@@ -23,7 +23,6 @@ import {
 } from '@/lib/contacts';
 import { ChampsPro, ChoixTypes, EnteteContacts, LigneContact, Puce, type BienDuContact } from '@/components/contacts/ChampsContact';
 import ChoixSource from '@/components/contacts/ChoixSource';
-import ImportImmoFacile from '@/components/contacts/ImportImmoFacile';
 import { Ic } from '@/components/documents/ApercuActe';
 import { colonneSourceAbsente, libelleSource, sourceDe } from '@/lib/sources';
 import { TABLE_DEMANDES, type PreRemplissage } from '@/lib/demandes-site';
@@ -647,7 +646,6 @@ export default function Clients({ onNavigate, fenetre }: {
   const [cats, setCats] = useState<Categorie[]>(() => lireCats(vueDemandee('clients')));
   /* « Importer depuis ImmoFacile » (V3.61) : la fenêtre, puis les contacts
      qu'elle vient de créer ou de compléter (« Voir les contacts importés »). */
-  const [importOuvert, setImportOuvert] = useState(false);
   const [importes, setImportes] = useState<string[] | null>(null);
   /* V3.88 — Les contacts cochés, et le geste en lot en cours. */
   const [choisis, setChoisis] = useState<Set<string>>(() => new Set());
@@ -1881,7 +1879,6 @@ export default function Clients({ onNavigate, fenetre }: {
       <EnteteRubrique titre="Mes contacts" icone={PictoClients} arrondi
         recherche={{ valeur: search, onChange: setSearch, placeholder: 'Nom, e-mail, agence, secteur, référence…', label: 'Chercher un contact' }}
         bouton={{ lib: 'Nouveau contact', onClick: openModal }}
-        bouton2={{ lib: 'Importer depuis ImmoFacile', court: 'Importer', ic: <Ic n="telecharger" t={15} />, onClick: () => setImportOuvert(true) }}
         phrase="Ctrl + clic (⌘ sur Mac) pour voir plusieurs types ensemble." phraseOrdi
         label="Filtrer par type de contact" aCheval actif={cats} onChoisir={(k, ajouter) => { setImportes(null); choisirCat(k as Categorie, ajouter); }}
         tuiles={[...ORDRE_TUILES.map(k => CATEGORIES.find(x => x.cle === k)).filter((x): x is (typeof CATEGORIES)[number] => !!x), TUILE_TRI, CATEGORIES[0], { cle: 'archives' as Categorie, lib: 'Archivés' }]
@@ -2371,13 +2368,6 @@ export default function Clients({ onNavigate, fenetre }: {
           avancement={lot.avancement} onValider={() => { void faireLot(); }} onFermer={() => setLot(null)} />
       )}
 
-      {/* « Importer depuis ImmoFacile » (V3.61). « Voir les contacts importés » :
-          la liste ne montre plus qu'eux, « Tout revoir » la rend entière. */}
-      {importOuvert && (
-        <ImportImmoFacile onFermer={() => setImportOuvert(false)}
-          onImporte={() => { signalerMaj(); fetchClients(); }}
-          onVoir={ids => { setImportOuvert(false); setImportes(ids); setCats(['tous']); setSearch(''); }} />
-      )}
     </div>
   );
 }

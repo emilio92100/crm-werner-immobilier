@@ -14,7 +14,6 @@ import CarteBien, { LigneBien, honorairesVente } from './CarteBien';
 import EditeurBien from './EditeurBien';
 import FicheBien from './FicheBien';
 import { FenMandat, FenNouveau } from './FenetresBien';
-import ImportBiensIF from './ImportBiensIF';
 import { etatDiffusion } from '@/lib/diffusion';
 import SqueletteFiche from '@/components/shared/SqueletteFiche';
 import FiltresBiens, { FILTRES_VIDES, filtrer, trier, type Filtres, type Tri } from './FiltresBiens';
@@ -146,6 +145,13 @@ export function BandeauVendu({ titre, texte, onFiche, onVendus, onFermer }: { ti
   );
 }
 
+/* La référence de l'annonce d'un portail d'où l'affaire a été reprise
+   (lib/import-seloger.ts : `donnees.portail`). */
+function refPortail(x: BienVente): string {
+  const p = x.donnees?.portail as { id?: unknown; reference?: unknown } | undefined;
+  return p && typeof p === 'object' ? [p.id, p.reference].filter(Boolean).map(String).join(' ') : '';
+}
+
 export default function PageBiens({ onNavigate }: { onNavigate: (page: string, data?: unknown) => void }) {
   const [liste, setListe] = useState<ListeBiens | null>(null);
   const [erreur, setErreur] = useState('');
@@ -193,7 +199,6 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
   const [mandatNeuf, setMandatNeuf] = useState<{ bien: BienVente; vus: string[] } | null>(null);
   const [cree, setCree] = useState(false);
   const [choixDepart, setChoixDepart] = useState(false);
-  const [importIF, setImportIF] = useState(false);
   const [erreurDepart, setErreurDepart] = useState('');
   /* « Créer son bien » depuis la fiche d'un contact : le propriétaire est déjà choisi. */
   const [pour, setPour] = useState<string | null>(null);
@@ -344,8 +349,8 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
   const proprioDe = (x: BienVente) => (x.client_id && liste?.clients[x.client_id] ? nomClient(liste.clients[x.client_id]) : '');
   const trouves = (filtre === 'archives' ? archives : actifs).filter(x => !q || sansAccent([
     x.titre, x.adresse, x.ville, x.quartier, x.code_postal, x.reference, x.mandat_numero, nomProprio(x.donnees || {}), proprioDe(x),
-    /* V3.79 : « 74 » ou « immofacile 74 » retrouve le bien repris. */
-    typeof x.donnees?.refImmofacile === 'string' ? `immofacile ${x.donnees.refImmofacile}` : '',
+    /* Werner : la référence de l'annonce SeLoger reprise (« seloger 12345 »). */
+    refPortail(x) ? `seloger ${refPortail(x)}` : '',
   ].filter(Boolean).join(' ')).includes(q));
   /* Les filtres fins comptent comme la recherche : les nombres des
      catégories les suivent. */
@@ -364,9 +369,10 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
 
   /* V3.80 (Alexandre : « les textes importés s'affichent en bordel ; est-ce
      qu'on peut tout modifier d'un seul trait ») : les annonces reprises
-     d'ImmoFacile d'un seul bloc, à mettre en paragraphes d'un clic. Le texte
-     d'origine reste dans la fiche (annonceTexteOrigine). */
-  const enBloc = useMemo(() => (liste?.biens || []).filter(x => typeof x.donnees?.refImmofacile === 'string' && typeof x.donnees?.annonceTexte === 'string' && texteEnBloc(x.donnees.annonceTexte)), [liste]);
+     d'un portail d'un seul bloc, à mettre en paragraphes d'un clic. Le texte
+     d'origine reste dans la fiche (annonceTexteOrigine). Werner : les annonces
+     reprises de SeLoger (`donnees.portail`). */
+  const enBloc = useMemo(() => (liste?.biens || []).filter(x => !!refPortail(x) && typeof x.donnees?.annonceTexte === 'string' && texteEnBloc(x.donnees.annonceTexte)), [liste]);
   const [aeration, setAeration] = useState<{ fait: number; total: number; erreurs: number } | null>(null);
   const [aerationCachee, setAerationCachee] = useState(false);
   async function aererTout() {
@@ -554,7 +560,7 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
           ) : aeration ? (
             <span className={b.aererTx}><b>{`Mise en paragraphes… ${aeration.fait + aeration.erreurs} sur ${aeration.total}`}</b><i className={b.aererBarre}><i style={{ width: `${((aeration.fait + aeration.erreurs) / aeration.total) * 100}%` }} /></i></span>
           ) : (
-            <span className={b.aererTx}><b>{enBloc.length > 1 ? `${enBloc.length} annonces reprises d’ImmoFacile sont d’un seul bloc.` : 'Une annonce reprise d’ImmoFacile est d’un seul bloc.'}</b>{' Les mêmes phrases, regroupées en paragraphes ; rien n’est réécrit.'}</span>
+            <span className={b.aererTx}><b>{enBloc.length > 1 ? `${enBloc.length} annonces reprises de SeLoger sont d’un seul bloc.` : 'Une annonce reprise de SeLoger est d’un seul bloc.'}</b>{' Les mêmes phrases, regroupées en paragraphes ; rien n’est réécrit.'}</span>
           )}
           {!aeration && <button type="button" className={`${s.btn} ${s.btnOr}`} onClick={() => { void aererTout(); }}>{enBloc.length > 1 ? 'Les mettre en paragraphes' : 'La mettre en paragraphes'}</button>}
           {(!aeration || aeration.fait + aeration.erreurs >= aeration.total) && (
@@ -689,8 +695,6 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
       {choixDepart && <FenNouveau occupe={cree} erreur={erreurDepart} pour={pour && liste?.clients[pour] ? nomClient(liste.clients[pour]) : ''}
         existants={existantsPour} onOuvrir={id => { setChoixDepart(false); setPour(null); ouvrir(id); }}
         onFermer={() => { if (!cree) { setChoixDepart(false); setPour(null); } }} onChoisir={e => { void nouveau(e); }} />}
-      {/* V3.79 : la reprise des biens d'ImmoFacile. */}
-      {importIF && <ImportBiensIF onFermer={() => setImportIF(false)} onImporte={() => { void charger(); }} />}
       {mandatNeuf && typeof document !== 'undefined' && <FenMandat bien={mandatNeuf.bien} creation onFermer={() => { void abandonnerMandatNeuf(); }}
         onFait={r => { const vus = mandatNeuf.vus; setMandatNeuf(null); majBien(r); setEdition({ bien: r, nouveau: true, vus }); }} />}
     </div>

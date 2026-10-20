@@ -81,7 +81,7 @@ export default function FenDiffusion({ bien, premiere, onFermer, onEnregistrer }
 
       <div className={b.diffNote}>
         <Ic n="horloge" t={16} />
-        <span>Ton site suit déjà ces choix (en une minute environ). Les portails reçoivent encore les annonces d’ImmoFacile pour quelques jours : ces choix serviront dès que le CRM les leur enverra, rien à refaire ce jour-là.</span>
+        <span>Le CRM n’envoie pas encore tes annonces à SeLoger : tu les publies toujours comme aujourd’hui. Ces choix serviront dès que l’envoi sera branché, rien à refaire ce jour-là.</span>
       </div>
     </Fenetre>
   );

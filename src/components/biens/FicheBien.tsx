@@ -100,6 +100,12 @@ type Fen =
 
 /* ── Les mots des listes de choix, lus dans le formulaire ── */
 const OPTIONS: Record<string, Record<string, string>> = {};
+/* La référence de l'annonce SeLoger d'où l'affaire a été reprise
+   (lib/import-seloger.ts : `donnees.portail`). */
+const refSeLoger = (d: Donnees): string => {
+  const p = d.portail as { nom?: unknown; reference?: unknown; id?: unknown } | undefined;
+  return p && typeof p === 'object' && p.nom === 'seloger' ? String(p.id || p.reference || '') : '';
+};
 for (const e of ETAPES_BIEN) for (const c of e.champs) if (c.t === 'choix' || c.t === 'cases') OPTIONS[c.cle] = Object.fromEntries(c.options.map(o => [o.v, o.l]));
 const lib = (d: Donnees, cle: string) => { const v = d[cle]; return typeof v === 'string' && v ? OPTIONS[cle]?.[v] || v : ''; };
 const libs = (d: Donnees, cle: string) => liste(d, cle).map(v => OPTIONS[cle]?.[v] || v);
@@ -195,8 +201,8 @@ export function Bandeau({ bien, detail, surCarte, cote }: { bien: BienVente; det
         <div className={b.heroBadges}>
           {bien.mandat_type && !cote && <span className={b.badgeOr}>{NOM_MANDAT[bien.mandat_type]?.toUpperCase()}{bien.mandat_numero && <i>{` · n° ${bien.mandat_numero}`}</i>}</span>}
           {bien.reference && <span className={b.ref}>{`Réf. ${bien.reference}`}</span>}
-          {/* V3.79 : un bien repris d'ImmoFacile garde sa référence d'origine. */}
-          {txt(d, 'refImmofacile') && <span className={b.ref}>{`ImmoFacile n° ${txt(d, 'refImmofacile')}`}</span>}
+          {/* Werner : une affaire reprise de SeLoger garde la référence de son annonce. */}
+          {refSeLoger(d) && <span className={b.ref}>{`SeLoger n° ${refSeLoger(d)}`}</span>}
         </div>
         <h1 className={b.heroT}>{titreBien(d)}</h1>
         {(adresse || txt(d, 'quartier')) && (
