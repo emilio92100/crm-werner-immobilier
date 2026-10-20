@@ -790,7 +790,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
           .rl-note > .rl-txt{white-space:normal !important;display:-webkit-box !important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}
           .rl-ligne{align-items:flex-start !important}
           .rl-actions > button{height:34px !important;font-size:12.5px !important;border-radius:11px !important}
-          /* V3.152 — bord à bord (Alexandre : « sur le mobile tout est bridé ») :
+          /* V3.152 — bord à bord (Werner : « sur le mobile tout est bridé ») :
              plus de marge sur les côtés, chaque carte va d'un bord à l'autre,
              sans arrondi ni cadre sur les côtés ; les titres gardent 14 px. */
           .rl-page{padding:12px 0 96px !important}

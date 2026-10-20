@@ -27,8 +27,8 @@ import { logoMail } from '@/lib/mail-charte';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://emilio-immo-chasseimmo.vercel.app';
-const CRM = process.env.NEXT_PUBLIC_CRM_URL || 'https://crm.emilio-immo.com';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobilier.vercel.app';
+const CRM = process.env.NEXT_PUBLIC_CRM_URL || 'https://crm-werner-immobilier.vercel.app';
 
 function base() {
   return createClient(
@@ -102,10 +102,10 @@ export async function GET(req: NextRequest) {
   </div>
 </div>`;
       await envoyerMailjet({
-        a: process.env.ALERTES_EMAIL || process.env.MAILJET_FROM_EMAIL || 'arogelet@emilio-immo.com',
+        a: process.env.ALERTES_EMAIL || process.env.MAILJET_FROM_EMAIL || 'contact@wernerimmobilier.com',
         sujet: `📨 Point automatique : ${partis.length} mail${partis.length > 1 ? 's' : ''} envoyé${partis.length > 1 ? 's' : ''}`,
         html, texte: `${partis.map((p) => p.nom).join(', ')}${rates.length ? `\nPas parti : ${rates.map((x) => x.nom).join(', ')}` : ''}`,
-        id: `point-recap-${Date.now()}`, deNom: 'Emilio · CRM',
+        id: `point-recap-${Date.now()}`, deNom: 'Werner · CRM',
       });
     }
 

@@ -19,9 +19,9 @@ const ENCRE = '#232528';
 const OR_CLAIR = '#f7b07a';
 const OR_FONCE = '#C8710F';
 
-const TEL = '06 58 95 76 32';
-const TEL_URL = '+33658957632';
-const MAIL = 'arogelet@emilio-immo.com';
+const TEL = '01 00 00 00 00';
+const TEL_URL = '+33100000000';
+const MAIL = 'contact@wernerimmobilier.com';
 
 export default function EspaceEnPreparation({ prenom }: { prenom?: string | null }) {
   const bonjour = prenom ? `Bonjour ${prenom},` : 'Bonjour,';
@@ -66,7 +66,7 @@ export default function EspaceEnPreparation({ prenom }: { prenom?: string | null
           fontSize: 10, fontWeight: 800, letterSpacing: 2.4,
           textTransform: 'uppercase', color: OR_CLAIR, opacity: .85,
         }}>
-          Emilio Immobilier
+          Werner Immobilier
         </div>
 
         <h1 style={{
@@ -132,7 +132,7 @@ export default function EspaceEnPreparation({ prenom }: { prenom?: string | null
         fontSize: 12, color: 'rgba(255,255,255,.34)', textAlign: 'center',
         animation: 'emilio-pose .5s .26s cubic-bezier(.16,1,.3,1) both',
       }}>
-        Alexandre Rogelet · Paris et Hauts-de-Seine
+        Werner · Paris et Hauts-de-Seine
       </div>
     </div>
   );

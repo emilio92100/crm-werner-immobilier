@@ -145,9 +145,9 @@ export function annoncePourEspace(a: LigneAnnonce, bien?: { titre?: string | nul
 
 /* Où elle en est, dit au client. `ton` : la couleur de la pastille. */
 export function etatAnnonce(a: Pick<AnnonceEspace, 'statut' | 'bienId'>): { lib: string; ton: 'or' | 'vert' | 'gris' } {
-  if (a.statut === 'ecarte') return { lib: 'Alexandre vous a répondu', ton: 'gris' };
+  if (a.statut === 'ecarte') return { lib: 'Werner vous a répondu', ton: 'gris' };
   if (a.statut === 'retenu') return a.bienId
     ? { lib: 'Retenue : dans vos biens', ton: 'vert' }
     : { lib: 'Retenue : il prépare la fiche', ton: 'vert' };
-  return { lib: 'Alexandre la regarde', ton: 'or' };
+  return { lib: 'Werner la regarde', ton: 'or' };
 }

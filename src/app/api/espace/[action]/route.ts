@@ -32,9 +32,9 @@ import { prixDuBien } from '@/lib/honoraires-bien';   // V3.145 : le prix de l'a
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://emilio-immo-chasseimmo.vercel.app';
-const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || 'arogelet@emilio-immo.com';
-const FROM_NAME = process.env.MAILJET_FROM_NAME || 'Alexandre ROGELET — Emilio Immobilier';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobilier.vercel.app';
+const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || 'contact@wernerimmobilier.com';
+const FROM_NAME = process.env.MAILJET_FROM_NAME || 'Werner Immobilier';
 
 function base() {
   return createClient(
@@ -159,7 +159,7 @@ async function prevenirVisite(
   const { data: client } = await supabase.from('clients').select('id, prenom, nom').eq('id', clientId).maybeSingle();
   const nom = client ? `${client.prenom || ''} ${client.nom || ''}`.trim() : 'Un client';
   const echappe = (t: string) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const crm = process.env.NEXT_PUBLIC_CRM_URL || 'https://crm.emilio-immo.com';
+  const crm = process.env.NEXT_PUBLIC_CRM_URL || 'https://crm-werner-immobilier.vercel.app';
   const lien = `${crm}/?page=fiche&client=${encodeURIComponent(clientId)}`;
   const mandatTexte = pasDeMandat === 'sans'
     ? 'Il n’a pas pu signer depuis son espace : aucun numéro n’était prêt pour lui. Ajoute des numéros d’avance dans le CRM (bloc Mandat), ou fais-lui signer le sien avant de caler la visite.'
@@ -209,7 +209,7 @@ async function prevenirVisite(
     headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
     body: JSON.stringify({
       Messages: [{
-        From: { Email: FROM_EMAIL, Name: 'Emilio · CRM' },
+        From: { Email: FROM_EMAIL, Name: 'Werner · CRM' },
         To: [{ Email: process.env.ALERTES_EMAIL || FROM_EMAIL }],
         Subject: `👀 ${nom} veut visiter · ${titre}`,
         TextPart: `${nom} veut visiter : ${titre}${lieu ? ` (${lieu})` : ''}${prix ? ` — ${Number(prix).toLocaleString('fr-FR')} €` : ''}.\n\nSes disponibilités : ${dispos || 'pas précisées, à lui demander.'}${mandatTexte ? `\n\n⚠️ ${mandatTete} ${mandatTexte}` : ''}\n\nOuvrir sa fiche : ${lien}\n\nLa demande est aussi dans tes Relances, pour aujourd’hui.`,
@@ -235,7 +235,7 @@ async function prevenirApresVisite(
   const { data: client } = await supabase.from('clients').select('id, prenom, nom').eq('id', clientId).maybeSingle();
   const nom = client ? `${client.prenom || ''} ${client.nom || ''}`.trim() : 'Un client';
   const echappe = (t: string) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const crm = process.env.NEXT_PUBLIC_CRM_URL || 'https://crm.emilio-immo.com';
+  const crm = process.env.NEXT_PUBLIC_CRM_URL || 'https://crm-werner-immobilier.vercel.app';
   const lien = `${crm}/?page=fiche&client=${encodeURIComponent(clientId)}`;
   const titre = bien.titre || 'un bien';
   const lieu = [bien.quartier, bien.ville].filter(Boolean).join(', ');
@@ -294,7 +294,7 @@ async function prevenirApresVisite(
     headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
     body: JSON.stringify({
       Messages: [{
-        From: { Email: FROM_EMAIL, Name: 'Emilio · CRM' },
+        From: { Email: FROM_EMAIL, Name: 'Werner · CRM' },
         To: [{ Email: process.env.ALERTES_EMAIL || FROM_EMAIL }],
         Subject: `${ISSUES[issue].e} ${phrase} · ${titre}`,
         TextPart: texte,
@@ -1283,8 +1283,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
     <hr style="border:none;border-top:1px solid #eeeeed;margin:24px 0 14px">
     <div style="font-size:12px;color:#aba7a3;line-height:1.6">
       Fiche transmise par ${echappe(prenom)}.<br>
-      Ce bien est présenté par Alexandre Rogelet, chasseur immobilier · 06 58 95 76 32<br>
-      Emilio Immobilier — RT Conseils · CPI 9201 2020 000 045 344
+      Ce bien est présenté par Werner, chasseur immobilier · 01 00 00 00 00<br>
+      Werner Immobilier — RT Conseils · CPI 9201 2020 000 045 344
     </div>
   </div>
 </div>`;
@@ -1295,10 +1295,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
           body: JSON.stringify({
             Messages: [{
               /* V3.118 : c'est le client qui partage, pas Alexandre. */
-              From: { Email: FROM_EMAIL, Name: cl?.prenom ? `${cl.prenom} via Emilio Immobilier` : 'Emilio Immobilier' },
+              From: { Email: FROM_EMAIL, Name: cl?.prenom ? `${cl.prenom} via Werner Immobilier` : 'Werner Immobilier' },
               To: [{ Email: dest }],
               Subject: `${prenom} vous partage un bien`,
-              TextPart: `Bonjour,\n\nVoici un bien que je suis en train de regarder. Dites-moi ce que vous en pensez.\n\n${bien.titre || ''}\n${[carac, prix ? Number(prix).toLocaleString('fr-FR') + ' \u20ac' : null].filter(Boolean).join(' \u00b7 ')}\n${lien}\n\n${prenom}\n\n---\nFiche transmise par ${prenom}.\nCe bien est présenté par Alexandre Rogelet, chasseur immobilier · 06 58 95 76 32\nEmilio Immobilier — RT Conseils · CPI 9201 2020 000 045 344`,
+              TextPart: `Bonjour,\n\nVoici un bien que je suis en train de regarder. Dites-moi ce que vous en pensez.\n\n${bien.titre || ''}\n${[carac, prix ? Number(prix).toLocaleString('fr-FR') + ' \u20ac' : null].filter(Boolean).join(' \u00b7 ')}\n${lien}\n\n${prenom}\n\n---\nFiche transmise par ${prenom}.\nCe bien est présenté par Werner, chasseur immobilier · 01 00 00 00 00\nWerner Immobilier — RT Conseils · CPI 9201 2020 000 045 344`,
               HTMLPart: html,
               CustomID: `partage-${bien.id}-${Date.now()}`,
               TrackOpens: 'disabled', TrackClicks: 'disabled',

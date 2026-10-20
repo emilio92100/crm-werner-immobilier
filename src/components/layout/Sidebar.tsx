@@ -272,9 +272,9 @@ export default function Sidebar({ activePage, onNavigate, ouvert = false, onFerm
             barre est réduite à ses icônes. Les images sont dans public/logos/. */}
         <div className={styles.logo}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className={styles.logoGrand} src="/logos/logo-emilio-800.png" alt="Emilio conseil immobilier" width={800} height={336} />
+          <img className={styles.logoGrand} src="/logos/logo-emilio-800.png" alt="Werner Immobilier" width={800} height={336} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className={styles.logoMark} src="/logos/e-192.png" alt="Emilio" width={40} height={40} />
+          <img className={styles.logoMark} src="/logos/e-192.png" alt="Werner" width={40} height={40} />
           <button type="button" className={styles.fermer} onClick={onFermer} aria-label="Fermer le menu">
             <Icone nom="fermer" taille={18} epaisseur={2} />
           </button>
@@ -348,10 +348,10 @@ export default function Sidebar({ activePage, onNavigate, ouvert = false, onFerm
 
         <div className={styles.userArea}>
           <div className={styles.userCard}>
-            <div className={styles.userAvatar}>AR</div>
+            <div className={styles.userAvatar}>W</div>
             <div>
-              <div className={styles.userName}>Alexandre R.</div>
-              <div className={styles.userRole}>Chasseur immobilier</div>
+              <div className={styles.userName}>Werner</div>
+              <div className={styles.userRole}>Immobilier d’entreprise</div>
             </div>
           </div>
         </div>

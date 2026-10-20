@@ -26,13 +26,13 @@ export const LIEN_POLICE_MAIL = '<link href="https://fonts.googleapis.com/css2?f
    (…vercel.app) : un domaine partagé par beaucoup de sites, dont les filtres
    anti-spam se méfient. espace.emilio-immo.com sert les fichiers de public/
    comme le CRM (le proxy laisse passer les images). */
-export const IMAGES_MAIL = (process.env.NEXT_PUBLIC_MAIL_IMAGES_URL || 'https://espace.emilio-immo.com').replace(/\/+$/, '');
+export const IMAGES_MAIL = (process.env.NEXT_PUBLIC_MAIL_IMAGES_URL || 'https://crm-werner-immobilier.vercel.app').replace(/\/+$/, '');
 export const LOGO_BLANC_MAIL = `${IMAGES_MAIL}/logo_high_resolution_white.png`;
 
 /* Le logo en <img>, prêt à poser dans une bande bleue. `mention` : un petit
    mot à droite (« CRM » pour les alertes envoyées à Alexandre). */
 export function logoMail(mention = '', hauteur = 28): string {
-  const img = `<img src="${LOGO_BLANC_MAIL}" alt="Emilio Immobilier" height="${hauteur}" style="height:${hauteur}px;width:auto;display:inline-block;vertical-align:middle;border:0;color:#ffffff;font-weight:800;font-size:15px;" />`;
+  const img = `<img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="${hauteur}" style="height:${hauteur}px;width:auto;display:inline-block;vertical-align:middle;border:0;color:#ffffff;font-weight:800;font-size:15px;" />`;
   return mention
     ? `${img}<span style="display:inline-block;vertical-align:middle;margin-left:10px;padding:3px 8px;border-radius:99px;background:rgba(255,255,255,.14);color:${MAIL.orClair};font-size:10px;font-weight:800;letter-spacing:1.5px;">${mention}</span>`
     : img;

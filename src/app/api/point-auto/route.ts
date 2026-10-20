@@ -22,7 +22,7 @@ import {
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://emilio-immo-chasseimmo.vercel.app';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobilier.vercel.app';
 
 function base() {
   return createClient(
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       const c = liste.find((x) => x.recherche && x.tokenClient);
       if (!c) return NextResponse.json({ ok: false, error: 'Aucun dossier actif avec une recherche pour construire un exemple.' }, { status: 404 });
       const m = mailPoint({ prenom: c.prenom, recherche: c.recherche, tokenClient: c.tokenClient!, site: SITE });
-      const a = process.env.ALERTES_EMAIL || process.env.MAILJET_FROM_EMAIL || 'arogelet@emilio-immo.com';
+      const a = process.env.ALERTES_EMAIL || process.env.MAILJET_FROM_EMAIL || 'contact@wernerimmobilier.com';
       const r = await envoyerMailjet({ a, sujet: `[Exemple · ${`${c.prenom} ${c.nom}`.trim()}] ${m.sujet}`, html: m.html, texte: m.texte, id: `point-exemple-${Date.now()}` });
       if (!r.ok) return NextResponse.json({ ok: false, error: r.erreur }, { status: 502 });
       return NextResponse.json({ ok: true, a, client: `${c.prenom} ${c.nom}`.trim() });

@@ -9,7 +9,7 @@ import { lireBiensSite } from '@/lib/flux-site-serveur';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const SITE = 'https://www.emilio-immo.com';
+const SITE = 'https://www.wernerimmobilier.com';
 const echapper = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export async function GET() {

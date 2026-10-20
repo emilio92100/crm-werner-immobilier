@@ -177,7 +177,7 @@ export default function CompteRenduVisite({ visite, titre, sous, prenom, onFerme
         .crv-pas:focus-visible,.crv-tuile:focus-visible{outline:2px solid ${OR};outline-offset:2px}
         @media (max-width:640px){
           .crv-voile{align-items:flex-end !important;padding:0 !important}
-          /* V3.138 (Alexandre : « en haut, mardi, la date et le nom, on ne le
+          /* V3.138 (Werner : « en haut, mardi, la date et le nom, on ne le
              voit pas en entier ») : 96vh dépassait l'écran du téléphone quand
              la barre d'adresse est affichée — le haut passait dessous. La
              hauteur visible (dvh), comme les fenêtres de l'agenda. */

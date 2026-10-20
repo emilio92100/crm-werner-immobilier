@@ -57,8 +57,8 @@ type Vous = { agence: string; interlocuteur: string; tel: string; email: string 
 /** Ce qu'Alexandre a noté de la personne à qui il a envoyé ce lien (le code `?de=`). */
 export type VousRepris = { agence: string; interlocuteur: string | null; tel: string | null; email: string | null };
 
-const TEL = '06 58 95 76 32';
-const TEL_URL = '+33658957632';
+const TEL = '01 00 00 00 00';
+const TEL_URL = '+33100000000';
 const CLE_VOUS = 'emilio_agence_vous';
 const cleEnvois = (t: string) => `emilio_agence_envois:${t}`;
 const PHOTOS_MAX = 6;
@@ -121,13 +121,13 @@ const ERREURS: Record<string, string> = {
   pdf_lourd: 'Ce PDF est trop lourd (20 Mo au plus) : envoyez une version plus légère, ou des photos.',
   pdf_type: 'Ce fichier n’est pas un PDF.',
   pdf_protege: 'Ce PDF est protégé par un mot de passe : envoyez-le sans mot de passe, ou des photos.',
-  pdf_indisponible: 'L’envoi de PDF n’est pas encore ouvert : envoyez des photos, ou appelez Alexandre.',
+  pdf_indisponible: 'L’envoi de PDF n’est pas encore ouvert : envoyez des photos, ou appelez Werner.',
   agence: 'Indiquez le nom de votre agence.',
-  contact: 'Indiquez un téléphone ou un e-mail, pour qu’Alexandre puisse vous rappeler.',
+  contact: 'Indiquez un téléphone ou un e-mail, pour qu’Werner puisse vous rappeler.',
   trop: 'Beaucoup d’envois d’un coup : réessayez dans quelques minutes.',
   ferme: 'Cette recherche n’est plus ouverte.',
   lien: 'Ce lien n’est plus valable.',
-  indisponible: 'L’envoi n’est pas encore ouvert : appelez Alexandre, il s’en occupe.',
+  indisponible: 'L’envoi n’est pas encore ouvert : appelez Werner, il s’en occupe.',
 };
 
 /* ── Les icônes, dessinées ── */
@@ -165,10 +165,10 @@ function Entete({ titre, sous, cote, salut }: { titre: string; sous: string; cot
     <header className="ag-tete">
       <div className="ag-tete-in">
         <div className="ag-tete-g">
-          <div className="ag-marque"><span>EMILIO IMMOBILIER</span><span className="ag-marque-d">Recherche pour un acquéreur</span></div>
+          <div className="ag-marque"><span>WERNER IMMOBILIER</span><span className="ag-marque-d">Recherche pour un acquéreur</span></div>
           <div className="ag-moi">
-            <span className="ag-av" aria-hidden="true">AR</span>
-            <span className="ag-moi-t"><b>Alexandre Rogelet</b><small>Emilio Immobilier · Vanves</small></span>
+            <span className="ag-av" aria-hidden="true">W</span>
+            <span className="ag-moi-t"><b>Werner</b><small>Werner Immobilier · Paris</small></span>
           </div>
           {salut && <span className="ag-salut">{salut}</span>}
           <h1>{titre}</h1>
@@ -198,10 +198,10 @@ function Etapes({ titre, etapes }: { titre: string; etapes: { t: string; s: stri
 const ETAPES_FORM = [
   { t: 'Collez le lien, ou déposez un PDF', s: 'Votre site, SeLoger, Leboncoin… une plaquette, ou quelques photos.' },
   { t: 'C’est lu automatiquement', s: 'Prix, surface, pièces : rien à ressaisir.' },
-  { t: 'Alexandre vous rappelle', s: 'Si le bien correspond à son client.' },
+  { t: 'Werner vous rappelle', s: 'Si le bien correspond à son client.' },
 ];
 const ETAPES_FAIT = [
-  { t: 'Votre bien est arrivé', s: 'Chez Alexandre, avec vos coordonnées.', fait: true },
+  { t: 'Votre bien est arrivé', s: 'Chez Werner, avec vos coordonnées.', fait: true },
   { t: 'Il l’étudie pour son client', s: 'Il le compare à sa recherche.' },
   { t: 'Il revient vers vous', s: 'S’il intéresse son client, pour organiser une visite.' },
 ];
@@ -234,7 +234,7 @@ function CarteEnvois({ envoyes }: { envoyes: Envoye[] }) {
         {info && (
           <div id="ag-hist-info" className="ag-bulle" role="note">
             <b>Les envois faits depuis cet appareil</b>
-            <span>{'Cette liste est gardée sur ce téléphone ou cet ordinateur. Ce que vous avez envoyé depuis un autre appareil n’y apparaît pas, mais Alexandre l’a bien reçu.'}</span>
+            <span>{'Cette liste est gardée sur ce téléphone ou cet ordinateur. Ce que vous avez envoyé depuis un autre appareil n’y apparaît pas, mais Werner l’a bien reçu.'}</span>
             <button type="button" onClick={() => setInfo(false)}>Compris</button>
           </div>
         )}
@@ -247,10 +247,10 @@ function CarteEnvois({ envoyes }: { envoyes: Envoye[] }) {
 /* Ordinateur : la carte pour joindre Alexandre, sous la recherche. */
 function CarteContact() {
   return (
-    <section className="ag-carte ag-contact ag-pc" aria-label="Joindre Alexandre">
-      <span className="ag-av ag-av-bleu" aria-hidden="true">AR</span>
-      <span className="ag-contact-t"><b>Une question sur ce client ?</b><small>{'Alexandre Rogelet'}</small><small className="ag-tel">{TEL}</small></span>
-      <a className="ag-contact-b" href={`tel:${TEL_URL}`} aria-label={`Appeler Alexandre au ${TEL}`}><Ic n="tel" t={16} /></a>
+    <section className="ag-carte ag-contact ag-pc" aria-label="Joindre Werner">
+      <span className="ag-av ag-av-bleu" aria-hidden="true">W</span>
+      <span className="ag-contact-t"><b>Une question sur ce client ?</b><small>{'Werner'}</small><small className="ag-tel">{TEL}</small></span>
+      <a className="ag-contact-b" href={`tel:${TEL_URL}`} aria-label={`Appeler Werner au ${TEL}`}><Ic n="tel" t={16} /></a>
     </section>
   );
 }
@@ -340,7 +340,7 @@ function CartePdf({ pdf, onRetirer }: { pdf: EtatPdf; onRetirer: () => void }) {
         </span>
         {retirer}
       </div>
-      <span className="ag-pdf-aide">{'Alexandre le lira de son côté. Vous pouvez ajouter le prix et la surface juste en dessous, si vous voulez.'}</span>
+      <span className="ag-pdf-aide">{'Werner le lira de son côté. Vous pouvez ajouter le prix et la surface juste en dessous, si vous voulez.'}</span>
     </div>
   );
 }
@@ -351,7 +351,7 @@ function CarteVous({ vous, repris, onModifier }: { vous: Vous; repris: boolean; 
   const ini = (nom || vous.agence).split(/\s+/).filter(Boolean).slice(0, 2).map(m => m[0]?.toUpperCase() || '').join('') || '?';
   return (
     <section className="ag-carte" aria-label="Vous">
-      <TitreCarte n="personne" cote={<span className="ag-pastille">{repris ? 'Repris du message d’Alexandre' : 'Gardé sur cet appareil'}</span>}>Vous</TitreCarte>
+      <TitreCarte n="personne" cote={<span className="ag-pastille">{repris ? 'Repris du message d’Werner' : 'Gardé sur cet appareil'}</span>}>Vous</TitreCarte>
       <div className="ag-vous">
         <span className="ag-av ag-av-plein" aria-hidden="true">{ini}</span>
         <span className="ag-vous-t">
@@ -373,9 +373,9 @@ function Fermee({ inconnu }: { inconnu: boolean }) {
   return (
     <main className="ag-page">
       <Entete titre={inconnu ? 'Ce lien n’est plus valable' : 'Cette recherche n’est plus ouverte'}
-        sous={inconnu ? 'Il a peut-être été remplacé. Alexandre vous en enverra un nouveau.' : 'Merci pour votre aide ! Pour un autre client, Alexandre vous enverra un nouveau lien.'} />
+        sous={inconnu ? 'Il a peut-être été remplacé. Werner vous en enverra un nouveau.' : 'Merci pour votre aide ! Pour un autre client, Werner vous enverra un nouveau lien.'} />
       <div className="ag-corps ag-corps-un">
-        <a className="ag-btn ag-btn-blanc" href={`tel:${TEL_URL}`}><Ic n="tel" t={17} /><span>{`Appeler Alexandre · ${TEL}`}</span></a>
+        <a className="ag-btn ag-btn-blanc" href={`tel:${TEL_URL}`}><Ic n="tel" t={17} /><span>{`Appeler Werner · ${TEL}`}</span></a>
       </div>
     </main>
   );
@@ -555,7 +555,7 @@ export default function PageAgence({ etat, token, resume, repris, code }: {
       <main className="ag-page">
         {fait ? (
           <>
-            <Entete titre={fait.deja ? 'Alexandre l’a déjà' : 'C’est arrivé chez Alexandre'}
+            <Entete titre={fait.deja ? 'Werner l’a déjà' : 'C’est arrivé chez Werner'}
               sous={fait.deja ? 'Ce bien est déjà chez lui pour ce client. Merci !' : `Il l’étudie pour son client et revient vers vous.${prenomAgent ? ` Merci, ${prenomAgent}.` : ' Merci !'}`}
               cote={fait.deja ? undefined : <Etapes titre="Et maintenant ?" etapes={ETAPES_FAIT} />} />
             <div className="ag-corps ag-corps-fait">
@@ -563,7 +563,7 @@ export default function PageAgence({ etat, token, resume, repris, code }: {
                 <div className="ag-recap-haut">
                   <span className="ag-fait-ic"><Ic n="coche" t={24} /></span>
                   <span className="ag-recap-t">
-                    <b>{fait.deja ? 'Déjà chez Alexandre' : 'Bien envoyé'}</b>
+                    <b>{fait.deja ? 'Déjà chez Werner' : 'Bien envoyé'}</b>
                     <small>{fait.deja ? 'Rien à refaire : il l’a pour ce client.' : `Aujourd’hui à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}`}</small>
                   </span>
                 </div>
@@ -575,7 +575,7 @@ export default function PageAgence({ etat, token, resume, repris, code }: {
                 )}
                 <div className="ag-recap-act">
                   <button type="button" className="ag-btn ag-btn-bleu" onClick={autre}><Ic n="plus" t={18} /><span>Proposer un autre bien</span></button>
-                  <a className="ag-btn ag-btn-blanc ag-mob" href={`tel:${TEL_URL}`}><Ic n="tel" t={17} /><span>{`Appeler Alexandre · ${TEL}`}</span></a>
+                  <a className="ag-btn ag-btn-blanc ag-mob" href={`tel:${TEL_URL}`}><Ic n="tel" t={17} /><span>{`Appeler Werner · ${TEL}`}</span></a>
                 </div>
               </section>
               <div className="ag-droite">
@@ -621,7 +621,7 @@ export default function PageAgence({ etat, token, resume, repris, code }: {
                     {(lecture.etat === 'echec' || lecture.etat === 'erreur') && (
                       <div className="ag-lu ag-lu-orange" role="status">
                         <Ic n="alerte" t={17} />
-                        <span className="ag-lu-t"><b>{'L’annonce n’a pas pu être lue automatiquement'}</b><small>{lecture.etat === 'erreur' ? lecture.message : 'Ajoutez quelques photos et le prix ci-dessous, ou envoyez le lien tel quel : Alexandre l’ouvrira.'}</small></span>
+                        <span className="ag-lu-t"><b>{'L’annonce n’a pas pu être lue automatiquement'}</b><small>{lecture.etat === 'erreur' ? lecture.message : 'Ajoutez quelques photos et le prix ci-dessous, ou envoyez le lien tel quel : Werner l’ouvrira.'}</small></span>
                       </div>
                     )}
                   </div>
@@ -661,13 +661,13 @@ export default function PageAgence({ etat, token, resume, repris, code }: {
                   )}
                   <div className="ag-grille">
                     <div className="ag-champ ag-large"><label htmlFor="ag-adr">Adresse <i>(facultatif)</i></label>
-                      <Saisie n="lieu"><input id="ag-adr" value={adresse} onChange={e => setAdresse(e.target.value)} placeholder="12 rue Jean-Jaurès, Vanves" maxLength={300} /></Saisie></div>
+                      <Saisie n="lieu"><input id="ag-adr" value={adresse} onChange={e => setAdresse(e.target.value)} placeholder="12 rue Jean-Jaurès, Paris" maxLength={300} /></Saisie></div>
                     <div className="ag-champ"><label htmlFor="ag-prix">Prix</label>
                       <Saisie n="budget"><input id="ag-prix" inputMode="numeric" value={prix} onChange={e => setPrix(e.target.value)} placeholder="265 000 €" maxLength={20} /></Saisie></div>
                     <div className="ag-champ"><label htmlFor="ag-surf">Surface</label>
                       <Saisie n="surface"><input id="ag-surf" inputMode="decimal" value={surface} onChange={e => setSurface(e.target.value)} placeholder="52 m²" maxLength={12} /></Saisie></div>
                   </div>
-                  <div className="ag-champ"><label htmlFor="ag-mot">Un mot pour Alexandre <i>(facultatif)</i></label>
+                  <div className="ag-champ"><label htmlFor="ag-mot">Un mot pour Werner <i>(facultatif)</i></label>
                     <Saisie n="bulle" haut><textarea id="ag-mot" rows={3} value={mot} onChange={e => setMot(e.target.value)} maxLength={1200}
                       placeholder="Exclusivité, pas encore en ligne. Visite possible jeudi après-midi." /></Saisie></div>
                 </section>
@@ -694,7 +694,7 @@ export default function PageAgence({ etat, token, resume, repris, code }: {
                 {erreur && <div className="ag-erreur" role="alert"><Ic n="alerte" t={17} /><span>{erreur}</span></div>}
                 <button type="button" className="ag-btn ag-btn-or" onClick={() => { void envoyer(); }} disabled={envoi || lecture.etat === 'lecture' || pdf?.etat === 'lecture'}>
                   {envoi ? <span className="ag-rond ag-rond-fonce" aria-hidden="true" /> : <Ic n="fleche" t={18} />}
-                  <span>{envoi ? (etape === 'pdf' ? 'Envoi du PDF…' : 'Envoi…') : lecture.etat === 'lecture' ? 'Lecture de l’annonce…' : pdf?.etat === 'lecture' ? 'Lecture du PDF…' : 'Envoyer à Alexandre'}</span>
+                  <span>{envoi ? (etape === 'pdf' ? 'Envoi du PDF…' : 'Envoi…') : lecture.etat === 'lecture' ? 'Lecture de l’annonce…' : pdf?.etat === 'lecture' ? 'Lecture du PDF…' : 'Envoyer à Werner'}</span>
                 </button>
                 <a className="ag-appel ag-mob" href={`tel:${TEL_URL}`}><Ic n="tel" t={15} /><span>{`Une question ? ${TEL}`}</span></a>
                 {envoyes.length > 0 && <CarteEnvois envoyes={envoyes} />}
@@ -753,7 +753,7 @@ body{ margin:0; background:#f6f6f7 }
 .ag-boite-bleu svg{ color:#2e3034 }
 .ag-imp-l{ display:flex; align-items:center; gap:9px; font-size:14px; font-weight:700 }
 .ag-coche{ width:22px; height:22px; border-radius:50%; background:#DCFCE7; color:#15803d; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0 }
-/* V3.202 — ses précisions, quand Alexandre les montre. */
+/* V3.202 — ses précisions, quand Werner les montre. */
 .ag-prec{ margin:0; padding-left:12px; border-left:3px solid #f08c42; font-size:14px; font-weight:600; line-height:1.6; color:#232528; white-space:pre-line; overflow-wrap:anywhere }
 /* Le titre d'une carte, avec son icône ; une case avec son icône. */
 .ag-titre-c{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }

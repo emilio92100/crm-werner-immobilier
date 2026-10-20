@@ -28,7 +28,7 @@ const OUTIL = {
     properties: {
       score: { type: 'integer', minimum: 0, maximum: 100, description: 'La note sur 100, selon les tranches de la veille' },
       verdict: { type: 'string', enum: ['priorite', 'appeler', 'reserve', 'ecarter'], description: 'Il suit la note : 85+ priorite, 70–84 appeler, 50–69 reserve, sous 50 ecarter' },
-      appreciation: { type: 'string', description: 'Une seule phrase qui tranche, pour Alexandre (260 caractères au plus)' },
+      appreciation: { type: 'string', description: 'Une seule phrase qui tranche, pour Werner (260 caractères au plus)' },
       points_forts: { type: 'array', items: { type: 'string' }, description: 'De 0 à 4 atouts pour CE client, une idée par ligne, le plus décisif d’abord' },
       points_attention: { type: 'array', items: { type: 'string' }, description: 'De 0 à 4 points d’attention, le plus décisif d’abord ; ce qui bloque ou doit être tranché commence par « ⚠️ »' },
     },
@@ -63,7 +63,7 @@ function bienPourIA(b: Record<string, unknown>): Record<string, unknown> {
   return x;
 }
 
-const CONSIGNE_CLIENT = `Tu fais la veille d'Alexandre Rogelet, chasseur immobilier à Paris et dans les Hauts-de-Seine (Emilio Immobilier). Son client a envoyé lui-même cette annonce depuis son espace ; Alexandre l'a mise en fiche. Juge-la EXACTEMENT comme la veille juge une annonce qu'elle trouve, par rapport à TOUTE la recherche de ce client.
+const CONSIGNE_CLIENT = `Tu fais la veille d'Werner, chasseur immobilier à Paris et dans les Hauts-de-Seine (Werner Immobilier). Son client a envoyé lui-même cette annonce depuis son espace ; Werner l'a mise en fiche. Juge-la EXACTEMENT comme la veille juge une annonce qu'elle trouve, par rapport à TOUTE la recherche de ce client.
 
 Ce que tu lis :
 - LA RECHERCHE : ses critères ; ses « exigences » (le niveau « souhaite » ou « indispensable » de parking, cave, balcon, terrasse, jardin, ascenseur, gardien, extérieur, cuisine) ; ses notes (les précisions libres, qui valent souvent plus que les cases, et disent son projet : résidence principale par défaut) ; « son_parcours » ; ce que ses visites ont appris ; ses comptes rendus ; ce qu'il a dit des biens montrés (ses refus d'abord : chaque motif de refus devient un critère) ; les annonces écartées et leur motif. « secteurs » écrit « Quartier (Ville) » veut dire ces quartiers-là seulement ; « arrets » donne la station et le temps à pied qu'il accepte.
@@ -72,7 +72,7 @@ Ce que tu lis :
 
 Les règles de la veille :
 1. Les curseurs, un peu au-delà se discute :
-   - Budget : le prix affiché (honoraires d'agence compris) jusqu'à 10 % au-dessus du budget maximum passe, avec l'écart chiffré en point d'attention (« 6 % au-dessus de son budget »). Au-delà de 10 %, ça bloque. Les honoraires d'Alexandre, les frais de notaire et les travaux n'entrent jamais dans la note.
+   - Budget : le prix affiché (honoraires d'agence compris) jusqu'à 10 % au-dessus du budget maximum passe, avec l'écart chiffré en point d'attention (« 6 % au-dessus de son budget »). Au-delà de 10 %, ça bloque. Les honoraires d'Werner, les frais de notaire et les travaux n'entrent jamais dans la note.
    - Surface : jusqu'à 5 % sous la surface minimum passe, avec l'écart en point d'attention (« 76 m² pour 80 demandés, −5 % »). Au-delà, ça bloque.
    - Étage minimum : un de moins se discute.
    - Le temps à pied jusqu'à SA station : quelques minutes de plus se discutent (pour 5 demandées, 10 au plus ; pour 10, 13 à 15 c'est déjà loin), au-delà ça bloque ; plus c'est près, mieux c'est. Une autre station ne la remplace pas. Tu ne calcules aucune distance : seulement ce qui est écrit (situation, description) ; inconnu, c'est un point à vérifier.
@@ -93,7 +93,7 @@ La note sur 100 :
 Le verdict suit la note : « priorite » (85+), « appeler » (70 à 84), « reserve » (50 à 69), « ecarter » (sous 50).
 
 Ce que tu écris :
-- « appreciation » : UNE phrase qui tranche, écrite pour Alexandre (le client ne la lit jamais) : pourquoi ce bien colle ou non à CE client, puis ce qui coince, avec le chiffre. Elle ne recopie pas les points.
+- « appreciation » : UNE phrase qui tranche, écrite pour Werner (le client ne la lit jamais) : pourquoi ce bien colle ou non à CE client, puis ce qui coince, avec le chiffre. Elle ne recopie pas les points.
 - « points_forts » : de 0 à 4, une idée par ligne, le plus décisif d'abord, chacun se suffit à lui-même (« Trois chambres pour trois demandées, plus un bureau », « À 4 min à pied de Jean-Jaurès, sa station »). Le jugement, pas la fiche recopiée.
 - « points_attention » : de 0 à 4, le plus décisif d'abord. Ce qui bloque ou doit être tranché avant d'appeler commence par « ⚠️ » ; les simples vérifications, sans préfixe.
 - Le test de cohérence : la note, le verdict et les points racontent la même chose. Un 78 sans point d'attention est faux, un 92 avec trois aussi, une « priorite » avec un « ⚠️ » aussi.
@@ -131,8 +131,8 @@ const remplacer = (t: string, a: string, b: string) => {
   return t.replace(a, b);
 };
 const CONSIGNE_AGENCE = [
-  ['Son client a envoyé lui-même cette annonce depuis son espace ; Alexandre l\'a mise en fiche. Juge-la EXACTEMENT',
-    'Une agence (un confrère) propose ce bien pour ce client, par le lien qu\'Alexandre lui a donné ; la fiche a été lue sur son annonce. Juge-le EXACTEMENT'],
+  ['Son client a envoyé lui-même cette annonce depuis son espace ; Werner l\'a mise en fiche. Juge-la EXACTEMENT',
+    'Une agence (un confrère) propose ce bien pour ce client, par le lien qu\'Werner lui a donné ; la fiche a été lue sur son annonce. Juge-le EXACTEMENT'],
   ['- CE QUE LE CLIENT EN A DIT en l\'envoyant : son mot, ce qui lui plaît.',
     '- CE QUE L\'AGENCE EN A DIT en le proposant : son mot (exclusivité, disponibilité, visite possible…), et l\'adresse quand elle la donne.'],
   ['Il l\'a envoyée lui-même : c\'est un signal (elle lui plaît), à dire dans un atout quand elle colle à sa recherche, en citant ce qu\'il en a dit. Ça ne change aucune règle. Si elle contredit franchement ses critères (un seuil dur, son secteur, son budget au-delà de 10 %), ne la sauve pas : note basse, et dis dans l\'appréciation que sa recherche bouge peut-être (« Il l\'a envoyée alors qu\'elle n\'a que 2 chambres pour 3 demandées : à lui demander si sa recherche a changé »).',

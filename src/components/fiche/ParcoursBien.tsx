@@ -3432,7 +3432,7 @@ export function LienEspace({ recherche, client }: { recherche: any; client: any 
         fontSize: 11.5, color: '#64748b', background: '#fafaf9', border: `1px solid ${BORD}`,
         borderRadius: 7, padding: '4px 9px', minWidth: 0, maxWidth: '100%', overflow: 'hidden',
         textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'ui-monospace, monospace',
-      }} title={url}>{court ? `espace.emilio-immo.com/${token}` : `/espace/${String(token).slice(0, 12)}…`}</code>
+      }} title={url}>{court ? url.replace(/^https?:\/\//, '') : `/espace/${String(token).slice(0, 12)}…`}</code>
 
       <button type="button" className="le-btn" onClick={copier} style={btnEspace(copie ? '#ecfdf5' : '#fafaf9', copie ? '#059669' : '#475569', copie ? '#a7f3d0' : BORD)}>
         {copie ? '✓ Copié' : 'Copier le lien'}

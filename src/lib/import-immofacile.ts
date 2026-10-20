@@ -263,7 +263,7 @@ const COMMUNES_92: [string, string][] = [
   ['92130', 'Issy-les-Moulineaux'], ['92300', 'Levallois-Perret'], ['92240', 'Malakoff'], ['92430', 'Marnes-la-Coquette'],
   ['92190', 'Meudon'], ['92120', 'Montrouge'], ['92000', 'Nanterre'], ['92200', 'Neuilly-sur-Seine'],
   ['92350', 'Le Plessis-Robinson'], ['92800', 'Puteaux'], ['92500', 'Rueil-Malmaison'], ['92210', 'Saint-Cloud'],
-  ['92330', 'Sceaux'], ['92310', 'Sèvres'], ['92150', 'Suresnes'], ['92170', 'Vanves'], ['92420', 'Vaucresson'],
+  ['92330', 'Sceaux'], ['92310', 'Sèvres'], ['92150', 'Suresnes'], ['92170', 'Paris'], ['92420', 'Vaucresson'],
   ['92410', 'Ville-d’Avray'], ['92390', 'Villeneuve-la-Garenne'],
 ];
 const PAR_CP: Record<string, string> = { ...Object.fromEntries(COMMUNES_92), '92360': 'Meudon' };

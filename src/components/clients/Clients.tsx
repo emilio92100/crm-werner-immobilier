@@ -1502,7 +1502,7 @@ export default function Clients({ onNavigate, fenetre }: {
               /* Une personne ou un couple */
               .nc-qui { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 460px; }
               .nc-qui-b { justify-content: center; align-items: center; padding: 10px 12px; }
-              /* V3.149 (Alexandre : « le prénom et le nom, c'est des petites
+              /* V3.149 (Werner : « le prénom et le nom, c'est des petites
                  cases, ça dépasse… le mail, il faut appuyer dedans et défiler »)
                  : les deux personnes l'une sous l'autre, chacune sur toute la
                  largeur. Le prénom et le nom sur une ligne ; le téléphone et
@@ -2070,7 +2070,7 @@ export default function Clients({ onNavigate, fenetre }: {
                         <span style={{ minWidth: 0 }}>
                           <span className={styles.nom} title={nomFoyer(client)} style={clos ? { color: '#6b7a90' } : undefined}>{nomFoyer(client)}</span>
                           <span className={styles.ref}>
-                            {client.reference?.replace('EMI-2026-', 'EMI-') || client.reference}
+                            {client.reference?.replace(/^WER-\d{4}-/, 'WER-') || client.reference}
                             {/* Une couleur seule ne se comprend pas : on la nomme. */}
                             {(client.statut as string) !== 'actif' && (
                               <span className={styles.etiquette} style={{ color: t.fg, background: t.bg, border: `1px solid ${t.trait}` }}>

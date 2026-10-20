@@ -208,7 +208,7 @@ export default function SignatureSurPlace({ doc, onFermer, finaliser = false }: 
 
   const bande = (
     <div className="sp-band">
-      <span className="m">EMILIO IMMOBILIER</span>
+      <span className="m">WERNER IMMOBILIER</span>
       <span className="n">{ecran === 'fini' ? 'Signature finalisée' : 'Signature sur place'}</span>
       {!(ecran === 'finalisation' && !avancement.erreur) && (
         <button type="button" className="sp-quitter" onClick={quitter} aria-label="Quitter"><Croix t={15} /><span>{ecran === 'fini' ? 'Terminer' : 'Quitter'}</span></button>
@@ -286,7 +286,7 @@ export default function SignatureSurPlace({ doc, onFermer, finaliser = false }: 
   if (vue === 'lecture' && s) return page(
     <div className="mdt-corps">
       <p className="mdt-p petit">{sansCode && !emailOk(s.personne.email)
-        ? 'C’est exactement ce texte que vous signez. Alexandre en garde l’exemplaire signé.'
+        ? 'C’est exactement ce texte que vous signez. Werner en garde l’exemplaire signé.'
         : 'C’est exactement ce texte que vous signez. Vous en recevrez un exemplaire signé par e-mail.'}</p>
       <TexteMandat parties={parties} identite={identite} cadres={{ etats, moi: s.cle }} bandeau={`${m.titre} · en attente de votre signature`} />
       <button type="button" className="btn or mdt-plein" onClick={() => setEcran(sansCode ? 'cadre' : 'resume')}>J’ai lu, je reviens</button>
@@ -367,7 +367,7 @@ export default function SignatureSurPlace({ doc, onFermer, finaliser = false }: 
               <span className="bx">{expres && <Ic n="check" t={14} e={3} />}</span>
               <span>{expresse}</span>
             </button>
-            <p className="mdt-p petit">{'Vous préférez que la mission attende la fin des 14 jours ? Ne signez pas : dites-le à Alexandre, il modifiera ce point du document.'}</p>
+            <p className="mdt-p petit">{'Vous préférez que la mission attende la fin des 14 jours ? Ne signez pas : dites-le à Werner, il modifiera ce point du document.'}</p>
           </>
         )}
         <div className="mdt-q">Votre code</div>
@@ -453,7 +453,7 @@ export default function SignatureSurPlace({ doc, onFermer, finaliser = false }: 
         : fin?.a.length
           ? `Tout le monde a signé. L’exemplaire signé, avec son certificat, part par e-mail à ${fin.a.map(masquerEmail).join(' et ')}. L’original est rangé dans le dossier.`
           : 'Tout le monde a signé. L’original signé, avec son certificat, est rangé dans le dossier.'}</p>
-      {fin?.espace && <p className="mdt-p">{'Vous retrouverez aussi votre exemplaire dans votre espace Emilio, avec vos autres documents.'}</p>}
+      {fin?.espace && <p className="mdt-p">{'Vous retrouverez aussi votre exemplaire dans votre espace Werner, avec vos autres documents.'}</p>}
       <div className="mdt-confiance">
         {sansCode
           ? <span><Ic n="tablette" t={15} /><span>Signé sur place, chacun dans son cadre</span></span>

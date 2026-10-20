@@ -20,7 +20,7 @@ import { lienEspace } from '@/lib/jeton';
 
 export const dynamic = 'force-dynamic';
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://emilio-immo-chasseimmo.vercel.app';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobilier.vercel.app';
 
 function base() {
   return createClient(
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
     const retenue = tousNonLus.find((b) => proposes.has(b.id));
     if (n === 0 && retenue) {
       return NextResponse.json({
-        titre: 'Alexandre a retenu votre annonce',
+        titre: 'Werner a retenu votre annonce',
         corps: 'Elle est dans vos biens, avec ce qu’il en pense.',
         url: `${lien}?r=${retenue.recherche_id}&bien=${retenue.id}`,
         pastille: 0,

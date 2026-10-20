@@ -122,8 +122,8 @@ function etatDeVente(v: { etape?: string | null; archive?: boolean | null } | nu
 /* Les coordonnées du conseiller : celles des Paramètres (« Tes coordonnées
    dans les mails »), comme la signature des mails ; celles d'avant si elles
    sont vides. */
-const TEL_DEFAUT = '06 58 95 76 32';
-const MAIL_DEFAUT = 'arogelet@emilio-immo.com';
+const TEL_DEFAUT = '01 00 00 00 00';
+const MAIL_DEFAUT = 'contact@wernerimmobilier.com';
 function lienTel(t: string): string {
   const n = t.replace(/[^\d+]/g, '');
   return /^0\d{9}$/.test(n) ? `+33${n.slice(1)}` : n;
@@ -209,16 +209,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     ville,
     prix ? `${fmt(prix)} €` : '',
   ].filter(Boolean).join(' · ');
-  const description = etat ? `${BANDEAU[etat].titre}. ${details}` : details || 'Un bien proposé par Emilio Immobilier.';
+  const description = etat ? `${BANDEAU[etat].titre}. ${details}` : details || 'Un bien proposé par Werner Immobilier.';
   const photos: string[] = Array.isArray(b.photos) ? b.photos.filter(Boolean) : [];
   const image = photos[0] ? apercuPhoto(photos[0]) : null;
   return {
-    title: `${titre} — Emilio Immobilier`,
+    title: `${titre} — Werner Immobilier`,
     description,
     openGraph: {
       title: titre,
       description,
-      siteName: 'Emilio Immobilier',
+      siteName: 'Werner Immobilier',
       locale: 'fr_FR',
       type: 'website',
       ...(image ? { images: [{ url: image, alt: titre }] } : {}),
@@ -340,7 +340,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
 
       <header style={{ background: MARQUE, padding: '16px 0', borderBottom: `2px solid ${OR}` }}>
         <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
-          <Image src="/logo_high_resolution_white.png" alt="Emilio Immobilier" width={280} height={64} style={{ height: 46, width: 'auto' }} priority />
+          <Image src="/logo_high_resolution_white.png" alt="Werner Immobilier" width={280} height={64} style={{ height: 46, width: 'auto' }} priority />
           {!bandeau && <div style={{ color: OR, fontSize: 10, letterSpacing: 2.4, fontWeight: 700 }}>SÉLECTION PRIVÉE</div>}
         </div>
       </header>
@@ -506,10 +506,10 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
             on lui donne de quoi appeler, et c'est tout ce qu'on lui demande. */}
         <section style={{ background: MARQUE, borderRadius: 22, padding: '32px 24px', color: '#fff', textAlign: 'center', marginTop: 30 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 18 }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(240, 140, 66,.15)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: JAKARTA, fontWeight: 800, fontSize: 15, border: `1px solid rgba(240, 140, 66,.4)` }}>AR</div>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(240, 140, 66,.15)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: JAKARTA, fontWeight: 800, fontSize: 15, border: `1px solid rgba(240, 140, 66,.4)` }}>W</div>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontFamily: JAKARTA, fontSize: 15, fontWeight: 800 }}>Alexandre Rogelet</div>
-              <div style={{ fontSize: 12, color: OR }}>Emilio Immobilier</div>
+              <div style={{ fontFamily: JAKARTA, fontSize: 15, fontWeight: 800 }}>Werner</div>
+              <div style={{ fontSize: 12, color: OR }}>Werner Immobilier</div>
             </div>
           </div>
           <h2 style={{ fontFamily: JAKARTA, fontSize: 21, fontWeight: 800, margin: '0 0 8px', letterSpacing: -.3 }}>
@@ -538,9 +538,9 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
 
       <footer style={{ background: ENCRE_NUIT, padding: '24px 20px', borderTop: '1px solid rgba(240, 140, 66,.2)' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <Image src="/logo_high_resolution_white.png" alt="Emilio Immobilier" width={220} height={50} style={{ height: 38, width: 'auto' }} />
+          <Image src="/logo_high_resolution_white.png" alt="Werner Immobilier" width={220} height={50} style={{ height: 38, width: 'auto' }} />
           <div style={{ color: 'rgba(255,255,255,.55)', fontSize: 11.5, lineHeight: 1.7 }}>
-            <span style={{ fontFamily: JAKARTA, fontWeight: 800, color: OR }}>Emilio Immobilier</span>
+            <span style={{ fontFamily: JAKARTA, fontWeight: 800, color: OR }}>Werner Immobilier</span>
             <span style={{ color: 'rgba(255,255,255,.4)' }}> — RT Conseils (SAS)</span>
             <br />
             <span style={{ color: 'rgba(255,255,255,.4)' }}>Paris &amp; Hauts-de-Seine · Carte professionnelle CPI 9201 2020 000 045 344</span>

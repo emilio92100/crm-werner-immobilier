@@ -103,7 +103,7 @@ function sujetMail(d: DemandeSite): string {
     case 'estimation': return 'Votre demande d’estimation';
     case 'mandat_recherche': return 'Votre recherche immobilière';
     case 'rappel_bien': return d.property_title ? `Votre demande sur le bien « ${d.property_title} »` : 'Votre demande sur un de nos biens';
-    default: return 'Votre message sur emilio-immo.com';
+    default: return 'Votre message sur wernerimmobilier.com';
   }
 }
 
@@ -432,7 +432,7 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
           <div className={`${s.tiroirProv} ${s.tiroirSeul}`}>
             <div className={s.tiroirTete}>
               <span>{prov === 'portails' ? 'Portails · un par un' : 'Mon site · par formulaire'}</span>
-              <small>{prov === 'portails' ? 'Logic-Immo arrive avec SeLoger' : 'emilio-immo.com'}</small>
+              <small>{prov === 'portails' ? 'Logic-Immo arrive avec SeLoger' : 'wernerimmobilier.com'}</small>
             </div>
             {/* Une pastille par formulaire (ou portail) : son icône, son nom, son
                 nombre ; un point rouge s'il y a du neuf. « Toutes » à droite. */}
@@ -534,7 +534,7 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
           <div className={s.vide}>
             <span className={s.videIc}><PictoBoite taille={26} /></span>
             <div className={s.videTitre}>Aucune demande pour l’instant</div>
-            <div className={s.videSous}>Les estimations, les demandes d’accompagnement, les questions sur un bien et les messages laissés sur emilio-immo.com arriveront ici, puis celles des portails.</div>
+            <div className={s.videSous}>Les estimations, les demandes d’accompagnement, les questions sur un bien et les messages laissés sur wernerimmobilier.com arriveront ici, puis celles des portails.</div>
           </div>
         ) : (
           <div key={cleListe} className={s.liste}>

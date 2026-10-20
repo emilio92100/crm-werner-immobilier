@@ -916,9 +916,9 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
                 )}
                 <div className={l.enveloppe} data-maj={apercuEn && apercu ? 'oui' : undefined}>
                   <div className={l.envTete}>
-                    <span className={l.envAv}>AR</span>
+                    <span className={l.envAv}>W</span>
                     <div className={l.envTx}>
-                      <b>{'Alexandre Rogelet · Emilio Immobilier'}</b>
+                      <b>{'Werner · Werner Immobilier'}</b>
                       <small>{`À : ${apercuOk ? apercuOk.a.join(', ') || '—' : cible ? (cible.genre === 'libre' ? cible.libre.email : mailDe(cible.ligne.acheteur)) : '—'}`}</small>
                     </div>
                     {apercuEn && apercu ? <span className={l.envMaj}><i />{'Mise à jour'}</span> : <span className={l.envQuand}>{'maintenant'}</span>}

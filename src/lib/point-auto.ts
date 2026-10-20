@@ -390,7 +390,7 @@ ${LIEN_POLICE_MAIL}
 
         <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
-            <td><img src="${LOGO_BLANC_MAIL}" alt="Emilio Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
             <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">VOTRE RECHERCHE</td>
           </tr></table>
         </td></tr>
@@ -419,16 +419,16 @@ ${LIEN_POLICE_MAIL}
             bouton('pause', 'J’ai mis ma recherche en pause ou arrêtée', `background:#ffffff;color:#5B6B80;border:1.5px solid #e5e4e3;`)
           }
           </table>
-          <p style="margin:10px 0 22px;">Bonne journée,<br />Alexandre</p>
+          <p style="margin:10px 0 22px;">Bonne journée,<br />Werner</p>
         </td></tr>
 
         <tr><td class="bord" style="background:${BLEU};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
             <td class="pied-nom">
-              <div style="font-size:14px;font-weight:700;color:#ffffff;">Alexandre Rogelet</div>
+              <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">06 58 95 76 32</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 00 00 00 00</td>
           </tr></table>
         </td></tr>
       </table>
@@ -436,7 +436,7 @@ ${LIEN_POLICE_MAIL}
       <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
         <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
           <div style="font-size:11.5px;color:#aba7a3;line-height:1.7;">
-            Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.<br />Chaque bouton ouvre votre espace personnel, au bon endroit.
+            Vous recevez ce message parce que votre recherche est en cours avec Werner Immobilier.<br />Chaque bouton ouvre votre espace personnel, au bon endroit.
           </div>
         </td></tr>
       </table>
@@ -460,7 +460,7 @@ ${LIEN_POLICE_MAIL}
     `J’ai mis ma recherche en pause ou arrêtée : ${lien('pause')}`,
     '',
     'Bonne journée,',
-    'Alexandre Rogelet · Emilio Immobilier · 06 58 95 76 32',
+    'Werner · Werner Immobilier · 01 00 00 00 00',
   ].join('\n');
 
   return { sujet: 'Où en est votre recherche ?', html, texte };
@@ -471,8 +471,8 @@ ${LIEN_POLICE_MAIL}
 export async function envoyerMailjet(o: { a: string; nom?: string; sujet: string; html: string; texte: string; id: string; deNom?: string }): Promise<{ ok: boolean; erreur?: string }> {
   const cle = process.env.MAILJET_API_KEY, secret = process.env.MAILJET_API_SECRET;
   if (!cle || !secret) return { ok: false, erreur: 'clés Mailjet absentes' };
-  const de = process.env.MAILJET_FROM_EMAIL || 'arogelet@emilio-immo.com';
-  const deNom = o.deNom || process.env.MAILJET_FROM_NAME || 'Alexandre ROGELET — Emilio Immobilier';
+  const de = process.env.MAILJET_FROM_EMAIL || 'contact@wernerimmobilier.com';
+  const deNom = o.deNom || process.env.MAILJET_FROM_NAME || 'Werner Immobilier';
   const auth = Buffer.from(`${cle}:${secret}`).toString('base64');
   try {
     const r = await fetch('https://api.mailjet.com/v3.1/send', {

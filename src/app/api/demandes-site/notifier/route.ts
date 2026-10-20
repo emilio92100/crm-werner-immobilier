@@ -21,7 +21,7 @@ import { CLE_ALERTES } from '@/lib/alertes';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const DESTINATAIRE = () => process.env.DEMANDES_EMAIL || process.env.ALERTES_EMAIL || process.env.MAILJET_FROM_EMAIL || 'arogelet@emilio-immo.com';
+const DESTINATAIRE = () => process.env.DEMANDES_EMAIL || process.env.ALERTES_EMAIL || process.env.MAILJET_FROM_EMAIL || 'contact@wernerimmobilier.com';
 
 async function traiter() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL, cle = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -59,7 +59,7 @@ async function traiter() {
     if (coupe) { coupees++; continue; }
 
     const m = mailDemande(d);
-    const r = await envoyerMailjet({ a: DESTINATAIRE(), sujet: m.sujet, html: m.html, texte: m.texte, id: `demande-${d.id}`, deNom: 'Site Emilio Immobilier' });
+    const r = await envoyerMailjet({ a: DESTINATAIRE(), sujet: m.sujet, html: m.html, texte: m.texte, id: `demande-${d.id}`, deNom: 'Site Werner Immobilier' });
     if (r.ok) { envoyes++; continue; }
     erreurs.push(r.erreur || 'envoi raté');
     console.error('[demandes-site/notifier] envoi', d.id, r.erreur);

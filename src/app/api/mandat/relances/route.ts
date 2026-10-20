@@ -279,7 +279,7 @@ async function relancerPropositions(sb: SupabaseClient, ko: Echecs): Promise<str
     if (!/mandat_propose_le|does not exist|schema cache/i.test(error.message)) ko.noter(`mandats proposés illisibles : ${error.message}`);
     return [];
   }
-  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://crm.emilio-immo.com';
+  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobilier.vercel.app';
   for (const r of (data || []) as Record<string, unknown>[]) {
     try {
       const rid = String(r.id), clientId = String(r.client_id || '');
@@ -313,13 +313,13 @@ async function relancerPropositions(sb: SupabaseClient, ko: Echecs): Promise<str
         ? `Votre mandat de recherche est prêt dans votre espace depuis le ${dateCourte(proposeLe)}. Il se relit et se signe en deux minutes, avec un code reçu par e-mail.`
         : 'Je reviens vers vous au sujet de votre mandat de recherche : c’est lui qui me permet d’organiser vos visites et de vous accompagner jusqu’à la signature. Il vous attend dans votre espace, deux minutes suffisent.';
       const erreur = await envoyerMail({
-        a: emails[0], nomA: nom, repondreA: 'agence@emilio-immo.com', sujet,
-        texte: `Bonjour ${prenom},\n\n${phrase.replace(/’/g, "'")}\n\nLire et signer mon mandat : ${lien}\n\nUne question avant de signer ? Répondez simplement à ce message.\n\nAlexandre Rogelet — Emilio Immobilier`,
+        a: emails[0], nomA: nom, repondreA: 'contact@wernerimmobilier.com', sujet,
+        texte: `Bonjour ${prenom},\n\n${phrase.replace(/’/g, "'")}\n\nLire et signer mon mandat : ${lien}\n\nUne question avant de signer ? Répondez simplement à ce message.\n\nWerner Immobilier`,
         html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(prenom)},</p>
           <p>${echappe(phrase)}</p>
           <p><a href="${lien}" style="display:inline-block;margin:6px 0 4px;background:#f08c42;color:#232528;text-decoration:none;padding:13px 22px;border-radius:12px;font-weight:800;font-size:15px">Lire et signer mon mandat</a></p>
           <p style="font-size:13px;color:#5B6B80">Une question avant de signer&nbsp;? Répondez simplement à ce message.</p>
-          <p>Alexandre Rogelet — Emilio Immobilier</p>`),
+          <p>Werner Immobilier</p>`),
       });
       bilan.push(`${nom} : rappel du mandat ${rappel}${erreur ? ` (⚠️ ${erreur})` : ''}`);
       /* V3.50 : pas parti, pas noté (il repartira demain). */

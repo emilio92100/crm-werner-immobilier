@@ -440,7 +440,7 @@ export function PadSignature({ nom, envoi, onAnnuler, onValider }: {
 
 export const ERREURS: Record<string, string> = {
   code: 'Ce code ne correspond pas.',
-  quota: 'Vous avez demandé beaucoup de codes d’affilée : réessayez dans une heure, ou appelez Alexandre.',
+  quota: 'Vous avez demandé beaucoup de codes d’affilée : réessayez dans une heure, ou appelez Werner.',
   kbis: 'Le Kbis n’a pas pu être lu : un PDF ou une photo de 3 Mo au plus. Vous pouvez aussi continuer sans.',
   email: 'Cette adresse e-mail ne semble pas juste.',
   email_pris: 'Cette adresse est déjà celle d’un autre signataire : chacun signe avec la sienne.',
@@ -450,14 +450,14 @@ export const ERREURS: Record<string, string> = {
   recommencer: 'Demandez un nouveau code pour signer.',
   attendre: 'Un code vient de partir : attendez quelques secondes avant d’en redemander un.',
   numero: 'Votre conseiller finalise votre dossier : il revient vers vous très vite pour la signature.',
-  change: 'Votre mandat vient d’être mis à jour par Alexandre. Relisez le récapitulatif, puis demandez votre code.',
+  change: 'Votre mandat vient d’être mis à jour par Werner. Relisez le récapitulatif, puis demandez votre code.',
   mail: 'Le code n’a pas pu être envoyé. Vérifiez votre adresse e-mail, puis réessayez.',
   stockage: 'La signature n’a pas pu être enregistrée. Réessayez dans un instant.',
   enregistrement: 'La signature n’a pas pu être enregistrée. Réessayez dans un instant.',
   deja: 'Votre mandat est déjà signé.',
-  document: 'Alexandre vous a déjà préparé votre mandat de recherche : inutile d’en signer un second ici. Revenez à votre espace pour voir où il en est.',
+  document: 'Werner vous a déjà préparé votre mandat de recherche : inutile d’en signer un second ici. Revenez à votre espace pour voir où il en est.',
   /* V3.56 : Alexandre a retiré la proposition pendant qu'il signait. */
-  retire: 'Ce mandat n’est plus à signer pour le moment : Alexandre revient vers vous très vite.',
+  retire: 'Ce mandat n’est plus à signer pour le moment : Werner revient vers vous très vite.',
 };
 
 /* « document » (V3.32) : Alexandre lui a préparé son mandat dans le CRM, le
@@ -748,12 +748,12 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
     setQuestion('envoi');
     const r = await envoyer('mandat', { etape: 'question', bienId });
     setQuestion(r?.ok ? 'ok' : '');
-    if (!r?.ok) setErreur('Votre demande n’est pas partie. Vous pouvez appeler Alexandre directement.');
+    if (!r?.ok) setErreur('Votre demande n’est pas partie. Vous pouvez appeler Werner directement.');
   };
   const aide = (
     <div className="mdt-aide">
       {question === 'ok'
-        ? <span className="ok"><Ic n="check" t={14} /><span>C’est noté&nbsp;: Alexandre vous rappelle très vite.</span></span>
+        ? <span className="ok"><Ic n="check" t={14} /><span>C’est noté&nbsp;: Werner vous rappelle très vite.</span></span>
         : (
           <>
             <button type="button" className="mdt-lien" disabled={question === 'envoi'} onClick={poserQuestion}>
@@ -916,11 +916,11 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
         {tete(raison === 'visite' ? 'Avant la visite' : 'Votre mandat de recherche')}
         <div className="mdt-corps mdt-accueil">
           <div className="mdt-sceau"><Ic n="bouclier" t={30} /></div>
-          <h3>{docRefus.signe ? 'Vous avez déjà signé votre mandat' : docRefus.lien ? 'Votre mandat de recherche vous attend' : 'Alexandre prépare votre mandat'}</h3>
+          <h3>{docRefus.signe ? 'Vous avez déjà signé votre mandat' : docRefus.lien ? 'Votre mandat de recherche vous attend' : 'Werner prépare votre mandat'}</h3>
           <p className="mdt-p">{docRefus.signe
-            ? 'Alexandre vous l’avait préparé, et vous l’avez signé. Il n’y a rien d’autre à signer ici.'
+            ? 'Werner vous l’avait préparé, et vous l’avez signé. Il n’y a rien d’autre à signer ici.'
             : docRefus.lien
-              ? 'Alexandre vous l’a préparé et envoyé\u00a0: c’est celui-là qu’il faut signer, pas un second. Vous le relisez en entier, puis vous le signez avec un code reçu par e-mail.'
+              ? 'Werner vous l’a préparé et envoyé\u00a0: c’est celui-là qu’il faut signer, pas un second. Vous le relisez en entier, puis vous le signez avec un code reçu par e-mail.'
               : 'Il vous l’a préparé lui-même : inutile d’en signer un ici. Il revient vers vous pour la signature.'}</p>
           {docRefus.lien && !docRefus.signe && <a className="btn or mdt-plein" href={docRefus.lien}>Lire et signer mon mandat</a>}
           <button type="button" className={docRefus.lien && !docRefus.signe ? 'btn lien mdt-plein' : 'btn or mdt-plein'} onClick={onFermer}>Revenir à mon espace</button>
@@ -936,10 +936,10 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
         {tete(raison === 'visite' ? 'Avant la visite' : 'Votre mandat de recherche')}
         <div className="mdt-corps mdt-accueil">
           <div className="mdt-sceau"><Ic n="bouclier" t={30} /></div>
-          <h3>{raison === 'visite' ? 'Visitez avec un conseiller de votre côté' : 'Confirmez votre recherche avec Alexandre'}</h3>
+          <h3>{raison === 'visite' ? 'Visitez avec un conseiller de votre côté' : 'Confirmez votre recherche avec Werner'}</h3>
           <p className="mdt-p">{raison === 'visite'
-            ? 'Pour organiser cette visite et vous accompagner jusqu’au bout, Alexandre vous propose de confirmer votre recherche avec lui. C’est votre mandat de recherche.'
-            : 'Alexandre vous propose de confirmer votre recherche avec lui. C’est votre mandat de recherche : il l’engage à vos côtés, jusqu’au bout.'}</p>
+            ? 'Pour organiser cette visite et vous accompagner jusqu’au bout, Werner vous propose de confirmer votre recherche avec lui. C’est votre mandat de recherche.'
+            : 'Werner vous propose de confirmer votre recherche avec lui. C’est votre mandat de recherche : il l’engage à vos côtés, jusqu’au bout.'}</p>
           <div className="mdt-puces">
             <span><span className="k"><Ic n="check" t={14} /></span><span><b>Une seule signature</b>, valable pour tous les biens qu’il vous présentera&nbsp;: ensuite, plus rien à signer pour visiter.</span></span>
             <span><span className="k"><Ic n="check" t={14} /></span><span>Il travaille pour vous, pas pour le vendeur.</span></span>
@@ -1075,7 +1075,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
                   <Ic n="info" t={19} />
                   <div>
                     <b>{m.civilite === 'Madame' ? 'Vous signez seule' : 'Vous signez seul'}</b>
-                    <p>{'Votre signature vous engage personnellement, même si vous achetez à deux ou via une société : votre engagement de ne pas acheter sans Alexandre un bien qu’il vous a présenté vaut aussi pour la personne avec qui vous achetez, et pour votre société.'}</p>
+                    <p>{'Votre signature vous engage personnellement, même si vous achetez à deux ou via une société : votre engagement de ne pas acheter sans Werner un bien qu’il vous a présenté vaut aussi pour la personne avec qui vous achetez, et pour votre société.'}</p>
                     <p>{'Vous préférez qu’elle signe aussi ? Ajoutez-la ci-dessus : elle recevra son propre lien.'}</p>
                   </div>
                 </div>
@@ -1178,9 +1178,9 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
   const attendre = fin && !fin.execution;
   const phraseVisite = raison === 'visite'
     ? (attendre
-      ? `Votre demande de visite est partie. Comme vous avez choisi d’attendre vos ${RETRACTATION_JOURS} jours, Alexandre vous proposera un créneau à partir du ${dateLongue(fin!.finRetractation)}.`
-      : 'Votre demande de visite est partie avec vos disponibilités. Alexandre vous propose un créneau très vite.')
-    : 'Alexandre est prévenu. Vous pouvez maintenant demander vos visites en un geste, depuis chaque bien.';
+      ? `Votre demande de visite est partie. Comme vous avez choisi d’attendre vos ${RETRACTATION_JOURS} jours, Werner vous proposera un créneau à partir du ${dateLongue(fin!.finRetractation)}.`
+      : 'Votre demande de visite est partie avec vos disponibilités. Werner vous propose un créneau très vite.')
+    : 'Werner est prévenu. Vous pouvez maintenant demander vos visites en un geste, depuis chaque bien.';
 
   /* Signé à plusieurs : sa signature est faite, on attend les autres. Pas
      de rond qui tourne : qui a signé, qui on attend, et quoi faire si le
@@ -1217,9 +1217,9 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
         <p className="mdt-p">{phraseVisite}</p>
         <button type="button" className="btn fant mdt-plein" onClick={telecharger}><Ic n="doc" t={16} /><span>Télécharger mon mandat signé</span></button>
         <div className="mdt-confiance fini">
-          <span><Ic n="check" t={15} /><span>Signé par vous et par Emilio Immobilier</span></span>
+          <span><Ic n="check" t={15} /><span>Signé par vous et par Werner Immobilier</span></span>
           <span><Ic n="mail" t={15} /><span>Exemplaire complet envoyé par e-mail</span></span>
-          <span><Ic n="etoile" t={15} /><span>Alexandre travaille désormais pour vous&nbsp;: biens hors marché, dossiers vérifiés, négociation</span></span>
+          <span><Ic n="etoile" t={15} /><span>Werner travaille désormais pour vous&nbsp;: biens hors marché, dossiers vérifiés, négociation</span></span>
         </div>
         <p className="mdt-p petit">Vous le retrouvez à tout moment dans «&nbsp;Ma recherche&nbsp;».</p>
         {erreur && <div className="mdt-erreur">{erreur}</div>}
@@ -1242,8 +1242,8 @@ const prenomSignataire = (s: SignataireEspace) => s.prenom || s.nom || 'un signa
 function etatCourt(s: SignataireEspace, offreExpiree = false): string {
   if (s.etat === 'signe') return s.le ? `signé le ${dateLongue(s.le)}` : 'signé';
   if (offreExpiree) return 'pas signé à temps';
-  if (s.etat === 'sur_place') return 'à signer avec Alexandre';
-  if (s.etat === 'expire') return 'lien expiré, Alexandre est prévenu';
+  if (s.etat === 'sur_place') return 'à signer avec Werner';
+  if (s.etat === 'expire') return 'lien expiré, Werner est prévenu';
   return 'à signer';
 }
 const enAttenteDe = (sigs: SignataireEspace[]) => prenoms(sigs.filter(s => s.etat !== 'signe' && s.qui !== 'vous').map(s => ({ prenom: prenomSignataire(s) })));
@@ -1251,16 +1251,16 @@ const enAttenteDe = (sigs: SignataireEspace[]) => prenoms(sigs.filter(s => s.eta
 /* Le texte de « Mon mandat de recherche » pour un mandat de Documents pas
    encore signé par tous. `lien` : le sien, valable. */
 function texteMandatDocument(doc: MandatDocEspace | null, lien: string | null): string {
-  const envoye = 'Alexandre vous l’a envoyé à signer. Vous le relisez en entier, puis vous le signez avec un code reçu par e-mail.';
+  const envoye = 'Werner vous l’a envoyé à signer. Vous le relisez en entier, puis vous le signez avec un code reçu par e-mail.';
   if (lien) return envoye;
-  if (!doc) return 'Alexandre vous l’a préparé. Il revient vers vous pour la signature.';
+  if (!doc) return 'Werner vous l’a préparé. Il revient vers vous pour la signature.';
   /* V3.56 : « sur papier » et « prochain rendez-vous » ne se séparent pas
      (un « papier. » seul sur sa ligne en 390 px). */
   const avec = (qui: string) => (doc.mode === 'sur_place' ? `Vous le signerez avec ${qui}, à votre prochain\u00a0rendez-vous.` : `Vous le signerez avec ${qui}, sur\u00a0papier.`);
   if (doc.statut === 'brouillon') {
     return doc.mode === 'en_ligne'
-      ? 'Alexandre le prépare pour vous. Vous le recevrez par e-mail, pour le signer en ligne avec un code.'
-      : `Alexandre le prépare pour vous. ${avec('lui')}`;
+      ? 'Werner le prépare pour vous. Vous le recevrez par e-mail, pour le signer en ligne avec un code.'
+      : `Werner le prépare pour vous. ${avec('lui')}`;
   }
   if (doc.vous === 'signe') {
     const moi = doc.signataires.find(s => s.qui === 'vous');
@@ -1268,15 +1268,15 @@ function texteMandatDocument(doc: MandatDocEspace | null, lien: string | null): 
     const autres = enAttenteDe(doc.signataires);
     return autres
       ? `Vous l’avez signé${quand}. Il attend encore la signature de ${autres}. Vous pouvez déjà demander des visites.`
-      : `Vous l’avez signé${quand}. Alexandre le finalise : vous recevrez l’exemplaire complet par e-mail.`;
+      : `Vous l’avez signé${quand}. Werner le finalise : vous recevrez l’exemplaire complet par e-mail.`;
   }
-  if (doc.vous === 'expire') return 'Le lien pour le signer a expiré. Alexandre en est prévenu : il revient vers vous.';
-  if (doc.mode === 'papier') return `Il est prêt. ${avec('Alexandre')}`;
-  if (doc.mode === 'sur_place' && doc.vous !== 'a_signer') return `Il est prêt. ${avec('Alexandre')}`;
+  if (doc.vous === 'expire') return 'Le lien pour le signer a expiré. Werner en est prévenu : il revient vers vous.';
+  if (doc.mode === 'papier') return `Il est prêt. ${avec('Werner')}`;
+  if (doc.mode === 'sur_place' && doc.vous !== 'a_signer') return `Il est prêt. ${avec('Werner')}`;
   /* En ligne, signature pas encore lancée, ou arrêtée : pas de fausse précision. */
-  if (!doc.lance) return 'Il est prêt. Alexandre revient vers vous pour la signature.';
+  if (!doc.lance) return 'Il est prêt. Werner revient vers vous pour la signature.';
   /* Parti, mais aucune ligne à l'une de ses adresses. */
-  return 'Alexandre vous l’a envoyé à signer par e-mail.';
+  return 'Werner vous l’a envoyé à signer par e-mail.';
 }
 
 /* Les signataires, une ligne chacun (comme ceux du mandat signé ici). */
@@ -1648,7 +1648,7 @@ export function CarteDocuments({ documents, mandat, envoyer, onVoirMandat }: {
           <div className="mdt-pret-ic"><Ic n="plume" t={20} /></div>
           <div className="mdt-pret-tx">
             <b>{`Un document vous attend : ${titre(x)}`}</b>
-            <span>{'Alexandre vous l’a envoyé à signer : vous le relisez en entier, puis vous le signez avec un code reçu par e-mail.'}</span>
+            <span>{'Werner vous l’a envoyé à signer : vous le relisez en entier, puis vous le signez avec un code reçu par e-mail.'}</span>
             <LiensProches sigs={x.signataires} />
           </div>
           <a className="btn or" href={x.lien}>Le signer</a>
@@ -1676,8 +1676,8 @@ export function CarteDocuments({ documents, mandat, envoyer, onVoirMandat }: {
           <div className="mdt-pret-tx">
             <b>{x.offreExpiree ? `Cette offre n’est plus valable\u00a0: ${titre(x)}` : x.mandat ? 'Le lien pour signer votre mandat a expiré' : `Le lien pour signer a expiré\u00a0: ${titre(x)}`}</b>
             <span>{x.offreExpiree
-              ? 'Sa date de validité est passée\u00a0: elle ne peut plus être signée. Alexandre revient vers vous.'
-              : 'Alexandre en est prévenu\u00a0: il revient vers vous.'}</span>
+              ? 'Sa date de validité est passée\u00a0: elle ne peut plus être signée. Werner revient vers vous.'
+              : 'Werner en est prévenu\u00a0: il revient vers vous.'}</span>
             {x.offreExpiree && (x.signataires || []).length > 1 && (
               <div className="mdt-pret-qui">
                 {(x.signataires || []).map((g, i) => (
@@ -1731,7 +1731,7 @@ export function CartePret({ onSigner }: { onSigner: () => void }) {
       <div className="mdt-pret-ic"><Ic n="plume" t={20} /></div>
       <div className="mdt-pret-tx">
         <b>Votre mandat de recherche est prêt</b>
-        <span>Alexandre l’a préparé pour vous. Deux minutes suffisent pour le signer.</span>
+        <span>Werner l’a préparé pour vous. Deux minutes suffisent pour le signer.</span>
       </div>
       <button type="button" className="btn or" onClick={onSigner}>Le signer</button>
     </section>
@@ -1752,7 +1752,7 @@ export function AvantVisiteDocument({ lien, onFermer }: { lien: string; onFermer
       <div className="mdt-corps mdt-accueil">
         <div className="mdt-sceau"><Ic n="bouclier" t={30} /></div>
         <h3>Votre mandat de recherche vous attend</h3>
-        <p className="mdt-p">{'Pour organiser cette visite, Alexandre vous a envoyé votre mandat de recherche. Il se relit en entier et se signe en deux minutes, avec un code reçu par e-mail.'}</p>
+        <p className="mdt-p">{'Pour organiser cette visite, Werner vous a envoyé votre mandat de recherche. Il se relit en entier et se signe en deux minutes, avec un code reçu par e-mail.'}</p>
         <div className="mdt-puces">
           <span><span className="k"><Ic n="check" t={14} /></span><span><b>Une seule signature</b>, valable pour tous les biens qu’il vous présentera.</span></span>
           <span><span className="k"><Ic n="check" t={14} /></span><span>Votre demande de visite est gardée&nbsp;: elle part dès votre retour dans votre espace, une fois signé.</span></span>
@@ -1793,7 +1793,7 @@ export function Renonciation({ mandat, envoyer, onFermer, onFait }: {
     const r = await envoyer('mandat', { etape: 'renoncer', confirme: true, ...(doc ? { document: doc.id } : {}) });
     setEnvoi(false);
     if (r?.ok) onFait({ accuse: r.accuse !== false && r.deja !== true, deja: r.deja === true });
-    else setErreur(r?.error === 'delai' ? 'Le délai de rétractation est passé : parlez-en à Alexandre.'
+    else setErreur(r?.error === 'delai' ? 'Le délai de rétractation est passé : parlez-en à Werner.'
       : r?.error === 'aucun' && doc ? ERREURS.aucun
         : 'La renonciation n’a pas pu être enregistrée. Réessayez dans un instant.');
   };

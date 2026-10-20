@@ -23,7 +23,7 @@ const sansAccent = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 /** Le nom du conseiller, tel que {{conseiller}} l'écrit. */
 export function conseillerDe(p: Record<string, string | undefined>): string {
   const nom = `${(p.conseiller_prenom || '').trim()} ${(p.conseiller_nom || '').trim()}`.trim();
-  return nom || 'Alexandre ROGELET';
+  return nom || 'Werner';
 }
 
 /** La signature des mails : celle des Paramètres, sinon celle que la page
@@ -32,7 +32,7 @@ export function conseillerDe(p: Record<string, string | undefined>): string {
 export function signatureDe(p: Record<string, string | undefined>): string {
   const posee = texteModele(p.signature_email || '').trim();
   if (posee) return posee;
-  return `Cordialement,\n${p.conseiller_prenom || 'Alexandre'} ${p.conseiller_nom || 'ROGELET'}\n${p.agence_nom || 'Emilio Immobilier'}\n${p.conseiller_telephone || '06 58 95 76 32'}`;
+  return `Cordialement,\n${p.conseiller_prenom || 'Werner'} ${p.conseiller_nom || ''}\n${p.agence_nom || 'Werner Immobilier'}\n${p.conseiller_telephone || '01 00 00 00 00'}`;
 }
 
 /** Remplace les variables connues ; une variable inconnue reste telle quelle,

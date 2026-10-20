@@ -270,8 +270,8 @@ export function adressesClient(c: { emails?: unknown; conjoint?: unknown } | nul
 }
 
 /* ── Les mails ── */
-const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || 'arogelet@emilio-immo.com';
-const FROM_NAME = process.env.MAILJET_FROM_NAME || 'Alexandre ROGELET — Emilio Immobilier';
+const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || 'contact@wernerimmobilier.com';
+const FROM_NAME = process.env.MAILJET_FROM_NAME || 'Werner Immobilier';
 
 export const echappe = (t: string) =>
   String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -308,7 +308,7 @@ export async function envoyerMailSuivi(o: MailAEnvoyer): Promise<{ erreur: strin
       headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
       body: JSON.stringify({
         Messages: [{
-          From: { Email: FROM_EMAIL, Name: o.deLaPartDe === 'crm' ? 'Emilio · CRM' : o.deLaPartDe === 'agence' ? 'Emilio Immobilier' : FROM_NAME },
+          From: { Email: FROM_EMAIL, Name: o.deLaPartDe === 'crm' ? 'Werner · CRM' : o.deLaPartDe === 'agence' ? 'Werner Immobilier' : FROM_NAME },
           To: [{ Email: o.a, ...(o.nomA ? { Name: o.nomA } : {}) }],
           ...(o.cci && o.cci.toLowerCase() !== o.a.toLowerCase() ? { Bcc: [{ Email: o.cci }] } : {}),
           ...(o.repondreA ? { ReplyTo: { Email: o.repondreA } } : {}),
@@ -339,7 +339,7 @@ export function gabarit(titre: string, corpsHtml: string, pied = '') {
 }
 
 export const ALERTES = () => process.env.ALERTES_EMAIL || FROM_EMAIL;
-export const CRM = () => process.env.NEXT_PUBLIC_CRM_URL || 'https://crm.emilio-immo.com';
+export const CRM = () => process.env.NEXT_PUBLIC_CRM_URL || 'https://crm-werner-immobilier.vercel.app';
 
 /* « iPhone · Safari », « Android · Chrome », « Mac · Chrome »… assez pour le
    certificat, sans prétendre à l'exactitude d'un vrai analyseur. */

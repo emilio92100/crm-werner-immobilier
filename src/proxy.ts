@@ -43,7 +43,7 @@ const PUBLIC_PREFIXES = ['/bien/', '/espace/', '/api/espace/', '/signer/', '/pro
 
 /* Le sous-domaine de l'espace acheteur. Tout le monde vit sur le même projet
    Vercel : c'est le nom d'hôte qui décide de ce qu'on sert. */
-const HOTE_ESPACE = 'espace.emilio-immo.com';
+const HOTE_ESPACE = (process.env.NEXT_PUBLIC_HOTE_ESPACE || '').trim().toLowerCase(); // vide tant que Werner n'a pas de sous-domaine
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -60,10 +60,10 @@ export async function proxy(request: NextRequest) {
    *    adresse dans la barre, et c'est précisément ce qu'on veut lui épargner.
    */
   const hote = (request.headers.get('host') || '').toLowerCase().split(':')[0];
-  if (hote === HOTE_ESPACE) {
+  if (HOTE_ESPACE && hote === HOTE_ESPACE) {
     /* Une adresse sans jeton ne mène nulle part : on renvoie vers le site. */
     if (pathname === '/') {
-      return NextResponse.redirect('https://www.emilio-immo.com');
+      return NextResponse.redirect('https://www.wernerimmobilier.com');
     }
     /* Ce qui porte déjà son vrai chemin, ce qui sert l'application, et tout
        fichier reconnaissable à son extension passent sans être touchés. */

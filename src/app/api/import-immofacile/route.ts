@@ -31,13 +31,13 @@ const MODELE = 'claude-haiku-4-5-20251001';
    tenir dans le délai d'une route Vercel. */
 const PAR_APPEL = 8;
 
-const CONSIGNES = `Tu aides Alexandre, agent immobilier et chasseur d'appartements à Paris et dans les Hauts-de-Seine, à reprendre les fiches clients de son ancien logiciel (ImmoFacile) dans son nouveau CRM.
+const CONSIGNES = `Tu aides Werner, agent immobilier et chasseur d'appartements à Paris et dans les Hauts-de-Seine, à reprendre les fiches clients de son ancien logiciel (ImmoFacile) dans son nouveau CRM.
 
-Pour chaque contact tu reçois : son statut dans ImmoFacile (« Propriétaire » = il possède un logement ; « Demandeur » = il cherche à acheter), les critères déjà remplis dans les colonnes, les « précisions » de sa recherche, et le commentaire libre d'Alexandre (notes datées, prises au téléphone, très abrégées ; parfois suivies du message que le contact a laissé sur un portail).
+Pour chaque contact tu reçois : son statut dans ImmoFacile (« Propriétaire » = il possède un logement ; « Demandeur » = il cherche à acheter), les critères déjà remplis dans les colonnes, les « précisions » de sa recherche, et le commentaire libre d'Werner (notes datées, prises au téléphone, très abrégées ; parfois suivies du message que le contact a laissé sur un portail).
 
 Tu lis ces textes et tu rends ce qu'ils disent. Tu n'inventes rien : une information absente reste null, false ou une liste vide.
 
-Abréviations d'Alexandre : « 3P » = 3 pièces ; « 2ch » = 2 chambres ; « K » = milliers d'euros (« 1 100K » = 1 100 000, « 950K » = 950 000) ; « HFN » = hors frais de notaire (c'est le budget) ; « RDC » = rez-de-chaussée ; « asc » = ascenseur ; « ext » = extérieur ; « SDB » = salle de bains ; « MB » = Marcel Sembat (quartier de Boulogne) ; « Vente après avoir trouvé » = il vendra son logement après avoir acheté ; « AC3 OK » = consentement enregistré dans ImmoFacile (à ignorer) ; « DVF » = prix de vente publics.
+Abréviations d'Werner : « 3P » = 3 pièces ; « 2ch » = 2 chambres ; « K » = milliers d'euros (« 1 100K » = 1 100 000, « 950K » = 950 000) ; « HFN » = hors frais de notaire (c'est le budget) ; « RDC » = rez-de-chaussée ; « asc » = ascenseur ; « ext » = extérieur ; « SDB » = salle de bains ; « MB » = Marcel Sembat (quartier de Boulogne) ; « Vente après avoir trouvé » = il vendra son logement après avoir acheté ; « AC3 OK » = consentement enregistré dans ImmoFacile (à ignorer) ; « DVF » = prix de vente publics.
 
 Sépare toujours trois choses :
 - CE QU'IL CHERCHE (son achat) → "recherche" ;
@@ -81,10 +81,10 @@ Chaque objet :
 },
 "vente": {
   "projet": "aucun" | "apres_achat" (il vendra son logement après avoir acheté) | "projet" (un vrai projet de vente : estimation demandée ou prévue, « projet de vente à venir », « rappeler pour estimation ») | "ailleurs" (déjà en vente avec une autre agence) | "vendu" (déjà vendu, ou sous compromis),
-  "aSuivre": true seulement si Alexandre doit suivre ce projet de vente (cas "projet", ou "apres_achat" avec une estimation à faire),
+  "aSuivre": true seulement si Werner doit suivre ce projet de vente (cas "projet", ou "apres_achat" avec une estimation à faire),
   "rappel": {"date": "AAAA-MM-JJ" si une date précise de rappel est écrite, sinon null, "mois": 1 à 12 si un mois est cité (« rappeler en septembre » = 9 ; deux mois, « septembre/octobre » = le dernier, 10), sinon null, "annee": l'année si elle est écrite ou se déduit de la date de la note, sinon null, "texte": la consigne, courte, ou null}
 },
-"aSavoir": un tableau de phrases courtes, pour Alexandre seul, sur la personne et son histoire : comment il est arrivé (annonce, panneau, portail), sa situation, ses délais, son financement, ce qui a été fait ou promis, avec les dates. Une idée par phrase, sans abréviation, dans l'ordre des dates. Pas les critères de recherche déjà rendus plus haut, pas les formules de politesse des messages de portail,
+"aSavoir": un tableau de phrases courtes, pour Werner seul, sur la personne et son histoire : comment il est arrivé (annonce, panneau, portail), sa situation, ses délais, son financement, ce qui a été fait ou promis, avec les dates. Une idée par phrase, sans abréviation, dans l'ordre des dates. Pas les critères de recherche déjà rendus plus haut, pas les formules de politesse des messages de portail,
 "emails": un tableau des adresses e-mail écrites dans le texte (pas celles d'une agence), "telephones": un tableau des numéros écrits dans le texte
 }
 

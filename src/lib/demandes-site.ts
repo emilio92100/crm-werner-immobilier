@@ -63,7 +63,7 @@ export const PROVENANCES: { k: Provenance; lib: string; court: string; c: string
   { k: 'bellesdemeures', lib: 'Belles Demeures', court: 'BD', c: '#5b2d6e', fond: '#f5eef8', trait: '#dfc9e8', portail: true },
 ];
 export const PORTAILS = PROVENANCES.filter(x => x.portail);
-export const PAGE_PUB = 'estimation.emilio-immo.com';
+export const PAGE_PUB = 'estimation.wernerimmobilier.com';
 const LIGNE_PUB = /^\s*Page\s*:\s*estimation\.emilio-immo\.com\s*$/im;
 export const vientDeLaPub = (message: string | null | undefined) => LIGNE_PUB.test(String(message ?? ''));
 export const provenanceDe = (d: Pick<DemandeSite, 'source'> & { message?: string | null }) =>
@@ -73,7 +73,7 @@ export const provenanceDe = (d: Pick<DemandeSite, 'source'> & { message?: string
 export const TABLE_DEMANDES = 'contact_submissions';
 
 /* L'adresse publique d'un bien du site (la page /biens/<id> du site). */
-export const SITE_PUBLIC = 'https://www.emilio-immo.com';
+export const SITE_PUBLIC = 'https://www.wernerimmobilier.com';
 
 /* ── Les catégories : une par formulaire du site ───────────────────────── */
 export type CategorieDemande = 'estimation' | 'mandat_recherche' | 'rappel_bien' | 'contact';

@@ -63,8 +63,8 @@ async function traiterPost(req: NextRequest) {
 
     if (action === 'renvoyer' || action === 'relancer') {
       const r = await inviter(sb, c, ligne, action === 'relancer'
-        ? { nouveau: true, note: 'Nouveau lien envoyé par Alexandre' }
-        : { note: 'Lien renvoyé par Alexandre' });
+        ? { nouveau: true, note: 'Nouveau lien envoyé par Werner' }
+        : { note: 'Lien renvoyé par Werner' });
       await journal(action === 'relancer' ? `✉️ Nouveau lien envoyé à ${nomDe(c.personne)}` : `✉️ Lien renvoyé à ${nomDe(c.personne)}`,
         `Mandat n° ${ligne.numero} · ${c.personne.email}${r.erreur ? ` — ⚠️ le mail n'est pas parti (${r.erreur})` : ''}`);
       /* Un lien valable (même si le mail n'est pas parti : il peut le copier). */
@@ -92,13 +92,13 @@ async function traiterPost(req: NextRequest) {
       let eMail: string | null = null;
       if (signe) eMail = await envoyerExemplaire({ a: p, numero: ligne.numero, signe, complet: true, fin: finRetractationDe(ligne, cos), attendus: [] });
       const eInfo = await envoyerMail({
-        a: p.email, nomA: nomDe(p), repondreA: 'agence@emilio-immo.com',
+        a: p.email, nomA: nomDe(p), repondreA: 'contact@wernerimmobilier.com',
         sujet: `Votre mandat de recherche n° ${ligne.numero} continue sans la signature de ${c.personne.prenom}`,
-        texte: `Bonjour ${p.prenom},\n\n${nomDe(c.personne)} n'a pas signé le mandat de recherche n° ${ligne.numero}. Comme le mandat le prévoit, il continue avec vous${signe ? ' : vous en trouverez la version définitive dans un autre message' : ''}.\n\nSi ${c.personne.prenom} souhaite finalement signer, dites-le-moi : je lui enverrai un nouveau lien.\n\nAlexandre Rogelet — Emilio Immobilier`,
+        texte: `Bonjour ${p.prenom},\n\n${nomDe(c.personne)} n'a pas signé le mandat de recherche n° ${ligne.numero}. Comme le mandat le prévoit, il continue avec vous${signe ? ' : vous en trouverez la version définitive dans un autre message' : ''}.\n\nSi ${c.personne.prenom} souhaite finalement signer, dites-le-moi : je lui enverrai un nouveau lien.\n\nWerner Immobilier`,
         html: gabarit('Votre mandat continue', `<p>Bonjour ${echappe(p.prenom)},</p>
           <p>${echappe(nomDe(c.personne))} n’a pas signé le <b>mandat de recherche n° ${echappe(ligne.numero)}</b>. Comme le mandat le prévoit, il continue avec vous${signe ? ' : vous en trouverez la version définitive dans un autre message' : ''}.</p>
           <p>Si ${echappe(c.personne.prenom)} souhaite finalement signer, dites-le-moi : je lui enverrai un nouveau lien.</p>
-          <p>Alexandre Rogelet — Emilio Immobilier</p>`),
+          <p>Werner Immobilier</p>`),
       });
       await journal(`🔒 Invitation de ${nomDe(c.personne)} close`,
         `Mandat n° ${ligne.numero} · le ${dateCourte(le)} à ${heureParis(le)}. Il continue avec ${nomDe(p)}${signe ? ' ; version définitive scellée et envoyée' : ''}.${eMail || eInfo ? `\n⚠️ Mail non parti : ${eMail || eInfo}` : ''}`);

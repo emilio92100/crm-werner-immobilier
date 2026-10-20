@@ -30,12 +30,12 @@ import { argentBien, lirePhotos, type BienVente } from '@/lib/biens-vente';
 import { diffuseSur } from '@/lib/diffusion';
 import { bienPourSite, gpsFiche } from '@/lib/flux-site';
 
-export const SELOGER_LOGICIEL = 'EmilioImmoCRM';
+export const SELOGER_LOGICIEL = 'WernerImmoCRM';
 export const SELOGER_VERSION_LOGICIEL = '3.98';
-const BAREME = 'https://www.emilio-immo.com/honoraires';
+const BAREME = 'https://www.wernerimmobilier.com/honoraires';
 /* Le contact que SeLoger affichait avec les annonces d'ImmoFacile (relevé
    dans leur comparaison du 6 octobre). */
-const CONTACT = { companyName: 'Emilio Immobilier', phoneNumber: '01 84 80 14 00', email: 'agence@emilio-immo.com' };
+const CONTACT = { companyName: 'Werner Immobilier', phoneNumber: '01 00 00 00 00', email: 'contact@wernerimmobilier.com' };
 
 /* « 12 bis Rue Edouard Detaille, 92100 Boulogne » → numéro et rue. */
 export function rueEtNumero(adresse: string): { houseNumber: string; street: string } {

@@ -52,7 +52,7 @@ export function CarteAnnonce({ annonces, peutEnvoyer, onEnvoyer, onAide, onToute
         <span className="ra-ic"><Ico n="lien" t={20} /></span>
         <div className="ra-tx">
           <b className="ra-t">{'Une annonce repérée ?'}</b>
-          <span className="ra-s">{peutEnvoyer ? 'Envoyez-la à Alexandre, il vous dit ce qu’il en pense' : 'Ce qu’Alexandre a pensé de celles que vous lui avez envoyées'}</span>
+          <span className="ra-s">{peutEnvoyer ? 'Envoyez-la à Werner, il vous dit ce qu’il en pense' : 'Ce qu’Werner a pensé de celles que vous lui avez envoyées'}</span>
           {peutEnvoyer && (
             <button type="button" className="ra-env" onClick={onEnvoyer}>
               <Ico n="plus" t={15} /><span>Envoyer une annonce</span>
@@ -112,7 +112,7 @@ const ERREURS: Record<string, string> = {
   lien: 'Ce n’est pas le lien d’une page. Copiez l’adresse de l’annonce (elle commence par https://), ou ajoutez une photo.',
   photo: 'Une photo n’a pas pu partir. Retirez-la, ou réessayez dans un instant.',
   illisible: 'Cette photo n’a pas pu être lue. Essayez-en une autre.',
-  trop: 'Vous avez déjà envoyé beaucoup d’annonces aujourd’hui. Réessayez demain, ou appelez Alexandre.',
+  trop: 'Vous avez déjà envoyé beaucoup d’annonces aujourd’hui. Réessayez demain, ou appelez Werner.',
   erreur: 'Ce n’est pas parti : un souci de connexion, sans doute. Ce que vous avez saisi est gardé, réessayez dans un instant.',
 };
 
@@ -171,7 +171,7 @@ export function EnvoiAnnonce({ onFermer, onEnvoyer, Ico }: {
   return (
     <>
       <div className="tete-f">
-        <div><div className="sur">Une annonce repérée</div><h3>Envoyer une annonce à Alexandre</h3></div>
+        <div><div className="sur">Une annonce repérée</div><h3>Envoyer une annonce à Werner</h3></div>
         <button className="fermer" onClick={onFermer} aria-label="Fermer"><Ico n="croix" t={14} /></button>
       </div>
       <div className="corps-f ra-f">
@@ -235,12 +235,12 @@ export function EnvoiAnnonce({ onFermer, onEnvoyer, Ico }: {
           })}
         </div>
 
-        <label className="ra-f-l" htmlFor="ra-mot">Un mot pour Alexandre <em>· facultatif</em></label>
+        <label className="ra-f-l" htmlFor="ra-mot">Un mot pour Werner <em>· facultatif</em></label>
         <textarea id="ra-mot" rows={3} value={mot} onChange={ev => setMot(ev.target.value)} maxLength={800}
           placeholder="Ex. : un peu au-dessus du budget, mais l’extérieur est superbe. Qu’en pensez-vous ?" />
 
         <button type="button" className="btn or ra-f-go" onClick={partir} disabled={envoi || lecture}>
-          {envoi ? <><span className="tourne" />Envoi en cours…</> : 'Envoyer à Alexandre'}
+          {envoi ? <><span className="tourne" />Envoi en cours…</> : 'Envoyer à Werner'}
         </button>
         {erreur && <div role="alert" className="ra-f-err">{ERREURS[erreur] || ERREURS.erreur}</div>}
         <p className="ra-f-pied">{'Vous suivez sa réponse sur votre accueil, dans « Votre dernière annonce ».'}</p>
@@ -261,7 +261,7 @@ export function ListeAnnonces({ annonces, peutEnvoyer, onEnvoyer, onBien, Ico }:
         </button>
       )}
       {annonces.length === 0 ? (
-        <div className="vide-sec">{'Vous n’avez pas encore envoyé d’annonce.'}<br />{'Un bien vu ailleurs vous plaît ? Envoyez-le à Alexandre : il vous dit ce qu’il en pense.'}</div>
+        <div className="vide-sec">{'Vous n’avez pas encore envoyé d’annonce.'}<br />{'Un bien vu ailleurs vous plaît ? Envoyez-le à Werner : il vous dit ce qu’il en pense.'}</div>
       ) : (
         <div className="ra-liste">
           {annonces.map(a => {
@@ -280,11 +280,11 @@ export function ListeAnnonces({ annonces, peutEnvoyer, onEnvoyer, onBien, Ico }:
                 </div>
                 {a.statut === 'ecarte' && (
                   a.reponse
-                    ? <div className="ra-rep"><span>{`« ${a.reponse} »`}</span><i>Alexandre</i></div>
-                    : <div className="ra-rep vide">{'Alexandre ne l’a pas retenue pour vous.'}</div>
+                    ? <div className="ra-rep"><span>{`« ${a.reponse} »`}</span><i>Werner</i></div>
+                    : <div className="ra-rep vide">{'Werner ne l’a pas retenue pour vous.'}</div>
                 )}
                 {a.statut === 'retenu' && a.avis && (
-                  <div className="ra-rep vert"><span>{`« ${a.avis} »`}</span><i>Alexandre</i></div>
+                  <div className="ra-rep vert"><span>{`« ${a.avis} »`}</span><i>Werner</i></div>
                 )}
                 {(a.mot || a.aime.length > 0) && (
                   <div className="ra-mot">

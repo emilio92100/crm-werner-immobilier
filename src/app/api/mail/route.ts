@@ -46,9 +46,9 @@ const TYPES_PIECES: Record<string, string> = {
 const MAX_JOINTS = 10_000_000;
 const LIENS_JOURS = 7;
 const MAX_DEST = 30;
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://emilio-immo-chasseimmo.vercel.app';
-const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || 'arogelet@emilio-immo.com';
-const FROM_NAME = process.env.MAILJET_FROM_NAME || 'Alexandre ROGELET — Emilio Immobilier';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobilier.vercel.app';
+const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || 'contact@wernerimmobilier.com';
+const FROM_NAME = process.env.MAILJET_FROM_NAME || 'Werner Immobilier';
 
 const ko = (erreur: string, status = 400) => NextResponse.json({ ok: false, erreur }, { status });
 const nomPropre = (n: string) => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')

@@ -701,7 +701,7 @@ async function mailClientReponse(sb: SupabaseClient, doc: DocOffre, r: ReponseVe
   const a = (cl?.emails || []).find(e => /@/.test(String(e || '')));
   if (!a) return 'le client n’a pas d’adresse e-mail : il n’a pas été prévenu par mail';
   const d = doc.donnees || {};
-  const base = lienEspace(cl?.token_espace || null, process.env.NEXT_PUBLIC_SITE_URL || 'https://emilio-immo-chasseimmo.vercel.app');
+  const base = lienEspace(cl?.token_espace || null, process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobilier.vercel.app');
   const lien = base ? `${base}${base.includes('?') ? '&' : '?'}${doc.recherche_id ? `r=${encodeURIComponent(doc.recherche_id)}&` : ''}bien=${encodeURIComponent(doc.bien_id || '')}` : '';
   const prenom = (cl?.prenom || '').trim();
   const bonjour = `Bonjour${prenom ? ` ${prenom}` : ''},`;
@@ -736,7 +736,7 @@ async function mailClientReponse(sb: SupabaseClient, doc: DocOffre, r: ReponseVe
       'Si vous le souhaitez, vous pouvez en faire une nouvelle depuis votre espace, ou on en parle ensemble. La recherche continue de toute façon.',
     ];
   }
-  const signature = 'Alexandre Rogelet — Emilio Immobilier';
+  const signature = 'Werner Immobilier';
   const texte = `${paras.join('\n\n')}${lien ? `\n\n${bouton} : ${lien}` : ''}\n\n${signature}`;
   const corps = `${paras.map(p => `<p style="margin:0 0 14px">${echappe(p)}</p>`).join('')}${lien ? boutonMail(lien, bouton) : ''}<p style="margin:18px 0 0">${echappe(signature)}</p>`;
   const e = await envoyerMail({ a, nomA: prenom || undefined, sujet, texte, html: enveloppeMail({ titre: echappe(titreMail), corps }) });

@@ -22,7 +22,7 @@ type Ligne = Omit<Alerte, 'cle' | 'groupe'> & { cle: Cle; groupe: Alerte['groupe
 const DEMANDE_SITE: Ligne = {
   cle: CLE_ALERTE_DEMANDE, groupe: 'site', titre: 'Une nouvelle demande du site',
   objet: 'Nouvelle demande du site — Estimation — Paul Martin',
-  quand: 'Quelqu’un remplit un formulaire d’emilio-immo.com : estimation, accompagnement acheteur, question sur un bien, message. Rien ne part pour une demande qui ressemble à un robot.',
+  quand: 'Quelqu’un remplit un formulaire d’wernerimmobilier.com : estimation, accompagnement acheteur, question sur un bien, message. Rien ne part pour une demande qui ressemble à un robot.',
   crm: 'La demande dans Demandes Internet, en « Nouvelle », avec ses réponses.',
 };
 const LISTE: Ligne[] = ALERTES_MAIL.some(a => (a.cle as string) === CLE_ALERTE_DEMANDE) ? ALERTES_MAIL : [...ALERTES_MAIL, DEMANDE_SITE];
@@ -38,7 +38,7 @@ const valeurDe = (s: Set<Cle>): string => {
 };
 
 const GROUPES: { id: Ligne['groupe']; titre: string }[] = [
-  { id: 'site', titre: 'Le site emilio-immo.com' },
+  { id: 'site', titre: 'Le site wernerimmobilier.com' },
   { id: 'clients', titre: 'Tes clients' },
   { id: 'mandats', titre: 'Les mandats' },
   { id: 'auto', titre: 'Le point automatique' },
@@ -111,7 +111,7 @@ export default function ParamAlertes() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 17, color: 'var(--emilio)' }}>🔔 Alertes par mail</div>
-            <div style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 1.5, maxWidth: 580 }}>{fr('Les mails que le CRM t’envoie, avec l’expéditeur « Emilio · CRM ». Coupe ceux dont tu n’as pas besoin : l’événement reste toujours visible dans le CRM, rien ne se perd.')}</div>
+            <div style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 1.5, maxWidth: 580 }}>{fr('Les mails que le CRM t’envoie, avec l’expéditeur « Werner · CRM ». Coupe ceux dont tu n’as pas besoin : l’événement reste toujours visible dans le CRM, rien ne se perd.')}</div>
           </div>
           {note && <span style={{ fontSize: 12, fontWeight: 700, color: '#10b981' }}>✓ {note}</span>}
         </div>

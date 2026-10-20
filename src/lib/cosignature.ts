@@ -31,7 +31,7 @@ import {
 } from './mandat';
 import { etListe, pdfMandat, pdfSigne, type SignataireCadre, type SignataireCertif } from './mandat-pdf';
 import { envoyerMail, gabarit, echappe } from './mandat-serveur';
-import { HOTE_ESPACE, partieAleatoire, poignee } from './jeton';
+import { basePublique, partieAleatoire, poignee } from './jeton';
 import type { IdentiteAgence } from './agence';
 
 export const BUCKET = 'mandats';
@@ -58,7 +58,7 @@ export type LigneMandat = {
 };
 
 export const nomDe = (m: Pick<Mandant, 'prenom' | 'nom'>) => `${m.prenom} ${m.nom}`.trim();
-export const lienSigner = (jeton: string) => `https://${HOTE_ESPACE}/signer/${jeton}`;
+export const lienSigner = (jeton: string) => `${basePublique()}/signer/${jeton}`;
 export const jetonSigner = (m: Pick<Mandant, 'prenom' | 'nom'>) => `${poignee(m.prenom, m.nom) || 'signer'}-${partieAleatoire(16)}`;
 /* Ceux qui font partie du mandat signé par le premier : tous, sauf les
    « prévus » d'un mandat qui n'est pas encore signé. */
@@ -114,24 +114,24 @@ export function mailInvitation(o: { co: Mandant; premier: Mandant; premierLe: st
     ? `${pn} a signé votre mandat de recherche${signeLe}, et il ne manque plus que votre signature. C'est notre dernier rappel : votre lien de signature est valable ${encore.replace(/’/g, "'")}. Passé cette date, il ne fonctionnera plus.`
     : o.rappel
     ? `${pn} a signé votre mandat de recherche${signeLe}. Il ne manque plus que votre signature pour qu'il soit complet.`
-    : `${pn} a signé aujourd'hui le mandat de recherche qu'${il} confie à Alexandre Rogelet, d'Emilio Immobilier, pour votre projet d'achat. ${Il} vous a ${indiquee} comme co-acquéreur : le mandat sera complet avec votre signature.`;
+    : `${pn} a signé aujourd'hui le mandat de recherche qu'${il} confie à Werner, d'Werner Immobilier, pour votre projet d'achat. ${Il} vous a ${indiquee} comme co-acquéreur : le mandat sera complet avec votre signature.`;
   const intro = o.rappel === 2
     ? `<p>${echappe(pn)} a signé votre mandat de recherche${echappe(signeLe)}, et il ne manque plus que votre signature.</p>
       <p>C’est notre <b>dernier rappel</b> : votre lien de signature est valable <b>${echappe(encore)}</b>. Passé cette date, il ne fonctionnera plus.</p>`
     : o.rappel
     ? `<p>${echappe(pn)} a signé votre mandat de recherche${echappe(signeLe)}. Il ne manque plus que votre signature pour qu’il soit complet.</p>`
-    : `<p><b>${echappe(pn)}</b> a signé aujourd’hui le mandat de recherche qu’${il} confie à Alexandre Rogelet, d’Emilio Immobilier, pour votre projet d’achat. ${Il} vous a ${indiquee} comme co-acquéreur : le mandat sera complet avec votre signature.</p>`;
+    : `<p><b>${echappe(pn)}</b> a signé aujourd’hui le mandat de recherche qu’${il} confie à Werner, d’Werner Immobilier, pour votre projet d’achat. ${Il} vous a ${indiquee} comme co-acquéreur : le mandat sera complet avec votre signature.</p>`;
   /* Au dernier rappel, la date est déjà dite plus haut. */
   const valable = o.rappel === 2 ? '' : ` et valable jusqu’au ${fin}`;
   return {
     sujet,
-    texte: `Bonjour ${co.prenom},\n\n${introTexte}\n\nVous pourrez le relire en entier, vérifier vos informations et signer, en deux minutes :\n${lien}\n\nCe lien est personnel${valable.replace(/’/g, "'")}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\nVous n'êtes pas ${concerne} par cet achat ? Ouvrez le lien et choisissez « Je ne suis pas ${concerne} » : ${p} et Alexandre seront prévenus.\n\nAlexandre Rogelet — Emilio Immobilier`,
+    texte: `Bonjour ${co.prenom},\n\n${introTexte}\n\nVous pourrez le relire en entier, vérifier vos informations et signer, en deux minutes :\n${lien}\n\nCe lien est personnel${valable.replace(/’/g, "'")}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\nVous n'êtes pas ${concerne} par cet achat ? Ouvrez le lien et choisissez « Je ne suis pas ${concerne} » : ${p} et Werner seront prévenus.\n\nWerner Immobilier`,
     html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(co.prenom)},</p>
       ${intro}
       <p>Vous pourrez le relire en entier, vérifier vos informations et signer, en deux minutes&nbsp;:</p>
       <p>${bouton(lien, 'Relire et signer le mandat')}</p>
       <p style="font-size:13px;color:#5B6B80">Ce lien est personnel${echappe(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.</p>`,
-      `Vous n’êtes pas ${concerne} par cet achat ? Ouvrez le lien et choisissez « Je ne suis pas ${concerne} » : ${echappe(p)} et Alexandre seront prévenus.`),
+      `Vous n’êtes pas ${concerne} par cet achat ? Ouvrez le lien et choisissez « Je ne suis pas ${concerne} » : ${echappe(p)} et Werner seront prévenus.`),
   };
 }
 
@@ -151,7 +151,7 @@ export function lienNeuf(co: Co, le: string, note?: string): Partial<Co> {
 export async function envoyerLien(c: Co, l: Pick<LigneMandat, 'mandant' | 'signe_le'>, rappel: 0 | 1 | 2 = 0): Promise<string | null> {
   if (!c.jeton || !c.lien_expire_le) return 'lien absent';
   const m = mailInvitation({ co: c.personne, premier: l.mandant, premierLe: l.signe_le, lien: lienSigner(c.jeton), expire: c.lien_expire_le, rappel });
-  return envoyerMail({ a: c.personne.email, nomA: nomDe(c.personne), sujet: m.sujet, texte: m.texte, html: m.html, repondreA: 'agence@emilio-immo.com' });
+  return envoyerMail({ a: c.personne.email, nomA: nomDe(c.personne), sujet: m.sujet, texte: m.texte, html: m.html, repondreA: 'contact@wernerimmobilier.com' });
 }
 
 /* Renvoie son lien (le même s'il est encore valable, sinon un neuf), ou
@@ -310,10 +310,10 @@ export async function envoyerExemplaire(o: {
     ? `Votre mandat de recherche n° ${o.numero} est complet : tous les signataires l’ont signé. Vous le trouverez ci-joint, avec son certificat de signature.`
     : `Votre signature est enregistrée. Vous trouverez ci-joint le mandat de recherche n° ${o.numero} tel qu’il est signé aujourd’hui, avec son certificat. Vous recevrez la version complète dès que ${attente} l’aura signé.`;
   return envoyerMail({
-    a: o.a.email, nomA: nomDe(o.a), pj, repondreA: 'agence@emilio-immo.com',
+    a: o.a.email, nomA: nomDe(o.a), pj, repondreA: 'contact@wernerimmobilier.com',
     sujet: o.complet ? `Votre mandat de recherche n° ${o.numero}, signé par tous` : `Votre mandat de recherche n° ${o.numero}`,
-    texte: `Bonjour ${o.a.prenom},\n\n${corps.replace(/’/g, "'")}\n\nAlexandre Rogelet — Emilio Immobilier\n\n—\nLe mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours et la façon de l'exercer.${finTexte}`,
-    html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(o.a.prenom)},</p><p>${echappe(corps)}</p><p>Alexandre Rogelet — Emilio Immobilier</p>`,
+    texte: `Bonjour ${o.a.prenom},\n\n${corps.replace(/’/g, "'")}\n\nWerner Immobilier\n\n—\nLe mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours et la façon de l'exercer.${finTexte}`,
+    html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(o.a.prenom)},</p><p>${echappe(corps)}</p><p>Werner Immobilier</p>`,
       `Le mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours et la façon de l’exercer.${fin}`),
   });
 }

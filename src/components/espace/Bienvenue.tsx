@@ -396,7 +396,7 @@ export default function Bienvenue({ prenom, conseiller, auto, onVu, onFini }: {
         <div ref={corps} className={s.corps} key={i}>
           <div className={s.illuCol}>
             <div className={`${s.illuAnim} ${sens}`}><Illustration n={i} /></div>
-            <span className={s.conseiller}><span>{(conseiller || 'A').charAt(0).toUpperCase()}</span>{`${conseiller || 'Alexandre'}, votre conseiller`}</span>
+            <span className={s.conseiller}><span>{(conseiller || 'A').charAt(0).toUpperCase()}</span>{`${conseiller || 'Werner'}, votre conseiller`}</span>
           </div>
           <div className={`${s.textes} ${sens}`}>
             <span className={s.sur}>{e.sur}</span>

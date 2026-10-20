@@ -417,10 +417,10 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
           <div className="mdt-ok"><Ic n="check" t={34} /></div>
           <h3>C’est envoyé à votre conseiller</h3>
           <p className="mdt-p">{fait.repli
-            ? `La signature n’a pas pu partir tout de suite : Alexandre reprend votre offre de ${EUR(total)} et vous l’envoie pour signature. Vous recevrez un e-mail.`
+            ? `La signature n’a pas pu partir tout de suite : Werner reprend votre offre de ${EUR(total)} et vous l’envoie pour signature. Vous recevrez un e-mail.`
             : fait.force
-              ? `Alexandre relit votre offre de ${EUR(total)} et finalise votre dossier avec vous. Il vous l’envoie ensuite pour signature : vous recevrez un e-mail.`
-              : `Alexandre relit votre offre de ${EUR(total)}. Il vous l’envoie ensuite pour signature : vous recevrez un e-mail, et elle vous attendra dans votre espace.`}</p>
+              ? `Werner relit votre offre de ${EUR(total)} et finalise votre dossier avec vous. Il vous l’envoie ensuite pour signature : vous recevrez un e-mail.`
+              : `Werner relit votre offre de ${EUR(total)}. Il vous l’envoie ensuite pour signature : vous recevrez un e-mail, et elle vous attendra dans votre espace.`}</p>
           <div className="ofr-rassure"><Ic n="bouclier" t={18} /><span>{bien.agence ? 'Il la présente ensuite au vendeur, et vous prévient dès sa réponse.' : 'Il défend ensuite votre offre auprès du vendeur, et vous prévient dès sa réponse.'}</span></div>
           <button type="button" className="btn or mdt-plein" onClick={onFermer}>Revenir à mon espace</button>
         </div>
@@ -647,7 +647,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
               <span className="ic"><Ic n="personne" t={20} /></span>
               <span className="tx">
                 <b>{envoi === 'relire' ? 'Envoi à votre conseiller…' : 'La faire relire par mon conseiller'}</b>
-                <span>{'Alexandre la relit, vous appelle si besoin, puis vous l’envoie pour signature.'}</span>
+                <span>{'Werner la relit, vous appelle si besoin, puis vous l’envoie pour signature.'}</span>
               </span>
               {envoi === 'relire' ? <span className="tourne" aria-hidden="true" /> : <span className="ofr-fl"><Ic n="chevron" t={16} /></span>}
             </button>

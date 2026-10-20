@@ -79,20 +79,20 @@ export async function GET(req: NextRequest) {
   const lieu = [bien?.adresse || bien?.adresse_probable || bien?.quartier, bien?.ville]
     .filter(Boolean).join(', ');
   const details = [
-    'Visite organisée par Emilio Immobilier.',
+    'Visite organisée par Werner Immobilier.',
     visite.contact_agence ? `Contact sur place : ${visite.contact_agence}` : '',
     visite.commentaire || '',
-    'Alexandre Rogelet · 06 58 95 76 32',
+    'Werner · 01 00 00 00 00',
   ].filter(Boolean).join('\n');
 
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Emilio Immobilier//Espace acheteur//FR',
+    'PRODID:-//Werner Immobilier//Espace acheteur//FR',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    `UID:visite-${visite.id}@emilio-immo.com`,
+    `UID:visite-${visite.id}@wernerimmobilier.com`,
     `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,
     `DTSTART:${horodatage(visite.date_visite, visite.heure)}`,
     `DTEND:${plusUneHeure(visite.date_visite, visite.heure)}`,

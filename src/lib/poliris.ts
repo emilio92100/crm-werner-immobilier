@@ -30,9 +30,9 @@ import { diffuseSur } from '@/lib/diffusion';
 import { bienPourSite, gpsFiche } from '@/lib/flux-site';
 
 export const POLIRIS_VERSION = '4.12';
-export const POLIRIS_AGENCE = 'emilioimmo';
+export const POLIRIS_AGENCE = 'wernerimmobilier';
 export const POLIRIS_NB_CHAMPS = 335;
-const BAREME = 'https://www.emilio-immo.com/honoraires';
+const BAREME = 'https://www.wernerimmobilier.com/honoraires';
 
 /* ── Le texte, tel que le format l'accepte ──────────────────────────────── */
 /* ISO-8859-1 ne connaît ni ’ ni œ ni € ni … : on les remplace par leurs

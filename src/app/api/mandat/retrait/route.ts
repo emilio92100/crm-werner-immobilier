@@ -30,7 +30,7 @@ export const maxDuration = 30;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const TEL = '06 58 95 76 32';
+const TEL = '01 00 00 00 00';
 const ko = (erreur: string, status = 400) => NextResponse.json({ ok: false, erreur }, { status });
 
 /* Le mail, au nom d'Alexandre : court, simple, rien à faire. */
@@ -44,12 +44,12 @@ function mailRetrait(prenom: string, commence: boolean) {
   const p4 = `Une question ? Répondez simplement à ce message, ou appelez-moi au ${TEL}.`;
   return {
     sujet: 'À propos de votre mandat de recherche',
-    texte: `${bonjour}\n\n${p1}\n\n${p2} ${p3}\n\n${p4}\n\nAlexandre Rogelet\nEmilio Immobilier`,
+    texte: `${bonjour}\n\n${p1}\n\n${p2} ${p3}\n\n${p4}\n\nWerner\nWerner Immobilier`,
     html: gabarit('Votre mandat de recherche', `<p>${echappe(bonjour)}</p>
       <p>${echappe(p1)}</p>
       <p>${echappe(p2)} ${echappe(p3)}</p>
       <p>${echappe(p4)}</p>
-      <p>Alexandre Rogelet<br/>Emilio Immobilier</p>`),
+      <p>Werner<br/>Werner Immobilier</p>`),
   };
 }
 

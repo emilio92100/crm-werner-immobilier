@@ -169,7 +169,7 @@ export async function genererReference(): Promise<string> {
     const { data, error } = await supabase
       .from('clients')
       .select('reference')
-      .like('reference', `EMI-${annee}-%`)
+      .like('reference', `WER-${annee}-%`)
       .order('id')
       .range(de, de + 999)
     /* V3.50 : une lecture ratée ne donne plus « EMI-AAAA-100 » (un numéro
@@ -183,11 +183,11 @@ export async function genererReference(): Promise<string> {
     }
     if (!data || data.length < 1000) break
   }
-  if (!max) return `EMI-${annee}-${PREMIER_DOSSIER}`
+  if (!max) return `WER-${annee}-${PREMIER_DOSSIER}`
   const num = max + 1
   /* Filet : si d'anciens dossiers sont restés en dessous de 100, le suivant
      repart quand même à 100 au lieu de continuer la vieille série. */
-  return `EMI-${annee}-${String(Math.max(num, PREMIER_DOSSIER)).padStart(3, '0')}`
+  return `WER-${annee}-${String(Math.max(num, PREMIER_DOSSIER)).padStart(3, '0')}`
 }
 
 /* Une ligne dans l'historique du client. Vérifiée depuis la V3.17 : un échec

@@ -46,7 +46,7 @@ export default function Ouverture() {
       {/* Le logo de l'agence, en grand : le client sait chez qui il arrive. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/logos/logo-emilio-800.png" alt="Emilio conseil immobilier" width={240} height={101}
+        src="/logos/logo-emilio-800.png" alt="Werner Immobilier" width={240} height={101}
         className="emilio-anim"
         style={{ width: 'min(240px, 62vw)', height: 'auto', animation: 'emilio-pose .5s cubic-bezier(.16,1,.3,1) both' }}
       />

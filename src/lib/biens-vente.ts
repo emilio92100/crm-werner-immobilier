@@ -862,8 +862,8 @@ export function colonnesBien(d: Donnees) {
 /* La référence du bien : EMI-V-<année>-<numéro>, à la suite des précédentes. */
 export function referenceSuivante(dernieres: (string | null)[]): string {
   const an = new Date().getFullYear();
-  const n = dernieres.map(r => (r && r.startsWith(`EMI-V-${an}-`) ? parseInt(r.split('-')[3], 10) : 0)).filter(Number.isFinite);
-  return `EMI-V-${an}-${String(Math.max(0, ...n) + 1).padStart(3, '0')}`;
+  const n = dernieres.map(r => (r && r.startsWith(`WER-A-${an}-`) ? parseInt(r.split('-')[3], 10) : 0)).filter(Number.isFinite);
+  return `WER-A-${an}-${String(Math.max(0, ...n) + 1).padStart(3, '0')}`;
 }
 
 export const joursDepuis = (iso: string | null | undefined) => {
@@ -1249,7 +1249,7 @@ export function versBienAcheteur(b: BienVente, o: { clientId: string; rechercheI
        son espace et la page /bien/<id> savaient déjà les montrer. */
     nb_lots: d.copro === 'oui' ? nb(d, 'lots') : null,
     ...(chargesAn && compris.length ? { charges_comprises: compris.join(', ') } : {}),
-    photos, source_portail: 'Emilio Immobilier', agence_nom: 'Emilio Immobilier', agence_tel: null,
+    photos, source_portail: 'Werner Immobilier', agence_nom: 'Werner Immobilier', agence_tel: null,
   };
 }
 
@@ -1261,7 +1261,7 @@ export function contexteDocument(b: BienVente) {
   return {
     id: '', titre: b.titre, adresse: txt(d, 'adresse') || null, code_postal: txt(d, 'cp') || null, ville: txt(d, 'ville') || null,
     quartier: txt(d, 'quartier') || null, type_bien: typeRecherche(d.typeBien), surface: nb(d, 'surface'), nb_pieces: nb(d, 'pieces'),
-    etage: nb(d, 'etage'), prix_acquereur: argentBien(d).prix, prix_vendeur: argentBien(d).net, agence_nom: 'Emilio Immobilier', description: null,
+    etage: nb(d, 'etage'), prix_acquereur: argentBien(d).prix, prix_vendeur: argentBien(d).net, agence_nom: 'Werner Immobilier', description: null,
   };
 }
 /* Le mandat de vente prérempli : les vendeurs, le bien, le prix, les honoraires. */

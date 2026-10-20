@@ -23,7 +23,7 @@
 
 const PUBLIQUE = () => process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
 const PRIVEE = () => process.env.VAPID_PRIVATE_KEY || '';
-const SUJET = () => process.env.VAPID_SUBJECT || 'mailto:arogelet@emilio-immo.com';
+const SUJET = () => process.env.VAPID_SUBJECT || 'mailto:contact@wernerimmobilier.com';
 
 export function pushConfigure(): boolean {
   return !!PUBLIQUE() && !!PRIVEE();

@@ -227,7 +227,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
       <div className={styles.welcomeBanner}>
         <div className={styles.welcomeLeft}>
           <p className={styles.welcomeDate}>{dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</p>
-          <h1 className={styles.welcomeTitle}>Bonjour, Alexandre 👋</h1>
+          <h1 className={styles.welcomeTitle}>Bonjour, Werner 👋</h1>
           <p className={styles.welcomeSub}>
             {relanceAfaire.length > 0
               ? <>Vous avez <strong style={{color:'#fca5a5'}}>{relanceAfaire.length} relance{relanceAfaire.length > 1 ? 's' : ''} à faire</strong>{relanceAvenir.length > 0 ? <> et {relanceAvenir.length} à venir</> : null} — bonne journée ! 🌟</>

@@ -849,7 +849,7 @@ export default function Decouverte(props: Props) {
     <div className={'dec' + (large ? ' pc' : '') + (visible ? ' on' : '')} role="dialog" aria-modal="true" aria-label="Vos nouveaux biens"
       ref={racine} tabIndex={-1}>
       <header className="dec-tete">
-        <img className="dec-logo" src="/logos/logo-emilio-800.png" alt="Emilio Immobilier" width={800} height={336} />
+        <img className="dec-logo" src="/logos/logo-emilio-800.png" alt="Werner Immobilier" width={800} height={336} />
         {large ? (
           <>
             <div className="dec-prog">

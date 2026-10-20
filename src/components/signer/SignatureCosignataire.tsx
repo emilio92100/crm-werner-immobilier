@@ -162,14 +162,14 @@ export default function SignatureCosignataire({ d }: { d: DonneesSigner }) {
     const r = await envoyer('renoncer', { confirme: true });
     setEnvoi(false);
     if (r?.ok) { setRenoncer(false); setEtat('retracte'); }
-    else setErreur(r?.error === 'delai' ? 'Le délai de rétractation est passé : parlez-en à Alexandre.' : 'La renonciation n’a pas pu être enregistrée. Réessayez dans un instant.');
+    else setErreur(r?.error === 'delai' ? 'Le délai de rétractation est passé : parlez-en à Werner.' : 'La renonciation n’a pas pu être enregistrée. Réessayez dans un instant.');
   };
 
   const cadre = (contenu: React.ReactNode) => (
     <div className="sgn-page">
       <style>{CSS_SIGNER + CSS_MANDAT}</style>
       <div className="sgn-band">
-        <span className="m">EMILIO IMMOBILIER</span>
+        <span className="m">WERNER IMMOBILIER</span>
         {d.numero && <span className="n">{`Mandat n° ${d.numero}`}</span>}
       </div>
       <div className="sgn-f" ref={haut}>{contenu}</div>
@@ -182,16 +182,16 @@ export default function SignatureCosignataire({ d }: { d: DonneesSigner }) {
         <h3>{titre}</h3>
         <p className="mdt-p">{texte}</p>
         {plus}
-        <a className="btn fant mdt-plein" href={'tel:' + d.tel.replace(/\s/g, '')}><Ic n="tel" t={16} /><span>{`Appeler Alexandre · ${d.tel}`}</span></a>
+        <a className="btn fant mdt-plein" href={'tel:' + d.tel.replace(/\s/g, '')}><Ic n="tel" t={16} /><span>{`Appeler Werner · ${d.tel}`}</span></a>
       </div>
     </div>,
   );
 
   /* ── Ce que le lien ne permet plus ── */
-  if (etat === 'introuvable') return message('info', 'Ce lien ne mène plus nulle part', 'Il a peut-être été remplacé par un plus récent : regardez le dernier e-mail reçu, ou appelez Alexandre.');
-  if (etat === 'expire') return message('horloge', 'Ce lien a expiré', `Pour votre sécurité, le lien de signature n’est valable que quinze jours. Demandez à ${p}, ou à Alexandre, de vous en renvoyer un nouveau.`);
-  if (etat === 'decline') return message('check', 'C’est noté', `${p} et Alexandre sont prévenus : vous ne signerez pas ce mandat. S’il s’agit d’une erreur, appelez Alexandre, il vous renverra un lien.`);
-  if (etat === 'annule') return message('info', 'Ce mandat ne vous attend plus', `Le mandat de recherche de ${p} continue sans votre signature. Si vous souhaitez finalement le signer, appelez Alexandre : il vous enverra un nouveau lien.`);
+  if (etat === 'introuvable') return message('info', 'Ce lien ne mène plus nulle part', 'Il a peut-être été remplacé par un plus récent : regardez le dernier e-mail reçu, ou appelez Werner.');
+  if (etat === 'expire') return message('horloge', 'Ce lien a expiré', `Pour votre sécurité, le lien de signature n’est valable que quinze jours. Demandez à ${p}, ou à Werner, de vous en renvoyer un nouveau.`);
+  if (etat === 'decline') return message('check', 'C’est noté', `${p} et Werner sont prévenus : vous ne signerez pas ce mandat. S’il s’agit d’une erreur, appelez Werner, il vous renverra un lien.`);
+  if (etat === 'annule') return message('info', 'Ce mandat ne vous attend plus', `Le mandat de recherche de ${p} continue sans votre signature. Si vous souhaitez finalement le signer, appelez Werner : il vous enverra un nouveau lien.`);
   if (etat === 'fin') return message('info', 'Ce mandat a pris fin', `${p} a mis fin au mandat de recherche : il n’y a plus rien à signer.`);
   if (etat === 'retracte') return message('retour', 'Votre renonciation est enregistrée', 'Le mandat ne vous engage plus, sans aucun frais. Vous avez reçu un accusé de réception par e-mail.');
 
@@ -258,7 +258,7 @@ export default function SignatureCosignataire({ d }: { d: DonneesSigner }) {
         <div className="mdt-sceau"><Ic n="plume" t={28} /></div>
         <div className="mdt-invite"><span className="de">{`Bonjour ${m.prenom}`}</span><span className="att">Votre signature est attendue</span></div>
         <h3>{`${p} vous invite à signer votre mandat de recherche`}</h3>
-        <p className="mdt-p">{`${nomP} a signé le ${dateLongue(d.premierLe)} le mandat de recherche confié à Alexandre Rogelet, d’Emilio Immobilier, pour votre projet d’achat. ${d.premier.civilite === 'Madame' ? 'Elle' : 'Il'} vous a ${f ? 'indiquée' : 'indiqué'} comme co-acquéreur : le mandat sera complet avec votre signature.`}</p>
+        <p className="mdt-p">{`${nomP} a signé le ${dateLongue(d.premierLe)} le mandat de recherche confié à Werner, d’Werner Immobilier, pour votre projet d’achat. ${d.premier.civilite === 'Madame' ? 'Elle' : 'Il'} vous a ${f ? 'indiquée' : 'indiqué'} comme co-acquéreur : le mandat sera complet avec votre signature.`}</p>
         <div className="mdt-puces">
           <span><span className="k"><Ic n="check" t={14} /></span><span><b>Relisez le mandat</b>{` en entier, tel que ${p} l’a signé.`}</span></span>
           <span><span className="k"><Ic n="check" t={14} /></span><span>Vérifiez vos informations, corrigez-les si besoin.</span></span>
@@ -272,7 +272,7 @@ export default function SignatureCosignataire({ d }: { d: DonneesSigner }) {
             <Ic n="info" t={19} />
             <div>
               <b>{`Vous n’êtes pas ${f ? 'concernée' : 'concerné'} ?`}</b>
-              <p>{`Vous ne signerez pas ce mandat. ${p} et Alexandre seront prévenus ; le mandat continue avec ${p}.`}</p>
+              <p>{`Vous ne signerez pas ce mandat. ${p} et Werner seront prévenus ; le mandat continue avec ${p}.`}</p>
               <div className="mdt-sgn-a" style={{ marginTop: 10, padding: 0 }}>
                 <button type="button" className="btn fant" disabled={envoi} onClick={() => { void confirmerDecliner(); }}>{envoi ? 'Envoi…' : 'Confirmer'}</button>
                 <button type="button" className="mdt-relire" onClick={() => setDecliner(false)}>Annuler</button>

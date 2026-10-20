@@ -44,7 +44,7 @@ import { modele, pdfDocument, txt, num, aRetractation, demandeExpresse, modeSign
 import { etListe, pdfSigne, type SignataireCertif, type CadreSigne } from './mandat-pdf';
 import { dateLongue, dateCourte, heureParis, masquerEmail, DELAI_COSIGNATURE } from './mandat';
 import { envoyerMail, gabarit, echappe, ALERTES, CRM } from './mandat-serveur';
-import { HOTE_ESPACE, partieAleatoire, poignee } from './jeton';
+import { basePublique, partieAleatoire, poignee } from './jeton';
 import { IDENTITE_DEFAUT, type IdentiteAgence } from './agence';
 import { noterSignature } from './registre';
 import { noteOffre } from './actes/offre-achat';
@@ -101,7 +101,7 @@ export type DocSigne = {
 };
 
 export const nomSig = (s: Pick<SigDoc, 'personne' | 'nom'>) => `${s.personne.prenom} ${s.personne.nom}`.trim() || s.nom;
-export const lienSigner = (jeton: string) => `https://${HOTE_ESPACE}/signer/${jeton}`;
+export const lienSigner = (jeton: string) => `${basePublique()}/signer/${jeton}`;
 export const jetonSigner = (p: Pick<PersonneSig, 'prenom' | 'nom'>) => `${poignee(p.prenom, p.nom) || 'signer'}-${partieAleatoire(16)}`;
 export const lienValide = (s: SigDoc) => !!s.lien_expire_le && Date.parse(s.lien_expire_le) > Date.now();
 export const actif = (s: SigDoc) => s.statut !== 'annule';
@@ -178,18 +178,18 @@ export function mailInvitation(o: { s: SigDoc; m: Modele; d: Donnees; lien: stri
     ? `${Doc} attend toujours votre signature. C’est notre dernier rappel : votre lien de signature est valable ${encore}. Passé cette date, il ne fonctionnera plus.`
     : o.rappel
     ? `${Doc} attend toujours votre signature.`
-    : `Alexandre Rogelet, d’Emilio Immobilier, vous adresse ${doc.le} à signer.`;
+    : `Werner, d’Werner Immobilier, vous adresse ${doc.le} à signer.`;
   const valable = o.rappel === 2 ? '' : ` et valable jusqu’au ${fin}`;
   const prenom = s.personne.prenom || nomSig(s);
   return {
     sujet,
-    texte: `Bonjour ${prenom},\n\n${sansCourbes(intro)}\n\nVous pourrez le relire en entier, puis le signer en ligne :\n${lien}\n\nCe lien est personnel${sansCourbes(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\nUne question ? Répondez à ce message, ou appelez Alexandre.\n\nAlexandre Rogelet — Emilio Immobilier`,
+    texte: `Bonjour ${prenom},\n\n${sansCourbes(intro)}\n\nVous pourrez le relire en entier, puis le signer en ligne :\n${lien}\n\nCe lien est personnel${sansCourbes(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\nUne question ? Répondez à ce message, ou appelez Werner.\n\nWerner Immobilier`,
     html: gabarit('Un document à signer', `<p>Bonjour ${echappe(prenom)},</p>
       <p>${echappe(intro)}</p>
       <p>Vous pourrez le relire en entier, puis le signer en ligne&nbsp;:</p>
       <p>${bouton(lien, 'Relire et signer')}</p>
       <p style="font-size:13px;color:#5B6B80">Ce lien est personnel${echappe(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.</p>`,
-      'Une question ? Répondez à ce message, ou appelez Alexandre.'),
+      'Une question ? Répondez à ce message, ou appelez Werner.'),
   };
 }
 
@@ -220,12 +220,12 @@ export function mailArret(o: { s: SigDoc; m: Modele; d: Donnees; annulation: boo
   const p3 = o.annulation ? '' : 'Si le document doit être signé à nouveau, vous recevrez un nouveau lien par e-mail.';
   return {
     sujet,
-    texte: `Bonjour ${prenom},\n\n${sansCourbes(p1)}\n\n${sansCourbes(p2)}${p3 ? `\n\n${sansCourbes(p3)}` : ''}\n\nUne question ? Répondez à ce message, ou appelez Alexandre.\n\nAlexandre Rogelet — Emilio Immobilier`,
+    texte: `Bonjour ${prenom},\n\n${sansCourbes(p1)}\n\n${sansCourbes(p2)}${p3 ? `\n\n${sansCourbes(p3)}` : ''}\n\nUne question ? Répondez à ce message, ou appelez Werner.\n\nWerner Immobilier`,
     html: gabarit(o.annulation ? 'Document annulé' : 'Signature interrompue', `<p>Bonjour ${echappe(prenom)},</p>
       <p>${echappe(p1)}</p>
       <p>${echappe(p2)}</p>
       ${p3 ? `<p>${echappe(p3)}</p>` : ''}`,
-      'Une question ? Répondez à ce message, ou appelez Alexandre.'),
+      'Une question ? Répondez à ce message, ou appelez Werner.'),
   };
 }
 
@@ -237,7 +237,7 @@ export async function prevenirArret(sigs: SigDoc[], m: Modele, d: Donnees, annul
   const prevenus: string[] = [], echecs: string[] = [];
   for (const x of aPrevenir(sigs)) {
     const mail = mailArret({ s: x, m, d, annulation });
-    const e = await envoyerMail({ a: x.personne.email, nomA: nomSig(x), sujet: mail.sujet, texte: mail.texte, html: mail.html, repondreA: 'agence@emilio-immo.com' });
+    const e = await envoyerMail({ a: x.personne.email, nomA: nomSig(x), sujet: mail.sujet, texte: mail.texte, html: mail.html, repondreA: 'contact@wernerimmobilier.com' });
     if (e) echecs.push(`${nomSig(x)} : ${e}`); else prevenus.push(nomSig(x));
   }
   return { prevenus, echecs };
@@ -258,7 +258,7 @@ export function lienNeuf(s: SigDoc, le: string, note?: string, expire?: string):
 export async function envoyerLien(s: SigDoc, m: Modele, d: Donnees, rappel: 0 | 1 | 2 = 0): Promise<string | null> {
   if (!s.jeton || !s.lien_expire_le) return 'lien absent';
   const x = mailInvitation({ s, m, d, lien: lienSigner(s.jeton), expire: s.lien_expire_le, rappel });
-  return envoyerMail({ a: s.personne.email, nomA: nomSig(s), sujet: x.sujet, texte: x.texte, html: x.html, repondreA: 'agence@emilio-immo.com' });
+  return envoyerMail({ a: s.personne.email, nomA: nomSig(s), sujet: x.sujet, texte: x.texte, html: x.html, repondreA: 'contact@wernerimmobilier.com' });
 }
 
 /* Renvoie son lien (le même s'il vaut encore, sinon un neuf), ou un rappel.
@@ -305,7 +305,7 @@ export function mailCode(o: { s: SigDoc; m: Modele; d: Donnees; code: string; mi
   const prenom = o.s.personne.prenom || nomSig(o.s);
   return {
     sujet: `Votre code de signature : ${o.code}`,
-    texte: `Bonjour ${prenom},\n\nVoici votre code pour signer ${sansCourbes(doc.le)} : ${joli}\n\nIl est valable ${o.minutes} minutes. Saisissez-le vous-même, et ne le communiquez à personne.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.\n\nAlexandre Rogelet — Emilio Immobilier`,
+    texte: `Bonjour ${prenom},\n\nVoici votre code pour signer ${sansCourbes(doc.le)} : ${joli}\n\nIl est valable ${o.minutes} minutes. Saisissez-le vous-même, et ne le communiquez à personne.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.\n\nWerner Immobilier`,
     html: gabarit('Votre code de signature', `<p>Bonjour ${echappe(prenom)},</p>
       <p>Voici votre code pour signer ${echappe(doc.le)} :</p>
       <div style="margin:16px 0;font-size:32px;font-weight:800;letter-spacing:8px;color:#232528">${joli}</div>
@@ -630,11 +630,11 @@ export async function envoyerExemplaire(o: {
   const r = o.s.cle !== 'agence' && o.m.rappel ? o.m.rappel(o.d) : null;
   const rappel = r ? `Pour rappel : ${r.titre.charAt(0).toLowerCase() + r.titre.slice(1)}, ${r.valeur}${r.detail ? ` (${r.detail})` : ''}${r.ecart ? `, ${r.ecart}` : ''}.` : '';
   return envoyerMail({
-    a: o.s.personne.email, nomA: nomSig(o.s), pj, repondreA: 'agence@emilio-immo.com',
+    a: o.s.personne.email, nomA: nomSig(o.s), pj, repondreA: 'contact@wernerimmobilier.com',
     sujet: o.complet ? `${Doc}, signé par tous` : `${Doc} : votre signature est enregistrée`,
-    texte: `Bonjour ${prenom},\n\n${sansCourbes(corps)}${rappel ? `\n\n${sansCourbes(rappel)}` : ''}\n\nAlexandre Rogelet — Emilio Immobilier\n\n—\n${sansCourbes(pied)}`,
+    texte: `Bonjour ${prenom},\n\n${sansCourbes(corps)}${rappel ? `\n\n${sansCourbes(rappel)}` : ''}\n\nWerner Immobilier\n\n—\n${sansCourbes(pied)}`,
     html: gabarit(o.complet ? 'Votre document signé' : 'Votre signature est enregistrée',
-      `<p>Bonjour ${echappe(prenom)},</p><p>${echappe(corps)}</p>${rappel ? `<p>${echappe(rappel)}</p>` : ''}<p>Alexandre Rogelet — Emilio Immobilier</p>`, pied),
+      `<p>Bonjour ${echappe(prenom)},</p><p>${echappe(corps)}</p>${rappel ? `<p>${echappe(rappel)}</p>` : ''}<p>Werner Immobilier</p>`, pied),
   });
 }
 

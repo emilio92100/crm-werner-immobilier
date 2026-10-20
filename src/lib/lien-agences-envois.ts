@@ -236,7 +236,7 @@ export async function agencesDuClient(rechercheId: string): Promise<AgenceConnue
     g.dernier = plusRecent(g.dernier, t.le);
   }
   /* Emilio Immobilier, c'est Alexandre (un de ses mandats présenté au client) : pas de lien à s'envoyer. */
-  const uniques = Array.from(new Set(groupes)).filter(g => !/\bemilio\b/.test(normNom(g.nom)));
+  const uniques = Array.from(new Set(groupes)).filter(g => !/\bwerner\b/.test(normNom(g.nom)));
   return uniques.map(({ cles: _cles, ...g }) => ({ ...g, envois: g.envois.sort((p, q) => (p.le < q.le ? 1 : -1)) }))
     .sort((p, q) => {
       const jp = p.tel || p.email ? 0 : 1, jq = q.tel || q.email ? 0 : 1;

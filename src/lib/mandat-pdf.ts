@@ -882,9 +882,9 @@ function pageDeGarde(doc: PDFDocument, k: Kit, o: OptionsPdf, sommaire: { t: str
 export async function pdfMandat(parties: Partie[], o: OptionsPdf): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(propre(`${o.projet ? 'Projet non signé — ' : ''}${o.titreDoc || `Mandat de recherche n° ${o.numero}`}`));
-  doc.setAuthor('Emilio Immobilier');
-  doc.setCreator('Emilio Immobilier');
-  doc.setProducer('Emilio Immobilier');
+  doc.setAuthor('Werner Immobilier');
+  doc.setCreator('Werner Immobilier');
+  doc.setProducer('Werner Immobilier');
   /* Une date fixe (celle de la signature) : le même mandat donne le même
      fichier, donc la même empreinte. */
   if (o.sig) { doc.setCreationDate(new Date(o.sig.le)); doc.setModificationDate(new Date(o.sig.le)); }
@@ -1052,7 +1052,7 @@ export function dessinerTampon(p: PDFPage, k: Kit, cx: number, cy: number, diame
   p.drawCircle({ x: cx, y: cy, size: 106 * u, borderColor: ENCRE, borderWidth: 1.6 * u, opacity: 0, borderOpacity: op });
   p.drawCircle({ x: cx, y: cy, size: 85 * u, borderColor: ENCRE, borderWidth: 1.6 * u, opacity: 0, borderOpacity: op });
 
-  surArc(p, 'EMILIO IMMOBILIER', { cx, cy, r: 92 * u, taille: 13.5 * u, police: k.serif, espacement: 2.4 * u, haut: true, inclinaison: incl, couleur: ENCRE, opacite: op });
+  surArc(p, 'WERNER IMMOBILIER', { cx, cy, r: 92 * u, taille: 13.5 * u, police: k.serif, espacement: 2.4 * u, haut: true, inclinaison: incl, couleur: ENCRE, opacite: op });
   surArc(p, '★ SIGNATURE ÉLECTRONIQUE ★', { cx, cy, r: 100 * u, taille: 10 * u, police: k.serif, espacement: 1.5 * u, haut: false, inclinaison: incl, couleur: ENCRE, opacite: op });
 
   /* Le centre, en coordonnées de la maquette (y vers le bas, centre 120). */

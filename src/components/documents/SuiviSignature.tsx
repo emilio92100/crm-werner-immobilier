@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { heureParis } from '@/lib/mandat';
-import { HOTE_ESPACE } from '@/lib/jeton';
+import { basePublique } from '@/lib/jeton';
 import Depliant from '@/components/shared/Depliant';
 import { PastillePli } from '@/components/shared/Pli';
 import { Ic } from './ApercuActe';
@@ -108,7 +108,7 @@ export async function lireSuivis(o: { docs?: DocumentRow[]; mandats?: SigEspace[
       });
       const signes = lignes.filter(x => x.etat === 'signe').length;
       const agence: LigneSuivi[] = d.signature?.agence_le
-        ? [{ id: 'agence-' + d.id, nom: 'L’agence', role: 'Emilio Immobilier', email: '', etat: 'agence', texte: `Signé le ${quand(d.signature.agence_le)}, au lancement` }]
+        ? [{ id: 'agence-' + d.id, nom: 'L’agence', role: 'Werner Immobilier', email: '', etat: 'agence', texte: `Signé le ${quand(d.signature.agence_le)}, au lancement` }]
         : [];
       const mode = d.signature?.mode === 'sur_place' ? 'sur_place' : 'en_ligne';
       out[d.id] = {
@@ -151,7 +151,7 @@ export async function lireSuivis(o: { docs?: DocumentRow[]; mandats?: SigEspace[
             : `Lien envoyé le ${c.invite_le ? quand(c.invite_le) : '—'} · ${c.ouvert_le ? `ouvert le ${quand(c.ouvert_le)}` : 'pas encore ouvert'}${rappel(c.relances)}`;
           return {
             id: c.id, nom: nomDe(c.personne, 'Co-signataire'), role: 'Signe avec lui', email: c.personne?.email || '', etat, texte,
-            geste: etat === 'attente' || etat === 'expire' ? { sorte: 'co', coId: c.id, expire: etat === 'expire', lien: c.jeton ? `https://${HOTE_ESPACE}/signer/${c.jeton}` : '' } : undefined,
+            geste: etat === 'attente' || etat === 'expire' ? { sorte: 'co', coId: c.id, expire: etat === 'expire', lien: c.jeton ? `${basePublique()}/signer/${c.jeton}` : '' } : undefined,
           };
         }),
       ];

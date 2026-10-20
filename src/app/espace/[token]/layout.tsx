@@ -30,7 +30,7 @@ export async function generateMetadata(
   const racine = hote === HOTE_ESPACE ? `/${token}` : `/espace/${token}`;
 
   return {
-    title: 'Ma recherche — Emilio Immobilier',
+    title: 'Ma recherche — Werner Immobilier',
     description: 'Les biens retenus pour vous, vos critères et vos visites.',
     manifest: `${racine}/manifeste`,
     appleWebApp: {

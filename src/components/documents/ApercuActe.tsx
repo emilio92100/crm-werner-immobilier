@@ -128,14 +128,14 @@ export default function ApercuActe({ parties, garde, pour, resume, projet = true
         /* Un courrier : l'en-tête de l'agence, sans page de garde. */
         <div className={s.papLettre} data-bloc="">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo_high_resolution.png" alt="Emilio Immobilier" />
+          <img src="/logo_high_resolution.png" alt="Werner Immobilier" />
           {projet && <span className={s.projet}>PROJET</span>}
         </div>
       ) : (
         <>
           <div className={s.papGarde} data-bloc="">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo_high_resolution_white.png" alt="Emilio Immobilier" />
+            <img src="/logo_high_resolution_white.png" alt="Werner Immobilier" />
             {projet && <span className={s.projet}>PROJET</span>}
             <div className={s.filet} />
             <h2>{garde.titre}</h2>

@@ -55,7 +55,7 @@ function acces(api: ApiAviv = 'annonces', envForce?: Env) {
     id, secret, env, api,
     base,
     audience: (api === 'annonces' ? process.env.SELOGER_AUDIENCE?.trim() : '') || base,
-    intermediaire: process.env.SELOGER_INTERMEDIAIRE?.trim() || 'RC-621209',
+    intermediaire: process.env.SELOGER_INTERMEDIAIRE?.trim() || '',
     scope: (api === 'annonces' ? process.env.SELOGER_SCOPE?.trim() : '') || '',
   };
 }

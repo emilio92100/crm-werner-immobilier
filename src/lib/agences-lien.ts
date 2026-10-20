@@ -14,8 +14,9 @@
 
    Rien ici ne lit la base : des outils purs, pour la page, les routes et le CRM. */
 
-export const HOTE_LIEN = 'https://espace.emilio-immo.com';
-export const lienAgences = (jeton: string) => `${HOTE_LIEN}/proposer/${jeton}`;
+import { basePublique } from './jeton';
+
+export const lienAgences = (jeton: string) => `${basePublique()}/proposer/${jeton}`;
 
 /** Un jeton de 12 caractères, sans caractère ambigu. */
 export function jetonAgences(): string {
@@ -50,7 +51,7 @@ export const lienAvecCode = (jeton: string, code?: string | null) => (code && co
 
 /** Le message à envoyer à l'agence (SMS ou mail), validé par Alexandre. */
 export function messageAgence(jeton: string): string {
-  return `Bonjour, c’est Alexandre Rogelet, d’Emilio Immobilier. Comme convenu, voici le lien pour me proposer vos biens pour mon client :\n${lienAgences(jeton)}\nIl suffit d’y coller le lien de votre annonce : elle arrive directement chez moi, je l’étudie et je reviens vers vous. Merci !`;
+  return `Bonjour, c’est Werner, d’Werner Immobilier. Comme convenu, voici le lien pour me proposer vos biens pour mon client :\n${lienAgences(jeton)}\nIl suffit d’y coller le lien de votre annonce : elle arrive directement chez moi, je l’étudie et je reviens vers vous. Merci !`;
 }
 
 /* ── Ce que l'agence voit de la recherche : rien qui nomme le client ──

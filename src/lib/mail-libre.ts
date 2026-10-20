@@ -26,7 +26,7 @@ export type StyleMail = 'simple' | 'emilio';
 
 export const STYLES_MAIL: { k: StyleMail; lib: string; aide: string }[] = [
   { k: 'simple', lib: 'Simple', aide: 'Comme un mail écrit dans ta messagerie. Le plus naturel, et celui qui arrive le mieux en boîte de réception.' },
-  { k: 'emilio', lib: 'Avec l’en-tête Emilio', aide: 'Le bandeau au logo et ton nom en pied. Pour une annonce ou un message à plusieurs acheteurs.' },
+  { k: 'emilio', lib: 'Avec l’en-tête Werner', aide: 'Le bandeau au logo et ton nom en pied. Pour une annonce ou un message à plusieurs acheteurs.' },
 ];
 
 const esc = (t: string) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -163,8 +163,8 @@ export function habillageDe(reglages: Record<string, string | undefined>, identi
   const adresse = [id.adresse, [id.cp, id.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   return {
     conseiller: joliNom(conseillerDe(reglages)),
-    telephone: (reglages.conseiller_telephone || '').trim() || '06 58 95 76 32',
-    agence: id.nom || 'Emilio Immobilier',
+    telephone: (reglages.conseiller_telephone || '').trim() || '01 00 00 00 00',
+    agence: id.nom || 'Werner Immobilier',
     mentions: [`${id.nom} — ${id.societe}${id.forme ? `, ${id.forme}` : ''}`, adresse, id.carte ? `carte professionnelle ${id.carte}` : ''].filter(Boolean).join(' · '),
     /* V3.198 : le logo depuis espace.emilio-immo.com (src/lib/mail-charte.ts), plus depuis `site`. */
     logo: LOGO_BLANC_MAIL,

@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
         const eMail = await envoyerMail({
           a: p.email, nomA: nomDe(p), deLaPartDe: 'agence',
           sujet: `Votre code de signature : ${code}`,
-          texte: `Bonjour ${p.prenom},\n\nVoici votre code pour signer votre mandat de recherche : ${joli}\n\nIl est valable ${CODE_MINUTES} minutes.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.\n\nAlexandre Rogelet — Emilio Immobilier`,
+          texte: `Bonjour ${p.prenom},\n\nVoici votre code pour signer votre mandat de recherche : ${joli}\n\nIl est valable ${CODE_MINUTES} minutes.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.\n\nWerner Immobilier`,
           html: gabarit('Votre code de signature', `<p>Bonjour ${echappe(p.prenom)},</p>
             <p>Voici votre code pour signer votre mandat de recherche :</p>
             <div style="margin:16px 0;font-size:32px;font-weight:800;letter-spacing:8px;color:#232528">${joli}</div>
@@ -280,21 +280,21 @@ export async function POST(req: NextRequest) {
           note: `${moi} a renoncé au mandat de recherche n° ${l.numero} ; il continue avec ${premier}. À rappeler.`,
         }));
         await envoyerMail({
-          a: co.personne.email, nomA: moi, repondreA: 'agence@emilio-immo.com',
+          a: co.personne.email, nomA: moi, repondreA: 'contact@wernerimmobilier.com',
           sujet: `Votre renonciation au mandat de recherche n° ${l.numero}`,
-          texte: `Bonjour ${co.personne.prenom},\n\nNous avons bien reçu votre renonciation au mandat de recherche n° ${l.numero}, le ${dateLongue(le)} à ${heureParis(le)}. Il ne vous engage plus, sans aucun frais.\n\nAlexandre Rogelet — Emilio Immobilier`,
+          texte: `Bonjour ${co.personne.prenom},\n\nNous avons bien reçu votre renonciation au mandat de recherche n° ${l.numero}, le ${dateLongue(le)} à ${heureParis(le)}. Il ne vous engage plus, sans aucun frais.\n\nWerner Immobilier`,
           html: gabarit('Votre renonciation est enregistrée', `<p>Bonjour ${echappe(co.personne.prenom)},</p>
             <p>Nous avons bien reçu votre renonciation au <b>mandat de recherche n° ${echappe(l.numero)}</b>, le ${dateLongue(le)} à ${heureParis(le)}. Il ne vous engage plus, sans aucun frais.</p>
-            <p>Alexandre Rogelet — Emilio Immobilier</p>`, 'Ce message vaut accusé de réception de votre rétractation.'),
+            <p>Werner Immobilier</p>`, 'Ce message vaut accusé de réception de votre rétractation.'),
         });
         await envoyerMail({
-          a: l.mandant.email, nomA: premier, repondreA: 'agence@emilio-immo.com',
+          a: l.mandant.email, nomA: premier, repondreA: 'contact@wernerimmobilier.com',
           sujet: `${co.personne.prenom} a renoncé au mandat de recherche n° ${l.numero}`,
-          texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a renoncé au mandat de recherche n° ${l.numero}, le ${dateLongue(le)}. Le mandat continue avec vous. Si vous souhaitez y mettre fin aussi, vous pouvez le faire depuis votre espace, rubrique « Ma recherche ».\n\nAlexandre Rogelet — Emilio Immobilier`,
+          texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a renoncé au mandat de recherche n° ${l.numero}, le ${dateLongue(le)}. Le mandat continue avec vous. Si vous souhaitez y mettre fin aussi, vous pouvez le faire depuis votre espace, rubrique « Ma recherche ».\n\nWerner Immobilier`,
           html: gabarit('Le mandat continue avec vous', `<p>Bonjour ${echappe(l.mandant.prenom)},</p>
             <p>${echappe(moi)} a renoncé au <b>mandat de recherche n° ${echappe(l.numero)}</b>, le ${dateLongue(le)}. Le mandat continue avec vous.</p>
             <p>Si vous souhaitez y mettre fin aussi, vous pouvez le faire depuis votre espace, rubrique « Ma recherche ».</p>
-            <p>Alexandre Rogelet — Emilio Immobilier</p>`),
+            <p>Werner Immobilier</p>`),
         });
         if (await alerteMailActive(sb, 'mandat_renonce')) await envoyerMail({
           a: ALERTES(), deLaPartDe: 'crm',
@@ -334,13 +334,13 @@ export async function POST(req: NextRequest) {
           await envoyerExemplaire({ a: l.mandant, numero: l.numero, signe, complet: true, fin, attendus: [] });
         }
         await envoyerMail({
-          a: l.mandant.email, nomA: premier, repondreA: 'agence@emilio-immo.com',
+          a: l.mandant.email, nomA: premier, repondreA: 'contact@wernerimmobilier.com',
           sujet: `${co.personne.prenom} ne signera pas le mandat de recherche n° ${l.numero}`,
-          texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a indiqué ne pas être concerné par cet achat : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.\n\nS'il s'agit d'une erreur, appelez Alexandre : il lui renverra un lien.\n\nAlexandre Rogelet — Emilio Immobilier`,
+          texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a indiqué ne pas être concerné par cet achat : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.\n\nS'il s'agit d'une erreur, appelez Werner : il lui renverra un lien.\n\nWerner Immobilier`,
           html: gabarit('Le mandat continue avec vous', `<p>Bonjour ${echappe(l.mandant.prenom)},</p>
             <p>${echappe(moi)} a indiqué ne pas être concerné par cet achat : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.</p>
-            <p>S’il s’agit d’une erreur, appelez Alexandre : il lui renverra un lien.</p>
-            <p>Alexandre Rogelet — Emilio Immobilier</p>`),
+            <p>S’il s’agit d’une erreur, appelez Werner : il lui renverra un lien.</p>
+            <p>Werner Immobilier</p>`),
         });
         await envoyerMail({
           a: ALERTES(), deLaPartDe: 'crm',

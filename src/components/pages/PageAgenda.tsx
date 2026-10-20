@@ -804,7 +804,7 @@ function StylesAgenda() {
       /* V3.55 : les en-têtes de la semaine gardent la place de la barre de
          défilement de la grille (8 px) : sans elle, chaque colonne du haut
          était un peu plus large que celle du dessous, et la colonne jaune
-         d'aujourd'hui se décalait (Alexandre : « le jaune n'est pas en
+         d'aujourd'hui se décalait (Werner : « le jaune n'est pas en
          continu »). La grille, elle, la garde même sans rien à faire défiler. */
       .ag-gouttiere{overflow:hidden;scrollbar-gutter:stable}.ag-gouttiere::-webkit-scrollbar{width:8px}
       .ag-grille-defil{scrollbar-gutter:stable}
@@ -2195,7 +2195,7 @@ function texteMail(o: { type: TypeRdv; prenom: string; debut: Date; lieu: string
     objet = `Rendez-vous confirmé · ${quand}`;
     phrase = `Je vous confirme notre rendez-vous du ${quand}${o.lieu ? `, ${o.lieu}` : ''}.`;
   }
-  const corps = `Bonjour ${o.prenom},\n\n${phrase}\n\nN'hésitez pas à m'appeler si le moindre changement s'impose.\n\nÀ très vite,\nAlexandre ROGELET\nEmilio Immobilier\n06 58 95 76 32`;
+  const corps = `Bonjour ${o.prenom},\n\n${phrase}\n\nN'hésitez pas à m'appeler si le moindre changement s'impose.\n\nÀ très vite,\nWerner\nWerner Immobilier\n01 00 00 00 00`;
   return { objet: maj(objet), corps };
 }
 
@@ -2423,7 +2423,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
       const premier = choisis[0] ? (choisis[0].titre || choisis[0].ville) : ajoutes[0] ? (ajoutes[0].titre || ajoutes[0].ville) : '';
       titreAuto = nbBiens > 1 ? `${nbBiens} visites${n ? ` · ${n}` : ''}` : nbBiens === 1 ? `Visite · ${premier || 'bien'}` : (n ? `Visite · ${n}` : 'Visite');
       lieuAuto = choisis.length ? lieuChoisi(choisis[0]) : ajoutes.length ? adresseVente(ajoutes[0]) : '';
-    } else if (f.type === 'client') { titreAuto = n ? `Rendez-vous · ${n}` : 'Rendez-vous client'; lieuAuto = 'Agence Emilio'; }
+    } else if (f.type === 'client') { titreAuto = n ? `Rendez-vous · ${n}` : 'Rendez-vous client'; lieuAuto = 'Agence Werner'; }
     else if (f.type === 'libre') { titreAuto = 'Rendez-vous'; lieuAuto = ''; }
     else if (f.type === 'appel') { titreAuto = `${f.mode === 'visio' ? 'Visio' : 'Appel'}${n ? ` · ${n}` : ''}`; lieuAuto = f.mode === 'visio' ? 'Visio' : 'Téléphone'; }
     else if (f.type === 'signature') { titreAuto = `${ETAPES[f.etape]}${n ? ` · ${n}` : ''}`; lieuAuto = ''; }

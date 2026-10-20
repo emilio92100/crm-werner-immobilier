@@ -753,11 +753,11 @@ const T: Record<string, string[]> = {
 
 /* Le chasseur qui suit le dossier — affiché en haut de l'espace. */
 const AGENT = {
-  nom: 'Alexandre Rogelet',
-  role: 'Votre conseiller · Emilio Immobilier',
-  tel: '06 58 95 76 32',
-  telUrl: '+33658957632',
-  mail: 'arogelet@emilio-immo.com',
+  nom: 'Werner',
+  role: 'Votre conseiller · Werner Immobilier',
+  tel: '01 00 00 00 00',
+  telUrl: '+33100000000',
+  mail: 'contact@wernerimmobilier.com',
 };
 function Ico({ n, t = 22 }: { n: string; t?: number }) {
   const d = T[n]; if (!d) return null;
@@ -1558,8 +1558,8 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
             ? 'Votre renonciation était déjà enregistrée : votre mandat de recherche a pris fin, sans aucun frais.'
             : accuse
               ? 'Votre mandat de recherche a pris fin, sans aucun frais. Un accusé de réception vient de vous être envoyé par e-mail.'
-              : 'Votre mandat de recherche a pris fin, sans aucun frais. Votre renonciation est bien enregistrée : Alexandre vous la confirmera par e-mail.'}
-          rappel="Votre espace reste ouvert : vous pouvez en parler à Alexandre quand vous voulez."
+              : 'Votre mandat de recherche a pris fin, sans aucun frais. Votre renonciation est bien enregistrée : Werner vous la confirmera par e-mail.'}
+          rappel="Votre espace reste ouvert : vous pouvez en parler à Werner quand vous voulez."
           onFermer={fermer} />, 'pleine');
       }} />);
   }
@@ -1637,8 +1637,8 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
       texte={avis === 'refuse'
         ? "Votre retour part directement dans votre dossier. Les prochaines propositions en tiendront compte pour ne plus vous montrer ce type de bien."
         : avis === 'souhaite_visiter'
-          ? "Alexandre est prévenu. Il vous rappelle pour caler la visite."
-          : "Alexandre est prévenu. Il va vous en chercher d'autres dans le même esprit."}
+          ? "Werner est prévenu. Il vous rappelle pour caler la visite."
+          : "Werner est prévenu. Il va vous en chercher d'autres dans le même esprit."}
       rappel="Chacun de vos retours est relu, et oriente les propositions suivantes."
       onFermer={fermer} />, 'pleine');
   }
@@ -2080,7 +2080,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
       if (r?.ok && typeof r.dansVosBiens === 'string') {
         const b = biensRef.current.find(x => x.id === r.dansVosBiens);
         montrer(<GrandOk titre="Ce bien est déjà dans vos biens"
-          texte="Alexandre vous l’avait déjà envoyé : vous le retrouvez dans votre espace, avec votre avis."
+          texte="Werner vous l’avait déjà envoyé : vous le retrouvez dans votre espace, avec votre avis."
           bouton={b ? 'Voir le bien' : 'Parfait'}
           onFermer={() => { fermer(); if (b) window.setTimeout(() => ouvrirBien(b), 340); }} />, 'pleine');
         return 'ok';
@@ -2090,11 +2090,11 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
         setAnnonces(l => [a, ...(l || []).filter(x => x.id !== a.id)]);
         if (r.deja) {
           montrer(<GrandOk titre="Vous la lui avez déjà envoyée"
-            texte={`C’était ${dateAnnonce(a.le)}. ${a.statut === 'nouveau' ? 'Alexandre la regarde : il vous dit vite ce qu’il en pense.' : 'Sa réponse est sur votre accueil, dans « Votre dernière annonce ».'}`}
+            texte={`C’était ${dateAnnonce(a.le)}. ${a.statut === 'nouveau' ? 'Werner la regarde : il vous dit vite ce qu’il en pense.' : 'Sa réponse est sur votre accueil, dans « Votre dernière annonce ».'}`}
             onFermer={fermer} autre={uneAutre} />, 'pleine');
           return 'ok';
         }
-        montrer(<GrandOk titre="C’est envoyé à Alexandre"
+        montrer(<GrandOk titre="C’est envoyé à Werner"
           texte="Il la regarde avec le même soin que les biens qu’il vous présente, et vous dit ce qu’il en pense."
           rappel="Vous suivez sa réponse sur votre accueil&nbsp;: retenue, elle rejoint vos biens&nbsp;; écartée, il vous dit pourquoi."
           onFermer={fermer} autre={uneAutre} />, 'pleine');
@@ -2132,7 +2132,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
         inert={decouverte ? true : undefined}>
         <div className="dedans">
           <div className="marque">
-            <span className="motmarque">EMILIO IMMOBILIER</span>
+            <span className="motmarque">WERNER IMMOBILIER</span>
             <nav className="nav-haut" aria-label="Menu">
               {ONGLETS.map(o => {
                 const n = compte[o.id] || 0;
@@ -2149,8 +2149,8 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
             </nav>
             <span className="ch-date" suppressHydrationWarning>{moment.date}</span>
             <a className="ch-agent" href={'tel:' + AGENT.telUrl} aria-label={'Appeler ' + AGENT.nom}>
-              <span className="ch-av">AR</span>
-              <span className="ch-an">Alexandre</span>
+              <span className="ch-av">W</span>
+              <span className="ch-an">Werner</span>
               <span className="ch-ap"><Ico n="tel" t={14} /><span>Appeler</span></span>
             </a>
           </div>
@@ -2255,7 +2255,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
           )}
           {vue === 'annonces' && (
             <Vue icone="lien" titre="Vos annonces envoyées" aller={aller}
-              sous="Ce qu’Alexandre en a pensé, la plus récente d’abord.">
+              sous="Ce qu’Werner en a pensé, la plus récente d’abord.">
               <ListeAnnonces annonces={annonces || []} peutEnvoyer={peutEnvoyerAnnonce} Ico={Ico}
                 onEnvoyer={ouvrirEnvoiAnnonce}
                 onBien={id => { const b = biens.find(x => x.id === id); if (b) ouvrirBien(b); }} />
@@ -2422,9 +2422,9 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
         {/* La signature, puis les mentions. Le cœur reste collé à « rien que
             pour vous » : sur téléphone, la phrase passe à la ligne avant lui. */}
         <div className="pied">
-          <div className="pied-sig">{'Imaginé et créé par '}<b>Emilio Immobilier</b>{', '}<span className="insecable">{'rien que pour vous '}<svg className="pied-coeur" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 20.6s-7.6-4.6-9.4-9.3C1.3 7.9 3.4 4.4 6.9 4.4c2 0 3.6 1.1 5.1 3 1.5-1.9 3.1-3 5.1-3 3.5 0 5.6 3.5 4.3 6.9-1.8 4.7-9.4 9.3-9.4 9.3z" fill="currentColor" /></svg></span></div>
+          <div className="pied-sig">{'Imaginé et créé par '}<b>Werner Immobilier</b>{', '}<span className="insecable">{'rien que pour vous '}<svg className="pied-coeur" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 20.6s-7.6-4.6-9.4-9.3C1.3 7.9 3.4 4.4 6.9 4.4c2 0 3.6 1.1 5.1 3 1.5-1.9 3.1-3 5.1-3 3.5 0 5.6 3.5 4.3 6.9-1.8 4.7-9.4 9.3-9.4 9.3z" fill="currentColor" /></svg></span></div>
           <div className="pied-trait" />
-          <b>Emilio Immobilier</b><br />
+          <b>Werner Immobilier</b><br />
           Numéro de carte professionnelle&nbsp;: <span className="insecable">CPI 9201 2020 000 045 344</span><br />
           Chasse immobilière sur mesure · Paris &amp; Hauts-de-Seine
         </div>
@@ -2693,9 +2693,9 @@ function Accueil({ client, crit, neufs, vus, donnes, nbPlusDispo = 0, passage, s
       {k === 'conseiller' && <>
         <div className="sep"><span>Votre conseiller</span><i /></div>
         <div className="chasseur">
-          <div className="av">AR</div>
-          <div><h4>Alexandre Rogelet</h4><p>Il cherche pour vous au quotidien</p></div>
-          <a className="tel" href="tel:0658957632"><Ico n="tel" t={15} /> Appeler</a>
+          <div className="av">W</div>
+          <div><h4>Werner</h4><p>Il cherche pour vous au quotidien</p></div>
+          <a className="tel" href="tel:0100000000"><Ico n="tel" t={15} /> Appeler</a>
         </div>
       </>}
       {k === 'engage' && (
@@ -3356,7 +3356,7 @@ function Liste({ biens, onOuvrir, vide, sansEtiq, crit }: { biens: Bien[]; onOuv
               {b.proposeeLe && <span className="ra-pp"><Ico n="lien" t={12} /><span>{`Vous nous l’aviez envoyée ${dateAnnonce(b.proposeeLe)}`}</span></span>}
               {b.avisConseiller && (
                 <span className="mon-com fait">
-                  <span className="mc-t">{'L’avis d’Alexandre'}</span>
+                  <span className="mc-t">{'L’avis d’Werner'}</span>
                   <span className="mc-c">{`« ${b.avisConseiller} »`}</span>
                 </span>
               )}
@@ -3707,7 +3707,7 @@ function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
 
   return (
     <Vue icone="cible" titre="Rappel de ma recherche" aller={aller}
-      sous="Ce qu'Alexandre a noté de votre projet, catégorie par catégorie. Vous pouvez le faire évoluer vous-même à tout moment.">
+      sous="Ce qu'Werner a noté de votre projet, catégorie par catégorie. Vous pouvez le faire évoluer vous-même à tout moment.">
 
       {/* 0 — Le rappel en une phrase, avant le détail catégorie par catégorie. */}
       <div className="resume-r">
@@ -3845,7 +3845,7 @@ function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
         <div className="precisions" style={{ marginTop: crit.urgence ? 14 : 4 }}>
           <div className="k">
             <span><Ico n="crayon" t={13} /> Précisions sur votre recherche</span>
-            <span className="cadenas"><Ico n="verrou" t={11} /> Noté par Alexandre</span>
+            <span className="cadenas"><Ico n="verrou" t={11} /> Noté par Werner</span>
           </div>
           <blockquote className="corps">{crit.notes || 'Aucune précision notée pour l’instant.'}</blockquote>
           <button className="cta-prec" onClick={onMessage}>
@@ -4666,7 +4666,7 @@ function EtapeOE({ e }: { e: SuiviClient['etapes'][number] }) {
         {(quand || e.sous) && <small>{[quand, e.sous].filter(Boolean).join(' · ')}</small>}
         {e.mot && (
           <span className="oe-mot">
-            <i>{'Le mot d’Alexandre'}</i>
+            <i>{'Le mot d’Werner'}</i>
             <span>{`« ${e.mot} »`}</span>
           </span>
         )}
@@ -4692,7 +4692,7 @@ function OuEnEst({ s }: { s: SuiviClient }) {
   return (
     <div className="oe">
       <div className="oe-tete">
-        <span className="oe-t">{'Où en est Alexandre'}</span>
+        <span className="oe-t">{'Où en est Werner'}</span>
         <span className={'oe-b' + (s.calee ? ' oe-ok' : '')}>{s.calee ? 'Visite calée' : 'En cours'}</span>
       </div>
       <ol className="oe-fil">
@@ -4717,7 +4717,7 @@ function OuEnEst({ s }: { s: SuiviClient }) {
         )}
         {apres.map((e, i) => <EtapeOE key={'r' + i} e={e} />)}
       </ol>
-      <p className="oe-pied">{'Les étapes se mettent à jour à chaque appel d’Alexandre.'}</p>
+      <p className="oe-pied">{'Les étapes se mettent à jour à chaque appel d’Werner.'}</p>
     </div>
   );
 }
@@ -4960,7 +4960,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
         {b.proposeeLe && (
           <div className="ra-propose">
             <b><Ico n="lien" t={14} /><span>{`Vous nous l’aviez envoyée ${dateAnnonce(b.proposeeLe)}`}</span></b>
-            {b.avisConseiller && <span><i>{'L’avis d’Alexandre\u00a0: '}</i>{`«\u00a0${b.avisConseiller}\u00a0»`}</span>}
+            {b.avisConseiller && <span><i>{'L’avis d’Werner\u00a0: '}</i>{`«\u00a0${b.avisConseiller}\u00a0»`}</span>}
             {b.sonMot && <span><i>{'Votre mot\u00a0: '}</i>{`«\u00a0${b.sonMot}\u00a0»`}</span>}
           </div>
         )}
@@ -5005,12 +5005,12 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
                 <div className="cpr" ref={refCr}>
                   <div className="cpr-tete">
                     <span className="cpr-ic" aria-hidden="true"><Ico n="note" t={16} /></span>
-                    <span className="cpr-tt">{'Le compte rendu d’Alexandre'}</span>
+                    <span className="cpr-tt">{'Le compte rendu d’Werner'}</span>
                     {et > 0 && <span className="cpr-et" aria-label={`${et} sur 5`}>{'★'.repeat(et)}<i>{'★'.repeat(Math.max(0, 5 - et))}</i></span>}
                   </div>
                   <TexteCR texte={b.visiteFaite.commentaire} />
                   <div className="cpr-sign">
-                    <span className="cpr-av" aria-hidden="true">AR</span>
+                    <span className="cpr-av" aria-hidden="true">W</span>
                     <span><b>{AGENT.nom}</b><small>{' · Votre conseiller'}</small></span>
                   </div>
                 </div>
@@ -5372,7 +5372,7 @@ function ModalePartage({ b, client, onFermer, onEnvoyer }: any) {
                   setCopie(true); setTimeout(() => setCopie(false), 1800);
                 }}>{copie ? '✓ Lien copié' : 'ou copier le lien'}</button>
               </div>
-              <p className="txt mention">Le message part au nom d&apos;Emilio Immobilier.</p>
+              <p className="txt mention">Le message part au nom d&apos;Werner Immobilier.</p>
             </div>
           </>
         )}
@@ -5595,17 +5595,17 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
       </>),
     },
     {
-      id: 'projet', ico: 'note', titre: 'Mon projet', sous: 'Votre échéance, et la note d’Alexandre',
+      id: 'projet', ico: 'note', titre: 'Mon projet', sous: 'Votre échéance, et la note d’Werner',
       contenu: (<>
         <label className="lab">Échéance souhaitée</label>
         <div className="choix">{URGENCES_E.map(([k, l, i]) => (
           <button key={k} className="ch" aria-pressed={t.urgence === k} onClick={() => setT(x => ({ ...x, urgence: x.urgence === k ? '' : k }))}>{i} {l}</button>))}</div>
         <div className="note-verr">
-          <div className="k"><span><Ico n="verrou" t={12} /> Précisions notées par Alexandre</span></div>
+          <div className="k"><span><Ico n="verrou" t={12} /> Précisions notées par Werner</span></div>
           <blockquote className="corps">{crit.notes || 'Aucune précision notée pour l’instant.'}</blockquote>
           <div className="pq">Cette note lui appartient : vous ne pouvez pas la modifier vous-même. Dites-lui ce que vous voudriez y changer, il s’en occupe.</div>
           <textarea rows={3} value={demandeNote} onChange={e => setDemandeNote(e.target.value)}
-            placeholder="Ce que je voudrais qu’Alexandre corrige dans cette note… (facultatif)" />
+            placeholder="Ce que je voudrais qu’Werner corrige dans cette note… (facultatif)" />
         </div>
       </>),
     },
@@ -5936,7 +5936,7 @@ function Message({ onFermer, onEnvoi }: any) {
         <button className="fermer" onClick={onFermer} aria-label="Fermer"><Ico n="croix" t={14} /></button>
       </div>
       <div className="corps-f">
-        <p className="txt" style={{ marginTop: 0, color: 'var(--plume)' }}>Alexandre le reçoit tout de suite et vous rappelle.</p>
+        <p className="txt" style={{ marginTop: 0, color: 'var(--plume)' }}>Werner le reçoit tout de suite et vous rappelle.</p>
         <textarea rows={5} value={txt} onChange={e => setTxt(e.target.value)} autoFocus
           placeholder="Ex : finalement on pourrait regarder un peu plus loin, et on peut monter si le bien est refait." />
         <BtnEnvoi enCours={envoi} classe="btn encre" libelle="Envoyer" style={{ marginTop: 12 }}
@@ -5986,7 +5986,7 @@ function lienGoogle(v: { date: string; heure: string | null; titre: string; adre
     action: 'TEMPLATE',
     text: 'Visite — ' + v.titre,
     dates: `${fmt(debut)}/${fmt(fin)}`,
-    details: 'Visite organisée par Emilio Immobilier.\nAlexandre Rogelet · 06 58 95 76 32',
+    details: 'Visite organisée par Werner Immobilier.\nWerner · 01 00 00 00 00',
     ctz: 'Europe/Paris',
   });
   if (v.adresse) p.set('location', v.adresse);
@@ -6033,7 +6033,7 @@ const AIDES: Record<string, { ico: string; sur: string; titre: string; texte: st
   /* V3.184 : le « ? » de « Une annonce repérée ? » (texte validé par Alexandre). */
   annonce: {
     ico: 'lien', sur: 'Une annonce repérée', titre: 'Vous avez vu un bien qui vous plaît ailleurs\u00a0?',
-    texte: 'Envoyez-le à Alexandre : il le regarde avec le même soin que les biens qu’il vous présente, et vous dit ce qu’il en pense.',
+    texte: 'Envoyez-le à Werner : il le regarde avec le même soin que les biens qu’il vous présente, et vous dit ce qu’il en pense.',
     puces: [
       'Collez le lien de l’annonce : SeLoger, Leboncoin, le site d’une agence… Pas de lien ? Vous avez vu une affiche en vitrine ou un panneau « À vendre » ? Prenez-le en photo, depuis votre téléphone.',
       'Il vérifie le prix, le quartier, la copropriété, et appelle l’agence si besoin.',
@@ -6135,10 +6135,10 @@ const AIDES: Record<string, { ico: string; sur: string; titre: string; texte: st
    (si Alexandre l'a laissé partir) ; la fenêtre le redit, sans rien à faire. */
 const MANDAT_RETIRE: typeof AIDES[string] = {
   ico: 'note', sur: 'Votre mandat de recherche', titre: 'Ce mandat n’est plus à signer',
-  texte: 'Alexandre a retiré sa proposition pour le moment.',
+  texte: 'Werner a retiré sa proposition pour le moment.',
   puces: [
     'Vous n’avez rien à faire de votre côté.',
-    'S’il faut en signer un plus tard, Alexandre vous le dira.',
+    'S’il faut en signer un plus tard, Werner vous le dira.',
     `Une question ? Appelez-le au ${AGENT.tel}.`,
   ],
 };
@@ -6354,7 +6354,7 @@ html, body{ height:auto !important; min-height:100% !important;
   overflow-x:hidden !important; overflow-y:auto !important;
   -webkit-overflow-scrolling:touch }
 :root{
-  /* V3.116 : les couleurs du site emilio-immo.com (plus de marine ni de doré) :
+  /* V3.116 : les couleurs du site wernerimmobilier.com (plus de marine ni de doré) :
      l'encre pour le texte, le bleu de la marque pour les aplats sombres,
      l'orange pour l'accent (orange clair sur fond bleu, orange foncé pour
      un texte sur fond clair). */
@@ -7155,7 +7155,7 @@ input, textarea, select{font-family:inherit}
 .cpr-sign > span:last-child{min-width:0; line-height:1.4}
 .cpr-sign b{font-size:14px; font-weight:800; color:var(--encre)}
 .cpr-sign small{font-size:12.5px; font-weight:600; color:var(--plume)}
-/* V3.193 : « Où en est Alexandre » sur la fiche, et sa ligne sur la carte.
+/* V3.193 : « Où en est Werner » sur la fiche, et sa ligne sur la carte.
    ⚠️ Classes préfixées : l'espace a déjà .fait (un bloc) et d'autres mots courts. */
 .oe{display:flex; flex-direction:column; gap:12px; margin:0 0 16px; padding:15px 15px 13px; border-radius:18px; background:#fff; border:1px solid var(--trait); box-shadow:0 10px 26px -20px rgba(35, 37, 40,.5)}
 .oe-tete{display:flex; align-items:center; justify-content:space-between; gap:10px}
@@ -7334,7 +7334,7 @@ input, textarea, select{font-family:inherit}
    Ces deux-là n'ont pas d'etat « selectionne » sur lequel accrocher une
    animation : un onglet filtre une liste, un bouton de la barre ouvre
    aussitot le panneau. Le retour se joue donc a l'appui, et il doit etre
-   plus marque que le discret scale(.95) d'origine — c'est ce qu'Alexandre
+   plus marque que le discret scale(.95) d'origine — c'est ce qu'Werner
    ne voyait pas. */
 .fc{transition:background .18s, color .18s, transform .16s cubic-bezier(.34,1.56,.64,1)}
 .fc:active{transform:scale(.9)}
@@ -7551,13 +7551,13 @@ label.lab{display:block; font-size:10px; letter-spacing:1.3px; text-transform:up
 /* V3.28 : encore plus visible. La poignée faisait 8 px de large, gris
    clair (#9aa6b8) : on la voyait mal, surtout sur la fiche d'un bien. Elle
    fait maintenant 11 px, en gris ardoise, et plus longue au minimum. */
-/* V3.29 : toujours pas visible chez Alexandre. Sa machine est une tablette
+/* V3.29 : toujours pas visible chez Werner. Sa machine est une tablette
    Windows (écran tactile) : pour le navigateur, le pointeur principal est le
    doigt, « (pointer:fine) » était faux, et rien de tout ça ne s'appliquait.
    On règle maintenant sur la largeur de l'écran, ou dès qu'une souris existe
    (« any-pointer »). Et plus large, et bien plus foncé : la poignée est
    bleu marine, la piste gris clair. */
-/* V3.117 : trop grosse, au contraire (Alexandre, sur la fiche d'un bien :
+/* V3.117 : trop grosse, au contraire (Werner, sur la fiche d'un bien :
    « une grosse barre bleue à droite… ça fait moche »). Elle s'affichait même
    sur son téléphone : un Samsung avec stylet dit avoir un pointeur fin
    (« any-pointer:fine »). Désormais : rien au téléphone (la barre du
@@ -8280,7 +8280,7 @@ button.vav-photo:hover img{transform:scale(1.03)}
 
 /* ═══════════════════════════════════════════════════════════════════
    LE NOUVEL ESPACE (septembre 2026)
-   En-tête bleu Emilio plus clair, « Aujourd'hui pour vous », les nouveaux
+   En-tête bleu Werner plus clair, « Aujourd'hui pour vous », les nouveaux
    biens en grand, la barre du bas sur téléphone, le menu dans la bande sur
    ordinateur. Ces règles viennent en dernier : elles l'emportent sur les
    anciennes quand elles se recouvrent.

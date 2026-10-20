@@ -57,7 +57,16 @@ export function jetonEspace(prenom?: string | null, nom?: string | null): string
 /* Le sous-domaine dédié à l'espace acheteur. Le CRM, lui, vit sur
    crm.emilio-immo.com : les deux pointent sur le même projet, c'est le nom
    d'hôte qui décide de ce qu'on affiche (voir src/proxy.ts). */
-export const HOTE_ESPACE = 'espace.emilio-immo.com';
+export const HOTE_ESPACE = (process.env.NEXT_PUBLIC_HOTE_ESPACE || '').trim().toLowerCase();
+
+/* CRM Werner : tant qu'aucun sous-domaine n'est réglé (NEXT_PUBLIC_HOTE_ESPACE
+   sur Vercel, par exemple « espace.wernerimmobilier.com »), les liens donnés
+   aux clients passent par l'adresse du CRM : …/espace/<jeton>, …/bien/<id>,
+   …/signer/<jeton>, …/proposer/<jeton>. Ces chemins sont publics (src/proxy.ts). */
+export function basePublique(): string {
+  if (HOTE_ESPACE) return `https://${HOTE_ESPACE}`;
+  return (process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobilier.vercel.app').trim().replace(/\/+$/, '');
+}
 
 /* Au-delà de cette longueur, on a affaire à un ancien jeton de 64 caractères :
    il garde l'adresse sous laquelle il a été envoyé au client. */
@@ -80,12 +89,12 @@ const LONGUEUR_ANCIEN = 40;
  * sinon l'adresse est réécrite vers l'espace et ne mène nulle part.
  */
 export function lienBienPublic(id: string): string {
-  return `https://${HOTE_ESPACE}/bien/${id}`;
+  return `${basePublique()}/bien/${id}`;
 }
 
 export function lienEspace(token?: string | null, origine?: string): string {
   if (!token) return '';
-  if (token.length <= LONGUEUR_ANCIEN) return `https://${HOTE_ESPACE}/${token}`;
+  if (token.length <= LONGUEUR_ANCIEN) return HOTE_ESPACE ? `https://${HOTE_ESPACE}/${token}` : `${basePublique()}/espace/${token}`;
   const base = origine || (typeof window !== 'undefined' ? window.location.origin : '');
   return `${base}/espace/${token}`;
 }

@@ -19,8 +19,8 @@ import { base, envoiDuCode, rechercheDuJeton } from '@/lib/agences-serveur';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: 'Proposer un bien — Emilio Immobilier',
-  description: 'Proposez un bien à Alexandre Rogelet pour son client.',
+  title: 'Proposer un bien — Werner Immobilier',
+  description: 'Proposez un bien à Werner pour son client.',
   robots: { index: false, follow: false },
   icons: {
     icon: [{ url: '/logos/e-192.png', sizes: '192x192', type: 'image/png' }],

@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase, addJournal } from '@/lib/supabase';
-import { lienEspace, HOTE_ESPACE } from '@/lib/jeton';
+import { lienEspace, basePublique } from '@/lib/jeton';
 import {
   HONORAIRES_TAUX, BAREME, tauxDe, tauxTexte, prixMaximum, honorairesPour, euros, rechercheDepuis, redigerMandat, resumeMandat, horsMandat,
   forfaitDe, seuilForfait, honorairesCourt, pourcentDe, jourParis, memeNumero,
@@ -269,7 +269,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
   const ecarts = sig && (sig.statut === 'signe' || sig.statut === 'partiel' || sig.statut === 'en_cours') ? ecartsDe(sig.mandant, client) : [];
   const attendus = cos.filter(c => c.statut === 'invite');
   const nomP = `${sig?.mandant?.prenom || ''} ${sig?.mandant?.nom || ''}`.trim();
-  const lienCo = (c: CoSig) => (c.jeton ? `https://${HOTE_ESPACE}/signer/${c.jeton}` : '');
+  const lienCo = (c: CoSig) => (c.jeton ? `${basePublique()}/signer/${c.jeton}` : '');
 
   /* ── Les gestes sur un co-signataire (le serveur envoie les mails) ── */
   async function gesteCo(action: 'renvoyer' | 'relancer' | 'clore', c: CoSig) {
@@ -962,7 +962,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
             )}
             <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, color: 'var(--emilio)', lineHeight: 1.5, cursor: 'pointer' }}>
               <input type="checkbox" checked={approuve} onChange={e => setApprouve(e.target.checked)} style={{ marginTop: 3 }} />
-              <span>{`J’approuve le mandat de recherche simple type et je signe l’offre au nom d’Emilio Immobilier pour ${registre ? 'les mandats signés seuls' : 'ces numéros'}.${approuveLe ? ` (approuvé le ${quand(approuveLe)})` : ''}`}</span>
+              <span>{`J’approuve le mandat de recherche simple type et je signe l’offre au nom d’Werner Immobilier pour ${registre ? 'les mandats signés seuls' : 'ces numéros'}.${approuveLe ? ` (approuvé le ${quand(approuveLe)})` : ''}`}</span>
             </label>
             <div><button type="button" style={btnOr} disabled={travail === 'reserve'} onClick={enregistrerReserve}>{travail === 'reserve' ? '…' : registre ? 'Enregistrer' : 'Enregistrer la réserve'}</button></div>
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10, fontSize: 13, color: '#475569', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>

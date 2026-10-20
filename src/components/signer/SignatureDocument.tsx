@@ -159,7 +159,7 @@ export default function SignatureDocument({ d }: { d: DonneesSignerDoc }) {
     <div className="sgn-page">
       <style>{CSS_SIGNER + CSS_MANDAT + CSS_DOC}</style>
       <div className="sgn-band">
-        <span className="m">EMILIO IMMOBILIER</span>
+        <span className="m">WERNER IMMOBILIER</span>
         {d.entete && <span className="n">{d.entete}</span>}
       </div>
       <div className="sgn-f">{contenu}</div>
@@ -172,17 +172,17 @@ export default function SignatureDocument({ d }: { d: DonneesSignerDoc }) {
         <h3>{titre}</h3>
         <p className="mdt-p">{texte}</p>
         {plus}
-        <a className="btn fant mdt-plein" href={'tel:' + d.tel.replace(/\s/g, '')}><Ic n="tel" t={16} /><span>{`Appeler Alexandre · ${d.tel}`}</span></a>
+        <a className="btn fant mdt-plein" href={'tel:' + d.tel.replace(/\s/g, '')}><Ic n="tel" t={16} /><span>{`Appeler Werner · ${d.tel}`}</span></a>
       </div>
     </div>,
   );
 
-  if (etat === 'introuvable') return message('info', 'Ce lien ne mène plus nulle part', 'Il a peut-être été remplacé par un plus récent : regardez le dernier e-mail reçu, ou appelez Alexandre.');
-  if (etat === 'indisponible') return message('info', 'La page n’a pas pu s’afficher', 'Elle n’a pas pu se charger complètement. Réessayez dans quelques minutes, ou appelez Alexandre.');
+  if (etat === 'introuvable') return message('info', 'Ce lien ne mène plus nulle part', 'Il a peut-être été remplacé par un plus récent : regardez le dernier e-mail reçu, ou appelez Werner.');
+  if (etat === 'indisponible') return message('info', 'La page n’a pas pu s’afficher', 'Elle n’a pas pu se charger complètement. Réessayez dans quelques minutes, ou appelez Werner.');
   if (etat === 'offre_expiree') return message('horloge', 'Cette offre n’est plus valable', finOffre
-    ? `Cette offre n’est plus valable depuis le ${dateLongue(finOffre)} à ${heureParis(finOffre)} : elle ne peut plus être signée. Contactez Emilio Immobilier.`
-    : 'Cette offre n’est plus valable : elle ne peut plus être signée. Contactez Emilio Immobilier.');
-  if (etat === 'expire') return message('horloge', 'Ce lien a expiré', 'Pour votre sécurité, un lien de signature n’est valable que quinze jours. Appelez Alexandre : il vous en enverra un nouveau.');
+    ? `Cette offre n’est plus valable depuis le ${dateLongue(finOffre)} à ${heureParis(finOffre)} : elle ne peut plus être signée. Contactez Werner Immobilier.`
+    : 'Cette offre n’est plus valable : elle ne peut plus être signée. Contactez Werner Immobilier.');
+  if (etat === 'expire') return message('horloge', 'Ce lien a expiré', 'Pour votre sécurité, un lien de signature n’est valable que quinze jours. Appelez Werner : il vous en enverra un nouveau.');
   /* V3.57 : il l'a signé, puis le document a pris fin. */
   if (etat === 'termine') return message('info',
     /* La date ne se coupe pas (« 2026 » seul sur sa ligne en 390 px). */
@@ -192,7 +192,7 @@ export default function SignatureDocument({ d }: { d: DonneesSignerDoc }) {
       <button type="button" className="btn fant mdt-plein" onClick={() => { void telecharger(); }}><Ic n="doc" t={16} /><span>Télécharger mon exemplaire signé</span></button>
       {erreur && <div className="mdt-erreur">{erreur}</div>}
     </>);
-  if (etat === 'annule' || etat === 'fin') return message('info', `${Maj(d.court)} ne vous attend plus`, `Alexandre a arrêté la signature en ligne ${d.du}. S’il faut encore signer, il vous enverra un nouveau lien.`);
+  if (etat === 'annule' || etat === 'fin') return message('info', `${Maj(d.court)} ne vous attend plus`, `Werner a arrêté la signature en ligne ${d.du}. S’il faut encore signer, il vous enverra un nouveau lien.`);
 
   /* ── Il a signé ── */
   if (etat === 'signe' || etape === 'fini') {
@@ -241,7 +241,7 @@ export default function SignatureDocument({ d }: { d: DonneesSignerDoc }) {
       <div className="mdt-corps mdt-accueil">
         <div className="mdt-sceau"><Ic n="plume" t={28} /></div>
         <div className="mdt-invite"><span className="de">{`Bonjour ${prenom}`}</span><span className="att">Votre signature est attendue</span></div>
-        <h3>{`Alexandre Rogelet vous adresse ${d.le}`}</h3>
+        <h3>{`Werner vous adresse ${d.le}`}</h3>
         <p className="mdt-p">{'Relisez-le en entier, puis signez-le en ligne avec un code reçu sur votre adresse e-mail.'}</p>
         <div className="mdt-puces">
           <span><span className="k"><Ic n="check" t={14} /></span><span><b>Relisez le document</b>{' en entier, tel qu’il sera signé.'}</span></span>
@@ -329,7 +329,7 @@ export default function SignatureDocument({ d }: { d: DonneesSignerDoc }) {
                   <span className="bx">{expres && <Ic n="check" t={14} />}</span>
                   <span>{d.expresse}</span>
                 </button>
-                <p className="mdt-p petit">{'Vous préférez que la mission attende la fin des 14 jours ? Ne signez pas tout de suite : appelez Alexandre, il modifiera ce point du document.'}</p>
+                <p className="mdt-p petit">{'Vous préférez que la mission attende la fin des 14 jours ? Ne signez pas tout de suite : appelez Werner, il modifiera ce point du document.'}</p>
               </>
             )}
             <button type="button" className="mdt-relire" onClick={() => { setRetour('signer'); setEtape('lecture'); }}>Le relire</button>

@@ -596,7 +596,7 @@ function FormContact({ nomFixe, initial, actions, onFini, onAnnuler }: {
       <div className={a.flFormGrille} data-fixe={nomFixe ? 'oui' : undefined}>
         {!nomFixe && (
           <label className={a.flChamp}><span>Agence</span>
-            <input ref={premier} value={nom} onChange={e => { setNom(e.target.value); setErreur(null); }} placeholder="Orpi Vanves" maxLength={120} autoComplete="off" /></label>
+            <input ref={premier} value={nom} onChange={e => { setNom(e.target.value); setErreur(null); }} placeholder="Orpi Paris" maxLength={120} autoComplete="off" /></label>
         )}
         <label className={a.flChamp}><span>{'Personne qui gère le dossier '}<i>(facultatif)</i></span>
           <input ref={nomFixe ? premier : undefined} value={personne} onChange={e => setPersonne(e.target.value)} placeholder="Marc Lenoir" maxLength={120} autoComplete="off" /></label>
@@ -753,7 +753,7 @@ function ApercuEnvoi({ type, html, message, onMessage, onCopier, onFermer }: {
           <span className={a.apIc} aria-hidden="true"><Icone nom={type === 'mail' ? 'mail' : 'mobile'} taille={18} epaisseur={2.1} /></span>
           <div className={a.flTitre}>
             <h2>{type === 'mail' ? 'Le mail que reçoit l’agence' : 'Le SMS que reçoit l’agence'}</h2>
-            <p>{type === 'mail' ? 'Mis en page aux couleurs d’Emilio, envoyé de ta part (arogelet@emilio-immo.com).' : 'Il s’ouvre sur ton téléphone, prêt à envoyer : tu peux le modifier ici.'}</p>
+            <p>{type === 'mail' ? 'Mis en page aux couleurs d’Werner, envoyé de ta part (contact@wernerimmobilier.com).' : 'Il s’ouvre sur ton téléphone, prêt à envoyer : tu peux le modifier ici.'}</p>
           </div>
           {type === 'mail' && (
             <div className={a.apVues} role="group" aria-label="Voir sur">

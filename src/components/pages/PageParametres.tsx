@@ -69,7 +69,7 @@ export default function PageParametres() {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Paramètres</h1>
-          <p className={styles.sub}>Configuration de votre outil Emilio Immobilier</p>
+          <p className={styles.sub}>Configuration de votre outil Werner Immobilier</p>
         </div>
         {!AUTONOMES.includes(activeSection) && (
           <button

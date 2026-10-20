@@ -33,7 +33,7 @@ import { etapeDe, titreBien, type Donnees } from '@/lib/biens-vente';
 import { euros } from '@/lib/mandat';
 import { lireBiensSuivis, parNumero, lienFiche, ouEnEst, texteDernier, type BienSuivi } from '@/lib/agences-suivies';
 
-export const crmUrl = () => (process.env.NEXT_PUBLIC_CRM_URL || 'https://crm.emilio-immo.com').replace(/\/+$/, '');
+export const crmUrl = () => (process.env.NEXT_PUBLIC_CRM_URL || 'https://crm-werner-immobilier.vercel.app').replace(/\/+$/, '');
 
 /* ── Le numéro : ses 9 derniers chiffres (rien en dessous de 9) ── */
 export function cleNumero(t: unknown): string {

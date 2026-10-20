@@ -62,7 +62,7 @@ export function texteRappel(o: { prenom: string; date: string; heures: (string |
     ? `Petit rappel pour nos ${n} visites ${quandPhrase}. Le programme est juste en dessous, avec les adresses.`
     : `Petit rappel pour notre visite ${quandPhrase}${h ? `, à ${h}` : ''}. L’adresse est juste en dessous.`;
   const fin = ecart === 0 ? 'À tout à l’heure' : ecart === 1 ? 'À demain' : 'À bientôt';
-  const corps = `Bonjour ${o.prenom},\n\n${phrase}\n\nSi vous avez un empêchement, dites-le-moi dès que possible et on trouvera un autre moment.\n\n${fin},\nAlexandre`;
+  const corps = `Bonjour ${o.prenom},\n\n${phrase}\n\nSi vous avez un empêchement, dites-le-moi dès que possible et on trouvera un autre moment.\n\n${fin},\nWerner`;
   return { objet, corps };
 }
 

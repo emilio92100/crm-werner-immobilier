@@ -50,7 +50,7 @@ export type IdentiteAgence = {
    cette fiche. Tant qu'Alexandre ne change rien, les documents restent
    exactement les mêmes. */
 export const IDENTITE_DEFAUT: IdentiteAgence = {
-  nom: 'Emilio Immobilier',
+  nom: 'Werner Immobilier',
   societe: 'RT CONSEILS',
   forme: 'SAS au capital de 1 000 €',
   siege: '10 avenue Kléber, 75016 Paris',
@@ -68,14 +68,14 @@ export const IDENTITE_DEFAUT: IdentiteAgence = {
   mediateurNom: 'Association MEDIMMOCONSO',
   mediateurAdresse: '1 allée du Parc de Mesemena, Bât. A, CS 25222, 44505 La Baule Cedex',
   mediateurSite: 'www.medimmoconso.fr',
-  signataireNom: 'Alexandre ROGELET',
-  signataireQualite: 'responsable des transactions immobilières',
+  signataireNom: 'Werner',
+  signataireQualite: 'agent commercial habilité',
   adresse: '10 avenue Kléber',
   cp: '75016',
   ville: 'Paris',
-  tel: '01 84 80 14 00',
-  mail: 'agence@emilio-immo.com',
-  site: 'www.emilio-immo.com',
+  tel: '01 00 00 00 00',
+  mail: 'contact@wernerimmobilier.com',
+  site: 'www.wernerimmobilier.com',
   orias: '', banque: '', reseau: '',
 };
 

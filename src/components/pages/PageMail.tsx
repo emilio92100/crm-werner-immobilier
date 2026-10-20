@@ -35,7 +35,7 @@ import Curseur from '@/components/shared/Curseur';
    · L'aperçu : le mail exact, fabriqué par les mêmes fonctions que l'envoi
      (src/lib/mail-libre.ts), pour chaque destinataire. */
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://emilio-immo-chasseimmo.vercel.app';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobilier.vercel.app';
 const MAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const MAX_FICHIER = 25_000_000;
 const MAX_JOINTS = 10_000_000;
@@ -207,7 +207,7 @@ function Editeur({ refEd, onChange, messages, onMessage, onFocus }: {
   }
   function poserLien() {
     const u = lienPropre(lien || '');
-    if (!u) { setErreurLien('Cette adresse ne semble pas complète (ex. www.emilio-immo.com).'); return; }
+    if (!u) { setErreurLien('Cette adresse ne semble pas complète (ex. www.wernerimmobilier.com).'); return; }
     const ed = refEd.current;
     if (!ed) return;
     ed.focus();
@@ -310,7 +310,7 @@ function FenetreApercu({ dests, objet, corps, style, h, conseiller, pieces, envo
         </div>
         <div className={s.fenCorps}>
           <dl className={s.entete}>
-            <dt>De</dt><dd>{'Alexandre ROGELET — Emilio Immobilier · arogelet@emilio-immo.com'}</dd>
+            <dt>De</dt><dd>{'Werner Immobilier · contact@wernerimmobilier.com'}</dd>
             <dt>À</dt>
             <dd>{!dests.length ? <span className={s.manque}>{'Personne pour l’instant'}</span> : dests.length > 1
               ? <select className={s.select} value={qui} onChange={e => setQui(Number(e.target.value))} aria-label="Voir le mail de">
@@ -665,7 +665,7 @@ export default function PageMail({ onNavigate }: { onNavigate: (page: string, da
   return (
     <div className={s.page}>
       <EnteteRubrique titre="Nouveau mail" icone={<Ic n="mail" t={22} />}
-        phrase="À un contact du CRM ou à n’importe quelle adresse. Il part de arogelet@emilio-immo.com, à ton nom."
+        phrase="À un contact du CRM ou à n’importe quelle adresse. Il part de contact@wernerimmobilier.com, à ton nom."
         tuiles={[]} actif="" onChoisir={() => {}} label="" />
       <Redaction onNavigate={onNavigate} />
     </div>
@@ -702,7 +702,7 @@ export function FenetreMail({ contact = null, contacts = null, adresse = null, o
           <span className={s.fenIc}><Ic n="mail" t={20} /></span>
           <div className={s.fenTx}>
             <h2>{titre}</h2>
-            <p>{contact ? 'Le mail part de arogelet@emilio-immo.com, à ton nom.' : adresse ? `À ${adresse.email}. Le mail part de arogelet@emilio-immo.com, à ton nom.` : contacts?.length ? 'Un mail par personne : chacun ne voit que son adresse. Il part de arogelet@emilio-immo.com, à ton nom.' : 'À un contact du CRM ou à n’importe quelle adresse. Il part de arogelet@emilio-immo.com, à ton nom.'}</p>
+            <p>{contact ? 'Le mail part de contact@wernerimmobilier.com, à ton nom.' : adresse ? `À ${adresse.email}. Le mail part de contact@wernerimmobilier.com, à ton nom.` : contacts?.length ? 'Un mail par personne : chacun ne voit que son adresse. Il part de contact@wernerimmobilier.com, à ton nom.' : 'À un contact du CRM ou à n’importe quelle adresse. Il part de contact@wernerimmobilier.com, à ton nom.'}</p>
           </div>
           <button type="button" className={s.fermer} aria-label="Fermer" onClick={fermer}><Croix /></button>
         </div>

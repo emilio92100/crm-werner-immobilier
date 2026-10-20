@@ -19,7 +19,7 @@ const dateParis = (iso: string) => {
   return `${jour} à ${heure}`;
 };
 
-export const CRM = () => (process.env.CRM_URL || 'https://emilio-immo-chasseimmo.vercel.app').replace(/\/$/, '');
+export const CRM = () => (process.env.CRM_URL || 'https://crm-werner-immobilier.vercel.app').replace(/\/$/, '');
 
 /* ── Le réglage (V3.50) ──
    Ce mail se coupe comme les autres alertes (Paramètres › Alertes mail, et
@@ -62,7 +62,7 @@ export function mailDemande(d: DemandeSite): { sujet: string; html: string; text
     ? `Nouvelle demande · Pub estimation — ${express ? 'Rappel express' : cat.lib} — ${d.name || 'sans nom'}`
     : `Nouvelle demande du site — ${cat.lib} — ${d.name || 'sans nom'}`;
   const texte = [
-    `Nouvelle demande reçue sur ${pub ? PAGE_PUB : 'emilio-immo.com'} (${cat.lib.toLowerCase()}), le ${dateParis(d.created_at)}.`,
+    `Nouvelle demande reçue sur ${pub ? PAGE_PUB : 'wernerimmobilier.com'} (${cat.lib.toLowerCase()}), le ${dateParis(d.created_at)}.`,
     '',
     d.name || 'Sans nom',
     ...lignes.map(([l, v]) => `${l} : ${v}`),

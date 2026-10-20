@@ -27,12 +27,12 @@ import { retracteEnLigne } from '@/lib/documents-espace';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: 'Votre signature — Emilio Immobilier',
+  title: 'Votre signature — Werner Immobilier',
   robots: { index: false, follow: false },
 };
 export const viewport: Viewport = { themeColor: '#25272b' };
 
-const TEL_AGENT = '06 58 95 76 32';
+const TEL_AGENT = '01 00 00 00 00';
 /* Un code parti il y a moins d'un quart d'heure. */
 const recent = (iso: string) => Date.now() - Date.parse(iso) < 15 * 60_000;
 const VIDE: Mandant = { civilite: '', prenom: '', nom: '', naissanceDate: '', naissanceLieu: '', adresse: '', email: '', telephone: '' };

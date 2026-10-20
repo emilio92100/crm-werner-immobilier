@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { lienEspace, lienBienPublic, BIENS_PAR_MAIL, HOTE_ESPACE } from '@/lib/jeton';
+import { lienEspace, lienBienPublic, BIENS_PAR_MAIL, basePublique } from '@/lib/jeton';
 import { nommerRecherche } from '@/lib/espace';
 import { tauxDe, forfaitDe, honorairesCourt, honorairesDuPrix, DUREE, RETRACTATION_JOURS, type Honoraires } from '@/lib/mandat';
 import { ecritServeur } from '@/lib/ecritures';
@@ -19,13 +19,13 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || 'arogelet@emilio-immo.com';
-const FROM_NAME = process.env.MAILJET_FROM_NAME || 'Alexandre ROGELET — Emilio Immobilier';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://emilio-immo-chasseimmo.vercel.app';
+const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || 'contact@wernerimmobilier.com';
+const FROM_NAME = process.env.MAILJET_FROM_NAME || 'Werner Immobilier';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobilier.vercel.app';
 /* V3.199 : un client sans espace ouvre l'adresse d'Emilio, jamais l'adresse
    technique (…vercel.app), mal vue des filtres anti-spam. SITE_URL ne sert plus
    qu'aux anciens jetons de 64 caractères (lienEspace). */
-const ESPACE_URL = `https://${HOTE_ESPACE}`;
+const ESPACE_URL = basePublique();
 
 /* V3.118 : les couleurs du site emilio-immo.com (src/lib/mail-charte.ts). */
 const BLEU = '#2e3034';
@@ -250,7 +250,7 @@ function coque(o: { etiquette: string; corpsHtml: string; contenu: string; token
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Emilio Immobilier</title>
+<title>Werner Immobilier</title>
 ${LIEN_POLICE_MAIL}
 <style>
   @media only screen and (max-width:600px) {
@@ -279,7 +279,7 @@ ${LIEN_POLICE_MAIL}
         <!-- En-tête -->
         <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
-            <td><img src="${LOGO_BLANC_MAIL}" alt="Emilio Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
             <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">${etiquette}</td>
           </tr></table>
         </td></tr>
@@ -298,11 +298,11 @@ ${LIEN_POLICE_MAIL}
         <tr><td class="bord" style="background:${BLEU};padding:20px 28px;margin-top:10px;">
           <table role="presentation" width="100%"><tr>
             <td class="pied-nom">
-              <div style="font-size:14px;font-weight:700;color:#ffffff;">Alexandre Rogelet</div>
+              <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">06 58 95 76 32</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 00 00 00 00</td>
           </tr></table>
         </td></tr>
 
@@ -311,11 +311,11 @@ ${LIEN_POLICE_MAIL}
       <!-- Sous la feuille, en gris sur gris : la sortie.
            Elle a sa place dans chaque envoi — un client qui a trouvé ailleurs
            et qui continue de recevoir des biens finit par ne plus ouvrir du
-           tout. Mieux vaut qu'il le dise, et qu'Alexandre l'apprenne. -->
+           tout. Mieux vaut qu'il le dise, et qu'Werner l'apprenne. -->
       <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
         <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
           <div style="font-size:11.5px;color:#aba7a3;line-height:1.7;">
-            Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.${
+            Vous recevez ce message parce que votre recherche est en cours avec Werner Immobilier.${
               lienFin(token)
                 ? `<br/><a href="${lienFin(token)}" style="color:#aba7a3;text-decoration:underline;">Je ne suis plus en recherche</a>`
                 : ''
@@ -374,7 +374,7 @@ function buildBienvenue(opts: { prenom: string; token?: string | null }): string
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Emilio Immobilier</title>
+<title>Werner Immobilier</title>
 ${LIEN_POLICE_MAIL}
 <style>
   /* ── Sur un téléphone ──
@@ -405,7 +405,7 @@ ${LIEN_POLICE_MAIL}
 
         <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
-            <td><img src="${LOGO_BLANC_MAIL}" alt="Emilio Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
             <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">VOTRE ESPACE</td>
           </tr></table>
         </td></tr>
@@ -480,11 +480,11 @@ ${LIEN_POLICE_MAIL}
         <tr><td class="bord" style="background:${BLEU};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
             <td class="pied-nom">
-              <div style="font-size:14px;font-weight:700;color:#ffffff;">Alexandre Rogelet</div>
+              <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">06 58 95 76 32</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 00 00 00 00</td>
           </tr></table>
         </td></tr>
 
@@ -493,7 +493,7 @@ ${LIEN_POLICE_MAIL}
       <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
         <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
           <div style="font-size:11.5px;color:#aba7a3;line-height:1.7;">
-            Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.${
+            Vous recevez ce message parce que votre recherche est en cours avec Werner Immobilier.${
               lienFin(token)
                 ? `<br/><a href="${lienFin(token)}" style="color:#aba7a3;text-decoration:underline;">Je ne suis plus en recherche</a>`
                 : ''
@@ -526,8 +526,8 @@ Le conseil qui change tout : ouvrez ce lien depuis votre téléphone, puis ajout
 
 Une question, une précision à me donner ? Répondez simplement à ce message, ou appelez-moi.
 
-Alexandre ROGELET — Emilio Immobilier
-06 58 95 76 32${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
+Werner Immobilier
+01 00 00 00 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
 }
 
 
@@ -568,7 +568,7 @@ function buildNouvelle(opts: { prenom: string; recherche: string; token?: string
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Emilio Immobilier</title>
+<title>Werner Immobilier</title>
 ${LIEN_POLICE_MAIL}
 <style>
   /* ── Sur un téléphone ──
@@ -599,7 +599,7 @@ ${LIEN_POLICE_MAIL}
 
         <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
-            <td><img src="${LOGO_BLANC_MAIL}" alt="Emilio Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
             <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">VOTRE ESPACE</td>
           </tr></table>
         </td></tr>
@@ -641,11 +641,11 @@ ${LIEN_POLICE_MAIL}
         <tr><td class="bord" style="background:${BLEU};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
             <td class="pied-nom">
-              <div style="font-size:14px;font-weight:700;color:#ffffff;">Alexandre Rogelet</div>
+              <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">06 58 95 76 32</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 00 00 00 00</td>
           </tr></table>
         </td></tr>
 
@@ -654,7 +654,7 @@ ${LIEN_POLICE_MAIL}
       <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
         <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
           <div style="font-size:11.5px;color:#aba7a3;line-height:1.7;">
-            Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.${
+            Vous recevez ce message parce que votre recherche est en cours avec Werner Immobilier.${
               lienFin(token)
                 ? `<br/><a href="${lienFin(token)}" style="color:#aba7a3;text-decoration:underline;">Je ne suis plus en recherche</a>`
                 : ''
@@ -683,8 +683,8 @@ Ouvrir mon espace : ${lien}
 
 Une question, une précision à me donner ? Répondez simplement à ce message, ou appelez-moi.
 
-Alexandre ROGELET — Emilio Immobilier
-06 58 95 76 32${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
+Werner Immobilier
+01 00 00 00 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
 }
 
 
@@ -704,7 +704,7 @@ function buildLien(opts: { prenom: string; token: string }): string {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Emilio Immobilier</title>
+<title>Werner Immobilier</title>
 ${LIEN_POLICE_MAIL}
 <style>
   @media only screen and (max-width:600px) {
@@ -727,7 +727,7 @@ ${LIEN_POLICE_MAIL}
 
         <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
-            <td><img src="${LOGO_BLANC_MAIL}" alt="Emilio Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
             <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">VOTRE ESPACE</td>
           </tr></table>
         </td></tr>
@@ -771,11 +771,11 @@ ${LIEN_POLICE_MAIL}
         <tr><td class="bord" style="background:${BLEU};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
             <td class="pied-nom">
-              <div style="font-size:14px;font-weight:700;color:#ffffff;">Alexandre Rogelet</div>
+              <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">06 58 95 76 32</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 00 00 00 00</td>
           </tr></table>
         </td></tr>
 
@@ -784,7 +784,7 @@ ${LIEN_POLICE_MAIL}
       <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
         <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
           <div style="font-size:11.5px;color:#aba7a3;line-height:1.7;">
-            Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.${
+            Vous recevez ce message parce que votre recherche est en cours avec Werner Immobilier.${
               lienFin(opts.token)
                 ? `<br/><a href="${lienFin(opts.token)}" style="color:#aba7a3;text-decoration:underline;">Je ne suis plus en recherche</a>`
                 : ''
@@ -811,8 +811,8 @@ Pour être prévenu sur votre téléphone : ouvrez ce lien depuis votre téléph
 
 Un souci pour l'ouvrir ? Répondez simplement à ce message, ou appelez-moi.
 
-Alexandre ROGELET — Emilio Immobilier
-06 58 95 76 32${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
+Werner Immobilier
+01 00 00 00 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
 }
 
 
@@ -931,7 +931,7 @@ Lire et signer mon mandat : ${lien}
 Une question avant de signer ? Répondez simplement à ce message.
 
 ---
-Alexandre Rogelet · Emilio Immobilier · 06 58 95 76 32`;
+Werner · Werner Immobilier · 01 00 00 00 00`;
 }
 
 function texteVisites(corps: string, lignes: LigneVisite[], token?: string | null): string {
@@ -941,7 +941,7 @@ function texteVisites(corps: string, lignes: LigneVisite[], token?: string | nul
     const adresse = lieuMail(b);
     return `- ${quandMail(l)} : ${titre}${adresse ? ` (${adresse})` : ''}`;
   }).join('\n');
-  return `${corps}\n\n${liste}\n\n---\nAlexandre Rogelet · Emilio Immobilier · 06 58 95 76 32${
+  return `${corps}\n\n${liste}\n\n---\nWerner · Werner Immobilier · 01 00 00 00 00${
     lienFin(token) ? `\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''
   }`;
 }
