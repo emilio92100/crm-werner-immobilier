@@ -47,7 +47,7 @@ import { estRelanceOffre, TETES_OFFRE } from '@/lib/offres';
  * lui, ouvre toujours sur « À faire ».
  */
 
-const NAVY = '#34496e', OR = '#c9a84c', OR_FONCE = '#8a6a1f', BORD = '#e3e8f0', LIGNE = '#eef1f6';
+const NAVY = '#1d1d1f', OR = '#ee7623', OR_FONCE = '#9c460d', BORD = '#eaeae9', LIGNE = '#f2f2f2';
 const DOUX = '#5b6678', PALE = '#8d99ab';
 const JAK = "'Plus Jakarta Sans', system-ui, sans-serif";
 /* Le temps qu'une ligne met à glisser et à se replier (V3.74), avant de
@@ -594,7 +594,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
         <div className="rl-ligne" data-ok={faites[r.id] ? '' : undefined} data-urg={urg} data-ouvert={ouvert ? '' : undefined} data-repere={repere === r.id ? '' : undefined}>
           {c || r.client_id
             ? <AvatarContact c={c || { prenom: nom }} teinte={{ bg: NAVY, fg: OR }} className="rl-av" libre style={{ width: 42, height: 42, borderRadius: 13, flexShrink: 0 }} />
-            : <span className="rl-av" style={{ width: 42, height: 42, borderRadius: 13, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#fbf4e1', color: OR_FONCE }}><Ic n="note" t={20} ep={2} /></span>}
+            : <span className="rl-av" style={{ width: 42, height: 42, borderRadius: 13, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#fbece1', color: OR_FONCE }}><Ic n="note" t={20} ep={2} /></span>}
           <span className="rl-texte">
             <span className="rl-l1">
               <b className="rl-nom">{nom}</b>
@@ -638,14 +638,14 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
         </div>
 
         {ouvert && report && (
-          <div className="rl-entre" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, margin: '6px 0 0', padding: '12px 14px', borderRadius: 16, background: '#fffaf0', border: '1px solid #f0e2bd' }}>
+          <div className="rl-entre" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, margin: '6px 0 0', padding: '12px 14px', borderRadius: 16, background: '#fff6f0', border: '1px solid #fad2b3' }}>
             <span style={{ fontSize: 11, fontWeight: 800, color: OR_FONCE, textTransform: 'uppercase', letterSpacing: .9, marginRight: 4 }}>Reporter au</span>
             {([['Demain', 1], ['Dans 3 j', 3], ['Dans 7 j', 7], ['Dans 15 j', 15], ['Dans 1 mois', 30]] as [string, number][]).map(([lib, j]) => {
               const d = plusJours(j);
               const actif = report.date === d;
               return (
                 <button key={lib} type="button" className="rl-appui" onClick={() => setReport({ id: r.id, date: d })}
-                  style={{ height: 32, padding: '0 12px', borderRadius: 20, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, border: `1px solid ${actif ? NAVY : '#e3d3ab'}`, background: actif ? NAVY : 'white', color: actif ? '#f2dfa6' : '#6b6045' }}>{lib}</button>
+                  style={{ height: 32, padding: '0 12px', borderRadius: 20, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, border: `1px solid ${actif ? NAVY : '#f8c096'}`, background: actif ? NAVY : 'white', color: actif ? '#f9c69f' : '#6b6045' }}>{lib}</button>
               );
             })}
             <ChoixDate compact valeur={report.date} min={plusJours(0)} placeholder="Une autre date" onChange={v => v && setReport({ id: r.id, date: v })} />
@@ -672,44 +672,44 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
         @keyframes rlPouls{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.45)}60%{box-shadow:0 0 0 7px rgba(220,38,38,0)}}
         .rl-entre{animation:rlEntre .45s cubic-bezier(.2,.9,.3,1) both}
         /* V3.82 : la carte d'une relance. */
-        .rl-ligne{position:relative;display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;background:#fff;border:1px solid #e6ebf2;box-shadow:0 1px 2px rgba(16,24,40,.03);overflow:hidden;transition:box-shadow .25s ease,border-color .25s ease,background-color .25s ease,transform .2s ease}
-        .rl-ligne[data-ouvert]{border-color:#ecdcae}
+        .rl-ligne{position:relative;display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;background:#fff;border:1px solid #edeceb;box-shadow:0 1px 2px rgba(20, 19, 19,.03);overflow:hidden;transition:box-shadow .25s ease,border-color .25s ease,background-color .25s ease,transform .2s ease}
+        .rl-ligne[data-ouvert]{border-color:#f9c7a1}
         /* V3.102 : la relance où l'on revient d'une fiche — un liseré or qui
            s'allume puis s'éteint, le temps de se repérer. */
-        @keyframes rlRepere{0%{box-shadow:0 0 0 0 rgba(201,168,76,0)}22%{box-shadow:0 0 0 5px rgba(201,168,76,.4)}100%{box-shadow:0 0 0 5px rgba(201,168,76,0)}}
-        .rl-ligne[data-repere]{border-color:#e2c77e;animation:rlRepere 2.2s ease-out .45s both}
+        @keyframes rlRepere{0%{box-shadow:0 0 0 0 rgba(238, 118, 35,0)}22%{box-shadow:0 0 0 5px rgba(238, 118, 35,.4)}100%{box-shadow:0 0 0 5px rgba(238, 118, 35,0)}}
+        .rl-ligne[data-repere]{border-color:#f6a76a;animation:rlRepere 2.2s ease-out .45s both}
         /* L'avatar cerclé de la couleur de l'échéance. */
         .rl-ligne .rl-av{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--uc,#cbd5e1);margin:4px}
         .rl-ligne[data-urg=retard]{--uc:#ef4444;--uf:#fef2f2;--ut:#b91c1c}
-        .rl-ligne[data-urg=auj]{--uc:#f59e0b;--uf:#fff7e6;--ut:#b45309}
+        .rl-ligne[data-urg=auj]{--uc:#f59e0b;--uf:#fff0e6;--ut:#b45309}
         .rl-ligne[data-urg=demain]{--uc:#60a5fa;--uf:#eff6ff;--ut:#1d4ed8}
         .rl-ligne[data-urg=plus]{--uc:#cbd5e1;--uf:#f1f5f9;--ut:#475569}
         .rl-texte{display:flex;flex-direction:column;gap:5px;flex:1 1 280px;min-width:0}
         .rl-l1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
-        .rl-nom{font-family:${JAK};font-size:15px;font-weight:800;color:#1a2332}
+        .rl-nom{font-family:${JAK};font-size:15px;font-weight:800;color:#18181b}
         .rl-tag{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:99px;background:var(--uf);color:var(--ut);font-size:11.5px;font-weight:800}
         .rl-tag > .rl-pouls{width:6px;height:6px;border-radius:50%;background:var(--ut)}
         .rl-date{font-size:11.5px;font-weight:600;color:${PALE}}
         .rl-ok{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;color:#15803d;background:#dcfce7;border-radius:20px;padding:2px 9px}
         .rl-note{display:flex;align-items:center;gap:7px;min-width:0;font-size:13px;color:${DOUX}}
-        .rl-orig{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;padding:2px 8px;border-radius:8px;background:#fbf4e1;color:${OR_FONCE};font-size:11.5px;font-weight:700}
+        .rl-orig{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;padding:2px 8px;border-radius:8px;background:#fbece1;color:${OR_FONCE};font-size:11.5px;font-weight:700}
         .rl-orig-fort{background:${OR};color:${NAVY};font-weight:800}
         .rl-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .rl-txt-2{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4}
         .rl-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;justify-content:flex-end}
-        .rl-b{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 12px;border-radius:11px;border:1px solid #e3e8f0;background:#fff;color:${NAVY};font:700 13px 'DM Sans',system-ui,sans-serif;cursor:pointer;white-space:nowrap}
-        .rl-b:hover{background:#f6f8fb;border-color:#d3dbe7}
-        .rl-b[aria-expanded=true]{border-color:${OR};background:#fffaf0;color:${OR_FONCE}}
+        .rl-b{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 12px;border-radius:11px;border:1px solid #eaeae9;background:#fff;color:${NAVY};font:700 13px 'DM Sans',system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+        .rl-b:hover{background:#f9f8f8;border-color:#dedddc}
+        .rl-b[aria-expanded=true]{border-color:${OR};background:#fff6f0;color:${OR_FONCE}}
         .rl-b-fant{border-color:transparent;background:transparent}
-        .rl-b-fant:hover{background:#f1f4f9;border-color:transparent}
-        .rl-b-prim{background:${NAVY};border-color:${NAVY};color:#fff;font-weight:800;padding:0 15px;box-shadow:0 8px 18px -10px rgba(52,73,110,.85)}
-        .rl-b-prim:hover{background:#2b3d5e;border-color:#2b3d5e}
+        .rl-b-fant:hover{background:#f5f5f5;border-color:transparent}
+        .rl-b-prim{background:${NAVY};border-color:${NAVY};color:#fff;font-weight:800;padding:0 15px;box-shadow:0 8px 18px -10px rgba(29, 29, 31,.85)}
+        .rl-b-prim:hover{background:#2b2a28;border-color:#2b2a28}
         /* Les groupes : un titre à pastille, puis les cartes le long d'un trait. */
         .rl-groupes{display:flex;flex-direction:column;gap:20px}
         .rl-groupe{display:flex;flex-direction:column;gap:10px}
         .rl-gt{display:flex;align-items:center;gap:10px;min-width:0}
         .rl-gt-ic{width:30px;height:30px;border-radius:10px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--gc) 13%,#fff);color:var(--gc)}
-        .rl-gt b{font-family:${JAK};font-size:15px;font-weight:800;color:#1a2332;white-space:nowrap}
+        .rl-gt b{font-family:${JAK};font-size:15px;font-weight:800;color:#18181b;white-space:nowrap}
         .rl-gt-n{padding:2px 9px;border-radius:99px;background:color-mix(in srgb,var(--gc) 13%,#fff);color:var(--gc);font-size:12px;font-weight:800}
         .rl-gt-sous{font-size:12.5px;font-weight:600;color:${PALE};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .rl-gt::after{content:'';flex:1 1 40px;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--gc) 35%,transparent),transparent)}
@@ -717,7 +717,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
         /* « Plus loin » : la barre des périodes. */
         .rl-periode{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-radius:16px;background:#fff;border:1px solid ${BORD}}
         .rl-periode-t{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#475569;margin-right:2px}
-        .rl-puce{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:20px;border:1px solid #dfe5ee;background:transparent;color:${NAVY};font:700 12.5px 'DM Sans',system-ui,sans-serif;cursor:pointer}
+        .rl-puce{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:20px;border:1px solid #e7e6e6;background:transparent;color:${NAVY};font:700 12.5px 'DM Sans',system-ui,sans-serif;cursor:pointer}
         .rl-puce > i{font-style:normal;font-size:11px;font-weight:800;padding:1px 7px;border-radius:20px;background:#f1f5f9;color:#475569}
         .rl-puce[aria-pressed=true]{background:${NAVY};border-color:${NAVY};color:#fff}
         .rl-puce[aria-pressed=true] > i{background:rgba(255,255,255,.18);color:#fff}
@@ -727,7 +727,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
            texte plutôt que de l'écraser sur trois mots. */
         .rl-ligne{flex-wrap:wrap}
         .rl-actions{margin-left:auto}
-        .rl-ligne:hover{box-shadow:0 14px 28px -22px rgba(16,24,40,.5);border-color:#d7deea;transform:translateY(-1px)}
+        .rl-ligne:hover{box-shadow:0 14px 28px -22px rgba(20, 19, 19,.5);border-color:#e2e0df;transform:translateY(-1px)}
         @media (max-width:1180px){.rl-b-lib{display:none}.rl-actions > .rl-b:not(.rl-b-prim):not(.rl-fiche){width:36px;padding:0}}
         /* V3.74 — Traitée : la ligne passe au vert, puis glisse et se replie
            à sa vraie hauteur (grille 1fr → 0fr) ; celles du dessous remontent
@@ -753,11 +753,11 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
         .rl-pouls{animation:rlPouls 1.9s ease-out infinite}
         @media (prefers-reduced-motion: reduce){.rl-al-ping{animation:none}}
         .rl-court{display:none}
-        .rl-al{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 18px;border-radius:20px;background:white;border:1px solid #ecdcb0;box-shadow:0 16px 34px -26px rgba(46,65,102,.45)}
+        .rl-al{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 18px;border-radius:20px;background:white;border:1px solid #f9c8a3;box-shadow:0 16px 34px -26px rgba(22, 22, 24,.45)}
         .rl-al-m{border-color:${BORD}}
         .rl-al-ic{width:48px;height:48px;border-radius:15px;display:flex;align-items:center;justify-content:center}
         .rl-al-ping{animation:rlPing 2s ease-out infinite}
-        @keyframes rlPing{0%{box-shadow:0 0 0 0 rgba(201,168,76,.5)}80%,100%{box-shadow:0 0 0 10px rgba(201,168,76,0)}}
+        @keyframes rlPing{0%{box-shadow:0 0 0 0 rgba(238, 118, 35,.5)}80%,100%{box-shadow:0 0 0 10px rgba(238, 118, 35,0)}}
         @media (prefers-reduced-motion: reduce){.rl-entre,.rl-ok,.rl-toast,.rl-toast-ok,.rl-ligne[data-repere]{animation:none !important}.rl-pli,.rl-pli .rl-ligne{transition:none !important}}
         @media (max-width: 760px){
           .rl-page{padding:16px 12px 96px !important;gap:16px !important}
@@ -805,7 +805,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
           .rl-gt, .rl-al-t{padding:0 14px}
           .rl-al-plus{margin-left:14px}
           /* Dans le bloc du tri, les cartes restent des cartes. */
-          .rl-tri .rl-ligne{border-radius:16px !important;border:1px solid #e6ebf2 !important;padding:11px 12px !important;margin-left:0 !important;margin-right:0 !important}
+          .rl-tri .rl-ligne{border-radius:16px !important;border:1px solid #edeceb !important;padding:11px 12px !important;margin-left:0 !important;margin-right:0 !important}
         }
       `}</style>
 
@@ -833,8 +833,8 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
       {!seulTri && alertes.length > 0 && (
         <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }} aria-label="Rapprochements">
           <div className="rl-al-t" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase', color: '#a07c28' }}>Rapprochements</span>
-            <span style={{ padding: '2px 9px', borderRadius: 99, background: OR, color: '#1a2332', fontFamily: JAK, fontSize: 12, fontWeight: 800 }}>{alertes.length > 1 ? `${alertes.length} nouveaux` : '1 nouveau'}</span>
+            <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase', color: '#b4560f' }}>Rapprochements</span>
+            <span style={{ padding: '2px 9px', borderRadius: 99, background: OR, color: '#18181b', fontFamily: JAK, fontSize: 12, fontWeight: 800 }}>{alertes.length > 1 ? `${alertes.length} nouveaux` : '1 nouveau'}</span>
           </div>
           {alertes.slice(0, toutesAlertes ? alertes.length : 3).map((a, i) => {
             const acheteur = a.k === 'acheteur';
@@ -852,12 +852,12 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
             const occupe = alerteEnCours === a.cle;
             return (
               <div key={a.cle} className={`rl-al rl-entre${acheteur ? '' : ' rl-al-m'}`} style={{ animationDelay: `${i * 80}ms` }}>
-                <span className={`rl-al-ic${acheteur ? ' rl-al-ping' : ''}`} style={acheteur ? { background: '#fbf6e9', border: '1px solid #ecdcb0', color: '#a07c28' } : { background: '#eef2f8', color: NAVY }}>
+                <span className={`rl-al-ic${acheteur ? ' rl-al-ping' : ''}`} style={acheteur ? { background: '#fbf0e9', border: '1px solid #f9c8a3', color: '#b4560f' } : { background: '#f4f3f2', color: NAVY }}>
                   <Ic n={acheteur ? 'groupe' : 'drapeau'} t={22} ep={2} />
                 </span>
                 <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: acheteur ? '#a07c28' : NAVY }}>{acheteur ? 'Un acheteur arrive' : 'Un mandat arrive'}</span>
-                  <b style={{ fontFamily: JAK, fontSize: 15.5, fontWeight: 800, color: '#1a2332', lineHeight: 1.35 }}>{titre}</b>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: acheteur ? '#b4560f' : NAVY }}>{acheteur ? 'Un acheteur arrive' : 'Un mandat arrive'}</span>
+                  <b style={{ fontFamily: JAK, fontSize: 15.5, fontWeight: 800, color: '#18181b', lineHeight: 1.35 }}>{titre}</b>
                   <span style={{ fontSize: 13.5, color: DOUX, lineHeight: 1.5 }}>{sous}</span>
                 </span>
                 <span className="rl-al-btns" style={{ display: 'flex', gap: 8 }}>
@@ -871,7 +871,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
           })}
           {alertes.length > 3 && (
             <button type="button" className="rl-appui rl-al-plus" onClick={() => setToutesAlertes(x => !x)}
-              style={{ alignSelf: 'flex-start', height: 34, padding: '0 14px', borderRadius: 11, border: '1px solid #ecdcb0', background: '#fffcf4', color: OR_FONCE, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              style={{ alignSelf: 'flex-start', height: 34, padding: '0 14px', borderRadius: 11, border: '1px solid #f9c8a3', background: '#fff9f4', color: OR_FONCE, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
               {toutesAlertes ? 'N’en montrer que trois' : `Voir les ${alertes.length - 3} autres`}
             </button>
           )}
@@ -923,7 +923,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
         </div>
       ) : visibles.length === 0 ? (
         <div className="rl-entre rl-vide" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '34px 24px', borderRadius: 20, background: 'white', border: `1px solid ${BORD}`, textAlign: 'center' }}>
-          <span style={{ width: 50, height: 50, borderRadius: 16, background: '#fbf4e1', color: OR_FONCE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="soleil" t={24} ep={1.9} /></span>
+          <span style={{ width: 50, height: 50, borderRadius: 16, background: '#fbece1', color: OR_FONCE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="soleil" t={24} ep={1.9} /></span>
           <b style={{ fontFamily: JAK, fontSize: 16, fontWeight: 800 }}>{qR ? `Aucune relance ne correspond à « ${q.trim()} »` : periode ? 'Aucune relance sur cette période' : filtre === 'retard' ? 'Rien en retard' : filtre === 'aujourdhui' ? 'Rien pour aujourd’hui' : filtre === 'afaire' ? 'Rien en retard, rien pour aujourd’hui' : filtre === 'semaine' ? 'Rien cette semaine' : 'Rien ici'}</b>
           {!qR && !periode && filtre === 'afaire' && (semaine.length > 0 || plusLoin > 0) && <span style={{ fontSize: 13.5, color: DOUX }}>{semaine.length ? `${semaine.length > 1 ? `${semaine.length} relances sont prévues` : '1 relance est prévue'} d’ici le ${dateCourte(dansSept)} : la tuile « Cette semaine » les montre.` : `${plusLoin > 1 ? `${plusLoin} relances sont prévues plus loin` : '1 relance est prévue plus loin'} : la tuile « Plus loin » les montre.`}</span>}
           {(periode || filtre !== 'afaire') && <button type="button" className="rl-appui" onClick={() => { setFiltre('afaire'); setPeriode(null); }} style={{ marginTop: 4, height: 36, padding: '0 14px', borderRadius: 11, border: `1px solid ${BORD}`, background: 'white', color: NAVY, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Revenir aux relances à faire</button>}
@@ -950,14 +950,14 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
 
       {/* V3.73 — Le tri d'après l'import : à part, sous les relances. */}
       {!seulTri && !loading && tri.length > 0 && (
-        <section ref={blocTri} className="rl-tri rl-entre" aria-label="Tri à faire" style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '16px 16px 18px', borderRadius: 22, background: '#f6f8fb', border: '1px dashed #d5dde8', scrollMarginTop: 16 }}>
+        <section ref={blocTri} className="rl-tri rl-entre" aria-label="Tri à faire" style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '16px 16px 18px', borderRadius: 22, background: '#f9f8f8', border: '1px dashed #e0dedd', scrollMarginTop: 16 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <span style={{ width: 40, height: 40, borderRadius: 13, background: 'white', border: '1px solid #dfe5ee', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n="drapeau" t={19} ep={2} /></span>
+            <span style={{ width: 40, height: 40, borderRadius: 13, background: 'white', border: '1px solid #e7e6e6', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n="drapeau" t={19} ep={2} /></span>
             <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <b style={{ fontFamily: JAK, fontSize: 16.5, fontWeight: 800, color: '#1a2332' }}>Tri à faire</b>
+                <b style={{ fontFamily: JAK, fontSize: 16.5, fontWeight: 800, color: '#18181b' }}>Tri à faire</b>
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>suite à l’import</span>
-                <span style={{ fontSize: 11, fontWeight: 800, color: '#475569', background: 'white', border: '1px solid #dfe5ee', borderRadius: 20, padding: '1px 8px' }}>{tri.length}</span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: '#475569', background: 'white', border: '1px solid #e7e6e6', borderRadius: 20, padding: '1px 8px' }}>{tri.length}</span>
               </span>
               <span style={{ fontSize: 13, color: DOUX, lineHeight: 1.5 }}>Des contacts sans nouvelles depuis longtemps : un dernier appel pour savoir s’ils restent dans ton fichier. Ils ne comptent pas dans les relances du dessus.</span>
             </span>
@@ -967,7 +967,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
           )}
           {triPlusTard > 0 && (
             <button type="button" className="rl-appui" onClick={() => setTriTout(x => !x)}
-              style={{ alignSelf: 'flex-start', height: 34, padding: '0 14px', borderRadius: 11, border: '1px solid #dfe5ee', background: 'white', color: '#475569', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              style={{ alignSelf: 'flex-start', height: 34, padding: '0 14px', borderRadius: 11, border: '1px solid #e7e6e6', background: 'white', color: '#475569', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
               {triTout ? 'Ne garder que ceux du jour' : `Voir aussi les ${triPlusTard > 1 ? `${triPlusTard} prévus plus tard` : 'un prévu plus tard'}`}
             </button>
           )}
@@ -988,14 +988,14 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
           )}
         </div>
       ) : (
-        <section className="rl-tri rl-entre" aria-label="Tri à faire" style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '16px 16px 18px', borderRadius: 22, background: '#f6f8fb', border: '1px dashed #d5dde8' }}>
+        <section className="rl-tri rl-entre" aria-label="Tri à faire" style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '16px 16px 18px', borderRadius: 22, background: '#f9f8f8', border: '1px dashed #e0dedd' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <span style={{ width: 40, height: 40, borderRadius: 13, background: 'white', border: '1px solid #dfe5ee', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n="drapeau" t={19} ep={2} /></span>
+            <span style={{ width: 40, height: 40, borderRadius: 13, background: 'white', border: '1px solid #e7e6e6', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n="drapeau" t={19} ep={2} /></span>
             <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <b style={{ fontFamily: JAK, fontSize: 16.5, fontWeight: 800, color: '#1a2332' }}>Tri à faire</b>
+                <b style={{ fontFamily: JAK, fontSize: 16.5, fontWeight: 800, color: '#18181b' }}>Tri à faire</b>
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>suite à l’import</span>
-                <span style={{ fontSize: 11, fontWeight: 800, color: '#475569', background: 'white', border: '1px solid #dfe5ee', borderRadius: 20, padding: '1px 8px' }}>{tri.length}</span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: '#475569', background: 'white', border: '1px solid #e7e6e6', borderRadius: 20, padding: '1px 8px' }}>{tri.length}</span>
               </span>
               <span style={{ fontSize: 13, color: DOUX, lineHeight: 1.5 }}>Des contacts sans nouvelles depuis longtemps : un dernier appel pour savoir s’ils restent dans ton fichier. Ce sont les mêmes que dans Relances, en bas de la page.</span>
             </span>
@@ -1051,14 +1051,14 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
       )}
 
       {noteFaite && (
-        <div key={toastCle} role="status" className="rl-toast rl-toast-court" style={{ position: 'fixed', left: '50%', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', transform: 'translate(-50%,0)', zIndex: 60, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderRadius: 16, background: NAVY, color: 'white', boxShadow: '0 20px 40px -18px rgba(10,15,24,.6)', maxWidth: 'calc(100vw - 24px)' }}>
+        <div key={toastCle} role="status" className="rl-toast rl-toast-court" style={{ position: 'fixed', left: '50%', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', transform: 'translate(-50%,0)', zIndex: 60, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderRadius: 16, background: NAVY, color: 'white', boxShadow: '0 20px 40px -18px rgba(14, 13, 13,.6)', maxWidth: 'calc(100vw - 24px)' }}>
           <span className="rl-toast-ok" style={{ width: 26, height: 26, borderRadius: 9, background: 'rgba(16,185,129,.2)', color: '#6ee7b7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n="coche" t={15} ep={2.6} /></span>
           <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{noteFaite}</span>
         </div>
       )}
 
       {annulable && (
-        <div key={toastCle} role="status" className="rl-toast rl-toast-long" style={{ position: 'fixed', left: '50%', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', transform: 'translate(-50%,0)', zIndex: 60, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 10px 10px 16px', borderRadius: 16, background: NAVY, color: 'white', boxShadow: '0 20px 40px -18px rgba(10,15,24,.6)', maxWidth: 'calc(100vw - 24px)' }}>
+        <div key={toastCle} role="status" className="rl-toast rl-toast-long" style={{ position: 'fixed', left: '50%', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', transform: 'translate(-50%,0)', zIndex: 60, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 10px 10px 16px', borderRadius: 16, background: NAVY, color: 'white', boxShadow: '0 20px 40px -18px rgba(14, 13, 13,.6)', maxWidth: 'calc(100vw - 24px)' }}>
           <span className="rl-toast-ok" style={{ width: 26, height: 26, borderRadius: 9, background: 'rgba(16,185,129,.2)', color: '#6ee7b7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n="coche" t={15} ep={2.6} /></span>
           <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{annulable.archive ? `${annulable.nom} archivé.` : annulable.nom === PB ? 'Pense-bête clôturé.' : `Relance de ${annulable.nom} clôturée.`}</span>
           <button type="button" onClick={annuler} style={{ height: 32, padding: '0 12px', borderRadius: 10, border: 'none', background: 'rgba(255,255,255,.12)', color: OR, fontSize: 12.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>Annuler</button>

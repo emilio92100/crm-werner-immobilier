@@ -116,7 +116,7 @@ export default function ParamAlertes() {
           {note && <span style={{ fontSize: 12, fontWeight: 700, color: '#10b981' }}>✓ {note}</span>}
         </div>
 
-        <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', background: '#f8fafc', border: '1px solid #e3e8f0', borderRadius: 12, padding: '11px 14px' }}>
+        <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', background: '#f8fafc', border: '1px solid #eaeae9', borderRadius: 12, padding: '11px 14px' }}>
           <span style={{ fontSize: 13.5, color: 'var(--emilio)' }}>{'Tu reçois '}<b>{`${recues} alerte${recues > 1 ? 's' : ''} sur ${total}`}</b></span>
           <span style={{ display: 'inline-flex', gap: 14 }}>
             <button type="button" disabled={enCours || coupees.size === total} onClick={() => enregistrer(new Set(LISTE.map(a => a.cle)))}
@@ -124,7 +124,7 @@ export default function ParamAlertes() {
               Tout couper
             </button>
             <button type="button" disabled={enCours || coupees.size === 0} onClick={() => enregistrer(new Set())}
-              style={{ background: 'none', border: 'none', padding: 0, fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: coupees.size === 0 ? '#cbd5e1' : '#4a6b90', cursor: 'pointer' }}>
+              style={{ background: 'none', border: 'none', padding: 0, fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: coupees.size === 0 ? '#cbd5e1' : '#716d69', cursor: 'pointer' }}>
               Tout recevoir
             </button>
           </span>
@@ -139,7 +139,7 @@ export default function ParamAlertes() {
                 <div key={a.cle} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 0', borderTop: '1px solid #f1f5f9' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: on ? 'var(--emilio)' : '#64748b' }}>{a.titre}</div>
-                    <div title={a.objet} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 7, maxWidth: '100%', background: on ? '#f4f7fb' : '#f8fafc', border: '1px solid #e6ebf2', borderRadius: 8, padding: '5px 9px', fontSize: 12, color: on ? '#334155' : '#94a3b8' }}>
+                    <div title={a.objet} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 7, maxWidth: '100%', background: on ? '#f8f8f7' : '#f8fafc', border: '1px solid #edeceb', borderRadius: 8, padding: '5px 9px', fontSize: 12, color: on ? '#334155' : '#94a3b8' }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6.5 8.5 6 8.5-6" /></svg>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{a.objet}</span>
                     </div>

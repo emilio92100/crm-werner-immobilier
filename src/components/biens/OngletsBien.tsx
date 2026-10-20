@@ -59,7 +59,7 @@ const capitale = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 const pctFr = (x: number) => `${String(Math.round(x * 10) / 10).replace('.', ',')}${NBSP}%`;
 
 /* ── L'anneau : une part remplie, un mot au centre ── */
-export function Anneau({ part, taille = 64, ep = 7, c = '#c9a84c', fond = '#fdf3d8', texte, texteC = '#7a5d1c', label }: {
+export function Anneau({ part, taille = 64, ep = 7, c = '#ee7623', fond = '#fde7d8', texte, texteC = '#8b3e0b', label }: {
   part: number; taille?: number; ep?: number; c?: string; fond?: string; texte: string; texteC?: string; label: string;
 }) {
   const r = (taille - ep) / 2 - 1;
@@ -81,13 +81,13 @@ export function Anneau({ part, taille = 64, ep = 7, c = '#c9a84c', fond = '#fdf3
 /* ══ LE BIEN ════════════════════════════════════════════════════════════ */
 export type Ton = 'bleu' | 'violet' | 'sarcelle' | 'vert' | 'ambre' | 'ardoise' | 'or' | 'ciel';
 const TONS: Record<Ton, { fond: string; c: string; ic: string; icC: string }> = {
-  bleu: { fond: '#eff4fb', c: '#2d5c8f', ic: '#2d5c8f', icC: '#fff' },
+  bleu: { fond: '#f6f5f4', c: '#393836', ic: '#393836', icC: '#fff' },
   violet: { fond: '#f5f3ff', c: '#6d28d9', ic: '#6d28d9', icC: '#fff' },
   sarcelle: { fond: '#f0fdfa', c: '#0f766e', ic: '#0d9488', icC: '#fff' },
   vert: { fond: '#f0fdf4', c: '#15803d', ic: '#16a34a', icC: '#fff' },
   ambre: { fond: '#fffbeb', c: '#b45309', ic: '#d97706', icC: '#fff' },
   ardoise: { fond: '#f1f5f9', c: '#334155', ic: '#475569', icC: '#fff' },
-  or: { fond: '#fbf6e9', c: '#7a5d1c', ic: '#c9a84c', icC: '#1a2332' },
+  or: { fond: '#fbf0e9', c: '#8b3e0b', ic: '#ee7623', icC: '#18181b' },
   ciel: { fond: '#ecfeff', c: '#0e7490', ic: '#0891b2', icC: '#fff' },
 };
 
@@ -239,7 +239,7 @@ export function CarteAnnonce({ titre = '', texte, mentions, mentionsTexte, onEcr
     <div className={o.annonce}>
       <div className={o.annonceL}>
         <Anneau part={part} texte={`${pct}${NBSP}%`} label={`Annonce complète à ${pct} pour cent`}
-          c={pct === 100 ? '#16a34a' : '#c9a84c'} fond={pct === 100 ? '#dcfce7' : '#fdf3d8'} texteC={pct === 100 ? '#15803d' : '#7a5d1c'} />
+          c={pct === 100 ? '#16a34a' : '#ee7623'} fond={pct === 100 ? '#dcfce7' : '#fde7d8'} texteC={pct === 100 ? '#15803d' : '#8b3e0b'} />
         <div className={o.annonceTx}><b><i className={o.annonceTxIc}><Ic n="megaphone" t={15} e={2.1} /></i>Le texte de l’annonce</b><span>{phrase}</span></div>
         <div className={o.annonceBtns}>
           {ia && (
@@ -341,7 +341,7 @@ export function BandePhotos({ photos, onVoir }: { photos: Photo[]; onVoir: () =>
 
 /* ── Les pièces ── */
 function tonPiece(ic: string): [string, string] {
-  if (['canape', 'table', 'bureau', 'vitrine'].includes(ic)) return ['#eff4fb', '#2d5c8f'];
+  if (['canape', 'table', 'bureau', 'vitrine'].includes(ic)) return ['#f6f5f4', '#393836'];
   if (ic === 'cuisine') return ['#fff7ed', '#c2410c'];
   if (['lit', 'cintre'].includes(ic)) return ['#f5f3ff', '#6d28d9'];
   if (['bain', 'douche', 'wc', 'machine'].includes(ic)) return ['#ecfeff', '#0e7490'];
@@ -366,12 +366,12 @@ const CLE_VUE = 'emilio.pieces.vue';
    · « Hors surface habitable » : les annexes, et leurs numéros de lots. */
 type GenrePiece = 'vie' | 'nuit' | 'cuisine' | 'eau' | 'passage' | 'autre';
 const FAMILLES: Record<GenrePiece, { l: string; c: string; f: string; ic: string }> = {
-  vie: { l: 'Pièces de vie', c: '#2d5c8f', f: '#eef3fb', ic: 'canape' },
+  vie: { l: 'Pièces de vie', c: '#393836', f: '#f5f4f4', ic: 'canape' },
   nuit: { l: 'Chambres', c: '#7c3aed', f: '#f4f0ff', ic: 'lit' },
   cuisine: { l: 'Cuisine', c: '#ea7a2c', f: '#fff4ea', ic: 'cuisine' },
   eau: { l: 'Eau et WC', c: '#0e98b4', f: '#e9f8f9', ic: 'bain' },
-  passage: { l: 'Entrée, dégagements', c: '#94a3b8', f: '#f3f5f8', ic: 'couloir' },
-  autre: { l: 'Le reste', c: '#94a3b8', f: '#f3f5f8', ic: 'plan' },
+  passage: { l: 'Entrée, dégagements', c: '#94a3b8', f: '#f6f5f5', ic: 'couloir' },
+  autre: { l: 'Le reste', c: '#94a3b8', f: '#f6f5f5', ic: 'plan' },
 };
 const familleDe = (nom: string): GenrePiece => {
   const ic = pictoPiece(nom);
@@ -677,7 +677,7 @@ export function CarteVisiteB({ v, prochaine, onCR, onAnnuler, onDoc, onFiche, on
         <div className={o.visT}>
           <b className={o.visNom}>{v.qui}</b>
           {!v.passee && !annulee && (
-            <span className={o.puce} style={v.source === 'crm' ? { background: '#fbf6e9', color: '#7a5d1c' } : { background: '#f1f5f9', color: '#475569' }}>
+            <span className={o.puce} style={v.source === 'crm' ? { background: '#fbf0e9', color: '#8b3e0b' } : { background: '#f1f5f9', color: '#475569' }}>
               {v.source === 'crm' ? `Acheteur suivi${v.note ? ` · ${v.note}${NBSP}%` : ''}` : 'Hors CRM'}
             </span>
           )}
@@ -796,7 +796,7 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
      proposition de l'acquéreur. */
   const [saisie, setSaisie] = useState<{ k: 'contre' | 'propose'; v: string } | null>(null);
   const PUCE: Record<string, { l: string; fond: string; c: string }> = {
-    attente: { l: negocie ? 'Au vendeur de répondre' : 'En attente de la réponse du vendeur', fond: '#fbf6e9', c: '#7a5d1c' },
+    attente: { l: negocie ? 'Au vendeur de répondre' : 'En attente de la réponse du vendeur', fond: '#fbf0e9', c: '#8b3e0b' },
     contre: { l: 'À l’acquéreur de répondre', fond: '#eff6ff', c: '#1d4ed8' },
     acceptee: { l: 'Acceptée', fond: '#dcfce7', c: '#15803d' },
     compromis: { l: 'Compromis signé', fond: '#dcfce7', c: '#15803d' },
@@ -972,7 +972,7 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
                   </div>
                   <div className={o.dates}>
                     {[
-                      { ic: 'doc', col: '#2d5c8f', l: 'Compromis signé le', v: c.signe },
+                      { ic: 'doc', col: '#393836', l: 'Compromis signé le', v: c.signe },
                       { ic: 'bouclier', col: '#b45309', l: 'Rétractation jusqu’au', v: c.sru },
                       { ic: 'banque', col: '#1d4ed8', l: c.comptant ? 'Condition de prêt' : 'Condition de prêt jusqu’au', v: c.pretLimite, sans: c.comptant ? 'Aucune · comptant' : '' },
                       { ic: 'plume', col: '#6d28d9', l: sorte === 'vendu' ? 'Acte signé le' : 'Acte prévu le', v: sorte === 'vendu' ? c.venduLe || c.acte : c.acte },
@@ -1023,8 +1023,8 @@ function NotairesListe({ notaires, commun, onModifier, onRenseigner, toujours, c
   toujours?: boolean; children?: ReactNode;
 }) {
   const ROLES: { role: NotaireCarte['role']; l: string; col: string }[] = commun
-    ? [{ role: 'vendeur', l: 'Notaire commun · vendeur et acquéreur', col: '#34496e' }]
-    : [{ role: 'vendeur', l: 'Notaire du vendeur', col: '#a07c28' }, { role: 'acquereur', l: 'Notaire de l’acquéreur', col: '#1d4ed8' }];
+    ? [{ role: 'vendeur', l: 'Notaire commun · vendeur et acquéreur', col: '#1d1d1f' }]
+    : [{ role: 'vendeur', l: 'Notaire du vendeur', col: '#b4560f' }, { role: 'acquereur', l: 'Notaire de l’acquéreur', col: '#1d4ed8' }];
   const lignes = ROLES.map(r => ({ r, n: notaires.find(x => x.role === r.role) || (commun ? notaires[0] : undefined) })).filter(x => toujours || x.n);
   return (
     <div className={o.notairesC}>
@@ -1109,7 +1109,7 @@ function SaisieMontant({ k, v, onChange, onValider, onAnnuler }: { k: 'contre' |
 /* Le document de l'offre, en une ligne : facultatif. */
 function DocDeLOffre({ a, piece }: { a: ActionsOffre; piece: string }) {
   const doc = a.doc || null;
-  const ETAT = { prepa: { l: 'En préparation', c: '#7a5d1c', f: '#fbf6e9' }, pret: { l: 'À faire signer', c: '#1d4ed8', f: '#eff6ff' }, signe: { l: 'Signée', c: '#15803d', f: '#dcfce7' } };
+  const ETAT = { prepa: { l: 'En préparation', c: '#8b3e0b', f: '#fbf0e9' }, pret: { l: 'À faire signer', c: '#1d4ed8', f: '#eff6ff' }, signe: { l: 'Signée', c: '#15803d', f: '#dcfce7' } };
   return (
     <div className={o.docOffre}>
       <div className={o.docOffreT}>
@@ -1264,7 +1264,7 @@ export function CarteDossier({ recus, demandes, nc, total, children }: { recus: 
   return (
     <div className={o.dossier}>
       <div className={o.dossierT}>
-        <Anneau part={total ? faits / total : 0} taille={72} ep={8} c="#16a34a" fond="#eef1f6" texteC="#1a2332" texte={`${faits}/${total}`} label={`${faits} pièces du dossier réglées sur ${total}`} />
+        <Anneau part={total ? faits / total : 0} taille={72} ep={8} c="#16a34a" fond="#f2f2f2" texteC="#18181b" texte={`${faits}/${total}`} label={`${faits} pièces du dossier réglées sur ${total}`} />
         <div><b>Le dossier : diagnostics et pièces</b><span>{detail}</span></div>
       </div>
       {children}
@@ -1287,12 +1287,12 @@ export type AVenirBien = { cle: string; titre: string; detail?: string; quand: s
 const GENRES: { k: GenreEvt | 'tout'; l: string; c?: string; fond?: string }[] = [
   { k: 'tout', l: 'Tout' },
   { k: 'visites', l: 'Visites', c: '#7c3aed', fond: '#f5f3ff' },
-  { k: 'offres', l: 'Offres', c: '#a07c28', fond: '#fbf6e9' },
+  { k: 'offres', l: 'Offres', c: '#b4560f', fond: '#fbf0e9' },
   { k: 'acheteurs', l: 'Envois', c: '#0d9488', fond: '#f0fdfa' },
   { k: 'contacts', l: 'Contacts', c: '#2563eb', fond: '#eff6ff' },
-  { k: 'etapes', l: 'Étapes et prix', c: '#34496e', fond: '#eef2f8' },
+  { k: 'etapes', l: 'Étapes et prix', c: '#1d1d1f', fond: '#f4f3f2' },
   { k: 'documents', l: 'Documents', c: '#64748b', fond: '#f1f5f9' },
-  { k: 'notes', l: 'Notes', c: '#475569', fond: '#eef2f7' },
+  { k: 'notes', l: 'Notes', c: '#475569', fond: '#f3f2f2' },
 ];
 const genreDe = (g: GenreEvt) => GENRES.find(x => x.k === g)!;
 

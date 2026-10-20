@@ -219,12 +219,12 @@ export function etatSuivi(lignes: LigneSuivi[], visite: VisiteCalee | undefined,
   if (!lignes.length) return veutVisiter
     ? { k: 'appeler', l: 'À appeler', c: '#8F3F00', bg: '#FFF1E6' }
     : { k: 'vide', l: 'Pas encore commencé', c: '#64748B', bg: '#F1F5F9' };
-  if (!appel) return { k: 'encours', l: 'En cours', c: '#1F4E8C', bg: '#EAF1FB' };
+  if (!appel) return { k: 'encours', l: 'En cours', c: '#343331', bg: '#f3f2f2' };
   if (appel.dispo === 'vendu') return { k: 'vendu', l: 'Plus disponible', c: '#475569', bg: '#EEF0F3' };
   if (creneauxOuverts(lignes)) return { k: 'creneaux', l: 'Créneaux reçus', c: '#4C1D95', bg: '#F1EBFF' };
   if (appel.ensuite === 'rappeler' || appel.reponse === 'message' || appel.reponse === 'sans_reponse') {
     const quand = appel.rappel_le ? ` le ${texteCreneau({ date: appel.rappel_le, heure: '00:00' }).split(' · ')[0].toLowerCase()}` : '';
     return { k: 'rappeler', l: `À rappeler${quand}`, c: '#8F3F00', bg: '#FFF1E6' };
   }
-  return { k: 'attente', l: 'En attente de l’agence', c: '#1F4E8C', bg: '#EAF1FB' };
+  return { k: 'attente', l: 'En attente de l’agence', c: '#343331', bg: '#f3f2f2' };
 }

@@ -330,13 +330,13 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
               <div className={s.champLigne}>
                 <label htmlFor="nd-mandat">Le mandat</label>
                 {mandat ? (
-                  <div className={`${s.resultat} ${s.resultatOn}`} style={{ border: '1px solid #ecdcb0', borderRadius: 12 }}>
+                  <div className={`${s.resultat} ${s.resultatOn}`} style={{ border: '1px solid #f9c8a3', borderRadius: 12 }}>
                     <Ic n={mandat.enLigne ? 'ecran' : 'doc'} t={16} />
                     <span className={s.resDeux}><b>{mandat.titre}</b><i>{[mandat.numero ? `N° ${mandat.numero}` : '', mandat.sous].filter(Boolean).join(' · ')}</i></span>
                     <button type="button" className={s.btnLien} onClick={() => setMandat(null)}>Changer</button>
                   </div>
                 ) : sansMandat ? (
-                  <div className={`${s.resultat} ${s.resultatOn}`} style={{ border: '1px solid #ecdcb0', borderRadius: 12 }}>
+                  <div className={`${s.resultat} ${s.resultatOn}`} style={{ border: '1px solid #f9c8a3', borderRadius: 12 }}>
                     <Ic n="plume" t={16} /><span>Sans mandat : tu saisiras tout</span>
                     <button type="button" className={s.btnLien} style={{ marginLeft: 'auto' }} onClick={() => setSansMandat(false)}>Changer</button>
                   </div>
@@ -368,13 +368,13 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
               <div className={s.champLigne}>
                 <label htmlFor="nd-confrere">Le confrère</label>
                 {confrere ? (
-                  <div className={`${s.resultat} ${s.resultatOn}`} style={{ border: '1px solid #ecdcb0', borderRadius: 12 }}>
+                  <div className={`${s.resultat} ${s.resultatOn}`} style={{ border: '1px solid #f9c8a3', borderRadius: 12 }}>
                     <Ic n="agence" t={16} />
                     <span className={s.resDeux}><b>{`${confrere.prenom || ''} ${confrere.nom || ''}`.trim() || 'Confrère'}</b><i>{ligneConfrere(confrere)}</i></span>
                     <button type="button" className={s.btnLien} onClick={() => setConfrere(null)}>Changer</button>
                   </div>
                 ) : sansConfrere ? (
-                  <div className={`${s.resultat} ${s.resultatOn}`} style={{ border: '1px solid #ecdcb0', borderRadius: 12 }}>
+                  <div className={`${s.resultat} ${s.resultatOn}`} style={{ border: '1px solid #f9c8a3', borderRadius: 12 }}>
                     <Ic n="plume" t={16} /><span>Pas dans mes contacts : je le saisirai</span>
                     <button type="button" className={s.btnLien} style={{ marginLeft: 'auto' }} onClick={() => setSansConfrere(false)}>Changer</button>
                   </div>
@@ -412,7 +412,7 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
             <div className={s.champLigne}>
               <label htmlFor="nd-client">{lien === 'mandat' ? 'Le client (pour ranger le document sur sa fiche)' : 'Le client'}</label>
               {client ? (
-                <div className={`${s.resultat} ${s.resultatOn}`} style={{ border: '1px solid #ecdcb0', borderRadius: 12 }}>
+                <div className={`${s.resultat} ${s.resultatOn}`} style={{ border: '1px solid #f9c8a3', borderRadius: 12 }}>
                   <AvatarContact c={client} teinte={teinteDe(client)} taille={36} />
                   <span className={s.resDeux}><b>{nomFoyer(client) || 'Client'}</b><i>{sousClient(client)}</i></span>
                   <button type="button" className={s.btnLien} style={{ marginLeft: 'auto' }} onClick={() => setClient(null)}>Changer</button>

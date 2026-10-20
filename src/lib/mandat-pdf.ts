@@ -41,17 +41,17 @@ const LARGEUR = A4.l - MARGE.g - MARGE.d;
 
 /* La palette Emilio */
 /* V3.17 : le bleu Emilio du CRM et du site, plutôt que le marine presque
-   noir d'avant (#1b365d pour les bandeaux, #1a2332 pour le texte). */
-const BLEU = rgb(52 / 255, 73 / 255, 110 / 255);         // #34496e, le bleu Emilio
-const MARINE = rgb(46 / 255, 65 / 255, 102 / 255);       // #2e4166, le texte, un bleu foncé
-const OR = rgb(201 / 255, 168 / 255, 76 / 255);          // #c9a84c
+   noir d'avant (#262524 pour les bandeaux, #18181b pour le texte). */
+const BLEU = rgb(52 / 255, 73 / 255, 110 / 255);         // #1d1d1f, le bleu Emilio
+const MARINE = rgb(46 / 255, 65 / 255, 102 / 255);       // #161618, le texte, un bleu foncé
+const OR = rgb(201 / 255, 168 / 255, 76 / 255);          // #ee7623
 const OR_FONCE = rgb(160 / 255, 124 / 255, 40 / 255);    // l'or lisible en petit sur blanc
 const GRIS = rgb(100 / 255, 116 / 255, 139 / 255);       // #64748b
 const GRIS_CLAIR = rgb(152 / 255, 164 / 255, 182 / 255);
-const FILET = rgb(227 / 255, 232 / 255, 240 / 255);      // #e3e8f0
-const FOND = rgb(246 / 255, 248 / 255, 251 / 255);       // #f6f8fb
+const FILET = rgb(227 / 255, 232 / 255, 240 / 255);      // #eaeae9
+const FOND = rgb(246 / 255, 248 / 255, 251 / 255);       // #f9f8f8
 const BLEU_PALE = rgb(219 / 255, 227 / 255, 238 / 255);  // le texte doux sur le bleu
-const ENCRE = rgb(31 / 255, 58 / 255, 107 / 255);        // #1f3a6b, le tampon
+const ENCRE = rgb(31 / 255, 58 / 255, 107 / 255);        // #2b2a29, le tampon
 const VERT = rgb(22 / 255, 101 / 255, 52 / 255);
 const VERT_FOND = rgb(240 / 255, 253 / 255, 244 / 255);
 const VERT_TRAIT = rgb(187 / 255, 247 / 255, 208 / 255);

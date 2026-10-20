@@ -28,9 +28,9 @@ import {
  *  <ModaleObservation> / <ModaleEnvoi> / <ModaleScore>
  */
 
-export const NAVY = '#34496e';
-export const OR = '#c9a84c';
-export const BORD = '#e3e8f0';
+export const NAVY = '#1d1d1f';
+export const OR = '#ee7623';
+export const BORD = '#eaeae9';
 
 /* ══ Styles globaux, injectés une seule fois ═══════════════════ */
 
@@ -54,23 +54,23 @@ export function StylesEmilio() {
       .emi-avis-bouton:hover { filter: brightness(1.08) }
       @media (max-width: 760px) { .emi-avis-bouton { flex: 1 1 100%; justify-content: center; padding-top: 10px !important; padding-bottom: 10px !important } }
       .emi-carte { transition: box-shadow .24s ease, transform .24s ease, border-color .24s ease }
-      .emi-carte:hover { box-shadow: 0 2px 4px rgba(16,24,40,.05), 0 20px 44px -24px rgba(16,24,40,.38) }
+      .emi-carte:hover { box-shadow: 0 2px 4px rgba(20, 19, 19,.05), 0 20px 44px -24px rgba(20, 19, 19,.38) }
       .emi-ligne { transition: box-shadow .16s ease, border-color .16s ease }
-      .emi-ligne:hover { box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 8px 20px -14px rgba(16,24,40,.45) }
+      .emi-ligne:hover { box-shadow: 0 1px 2px rgba(20, 19, 19,.05), 0 8px 20px -14px rgba(20, 19, 19,.45) }
 
       /* ── bandeau de photos ─────────────────────────────── */
       .emi-vignette { position:relative; flex:1 1 0; min-width:88px; max-width:158px; aspect-ratio:1/1;
-        border-radius:12px; overflow:hidden; background:#e8edf3; cursor:zoom-in; border:none; padding:0;
+        border-radius:12px; overflow:hidden; background:#eeeeed; cursor:zoom-in; border:none; padding:0;
         transition: transform .24s cubic-bezier(.16,1,.3,1), box-shadow .24s ease }
       .emi-vignette img { width:100%; height:100%; object-fit:cover; display:block;
         transition: transform .5s cubic-bezier(.16,1,.3,1), filter .24s ease }
-      .emi-vignette:hover { transform: translateY(-3px); box-shadow: 0 12px 24px -12px rgba(16,24,40,.5); z-index:2 }
+      .emi-vignette:hover { transform: translateY(-3px); box-shadow: 0 12px 24px -12px rgba(20, 19, 19,.5); z-index:2 }
       .emi-vignette:hover img { transform: scale(1.07) }
       .emi-bande { display:flex; gap:7px; align-items:stretch }
       /* Le bouton « Voir le plan », posé sur le bas du bandeau de photos. */
-      .emi-voir-plan { display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,.96); color:#34496e;
+      .emi-voir-plan { display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,.96); color:#1d1d1f;
         border:none; border-radius:20px; padding:7px 13px; font-size:12px; font-weight:800; cursor:pointer;
-        font-family:inherit; box-shadow:0 6px 16px -8px rgba(16,24,40,.55); transition: transform .18s ease }
+        font-family:inherit; box-shadow:0 6px 16px -8px rgba(20, 19, 19,.55); transition: transform .18s ease }
       .emi-voir-plan:hover { transform: translateY(-1px) }
 
       /* ── volet dépliant ────────────────────────────────── */
@@ -100,12 +100,12 @@ export function StylesEmilio() {
         color:#64748b; cursor:pointer; font-family:inherit; white-space:nowrap;
         transition: background .28s cubic-bezier(.16,1,.3,1), color .28s cubic-bezier(.16,1,.3,1) }
       .emi-onglet:hover { color:${NAVY}; background:rgba(255,255,255,.62) }
-      .emi-onglet[data-actif="true"] { color:${NAVY}; font-weight:800; background:#f7f9fc;
+      .emi-onglet[data-actif="true"] { color:${NAVY}; font-weight:800; background:#fafaf9;
         border-color:${BORD}; padding-top:9px }
       .emi-onglet[data-actif="true"]::before { content:""; position:absolute; left:-1px; right:-1px; top:-1px;
         height:3px; border-radius:3px 3px 0 0; background:${OR} }
       .emi-compteur { background:rgba(148,163,184,.18); color:#64748b; border-radius:20px; padding:1px 8px; font-size:11.5px; font-weight:800; transition: all .32s cubic-bezier(.16,1,.3,1) }
-      .emi-onglet[data-actif="true"] .emi-compteur { background:rgba(26,35,50,.1); color:${NAVY} }
+      .emi-onglet[data-actif="true"] .emi-compteur { background:rgba(24, 24, 27,.1); color:${NAVY} }
       .emi-onglet .emi-compteur.dore { background:${OR}; color:#fff }
 
       /* ─── La barre du suivi, sur fond bleu profond ───
@@ -113,12 +113,12 @@ export function StylesEmilio() {
          ce qu'on fait pour lui. On ne les confond plus. */
       .emi-onglets.sombre .emi-onglet { color:rgba(255,255,255,.66) }
       .emi-onglets.sombre .emi-onglet:hover { color:#fff; background:rgba(255,255,255,.09) }
-      .emi-onglets.sombre .emi-onglet[data-actif="true"] { color:${NAVY}; background:#f7f9fc; border-color:transparent }
+      .emi-onglets.sombre .emi-onglet[data-actif="true"] { color:${NAVY}; background:#fafaf9; border-color:transparent }
       /* Le filet doré du haut faisait doublon avec le blanc de l'onglet, qui
          suffit à dire lequel est ouvert. */
       .emi-onglets.sombre .emi-onglet[data-actif="true"]::before { display:none }
       .emi-onglets.sombre .emi-compteur { background:rgba(255,255,255,.15); color:#fff }
-      .emi-onglets.sombre .emi-onglet[data-actif="true"] .emi-compteur { background:rgba(26,35,50,.1); color:${NAVY} }
+      .emi-onglets.sombre .emi-onglet[data-actif="true"] .emi-compteur { background:rgba(24, 24, 27,.1); color:${NAVY} }
 
       /* Le raccord de l'onglet au panneau. Deux quarts de cercle peints dans la
          couleur du panneau, de part et d'autre : l'onglet cesse d'être un
@@ -128,8 +128,8 @@ export function StylesEmilio() {
         content:""; position:absolute; bottom:0; left:-11px; right:-11px; height:11px;
         pointer-events:none;
         background:
-          radial-gradient(circle at 0 0, transparent 11px, #f7f9fc 11.5px) left bottom / 11px 11px no-repeat,
-          radial-gradient(circle at 100% 0, transparent 11px, #f7f9fc 11.5px) right bottom / 11px 11px no-repeat;
+          radial-gradient(circle at 0 0, transparent 11px, #fafaf9 11.5px) left bottom / 11px 11px no-repeat,
+          radial-gradient(circle at 100% 0, transparent 11px, #fafaf9 11.5px) right bottom / 11px 11px no-repeat;
       }
 
       /* V3.167 — L'onglet blanc GLISSE d'une étape à l'autre (Curseur.tsx),
@@ -141,14 +141,14 @@ export function StylesEmilio() {
       /* V3.167 — Une barre de filtres façon « Demandes Internet » : un rail
          bleu pâle, la pastille marine glisse dessous (Curseur.tsx). */
       .emi-filtres { display:flex; gap:4px; flex-wrap:wrap; align-items:center; align-self:flex-start; max-width:100%;
-        box-sizing:border-box; background:#f1f5fb; border-radius:16px; padding:4px }
+        box-sizing:border-box; background:#f7f6f5; border-radius:16px; padding:4px }
       .emi-filtre { display:inline-flex; align-items:center; gap:7px; border:none; border-radius:12px; padding:8px 13px;
         background:transparent; color:${NAVY}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0 }
       .emi-filtre:hover:not([aria-pressed="true"]) { background:rgba(255,255,255,.75) }
-      .emi-filtre[aria-pressed="true"] { background:${NAVY}; color:#fff; box-shadow:0 10px 22px -12px rgba(34,73,124,.85) }
+      .emi-filtre[aria-pressed="true"] { background:${NAVY}; color:#fff; box-shadow:0 10px 22px -12px rgba(29, 29, 31,.85) }
       .emi-filtre i { font-style:normal; font-size:11px; font-weight:800; border-radius:20px; padding:1px 7px; background:#fff; color:#64748b;
         font-variant-numeric:tabular-nums; transition:background .3s ease, color .3s ease }
-      .emi-filtre[aria-pressed="true"] i { background:${OR}; color:#1a2332 }
+      .emi-filtre[aria-pressed="true"] i { background:${OR}; color:#18181b }
       @media (max-width: 760px) {
         .emi-filtres { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; align-self:stretch }
         .emi-filtres::-webkit-scrollbar { display:none }
@@ -273,14 +273,14 @@ export function Modale({ children, onFerme, largeur = 560, nu }: { children: Rea
     <div className="emi-voile" data-nu={nu ? 'true' : undefined} onClick={onFerme}
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: nu ? 'rgba(8,12,20,.9)' : 'rgba(12,18,30,.55)', backdropFilter: 'blur(3px)',
+        background: nu ? 'rgba(12, 12, 11,.9)' : 'rgba(16, 15, 15,.55)', backdropFilter: 'blur(3px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 24, overflowY: 'auto',
       }}>
       <div className="emi-fenetre" onClick={(e) => e.stopPropagation()}
         style={{
           background: nu ? 'transparent' : 'white', borderRadius: 22, width: '100%', maxWidth: largeur,
-          boxShadow: nu ? 'none' : '0 32px 80px rgba(12,18,30,.4)', overflow: nu ? 'visible' : 'hidden',
+          boxShadow: nu ? 'none' : '0 32px 80px rgba(16, 15, 15,.4)', overflow: nu ? 'visible' : 'hidden',
           fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", margin: 'auto',
         }}>
         {children}
@@ -295,7 +295,7 @@ export function Modale({ children, onFerme, largeur = 560, nu }: { children: Rea
 const DPE_COULEURS: Record<string, { bg: string; fg: string }> = {
   A: { bg: '#319834', fg: '#fff' }, B: { bg: '#4ab84a', fg: '#fff' },
   C: { bg: '#a8d84a', fg: NAVY }, D: { bg: '#f7e017', fg: NAVY },
-  E: { bg: '#f5b912', fg: NAVY }, F: { bg: '#ee8235', fg: '#fff' },
+  E: { bg: '#ee7320', fg: NAVY }, F: { bg: '#ee8235', fg: '#fff' },
   G: { bg: '#e2231a', fg: '#fff' },
 };
 
@@ -305,7 +305,7 @@ export function Dpe({ lettre, label = 'DPE' }: { lettre?: string | null; label?:
   const c = DPE_COULEURS[L];
   if (!c) return null;
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f7f9fc', border: `1px solid ${BORD}`, borderRadius: 7, padding: '2px 7px 2px 3px', fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fafaf9', border: `1px solid ${BORD}`, borderRadius: 7, padding: '2px 7px 2px 3px', fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>
       <span style={{ background: c.bg, color: c.fg, borderRadius: 5, width: 17, height: 17, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11.5, fontWeight: 800 }}>{L}</span>
       {label}
     </span>
@@ -314,9 +314,9 @@ export function Dpe({ lettre, label = 'DPE' }: { lettre?: string | null; label?:
 
 export function Chip({ children, ton = 'neutre' }: { children: React.ReactNode; ton?: 'neutre' | 'vert' | 'or' | 'ambre' | 'violet' | 'rouge' }) {
   const t = {
-    neutre: { bg: '#f7f9fc', fg: '#64748b', bd: BORD },
+    neutre: { bg: '#fafaf9', fg: '#64748b', bd: BORD },
     vert: { bg: '#f0fdf4', fg: '#15803d', bd: '#bbf7d0' },
-    or: { bg: '#fdfaf1', fg: '#a17d2c', bd: '#ecdcb4' },
+    or: { bg: '#fdf6f1', fg: '#be550f', bd: '#f9caa7' },
     ambre: { bg: '#fffbeb', fg: '#92400e', bd: '#fde68a' },
     violet: { bg: '#f5f3ff', fg: '#7c3aed', bd: '#ddd6fe' },
     rouge: { bg: '#fef2f2', fg: '#b91c1c', bd: '#fecaca' },
@@ -327,19 +327,19 @@ export function Chip({ children, ton = 'neutre' }: { children: React.ReactNode; 
 export function BoutonLien({ children, onClick, href, actif }: { children: React.ReactNode; onClick?: () => void; href?: string; actif?: boolean }) {
   const st: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center', gap: 5,
-    background: actif ? NAVY : '#f7f9fc', color: actif ? 'white' : '#475569',
+    background: actif ? NAVY : '#fafaf9', color: actif ? 'white' : '#475569',
     border: `1px solid ${actif ? NAVY : BORD}`, borderRadius: 9, padding: '5px 11px',
     fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
     textDecoration: 'none', transition: 'all .16s ease',
   };
-  const surv = (e: any, entre: boolean) => { if (!actif) e.currentTarget.style.background = entre ? '#eef2f7' : '#f7f9fc'; };
+  const surv = (e: any, entre: boolean) => { if (!actif) e.currentTarget.style.background = entre ? '#f3f2f2' : '#fafaf9'; };
   if (href) return <a href={href} target="_blank" rel="noopener noreferrer" style={st} onMouseEnter={e => surv(e, true)} onMouseLeave={e => surv(e, false)}>{children}</a>;
   return <button type="button" onClick={onClick} style={st} onMouseEnter={e => surv(e, true)} onMouseLeave={e => surv(e, false)}>{children}</button>;
 }
 
 export const CARTE: React.CSSProperties = {
   background: 'white', border: `1px solid ${BORD}`, borderRadius: 18, overflow: 'hidden',
-  boxShadow: '0 1px 2px rgba(16,24,40,.04), 0 10px 26px -20px rgba(16,24,40,.28)',
+  boxShadow: '0 1px 2px rgba(20, 19, 19,.04), 0 10px 26px -20px rgba(20, 19, 19,.28)',
 };
 
 /* conservé pour compatibilité, plus utilisé par les cartes */
@@ -398,7 +398,7 @@ export function Vignettes({ photos, plans, max = 7, coinGauche, coinDroit }: {
                 <img src={u} alt="" onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0'; }} />
                 {dernier && (
                   <span style={{
-                    position: 'absolute', inset: 0, background: 'rgba(12,18,30,.62)', color: 'white',
+                    position: 'absolute', inset: 0, background: 'rgba(16, 15, 15,.62)', color: 'white',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 17, fontWeight: 800, letterSpacing: -.4, backdropFilter: 'blur(1px)',
                   }}>+{reste + 1}</span>
@@ -447,7 +447,7 @@ export function Visionneuse({ photos, depart, onFerme, clair }: { photos: string
             <button type="button" onClick={() => aller(1)} style={fleche('right')} aria-label="Suivante">›</button>
           </>
         )}
-        <div style={{ position: 'absolute', top: 14, right: 14, background: 'rgba(8,12,20,.6)', color: 'white', borderRadius: 20, padding: '5px 13px', fontSize: 12.5, fontWeight: 700, backdropFilter: 'blur(6px)' }}>
+        <div style={{ position: 'absolute', top: 14, right: 14, background: 'rgba(12, 12, 11,.6)', color: 'white', borderRadius: 20, padding: '5px 13px', fontSize: 12.5, fontWeight: 700, backdropFilter: 'blur(6px)' }}>
           {i + 1} / {photos.length}
         </div>
       </div>
@@ -475,7 +475,7 @@ export function Galerie({ photos, hauteur = 168, coin }: { photos: string[]; hau
   const aller = (d: number) => setIdx((i) => (i + d + total) % total);
 
   return (
-    <div className="emi-galerie" style={{ position: 'relative', background: '#e8edf3', minHeight: hauteur, overflow: 'hidden' }}>
+    <div className="emi-galerie" style={{ position: 'relative', background: '#eeeeed', minHeight: hauteur, overflow: 'hidden' }}>
       {photos.map((u, i) => (
         <img key={u + i} src={u} alt=""
           style={{
@@ -517,8 +517,8 @@ export function Galerie({ photos, hauteur = 168, coin }: { photos: string[]; hau
 export type EtatCritere = 'ok' | 'sous';
 
 const TONS_TUILE = {
-  or: { bg: '#fdfaf1', bd: '#ecdcb4', ic: OR, val: NAVY, lib: '#9aa8bd' },
-  neutre: { bg: '#f7f9fc', bd: BORD, ic: '#7b8ba3', val: NAVY, lib: '#9aa8bd' },
+  or: { bg: '#fdf6f1', bd: '#f9caa7', ic: OR, val: NAVY, lib: '#afaca8' },
+  neutre: { bg: '#fafaf9', bd: BORD, ic: '#7b8ba3', val: NAVY, lib: '#afaca8' },
   ok: { bg: '#f0fdf4', bd: '#bbf7d0', ic: '#16a34a', val: '#15803d', lib: '#15803d' },
   sous: { bg: '#fffbeb', bd: '#fde68a', ic: '#d97706', val: '#b45309', lib: '#92400e' },
 };
@@ -700,9 +700,9 @@ export function LigneBien({ p, recherche }: { p: any; recherche?: any }) {
   return (
     <div className="emi-equipements" style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 10, fontWeight: 800, color: '#9aa8bd', textTransform: 'uppercase', letterSpacing: 1 }}>Équipements</span>
+        <span style={{ fontSize: 10, fontWeight: 800, color: '#afaca8', textTransform: 'uppercase', letterSpacing: 1 }}>Équipements</span>
         {duDore && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: '#a17d2c' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: '#be550f' }}>
             <span style={{ display: 'flex', width: 14, height: 14, borderRadius: '50%', background: OR, color: 'white', alignItems: 'center', justifyContent: 'center' }}>
               <Icone nom="coche" taille={9} epaisseur={3.4} />
             </span>
@@ -716,9 +716,9 @@ export function LigneBien({ p, recherche }: { p: any; recherche?: any }) {
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '5px 11px 5px 8px', borderRadius: 999, fontSize: 12.5,
             fontWeight: it.voulu ? 700 : 600,
-            background: it.voulu ? '#fdfaf1' : 'white',
-            border: `1px solid ${it.voulu ? '#e6d29f' : BORD}`,
-            color: it.voulu ? '#8a6d24' : '#475569',
+            background: it.voulu ? '#fdf6f1' : 'white',
+            border: `1px solid ${it.voulu ? '#f8bb8d' : BORD}`,
+            color: it.voulu ? '#a1480d' : '#475569',
           }}>
             <span style={{ display: 'flex', color: it.voulu ? OR : '#94a3b8' }}><Icone nom={it.icone} taille={15} epaisseur={1.9} /></span>
             <span>{it.texte}</span>
@@ -758,12 +758,12 @@ export function BasculeAffichage({ compact, onChange }: { compact: boolean; onCh
     border: 'none', borderRadius: 16, padding: '5px 11px',
     background: actif ? 'white' : 'transparent',
     color: actif ? NAVY : '#8b98a9',
-    boxShadow: actif ? '0 1px 3px rgba(16,24,40,.13)' : 'none',
+    boxShadow: actif ? '0 1px 3px rgba(20, 19, 19,.13)' : 'none',
     fontSize: 12, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
   });
   return (
     <div role="group" aria-label="Affichage de la liste"
-      style={{ display: 'inline-flex', gap: 2, padding: 3, borderRadius: 19, background: '#eef2f8', border: `1px solid ${BORD}` }}>
+      style={{ display: 'inline-flex', gap: 2, padding: 3, borderRadius: 19, background: '#f4f3f2', border: `1px solid ${BORD}` }}>
       <button type="button" onClick={() => onChange(false)} style={bouton(!compact)} aria-pressed={!compact}>
         <Icone nom="carte" taille={13} epaisseur={2} />Détaillé
       </button>
@@ -799,9 +799,9 @@ export function LigneCompacte({ photo, numero, titre, lieu, specs, prix, sousPri
   return (
     <div className="emi-ligne" data-coche={coche ? (choisi ? 'oui' : 'non') : undefined} style={{
       display: 'flex', alignItems: 'center', gap: 12, minWidth: 0,
-      background: choisi ? '#fffdf7' : 'white', border: `1px solid ${choisi ? OR : BORD}`, borderRadius: 13,
+      background: choisi ? '#fffaf7' : 'white', border: `1px solid ${choisi ? OR : BORD}`, borderRadius: 13,
       borderLeft: accent ? `4px solid ${accent}` : `1px solid ${choisi ? OR : BORD}`,
-      boxShadow: choisi ? '0 0 0 3px rgba(201,168,76,.16)' : 'none',
+      boxShadow: choisi ? '0 0 0 3px rgba(238, 118, 35,.16)' : 'none',
       padding: '8px 12px 8px 10px', transition: 'background .14s, border-color .14s, box-shadow .14s',
     }}>
       {coche && (
@@ -817,8 +817,8 @@ export function LigneCompacte({ photo, numero, titre, lieu, specs, prix, sousPri
       )}
 
       {photo
-        ? <img src={photo} alt="" style={{ width: 54, height: 42, objectFit: 'cover', borderRadius: 8, flexShrink: 0, background: '#eef2f8' }} />
-        : <span style={{ width: 54, height: 42, borderRadius: 8, flexShrink: 0, background: '#eef2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b6c1d1' }}>
+        ? <img src={photo} alt="" style={{ width: 54, height: 42, objectFit: 'cover', borderRadius: 8, flexShrink: 0, background: '#f4f3f2' }} />
+        : <span style={{ width: 54, height: 42, borderRadius: 8, flexShrink: 0, background: '#f4f3f2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c6c3c1' }}>
             <Icone nom="maison" taille={16} />
           </span>}
 
@@ -886,8 +886,8 @@ export function CaseACocher({ actif, partiel, onClick, titre, taille = 20 }: {
       }}>
       <span style={{
         width: taille, height: taille, borderRadius: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        border: `1.5px solid ${plein ? NAVY : '#c3ccda'}`, background: plein ? NAVY : 'white', color: OR,
-        boxShadow: plein ? 'none' : 'inset 0 1px 2px rgba(16,24,40,.06)', transition: 'all .14s',
+        border: `1.5px solid ${plein ? NAVY : '#d0cecd'}`, background: plein ? NAVY : 'white', color: OR,
+        boxShadow: plein ? 'none' : 'inset 0 1px 2px rgba(20, 19, 19,.06)', transition: 'all .14s',
       }}>
         {actif ? <Icone nom="coche" taille={taille - 6} epaisseur={3} />
           : partiel ? <Icone nom="moins" taille={taille - 6} epaisseur={3} /> : null}
@@ -954,10 +954,10 @@ function RappelMandat({ mandat, applique, onAppliquer, pour }: {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12,
-      background: applique ? '#fdfaf1' : 'white', border: `1px solid ${applique ? '#ecdcb4' : BORD}`,
+      background: applique ? '#fdf6f1' : 'white', border: `1px solid ${applique ? '#f9caa7' : BORD}`,
       borderRadius: 10, padding: '7px 11px', fontSize: 12.5, color: '#64748b',
     }}>
-      <span style={{ display: 'inline-flex', color: '#a17d2c' }}><Icone nom="liste" taille={14} epaisseur={1.9} /></span>
+      <span style={{ display: 'inline-flex', color: '#be550f' }}><Icone nom="liste" taille={14} epaisseur={1.9} /></span>
       <span style={{ flex: '1 1 200px' }}>
         {applique ? 'Honoraires du mandat en cours' : 'Mandat en cours'}&nbsp;: <b style={{ color: NAVY }}>{mandat.texte}</b>
       </span>
@@ -1045,7 +1045,7 @@ export function ChoixHonoraires({ bien, mandat, e, onChange, prenom }: {
     return (
       <button type="button" key={id} aria-pressed={actif} onClick={() => onChange({ cas: id })}
         style={{
-          flex: '1 1 140px', minWidth: 0, textAlign: 'left', background: actif ? '#fdfaf1' : 'white',
+          flex: '1 1 140px', minWidth: 0, textAlign: 'left', background: actif ? '#fdf6f1' : 'white',
           border: `1.5px solid ${actif ? OR : BORD}`, borderRadius: 12, padding: '9px 11px', cursor: 'pointer', fontFamily: 'inherit',
           transition: 'border-color .15s, background .15s',
         }}>
@@ -1066,7 +1066,7 @@ export function ChoixHonoraires({ bien, mandat, e, onChange, prenom }: {
         flex: 1, background: actif ? 'white' : 'transparent', color: actif ? NAVY : '#94a3b8',
         border: 'none', borderRadius: 9, padding: '8px 0', fontSize: 13, fontWeight: actif ? 800 : 600,
         cursor: 'pointer', fontFamily: 'inherit',
-        boxShadow: actif ? '0 2px 6px rgba(16,24,40,.14)' : 'none', transition: 'all .2s cubic-bezier(.16,1,.3,1)',
+        boxShadow: actif ? '0 2px 6px rgba(20, 19, 19,.14)' : 'none', transition: 'all .2s cubic-bezier(.16,1,.3,1)',
       }}>{label}</button>
   );
   const defautPour = (t: TypeHono) => (mandat && mandat.type === t ? String(mandat.val) : t === 'pourcentage' ? String(HONORAIRES_TAUX) : '25000');
@@ -1093,7 +1093,7 @@ export function ChoixHonoraires({ bien, mandat, e, onChange, prenom }: {
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 210px' }}>
               <input type="number" min="0" step={e.agenceType === 'pourcentage' ? '0.1' : '500'} value={e.agenceVal} placeholder={e.agenceType === 'pourcentage' ? '5' : '25000'}
                 aria-label="Honoraires de l’agence" onChange={x => onChange({ agenceVal: x.target.value })} style={champ} />
-              <span style={{ display: 'flex', background: '#eef2f7', borderRadius: 11, padding: 3, width: 92, flexShrink: 0 }}>
+              <span style={{ display: 'flex', background: '#f3f2f2', borderRadius: 11, padding: 3, width: 92, flexShrink: 0 }}>
                 {bascule(e.agenceType === 'pourcentage', () => onChange({ agenceType: 'pourcentage' }), '%')}
                 {bascule(e.agenceType === 'fixe', () => onChange({ agenceType: 'fixe' }), '€')}
               </span>
@@ -1118,7 +1118,7 @@ export function ChoixHonoraires({ bien, mandat, e, onChange, prenom }: {
           <RappelMandat mandat={mandat} applique={surMandat}
             onAppliquer={() => { if (mandat) onChange({ type: mandat.type, valeur: String(mandat.val) }); }} />
           <div style={{ display: 'flex', gap: 11, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', background: '#eef2f7', borderRadius: 11, padding: 3, width: 180, flexShrink: 0 }}>
+            <div style={{ display: 'flex', background: '#f3f2f2', borderRadius: 11, padding: 3, width: 180, flexShrink: 0 }}>
               {bascule(e.type === 'pourcentage', () => onChange({ type: 'pourcentage', valeur: defautPour('pourcentage') }), '% du prix')}
               {bascule(e.type === 'fixe', () => onChange({ type: 'fixe', valeur: defautPour('fixe') }), 'Montant fixe')}
             </div>
@@ -1260,7 +1260,7 @@ export function ModaleHonoraires({ bien, clientId, client, mandat = null, onFerm
         </div>
       ) : (
         <>
-          <div style={{ padding: '18px 24px', background: '#fbfcfe' }}>
+          <div style={{ padding: '18px 24px', background: '#fdfcfc' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13.5, color: '#64748b', marginBottom: 14 }}>
               <span>{'Prix de l’annonce'}</span>
               <span style={{ fontWeight: 700, color: NAVY, fontSize: 15 }}>{c.base > 0 ? `${c.base.toLocaleString('fr-FR')} €` : 'pas de prix'}</span>
@@ -1359,7 +1359,7 @@ function Compteur({ ton, titre, items, ouvert, onClick }: {
       display: 'flex', flexDirection: 'column', gap: 7, textAlign: 'left', fontFamily: 'inherit',
       padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
       background: ouvert ? c.bg : 'white', border: `1px solid ${c.bd}`,
-      boxShadow: ouvert ? '0 3px 10px -5px rgba(26,35,50,.45)' : 'none',
+      boxShadow: ouvert ? '0 3px 10px -5px rgba(24, 24, 27,.45)' : 'none',
     }}>
       <span style={{ display: 'flex', alignItems: 'center', gap: 7, width: '100%' }}>
         <span style={{ width: 7, height: 7, borderRadius: '50%', background: c.pastille, flexShrink: 0 }} />
@@ -1421,7 +1421,7 @@ export function BilanBien({ p }: { p: any }) {
   const volet = (v: TonBilan, items: string[], titre: string) => (
     <div className="emi-volet emi-volet-grille" data-ouvert={ouvert === v}>
       <div>
-        <div style={{ background: '#fafcff', border: `1px solid ${BORD}`, borderRadius: 12, padding: '13px 15px', display: 'flex', flexDirection: 'column', gap: 9 }}>
+        <div style={{ background: '#fdfcfc', border: `1px solid ${BORD}`, borderRadius: 12, padding: '13px 15px', display: 'flex', flexDirection: 'column', gap: 9 }}>
           <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: TONS_BILAN[v].titre }}>{titre}</span>
           <ListeNumerotee items={items} ton={v} />
         </div>
@@ -1766,9 +1766,9 @@ export function AvisLien({ p }: { p: any }) {
     return (
       <div className="emi-avis-lien" data-etat="retire" style={{
         display: 'flex', alignItems: 'flex-start', gap: 11, flexWrap: 'wrap',
-        background: '#fffaf0', border: '1px solid #f6d89a', borderRadius: 14, padding: '11px 12px',
+        background: '#fff6f0', border: '1px solid #f8c298', borderRadius: 14, padding: '11px 12px',
       }}>
-        <span style={{ width: 30, height: 30, borderRadius: 9, background: '#fdecc8', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ width: 30, height: 30, borderRadius: 9, background: '#fddec8', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Icone nom="alerte" taille={16} epaisseur={2.1} />
         </span>
         <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, flex: '1 1 220px' }}>
@@ -1779,7 +1779,7 @@ export function AvisLien({ p }: { p: any }) {
         </span>
         {a.tel && (
           <a href={`tel:${a.tel.replace(/\s+/g, '')}`} className="emi-avis-bouton"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, alignSelf: 'center', background: 'white', color: '#92400e', border: '1px solid #f6d89a', borderRadius: 10, padding: '7px 12px', fontSize: 12.5, fontWeight: 800, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, alignSelf: 'center', background: 'white', color: '#92400e', border: '1px solid #f8c298', borderRadius: 10, padding: '7px 12px', fontSize: 12.5, fontWeight: 800, textDecoration: 'none', whiteSpace: 'nowrap' }}>
             <Icone nom="tel" taille={14} epaisseur={2} />
             <span>{`Appeler · ${a.tel}`}</span>
           </a>
@@ -1797,11 +1797,11 @@ export function AvisLien({ p }: { p: any }) {
 
   return (
     <div className="emi-avis-lien" data-etat="remplace" style={{
-      border: '1px solid #ecdcb4', borderRadius: 14, overflow: 'hidden',
-      background: 'linear-gradient(180deg, #fffcf3 0%, #ffffff 70%)',
+      border: '1px solid #f9caa7', borderRadius: 14, overflow: 'hidden',
+      background: 'linear-gradient(180deg, #fff8f3 0%, #ffffff 70%)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 11, flexWrap: 'wrap', padding: '11px 12px 10px' }}>
-        <span style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(201,168,76,.18)', color: '#a17d2c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(238, 118, 35,.18)', color: '#be550f', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Icone nom="lien" taille={16} epaisseur={2.1} />
         </span>
         <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: '1 1 220px' }}>
@@ -1809,14 +1809,14 @@ export function AvisLien({ p }: { p: any }) {
           <span style={{ fontSize: 12.5, color: '#7b8798', lineHeight: 1.45 }}>{phrase}</span>
         </span>
         <a href={e.actuel.url} target="_blank" rel="noreferrer" className="emi-avis-bouton"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: NAVY, color: 'white', borderRadius: 10, padding: '8px 13px', fontSize: 12.5, fontWeight: 800, textDecoration: 'none', whiteSpace: 'nowrap', boxShadow: '0 6px 14px -8px rgba(52,73,110,.8)' }}>
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: NAVY, color: 'white', borderRadius: 10, padding: '8px 13px', fontSize: 12.5, fontWeight: 800, textDecoration: 'none', whiteSpace: 'nowrap', boxShadow: '0 6px 14px -8px rgba(29, 29, 31,.8)' }}>
           <span>Ouvrir l’annonce en ligne</span>
           <Icone nom="lien" taille={13} epaisseur={2.2} />
         </a>
       </div>
 
       {/* la frise : de l'ancienne annonce à celle d'aujourd'hui */}
-      <div style={{ borderTop: '1px solid #f3ead2', padding: '10px 14px 11px' }}>
+      <div style={{ borderTop: '1px solid #f3e0d2', padding: '10px 14px 11px' }}>
         {etapes.map((d, i) => (
           <div key={i} className="emi-avis-etape" style={{ display: 'grid', gridTemplateColumns: '11px minmax(0, 1fr) auto', columnGap: 11, alignItems: 'start', padding: '3px 0 9px' }}>
             {/* le point, et le trait qui descend jusqu'au point suivant */}
@@ -1829,7 +1829,7 @@ export function AvisLien({ p }: { p: any }) {
                 <span style={{ textDecoration: 'line-through', textDecorationColor: '#cbd5e1' }}>{d.agence}</span>
                 {d.portail ? <span style={{ fontWeight: 600 }}>{` · ${d.portail}`}</span> : null}
               </span>
-              <span style={{ fontSize: 11.5, color: '#a9b6c8' }}>{`Ancienne annonce${d.prix ? ` · ${k(d.prix)}` : ''} · lien mort`}</span>
+              <span style={{ fontSize: 11.5, color: '#bbb8b6' }}>{`Ancienne annonce${d.prix ? ` · ${k(d.prix)}` : ''} · lien mort`}</span>
             </span>
             <span style={{ fontSize: 11, fontWeight: 800, color: '#b42318', background: '#fef3f2', border: '1px solid #fecdca', borderRadius: 20, padding: '2px 9px', whiteSpace: 'nowrap', marginTop: 1 }}>
               {`retirée le ${jourCourt(d.retiree_le)}`}
@@ -1863,18 +1863,18 @@ function CaseMarche({ icone, titre, valeur, detail, ton = 'neutre', onClick, ouv
   const t = ton === 'vert'
     ? { bg: '#f0fdf4', bd: '#bbf7d0', ic: '#16a34a', val: '#15803d', det: '#15803d' }
     : ton === 'ambre'
-      ? { bg: '#fffaf0', bd: '#f6d89a', ic: '#d97706', val: '#b45309', det: '#b45309' }
-      : { bg: 'white', bd: '#e1e8f1', ic: '#8a9ab0', val: NAVY, det: '#8190a5' };
+      ? { bg: '#fff6f0', bd: '#f8c298', ic: '#d97706', val: '#b45309', det: '#b45309' }
+      : { bg: 'white', bd: '#eae9e8', ic: '#a19d99', val: NAVY, det: '#8190a5' };
   /* Sur ordinateur, trois cases côte à côte ; sur téléphone, trois lignes
      (crm-mobile.css) : l'intitulé à gauche, le chiffre à droite. */
   const contenu = (
     <>
       <span className="emi-case-tete" style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0, paddingRight: onClick ? 16 : 0 }}>
         <span style={{ display: 'flex', color: ouvert ? OR : t.ic }}><Icone nom={icone} taille={13} epaisseur={2} /></span>
-        <span className="emi-case-titre" style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase', color: ouvert ? 'rgba(255,255,255,.62)' : '#9aa8bd', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{titre}</span>
+        <span className="emi-case-titre" style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase', color: ouvert ? 'rgba(255,255,255,.62)' : '#afaca8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{titre}</span>
       </span>
       {onClick && (
-        <span className="emi-chevron emi-case-chev" data-ouvert={!!ouvert} style={{ position: 'absolute', top: 10, right: 10, display: 'flex', color: ouvert ? OR : '#b6c1d1' }}>
+        <span className="emi-chevron emi-case-chev" data-ouvert={!!ouvert} style={{ position: 'absolute', top: 10, right: 10, display: 'flex', color: ouvert ? OR : '#c6c3c1' }}>
           <Icone nom="chevron" taille={12} epaisseur={2.4} />
         </span>
       )}
@@ -1887,7 +1887,7 @@ function CaseMarche({ icone, titre, valeur, detail, ton = 'neutre', onClick, ouv
     display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, minWidth: 0,
     textAlign: 'left', fontFamily: 'inherit', padding: '10px 11px 11px', borderRadius: 12,
     background: ouvert ? NAVY : t.bg, border: `1px solid ${ouvert ? NAVY : t.bd}`,
-    boxShadow: ouvert ? '0 8px 18px -10px rgba(26,35,50,.9)' : '0 1px 2px rgba(16,24,40,.04)',
+    boxShadow: ouvert ? '0 8px 18px -10px rgba(24, 24, 27,.9)' : '0 1px 2px rgba(20, 19, 19,.04)',
     transition: 'background .2s ease, border-color .2s ease, box-shadow .2s ease',
   };
   if (!onClick) return <div className="emi-case" style={st}>{contenu}</div>;
@@ -1930,7 +1930,7 @@ export function BandeauMarche({ p, sobre }: { p: any; sobre?: boolean }) {
      les mêmes, au même endroit. Ce sont des données de travail : elles
      restent dans le CRM et ne partent jamais chez le client. */
   return (
-    <div className="emi-marche" style={{ border: '1px solid #d8e0eb', borderRadius: 14, overflow: 'hidden', background: '#f3f6fa' }}>
+    <div className="emi-marche" style={{ border: '1px solid #e3e2e0', borderRadius: 14, overflow: 'hidden', background: '#f7f6f6' }}>
       {sobre ? (
         /* V3.165 : dans « Ce que dit la veille », le marché n'a pas besoin d'un
            second bandeau sombre : un titre suffit. */
@@ -1940,7 +1940,7 @@ export function BandeauMarche({ p, sobre }: { p: any; sobre?: boolean }) {
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 12px', background: NAVY }}>
-          <span style={{ width: 24, height: 24, borderRadius: 7, background: 'rgba(201,168,76,.16)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <span style={{ width: 24, height: 24, borderRadius: 7, background: 'rgba(238, 118, 35,.16)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icone nom="courbe" taille={14} epaisseur={2.1} />
           </span>
           <span style={{ fontSize: 12, fontWeight: 800, color: 'white', letterSpacing: 1.3, textTransform: 'uppercase' }}>Marché</span>
@@ -2013,7 +2013,7 @@ export function BandeauMarche({ p, sobre }: { p: any; sobre?: boolean }) {
                   </div>
                   {baisse > 0 && (
                     <div style={{ marginTop: 6, borderTop: `2px solid ${BORD}`, paddingTop: 9, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: '#9aa8bd', textTransform: 'uppercase', letterSpacing: .8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: '#afaca8', textTransform: 'uppercase', letterSpacing: .8 }}>
                         Depuis la mise en ligne
                       </span>
                       <span style={{ fontSize: 15.5, fontWeight: 800, color: '#15803d' }}>
@@ -2022,7 +2022,7 @@ export function BandeauMarche({ p, sobre }: { p: any; sobre?: boolean }) {
                       </span>
                     </div>
                   )}
-                  <div style={{ fontSize: 11, color: '#b6c1d1', marginTop: 8, marginBottom: 4 }}>Source : Yanport</div>
+                  <div style={{ fontSize: 11, color: '#c6c3c1', marginTop: 8, marginBottom: 4 }}>Source : Yanport</div>
                 </>
               ) : (
                 <div style={{ fontSize: 13, color: '#94a3b8', padding: '6px 0 10px' }}>
@@ -2094,7 +2094,7 @@ export function BandeauMarche({ p, sobre }: { p: any; sobre?: boolean }) {
                       Pas de lien : il ne mène nulle part. */}
                   {retirees.length > 0 && (
                     <div style={{ marginTop: liste.length ? 4 : 0, paddingTop: liste.length ? 9 : 2, borderTop: liste.length ? `1px dashed ${BORD}` : 'none' }}>
-                      <div style={{ fontSize: 10.5, fontWeight: 800, color: '#a9b6c8', textTransform: 'uppercase', letterSpacing: .8, marginBottom: 2 }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 800, color: '#bbb8b6', textTransform: 'uppercase', letterSpacing: .8, marginBottom: 2 }}>
                         {retirees.length > 1 ? 'Annonces retirées' : 'Annonce retirée'}
                       </div>
                       {retirees.map((d, i) => (
@@ -2104,10 +2104,10 @@ export function BandeauMarche({ p, sobre }: { p: any; sobre?: boolean }) {
                           <span className="emi-diff-nom" style={{ fontWeight: 700, color: '#94a3b8', flex: '1 1 150px', minWidth: 0, textAlign: 'left' }}>
                             <span style={{ textDecoration: 'line-through', textDecorationColor: '#cbd5e1' }}>{d.agence}</span>
                             {d.portail ? <span style={{ fontWeight: 600, fontSize: 11.5 }}>{` · ${d.portail}`}</span> : null}
-                            {d.lien_retenu ? <span style={{ fontWeight: 700, fontSize: 11, color: '#b6c1d1' }}>{' · ancien lien du bien'}</span> : null}
+                            {d.lien_retenu ? <span style={{ fontWeight: 700, fontSize: 11, color: '#c6c3c1' }}>{' · ancien lien du bien'}</span> : null}
                           </span>
                           {typeof d.prix === 'number' && (
-                            <span className="emi-diff-prix" style={{ fontWeight: 700, color: '#a9b6c8', minWidth: 104, textAlign: 'right' }}>
+                            <span className="emi-diff-prix" style={{ fontWeight: 700, color: '#bbb8b6', minWidth: 104, textAlign: 'right' }}>
                               {`${d.prix.toLocaleString('fr-FR')} €`}
                             </span>
                           )}
@@ -2123,14 +2123,14 @@ export function BandeauMarche({ p, sobre }: { p: any; sobre?: boolean }) {
                   )}
                   {ecart > 0 && (
                     <div style={{ marginTop: 6, borderTop: `2px solid ${BORD}`, paddingTop: 9, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: '#9aa8bd', textTransform: 'uppercase', letterSpacing: .8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: '#afaca8', textTransform: 'uppercase', letterSpacing: .8 }}>
                         Écart entre diffuseurs
                       </span>
                       <span style={{ fontSize: 15.5, fontWeight: 800, color: '#15803d' }}>{ecart.toLocaleString('fr-FR')} €</span>
                     </div>
                   )}
                   {nomPortail(portail) && (
-                    <div style={{ fontSize: 11, color: '#b6c1d1', marginTop: 8, marginBottom: 4 }}>
+                    <div style={{ fontSize: 11, color: '#c6c3c1', marginTop: 8, marginBottom: 4 }}>
                       {`Annonce retenue trouvée sur ${nomPortail(portail)}`}
                     </div>
                   )}
@@ -2156,7 +2156,7 @@ export function BandeauMarche({ p, sobre }: { p: any; sobre?: boolean }) {
 function Ligne({ lib, val }: { lib: string; val: React.ReactNode }) {
   return (
     <div>
-      <div style={{ fontSize: 10, fontWeight: 800, color: '#9aa8bd', textTransform: 'uppercase', letterSpacing: .8, marginBottom: 3 }}>{lib}</div>
+      <div style={{ fontSize: 10, fontWeight: 800, color: '#afaca8', textTransform: 'uppercase', letterSpacing: .8, marginBottom: 3 }}>{lib}</div>
       <div style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>{val}</div>
     </div>
   );
@@ -2175,7 +2175,7 @@ export function Onglets({ items, actif, onChange, sombre }: {
     <div className={sombre ? 'emi-onglets sombre' : 'emi-onglets'} data-defile="" style={sombre ? {
       display: 'flex', gap: 3, flexWrap: 'wrap', padding: 0, marginBottom: 0,
     } : {
-      display: 'flex', gap: 3, flexWrap: 'wrap', background: '#eef2f7',
+      display: 'flex', gap: 3, flexWrap: 'wrap', background: '#f3f2f2',
       border: `1px solid ${BORD}`, borderBottom: 'none',
       borderRadius: '16px 16px 0 0', padding: '6px 6px 0', marginBottom: 0,
     }}>
@@ -2317,9 +2317,9 @@ function baseDe(p: any, r: any): string[] {
 }
 
 const TONS_SCORE = {
-  bleu: { c: '#2563eb', titre: '#1d4ed8', bg: '#f5f8ff', bd: '#dbe5fb', puce: '#e0e9fd', icone: 'cible', puceIcone: 'coche' },
+  bleu: { c: '#2563eb', titre: '#1d4ed8', bg: '#fafafa', bd: '#ecebea', puce: '#f0eeed', icone: 'cible', puceIcone: 'coche' },
   vert: { c: '#16a34a', titre: '#15803d', bg: '#f3fbf5', bd: '#cdeed8', puce: '#dcfce7', icone: 'plus', puceIcone: 'plus' },
-  ambre: { c: '#d97706', titre: '#b45309', bg: '#fffaf0', bd: '#f8e3b5', puce: '#fef3c7', icone: 'moins', puceIcone: 'moins' },
+  ambre: { c: '#d97706', titre: '#b45309', bg: '#fff6f0', bd: '#fad2b3', puce: '#fef3c7', icone: 'moins', puceIcone: 'moins' },
   rouge: { c: '#dc2626', titre: '#b91c1c', bg: '#fff6f6', bd: '#fbd5d5', puce: '#fee2e2', icone: 'alerte', puceIcone: 'alerte' },
 };
 
@@ -2351,7 +2351,7 @@ function BlocScore({ ton, titre, sous, items, pied }: {
           </li>
         ))}
       </ul>
-      {pied && <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, padding: '9px 13px', borderTop: '1px solid #f1f5f9', background: '#fbfcfe' }}>{pied}</div>}
+      {pied && <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, padding: '9px 13px', borderTop: '1px solid #f1f5f9', background: '#fdfcfc' }}>{pied}</div>}
     </section>
   );
 }
@@ -2364,8 +2364,8 @@ export function PastilleScore({ score, onClick }: { score: any; onClick: () => v
     <button type="button" onClick={onClick} title="Comment cette note est calculée" aria-label={`Note ${n} sur 100 : voir le détail`}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
-        background: fort ? '#fdfaf1' : '#f7f9fc', color: fort ? '#a17d2c' : '#64748b',
-        border: `1px solid ${fort ? '#ecdcb4' : BORD}`, borderRadius: 20,
+        background: fort ? '#fdf6f1' : '#fafaf9', color: fort ? '#be550f' : '#64748b',
+        border: `1px solid ${fort ? '#f9caa7' : BORD}`, borderRadius: 20,
         padding: '4px 10px 4px 11px', fontSize: 12, fontWeight: 800,
         cursor: 'pointer', fontFamily: 'inherit',
       }}>
@@ -2453,20 +2453,20 @@ export function ModaleScore({ p, recherche, onFerme }: { p: any; recherche?: any
             ))}
           </div>
           <div style={{ marginTop: 8, display: 'flex', gap: 9, alignItems: 'flex-start', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 11, padding: '8px 11px' }}>
-            <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, color: tr.c === OR ? OR : 'white', background: tr.c === OR ? 'rgba(201,168,76,.16)' : tr.c, borderRadius: 7, padding: '2px 7px', marginTop: 1 }}>{tr.lib}</span>
+            <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, color: tr.c === OR ? OR : 'white', background: tr.c === OR ? 'rgba(238, 118, 35,.16)' : tr.c, borderRadius: 7, padding: '2px 7px', marginTop: 1 }}>{tr.lib}</span>
             <span style={{ fontSize: 12.5, lineHeight: 1.5, color: 'rgba(255,255,255,.78)' }}>{tr.regle}</span>
           </div>
         </div>
       </div>
 
       <div style={{
-        padding: 16, background: '#f7f9fc', display: 'grid', gap: 12, alignItems: 'start',
+        padding: 16, background: '#fafaf9', display: 'grid', gap: 12, alignItems: 'start',
         gridTemplateColumns: 'repeat(auto-fit, minmax(min(270px, 100%), 1fr))',
       }}>
         {colonnes}
       </div>
 
-      <div className="emi-score-pied" style={{ padding: '0 16px 16px', background: '#f7f9fc', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <div className="emi-score-pied" style={{ padding: '0 16px 16px', background: '#fafaf9', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: '#94a3b8', flex: '1 1 260px' }}>
           <Icone nom="cadenas" taille={12} epaisseur={2} />
           <span>Note posée par la veille, pour toi seul — jamais montrée au client.</span>
@@ -2492,10 +2492,10 @@ export function NotesVeille({ p, onScore }: { p: any; onScore: () => void }) {
   return (
     <div className="emi-notes" style={{ display: 'flex', flexDirection: 'column', gap: 9, borderTop: `1px dashed ${BORD}`, paddingTop: 11 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 800, color: '#9aa8bd', textTransform: 'uppercase', letterSpacing: 1 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 800, color: '#afaca8', textTransform: 'uppercase', letterSpacing: 1 }}>
           <Icone nom="cadenas" taille={12} epaisseur={2.1} />Notes de la veille
         </span>
-        <span style={{ fontSize: 11, color: '#b6c1d1', fontWeight: 600 }}>interne, jamais vu par le client</span>
+        <span style={{ fontSize: 11, color: '#c6c3c1', fontWeight: 600 }}>interne, jamais vu par le client</span>
         {aNote && <span style={{ marginLeft: 'auto' }}><PastilleScore score={p.score} onClick={onScore} /></span>}
       </div>
       <Appreciation p={p} />
@@ -2601,10 +2601,10 @@ export function ModaleObservation({ bien, clientId, onFerme, onEnregistre }: { b
 
       <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 17 }}>
         {actuel && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', background: '#f7f9fc', border: `1px solid ${BORD}`, borderRadius: 12, padding: '10px 13px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', background: '#fafaf9', border: `1px solid ${BORD}`, borderRadius: 12, padding: '10px 13px' }}>
             <span style={{ fontSize: 13, color: '#475569' }}>{`Réponse actuelle : ${actuel.icone} ${actuel.label}${bien.retour_par === 'conseiller' ? ', notée par toi' : ', depuis son espace'}`}</span>
             <button type="button" onClick={remettreEnAttente} disabled={envoi}
-              style={{ background: 'none', border: 'none', padding: 0, color: '#a07c28', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, fontFamily: 'inherit' }}>
+              style={{ background: 'none', border: 'none', padding: 0, color: '#b4560f', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, fontFamily: 'inherit' }}>
               ⏳ Remettre en attente de son retour
             </button>
           </div>
@@ -2615,7 +2615,7 @@ export function ModaleObservation({ bien, clientId, onFerme, onEnregistre }: { b
             return (
               <button key={a.id} type="button" onClick={() => setAvis(a.id)}
                 style={{
-                  flex: 1, background: actif ? a.fond : '#fbfcfe',
+                  flex: 1, background: actif ? a.fond : '#fdfcfc',
                   border: `2px solid ${actif ? a.couleur : BORD}`, borderRadius: 15,
                   padding: '17px 8px', cursor: 'pointer', fontFamily: 'inherit',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
@@ -2636,7 +2636,7 @@ export function ModaleObservation({ bien, clientId, onFerme, onEnregistre }: { b
               {(SUGGESTIONS[choisi.id] || []).map(s => (
                 <button key={s} type="button" onClick={() => setTexte(s)}
                   style={{
-                    background: texte === s ? choisi.fond : '#f7f9fc',
+                    background: texte === s ? choisi.fond : '#fafaf9',
                     border: `1px solid ${texte === s ? choisi.bordure : BORD}`,
                     color: texte === s ? choisi.couleur : '#64748b',
                     borderRadius: 20, padding: '5px 12px', fontSize: 12.5, fontWeight: 600,
@@ -2655,7 +2655,7 @@ export function ModaleObservation({ bien, clientId, onFerme, onEnregistre }: { b
         )}
       </div>
 
-      <div style={{ padding: '14px 24px', borderTop: `1px solid ${BORD}`, background: '#fbfcfe', display: 'flex', justifyContent: 'flex-end', gap: 9 }}>
+      <div style={{ padding: '14px 24px', borderTop: `1px solid ${BORD}`, background: '#fdfcfc', display: 'flex', justifyContent: 'flex-end', gap: 9 }}>
         <button type="button" onClick={onFerme} style={btnSecondaire}>Annuler</button>
         <button type="button" onClick={enregistrer} disabled={!avis || envoi}
           style={{ ...btnPrincipal, background: avis ? NAVY : '#cbd5e1', cursor: avis ? 'pointer' : 'default' }}>
@@ -2796,7 +2796,7 @@ export function ModaleEnvoi({ bien, clientId, client, onFerme, onEnvoye, onMail,
         </div>
       </div>
 
-      <div style={{ padding: '18px 24px', borderBottom: `1px solid ${BORD}`, background: '#fbfcfe' }}>
+      <div style={{ padding: '18px 24px', borderBottom: `1px solid ${BORD}`, background: '#fdfcfc' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13.5, color: '#64748b', marginBottom: 14 }}>
           <span>Prix de l&apos;annonce</span>
           <span style={{ fontWeight: 700, color: NAVY, fontSize: 15 }}>{(agence ? total : base).toLocaleString('fr-FR')} €</span>
@@ -2808,7 +2808,7 @@ export function ModaleEnvoi({ bien, clientId, client, onFerme, onEnvoye, onMail,
             <div style={{ fontSize: 10.5, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 9 }}>
               Honoraires de l&apos;agence
             </div>
-            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.55, marginBottom: 13, background: '#fdfaf1', border: '1px solid #ecdcb4', borderRadius: 10, padding: '9px 12px' }}>
+            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.55, marginBottom: 13, background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 10, padding: '9px 12px' }}>
               {honoraires > 0
                 ? `${honoraires.toLocaleString('fr-FR')} €, déjà compris dans le prix. Ce bien est un mandat de l’agence : rien à ajouter.`
                 : 'Déjà compris dans le prix. Ce bien est un mandat de l’agence : rien à ajouter.'}
@@ -2836,7 +2836,7 @@ export function ModaleEnvoi({ bien, clientId, client, onFerme, onEnvoye, onMail,
         {canal('🔗', copie ? 'Lien copié ✓' : 'Copier le lien', bien.pdf_url ? 'Le PDF client' : 'La fiche du bien', viaLien, OR)}
       </div>
 
-      <div style={{ padding: '13px 24px', borderTop: `1px solid ${BORD}`, background: '#fbfcfe', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ padding: '13px 24px', borderTop: `1px solid ${BORD}`, background: '#fdfcfc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: 12, color: '#94a3b8' }}>Le bien passera dans « Présentés »</span>
         <button type="button" onClick={onFerme} style={btnSecondaire}>Fermer</button>
       </div>
@@ -3002,7 +3002,7 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
         flex: 1, background: actif ? 'white' : 'transparent', color: actif ? NAVY : '#94a3b8',
         border: 'none', borderRadius: petit ? 7 : 9, padding: petit ? '5px 0' : '8px 0',
         fontSize: petit ? 12 : 13, fontWeight: actif ? 800 : 600, cursor: 'pointer', fontFamily: 'inherit',
-        boxShadow: actif ? '0 2px 6px rgba(16,24,40,.14)' : 'none', transition: 'all .2s cubic-bezier(.16,1,.3,1)',
+        boxShadow: actif ? '0 2px 6px rgba(20, 19, 19,.14)' : 'none', transition: 'all .2s cubic-bezier(.16,1,.3,1)',
       }}>{label}</button>
   );
   const defautPour = (t: TypeHono) => (mandat && mandat.type === t ? String(mandat.val) : t === 'pourcentage' ? String(HONORAIRES_TAUX) : '25000');
@@ -3011,11 +3011,11 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
     <button type="button" onClick={action} disabled={envoi || bloque}
       style={{
         display: 'flex', alignItems: 'center', gap: 13, width: '100%', textAlign: 'left',
-        background: principal ? '#fdfaf1' : 'white', border: `1.5px solid ${principal ? '#ecdcb4' : BORD}`, borderRadius: 14, padding: '12px 15px',
+        background: principal ? '#fdf6f1' : 'white', border: `1.5px solid ${principal ? '#f9caa7' : BORD}`, borderRadius: 14, padding: '12px 15px',
         cursor: envoi || bloque ? 'default' : 'pointer', fontFamily: 'inherit', transition: 'all .18s cubic-bezier(.16,1,.3,1)', opacity: envoi || bloque ? .55 : 1,
       }}
       onMouseEnter={e => { if (!envoi && !bloque) { e.currentTarget.style.borderColor = teinte; e.currentTarget.style.transform = 'translateX(4px)'; } }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = principal ? '#ecdcb4' : BORD; e.currentTarget.style.transform = 'none'; }}>
+      onMouseLeave={e => { e.currentTarget.style.borderColor = principal ? '#f9caa7' : BORD; e.currentTarget.style.transform = 'none'; }}>
       <span style={{ width: 38, height: 38, borderRadius: 11, background: `${teinte}18`, color: teinte, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <Icone nom={icone} taille={19} epaisseur={1.8} />
       </span>
@@ -3034,7 +3034,7 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
           {biens.slice(0, 3).map((b, i) => (
             <span key={b.id} style={{
               width: 46, height: 46, borderRadius: 12, marginLeft: -12, overflow: 'hidden', flexShrink: 0,
-              border: `2px solid ${NAVY}`, background: '#2a3547', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: `2px solid ${NAVY}`, background: '#242322', display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#7f8ca3', transform: `rotate(${(i - 1) * 4}deg)`,
             }}>
               {b.photos?.[0] ? <img src={b.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Icone nom="maison" taille={18} />}
@@ -3054,14 +3054,14 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
         </div>
       </div>
 
-      <div style={{ padding: '16px 24px 14px', borderBottom: `1px solid ${BORD}`, background: '#fbfcfe' }}>
+      <div style={{ padding: '16px 24px 14px', borderBottom: `1px solid ${BORD}`, background: '#fdfcfc' }}>
         <div style={{ fontSize: 10.5, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 9 }}>
           {'Tes honoraires, quand ils s’ajoutent'}
         </div>
         <RappelMandat mandat={mandat} applique={surMandat} pour={`aux ${avecHono.length || n}`}
           onAppliquer={() => { if (mandat) toutAppliquer(mandat.type, String(mandat.val)); }} />
         <div className="emi-hono-tous" style={{ display: 'flex', gap: 11, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', background: '#eef2f7', borderRadius: 11, padding: 3, width: 180, flexShrink: 0 }}>
+          <div style={{ display: 'flex', background: '#f3f2f2', borderRadius: 11, padding: 3, width: 180, flexShrink: 0 }}>
             {bascule(typeG === 'pourcentage', () => toutAppliquer('pourcentage', defautPour('pourcentage')), '% du prix')}
             {bascule(typeG === 'fixe', () => toutAppliquer('fixe', defautPour('fixe')), 'Montant fixe')}
           </div>
@@ -3086,7 +3086,7 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
               display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '11px 0',
               borderTop: i ? `1px solid ${BORD}` : 'none',
             }}>
-              <span style={{ width: 44, height: 44, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: '#eef2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b6c1d1' }}>
+              <span style={{ width: 44, height: 44, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: '#f4f3f2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c6c3c1' }}>
                 {b.photos?.[0] ? <img src={b.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Icone nom="maison" taille={16} />}
               </span>
               <span style={{ flex: '1 1 180px', minWidth: 0 }}>
@@ -3118,7 +3118,7 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
                       onChange={e => changerLigne(b.id, { valeur: e.target.value })}
                       aria-label={`Taux ou forfait de ${b.titre || 'ce bien'}`}
                       style={{ width: 78, border: `1.5px solid ${auDessus ? '#dc2626' : aPart ? OR : BORD}`, borderRadius: 9, padding: '6px 8px', fontSize: 13.5, fontWeight: 700, color: NAVY, fontFamily: 'inherit', textAlign: 'right', outline: 'none' }} />
-                    <span style={{ display: 'flex', background: '#eef2f7', borderRadius: 9, padding: 2, width: 62 }}>
+                    <span style={{ display: 'flex', background: '#f3f2f2', borderRadius: 9, padding: 2, width: 62 }}>
                       {bascule(l.type === 'pourcentage', () => changerLigne(b.id, { type: 'pourcentage', valeur: defautPour('pourcentage') }), '%', true)}
                       {bascule(l.type === 'fixe', () => changerLigne(b.id, { type: 'fixe', valeur: defautPour('fixe') }), '€', true)}
                     </span>
@@ -3152,7 +3152,7 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
         {lienDossier && canal('lien', copie ? 'Lien copié ✓' : 'Copier le lien de son espace', `Les ${n} biens y apparaissent tout de suite`, viaLien, OR)}
       </div>
 
-      <div style={{ padding: '13px 24px', borderTop: `1px solid ${BORD}`, background: '#fbfcfe', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <div style={{ padding: '13px 24px', borderTop: `1px solid ${BORD}`, background: '#fdfcfc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12, color: '#94a3b8', flex: '1 1 220px' }}>{`Les ${n} biens passeront ensemble dans « Présentés »`}</span>
         <button type="button" onClick={onFerme} style={btnSecondaire}>Fermer</button>
       </div>
@@ -3224,11 +3224,11 @@ export function ModalePhotos({ bien, onFerme, onEnregistre }: {
     <Modale onFerme={onFerme} largeur={900}>
       <style>{`
         .emi-ph-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
-        .emi-ph-case{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:4/3;background:#eef2f8;user-select:none;-webkit-user-select:none;cursor:grab;transition:box-shadow .18s ease,transform .18s ease,outline-color .18s ease;outline:2px solid transparent;outline-offset:2px}
-        .emi-ph-case:hover{box-shadow:0 12px 26px -16px rgba(16,24,40,.55)}
-        .emi-ph-case[data-tire="oui"]{cursor:grabbing;transform:scale(1.04);outline-color:${OR};box-shadow:0 20px 40px -18px rgba(16,24,40,.6);z-index:2}
+        .emi-ph-case{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:4/3;background:#f4f3f2;user-select:none;-webkit-user-select:none;cursor:grab;transition:box-shadow .18s ease,transform .18s ease,outline-color .18s ease;outline:2px solid transparent;outline-offset:2px}
+        .emi-ph-case:hover{box-shadow:0 12px 26px -16px rgba(20, 19, 19,.55)}
+        .emi-ph-case[data-tire="oui"]{cursor:grabbing;transform:scale(1.04);outline-color:${OR};box-shadow:0 20px 40px -18px rgba(20, 19, 19,.6);z-index:2}
         .emi-ph-case img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;-webkit-user-drag:none}
-        .emi-ph-bouton{width:32px;height:32px;border-radius:10px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(255,255,255,.94);color:${NAVY};box-shadow:0 2px 8px rgba(16,24,40,.22);transition:transform .15s ease}
+        .emi-ph-bouton{width:32px;height:32px;border-radius:10px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(255,255,255,.94);color:${NAVY};box-shadow:0 2px 8px rgba(20, 19, 19,.22);transition:transform .15s ease}
         .emi-ph-bouton:hover{transform:scale(1.08)}
         .emi-ph-poignee{touch-action:none;cursor:grab}
         @keyframes emiPhIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
@@ -3240,7 +3240,7 @@ export function ModalePhotos({ bien, onFerme, onEnregistre }: {
       `}</style>
 
       <div style={{ background: NAVY, padding: '18px 24px', display: 'flex', gap: 14, alignItems: 'center' }}>
-        <span style={{ width: 42, height: 42, borderRadius: 13, background: 'rgba(201,168,76,.16)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ width: 42, height: 42, borderRadius: 13, background: 'rgba(238, 118, 35,.16)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Icone nom="photos" taille={21} epaisseur={1.8} />
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -3265,7 +3265,7 @@ export function ModalePhotos({ bien, onFerme, onEnregistre }: {
                 onPointerDown={e => commencer(e, i)} style={{ animationDelay: Math.min(i, 12) * 25 + 'ms' }}>
                 <img src={u} alt={`Photo ${i + 1}`} draggable={false}
                   onError={e => { (e.target as HTMLImageElement).style.opacity = '0.25'; }} />
-                <span style={{ position: 'absolute', top: 8, left: 8, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 20, fontSize: 11, fontWeight: 800, background: i === 0 ? OR : 'rgba(16,24,40,.62)', color: i === 0 ? NAVY : 'white' }}>
+                <span style={{ position: 'absolute', top: 8, left: 8, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 20, fontSize: 11, fontWeight: 800, background: i === 0 ? OR : 'rgba(20, 19, 19,.62)', color: i === 0 ? NAVY : 'white' }}>
                   {i === 0 ? <><Icone nom="etoile" taille={11} epaisseur={2.4} />Principale</> : i + 1}
                 </span>
                 <span style={{ position: 'absolute', top: 6, right: 6, display: 'flex', gap: 6 }}>
@@ -3299,7 +3299,7 @@ export function ModalePhotos({ bien, onFerme, onEnregistre }: {
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {retirees.map(u => (
                 <button key={u} type="button" onClick={() => remettre(u)} title="Remettre cette photo"
-                  style={{ position: 'relative', width: 104, height: 78, borderRadius: 11, overflow: 'hidden', border: `1px solid ${BORD}`, padding: 0, cursor: 'pointer', background: '#eef2f8' }}>
+                  style={{ position: 'relative', width: 104, height: 78, borderRadius: 11, overflow: 'hidden', border: `1px solid ${BORD}`, padding: 0, cursor: 'pointer', background: '#f4f3f2' }}>
                   <img src={u} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(1)', opacity: .5, display: 'block' }} />
                   <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11.5, fontWeight: 800, color: NAVY }}>
                     <Icone nom="remettre" taille={13} epaisseur={2.4} />Remettre
@@ -3314,7 +3314,7 @@ export function ModalePhotos({ bien, onFerme, onEnregistre }: {
         )}
       </div>
 
-      <div className="emi-ph-pied" style={{ padding: '13px 24px', borderTop: `1px solid ${BORD}`, background: '#fbfcfe', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <div className="emi-ph-pied" style={{ padding: '13px 24px', borderTop: `1px solid ${BORD}`, background: '#fdfcfc', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12.5, color: '#94a3b8', flex: '1 1 160px' }}>{pied}</span>
         <button type="button" onClick={onFerme} style={btnSecondaire}>Annuler</button>
         <button type="button" onClick={enregistrer} disabled={envoi || (!change && !retirees.length)}
@@ -3345,7 +3345,7 @@ const EVT: Record<string, { i: string; l: string; c: string }> = {
   message:   { i: '✉️', l: 'A écrit un message', c: OR },
   criteres:  { i: '🎯', l: 'A modifié ses critères', c: '#8b5cf6' },
   notifications: { i: '🔔', l: 'A activé les notifications', c: '#10b981' },
-  mandat: { i: '✍️', l: 'Mandat de recherche', c: '#c9a84c' },
+  mandat: { i: '✍️', l: 'Mandat de recherche', c: '#ee7623' },
 };
 
 export function LienEspace({ recherche, client }: { recherche: any; client: any }) {
@@ -3417,10 +3417,10 @@ export function LienEspace({ recherche, client }: { recherche: any; client: any 
   return (
     <div className="le-cadre" style={{
       background: 'white', border: `1px solid ${BORD}`, borderRadius: 13,
-      boxShadow: '0 1px 2px rgba(16,24,40,.04)', overflow: 'hidden',
+      boxShadow: '0 1px 2px rgba(20, 19, 19,.04)', overflow: 'hidden',
     }}>
     <div className="le-barre" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '9px 13px' }}>
-      <span className="le-titre" style={{ fontSize: 10, fontWeight: 800, color: '#9aa8bd', textTransform: 'uppercase', letterSpacing: 1 }}>
+      <span className="le-titre" style={{ fontSize: 10, fontWeight: 800, color: '#afaca8', textTransform: 'uppercase', letterSpacing: 1 }}>
         Espace client
       </span>
       {/* Le lien en entier : Alexandre doit pouvoir le lire d'un coup d'œil
@@ -3429,21 +3429,21 @@ export function LienEspace({ recherche, client }: { recherche: any; client: any 
           vraie largeur, et ne se raccourcit que si la fenêtre est vraiment
           trop étroite. */}
       <code className="le-lien" style={{
-        fontSize: 11.5, color: '#64748b', background: '#f7f9fc', border: `1px solid ${BORD}`,
+        fontSize: 11.5, color: '#64748b', background: '#fafaf9', border: `1px solid ${BORD}`,
         borderRadius: 7, padding: '4px 9px', minWidth: 0, maxWidth: '100%', overflow: 'hidden',
         textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'ui-monospace, monospace',
       }} title={url}>{court ? `espace.emilio-immo.com/${token}` : `/espace/${String(token).slice(0, 12)}…`}</code>
 
-      <button type="button" className="le-btn" onClick={copier} style={btnEspace(copie ? '#ecfdf5' : '#f7f9fc', copie ? '#059669' : '#475569', copie ? '#a7f3d0' : BORD)}>
+      <button type="button" className="le-btn" onClick={copier} style={btnEspace(copie ? '#ecfdf5' : '#fafaf9', copie ? '#059669' : '#475569', copie ? '#a7f3d0' : BORD)}>
         {copie ? '✓ Copié' : 'Copier le lien'}
       </button>
       <button type="button" className="le-btn" onClick={whatsapp} style={btnEspace('#f0fdf4', '#15803d', '#bbf7d0')}>WhatsApp</button>
-      <a className="le-btn" href={url} target="_blank" rel="noopener noreferrer" style={btnEspace('#f7f9fc', '#475569', BORD)}>Ouvrir</a>
+      <a className="le-btn" href={url} target="_blank" rel="noopener noreferrer" style={btnEspace('#fafaf9', '#475569', BORD)}>Ouvrir</a>
 
       <button type="button" className="le-etat" onClick={() => setDeplie(d => !d)}
         style={{
           marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 7,
-          background: derniere ? '#f0fdf4' : '#f7f9fc', border: `1px solid ${derniere ? '#bbf7d0' : BORD}`,
+          background: derniere ? '#f0fdf4' : '#fafaf9', border: `1px solid ${derniere ? '#bbf7d0' : BORD}`,
           borderRadius: 9, padding: '5px 11px', fontSize: 12, fontWeight: 700,
           color: derniere ? '#15803d' : '#94a3b8', cursor: 'pointer', fontFamily: 'inherit',
         }}>
@@ -3456,8 +3456,8 @@ export function LienEspace({ recherche, client }: { recherche: any; client: any 
     </div>
 
     {deplie && (
-      <div style={{ borderTop: `1px solid ${BORD}`, background: '#fbfcfe', padding: '12px 15px', maxHeight: 340, overflowY: 'auto' }}>
-        <div style={{ fontSize: 10, fontWeight: 800, color: '#9aa8bd', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+      <div style={{ borderTop: `1px solid ${BORD}`, background: '#fdfcfc', padding: '12px 15px', maxHeight: 340, overflowY: 'auto' }}>
+        <div style={{ fontSize: 10, fontWeight: 800, color: '#afaca8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
           Ce qu&apos;il a fait dans son espace
         </div>
         {evts === null && <div style={{ fontSize: 13, color: '#94a3b8' }}>Chargement…</div>}
@@ -3525,7 +3525,7 @@ export function Action({ children, onClick, href, ton = 'neutre', disabled }: {
   const surv = (e: any, entre: boolean) => {
     if (disabled) return;
     e.currentTarget.style.transform = entre ? 'translateY(-1.5px)' : 'none';
-    e.currentTarget.style.boxShadow = entre ? '0 10px 20px -12px rgba(16,24,40,.6)' : 'none';
+    e.currentTarget.style.boxShadow = entre ? '0 10px 20px -12px rgba(20, 19, 19,.6)' : 'none';
   };
   if (href) return <a href={href} target="_blank" rel="noopener noreferrer" style={st} onMouseEnter={e => surv(e, true)} onMouseLeave={e => surv(e, false)}>{children}</a>;
   return <button type="button" onClick={onClick} disabled={disabled} style={st} onMouseEnter={e => surv(e, true)} onMouseLeave={e => surv(e, false)}>{children}</button>;

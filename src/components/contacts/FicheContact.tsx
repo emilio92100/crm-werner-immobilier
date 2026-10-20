@@ -498,7 +498,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
       <div className={`${c.hero} ${c.heroAvecCo} ${c.heroOnglets}`}>
         <div className={c.heroG}>
         <div className={c.heroQui}>
-          <AvatarContact c={x} teinte={{ bg: '', fg: '#e0c36e' }} className={c.heroAv} libre />
+          <AvatarContact c={x} teinte={{ bg: '', fg: '#f49d5a' }} className={c.heroAv} libre />
           <div className={c.heroTxt}>
             {/* « Il agit pour une société ? » à droite du nom (V3.32) : une ligne de moins. */}
             <div className={c.heroNomL}>
@@ -574,7 +574,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
                         {/* Ce que sa dernière délégation a gardé (V3.19). */}
                         {jur?.le && (
                           <>
-                            <div className={c.lignes} style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #eef1f6' }}>
+                            <div className={c.lignes} style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #f2f2f2' }}>
                               <Li ic="immeuble" l="Société" v={[jur.societe, jur.forme].filter(Boolean).join(', ')} />
                               <Li ic="doc" l="RCS" v={jur.rcs} />
                               <Li ic="carte" l="Carte professionnelle" v={[jur.carte, jur.cci ? `délivrée par ${jur.cci}` : ''].filter(Boolean).join(', ')} />

@@ -24,7 +24,7 @@ const CHAMP = [
   'textarea', 'select', '[contenteditable="true"]', '[contenteditable=""]',
 ].join(', ');
 
-/* L'opacité du fond (« rgba(15,22,35,.55) » → .55). */
+/* L'opacité du fond (« rgba(18, 18, 17,.55) » → .55). */
 function opacite(cs: CSSStyleDeclaration): number {
   if (cs.backgroundImage && cs.backgroundImage !== 'none') return 1;
   const c = (cs.backgroundColor || '').trim();

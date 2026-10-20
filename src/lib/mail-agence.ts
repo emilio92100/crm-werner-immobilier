@@ -70,7 +70,7 @@ export function mailLienAgence(o: { lien: string; interlocuteur?: string | null;
       <td align="right" class="ag-badge" style="vertical-align:middle;"><span style="display:inline-block;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:${MAIL.orClair};font-size:10.5px;font-weight:800;letter-spacing:1.2px;white-space:nowrap;">RECHERCHE ACQUÉREUR</span></td>
     </tr></table>
     <div class="ag-titre" style="margin-top:16px;font-size:26px;font-weight:800;line-height:1.2;color:#ffffff;">Un bien pour mon client&nbsp;?</div>
-    <div style="margin-top:6px;font-size:15px;font-weight:600;line-height:1.5;color:#DCE6F3;">Déposez-le en un clic : il arrive directement chez moi.</div>
+    <div style="margin-top:6px;font-size:15px;font-weight:600;line-height:1.5;color:#e9e8e6;">Déposez-le en un clic : il arrive directement chez moi.</div>
   </td></tr>
   <tr><td class="ag-pad" style="background:#ffffff;border:1px solid ${MAIL.trait};border-top:none;border-radius:0 0 18px 18px;padding:26px 28px 28px;">
     <div style="font-size:15px;font-weight:700;color:${MAIL.encre};">${bonjour}</div>

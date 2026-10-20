@@ -8,7 +8,7 @@
 .in { width: 100%; box-sizing: border-box; }
 .principal {
   position: absolute; top: 0; bottom: 0; right: 8px; margin: auto 0; height: 20px; display: inline-flex; align-items: center;
-  padding: 0 8px; border-radius: 99px; background: #fbf5e3; color: #8a6a1f; border: 1px solid #ecdcae;
+  padding: 0 8px; border-radius: 99px; background: #fbede3; color: #9c460d; border: 1px solid #f9c7a1;
   font: 800 10px 'DM Sans', sans-serif; letter-spacing: .4px; text-transform: uppercase; pointer-events: none;
 }
 .bouton {
@@ -16,13 +16,13 @@
   display: inline-flex; align-items: center; justify-content: center; color: #94a3b8; padding: 0;
   transition: background .15s, color .15s;
 }
-.bouton:hover { background: #f5efdc; color: #a9822f; }
+.bouton:hover { background: #f5e6dc; color: #c85a10; }
 .retirer:hover { background: #fef2f2; color: #b91c1c; }
 .ajouter {
   align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; margin-top: 7px; padding: 4px 2px; border: none; background: none;
-  cursor: pointer; color: #a9822f; font: 700 12.5px 'DM Sans', sans-serif;
+  cursor: pointer; color: #c85a10; font: 700 12.5px 'DM Sans', sans-serif;
 }
-.ajouter:hover { color: #1a2332; }
+.ajouter:hover { color: #18181b; }
 .ajouter:hover span { text-decoration: underline; text-underline-offset: 3px; }
 @media (hover: none) {
   .bouton { width: 36px; height: 36px; }

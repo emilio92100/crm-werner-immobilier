@@ -6,8 +6,8 @@ import { useState, useRef, useLayoutEffect } from 'react';
    respire en paragraphes, puis on replie ce qui dépasse. On ne touche jamais
    aux mots — seulement à l'air entre eux. */
 
-const ENCRE = '#1a2332';
-const OR = '#c9a84c';
+const ENCRE = '#18181b';
+const OR = '#ee7623';
 const PLUME = '#64748b';
 
 function enParagraphes(texte: string): string[] {

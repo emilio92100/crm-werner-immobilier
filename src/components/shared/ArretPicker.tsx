@@ -13,9 +13,9 @@ export function PastilleArret({ id, t = 24 }: { id: string; t?: number }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto',
-      background: g ? g.couleur : (bus ? '#eef1f6' : '#e3e8f0'),
+      background: g ? g.couleur : (bus ? '#f2f2f2' : '#eaeae9'),
       color: g ? g.texte : '#5a6a80',
-      border: g ? 'none' : '1px solid #d8dfe9',
+      border: g ? 'none' : '1px solid #e2e0df',
       width: rond ? t : undefined, height: t, minWidth: t,
       borderRadius: rond ? '50%' : Math.round(t / 3),
       fontWeight: 800, lineHeight: 1, fontFamily: 'inherit',
@@ -113,18 +113,18 @@ export default function ArretPicker({
 }
 
 const C: Record<string, React.CSSProperties> = {
-  carte: { background: '#f8fafc', border: '1px solid #e3e8f0', borderRadius: 14, padding: 13, marginBottom: 9 },
+  carte: { background: '#f8fafc', border: '1px solid #eaeae9', borderRadius: 14, padding: 13, marginBottom: 9 },
   tete: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
   nom: { fontSize: 14.5, fontWeight: 800, color: 'var(--emilio)', lineHeight: 1.25 },
   ville: { fontSize: 11.5, color: '#94a3b8', fontWeight: 600, marginTop: 2 },
-  croix: { flex: '0 0 auto', width: 26, height: 26, borderRadius: '50%', border: '1px solid #e3e8f0', background: '#fff', color: '#94a3b8', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' },
+  croix: { flex: '0 0 auto', width: 26, height: 26, borderRadius: '50%', border: '1px solid #eaeae9', background: '#fff', color: '#94a3b8', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' },
   lignes: { display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 10 },
   pied: { display: 'flex', alignItems: 'center', gap: 7, marginTop: 11, flexWrap: 'wrap' },
   pas: { fontSize: 12.5, color: '#64748b', fontWeight: 600 },
-  rond: { width: 26, height: 26, borderRadius: '50%', border: '1px solid #e3e8f0', background: '#fff', color: 'var(--emilio)', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', lineHeight: 1 },
+  rond: { width: 26, height: 26, borderRadius: '50%', border: '1px solid #eaeae9', background: '#fff', color: 'var(--emilio)', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', lineHeight: 1 },
   val: { fontSize: 13.5, fontWeight: 800, color: 'var(--emilio)', minWidth: 52, textAlign: 'center', fontVariantNumeric: 'tabular-nums' },
-  champ: { width: '100%', background: '#fff', border: '1.5px solid #e3e8f0', borderRadius: 11, padding: '11px 13px', fontSize: 13.5, color: 'var(--emilio)', fontFamily: 'inherit', outline: 'none' },
-  liste: { position: 'absolute', left: 0, right: 0, top: 'calc(100% + 5px)', zIndex: 60, background: '#fff', border: '1px solid #e3e8f0', borderRadius: 13, boxShadow: '0 12px 30px rgba(16,24,40,.14)', overflow: 'hidden' },
+  champ: { width: '100%', background: '#fff', border: '1.5px solid #eaeae9', borderRadius: 11, padding: '11px 13px', fontSize: 13.5, color: 'var(--emilio)', fontFamily: 'inherit', outline: 'none' },
+  liste: { position: 'absolute', left: 0, right: 0, top: 'calc(100% + 5px)', zIndex: 60, background: '#fff', border: '1px solid #eaeae9', borderRadius: 13, boxShadow: '0 12px 30px rgba(20, 19, 19,.14)', overflow: 'hidden' },
   item: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, width: '100%', padding: '10px 13px', background: 'none', border: 0, borderTop: '1px solid #f1f5f9', cursor: 'pointer', fontFamily: 'inherit' },
   itemNom: { display: 'block', fontSize: 13.5, fontWeight: 700, color: 'var(--emilio)' },
   itemVille: { display: 'block', fontSize: 11, color: '#94a3b8', fontWeight: 600, marginTop: 1 },

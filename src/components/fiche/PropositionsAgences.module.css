@@ -17,7 +17,7 @@
 .qui a { color: #4c1d95; text-decoration: none; border-bottom: 1px dotted #a78bfa; }
 .qui small { font-size: 12.5px; font-weight: 600; color: #6d5ba6; }
 .motA { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 11px; background: #faf8ff; border: 1px solid #ebe5fb;
-  font-size: 14px; line-height: 1.5; color: #1a2332; font-weight: 600; }
+  font-size: 14px; line-height: 1.5; color: #18181b; font-weight: 600; }
 .motA i { font-style: normal; font-size: 10.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: #6d28d9; }
 .nonLue { font-size: 12.5px; line-height: 1.5; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 7px 11px; font-weight: 600; }
 .absent { font-size: 12.5px; color: #8f3f00; font-weight: 700; }
@@ -25,30 +25,30 @@
 /* ── La fenêtre ── */
 .voile { position: fixed; inset: 0; z-index: 1300; background: rgba(15,23,42,.45); display: flex; align-items: center; justify-content: center; padding: 18px; }
 .fenetre { width: min(640px, 100%); max-height: calc(100dvh - 36px); display: flex; flex-direction: column; background: white; border-radius: 22px;
-  box-shadow: 0 30px 80px -20px rgba(17,35,64,.5); font-family: 'DM Sans', system-ui, sans-serif; color: #13243D; overflow: hidden; }
-.fTete { display: flex; align-items: flex-start; gap: 12px; padding: 18px 18px 14px; border-bottom: 1px solid #eef2f7; }
+  box-shadow: 0 30px 80px -20px rgba(27, 26, 25,.5); font-family: 'DM Sans', system-ui, sans-serif; color: #141416; overflow: hidden; }
+.fTete { display: flex; align-items: flex-start; gap: 12px; padding: 18px 18px 14px; border-bottom: 1px solid #f3f2f2; }
 .fTete h2 { margin: 0; font: 800 17px 'Plus Jakarta Sans', sans-serif; }
 .fTete p { margin: 3px 0 0; font-size: 13px; font-weight: 600; color: #64748b; }
 .fIc { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: #f5f3ff; color: #6d28d9; }
-.fFermer { margin-left: auto; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 10px; border: 1px solid #e3e8f0; background: white; color: #64748b;
+.fFermer { margin-left: auto; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 10px; border: 1px solid #eaeae9; background: white; color: #64748b;
   display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .fCorps { flex: 1 1 auto; overflow-y: auto; padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
 .ligneLien { display: flex; align-items: center; gap: 8px; }
 .lienTxt { flex: 1 1 auto; min-width: 0; height: 42px; display: flex; align-items: center; padding: 0 12px; border-radius: 11px; background: #f8fafc;
-  border: 1.5px solid #e3e8f0; font-size: 14px; font-weight: 700; color: #22497D; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  border: 1.5px solid #eaeae9; font-size: 14px; font-weight: 700; color: #1d1d1f; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .btnFort { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 42px; padding: 0 14px; border-radius: 11px; border: none;
-  background: #22497D; color: white; font: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; white-space: nowrap; text-decoration: none; }
+  background: #1d1d1f; color: white; font: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; white-space: nowrap; text-decoration: none; }
 .btnFort:disabled { opacity: .55; cursor: default; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 38px; padding: 0 13px; border-radius: 10px; border: 1px solid #c9d6e8;
-  background: white; color: #22497D; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; text-decoration: none; }
-.btn:hover { border-color: #22497D; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 38px; padding: 0 13px; border-radius: 10px; border: 1px solid #dad8d7;
+  background: white; color: #1d1d1f; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; text-decoration: none; }
+.btn:hover { border-color: #1d1d1f; }
 .lib { font: 800 12px 'Plus Jakarta Sans', sans-serif; letter-spacing: .5px; text-transform: uppercase; color: #475569; }
-.zone { width: 100%; box-sizing: border-box; border: 1.5px solid #e3e8f0; border-radius: 12px; padding: 11px 13px; font: 500 14px/1.55 'DM Sans', sans-serif;
-  color: #13243D; background: #f8fafc; resize: vertical; min-height: 120px; outline: none; }
-.zone:focus { border-color: #22497D; background: white; }
+.zone { width: 100%; box-sizing: border-box; border: 1.5px solid #eaeae9; border-radius: 12px; padding: 11px 13px; font: 500 14px/1.55 'DM Sans', sans-serif;
+  color: #141416; background: #f8fafc; resize: vertical; min-height: 120px; outline: none; }
+.zone:focus { border-color: #1d1d1f; background: white; }
 .boutons { display: flex; gap: 8px; flex-wrap: wrap; }
 .aide { font-size: 12.5px; font-weight: 600; line-height: 1.5; color: #64748b; }
-.voit { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; background: #f4f6f9; }
+.voit { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; background: #f7f6f6; }
 .voitTx { font-size: 13.5px; font-weight: 600; line-height: 1.5; color: #334155; }
 .bas { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .stats { font-size: 13px; font-weight: 700; color: #334155; }
@@ -58,7 +58,7 @@
   color: #991b1b; font-size: 13.5px; font-weight: 600; line-height: 1.5; }
 
 /* V3.202 — Le PDF d'une agence : sa première page en vignette, « PDF · 4 p. », la ligne du fichier. */
-.photoPdf { background: #e8edf5; }
+.photoPdf { background: #efeeee; }
 .photoPdf img { object-fit: contain; object-position: center top; padding: 6px 0 0; box-sizing: border-box; }
 .badgePdf { position: absolute; right: 6px; bottom: 6px; padding: 2px 7px; border-radius: 6px; background: rgba(30, 41, 59, .88); color: #fff;
   font: 800 10.5px 'DM Sans', sans-serif; letter-spacing: .2px; }
@@ -70,11 +70,11 @@
 .lignePdf svg { flex: 0 0 auto; color: #475569; }
 .via { margin-left: auto; font-size: 12px !important; font-weight: 800 !important; color: #7c3aed !important; white-space: nowrap; }
 /* V3.202 — « Montrer ses précisions aux agences ». */
-.flCase { display: flex; align-items: center; gap: 10px; margin-top: 4px; padding: 10px 12px; border-radius: 12px; background: #fff; border: 1.5px solid #e3e8f0; cursor: pointer; }
-.flCase[data-on="oui"] { border-color: #22497D; }
-.flCase input { width: 19px; height: 19px; margin: 0; flex: 0 0 auto; accent-color: #22497D; cursor: pointer; }
+.flCase { display: flex; align-items: center; gap: 10px; margin-top: 4px; padding: 10px 12px; border-radius: 12px; background: #fff; border: 1.5px solid #eaeae9; cursor: pointer; }
+.flCase[data-on="oui"] { border-color: #1d1d1f; }
+.flCase input { width: 19px; height: 19px; margin: 0; flex: 0 0 auto; accent-color: #1d1d1f; cursor: pointer; }
 .flCase > span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.flCase b { font-size: 13.5px; font-weight: 800; color: #13243D; }
+.flCase b { font-size: 13.5px; font-weight: 800; color: #141416; }
 .flCase small { font-size: 12px; font-weight: 600; color: #64748b; }
 .flPrec { display: flex; flex-direction: column; gap: 7px; }
 .flPrec .zone { min-height: 110px; resize: vertical; }
@@ -104,14 +104,14 @@
 
 /* ═══ V3.200 — La fenêtre du lien, large et rangée (maquettes 9 et 10) ═══ */
 .flFenetre { width: min(1000px, 100%); height: min(700px, calc(100dvh - 36px)); display: flex; flex-direction: column; background: white; border-radius: 22px;
-  box-shadow: 0 40px 90px -30px rgba(17,35,64,.6); font-family: 'DM Sans', system-ui, sans-serif; color: #13243D; overflow: hidden; }
-.flTete { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-bottom: 1px solid #eef2f7; }
+  box-shadow: 0 40px 90px -30px rgba(27, 26, 25,.6); font-family: 'DM Sans', system-ui, sans-serif; color: #141416; overflow: hidden; }
+.flTete { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-bottom: 1px solid #f3f2f2; }
 .flTitre { flex: 1 1 auto; min-width: 0; }
 .flTitre h2 { margin: 0; font: 800 18px 'Plus Jakarta Sans', sans-serif; }
 .flTitre p { margin: 3px 0 0; font-size: 13px; font-weight: 600; color: #64748b; }
 .flChiffres { display: flex; gap: 8px; }
-.flChiffre { display: flex; flex-direction: column; align-items: center; padding: 5px 14px; border-radius: 12px; background: #f4f7fb; }
-.flChiffre b { font: 800 18px/1.15 'Plus Jakarta Sans', sans-serif; color: #13243D; }
+.flChiffre { display: flex; flex-direction: column; align-items: center; padding: 5px 14px; border-radius: 12px; background: #f8f8f7; }
+.flChiffre b { font: 800 18px/1.15 'Plus Jakarta Sans', sans-serif; color: #141416; }
 .flChiffre small { font-size: 11.5px; font-weight: 700; color: #64748b; white-space: nowrap; }
 .flChiffre[data-ton="prune"] { background: #f5f3ff; }
 .flChiffre[data-ton="prune"] b { color: #5b21b6; }
@@ -121,25 +121,25 @@
 /* Ordinateur : à gauche le lien (fond clair), à droite ses agences ; chaque côté défile seul.
    Téléphone : une colonne (la gauche « s'efface », `order` range les blocs). */
 .flCorps { flex: 1 1 auto; min-height: 0; display: flex; }
-.flGauche { flex: 0 0 340px; width: 340px; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; background: #f8fafd; border-right: 1px solid #eef2f7; }
+.flGauche { flex: 0 0 340px; width: 340px; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; background: #fbfbfa; border-right: 1px solid #f3f2f2; }
 .flBloc { flex-shrink: 0; padding: 16px 20px 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .flBas { margin-top: auto; align-items: center; padding-bottom: 16px; }
 .flLib { font: 800 11.5px 'Plus Jakarta Sans', sans-serif; letter-spacing: .8px; text-transform: uppercase; color: #64748b; }
-.flLien { display: flex; align-items: center; gap: 8px; padding: 5px 5px 5px 12px; border-radius: 13px; background: white; border: 1.5px solid #e3e8f0; }
-.flLien span { flex: 1 1 auto; min-width: 0; font-size: 13.5px; font-weight: 700; color: #22497D; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.flLien button { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: none; background: #22497D; color: white;
+.flLien { display: flex; align-items: center; gap: 8px; padding: 5px 5px 5px 12px; border-radius: 13px; background: white; border: 1.5px solid #eaeae9; }
+.flLien span { flex: 1 1 auto; min-width: 0; font-size: 13.5px; font-weight: 700; color: #1d1d1f; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.flLien button { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: none; background: #1d1d1f; color: white;
   font: 800 12.5px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; }
 .flPetit { font-size: 12px; font-weight: 600; line-height: 1.5; color: #64748b; }
 .flPastilles { display: flex; flex-wrap: wrap; gap: 6px; }
-.flPastille { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 99px; background: #e8eff8; color: #22497D; font-size: 12.5px; font-weight: 700; }
-.flPastille[data-ton="or"] { background: #fff6ec; color: #a95808; border: 1px solid #f7d5b0; font-weight: 800; }
-.flPastille[data-ton="blanc"] { background: white; color: #13243D; border: 1px solid #dce3ec; }
+.flPastille { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 99px; background: #f1f0ef; color: #1d1d1f; font-size: 12.5px; font-weight: 700; }
+.flPastille[data-ton="or"] { background: #fff6ec; color: #b4560f; border: 1px solid #f7d5b0; font-weight: 800; }
+.flPastille[data-ton="blanc"] { background: white; color: #141416; border: 1px solid #e5e4e3; }
 .flPastille[data-ton="blanc"] svg { color: #15803d; }
 .flOnglets { display: flex; gap: 6px; }
-.flOnglets button { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; border-radius: 10px; border: 1px solid #dce3ec;
-  background: white; color: #22497D; font: 700 13px 'DM Sans', sans-serif; cursor: pointer; }
-.flOnglets button[aria-pressed="true"] { background: #22497D; color: white; border-color: #22497D; }
-.flApercu { display: block; width: 100%; height: 380px; border: 1px solid #e3e8f0; border-radius: 12px; background: #e6edf6; }
+.flOnglets button { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; border-radius: 10px; border: 1px solid #e5e4e3;
+  background: white; color: #1d1d1f; font: 700 13px 'DM Sans', sans-serif; cursor: pointer; }
+.flOnglets button[aria-pressed="true"] { background: #1d1d1f; color: white; border-color: #1d1d1f; }
+.flApercu { display: block; width: 100%; height: 380px; border: 1px solid #eaeae9; border-radius: 12px; background: #efeeed; }
 .flSmsPied { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 .flAgences { flex: 1 1 auto; min-width: 0; min-height: 0; overflow-y: auto; padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 10px; }
@@ -149,16 +149,16 @@
 .flAgencesTete span { font-size: 12.5px; font-weight: 600; color: #64748b; }
 
 /* Une partie qui se déplie */
-.flPartie { border: 1px solid #e3e8f0; border-radius: 16px; overflow: hidden; background: white; }
-.flPartieTete { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: none; background: white; font: inherit; color: #13243D; cursor: pointer; text-align: left; }
-.flPartieTete:hover { background: #fbfcfe; }
+.flPartie { border: 1px solid #eaeae9; border-radius: 16px; overflow: hidden; background: white; }
+.flPartieTete { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: none; background: white; font: inherit; color: #141416; cursor: pointer; text-align: left; }
+.flPartieTete:hover { background: #fdfcfc; }
 .flPartieTete b { font-size: 13.5px; font-weight: 800; white-space: nowrap; }
 .flPartieTete > svg { color: #94a3b8; flex-shrink: 0; }
-.flPoint { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: #e68b23; }
-.flNb { padding: 1px 8px; border-radius: 99px; font-size: 12px; font-weight: 800; background: #fdebd5; color: #a95808; }
+.flPoint { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: #ee7623; }
+.flNb { padding: 1px 8px; border-radius: 99px; font-size: 12px; font-weight: 800; background: #fdebd5; color: #b4560f; }
 .flNoms { flex: 0 1 auto; min-width: 0; font-size: 12.5px; font-weight: 600; color: #64748b; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .flRessort { flex: 1 1 auto; }
-.flDeplier { font-size: 12.5px; font-weight: 700; color: #22497D; white-space: nowrap; }
+.flDeplier { font-size: 12.5px; font-weight: 700; color: #1d1d1f; white-space: nowrap; }
 .flPartie[data-ton="or"][data-ouverte] .flPartieTete { background: #fff9f1; }
 .flPartie[data-ton="vert"] .flPoint { background: #16a34a; }
 .flPartie[data-ton="vert"] .flNb { background: #dcfce7; color: #166534; }
@@ -166,19 +166,19 @@
 .flPartie[data-ton="prune"] .flPoint { background: #7c3aed; }
 .flPartie[data-ton="prune"] .flNb { background: #f5f3ff; color: #5b21b6; }
 .flPartie[data-ton="prune"][data-ouverte] .flPartieTete { background: #faf8ff; }
-.flPartieCorps { border-top: 1px solid #f1f4f8; }
-.flAide { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 14px; font-size: 12.5px; font-weight: 600; line-height: 1.5; color: #475569; background: #fbfcfe; }
+.flPartieCorps { border-top: 1px solid #f5f4f4; }
+.flAide { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 14px; font-size: 12.5px; font-weight: 600; line-height: 1.5; color: #475569; background: #fdfcfc; }
 .flAide svg { margin-top: 2px; color: #94a3b8; }
 .flVide { margin: 0; padding: 12px 14px; font-size: 13px; font-weight: 600; color: #94a3b8; }
-.flPlus { width: 100%; padding: 10px; border: none; border-top: 1px solid #f1f4f8; background: white; color: #22497D; font: 700 13px 'DM Sans', sans-serif; cursor: pointer; }
+.flPlus { width: 100%; padding: 10px; border: none; border-top: 1px solid #f5f4f4; background: white; color: #1d1d1f; font: 700 13px 'DM Sans', sans-serif; cursor: pointer; }
 
 /* Une agence */
-.flAgence { border-top: 1px solid #f1f4f8; }
-.flAgence[data-edition] { background: #f8fafd; }
+.flAgence { border-top: 1px solid #f5f4f4; }
+.flAgence[data-edition] { background: #fbfbfa; }
 .flAgLigne { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
 .flRond { width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font: 800 13px 'Plus Jakarta Sans', sans-serif; flex-shrink: 0; }
 .flAgTx { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.flAgTx b { font-size: 14px; font-weight: 800; color: #13243D; overflow-wrap: anywhere; }
+.flAgTx b { font-size: 14px; font-weight: 800; color: #141416; overflow-wrap: anywhere; }
 .flAgTx small { font-size: 12.5px; font-weight: 600; color: #64748b; overflow-wrap: anywhere; }
 .flOrigine { font-size: 11.5px; font-weight: 700; color: #94a3b8; }
 .flEtat { display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; margin-top: 2px; }
@@ -186,51 +186,51 @@
 .flPuce { padding: 2px 8px; border-radius: 99px; font-size: 11.5px; font-weight: 800; }
 .flPuce[data-ton="prune"] { background: #f5f3ff; color: #5b21b6; }
 .flBtns { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
-.flIco { width: 38px; height: 38px; border-radius: 11px; border: 1px solid #c9d6e8; background: white; color: #22497D; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
-.flIco:hover { border-color: #22497D; }
-.flBtn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 38px; padding: 0 13px; border-radius: 11px; border: none; background: #22497D; color: white;
+.flIco { width: 38px; height: 38px; border-radius: 11px; border: 1px solid #dad8d7; background: white; color: #1d1d1f; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.flIco:hover { border-color: #1d1d1f; }
+.flBtn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 38px; padding: 0 13px; border-radius: 11px; border: none; background: #1d1d1f; color: white;
   font: 800 13px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; text-decoration: none; }
-.flBtn:hover { background: #1a3a66; color: white; }
-.flBtn[data-ton="doux"] { background: white; color: #22497D; border: 1px solid #c9d6e8; }
-.flBtn[data-ton="doux"]:hover { border-color: #22497D; background: white; color: #22497D; }
-.flBtn[data-ton="pointille"] { background: white; color: #22497D; border: 1px dashed #b7c3d4; font-weight: 700; }
+.flBtn:hover { background: #282726; color: white; }
+.flBtn[data-ton="doux"] { background: white; color: #1d1d1f; border: 1px solid #dad8d7; }
+.flBtn[data-ton="doux"]:hover { border-color: #1d1d1f; background: white; color: #1d1d1f; }
+.flBtn[data-ton="pointille"] { background: white; color: #1d1d1f; border: 1px dashed #c8c6c3; font-weight: 700; }
 .flBtn:disabled { opacity: .55; cursor: default; }
 
 /* Une autre agence */
-.flAutreBtn { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 12px; border: 1.5px dashed #c9d6e8;
-  background: #fbfcfe; color: #22497D; font: 800 13.5px 'DM Sans', sans-serif; cursor: pointer; }
-.flAutreBtn:hover { border-color: #22497D; }
-.flAutre { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 14px; border: 1.5px dashed #c9d6e8; background: #fbfcfe; }
+.flAutreBtn { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 12px; border: 1.5px dashed #dad8d7;
+  background: #fdfcfc; color: #1d1d1f; font: 800 13.5px 'DM Sans', sans-serif; cursor: pointer; }
+.flAutreBtn:hover { border-color: #1d1d1f; }
+.flAutre { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 14px; border: 1.5px dashed #dad8d7; background: #fdfcfc; }
 .flAutreTete { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.flAutreTete b { font-size: 13.5px; font-weight: 800; color: #22497D; }
-.flAutreFermer { width: 30px; height: 30px; border-radius: 8px; border: 1px solid #e3e8f0; background: white; color: #64748b; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.flAutreTete b { font-size: 13.5px; font-weight: 800; color: #1d1d1f; }
+.flAutreFermer { width: 30px; height: 30px; border-radius: 8px; border: 1px solid #eaeae9; background: white; color: #64748b; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .flChamp { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .flChamp > span { font-size: 12px; font-weight: 700; color: #475569; }
 .flChamp > span i { font-style: normal; font-weight: 600; color: #94a3b8; }
-.flChamp input { width: 100%; box-sizing: border-box; height: 40px; border: 1.5px solid #e3e8f0; border-radius: 10px; padding: 0 11px; font: 500 14px 'DM Sans', sans-serif;
-  color: #13243D; background: white; outline: none; }
-.flChamp input:focus { border-color: #22497D; }
+.flChamp input { width: 100%; box-sizing: border-box; height: 40px; border: 1.5px solid #eaeae9; border-radius: 10px; padding: 0 11px; font: 500 14px 'DM Sans', sans-serif;
+  color: #141416; background: white; outline: none; }
+.flChamp input:focus { border-color: #1d1d1f; }
 
 /* V3.201 — Le contact d'une agence, rempli sur place (et « Une autre agence »). */
-.flAgForm { margin: 0 14px 14px; padding: 14px; border-radius: 14px; background: white; border: 1px solid #dce3ec;
-  box-shadow: 0 10px 26px -20px rgba(17,35,64,.55); display: flex; flex-direction: column; gap: 10px; }
-.flFormTitre { font: 800 13.5px 'Plus Jakarta Sans', sans-serif; color: #22497D; }
+.flAgForm { margin: 0 14px 14px; padding: 14px; border-radius: 14px; background: white; border: 1px solid #e5e4e3;
+  box-shadow: 0 10px 26px -20px rgba(27, 26, 25,.55); display: flex; flex-direction: column; gap: 10px; }
+.flFormTitre { font: 800 13.5px 'Plus Jakarta Sans', sans-serif; color: #1d1d1f; }
 .flForm { display: flex; flex-direction: column; gap: 10px; }
 .flFormGrille { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 10px 12px; }
 .flFormGrille[data-fixe] > :first-child { grid-column: 1 / -1; }
 .flFormAide { margin: 0; font-size: 12.5px; font-weight: 600; line-height: 1.5; color: #64748b; }
 .flFormAide[data-erreur] { color: #b91c1c; }
 .flFormBtns { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.flLienBtn { background: none; border: none; padding: 6px 4px; color: #22497D; font: 700 13px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; }
+.flLienBtn { background: none; border: none; padding: 6px 4px; color: #1d1d1f; font: 700 13px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; }
 .flLienBtn:disabled { opacity: .45; cursor: default; }
 
 /* « Voir le mail », « Voir le SMS » */
-.flVoir { width: 100%; display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 13px; border: 1px solid #e3e8f0; background: white;
-  font: inherit; color: #13243D; text-align: left; cursor: pointer; }
-.flVoir:hover { border-color: #22497D; }
+.flVoir { width: 100%; display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 13px; border: 1px solid #eaeae9; background: white;
+  font: inherit; color: #141416; text-align: left; cursor: pointer; }
+.flVoir:hover { border-color: #1d1d1f; }
 .flVoir > svg:last-child { color: #94a3b8; transform: rotate(-90deg); flex-shrink: 0; }
-.flVoirIc { width: 36px; height: 36px; border-radius: 10px; background: #fff6ec; color: #a95808; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.flVoirIc[data-ton="bleu"] { background: #e8eff8; color: #22497D; }
+.flVoirIc { width: 36px; height: 36px; border-radius: 10px; background: #fff6ec; color: #b4560f; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.flVoirIc[data-ton="bleu"] { background: #f1f0ef; color: #1d1d1f; }
 .flVoirTx { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .flVoirTx b { font-size: 13.5px; font-weight: 800; }
 .flVoirTx small { font-size: 12px; font-weight: 600; color: #64748b; }
@@ -238,20 +238,20 @@
 /* L'aperçu, par-dessus la fenêtre du lien */
 .apVoile { position: fixed; inset: 0; z-index: 1400; background: rgba(15,23,42,.5); display: flex; align-items: center; justify-content: center; padding: 18px; }
 .apFenetre { width: min(820px, 100%); max-height: calc(100dvh - 36px); display: flex; flex-direction: column; background: white; border-radius: 22px;
-  box-shadow: 0 40px 90px -30px rgba(17,35,64,.65); font-family: 'DM Sans', system-ui, sans-serif; color: #13243D; overflow: hidden; }
+  box-shadow: 0 40px 90px -30px rgba(27, 26, 25,.65); font-family: 'DM Sans', system-ui, sans-serif; color: #141416; overflow: hidden; }
 .apFenetre[data-type="sms"] { width: min(780px, 100%); }
-.apTete { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-bottom: 1px solid #eef2f7; }
-.apIc { width: 40px; height: 40px; border-radius: 12px; background: #fff6ec; color: #a95808; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.apTete { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-bottom: 1px solid #f3f2f2; }
+.apIc { width: 40px; height: 40px; border-radius: 12px; background: #fff6ec; color: #b4560f; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .apVues { display: flex; gap: 4px; padding: 3px; border-radius: 11px; background: #f1f5f9; flex-shrink: 0; }
 .apVues button { height: 32px; padding: 0 12px; border-radius: 9px; border: none; background: transparent; color: #64748b; font: 700 13px 'DM Sans', sans-serif; cursor: pointer; }
-.apVues button[aria-pressed="true"] { background: white; color: #13243D; box-shadow: 0 1px 4px rgba(17,35,64,.15); }
-.apCorpsMail { flex: 1 1 auto; min-height: 0; overflow: auto; background: #e6edf6; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.apMail { display: block; width: 100%; max-width: 700px; height: min(70dvh, 820px); border: none; border-radius: 14px; background: #e6edf6; }
-.apMail[data-vue="tel"] { max-width: 390px; border: 10px solid #13243D; border-radius: 36px; }
+.apVues button[aria-pressed="true"] { background: white; color: #141416; box-shadow: 0 1px 4px rgba(27, 26, 25,.15); }
+.apCorpsMail { flex: 1 1 auto; min-height: 0; overflow: auto; background: #efeeed; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.apMail { display: block; width: 100%; max-width: 700px; height: min(70dvh, 820px); border: none; border-radius: 14px; background: #efeeed; }
+.apMail[data-vue="tel"] { max-width: 390px; border: 10px solid #141416; border-radius: 36px; }
 .apCorpsSms { flex: 1 1 auto; min-height: 0; overflow: auto; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; padding: 20px; }
-.apTel { background: #f4f6fb; border: 10px solid #13243D; border-radius: 34px; padding: 18px 14px; min-height: 380px; display: flex; flex-direction: column; gap: 12px; }
+.apTel { background: #f8f8f7; border: 10px solid #141416; border-radius: 34px; padding: 18px 14px; min-height: 380px; display: flex; flex-direction: column; gap: 12px; }
 .apTelTete { text-align: center; font-size: 12px; font-weight: 700; color: #64748b; }
-.apBulle { align-self: flex-end; max-width: 94%; background: #22497D; color: white; border-radius: 18px 18px 4px 18px; padding: 10px 12px;
+.apBulle { align-self: flex-end; max-width: 94%; background: #1d1d1f; color: white; border-radius: 18px 18px 4px 18px; padding: 10px 12px;
   font-size: 13.5px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
 .apEdition { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .apPied { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 4px; }

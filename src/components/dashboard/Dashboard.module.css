@@ -25,7 +25,7 @@
   top: -30px; right: -30px;
   width: 180px; height: 180px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(201,168,76,0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(238, 118, 35,0.1) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -34,7 +34,7 @@
 .welcomeDate {
   font-size: 10px;
   font-weight: 700;
-  color: #c9a84c;
+  color: #ee7623;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin-bottom: 5px;
@@ -75,7 +75,7 @@
   font-size: 10px; font-weight: 700; color: #94a3b8;
   text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap;
 }
-.sectionDivider::after { content: ''; flex: 1; height: 1px; background: #e3e8f0; }
+.sectionDivider::after { content: ''; flex: 1; height: 1px; background: #eaeae9; }
 
 /* ── STATS ── */
 .statsGrid {
@@ -84,7 +84,7 @@
 }
 
 .statCard {
-  background: white; border-radius: 16px; border: 1px solid #e3e8f0;
+  background: white; border-radius: 16px; border: 1px solid #eaeae9;
   padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   transition: all 0.15s; cursor: pointer;
 }
@@ -94,7 +94,7 @@
 .statTop { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .statIcon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
 .iconSlate { background: #f1f5f9; }
-.iconGold  { background: #fdf6e3; }
+.iconGold  { background: #fdeee3; }
 .iconBlue  { background: #eff6ff; }
 .iconDark  { background: rgba(255,255,255,0.08); }
 
@@ -102,13 +102,13 @@
 .badgePurple { background: #f5f3ff; color: #8b5cf6; border: 1px solid #ddd6fe; }
 .badgeGreen  { background: #ecfdf5; color: #10b981; border: 1px solid #a7f3d0; }
 .badgeBlue   { background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
-.badgeGoldDark { background: rgba(201,168,76,0.15); color: #e8c96a; border: 1px solid rgba(201,168,76,0.2); }
+.badgeGoldDark { background: rgba(238, 118, 35,0.15); color: #f6a15e; border: 1px solid rgba(238, 118, 35,0.2); }
 
 .statVal { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; color: var(--emilio); line-height: 1; margin-bottom: 4px; }
 .statValWhite { color: white; }
 .statLabel    { font-size: 11px; color: #4a5568; font-weight: 500; }
 .statLabelDark { color: rgba(255,255,255,0.45); }
-.statSub      { font-size: 10px; color: #c9a84c; margin-top: 4px; font-weight: 600; }
+.statSub      { font-size: 10px; color: #ee7623; margin-top: 4px; font-weight: 600; }
 
 /* ── MAIN ROW ── */
 .mainRow {
@@ -117,7 +117,7 @@
 }
 
 .card {
-  background: white; border-radius: 16px; border: 1px solid #e3e8f0;
+  background: white; border-radius: 16px; border: 1px solid #eaeae9;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden; display: flex; flex-direction: column;
 }
 
@@ -127,7 +127,7 @@
 }
 
 .cardTitle { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 13px; color: var(--emilio); display: flex; align-items: center; gap: 6px; }
-.cardLink  { font-size: 11px; color: #c9a84c; font-weight: 600; border: none; background: none; cursor: pointer; }
+.cardLink  { font-size: 11px; color: #ee7623; font-weight: 600; border: none; background: none; cursor: pointer; }
 .cardLink:hover { opacity: 0.7; }
 
 .badge      { display: inline-flex; align-items: center; gap: 2px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
@@ -164,27 +164,27 @@
 .listDetail { font-size: 11px; color: #4a5568; }
 
 .txList { padding: 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
-.txItem { background: #f7f9fc; border-radius: 12px; padding: 12px; cursor: pointer; transition: background 0.12s; }
-.txItem:hover { background: #eef1f6; }
+.txItem { background: #fafaf9; border-radius: 12px; padding: 12px; cursor: pointer; transition: background 0.12s; }
+.txItem:hover { background: #f2f2f2; }
 .txTop  { display: flex; justify-content: space-between; margin-bottom: 2px; }
 .txName { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 13px; color: var(--emilio); }
-.txPrice { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 13px; color: #c9a84c; }
+.txPrice { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 13px; color: #ee7623; }
 .txSub  { font-size: 11px; color: #4a5568; margin-bottom: 7px; }
 .txHint { font-size: 10px; color: #4a5568; margin-top: 4px; }
 
 .progBar  { display: flex; gap: 3px; }
-.progStep { flex: 1; height: 3px; border-radius: 2px; background: #e3e8f0; }
-.progStep.done   { background: #c9a84c; }
+.progStep { flex: 1; height: 3px; border-radius: 2px; background: #eaeae9; }
+.progStep.done   { background: #ee7623; }
 .progStep.active { background: var(--emilio-fond); }
 
 .rightCol { display: flex; flex-direction: column; gap: 10px; }
 
 .visiteList { padding: 6px 8px; }
 .visiteRow  { display: flex; align-items: center; gap: 10px; padding: 7px 6px; border-radius: 8px; cursor: pointer; transition: background 0.12s; }
-.visiteRow:hover { background: #f7f9fc; }
+.visiteRow:hover { background: #fafaf9; }
 .vdate      { border-radius: 8px; padding: 5px 9px; text-align: center; min-width: 40px; flex-shrink: 0; }
 .vdateDark  { background: var(--emilio-fond); }
-.vdateLight { background: #eef1f6; }
+.vdateLight { background: #f2f2f2; }
 .vday       { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 17px; line-height: 1; }
 .vdateDark  .vday { color: white; }
 .vdateLight .vday { color: var(--emilio); }
@@ -193,7 +193,7 @@
 .vdateLight .vmon { color: #94a3b8; }
 .vname  { font-size: 12px; font-weight: 600; color: var(--emilio); }
 .vlieu  { font-size: 10px; color: #4a5568; }
-.vheure { font-size: 10px; color: #c9a84c; font-weight: 600; }
+.vheure { font-size: 10px; color: #ee7623; font-weight: 600; }
 
 .actList { padding: 10px 12px; display: flex; flex-direction: column; gap: 9px; }
 .actRow  { display: flex; align-items: flex-start; gap: 8px; }
@@ -266,7 +266,7 @@
 
   .statsGrid { gap: 10px; padding: 0 10px; margin-top: 12px; background: none; border: none; }
   .statCard {
-    border: 1px solid #e6ebf2; border-radius: 18px; padding: 14px;
+    border: 1px solid #edeceb; border-radius: 18px; padding: 14px;
     box-shadow: 0 8px 20px -16px rgba(15, 23, 42, .45);
   }
   .statDark { border-color: var(--emilio); }

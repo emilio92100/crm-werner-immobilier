@@ -31,7 +31,7 @@ import { etapeDe, type BienVente, type EtapeVente } from '@/lib/biens-vente';
 export type Support = 'site' | 'seloger' | 'bd' | 'jinka';
 
 export const SUPPORTS: { k: Support; lib: string; court: string; sous: string; c: string; fond: string }[] = [
-  { k: 'site', lib: 'Mon site', court: 'Site', sous: 'emilio-immo.com', c: '#22497c', fond: '#eef3fa' },
+  { k: 'site', lib: 'Mon site', court: 'Site', sous: 'emilio-immo.com', c: '#1d1d1f', fond: '#f5f4f3' },
   { k: 'seloger', lib: 'SeLoger', court: 'SL', sous: 'Et Logic-Immo, automatiquement', c: '#b4233c', fond: '#fdf0f2' },
   { k: 'bd', lib: 'Belles Demeures', court: 'BD', sous: 'Pour les biens que tu choisis', c: '#5b2d6e', fond: '#f5eef8' },
   { k: 'jinka', lib: 'Jinka', court: 'JK', sous: 'L’appli qui regroupe les annonces', c: '#0e7490', fond: '#ecfeff' },

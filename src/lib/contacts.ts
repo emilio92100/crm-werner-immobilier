@@ -14,13 +14,13 @@ export type TypeContact = 'acheteur' | 'vendeur' | 'vendeur_signe' | 'proprietai
 
 export const TYPES_CONTACT: { k: TypeContact; lib: string; pluriel: string; ic: string; c: string; fond: string; aide: string }[] = [
   { k: 'acheteur', lib: 'Acheteur', pluriel: 'Acheteurs', ic: 'cible', c: '#0f7a4f', fond: '#ecfdf5', aide: 'Il cherche à acheter : sa recherche, son espace, la veille.' },
-  { k: 'vendeur', lib: 'Vendeur', pluriel: 'Vendeurs', ic: 'etiquette', c: '#a07c28', fond: '#fbf6e9', aide: 'Son bien est en vente avec nous : mandat, sous offre ou sous compromis.' },
+  { k: 'vendeur', lib: 'Vendeur', pluriel: 'Vendeurs', ic: 'etiquette', c: '#b4560f', fond: '#fbf0e9', aide: 'Son bien est en vente avec nous : mandat, sous offre ou sous compromis.' },
   /* V3.47 : sa vente est signée chez le notaire. Il quitte les vendeurs en
      cours, sans être archivé : un ancien client, une recommandation, un
      prochain projet. Proposé dans « La vente est signée ». */
   { k: 'vendeur_signe', lib: 'Vendeur signé', pluriel: 'Vendeurs signés', ic: 'check', c: '#15803d', fond: '#f0fdf4', aide: 'Sa vente est signée : un ancien client, pour une recommandation ou un prochain projet.' },
   { k: 'proprietaire', lib: 'Propriétaire', pluriel: 'Propriétaires', ic: 'cle', c: '#b45309', fond: '#fff7ed', aide: 'Il possède un bien qui n’est pas en vente : à suivre, en estimation, ou rien encore. Un vendeur de demain.' },
-  { k: 'notaire', lib: 'Notaire', pluriel: 'Notaires', ic: 'balance', c: '#34496e', fond: '#eef2f8', aide: 'Son étude, son clerc : pour les compromis et les actes.' },
+  { k: 'notaire', lib: 'Notaire', pluriel: 'Notaires', ic: 'balance', c: '#1d1d1f', fond: '#f4f3f2', aide: 'Son étude, son clerc : pour les compromis et les actes.' },
   { k: 'confrere', lib: 'Confrère ou agence', pluriel: 'Confrères', ic: 'agence', c: '#7c3aed', fond: '#f5f3ff', aide: 'Un agent, un mandataire, une agence : pour les biens partagés.' },
   { k: 'gardien', lib: 'Gardien', pluriel: 'Gardiens', ic: 'immeuble', c: '#0e7490', fond: '#ecfeff', aide: 'Le gardien d’un immeuble : ses horaires, les clés, les infos.' },
   { k: 'partenaire', lib: 'Partenaire', pluriel: 'Partenaires', ic: 'outil', c: '#475569', fond: '#f1f5f9', aide: 'Courtier, diagnostiqueur, artisan, syndic, avocat…' },

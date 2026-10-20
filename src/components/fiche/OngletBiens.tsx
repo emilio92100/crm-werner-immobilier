@@ -34,7 +34,7 @@ const ICONES_R: Record<string, string> = {
  */
 
 const RETOURS: Record<string, { l: string; c: string; bg: string; bd: string; i: string }> = {
-  propose: { l: 'En attente de retour', c: '#64748b', bg: '#f7f9fc', bd: BORD, i: '⏳' },
+  propose: { l: 'En attente de retour', c: '#64748b', bg: '#fafaf9', bd: BORD, i: '⏳' },
   interesse: { l: 'Ça lui plaît', c: '#059669', bg: '#ecfdf5', bd: '#a7f3d0', i: '👍' },
   souhaite_visiter: { l: 'Veut visiter', c: '#7c3aed', bg: '#f5f3ff', bd: '#ddd6fe', i: '👀' },
   visite: { l: 'Visité', c: '#7c3aed', bg: '#f5f3ff', bd: '#ddd6fe', i: '🔑' },
@@ -68,11 +68,11 @@ function LienRetirer({ onClick }: { onClick: () => void }) {
     <button type="button" onClick={onClick} title="Retirer ce bien du dossier"
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 5, background: 'none', border: 'none',
-        color: '#c3ccda', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+        color: '#d0cecd', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
         padding: '4px 2px', transition: 'color .12s',
       }}
       onMouseEnter={e => { e.currentTarget.style.color = '#dc2626'; }}
-      onMouseLeave={e => { e.currentTarget.style.color = '#c3ccda'; }}>
+      onMouseLeave={e => { e.currentTarget.style.color = '#d0cecd'; }}>
       <IconeCorbeille /> Retirer
     </button>
   );
@@ -119,7 +119,7 @@ function BarreGroupe({ n, onEnvoyer, onVider }: { n: number; onEnvoyer: () => vo
       <style>{`
         .emi-barre-groupe{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:80;display:flex;align-items:center;gap:12px;
           background:${NAVY};color:#fff;border-radius:16px;padding:9px 9px 9px 14px;max-width:calc(100vw - 24px);box-sizing:border-box;
-          box-shadow:0 18px 40px -12px rgba(12,18,30,.55),0 2px 6px rgba(12,18,30,.2);font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+          box-shadow:0 18px 40px -12px rgba(16, 15, 15,.55),0 2px 6px rgba(16, 15, 15,.2);font-family:'Plus Jakarta Sans',system-ui,sans-serif;
           animation:emiBarreMonte .28s cubic-bezier(.22,.9,.3,1) both}
         @keyframes emiBarreMonte{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
         .emi-bg-n{min-width:26px;height:26px;border-radius:8px;background:${OR};color:${NAVY};font-weight:800;font-size:13.5px;display:inline-flex;align-items:center;justify-content:center;padding:0 7px;box-sizing:border-box}
@@ -416,7 +416,7 @@ export default function OngletBiens({ clientId, rechercheId, client, mode, onCha
   useEffect(() => () => window.clearTimeout(minuteur.current), []);
 
   if (chargement) {
-    return <div style={{ padding: 40, textAlign: 'center', color: '#b6c1d1', fontSize: 14, minHeight: 200 }}>Chargement…</div>;
+    return <div style={{ padding: 40, textAlign: 'center', color: '#c6c3c1', fontSize: 14, minHeight: 200 }}>Chargement…</div>;
   }
 
   if (biens.length === 0) {
@@ -505,7 +505,7 @@ export default function OngletBiens({ clientId, rechercheId, client, mode, onCha
       const canal = b.canal_envoi === 'mail' ? ' par mail' : b.canal_envoi === 'whatsapp' ? ' par WhatsApp' : '';
       const quand = b.envoye_le ? `Envoyé ${depuisQuand(b.envoye_le)}${canal}` : 'Envoyé';
       return (
-        <BasLigne couleur="#64748b" fond="#f7f9fc" bord={BORD} icone="horloge" etat="En attente de son retour"
+        <BasLigne couleur="#64748b" fond="#fafaf9" bord={BORD} icone="horloge" etat="En attente de son retour"
           mot={`${quand} · ${b.nb_vues ? `ouvert ${b.nb_vues} fois` : 'jamais ouvert'}`} vide
           boutons={<BoutonBas onClick={() => setObs(b)}>Noter son retour</BoutonBas>} />
       );
@@ -548,7 +548,7 @@ export default function OngletBiens({ clientId, rechercheId, client, mode, onCha
     return (
       <>
         {ligneAgence}
-        <BasLigne couleur="#a17d2c" fond="#fdfaf1" bord="#ecdcb4" icone="lien"
+        <BasLigne couleur="#be550f" fond="#fdf6f1" bord="#f9caa7" icone="lien"
           etat={`Proposé par ${prenomC} le ${leJour(an.created_at)}`}
           mot={an.mot ? <>{`« ${an.mot} »`}{' '}<small>{'· envoyé, il ira dans « Ça lui plaît »'}</small></> : <small>{'Envoyé, il ira directement dans « Ça lui plaît ».'}</small>}
           vide={!an.mot} />
@@ -567,7 +567,7 @@ export default function OngletBiens({ clientId, rechercheId, client, mode, onCha
       );
     }
     if (b.pdf_statut === 'demande') {
-      return <BasLigne couleur="#64748b" fond="#f7f9fc" bord={BORD} icone="horloge" etat="Fiche soignée demandée" mot="Elle sera prête à la prochaine session." vide />;
+      return <BasLigne couleur="#64748b" fond="#fafaf9" bord={BORD} icone="horloge" etat="Fiche soignée demandée" mot="Elle sera prête à la prochaine session." vide />;
     }
     return undefined;
   };
@@ -581,12 +581,12 @@ export default function OngletBiens({ clientId, rechercheId, client, mode, onCha
     return (
       <>
         {an && (
-          <div style={{ background: '#fdfaf1', border: '1px solid #ecdcb4', borderRadius: 14, padding: '12px 16px' }}>
+          <div style={{ background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 14, padding: '12px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
-              <span style={{ display: 'flex', color: '#a17d2c' }}><Icone nom="lien" taille={16} epaisseur={2.1} /></span>
-              <span style={{ fontSize: 15, fontWeight: 800, color: '#7a5d1c' }}>{`Proposé par ${prenomC}`}</span>
+              <span style={{ display: 'flex', color: '#be550f' }}><Icone nom="lien" taille={16} epaisseur={2.1} /></span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#8b3e0b' }}>{`Proposé par ${prenomC}`}</span>
               <span style={{ fontSize: 12.5, color: '#94a3b8', fontWeight: 600 }}>{`· ${depuisQuand(an.created_at)}, depuis son espace`}</span>
-              <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: '#c2a660' }}>Son annonce</span>
+              <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: '#ee7320' }}>Son annonce</span>
             </div>
             <div style={{ marginTop: 6, fontSize: 14.5, lineHeight: 1.55, color: an.mot ? NAVY : '#94a3b8', fontWeight: an.mot ? 600 : 500 }}>
               {an.mot ? `« ${an.mot} »` : 'Pas de mot laissé.'}
@@ -614,7 +614,7 @@ export default function OngletBiens({ clientId, rechercheId, client, mode, onCha
               <span style={{ display: 'flex', color: r.c }}><Icone nom={ICONES_R[b.badge_retour] || 'horloge'} taille={17} epaisseur={2.1} /></span>
               <span style={{ fontSize: 15, fontWeight: 800, color: r.c }}>{r.l}</span>
               {b.retour_le && <span style={{ fontSize: 12.5, color: '#94a3b8', fontWeight: 600 }}>{`· ${depuisQuand(b.retour_le)}, ${b.retour_par === 'conseiller' ? 'noté par toi' : 'depuis son espace'}`}</span>}
-              <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: '#a9b6c8' }}>Son retour</span>
+              <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: '#bbb8b6' }}>Son retour</span>
             </div>
             {b.retour_client && b.retour_client !== r.l ? (
               <div style={{ marginTop: 7, fontSize: 15, lineHeight: 1.6, color: NAVY, fontWeight: 600 }}>{`« ${b.retour_client} »`}</div>
@@ -669,7 +669,7 @@ export default function OngletBiens({ clientId, rechercheId, client, mode, onCha
     const g = groupeP(b);
     const r = RETOURS[g] || RETOURS.propose;
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: r.bg, color: r.c, border: `1px solid ${r.bd}`, borderRadius: 20, padding: '5px 12px', fontSize: 12, fontWeight: 800, boxShadow: '0 4px 12px -6px rgba(16,24,40,.5)' }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: r.bg, color: r.c, border: `1px solid ${r.bd}`, borderRadius: 20, padding: '5px 12px', fontSize: 12, fontWeight: 800, boxShadow: '0 4px 12px -6px rgba(20, 19, 19,.5)' }}>
         <Icone nom={ICONES_R[g] || 'horloge'} taille={14} epaisseur={2.2} />{r.l}
       </span>
     );

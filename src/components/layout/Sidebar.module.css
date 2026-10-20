@@ -7,7 +7,7 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  border-right: 1px solid #e3e8f0;
+  border-right: 1px solid #eaeae9;
 }
 
 /* LOGO */
@@ -23,7 +23,7 @@
 .logoGrand { display: block; width: 176px; height: auto; margin: 2px auto 0; }
 .logoMark {
   display: none; width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(26,35,50,0.2);
+  box-shadow: 0 4px 12px rgba(24, 24, 27,0.2);
 }
 
 /* NAV */
@@ -56,7 +56,7 @@
 .navItem.active::before {
   content: ''; position: absolute; left: 0; top: 50%;
   transform: translateY(-50%);
-  width: 3px; height: 20px; background: #c9a84c; border-radius: 0 3px 3px 0;
+  width: 3px; height: 20px; background: #ee7623; border-radius: 0 3px 3px 0;
 }
 .navLabel { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Le pictogramme dessiné de la rubrique (V3.24 : aussi sur ordinateur, à la
@@ -69,10 +69,10 @@
    `--nf`, Sidebar.tsx), son nom en bleu nuit ; la rubrique ouverte, sa
    pastille bleu Emilio et le picto doré. */
 @media (min-width: 901px) {
-  .navItem { padding: 7px 12px 7px 9px; color: #3b4a60; font-weight: 600; }
+  .navItem { padding: 7px 12px 7px 9px; color: #302e2d; font-weight: 600; }
   .navPicto { width: 30px; height: 30px; border-radius: 9px; background: var(--nf, #f1f5f9); color: var(--nc, #64748b); transition: background .2s, color .2s; }
-  .navItem:hover .navPicto, .navParent .navPicto { background: var(--nf, #e8edf5); color: var(--nc, var(--emilio)); }
-  .navItem.active .navPicto { background: var(--emilio-fond); color: #c9a84c; }
+  .navItem:hover .navPicto, .navParent .navPicto { background: var(--nf, #efeeee); color: var(--nc, var(--emilio)); }
+  .navItem.active .navPicto { background: var(--emilio-fond); color: #ee7623; }
   .reduit .navItem { padding: 8px 0; }
 }
 
@@ -93,7 +93,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   color: #94a3b8; cursor: pointer; transition: background .15s, color .15s;
 }
-.navBascule:hover { background: #eef2f7; color: var(--emilio); }
+.navBascule:hover { background: #f3f2f2; color: var(--emilio); }
 .navBascule svg { transform: rotate(-90deg); transition: transform .28s cubic-bezier(.22,.9,.3,1); }
 .navBasculeOuvert svg { transform: rotate(0deg); }
 .sousMenu { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s cubic-bezier(.22,.9,.3,1); }
@@ -107,7 +107,7 @@
 .sousItem {
   position: relative; display: flex; align-items: center; gap: 10px;
   width: 100%; padding: 4px 10px 4px 5px; margin: 2px 0; border: none; border-radius: 10px;
-  background: transparent; color: #3b4a60; cursor: pointer; text-align: left;
+  background: transparent; color: #302e2d; cursor: pointer; text-align: left;
   font: 600 13px 'DM Sans', sans-serif; letter-spacing: -0.1px; transition: background .15s, color .15s;
 }
 .sousIc {
@@ -116,7 +116,7 @@
   background: var(--sf, #f1f5f9); color: var(--sc, #64748b); transition: background .2s, color .2s;
 }
 .sousMot { position: relative; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sousItem:hover { background: #f5f7fa; color: var(--emilio); }
+.sousItem:hover { background: #f8f8f7; color: var(--emilio); }
 
 /* L'entrée ouverte : le mot en gras, et sa pastille qui s'allume — pleine,
    à sa couleur, avec une onde qui s'en échappe doucement, sans fin. Pas de
@@ -174,7 +174,7 @@
   width: 34px; height: 34px; border-radius: 10px;
   background: var(--emilio-fond);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 12px; color: #c9a84c; flex-shrink: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 12px; color: #ee7623; flex-shrink: 0;
 }
 .userName { font-size: 13px; font-weight: 600; color: var(--emilio); }
 .userRole { font-size: 11px; color: #94a3b8; margin-top: 1px; }
@@ -230,16 +230,16 @@
     width: min(84vw, 310px); min-width: 0;
     height: 100vh; height: 100dvh;
     border-right: none;
-    box-shadow: 0 0 0 rgba(15,22,35,0);
+    box-shadow: 0 0 0 rgba(18, 18, 17,0);
     transform: translateX(-104%);
     transition: transform .32s cubic-bezier(.22,.9,.3,1), box-shadow .32s ease;
     padding-top: env(safe-area-inset-top, 0px);
   }
-  .ouvert { transform: none; box-shadow: 18px 0 50px rgba(15,22,35,.22); }
+  .ouvert { transform: none; box-shadow: 18px 0 50px rgba(18, 18, 17,.22); }
 
   .voile {
     display: block; position: fixed; inset: 0; z-index: 150;
-    background: rgba(15,22,35,.42); backdrop-filter: blur(2px);
+    background: rgba(18, 18, 17,.42); backdrop-filter: blur(2px);
     opacity: 0; pointer-events: none; transition: opacity .28s ease;
   }
   .voileOuvert { opacity: 1; pointer-events: auto; }
@@ -249,7 +249,7 @@
   .fermer {
     display: inline-flex; align-items: center; justify-content: center;
     margin-left: auto; width: 38px; height: 38px; border-radius: 12px;
-    border: 1px solid #e3e8f0; background: #f8fafc; color: #64748b;
+    border: 1px solid #eaeae9; background: #f8fafc; color: #64748b;
   }
 
   /* Les rubriques : plus hautes, pour le doigt, avec un vrai pictogramme. */
@@ -265,8 +265,8 @@
     background: var(--nf, #f1f5f9); color: var(--nc, #64748b);
   }
   .navItem:hover .navPicto { color: var(--nc, var(--emilio)); }
-  .navItem.active .navPicto { background: var(--emilio-fond); color: #c9a84c; }
-  .navParent .navPicto { background: var(--nf, #e8edf5); color: var(--nc, var(--emilio)); }
+  .navItem.active .navPicto { background: var(--emilio-fond); color: #ee7623; }
+  .navParent .navPicto { background: var(--nf, #efeeee); color: var(--nc, var(--emilio)); }
   .navItemBascule { padding-right: 50px; }
   .navBascule { right: 8px; width: 36px; height: 36px; border-radius: 10px; }
   .sousListe { margin: 0 0 8px 22px; }
@@ -283,8 +283,8 @@
     padding: 0 4px env(safe-area-inset-bottom, 0px);
     background: rgba(255,255,255,.94);
     backdrop-filter: saturate(1.6) blur(14px); -webkit-backdrop-filter: saturate(1.6) blur(14px);
-    border-top: 1px solid #e3e8f0;
-    box-shadow: 0 -6px 24px rgba(15,22,35,.06);
+    border-top: 1px solid #eaeae9;
+    box-shadow: 0 -6px 24px rgba(18, 18, 17,.06);
   }
   .onglet, .ongletPlus {
     flex: 1 1 0; min-width: 0;
@@ -297,7 +297,7 @@
     position: relative; display: inline-flex; align-items: center; justify-content: center;
     width: 46px; height: 30px; border-radius: 15px; transition: background .2s ease;
   }
-  .ongletActif .ongletPicto { background: #fdf6e3; color: #a9822f; }
+  .ongletActif .ongletPicto { background: #fdeee3; color: #c85a10; }
   .ongletMot { font-size: 10.5px; font-weight: 700; letter-spacing: .1px; line-height: 1; }
   .ongletActif .ongletMot { color: var(--emilio); font-weight: 800; }
 
@@ -315,35 +315,35 @@
   .plusRond {
     width: 48px; height: 48px; margin-top: -20px; border-radius: 16px;
     display: inline-flex; align-items: center; justify-content: center;
-    background: var(--emilio-fond); color: #e8c96a;
-    box-shadow: 0 8px 20px -6px rgba(26,35,50,.55), 0 0 0 4px #fff;
+    background: var(--emilio-fond); color: #f6a15e;
+    box-shadow: 0 8px 20px -6px rgba(24, 24, 27,.55), 0 0 0 4px #fff;
   }
   .ongletPlus:active .plusRond { transform: scale(.94); }
   .plusRond svg { transition: transform .25s cubic-bezier(.3,1.4,.5,1); }
   .ongletPlusOuvert .plusRond svg { transform: rotate(45deg); }
 
   /* Le menu du « + » : trois choix qui montent au-dessus de la barre. */
-  .plusVoile { position: fixed; inset: 0; z-index: 58; background: rgba(15,22,35,.38);
+  .plusVoile { position: fixed; inset: 0; z-index: 58; background: rgba(18, 18, 17,.38);
     -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); animation: plusVoile .2s ease both; }
   .plusMenu {
     position: fixed; left: 12px; right: 12px; z-index: 59;
     bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 14px);
     background: #fff; border-radius: 20px; padding: 6px;
-    box-shadow: 0 24px 48px -16px rgba(15,22,35,.45), 0 0 0 1px rgba(15,22,35,.04);
+    box-shadow: 0 24px 48px -16px rgba(18, 18, 17,.45), 0 0 0 1px rgba(18, 18, 17,.04);
     animation: plusMonte .26s cubic-bezier(.2,.9,.3,1) both;
   }
   .plusChoix { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 12px;
     background: none; border: none; border-radius: 14px; text-align: left; font-family: inherit; color: var(--emilio);
     -webkit-tap-highlight-color: transparent; }
-  .plusChoix:active { background: #f4f6fa; }
-  .plusChoix + .plusChoix { border-top: 1px solid #f1f4f8; border-radius: 0 0 14px 14px; }
+  .plusChoix:active { background: #f7f7f7; }
+  .plusChoix + .plusChoix { border-top: 1px solid #f5f4f4; border-radius: 0 0 14px 14px; }
   .plusIco { width: 40px; height: 40px; border-radius: 12px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
-    background: #f4f6fa; color: var(--emilio); }
-  .plusChoix:nth-child(2) .plusIco { background: #fdf6e3; color: #a9822f; }
+    background: #f7f7f7; color: var(--emilio); }
+  .plusChoix:nth-child(2) .plusIco { background: #fdeee3; color: #c85a10; }
   .plusTexte { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
   .plusTexte b { font-size: 15px; font-weight: 700; }
   .plusTexte i { font-style: normal; font-size: 12.5px; color: #8896a8; }
-  .plusFleche { color: #c3cbd7; display: inline-flex; }
+  .plusFleche { color: #cecdcc; display: inline-flex; }
   .plusFleche svg { transform: rotate(-90deg); }
 }
 @keyframes plusVoile { from { opacity: 0; } to { opacity: 1; } }

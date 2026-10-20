@@ -86,7 +86,7 @@ export function PastilleProprio({ nom, pluriel, personne, societe, pour, sous, p
   return (
     <div className={b.pProprio}>
       <button type="button" className={`${b.pProprioBtn} ${onRetirer ? b.pProprioAvecX : ''}`} aria-haspopup="dialog" aria-expanded={vue === 'infos'} onClick={() => setVue(x => (x === 'infos' ? null : 'infos'))}>
-        <AvatarContact c={c} teinte={{ bg: '', fg: '#a07c28' }} taille={34} societe={societe} />
+        <AvatarContact c={c} teinte={{ bg: '', fg: '#b4560f' }} taille={34} societe={societe} />
         <span className={b.pProprioTx}><small>{pluriel ? 'Propriétaires' : 'Propriétaire'}</small><b>{nom}</b></span>
         <Ic n="bas" t={13} e={2.4} />
       </button>
@@ -116,7 +116,7 @@ export function PastilleProprio({ nom, pluriel, personne, societe, pour, sous, p
       {vue === 'infos' && (
         <div className={b.pProprioPan} role="dialog" aria-label={`${pluriel ? 'Les propriétaires' : 'Le propriétaire'} : ${nom}`}>
           <div className={b.pProprioQui}>
-            <AvatarContact c={c} teinte={{ bg: '', fg: '#a07c28' }} taille={42} societe={societe} />
+            <AvatarContact c={c} teinte={{ bg: '', fg: '#b4560f' }} taille={42} societe={societe} />
             <div>
               <b>{nom}</b>
               <small>{role || (pluriel ? 'Propriétaires' : 'Propriétaire')}{sous ? ` · ${sous}` : ''}</small>

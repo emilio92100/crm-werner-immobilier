@@ -43,7 +43,7 @@ export type ActionsVisite = {
 export type { ActionsOffre };
 
 const PUCE_OFFRE: Record<string, { l: string; fond: string; c: string }> = {
-  en_attente: { l: 'En attente de réponse', fond: '#fbf6e9', c: '#7a5d1c' },
+  en_attente: { l: 'En attente de réponse', fond: '#fbf0e9', c: '#8b3e0b' },
   contre: { l: 'Contre-offre', fond: '#eff6ff', c: '#1d4ed8' },
   acceptee: { l: 'Acceptée', fond: '#dcfce7', c: '#15803d' },
   refusee: { l: 'Refusée', fond: '#f1f5f9', c: '#475569' },

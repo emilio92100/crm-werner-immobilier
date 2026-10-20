@@ -28,11 +28,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://emilio-immo-chasse
 const ESPACE_URL = `https://${HOTE_ESPACE}`;
 
 /* V3.118 : les couleurs du site emilio-immo.com (src/lib/mail-charte.ts). */
-const BLEU = '#22497D';
-const DORE = '#E68B23';
-const ENCRE = '#13243D';
-const DORE_TEXTE = '#A95808';
-const DORE_CLAIR = '#F2B266';
+const BLEU = '#1d1d1f';
+const DORE = '#ee7623';
+const ENCRE = '#141416';
+const DORE_TEXTE = '#b4560f';
+const DORE_CLAIR = '#f6a15e';
 const FOND = '#FFF6EC';
 
 interface BienLite {
@@ -140,7 +140,7 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
     return '';
   };
 
-  const hairline = `<tr><td class="bord" style="padding:0 28px;"><div style="border-top:1px solid #E8EDF3;line-height:0;font-size:0;">&nbsp;</div></td></tr>`;
+  const hairline = `<tr><td class="bord" style="padding:0 28px;"><div style="border-top:1px solid #eeeeed;line-height:0;font-size:0;">&nbsp;</div></td></tr>`;
 
   function singleBloc(b: BienLite): string {
     const photo = photoOf(b);
@@ -152,14 +152,14 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
     if (b.nb_pieces) cells.push({ v: `${b.nb_pieces}`, l: b.nb_pieces > 1 ? 'Pièces' : 'Pièce' });
     if (b.nb_chambres) cells.push({ v: `${b.nb_chambres}`, l: b.nb_chambres > 1 ? 'Chambres' : 'Chambre' });
     if (etageTxt) cells.push({ v: etageTxt, l: 'Étage' });
-    const statsRow = cells.map((c, i) => `${i > 0 ? '<td width="1" style="background:#E8EDF3;"></td>' : ''}<td align="center" style="padding:10px 6px;"><div style="font-size:17px;font-weight:700;color:${BLEU};">${c.v}</div><div style="font-size:11px;color:#8FA3BF;margin-top:2px;">${c.l}</div></td>`).join('');
+    const statsRow = cells.map((c, i) => `${i > 0 ? '<td width="1" style="background:#eeeeed;"></td>' : ''}<td align="center" style="padding:10px 6px;"><div style="font-size:17px;font-weight:700;color:${BLEU};">${c.v}</div><div style="font-size:11px;color:#aba7a3;margin-top:2px;">${c.l}</div></td>`).join('');
     return `
       ${photo ? `<tr><td style="padding:0;"><img src="${escapeHtml(photo)}" alt="" width="600" style="width:100%;max-width:600px;height:auto;display:block;border:0;" /></td></tr>` : ''}
       <tr><td class="bord" style="padding:24px 28px 8px;">
         <div style="font-size:20px;font-weight:700;color:${BLEU};line-height:1.3;margin-bottom:6px;">${escapeHtml(titreOf(b))}</div>
-        ${loc ? `<div style="font-size:13px;color:#8FA3BF;"><span style="color:${DORE};">&#9679;</span> ${escapeHtml(loc)}</div>` : ''}
+        ${loc ? `<div style="font-size:13px;color:#aba7a3;"><span style="color:${DORE};">&#9679;</span> ${escapeHtml(loc)}</div>` : ''}
       </td></tr>
-      ${statsRow ? `<tr><td class="bord" style="padding:14px 28px 4px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E8EDF3;border-bottom:1px solid #E8EDF3;"><tr>${statsRow}</tr></table></td></tr>` : ''}
+      ${statsRow ? `<tr><td class="bord" style="padding:14px 28px 4px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #eeeeed;border-bottom:1px solid #eeeeed;"><tr>${statsRow}</tr></table></td></tr>` : ''}
       <tr><td class="bord" style="padding:18px 28px 6px;">
         ${prix ? `<div style="font-size:26px;font-weight:800;color:${BLEU};line-height:1;">${fmt(prix)} €</div><div style="font-size:11px;color:${DORE_TEXTE};font-weight:600;margin:6px 0 ${honoOf(b) ? '4' : '18'}px;">${b.bien_vente_id && b.prix_acquereur ? 'Prix FAI · honoraires inclus' : 'Prix demandé'}</div>${honoOf(b) ? `<div style="font-size:12px;color:#5B6B80;margin:0 0 18px;">${honoOf(b)}</div>` : ''}` : ''}
         <a href="${lienBien(b, token, rech)}" style="display:block;background:${BLEU};color:#ffffff;text-decoration:none;text-align:center;padding:15px;border-radius:11px;font-size:15px;font-weight:600;">Consulter le bien &rarr;</a>
@@ -180,7 +180,7 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
           </td>
           <td class="mibody" style="vertical-align:top;padding-left:16px;">
             <div style="font-size:15px;font-weight:700;color:${BLEU};margin-bottom:3px;">${escapeHtml(titreOf(b))}</div>
-            ${loc ? `<div style="font-size:12px;color:#8FA3BF;margin-bottom:6px;"><span style="color:${DORE};">&#9679;</span> ${escapeHtml(loc)}</div>` : ''}
+            ${loc ? `<div style="font-size:12px;color:#aba7a3;margin-bottom:6px;"><span style="color:${DORE};">&#9679;</span> ${escapeHtml(loc)}</div>` : ''}
             ${carac ? `<div style="font-size:12px;color:#5B6B80;margin-bottom:8px;">${escapeHtml(carac)}</div>` : ''}
             ${prix ? `<div style="font-size:17px;font-weight:800;color:${BLEU};margin-bottom:${honoOf(b) ? '2' : '8'}px;">${fmt(prix)} €</div>${honoOf(b) ? `<div style="font-size:11.5px;color:#5B6B80;margin-bottom:8px;">+ ${fmt(prixDuBien(b).hono)} € de nos honoraires</div>` : ''}` : ''}
             <a href="${lienBien(b, token, rech)}" style="color:${DORE_TEXTE};text-decoration:none;font-size:13px;font-weight:700;">Consulter le bien &rarr;</a>
@@ -202,18 +202,18 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
         : `<div style="width:60px;height:46px;background:${BLEU};border-radius:8px;"></div>`}</td>`;
     }).join('');
     const plus = n > 4
-      ? `<td width="60"><div style="width:60px;height:46px;line-height:46px;text-align:center;background:#E8EFF8;color:${BLEU};border-radius:8px;font-size:14px;font-weight:800;">+${n - 4}</div></td>`
+      ? `<td width="60"><div style="width:60px;height:46px;line-height:46px;text-align:center;background:#f1f0ef;color:${BLEU};border-radius:8px;font-size:14px;font-weight:800;">+${n - 4}</div></td>`
       : '';
     /* Sans lien d'espace (dossier pas encore repris), on liste les suivants
        avec leur fiche publique : le client ne perd aucun bien. */
     const sansEspace = lien ? '' : reste.map(b => {
       const prix = prixOf(b);
-      return `<div style="font-size:13px;color:#46566B;margin-top:8px;"><a href="${lienBienPublic(b.id)}" style="color:${BLEU};font-weight:700;text-decoration:none;">${escapeHtml(titreOf(b))}</a>${prix ? ` · ${fmt(prix)} €` : ''}</div>`;
+      return `<div style="font-size:13px;color:#363533;margin-top:8px;"><a href="${lienBienPublic(b.id)}" style="color:${BLEU};font-weight:700;text-decoration:none;">${escapeHtml(titreOf(b))}</a>${prix ? ` · ${fmt(prix)} €` : ''}</div>`;
     }).join('');
     return `
       ${hairline}
       <tr><td class="bord" style="padding:20px 28px 26px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F8FC;border:1px solid #F7D5B0;border-radius:14px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f6f6f7;border:1px solid #F7D5B0;border-radius:14px;">
           <tr><td style="padding:18px 20px 20px;">
             <div style="font-size:10.5px;letter-spacing:2px;color:${DORE_TEXTE};font-weight:700;">DANS VOTRE ESPACE</div>
             <div style="font-size:18px;font-weight:800;color:${BLEU};margin-top:6px;line-height:1.3;">${n === 1 ? 'Un autre bien vous attend' : `${n} autres biens vous attendent`}</div>
@@ -269,12 +269,12 @@ ${LIEN_POLICE_MAIL}
   }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#E6EDF6;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E6EDF6;">
+<body style="margin:0;padding:0;background:#efeeed;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#efeeed;">
     <tr><td align="center" class="cadre" style="padding:26px 12px;">
 
       <!-- FEUILLE UNIQUE -->
-      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #DCE3EC;border-radius:18px;overflow:hidden;">
+      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:18px;overflow:hidden;">
 
         <!-- En-tête -->
         <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
@@ -286,7 +286,7 @@ ${LIEN_POLICE_MAIL}
 
         <!-- Message -->
         <tr><td class="bord" style="padding:26px 28px 4px;">
-          <div style="font-size:14.5px;color:#46566B;line-height:1.7;">${corpsHtml}</div>
+          <div style="font-size:14.5px;color:#363533;line-height:1.7;">${corpsHtml}</div>
         </td></tr>
 
         ${contenu ? softDivider : ''}
@@ -314,10 +314,10 @@ ${LIEN_POLICE_MAIL}
            tout. Mieux vaut qu'il le dise, et qu'Alexandre l'apprenne. -->
       <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
         <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
-          <div style="font-size:11.5px;color:#8FA3BF;line-height:1.7;">
+          <div style="font-size:11.5px;color:#aba7a3;line-height:1.7;">
             Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.${
               lienFin(token)
-                ? `<br/><a href="${lienFin(token)}" style="color:#8FA3BF;text-decoration:underline;">Je ne suis plus en recherche</a>`
+                ? `<br/><a href="${lienFin(token)}" style="color:#aba7a3;text-decoration:underline;">Je ne suis plus en recherche</a>`
                 : ''
             }
           </div>
@@ -397,11 +397,11 @@ ${LIEN_POLICE_MAIL}
   }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#E6EDF6;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E6EDF6;">
+<body style="margin:0;padding:0;background:#efeeed;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#efeeed;">
     <tr><td align="center" class="cadre" style="padding:26px 12px;">
 
-      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #DCE3EC;border-radius:18px;overflow:hidden;">
+      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:18px;overflow:hidden;">
 
         <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
@@ -414,7 +414,7 @@ ${LIEN_POLICE_MAIL}
              comme une parole, pas comme une fiche. -->
         <tr><td class="bord" align="center" style="padding:32px 34px 0;">
           <div class="accroche" style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.3px;color:${BLEU};line-height:1.3;">Bienvenue, ${prenom}.</div>
-          <div style="font-size:14.5px;color:#46566B;line-height:1.75;margin-top:12px;">
+          <div style="font-size:14.5px;color:#363533;line-height:1.75;margin-top:12px;">
             Ravi de commencer cette recherche avec vous. Elle est enregistrée&nbsp;: j&#39;ai maintenant
             ce qu&#39;il me faut pour parcourir le marché, et je vous ai ouvert un espace personnel
             où tout se retrouve au même endroit.
@@ -427,7 +427,7 @@ ${LIEN_POLICE_MAIL}
               <a href="${lien}" style="display:inline-block;padding:15px 32px;font-size:15.5px;font-weight:700;color:${ENCRE};text-decoration:none;">&#128273;&nbsp;&nbsp;Ouvrir mon espace</a>
             </td>
           </tr></table>
-          <div style="font-size:12px;color:#8FA3BF;margin-top:11px;">Ce lien est le vôtre, il ne change pas.</div>
+          <div style="font-size:12px;color:#aba7a3;margin-top:11px;">Ce lien est le vôtre, il ne change pas.</div>
         </td></tr>
 
         <tr><td class="bord" style="padding:26px 28px 0;">
@@ -472,7 +472,7 @@ ${LIEN_POLICE_MAIL}
 
         <!-- Coupée en deux lignes : un bloc centré de longueurs inégales tient mal. -->
         <tr><td class="etroit" align="center" style="padding:24px 40px 28px;">
-          <div style="font-size:14.5px;color:#46566B;line-height:1.75;">
+          <div style="font-size:14.5px;color:#363533;line-height:1.75;">
             Une question, une précision à me donner&nbsp;?<br/>Répondez simplement à ce message, ou appelez-moi.
           </div>
         </td></tr>
@@ -492,10 +492,10 @@ ${LIEN_POLICE_MAIL}
 
       <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
         <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
-          <div style="font-size:11.5px;color:#8FA3BF;line-height:1.7;">
+          <div style="font-size:11.5px;color:#aba7a3;line-height:1.7;">
             Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.${
               lienFin(token)
-                ? `<br/><a href="${lienFin(token)}" style="color:#8FA3BF;text-decoration:underline;">Je ne suis plus en recherche</a>`
+                ? `<br/><a href="${lienFin(token)}" style="color:#aba7a3;text-decoration:underline;">Je ne suis plus en recherche</a>`
                 : ''
             }
           </div>
@@ -591,11 +591,11 @@ ${LIEN_POLICE_MAIL}
   }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#E6EDF6;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E6EDF6;">
+<body style="margin:0;padding:0;background:#efeeed;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#efeeed;">
     <tr><td align="center" class="cadre" style="padding:26px 12px;">
 
-      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #DCE3EC;border-radius:18px;overflow:hidden;">
+      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:18px;overflow:hidden;">
 
         <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
@@ -606,7 +606,7 @@ ${LIEN_POLICE_MAIL}
 
         <tr><td class="bord" align="center" style="padding:32px 34px 0;">
           <div class="accroche" style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.3px;color:${BLEU};line-height:1.3;">${deux ? 'Une deuxième recherche' : 'Une nouvelle recherche'}, ${prenom}.</div>
-          <div style="font-size:14.5px;color:#46566B;line-height:1.75;margin-top:12px;">
+          <div style="font-size:14.5px;color:#363533;line-height:1.75;margin-top:12px;">
             <b style="color:${BLEU};">${recherche}</b> est enregistrée. Elle s&#39;ajoute à votre espace,
             à côté ${deux ? 'de la première' : 'des précédentes'}&nbsp;: vous n&#39;avez rien de nouveau
             à installer, c&#39;est le même endroit et le même lien qu&#39;avant.
@@ -633,7 +633,7 @@ ${LIEN_POLICE_MAIL}
         </td></tr>
 
         <tr><td class="etroit" align="center" style="padding:14px 40px 28px;">
-          <div style="font-size:14.5px;color:#46566B;line-height:1.75;">
+          <div style="font-size:14.5px;color:#363533;line-height:1.75;">
             Une question, une précision à me donner&nbsp;?<br/>Répondez simplement à ce message, ou appelez-moi.
           </div>
         </td></tr>
@@ -653,10 +653,10 @@ ${LIEN_POLICE_MAIL}
 
       <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
         <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
-          <div style="font-size:11.5px;color:#8FA3BF;line-height:1.7;">
+          <div style="font-size:11.5px;color:#aba7a3;line-height:1.7;">
             Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.${
               lienFin(token)
-                ? `<br/><a href="${lienFin(token)}" style="color:#8FA3BF;text-decoration:underline;">Je ne suis plus en recherche</a>`
+                ? `<br/><a href="${lienFin(token)}" style="color:#aba7a3;text-decoration:underline;">Je ne suis plus en recherche</a>`
                 : ''
             }
           </div>
@@ -719,11 +719,11 @@ ${LIEN_POLICE_MAIL}
   }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#E6EDF6;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E6EDF6;">
+<body style="margin:0;padding:0;background:#efeeed;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#efeeed;">
     <tr><td align="center" class="cadre" style="padding:26px 12px;">
 
-      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #DCE3EC;border-radius:18px;overflow:hidden;">
+      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:18px;overflow:hidden;">
 
         <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
@@ -734,7 +734,7 @@ ${LIEN_POLICE_MAIL}
 
         <tr><td class="bord" align="center" style="padding:32px 34px 0;">
           <div class="accroche" style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.3px;color:${BLEU};line-height:1.3;">Bonjour ${prenom},</div>
-          <div style="font-size:14.5px;color:#46566B;line-height:1.75;margin-top:12px;">
+          <div style="font-size:14.5px;color:#363533;line-height:1.75;margin-top:12px;">
             Voici de nouveau le lien de votre espace personnel. C&#39;est toujours le même&nbsp;:
             vous pouvez garder ce message pour le retrouver facilement.
           </div>
@@ -746,7 +746,7 @@ ${LIEN_POLICE_MAIL}
               <a href="${lien}" style="display:inline-block;padding:15px 32px;font-size:15.5px;font-weight:700;color:${ENCRE};text-decoration:none;">&#128273;&nbsp;&nbsp;Ouvrir mon espace</a>
             </td>
           </tr></table>
-          <div style="font-size:12px;color:#8FA3BF;margin-top:11px;word-break:break-all;">${lien}</div>
+          <div style="font-size:12px;color:#aba7a3;margin-top:11px;word-break:break-all;">${lien}</div>
         </td></tr>
 
         <tr><td class="bord" style="padding:22px 28px 0;">
@@ -763,7 +763,7 @@ ${LIEN_POLICE_MAIL}
         </td></tr>
 
         <tr><td class="etroit" align="center" style="padding:24px 40px 28px;">
-          <div style="font-size:14.5px;color:#46566B;line-height:1.75;">
+          <div style="font-size:14.5px;color:#363533;line-height:1.75;">
             Un souci pour l&#39;ouvrir&nbsp;?<br/>Répondez simplement à ce message, ou appelez-moi.
           </div>
         </td></tr>
@@ -783,10 +783,10 @@ ${LIEN_POLICE_MAIL}
 
       <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
         <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
-          <div style="font-size:11.5px;color:#8FA3BF;line-height:1.7;">
+          <div style="font-size:11.5px;color:#aba7a3;line-height:1.7;">
             Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.${
               lienFin(opts.token)
-                ? `<br/><a href="${lienFin(opts.token)}" style="color:#8FA3BF;text-decoration:underline;">Je ne suis plus en recherche</a>`
+                ? `<br/><a href="${lienFin(opts.token)}" style="color:#aba7a3;text-decoration:underline;">Je ne suis plus en recherche</a>`
                 : ''
             }
           </div>
@@ -854,7 +854,7 @@ function quandMail(l: LigneVisite): string {
 
 function buildVisites(o: { corps: string; lignes: LigneVisite[]; token?: string | null; recherche?: string | null }): string {
   const corpsHtml = escapeHtml(o.corps).replace(/\n/g, '<br/>');
-  const hairline = `<tr><td class="bord" style="padding:0 28px;"><div style="border-top:1px solid #E8EDF3;line-height:0;font-size:0;">&nbsp;</div></td></tr>`;
+  const hairline = `<tr><td class="bord" style="padding:0 28px;"><div style="border-top:1px solid #eeeeed;line-height:0;font-size:0;">&nbsp;</div></td></tr>`;
   const rows = o.lignes.map((l, i) => {
     const b = l.bien;
     const photo = b && Array.isArray(b.photos) && b.photos.length > 0 ? b.photos[0] : null;
@@ -864,7 +864,7 @@ function buildVisites(o: { corps: string; lignes: LigneVisite[]; token?: string 
     const liens = [
       b ? `<a href="${lienBien(b, o.token, o.recherche)}" style="color:${DORE_TEXTE};text-decoration:none;font-size:13px;font-weight:700;">Revoir le bien &rarr;</a>` : '',
       itineraire ? `<a href="${itineraire}" style="color:${BLEU};text-decoration:none;font-size:13px;font-weight:700;">Itinéraire &rarr;</a>` : '',
-    ].filter(Boolean).join('<span style="color:#DCE3EC;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>');
+    ].filter(Boolean).join('<span style="color:#e5e4e3;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>');
     return `
       <tr><td class="bord" style="padding:${i === 0 ? '20' : '18'}px 28px 18px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
@@ -896,8 +896,8 @@ function lienMandat(token?: string | null, recherche?: string | null): string {
 function buildMandatPret(o: { prenom: string; hono: Honoraires; token?: string | null; recherche?: string | null }): string {
   const corpsHtml = `Bonjour ${escapeHtml(o.prenom)},<br/><br/>Comme convenu, votre <b>mandat de recherche</b> est prêt dans votre espace. Il se lit et se signe en deux minutes, avec un code reçu par e-mail.`;
   const ligne = (t: string, v: string, d: string) => `
-    <tr><td style="padding:10px 0;border-top:1px solid #E8EDF3;">
-      <div style="font-size:10px;letter-spacing:1.6px;text-transform:uppercase;font-weight:700;color:#A95808;">${t}</div>
+    <tr><td style="padding:10px 0;border-top:1px solid #eeeeed;">
+      <div style="font-size:10px;letter-spacing:1.6px;text-transform:uppercase;font-weight:700;color:#b4560f;">${t}</div>
       <div style="font-size:15px;font-weight:700;color:${BLEU};margin-top:3px;">${v}</div>
       <div style="font-size:12.5px;color:#5B6B80;margin-top:2px;">${d}</div>
     </td></tr>`;
@@ -912,7 +912,7 @@ function buildMandatPret(o: { prenom: string; hono: Honoraires; token?: string |
     </td></tr>
     ${lien ? `<tr><td class="bord" align="center" style="padding:14px 28px 26px;">
       <a href="${lien}" style="display:inline-block;background:${DORE};color:${ENCRE};text-decoration:none;font-size:15px;font-weight:800;padding:14px 26px;border-radius:12px;">Lire et signer mon mandat</a>
-      <div style="font-size:12px;color:#8FA3BF;margin-top:12px;line-height:1.6;">Une question avant de signer&nbsp;? Répondez simplement à ce message.</div>
+      <div style="font-size:12px;color:#aba7a3;margin-top:12px;line-height:1.6;">Une question avant de signer&nbsp;? Répondez simplement à ce message.</div>
     </td></tr>` : ''}`;
   return coque({ etiquette: 'VOTRE MANDAT', corpsHtml, contenu, token: o.token });
 }

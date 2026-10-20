@@ -92,7 +92,7 @@ export function LigneListe({ b, id, className, accent, coche, attente, onOuvrir,
   const lieu = lieuDe(b);
   return (
     <div id={id} className={`${s.ligne}${className ? ` ${className}` : ''}`} data-coche={coche ? (coche.actif ? 'oui' : 'non') : undefined}
-      data-attente={attente ? 'oui' : undefined} style={{ ['--accent' as string]: accent || '#e3e8f0' }}>
+      data-attente={attente ? 'oui' : undefined} style={{ ['--accent' as string]: accent || '#eaeae9' }}>
       <div className={s.haut}>
         {coche && (
           <span className={s.coche}>

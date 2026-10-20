@@ -19,7 +19,7 @@ import { adresseVente } from '@/lib/adresse-vente';
  * rappel-visites.sql : sans elle, le mail part quand même, et on le dit.
  */
 
-const NAVY = '#34496e', OR = '#c9a84c', BORD = '#e3e8f0', DOUX = '#5b6678', PALE = '#8d99ab';
+const NAVY = '#1d1d1f', OR = '#ee7623', BORD = '#eaeae9', DOUX = '#5b6678', PALE = '#8d99ab';
 const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -114,7 +114,7 @@ function CadreMail({ html }: { html: string }) {
           if (d) setHaut(Math.max(320, d.documentElement.scrollHeight, d.body?.scrollHeight || 0));
         } catch { /* sans accès, la hauteur par défaut */ }
       }}
-      style={{ width: '100%', height: haut, border: `1px solid ${BORD}`, borderRadius: 14, background: '#F5F8FC', display: 'block', pointerEvents: 'none' }} />
+      style={{ width: '100%', height: haut, border: `1px solid ${BORD}`, borderRadius: 14, background: '#f6f6f7', display: 'block', pointerEvents: 'none' }} />
   );
 }
 
@@ -219,17 +219,17 @@ export function ModaleRappelVisite({ visiteId, onFerme, onEnvoye }: { visiteId: 
 
   if (!monte) return null;
   const titreJour = date ? jourLong(depuisCle(date)) : '';
-  const onglet = (on: boolean): React.CSSProperties => ({ flex: 1, height: 36, borderRadius: 9, border: 'none', background: on ? 'white' : 'transparent', color: on ? NAVY : DOUX, fontSize: 13, fontWeight: on ? 800 : 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: on ? '0 1px 2px rgba(16,24,40,.08), 0 2px 8px -4px rgba(16,24,40,.18)' : 'none', transition: 'background-color .15s ease, color .15s ease' });
+  const onglet = (on: boolean): React.CSSProperties => ({ flex: 1, height: 36, borderRadius: 9, border: 'none', background: on ? 'white' : 'transparent', color: on ? NAVY : DOUX, fontSize: 13, fontWeight: on ? 800 : 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: on ? '0 1px 2px rgba(20, 19, 19,.08), 0 2px 8px -4px rgba(20, 19, 19,.18)' : 'none', transition: 'background-color .15s ease, color .15s ease' });
   const libelle: React.CSSProperties = { fontSize: 11, fontWeight: 800, color: PALE, textTransform: 'uppercase', letterSpacing: .8 };
   const champ: React.CSSProperties = { width: '100%', boxSizing: 'border-box', background: '#f8fafc', border: `1.5px solid ${BORD}`, borderRadius: 10, padding: '10px 12px', fontSize: 13.5, fontFamily: 'inherit', color: NAVY, outline: 'none' };
 
   return createPortal(
     <div className="crm-voile"
-      style={{ position: 'fixed', inset: 0, zIndex: 10050, background: 'rgba(15,22,35,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(4px)', fontFamily: "'DM Sans', system-ui, sans-serif", color: NAVY }}>
+      style={{ position: 'fixed', inset: 0, zIndex: 10050, background: 'rgba(18, 18, 17,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(4px)', fontFamily: "'DM Sans', system-ui, sans-serif", color: NAVY }}>
       <div className="crm-feuille" role="dialog" aria-label="Rappel de visite"
         style={{ background: 'white', borderRadius: 20, width: '100%', maxWidth: 560, maxHeight: 'calc(100dvh - 40px)', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 48px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
         <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ width: 38, height: 38, borderRadius: 11, background: '#fbf4e1', color: '#8a6a1f', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <span style={{ width: 38, height: 38, borderRadius: 11, background: '#fbece1', color: '#9c460d', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 7.2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9.6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="m3.6 7.6 8.4 5.8 8.4-5.8" /></svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -247,7 +247,7 @@ export function ModaleRappelVisite({ visiteId, onFerme, onEnvoye }: { visiteId: 
           ) : (
             <>
               {/* V3.134 : deux vues, le texte qu'on écrit et le mail qu'il reçoit. */}
-              <div role="tablist" aria-label="Vue" style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 12, background: '#eef1f6' }}>
+              <div role="tablist" aria-label="Vue" style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 12, background: '#f2f2f2' }}>
                 <button type="button" role="tab" aria-selected={vue === 'texte'} onClick={() => setVue('texte')} style={onglet(vue === 'texte')}>Le texte</button>
                 <button type="button" role="tab" aria-selected={vue === 'mail'} onClick={voirMail} style={onglet(vue === 'mail')}>Le mail du client</button>
               </div>
@@ -282,7 +282,7 @@ export function ModaleRappelVisite({ visiteId, onFerme, onEnvoye }: { visiteId: 
                   const actif = !!coches[l.id];
                   return (
                     <button key={l.id} type="button" aria-pressed={actif} onClick={() => lignes.length > 1 && setCoches(c => ({ ...c, [l.id]: !c[l.id] }))}
-                      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: 8, borderRadius: 13, border: `1.5px solid ${actif ? OR : BORD}`, background: actif ? '#fffaf0' : 'white', cursor: lignes.length > 1 ? 'pointer' : 'default', textAlign: 'left', fontFamily: 'inherit', color: NAVY, opacity: actif ? 1 : .6 }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: 8, borderRadius: 13, border: `1.5px solid ${actif ? OR : BORD}`, background: actif ? '#fff6f0' : 'white', cursor: lignes.length > 1 ? 'pointer' : 'default', textAlign: 'left', fontFamily: 'inherit', color: NAVY, opacity: actif ? 1 : .6 }}>
                       {l.photo
                         ? <img src={l.photo} alt="" style={{ width: 52, height: 42, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
                         : <span style={{ width: 52, height: 42, borderRadius: 8, background: NAVY, flexShrink: 0 }} />}
@@ -291,7 +291,7 @@ export function ModaleRappelVisite({ visiteId, onFerme, onEnvoye }: { visiteId: 
                         <span style={{ fontSize: 12, color: l.lieu ? DOUX : '#b45309', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.lieu || 'Pas d’adresse sur le bien'}</span>
                       </span>
                       {lignes.length > 1 && (
-                        <span style={{ width: 22, height: 22, borderRadius: 7, border: `1.5px solid ${actif ? OR : '#cbd3df'}`, background: actif ? OR : 'white', color: NAVY, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, fontWeight: 900 }}>{actif ? '✓' : ''}</span>
+                        <span style={{ width: 22, height: 22, borderRadius: 7, border: `1.5px solid ${actif ? OR : '#d6d5d4'}`, background: actif ? OR : 'white', color: NAVY, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, fontWeight: 900 }}>{actif ? '✓' : ''}</span>
                       )}
                     </button>
                   );
@@ -315,7 +315,7 @@ export function ModaleRappelVisite({ visiteId, onFerme, onEnvoye }: { visiteId: 
                 <textarea value={corps} onChange={e => { setRetouche(true); setCorps(e.target.value); }} rows={Math.min(14, Math.max(8, corps.split('\n').length + 1))} style={{ ...champ, resize: 'vertical', lineHeight: 1.55 }} aria-label="Message" />
                 <span style={{ fontSize: 12, color: PALE }}>{choisies.length > 1 ? 'Sous le message, le mail montre chaque visite avec son heure, sa photo, son adresse et l’itinéraire.' : 'Sous le message, le mail montre la visite avec son heure, sa photo, son adresse et l’itinéraire.'}</span>
                 {retouche && propose && (
-                  <button type="button" onClick={() => setRetouche(false)} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', padding: 0, color: '#8a6a1f', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Remettre le texte proposé</button>
+                  <button type="button" onClick={() => setRetouche(false)} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', padding: 0, color: '#9c460d', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Remettre le texte proposé</button>
                 )}
                 <button type="button" onClick={voirMail} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', padding: 0, color: NAVY, fontSize: 12.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3 }}>Voir le mail tel que le client le recevra</button>
               </div>

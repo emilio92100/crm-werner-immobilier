@@ -421,14 +421,14 @@ export default function SignatureCosignataire({ d }: { d: DonneesSigner }) {
 export const CSS_SIGNER = `
 html, body{ height:auto !important; min-height:100% !important; overflow-x:hidden !important; overflow-y:auto !important }
 :root{
-  --encre:#1a2332; --encre2:#2a3a52; --or:#c9a84c; --or-fonce:#a9822f;
-  --fond:#f4f6fa; --carte:#fff; --trait:#e3e8f0; --trait-fort:#cfd7e3;
+  --encre:#18181b; --encre2:#272625; --or:#ee7623; --or-fonce:#c85a10;
+  --fond:#f7f7f7; --carte:#fff; --trait:#eaeae9; --trait-fort:#dad9d8;
   --plume:#64748b; --plume-clair:#98a4b6;
   --vert:#15803d; --vert-fond:#f0fdf4; --vert-trait:#bbf7d0;
   --brique:#dc2626; --brique-fond:#fef2f2; --brique-trait:#fecaca;
-  --or-fond:#fdfaf1; --or-trait:#ecdcb4;
-  --ombre:0 1px 2px rgba(16,24,40,.04), 0 10px 26px -20px rgba(16,24,40,.3);
-  --ombre-f:0 2px 4px rgba(16,24,40,.05), 0 20px 44px -24px rgba(16,24,40,.5);
+  --or-fond:#fdf6f1; --or-trait:#f9caa7;
+  --ombre:0 1px 2px rgba(20, 19, 19,.04), 0 10px 26px -20px rgba(20, 19, 19,.3);
+  --ombre-f:0 2px 4px rgba(20, 19, 19,.05), 0 20px 44px -24px rgba(20, 19, 19,.5);
 }
 *{box-sizing:border-box}
 body{margin:0; background:var(--fond); color:var(--encre);

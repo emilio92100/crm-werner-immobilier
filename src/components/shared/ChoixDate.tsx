@@ -15,7 +15,7 @@ const JOURS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
   'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
-const OR = '#c9a84c', OR_FONCE = '#a9822f', ENCRE = '#34496e';
+const OR = '#ee7623', OR_FONCE = '#c85a10', ENCRE = '#1d1d1f';
 
 function iso(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -78,8 +78,8 @@ export default function ChoixDate({ valeur, onChange, min, placeholder = 'Choisi
           padding: compact ? '6px 12px' : '9px 14px',
           borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
           fontSize: compact ? 12.5 : 13.5, fontWeight: valeur ? 700 : 600,
-          border: `1px solid ${pos ? OR : valeur ? '#e3d3ab' : '#e3e8f0'}`,
-          background: valeur ? '#fdfaf1' : 'white',
+          border: `1px solid ${pos ? OR : valeur ? '#f8c096' : '#eaeae9'}`,
+          background: valeur ? '#fdf6f1' : 'white',
           color: valeur ? ENCRE : '#94a3b8',
           transition: 'border-color .15s, background .15s',
         }}>
@@ -98,8 +98,8 @@ export default function ChoixDate({ valeur, onChange, min, placeholder = 'Choisi
           <div onClick={() => setPos(null)} style={{ position: 'fixed', inset: 0, zIndex: 20000 }} />
           <div style={{
             position: 'fixed', left: pos.x, top: pos.y, zIndex: 20001, width: 268,
-            background: 'white', border: '1px solid #e3e8f0', borderRadius: 15,
-            boxShadow: '0 3px 8px rgba(15,22,35,.06), 0 18px 44px rgba(15,22,35,.2)',
+            background: 'white', border: '1px solid #eaeae9', borderRadius: 15,
+            boxShadow: '0 3px 8px rgba(18, 18, 17,.06), 0 18px 44px rgba(18, 18, 17,.2)',
             padding: 12, animation: 'calEntre .14s cubic-bezier(.16,1,.3,1)',
           }}>
             <style>{`@keyframes calEntre { from { opacity:0; transform:translateY(-6px) scale(.985) } to { opacity:1; transform:none } }
@@ -108,9 +108,9 @@ export default function ChoixDate({ valeur, onChange, min, placeholder = 'Choisi
               .cal-j:hover:not(:disabled) { background:#f1f5f9 }
               .cal-j:disabled { color:#cbd5e1; cursor:default }
               .cal-j[data-auj="true"] { color:${OR_FONCE}; font-weight:800 }
-              .cal-j[data-pris="true"] { background:${ENCRE}; color:#f2dfa6; font-weight:800 }
-              .cal-j[data-pris="true"]:hover { background:#3a5178 }
-              .cal-fl { width:28px; height:28px; border-radius:8px; border:1px solid #e3e8f0; background:white;
+              .cal-j[data-pris="true"] { background:${ENCRE}; color:#f9c69f; font-weight:800 }
+              .cal-j[data-pris="true"]:hover { background:#2c2c2e }
+              .cal-fl { width:28px; height:28px; border-radius:8px; border:1px solid #eaeae9; background:white;
                 color:#64748b; cursor:pointer; display:inline-flex; align-items:center; justify-content:center }
               .cal-fl:hover { border-color:${OR}; color:${ENCRE} }`}</style>
 
@@ -126,7 +126,7 @@ export default function ChoixDate({ valeur, onChange, min, placeholder = 'Choisi
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
               {JOURS.map((j, i) => (
-                <span key={i} style={{ textAlign: 'center', fontSize: 10.5, fontWeight: 800, color: '#a3b0c2', textTransform: 'uppercase' }}>{j}</span>
+                <span key={i} style={{ textAlign: 'center', fontSize: 10.5, fontWeight: 800, color: '#b6b2af', textTransform: 'uppercase' }}>{j}</span>
               ))}
             </div>
 

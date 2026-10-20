@@ -45,24 +45,24 @@ const supabase = createClient(
 );
 
 /* Les jetons de l'espace acheteur, repris à l'identique. */
-const ENCRE = '#13243D';
-const ENCRE_NUIT = '#1B3D6B';
+const ENCRE = '#141416';
+const ENCRE_NUIT = '#2a2927';
 /* V3.116 : les aplats sombres en bleu de la marque, comme le site emilio-immo.com. */
-const MARQUE = '#22497D';
-const OR = '#E68B23';
-const OR_FONCE = '#A95808';
+const MARQUE = '#1d1d1f';
+const OR = '#ee7623';
+const OR_FONCE = '#b4560f';
 const OR_FOND = '#FFF6EC';
 const OR_TRAIT = '#F7D5B0';
-const FOND = '#F5F8FC';
+const FOND = '#f6f6f7';
 const CARTE = '#ffffff';
-const TRAIT = '#E8EDF3';
+const TRAIT = '#eeeeed';
 const PLUME = '#5B6B80';
-const PLUME_CLAIR = '#8FA3BF';
-const OMBRE = '0 1px 2px rgba(19,36,61,.04), 0 10px 26px -20px rgba(19,36,61,.3)';
+const PLUME_CLAIR = '#aba7a3';
+const OMBRE = '0 1px 2px rgba(20, 20, 22,.04), 0 10px 26px -20px rgba(20, 20, 22,.3)';
 
 const DPEC: Record<string, string> = {
   A: '#319834', B: '#4ab84a', C: '#a8d84a', D: '#f7e017',
-  E: '#f5b912', F: '#ee8235', G: '#e2231a',
+  E: '#ee7320', F: '#ee8235', G: '#e2231a',
 };
 
 const JAKARTA = "'Plus Jakarta Sans', system-ui, sans-serif";
@@ -107,7 +107,7 @@ const T: Record<string, string[]> = {
    s'affichait ici comme disponible, prix et « Sélection privée » compris. */
 type Etat = 'vendu' | 'compromis' | 'retire';
 const BANDEAU: Record<Etat, { titre: string; sous: string; ic: string; c: string; fond: string; trait: string }> = {
-  vendu: { titre: 'Ce bien a été vendu', sous: 'Il n’est plus disponible.', ic: 'cle', c: ENCRE, fond: '#E8EFF8', trait: '#C9D5E6' },
+  vendu: { titre: 'Ce bien a été vendu', sous: 'Il n’est plus disponible.', ic: 'cle', c: ENCRE, fond: '#f1f0ef', trait: '#d9d8d6' },
   compromis: { titre: 'Sous compromis', sous: 'Une promesse de vente est signée : il n’est plus disponible pour l’instant.', ic: 'cle', c: OR_FONCE, fond: OR_FOND, trait: OR_TRAIT },
   retire: { titre: 'Ce bien n’est plus en vente', sous: 'Il n’est plus proposé pour l’instant.', ic: 'maison', c: PLUME, fond: FOND, trait: TRAIT },
 };
@@ -506,7 +506,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
             on lui donne de quoi appeler, et c'est tout ce qu'on lui demande. */}
         <section style={{ background: MARQUE, borderRadius: 22, padding: '32px 24px', color: '#fff', textAlign: 'center', marginTop: 30 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 18 }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(230,139,35,.15)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: JAKARTA, fontWeight: 800, fontSize: 15, border: `1px solid rgba(230,139,35,.4)` }}>AR</div>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(238, 118, 35,.15)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: JAKARTA, fontWeight: 800, fontSize: 15, border: `1px solid rgba(238, 118, 35,.4)` }}>AR</div>
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontFamily: JAKARTA, fontSize: 15, fontWeight: 800 }}>Alexandre Rogelet</div>
               <div style={{ fontSize: 12, color: OR }}>Emilio Immobilier</div>
@@ -536,7 +536,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      <footer style={{ background: ENCRE_NUIT, padding: '24px 20px', borderTop: '1px solid rgba(230,139,35,.2)' }}>
+      <footer style={{ background: ENCRE_NUIT, padding: '24px 20px', borderTop: '1px solid rgba(238, 118, 35,.2)' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <Image src="/logo_high_resolution_white.png" alt="Emilio Immobilier" width={220} height={50} style={{ height: 38, width: 'auto' }} />
           <div style={{ color: 'rgba(255,255,255,.55)', fontSize: 11.5, lineHeight: 1.7 }}>

@@ -39,7 +39,7 @@ export const personneDe = (nom: string, role = ''): Personne => ({
   prenom: nom, civilite: /(ante|ente|ée|ice|esse)$/i.test(role.trim()) || /\b(mme|madame)\b/i.test(nom) ? 'Madame' : '',
 });
 
-const CHEVEUX = ['#3a2c25', '#5b3d27', '#8a5a33', '#b98a4d', '#d8b46a', '#7d828c'];
+const CHEVEUX = ['#3a2c25', '#5b3d27', '#8a5a33', '#b98a4d', '#f4964e', '#7d828c'];
 function hash(t: string) { let h = 0; for (const ch of t) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; }
 
 const civ = (x: unknown) => (typeof x === 'string' ? x : '').toLowerCase();
@@ -64,8 +64,8 @@ function Personnage({ habit, cheveux, madame, x = 0, s = 1 }: { habit: string; c
       {madame
         ? <path d="M12.8 17.2c.4-5.2 3.4-8.4 7.2-8.4s6.8 3.2 7.2 8.4c-2.2-1.8-4.4-3-7.2-3.4-2.8.4-5 1.6-7.2 3.4z" fill={cheveux} />
         : <path d="M12.4 16.8c0-5.6 3.3-8.9 7.6-8.9s7.6 3.3 7.6 8.9c-1.3-2.2-3.8-3.6-7.6-3.8-3.8.2-6.3 1.6-7.6 3.8z" fill={cheveux} />}
-      <circle cx="17.3" cy="18.2" r=".95" fill="#34496e" />
-      <circle cx="22.7" cy="18.2" r=".95" fill="#34496e" />
+      <circle cx="17.3" cy="18.2" r=".95" fill="#1d1d1f" />
+      <circle cx="22.7" cy="18.2" r=".95" fill="#1d1d1f" />
       <path d="M17.6 21.1c1.4 1.1 3.4 1.1 4.8 0" stroke="#c07a5a" strokeWidth="1.1" strokeLinecap="round" fill="none" />
     </g>
   );

@@ -82,7 +82,7 @@ export default function FondCarte({ centre = CENTRE, zoom = 13, className, menti
   }, []);
 
   return (
-    <div className={className} style={{ position: 'relative', overflow: 'hidden', background: '#eef1f5' }}>
+    <div className={className} style={{ position: 'relative', overflow: 'hidden', background: '#f2f2f1' }}>
       {/* data-emi-anim="non" (V3.152) : la carte pose et retire ses repères et
           ses bulles elle-même ; le mouvement global n'y touche pas. */}
       <div ref={boite} data-emi-anim="non" style={{ position: 'absolute', inset: 0, opacity: prete ? 1 : 0, transition: 'opacity .55s ease' }} />

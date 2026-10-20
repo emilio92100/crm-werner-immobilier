@@ -47,7 +47,7 @@
 /* Le bouton qui déplie les critères n'existe que sur téléphone. */
 html.crm .fc-crit-bascule { display: none; }
 /* « Envoyer à Camille » (V3.87) : le choix survolé se dore (ordinateur et téléphone). */
-html.crm .fc-envoi-choix:not(:disabled):hover { border-color: #e0c77d !important; background: #fffaf0 !important; box-shadow: 0 10px 22px -18px rgba(26, 35, 50, .55); }
+html.crm .fc-envoi-choix:not(:disabled):hover { border-color: #f5a568 !important; background: #fff6f0 !important; box-shadow: 0 10px 22px -18px rgba(24, 24, 27, .55); }
 
 @media (max-width: 900px) {
   /* La hauteur réelle de l'écran : 100vh compte la barre d'adresse de
@@ -164,7 +164,7 @@ html.crm .fc-envoi-choix:not(:disabled):hover { border-color: #e0c77d !important
   html.crm .fc-budget {
     flex: 1 1 100%; text-align: left !important;
     display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
-    border-top: 1px solid #efe3c6; padding-top: 10px; margin-top: 2px;
+    border-top: 1px solid #fbd6ba; padding-top: 10px; margin-top: 2px;
   }
   html.crm .fc-budget > span:last-child { font-size: 19px !important; margin-top: 0 !important; }
   html.crm .fc-familles { grid-template-columns: 1fr !important; gap: 10px !important; }
@@ -175,7 +175,7 @@ html.crm .fc-envoi-choix:not(:disabled):hover { border-color: #e0c77d !important
   html.crm .fc-crit-bascule {
     display: flex; align-items: center; justify-content: center; gap: 8px;
     width: 100%; padding: 11px 14px; border-radius: 12px;
-    background: #f8fafc; border: 1px solid #e3e8f0; color: #334155;
+    background: #f8fafc; border: 1px solid #eaeae9; color: #334155;
     font-family: inherit; font-size: 13.5px; font-weight: 700;
   }
   html.crm .fc-crit-chevron { display: inline-flex; transition: transform .28s cubic-bezier(.16,1,.3,1); }

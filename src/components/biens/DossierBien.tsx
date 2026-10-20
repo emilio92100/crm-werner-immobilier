@@ -693,7 +693,7 @@ export function DossierBien({ bienId, d, maj, destinataires, lieu, onMessage, et
   return (
     <section className={x.dossier} onDragOver={e => { e.preventDefault(); setSurvol(true); }} onDragLeave={e => { if (e.currentTarget === e.target) setSurvol(false); }} onDrop={surDepot}>
       <div className={x.tete}>
-        <Anneau part={concernes.length ? recus / concernes.length : 0} taille={64} ep={7} c="#16a34a" fond="#eef1f6" texteC="#1a2332" texte={`${recus}/${concernes.length}`} label={`${recus} pièces reçues sur ${concernes.length}`} />
+        <Anneau part={concernes.length ? recus / concernes.length : 0} taille={64} ep={7} c="#16a34a" fond="#f2f2f2" texteC="#18181b" texte={`${recus}/${concernes.length}`} label={`${recus} pièces reçues sur ${concernes.length}`} />
         <div className={x.teteTx}>
           <h3>Diagnostics et pièces</h3>
           <div className={x.etats2}>

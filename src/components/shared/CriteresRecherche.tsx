@@ -29,13 +29,13 @@ export const PastilleExigence = ({ ico, libelle, niveau, onChange }: {
       title="Un clic : souhaité — deux clics : indispensable — trois clics : indifférent"
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 20,
-        border: `1px solid ${indisp ? '#c9a84c' : souh ? '#10b981' : '#e2e8f0'}`,
+        border: `1px solid ${indisp ? '#ee7623' : souh ? '#10b981' : '#e2e8f0'}`,
         background: indisp ? 'var(--emilio)' : souh ? '#ecfdf5' : 'white',
-        color: indisp ? '#f2dfa6' : souh ? '#10b981' : '#64748b',
+        color: indisp ? '#f9c69f' : souh ? '#10b981' : '#64748b',
         fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.14s',
       }}>
       <span>{ico}</span><span>{libelle}</span>
-      {indisp ? <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.6, background: '#c9a84c', color: 'var(--emilio)', borderRadius: 6, padding: '2px 5px' }}>INDISPENSABLE</span>
+      {indisp ? <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.6, background: '#ee7623', color: 'var(--emilio)', borderRadius: 6, padding: '2px 5px' }}>INDISPENSABLE</span>
         : souh ? <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.6, color: '#10b981' }}>SOUHAITÉ</span> : null}
     </button>
   );
@@ -45,7 +45,7 @@ export const PastilleExigence = ({ ico, libelle, niveau, onChange }: {
 export const LegendeNiveaux = () => (
   <div style={{ fontSize: 12, color: '#94a3b8', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
     <span>Cliquez une fois = <b style={{ color: '#10b981' }}>souhaité</b></span>
-    <span>deux fois = <b style={{ color: '#9a7d2e' }}>indispensable</b></span>
+    <span>deux fois = <b style={{ color: '#b9530f' }}>indispensable</b></span>
     <span>trois fois = indifférent</span>
   </div>
 );
@@ -157,7 +157,7 @@ export const TYPES_BIEN = [
 /* En-tête de section dans la pop-up « Critères de recherche ». */
 export const SectionCrit = ({ ico, titre, note }: { ico: string; titre: string; note?: string }) => (
   <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, margin: '8px 0 -4px',
-    paddingBottom: 9, borderBottom: '1px solid #e3e8f0' }}>
+    paddingBottom: 9, borderBottom: '1px solid #eaeae9' }}>
     <span style={{ fontSize: 16, lineHeight: 1 }}>{ico}</span>
     <span style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--emilio)', letterSpacing: 0.2 }}>{titre}</span>
     {note ? <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>{note}</span> : null}
@@ -297,7 +297,7 @@ export function etapesCriteres(crit: CritForm, setCrit: SetCrit): EtapeCrit[] {
               </div>
 
               {/* Ascenseur : indispensable, ou bien « je monte jusqu'au Xe sans ». */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e3e8f0', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #eaeae9', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                   <PastilleExigence ico="🛗" libelle="Ascenseur" niveau={niv('ascenseur')} onChange={n => setNiv('ascenseur', n)} />
                   {niv('ascenseur') !== 'indispensable' && (
@@ -343,7 +343,7 @@ export function etapesCriteres(crit: CritForm, setCrit: SetCrit): EtapeCrit[] {
               <LegendeNiveaux />
 
               {/* Extérieur : au-delà du simple balcon/terrasse coché, sa taille compte. */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e3e8f0', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #eaeae9', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                   <PastilleExigence ico="🌤️" libelle="Un extérieur" niveau={niv('exterieur')} onChange={n => setNiv('exterieur', n)} />
                   {niv('exterieur') && (
@@ -362,7 +362,7 @@ export function etapesCriteres(crit: CritForm, setCrit: SetCrit): EtapeCrit[] {
               </div>
 
               {/* Cuisine : ouverte ou séparée, et à quel point c'est ferme. */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e3e8f0', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #eaeae9', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>🍳 Cuisine</span>
                   {CUISINES.map(([v, l, i]) => {
@@ -374,7 +374,7 @@ export function etapesCriteres(crit: CritForm, setCrit: SetCrit): EtapeCrit[] {
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     {[{v:'souhaite' as Niveau,l:'Simple préférence'},{v:'indispensable' as Niveau,l:'Indispensable'}].map(o => {
                       const actif = niv('cuisine') === o.v;
-                      return <button type="button" key={o.v} onClick={() => setNiv('cuisine', actif ? '' : o.v)} style={{ padding: '6px 12px', borderRadius: 20, border: `1px solid ${actif ? (o.v === 'indispensable' ? '#c9a84c' : '#10b981') : '#e2e8f0'}`, background: actif ? (o.v === 'indispensable' ? '#fdf9ef' : '#ecfdf5') : 'white', color: actif ? (o.v === 'indispensable' ? '#9a7d2e' : '#10b981') : '#94a3b8', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{actif ? '✓ ' : ''}{o.l}</button>;
+                      return <button type="button" key={o.v} onClick={() => setNiv('cuisine', actif ? '' : o.v)} style={{ padding: '6px 12px', borderRadius: 20, border: `1px solid ${actif ? (o.v === 'indispensable' ? '#ee7623' : '#10b981') : '#e2e8f0'}`, background: actif ? (o.v === 'indispensable' ? '#fdf5ef' : '#ecfdf5') : 'white', color: actif ? (o.v === 'indispensable' ? '#b9530f' : '#10b981') : '#94a3b8', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{actif ? '✓ ' : ''}{o.l}</button>;
                     })}
                   </div>
                 )}

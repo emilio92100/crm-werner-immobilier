@@ -645,14 +645,14 @@ export type SousVue = 'tout' | 'surfaces' | 'interieur' | 'immeuble' | 'exterieu
 export function vuesDuBien(d: Donnees, avant: boolean): { k: SousVue; l: string; ic: string; c: string }[] {
   const enImm = !['maison', 'terrain'].includes(String(d.typeBien || ''));
   return [
-    { k: 'tout', l: 'Tout', ic: 'maison', c: '#c9a84c' },
+    { k: 'tout', l: 'Tout', ic: 'maison', c: '#ee7623' },
     /* V3.99 (Alexandre : « le prix est trop à droite, mettez-le tout à
        gauche, à côté de Surfaces ») : juste après « Tout ». */
-    { k: 'prix', l: avant ? 'Estimation et prix' : 'Prix', ic: 'etiquette', c: '#a9822f' },
+    { k: 'prix', l: avant ? 'Estimation et prix' : 'Prix', ic: 'etiquette', c: '#c85a10' },
     /* V3.91 (Alexandre : « il y a beaucoup d'onglets ») : l'onglet Surfaces
        devient une sous-rubrique de « Le bien », la même page (OngletSurfaces). */
     { k: 'surfaces', l: 'Surfaces', ic: 'regle', c: '#475569' },
-    { k: 'interieur', l: 'Intérieur', ic: 'canape', c: '#2d5c8f' },
+    { k: 'interieur', l: 'Intérieur', ic: 'canape', c: '#393836' },
     { k: 'immeuble', l: enImm ? 'Immeuble' : 'Maison', ic: enImm ? 'immeuble' : 'maison', c: '#6d28d9' },
     { k: 'exterieur', l: 'Extérieur', ic: 'terrain', c: '#16a34a' },
     { k: 'quartier', l: 'Quartier', ic: 'carte', c: '#0891b2' },
@@ -884,7 +884,7 @@ export function OngletBien({ bien, vue = 'tout', onModifier, onSurfaces, onEstim
 /* ══ ONGLET « HISTORIQUE » (V3.29 : la frise du Suivi, OngletsBien.tsx) ═══ */
 type Evt = EvtBien;
 const PUCE_OFFRE: Record<string, EvtBien['puce']> = {
-  en_attente: { l: 'En attente de réponse', c: '#7a5d1c', fond: '#fbf6e9', bord: '#ecdcb0' },
+  en_attente: { l: 'En attente de réponse', c: '#8b3e0b', fond: '#fbf0e9', bord: '#f9c8a3' },
   contre: { l: 'Contre-offre', c: '#1d4ed8', fond: '#eff6ff', bord: '#bfdbfe' },
   acceptee: { l: 'Acceptée', c: '#15803d', fond: '#ecfdf3', bord: '#bbf0cf' },
   refusee: { l: 'Refusée', c: '#475569', fond: '#f1f5f9', bord: '#e2e8f0' },
@@ -937,8 +937,8 @@ export function evenements(bien: BienVente, det: DetailBien, clients: Record<str
         const signe = d.reprise === false || (d.reprise !== true && (d.source === 'documents' || d.de === 'estimation' || d.de === 'a_suivre' || (d.de === 'mandat' && !!str('date'))));
         titre = d.depuis === 'creation' && !str('date') ? 'Créé directement « En vente »' : signe ? `Mandat signé${str('numero') ? ` · n° ${str('numero')}` : ''}` : 'Remis en vente';
         if (signe && str('type')) puce = str('type') === 'exclusif'
-          ? { l: 'Exclusif', c: '#e8c96a', fond: '#1a2332', bord: '#1a2332' }
-          : { l: NOM_MANDAT[str('type')] || str('type'), c: '#34496e', fond: '#eef2f8', bord: '#dbe3ef' };
+          ? { l: 'Exclusif', c: '#f6a15e', fond: '#18181b', bord: '#18181b' }
+          : { l: NOM_MANDAT[str('type')] || str('type'), c: '#1d1d1f', fond: '#f4f3f2', bord: '#e6e5e4' };
         detail = [str('fin') ? `jusqu’au ${dateCourte(str('fin'))}` : '', typeof d.prix === 'number' ? `prix ${euros(d.prix)}` : '', d.source === 'documents' ? 'noté depuis Documents' : ''].filter(Boolean).join(' · ');
       } else if (e === 'offre') { titre = 'Passé sous offre'; detail = typeof d.montant === 'number' ? `${str('qui')} · ${euros(d.montant)}` : ''; }
       else if (e === 'compromis') {
@@ -1041,7 +1041,7 @@ export function evenements(bien: BienVente, det: DetailBien, clients: Record<str
         const vues = vuesDe(d);
         l.push({ cle: x.id, le: x.le, ic: 'mail', ton: 'ic_or', genre: 'acheteurs', titre: `Présenté par mail à ${x.qui || 'un contact'}`,
           detail: d.lien === true ? 'Avec le lien de sa page sur le site' : 'Avec sa photo et sa description',
-          puce: vues.length ? { l: 'Fiche ouverte', c: '#0f766e', fond: '#f0fdfa', bord: '#99f6e4' } : { l: 'Mail simple', c: '#7a5d1c', fond: '#fbf6e9', bord: '#ecdcb0' }, chez: chezLui(x.client_id) });
+          puce: vues.length ? { l: 'Fiche ouverte', c: '#0f766e', fond: '#f0fdfa', bord: '#99f6e4' } : { l: 'Mail simple', c: '#8b3e0b', fond: '#fbf0e9', bord: '#f9c8a3' }, chez: chezLui(x.client_id) });
         for (const v of vues) {
           const nom = v.dest.nom || v.dest.email;
           v.le.forEach((le, i) => l.push({ cle: `${x.id}-v-${v.code}-${i}`, le, ic: 'oeil', ton: 'ic_gris', genre: 'acheteurs', discret: true,
@@ -1051,12 +1051,12 @@ export function evenements(bien: BienVente, det: DetailBien, clients: Record<str
       }
       if (d.demande === true) {
         l.push({ cle: x.id, le: x.le, ic: 'liste', ton: 'ic_or', genre: 'documents', titre: `Documents demandés à ${x.qui || 'un contact'}`,
-          detail: demandes.join(', '), puce: { l: `${demandes.length} document${demandes.length > 1 ? 's' : ''}`, c: '#7a5d1c', fond: '#fbf6e9', bord: '#ecdcb0' } });
+          detail: demandes.join(', '), puce: { l: `${demandes.length} document${demandes.length > 1 ? 's' : ''}`, c: '#8b3e0b', fond: '#fbf0e9', bord: '#f9c8a3' } });
         continue;
       }
       l.push({ cle: x.id, le: x.le, ic: 'envoyer', ton: 'ic_or', genre: 'documents', titre: `${projet ? 'Projet envoyé' : 'Documents envoyés'} à ${x.qui || 'un contact'}`,
         detail: [projet ? x.commentaire || '' : pieces.join(', '), d.mode === 'liens' ? 'en liens de téléchargement (7 jours)' : ''].filter(Boolean).join(' · '),
-        puce: projet ? { l: 'Projet non signé', c: '#7a5d1c', fond: '#fbf6e9', bord: '#ecdcb0' } : { l: `${pieces.length} document${pieces.length > 1 ? 's' : ''}`, c: '#7a5d1c', fond: '#fbf6e9', bord: '#ecdcb0' } });
+        puce: projet ? { l: 'Projet non signé', c: '#8b3e0b', fond: '#fbf0e9', bord: '#f9c8a3' } : { l: `${pieces.length} document${pieces.length > 1 ? 's' : ''}`, c: '#8b3e0b', fond: '#fbf0e9', bord: '#f9c8a3' } });
     } else if (x.type === 'visite') {
       const iss = x.avis && x.avis in ISSUES ? (x.avis as Issue) : null;
       const passe = x.statut === 'faite' || x.le < new Date().toISOString();
@@ -1576,7 +1576,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
     const puis = (f: () => void) => () => { setGuide(null); f(); };
     const ch = {
       mandat: { l: 'Le mandat est signé…', s: 'Le bien passe « En vente »', ic: 'plume', c: '#059669', f: '#ecfdf5', go: puis(() => setFen({ k: 'mandat' })) },
-      preparer: { l: 'Préparer le mandat', s: 'Dans Documents, prérempli avec le bien et le propriétaire', ic: 'doc', c: '#2d5c8f', f: '#eff4fb', go: puis(() => { void faireDocument({ modele: 'mandat_vente' }); }) },
+      preparer: { l: 'Préparer le mandat', s: 'Dans Documents, prérempli avec le bien et le propriétaire', ic: 'doc', c: '#393836', f: '#f6f5f4', go: puis(() => { void faireDocument({ modele: 'mandat_vente' }); }) },
       estim: { l: 'Définir l’estimation…', s: 'La fourchette et le prix conseillé', ic: 'euro', c: '#7c3aed', f: '#f5f3ff', go: puis(() => setFen({ k: 'estim' })) },
       remettre: { l: jamaisEnVente ? 'Le mandat est signé…' : 'Remettre en vente…', s: 'Le bien repasse « En vente »', ic: 'etiquette', c: '#059669', f: '#ecfdf5', go: puis(() => setFen({ k: 'mandat' })) },
       revente: { l: 'Une nouvelle vente de ce bien…', s: 'Nouvelle fiche, même description, nouveau propriétaire', ic: 'cle', c: '#7c3aed', f: '#f5f3ff', go: puis(() => setFen({ k: 'revente' })) },
@@ -1805,7 +1805,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
     { n: compte('revoir'), c: ISSUES.revoir.couleur, l: 'à revoir' },
     { n: compte('reflexion'), c: ISSUES.reflexion.couleur, l: 'en réflexion' },
     { n: compte('non'), c: ISSUES.non.couleur, l: pl(compte('non'), 'pas pour lui', 'pas pour eux') },
-    { n: compte(null), c: '#dfe5ee', l: pl(compte(null), 'compte rendu à faire', 'comptes rendus à faire') },
+    { n: compte(null), c: '#e7e6e6', l: pl(compte(null), 'compte rendu à faire', 'comptes rendus à faire') },
   ];
   const noteDe = (rechercheId: string | null) => acheteurs.find(x => x.recherche.id === rechercheId)?.corr.note;
   const versProchaine = (v: VisiteU, etat: string, ton: ProchaineVisite['ton']): ProchaineVisite => {
@@ -1819,7 +1819,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
     ...[...visitesAVenir].reverse().slice(0, 3).map(v => versProchaine(v, 'À venir', 'bleu')),
     ...faites.filter(v => !v.issue && v.statut !== 'faite').slice(0, 2).map(v => versProchaine(v, 'Compte rendu à faire', 'or')),
   ].slice(0, 4);
-  const TEINTE: Record<string, string> = { ic_or: '#c9a84c', ic_vert: '#16a34a', ic_bleu: '#2563eb', ic_violet: '#7c3aed', ic_rouge: '#dc2626', ic_gris: '#94a3b8', ic_emilio: '#34496e' };
+  const TEINTE: Record<string, string> = { ic_or: '#ee7623', ic_vert: '#16a34a', ic_bleu: '#2563eb', ic_violet: '#7c3aed', ic_rouge: '#dc2626', ic_gris: '#94a3b8', ic_emilio: '#1d1d1f' };
   const recents: Recent[] = evts.slice(0, 4).map(x => {
     const det = (x.detail || '').split('\n')[0];
     return { cle: x.cle, le: x.le, titre: x.titre, c: TEINTE[x.ton] || '#94a3b8', detail: det.length > 90 ? `${det.slice(0, 88)}…` : det || undefined };

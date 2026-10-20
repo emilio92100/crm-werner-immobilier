@@ -58,7 +58,7 @@ type Categorie = 'toutes' | CategorieDemande;
 type Teinte = { c: string; fond: string; trait: string };
 
 const teinte = (x: Teinte) => ({ '--c': x.c, '--fond': x.fond, '--trait': x.trait } as CSSProperties);
-const MARINE: Teinte = { c: '#34496e', fond: '#eef2f8', trait: '#d3dcea' };
+const MARINE: Teinte = { c: '#1d1d1f', fond: '#f4f3f2', trait: '#e0dedd' };
 
 /* V3.127 : « À rappeler » — une date de rappel, pas encore traitée. */
 const aRappeler = (d: DemandeSite) => !d.archive && statutDe(d.statut).k !== 'traite' && !!d.a_rappeler_le;
@@ -84,7 +84,7 @@ const PERIODES: { k: Periode; lib: string; court: string; phrase: string; jours:
   { k: 'an', lib: '12 mois', court: '12 mois', phrase: 'sur 12 mois', jours: 365 },
   { k: 'tout', lib: 'Depuis le début', court: 'Tout', phrase: 'depuis le début', jours: null },
 ];
-const BLEU = '#22497c';
+const BLEU = '#1d1d1f';
 /* La ponctuation française ne passe jamais seule à la ligne (V3.127). */
 /* « Reçue hier · mer. 7 oct. à 12:00 » : court, pour tenir sur la ligne du
    nom à côté des boutons (la date complète est dans l'infobulle). */
@@ -421,8 +421,8 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
         recherche={demandes.length > 0 ? { valeur: cherche, onChange: setCherche, placeholder: 'Nom, téléphone, ville, bien…', label: 'Chercher une demande' } : undefined}
         label="D’où viennent les demandes" actif={prov} onChoisir={k => choisirProv(k as Prov)} aCheval
         tuiles={[
-          { cle: 'site', lib: 'Mon site', n: trouvees.filter(d => !d.archive && provenanceDe(d).k === 'site').length, couleur: '#22497c' },
-          { cle: 'pub', lib: 'Pub estimation', n: trouvees.filter(d => !d.archive && provenanceDe(d).k === 'pub').length, couleur: '#e68b23' },
+          { cle: 'site', lib: 'Mon site', n: trouvees.filter(d => !d.archive && provenanceDe(d).k === 'site').length, couleur: '#1d1d1f' },
+          { cle: 'pub', lib: 'Pub estimation', n: trouvees.filter(d => !d.archive && provenanceDe(d).k === 'pub').length, couleur: '#ee7623' },
           { cle: 'portails', lib: 'Portails', n: trouvees.filter(d => !d.archive && provenanceDe(d).portail).length, couleur: '#b4233c' },
           { cle: 'tout', lib: 'Tout', n: trouvees.filter(d => !d.archive).length, tete: true, fin: true, ic: <PictoBoite taille={14} epaisseur={2.1} /> },
         ]} />
@@ -441,7 +441,7 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
                 t.tous ? <span key="sep" className={s.pformSep} aria-hidden="true" /> : null,
                 <button key={t.k} type="button" aria-pressed={t.on} title={t.sous}
                   className={`${s.pform} ${t.on ? s.pformOn : ''} ${t.tous ? s.pformTous : ''}`}
-                  style={{ ...teinte({ c: t.c, fond: '#fff', trait: '#e1e8f2' }), animationDelay: `${i * 40}ms` }} onClick={t.choisir}>
+                  style={{ ...teinte({ c: t.c, fond: '#fff', trait: '#ebeae8' }), animationDelay: `${i * 40}ms` }} onClick={t.choisir}>
                   <span className={s.pformIc}>{t.court ? t.court : <Ic n={t.ic} t={15} e={2.1} />}</span>
                   <span className={s.pformL}><span className={s.libLong}>{t.lib}</span><span className={s.libCourt}>{t.libCourt}</span></span>
                   <span className={s.pformN}>{t.n}</span>

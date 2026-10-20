@@ -338,7 +338,7 @@ export function BiensDuContact({ clientId, prenom, onNavigate, toujours = false,
   const archives = biens.filter(b => b.archive);
   return (
     <BlocRepliable ic="maison" titre="Ses biens" n={actifs.length} ouvertAuDebut={ouvertAuDebut}
-      resume={actifs.length ? actifs.slice(0, 2).map(x => { const e = etapeDe(x.etape); return <span key={x.id} style={{ background: '#f4f7fb', color: e.c }}><span className={c.point} style={{ background: e.c }} />{e.court}</span>; }) : undefined}
+      resume={actifs.length ? actifs.slice(0, 2).map(x => { const e = etapeDe(x.etape); return <span key={x.id} style={{ background: '#f8f8f7', color: e.c }}><span className={c.point} style={{ background: e.c }} />{e.court}</span>; }) : undefined}
       action={<button type="button" className={c.lien} onClick={() => { demanderNouveauBien(clientId); onNavigate('biens'); }}>+ Créer<span className={sd.rpLong}> un bien</span></button>}>
       {actifs.length ? (
         <div className={c.biensMini} style={{ borderTop: 'none', paddingTop: 0 }}>
@@ -457,7 +457,7 @@ export function LigneContact({ x, biens: tousBiens, derniere, onOuvrir, onBien, 
           );
         })}
         {vend && biens.length > 2 && <span className={c.lPlus}>{`+ ${biens.length - 2} autre${biens.length > 3 ? 's' : ''} bien${biens.length > 3 ? 's' : ''}`}</span>}
-        {vend && !biens.length && !types.includes('acheteur') && <span className={c.lInfo}><span className={c.lInfoIc} style={{ color: '#b8c2d1' }}><Ic n="maison" t={14} /></span><span className={c.lAFaire}>{nbArchives ? `Biens archivés (${nbArchives})` : 'Pas encore de bien'}</span></span>}
+        {vend && !biens.length && !types.includes('acheteur') && <span className={c.lInfo}><span className={c.lInfoIc} style={{ color: '#c7c4c2' }}><Ic n="maison" t={14} /></span><span className={c.lAFaire}>{nbArchives ? `Biens archivés (${nbArchives})` : 'Pas encore de bien'}</span></span>}
         {pro && (
           <span className={c.lInfo}>
             <span className={c.lInfoIc} style={{ color: t.c }}><Ic n={t.ic} t={14} /></span>

@@ -152,8 +152,8 @@ export function FenetreOffre({ doc, adresse, onFermer, onEnvoye }: {
             </div>
             <textarea id="of-texte" className={s.input} rows={10} value={message} onChange={e => setTexte(e.target.value)} />
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: '#3D4C63', cursor: 'pointer' }}>
-            <input type="checkbox" checked={copie} onChange={e => setCopie(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#22497D' }} />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: '#31302e', cursor: 'pointer' }}>
+            <input type="checkbox" checked={copie} onChange={e => setCopie(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#1d1d1f' }} />
             <span>{'M’envoyer une copie cachée'}</span>
           </label>
           {erreur && <div className={s.erreur}>{erreur}</div>}

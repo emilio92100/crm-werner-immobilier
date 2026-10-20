@@ -86,7 +86,7 @@ export default function ParamPointAuto() {
       ? { t: 'Mailjet n’est pas configuré', s: 'Les clés Mailjet manquent sur Vercel : aucun mail ne peut partir.', bg: '#fef2f2', bd: '#fecaca', fg: '#991b1b' }
       : reglages.actif
         ? { t: 'Activé', s: 'L’envoi a lieu chaque matin, vers 10 h. Ceux qui sont dus reçoivent le mail à ce moment-là.', bg: '#ecfdf5', bd: '#bbf7d0', fg: '#166534' }
-        : { t: 'Désactivé', s: 'Aucun mail ne part. Regarde la liste plus bas avant de l’activer : elle dit exactement qui le recevrait.', bg: '#f8fafc', bd: '#e3e8f0', fg: '#475569' };
+        : { t: 'Désactivé', s: 'Aucun mail ne part. Regarde la liste plus bas avant de l’activer : elle dit exactement qui le recevrait.', bg: '#f8fafc', bd: '#eaeae9', fg: '#475569' };
 
   const nomDe = (c: Candidat) => `${c.prenom} ${c.nom}`.trim() || 'Sans nom';
 
@@ -166,9 +166,9 @@ export default function ParamPointAuto() {
           {dus.length === 0
             ? <div style={{ fontSize: 13, color: '#94a3b8' }}>Personne : tous les dossiers actifs ont bougé récemment.</div>
             : dus.map(c => (
-              <div key={c.clientId} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '9px 12px', borderRadius: 10, background: '#fdf8ea', border: '1px solid #efe1b6', marginBottom: 6, fontSize: 13.5 }}>
+              <div key={c.clientId} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '9px 12px', borderRadius: 10, background: '#fdf2ea', border: '1px solid #facdab', marginBottom: 6, fontSize: 13.5 }}>
                 <b style={{ color: 'var(--emilio)' }}>{nomDe(c)}</b>
-                <span style={{ color: '#8a6d1f', fontSize: 12.5 }}>{c.dernierMouvement ? `rien depuis le ${jour(c.dernierMouvement)}` : 'rien depuis la création'}</span>
+                <span style={{ color: '#9c460d', fontSize: 12.5 }}>{c.dernierMouvement ? `rien depuis le ${jour(c.dernierMouvement)}` : 'rien depuis la création'}</span>
               </div>
             ))}
         </div>

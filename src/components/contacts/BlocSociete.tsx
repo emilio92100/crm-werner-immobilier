@@ -165,7 +165,7 @@ export default function BlocSociete({ client, notes, onEnregistrer, onFiche, ouv
     const gerant = /g[ée]rant|pr[ée]sident/i.test(a.role);
     return (
       <div key={a.id} className={c.socL} data-gerant={gerant ? 'oui' : 'non'}>
-        <AvatarContact c={personneDe(a.nom, a.role)} teinte={{ bg: '', fg: '#34496e' }} className={c.socInit} libre />
+        <AvatarContact c={personneDe(a.nom, a.role)} teinte={{ bg: '', fg: '#1d1d1f' }} className={c.socInit} libre />
         <div className={c.socNom}>
           <b>{a.nom || 'Sans nom'}</b>
           <span>

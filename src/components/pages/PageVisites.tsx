@@ -337,7 +337,7 @@ function CarteVisite({ v, groupe, auj, rang, onClient, onBien, onCR, onAnnuler, 
       <div className={cv.milieu}>
         <div className={cv.qui}>
           <button type="button" className={cv.nom} onClick={onClient} title={sansFiche ? 'Ouvrir la fiche du bien' : `Ouvrir la fiche de ${nom}`}>
-            {v.clients && <AvatarContact c={v.clients} teinte={{ bg: '#eef2f8', fg: '#34496e' }} taille={34} />}
+            {v.clients && <AvatarContact c={v.clients} teinte={{ bg: '#f4f3f2', fg: '#1d1d1f' }} taille={34} />}
             <b>{nom}</b>
           </button>
           {v.libre && <span className={cv.hors} title="Noté sur la fiche du bien, sans fiche acheteur">Hors CRM</span>}
@@ -449,7 +449,7 @@ function CarteJournee({ visites, groupe, auj, rang, onClient, onBien, onCR, onAn
       <div className={cv.milieu}>
         <div className={cv.qui}>
           <button type="button" className={cv.nom} onClick={onClient} title={sansFiche ? 'Ouvrir la fiche du bien' : `Ouvrir la fiche de ${nom}`}>
-            {v0.clients && <AvatarContact c={v0.clients} teinte={{ bg: '#eef2f8', fg: '#34496e' }} taille={34} />}
+            {v0.clients && <AvatarContact c={v0.clients} teinte={{ bg: '#f4f3f2', fg: '#1d1d1f' }} taille={34} />}
             <b>{nom}</b>
           </button>
           {horsCrm && <span className={cv.hors} title="Noté sur la fiche du bien, sans fiche acheteur">Hors CRM</span>}
@@ -830,7 +830,7 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
                     <div key={d.id} className={dv.carte} role="button" tabIndex={0} style={{ animationDelay: `${Math.min(i, 6) * 50}ms` }}
                       onClick={() => ouvrirDemande(d)} onKeyDown={e => { if (e.key === 'Enter') ouvrirDemande(d); }}>
                       <div className={dv.qui}>
-                        {d.client && <AvatarContact c={d.client} teinte={{ bg: '#eef2f8', fg: '#34496e' }} taille={42} />}
+                        {d.client && <AvatarContact c={d.client} teinte={{ bg: '#f4f3f2', fg: '#1d1d1f' }} taille={42} />}
                         <span className={dv.quiTx}><b>{nom}</b><span>veut visiter ce bien</span></span>
                         <span className={`${dv.attente} ${att.vieux ? dv.attenteVieille : ''}`}><i />{att.texte}</span>
                       </div>
@@ -890,7 +890,7 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
                 {annulees.map(v => {
                   const date = v.date_visite ? formatDate(v.date_visite) : null;
                   return (
-                    <div key={v.id} className={cv.annulee} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fafbfd', borderRadius: 14, border: '1px solid #e3e8f0', padding: '10px 14px', opacity: .8 }}>
+                    <div key={v.id} className={cv.annulee} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fcfcfb', borderRadius: 14, border: '1px solid #eaeae9', padding: '10px 14px', opacity: .8 }}>
                       {date && <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', minWidth: 70 }}>{`${date.day} ${date.mon} ${date.year}`}</span>}
                       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                         <b style={{ fontSize: 13.5, color: '#64748b', textDecoration: 'line-through' }}>{`${v.clients?.prenom || ''} ${v.clients?.nom || ''}`.trim() || '—'}</b>

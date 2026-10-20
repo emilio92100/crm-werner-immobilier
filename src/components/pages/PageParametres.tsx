@@ -85,11 +85,11 @@ export default function PageParametres() {
         {/* NAV SECTIONS */}
         {/* V3.167 : les rubriques dans un rail blanc ; la pastille bleue glisse
             de l'une à l'autre (Curseur), comme dans « Demandes Internet ». */}
-        <div className={styles.paramNav} style={{ display: 'flex', flexDirection: 'column', gap: 3, alignSelf: 'start', background: 'white', border: '1px solid #e3e8f0', borderRadius: 16, padding: 6 }} data-defile="">
+        <div className={styles.paramNav} style={{ display: 'flex', flexDirection: 'column', gap: 3, alignSelf: 'start', background: 'white', border: '1px solid #eaeae9', borderRadius: 16, padding: 6 }} data-defile="">
           <Curseur cle={activeSection} />
           {sections.map(s => (
             <button key={s.id} onClick={() => setActiveSection(s.id)} aria-pressed={activeSection === s.id}
-              style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '10px 14px', borderRadius: 11, border: 'none', background: activeSection === s.id ? 'var(--emilio)' : 'transparent', color: activeSection === s.id ? 'white' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', boxShadow: activeSection === s.id ? '0 8px 18px -10px rgba(46,65,102,.85)' : 'none' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '10px 14px', borderRadius: 11, border: 'none', background: activeSection === s.id ? 'var(--emilio)' : 'transparent', color: activeSection === s.id ? 'white' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', boxShadow: activeSection === s.id ? '0 8px 18px -10px rgba(22, 22, 24,.85)' : 'none' }}>
               {s.icon} {s.label.split(' ').slice(1).join(' ')}
             </button>
           ))}
@@ -114,7 +114,7 @@ export default function PageParametres() {
                   <div><label className={styles.label}>Téléphone</label><input className={styles.input} value={params.conseiller_telephone||''} onChange={e=>set('conseiller_telephone',e.target.value)} /></div>
                   <div><label className={styles.label}>Site web (optionnel)</label><input className={styles.input} value={params.site_web||''} onChange={e=>set('site_web',e.target.value)} placeholder="https://..." /></div>
                 </div>
-                <div style={{ marginTop: 16, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e3e8f0' }}>
+                <div style={{ marginTop: 16, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #eaeae9' }}>
                   <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--emilio)', marginBottom: 4 }}>📋 Signature automatique</div>
                   <div style={{ fontSize: 12, color: '#64748b', marginBottom: 8 }}>{'Placée à la fin de chaque mail que tu écris depuis le CRM (Nouveau mail, envoi de biens) : tu peux la retoucher avant d’envoyer.'}</div>
                   <textarea className={styles.input} rows={4} value={params.signature_email || signatureDe(params)}

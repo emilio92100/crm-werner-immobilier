@@ -416,7 +416,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
               {mode === 'crm' ? (
                 client ? (
                   <div className={o.retenu} key={client.id}>
-                    <AvatarContact c={client} teinte={{ bg: '#eef2f8', fg: '#34496e' }} taille={40} />
+                    <AvatarContact c={client} teinte={{ bg: '#f4f3f2', fg: '#1d1d1f' }} taille={40} />
                     <span className={o.retenuTx}>
                       <b>{nomClient(client)}</b>
                       <small>{rechClient.length ? `${rechClient.length > 1 ? `${rechClient.length} recherches` : `Recherche : ${rechClient[0].nom || 'en cours'}`}` : 'Aucune recherche'}</small>
@@ -437,7 +437,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
                           const r = recherchesDe(c.id);
                           return (
                             <button key={c.id} type="button" className={o.ligne} style={{ animationDelay: `${i * 35}ms` }} onClick={() => choisirClient(c)}>
-                              <AvatarContact c={c} teinte={{ bg: '#eef2f8', fg: '#34496e' }} taille={34} />
+                              <AvatarContact c={c} teinte={{ bg: '#f4f3f2', fg: '#1d1d1f' }} taille={34} />
                               <span className={o.ligneTx}>
                                 <b>{nomClient(c)}</b>
                                 <small>{r.length ? `Recherche : ${r[0].nom || 'en cours'}${r.length > 1 ? ` (+${r.length - 1})` : ''}` : 'Aucune recherche'}{(c.telephones || [])[0] ? ` · ${(c.telephones || [])[0]}` : ''}</small>

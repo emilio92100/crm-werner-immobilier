@@ -40,11 +40,11 @@ const TYPES = ['Appartement', 'Maison', 'Duplex', 'Loft', 'Studio', 'Villa', 'Te
 const EXPOSITIONS = ['Nord', 'Sud', 'Est', 'Ouest', 'Sud-Est', 'Sud-Ouest', 'Nord-Est', 'Nord-Ouest', 'Est-Ouest'];
 const ETATS = ['Neuf', 'Rénové', 'Bon état', 'Entretenu', 'À rafraîchir', 'À rénover'];
 const DPE_C: Record<string, [string, string]> = {
-  A: ['#319834', '#fff'], B: ['#4ab84a', '#fff'], C: ['#a8d84a', '#1a2332'], D: ['#f7e017', '#1a2332'],
-  E: ['#f5b912', '#1a2332'], F: ['#ee8235', '#fff'], G: ['#e2231a', '#fff'],
+  A: ['#319834', '#fff'], B: ['#4ab84a', '#fff'], C: ['#a8d84a', '#18181b'], D: ['#f7e017', '#18181b'],
+  E: ['#ee7320', '#18181b'], F: ['#ee8235', '#fff'], G: ['#e2231a', '#fff'],
 };
 const GES_C: Record<string, [string, string]> = {
-  A: ['#f6edfd', '#1a2332'], B: ['#e4c7fa', '#1a2332'], C: ['#d5aaf6', '#1a2332'], D: ['#c58ef1', '#1a2332'],
+  A: ['#f6edfd', '#18181b'], B: ['#e4c7fa', '#18181b'], C: ['#d5aaf6', '#18181b'], D: ['#c58ef1', '#18181b'],
   E: ['#a95ee6', '#fff'], F: ['#8a36d4', '#fff'], G: ['#6a1fb0', '#fff'],
 };
 const EQUIPEMENTS: { k: string; l: string; i: string }[] = [
@@ -251,7 +251,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
               return (
                 <button key={p.id} type="button" className={s.entree} data-actif={actif === p.id} data-entree={p.id} onClick={() => aller(p.id)}>
                   <Icone nom={p.i} taille={17} epaisseur={2} />{p.l}
-                  {p.id === 'photos' ? <em style={{ color: '#64748b', background: '#eef2f8', borderColor: '#e3e8f0' }}>{photos.length}</em> : n > 0 ? <em>{n}</em> : null}
+                  {p.id === 'photos' ? <em style={{ color: '#64748b', background: '#f4f3f2', borderColor: '#eaeae9' }}>{photos.length}</em> : n > 0 ? <em>{n}</em> : null}
                 </button>
               );
             })}

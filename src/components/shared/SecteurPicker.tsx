@@ -159,7 +159,7 @@ export default function SecteurPicker({
                 </div>
 
                 {tiroir && (
-                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #dbe2ec' }}>
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #e5e3e2' }}>
                     {restants.length > 0 ? (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                         {restants.map((q) => (
@@ -228,14 +228,14 @@ function avecQuartier(liste: string[], ville: string, label: string): string[] {
   return k >= 0 ? [...liste.slice(0, k + 1), label, ...liste.slice(k + 1)] : [...liste, label];
 }
 
-const inp: React.CSSProperties = { width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #e3e8f0', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' };
-const sugBox: React.CSSProperties = { position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '1px solid #e3e8f0', borderRadius: 10, marginTop: 4, boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 30, overflow: 'hidden' };
+const inp: React.CSSProperties = { width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #eaeae9', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' };
+const sugBox: React.CSSProperties = { position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '1px solid #eaeae9', borderRadius: 10, marginTop: 4, boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 30, overflow: 'hidden' };
 const sugItem: React.CSSProperties = { padding: '10px 12px', cursor: 'pointer', fontSize: 14, color: 'var(--emilio)', borderBottom: '1px solid #f1f5f9' };
-const carte: React.CSSProperties = { background: '#f8fafc', border: '1px solid #e3e8f0', borderRadius: 13, padding: '12px 14px' };
+const carte: React.CSSProperties = { background: '#f8fafc', border: '1px solid #eaeae9', borderRadius: 13, padding: '12px 14px' };
 const croix: React.CSSProperties = { marginLeft: 'auto', background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 2 };
 const piluleVide: React.CSSProperties = { fontSize: 12.5, padding: '6px 12px', borderRadius: 20, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 };
 const pilulePleine: React.CSSProperties = { ...piluleVide, border: '1px solid var(--emilio)', background: 'var(--emilio-fond)', color: 'white' };
 const piluleAjout: React.CSSProperties = { ...piluleVide, borderStyle: 'dashed', color: '#3b82f6', borderColor: '#bfdbfe' };
 const puceQuartier: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fef9c3', color: '#854d0e', border: '1px solid #fde68a', padding: '5px 8px 5px 12px', borderRadius: 20, fontSize: 12.5, fontWeight: 700 };
-const croixPuce: React.CSSProperties = { background: 'none', border: 'none', color: '#a98a2e', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit', padding: 0, lineHeight: 1 };
+const croixPuce: React.CSSProperties = { background: 'none', border: 'none', color: '#c75910', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit', padding: 0, lineHeight: 1 };
 const boutonAjout: React.CSSProperties = { fontSize: 13, padding: '0 16px', borderRadius: 10, border: 'none', background: 'var(--emilio-fond)', color: 'white', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, whiteSpace: 'nowrap' };

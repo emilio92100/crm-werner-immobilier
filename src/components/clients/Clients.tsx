@@ -56,7 +56,7 @@ type Categorie = 'tous' | 'acheteur' | 'non_filtre' | Exclude<TypeContact, 'ache
 /* Les pastilles des tuiles, sur le bandeau bleu : les couleurs des types,
    éclaircies pour qu'on les voie (le bleu d'un notaire disparaissait). */
 const TEINTE_BANDEAU: Record<TypeContact, string> = {
-  acheteur: '#34d399', vendeur: '#e0c57a', vendeur_signe: '#86efac', proprietaire: '#fb923c', notaire: '#a9bce0',
+  acheteur: '#34d399', vendeur: '#f5a365', vendeur_signe: '#86efac', proprietaire: '#fb923c', notaire: '#c7c4c2',
   confrere: '#b79cff', gardien: '#5fd4e8', partenaire: '#cbd5e1',
 };
 /* L'ordre des tuiles (V3.24) : « Tous », puis les trois du menu de gauche
@@ -153,7 +153,7 @@ function SuiteListe({ reste, onSuite }: { reste: number; onSuite: () => void }) 
   return (
     <div ref={ici} style={{ display: 'flex', justifyContent: 'center', padding: '14px 0 6px' }}>
       <button type="button" onClick={onSuite}
-        style={{ border: '1px solid #e3e8f0', background: 'white', color: '#475569', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+        style={{ border: '1px solid #eaeae9', background: 'white', color: '#475569', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
         {`Afficher la suite · encore ${reste} contact${reste > 1 ? 's' : ''}`}
       </button>
     </div>
@@ -228,8 +228,8 @@ function Civilite({ v, onV }: { v: string; onV: (c: 'Monsieur' | 'Madame') => vo
    type de contact, un titre, une précision. Les émoji des titres rendaient
    différemment d'un téléphone à l'autre. */
 type Teinte = { c: string; fond: string };
-const MARINE: Teinte = { c: '#34496e', fond: '#eef2f8' };
-const OR: Teinte = { c: '#a07c28', fond: '#fbf6e9' };
+const MARINE: Teinte = { c: '#1d1d1f', fond: '#f4f3f2' };
+const OR: Teinte = { c: '#b4560f', fond: '#fbf0e9' };
 function Bloc({ ic, titre, petit, teinte = MARINE, children }: { ic: string; titre: string; petit?: string; teinte?: Teinte; children: React.ReactNode }) {
   return (
     <section className="nc-bloc">
@@ -406,7 +406,7 @@ function signalDe(client: any, st: StatDossier | undefined): Signal {
     if (j < 0) return { texte: `🔔 Relance en retard`, color: '#be123c', bg: '#fff1f2', rang: 0, aide };
     if (j === 0) return { texte: `🔔 Relance aujourd'hui`, color: '#be123c', bg: '#fff1f2', rang: 1, aide };
     if (j <= 7) return { texte: `Relance dans ${j} j`, color: '#b45309', bg: '#fffbeb', rang: 2, aide };
-    return { texte: `Relance le ${new Date(st.relance.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`, color: '#64748b', bg: '#f5f8fc', rang: 4, aide };
+    return { texte: `Relance le ${new Date(st.relance.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`, color: '#64748b', bg: '#f6f6f7', rang: 4, aide };
   }
   /* Pas de mandat du tout : rien à signaler. Un dossier sans mandat n'est pas
      un dossier au mandat expiré. */
@@ -436,9 +436,9 @@ function signalDe(client: any, st: StatDossier | undefined): Signal {
     if (j > 45 && (client.statut as string) === 'actif') {
       return { texte: `Rien depuis ${duree(j)}`, color: '#b45309', bg: '#fffbeb', rang: 5, aide };
     }
-    return { texte: `Mis à jour ${quand}`, color: '#7b8798', bg: '#f5f8fc', rang: 6, aide };
+    return { texte: `Mis à jour ${quand}`, color: '#7b8798', bg: '#f6f6f7', rang: 6, aide };
   }
-  return { texte: `Créé il y a ${duree(joursDepuis(client.created_at))}`, color: '#7b8798', bg: '#f5f8fc', rang: 7, aide: 'Aucun événement enregistré sur ce dossier' };
+  return { texte: `Créé il y a ${duree(joursDepuis(client.created_at))}`, color: '#7b8798', bg: '#f6f6f7', rang: 7, aide: 'Aucun événement enregistré sur ce dossier' };
 }
 
 /* ── La colonne Recherche : une pastille par critère, picto compris ──
@@ -460,10 +460,10 @@ const PA_BASE: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 9,
   padding: 'var(--pa-p, 4px 10px 4px 8px)', fontSize: 'var(--pa-t, 12.5px)', fontWeight: 700, whiteSpace: 'nowrap',
 };
-const PA_TYPE: React.CSSProperties = { ...PA_BASE, background: '#eef4fb', border: '1px solid #dbe7f6', color: '#2d5c8f' };
-const PA_NOMBRE: React.CSSProperties = { ...PA_BASE, background: '#f8fafc', border: '1px solid #eef2f7', color: '#45566e' };
+const PA_TYPE: React.CSSProperties = { ...PA_BASE, background: '#f5f4f4', border: '1px solid #eae8e7', color: '#393836' };
+const PA_NOMBRE: React.CSSProperties = { ...PA_BASE, background: '#f8fafc', border: '1px solid #f3f2f2', color: '#373533' };
 const PA_FORT: React.CSSProperties = { fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'var(--pa-f, 13.5px)', fontWeight: 800, color: 'var(--emilio)' };
-const PA_FAIBLE: React.CSSProperties = { fontSize: 'var(--pa-n, 11px)', color: '#a3b0c2', fontWeight: 600 };
+const PA_FAIBLE: React.CSSProperties = { fontSize: 'var(--pa-n, 11px)', color: '#b6b2af', fontWeight: 600 };
 
 /* Deux types tiennent sur une ligne, au-delà on compte. */
 function texteType(v: unknown) {
@@ -491,7 +491,7 @@ function indispensables(c: any): string[] {
 }
 const PA_INDISP: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: 7, padding: '2px 8px 2px 6px',
-  fontSize: 11.5, fontWeight: 700, whiteSpace: 'nowrap', background: '#fdf6e9', border: '1px solid #f0dfbd', color: '#8a5d14',
+  fontSize: 11.5, fontWeight: 700, whiteSpace: 'nowrap', background: '#fdf1e9', border: '1px solid #fad2b3', color: '#92420c',
 };
 const D_INDISP = <><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6z" /><path d="m8.8 12 2.2 2.2 4.4-4.4" /></>;
 
@@ -545,7 +545,7 @@ const TEINTE: Record<string, { bg: string; fg: string; trait: string }> = {
   prospect:    { bg: '#f5f3ff', fg: '#6d28d9', trait: '#ddd6fe' },
   actif:       { bg: '#ecfdf5', fg: '#0f7a4f', trait: '#a7e8c6' },
   suspendu:    { bg: '#fffbeb', fg: '#b45309', trait: '#fde68a' },
-  bien_trouve: { bg: '#eff6ff', fg: '#1d4ed8', trait: '#bcd4fb' },
+  bien_trouve: { bg: '#eff6ff', fg: '#1d4ed8', trait: '#dedcd9' },
   perdu:       { bg: '#fef2f2', fg: '#b91c1c', trait: '#fecaca' },
 };
 
@@ -1468,22 +1468,22 @@ export default function Clients({ onNavigate, fenetre }: {
               @keyframes crmFadeIn { from { opacity: 0; } to { opacity: 1; } }
               @keyframes crmPopIn { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
               @keyframes ncEntre { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-              .crm-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-color: #fff !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23c9a84c' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding: 11px 38px 11px 14px !important; border-radius: 12px !important; border: 1.5px solid #e3e8f0 !important; font-size: 13.5px !important; font-weight: 600; color: var(--emilio); cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+              .crm-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-color: #fff !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23c9a84c' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding: 11px 38px 11px 14px !important; border-radius: 12px !important; border: 1.5px solid #eaeae9 !important; font-size: 13.5px !important; font-weight: 600; color: var(--emilio); cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
               .crm-select:hover { border-color: #cbd5e1 !important; }
-              .crm-select:focus { border-color: #c9a84c !important; background-color: #fff !important; box-shadow: 0 0 0 3px rgba(201,168,76,0.12); outline: none; }
+              .crm-select:focus { border-color: #ee7623 !important; background-color: #fff !important; box-shadow: 0 0 0 3px rgba(238, 118, 35,0.12); outline: none; }
 
               /* Le rail des trois temps */
               .nc-rail { display: flex; gap: 0; margin-top: 18px; }
               .nc-pas { flex: 1 1 0; min-width: 0; background: none; border: none; padding: 0 0 2px; font-family: inherit; text-align: left; cursor: pointer; }
               .nc-pas:disabled { cursor: default; }
-              .nc-barre { height: 4px; border-radius: 4px; background: #e3e8f0; margin-right: 6px; transition: background .3s ease; }
-              .nc-pas[data-etat="fait"] .nc-barre { background: #c9a84c; }
+              .nc-barre { height: 4px; border-radius: 4px; background: #eaeae9; margin-right: 6px; transition: background .3s ease; }
+              .nc-pas[data-etat="fait"] .nc-barre { background: #ee7623; }
               .nc-pas[data-etat="ici"] .nc-barre { background: var(--emilio); }
               .nc-lig { display: flex; align-items: baseline; gap: 6px; margin-top: 7px; }
               .nc-lig b { font-size: 11.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: .6px; }
-              .nc-pas[data-etat="fait"] .nc-lig b { color: #a9822f; }
+              .nc-pas[data-etat="fait"] .nc-lig b { color: #c85a10; }
               .nc-pas[data-etat="ici"] .nc-lig b { color: var(--emilio); }
-              .nc-lig i { font-style: normal; font-size: 11.5px; color: #b4bfcd; }
+              .nc-lig i { font-style: normal; font-size: 11.5px; color: #c3c0be; }
               @media (max-width: 720px) { .nc-lig i { display: none; } }
               .nc-ou { display: none; }
 
@@ -1492,7 +1492,7 @@ export default function Clients({ onNavigate, fenetre }: {
               /* Le statut : cinq cartes plutôt qu'une liste déroulante — on voit
                  ce que chaque état veut dire au lieu de le deviner. */
               .nc-etats { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 8px; }
-              .nc-etat { display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid #e3e8f0; background: #fff; cursor: pointer; font-family: inherit; text-align: left; transition: border-color .14s, background .14s, transform .12s; }
+              .nc-etat { display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid #eaeae9; background: #fff; cursor: pointer; font-family: inherit; text-align: left; transition: border-color .14s, background .14s, transform .12s; }
               .nc-etat:hover { transform: translateY(-1px); }
               .nc-etat[data-on="true"] { border-color: var(--emilio); background: #f8fafc; }
               .nc-etat u { text-decoration: none; width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
@@ -1508,49 +1508,49 @@ export default function Clients({ onNavigate, fenetre }: {
                  largeur. Le prénom et le nom sur une ligne ; le téléphone et
                  l'e-mail sur la suivante, l'e-mail avec la plus grande case. */
               .nc-couple { display: flex; flex-direction: column; gap: 10px; }
-              .nc-pers { border: 1px solid #e3e8f0; border-radius: 14px; padding: 13px 16px 16px; background: #fff; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+              .nc-pers { border: 1px solid #eaeae9; border-radius: 14px; padding: 13px 16px 16px; background: #fff; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
               .nc-pers-h { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
-              .nc-pers-t { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #a9822f; }
-              .nc-pers-n { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #fbf6e9; border: 1px solid #efdfb4; color: #8a6a1f; font: 800 11.5px 'Plus Jakarta Sans', sans-serif; letter-spacing: 0; }
+              .nc-pers-t { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #c85a10; }
+              .nc-pers-n { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #fbf0e9; border: 1px solid #facca9; color: #9c460d; font: 800 11.5px 'Plus Jakarta Sans', sans-serif; letter-spacing: 0; }
               .nc-id { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
               .nc-co { display: grid; grid-template-columns: minmax(150px, 190px) minmax(0, 1fr); gap: 12px; }
               /* Un libellé sur deux lignes ne décale plus sa case : elles restent alignées en bas. */
               .nc-id > div, .nc-co > div { justify-content: flex-end; }
               @media (max-width: 760px) { .nc-id, .nc-co { grid-template-columns: 1fr; } .nc-pers { padding: 12px 13px 14px; } }
               .nc-civ { display: flex; gap: 6px; }
-              .nc-civ button { padding: 6px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 700; border: 1.5px solid #e3e8f0; background: #fff; color: #8593a8; cursor: pointer; font-family: inherit; }
+              .nc-civ button { padding: 6px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 700; border: 1.5px solid #eaeae9; background: #fff; color: #8593a8; cursor: pointer; font-family: inherit; }
               .nc-civ button[data-on="true"] { border-color: var(--emilio); background: #f8fafc; color: var(--emilio); }
-              .nc-note { font-size: 12px; line-height: 1.55; border-radius: 10px; padding: 9px 12px; background: #f8fafc; border: 1px solid #eef1f6; color: #64748b; }
+              .nc-note { font-size: 12px; line-height: 1.55; border-radius: 10px; padding: 9px 12px; background: #f8fafc; border: 1px solid #f2f2f2; color: #64748b; }
 
               /* V3.23 — les sections, les champs, l'aperçu */
-              .nc-bloc { background: #fff; border: 1px solid #e6ebf2; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,.02); min-width: 0; }
+              .nc-bloc { background: #fff; border: 1px solid #edeceb; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,.02); min-width: 0; }
               .nc-bloc-t { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; flex-wrap: wrap; }
               .nc-bloc-ic { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
               .nc-bloc-t b { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15.5px; font-weight: 800; color: var(--emilio); }
               .nc-bloc-t small { font-size: 12.5px; font-weight: 600; color: #94a3b8; }
               .nc-bloc-corps { display: flex; flex-direction: column; gap: 12px; }
-              .nc-fenetre .${styles.input}, .nc-fenetre .${styles.textarea} { background: #fff; border: 1.5px solid #dfe5ee; border-radius: 11px; padding: 11px 13px; font-size: 14px; }
-              .nc-fenetre .${styles.input}:focus, .nc-fenetre .${styles.textarea}:focus { border-color: #c9a84c; box-shadow: 0 0 0 3px rgba(201,168,76,.16); }
-              .nc-fenetre .${styles.label} { font-size: 12.5px; font-weight: 700; color: #3b4a60; }
+              .nc-fenetre .${styles.input}, .nc-fenetre .${styles.textarea} { background: #fff; border: 1.5px solid #e7e6e6; border-radius: 11px; padding: 11px 13px; font-size: 14px; }
+              .nc-fenetre .${styles.input}:focus, .nc-fenetre .${styles.textarea}:focus { border-color: #ee7623; box-shadow: 0 0 0 3px rgba(238, 118, 35,.16); }
+              .nc-fenetre .${styles.label} { font-size: 12.5px; font-weight: 700; color: #302e2d; }
               .nc-fenetre .${styles.formRow} { gap: 12px; }
               .nc-fenetre .${styles.formGroup} { gap: 6px; }
               .nc-aide { font-size: 12px; color: #94a3b8; line-height: 1.5; }
-              .nc-lien { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; border: none; background: none; padding: 2px 0; font: 700 13px 'DM Sans', sans-serif; color: #a07c28; cursor: pointer; }
+              .nc-lien { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; border: none; background: none; padding: 2px 0; font: 700 13px 'DM Sans', sans-serif; color: #b4560f; cursor: pointer; }
               .nc-lien:hover { text-decoration: underline; text-underline-offset: 3px; }
               .nc-deux { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 18px; align-items: start; }
               .nc-champs { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-              .nc-apercu { position: sticky; top: 0; border-radius: 18px; overflow: hidden; border: 1px solid #e3e8f0; background: #fff; box-shadow: 0 14px 30px -24px rgba(26,35,50,.6); }
-              .nc-ap-h { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 9px; padding: 18px 14px 16px; color: #fff; background: linear-gradient(152deg, #3a5178 0%, #27395a 60%, #2e4166 100%); }
+              .nc-apercu { position: sticky; top: 0; border-radius: 18px; overflow: hidden; border: 1px solid #eaeae9; background: #fff; box-shadow: 0 14px 30px -24px rgba(24, 24, 27,.6); }
+              .nc-ap-h { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 9px; padding: 18px 14px 16px; color: #fff; background: linear-gradient(152deg, #2c2c2e 0%, #282726 60%, #161618 100%); }
               .nc-ap-txt { display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; max-width: 100%; }
               .nc-ap-nom { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16.5px; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
               .nc-ap-nom.vide { color: rgba(255,255,255,.45); font-weight: 700; }
               .nc-ap-types { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
               .nc-ap-b { padding: 12px 14px; display: flex; flex-direction: column; gap: 9px; }
-              .nc-ap-l { display: flex; align-items: center; gap: 9px; font-size: 13px; color: #3b4a60; min-width: 0; }
-              .nc-ap-l svg { color: #a3b0c2; flex-shrink: 0; }
+              .nc-ap-l { display: flex; align-items: center; gap: 9px; font-size: 13px; color: #302e2d; min-width: 0; }
+              .nc-ap-l svg { color: #b6b2af; flex-shrink: 0; }
               .nc-ap-l span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-              .nc-ap-l.vide { color: #b4bfcd; }
-              .nc-ap-src { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: #fdf8ec; border: 1px solid #efdfb4; font-size: 12.5px; font-weight: 700; color: #7a5d1c; min-width: 0; }
+              .nc-ap-l.vide { color: #c3c0be; }
+              .nc-ap-src { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: #fdf3ec; border: 1px solid #facca9; font-size: 12.5px; font-weight: 700; color: #8b3e0b; min-width: 0; }
               .nc-ap-src span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
               @media (max-width: 900px) {
                 .nc-deux { grid-template-columns: 1fr; gap: 12px; }
@@ -1722,7 +1722,7 @@ export default function Clients({ onNavigate, fenetre }: {
                             <label className={styles.label}>Adresse</label>
                             <input className={styles.input} value={form.adresse_rue} onChange={e => searchAdresse(e.target.value)} autoComplete="off" />
                             {adrSug.length > 0 && (
-                              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, background: 'white', border: '1px solid #e3e8f0', borderRadius: 12, marginTop: 4, overflow: 'hidden', boxShadow: '0 10px 30px rgba(15,22,35,.14)' }}>
+                              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, background: 'white', border: '1px solid #eaeae9', borderRadius: 12, marginTop: 4, overflow: 'hidden', boxShadow: '0 10px 30px rgba(18, 18, 17,.14)' }}>
                                 {adrSug.map((f: any, i: number) => (
                                   <button type="button" key={i} onClick={() => pickAdresse(f)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 13px', border: 'none', borderBottom: i < adrSug.length - 1 ? '1px solid #f1f5f9' : 'none', background: 'white', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, color: 'var(--emilio)' }}>
                                     {f.properties?.label}
@@ -1743,7 +1743,7 @@ export default function Clients({ onNavigate, fenetre }: {
 
                       {!acheteur && (form.types.includes('vendeur') || form.types.includes('proprietaire')) && (
                         <Bloc ic="maison" titre="Son bien" teinte={teinte}>
-                          <button type="button" onClick={() => setForm({ ...form, creerBien: !form.creerBien })} style={{ ...pill(form.creerBien, '#c9a84c', '#fbf6e9', '#8a6a1f'), alignSelf: 'flex-start' }}>
+                          <button type="button" onClick={() => setForm({ ...form, creerBien: !form.creerBien })} style={{ ...pill(form.creerBien, '#ee7623', '#fbf0e9', '#9c460d'), alignSelf: 'flex-start' }}>
                             {form.creerBien ? '✓ ' : ''}Créer son bien juste après (rubrique Biens)
                           </button>
                           <div className="nc-aide">« Nouveau bien » s’ouvre, lui déjà propriétaire : à suivre, estimation ou mandat signé.</div>
@@ -1765,7 +1765,7 @@ export default function Clients({ onNavigate, fenetre }: {
                         </div>
                         <div style={{ fontSize: 12, lineHeight: 1.55, borderRadius: 10, padding: '9px 12px',
                           background: form.statut === 'actif' ? '#ecfdf5' : '#f8fafc',
-                          border: `1px solid ${form.statut === 'actif' ? '#bbf7d0' : '#eef1f6'}`,
+                          border: `1px solid ${form.statut === 'actif' ? '#bbf7d0' : '#f2f2f2'}`,
                           color: form.statut === 'actif' ? '#15803d' : '#64748b' }}>
                           {form.statut === 'actif'
                             ? 'La veille cherchera pour ce client dès la création du dossier.'
@@ -1819,7 +1819,7 @@ export default function Clients({ onNavigate, fenetre }: {
                   {/* ═══ 2 · SA RECHERCHE ═══ */}
                   {pas === 'recherche' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      <button type="button" onClick={() => setForm({ ...form, critPlusTard: !form.critPlusTard })} style={{ ...pill(form.critPlusTard, '#64748b', '#f1f5f9', '#34496e'), alignSelf: 'flex-start' }}>
+                      <button type="button" onClick={() => setForm({ ...form, critPlusTard: !form.critPlusTard })} style={{ ...pill(form.critPlusTard, '#64748b', '#f1f5f9', '#1d1d1f'), alignSelf: 'flex-start' }}>
                         {form.critPlusTard ? '✓ ' : ''}Ses critères plus tard : acheteur non filtré
                       </button>
                       {form.critPlusTard ? (
@@ -1857,7 +1857,7 @@ export default function Clients({ onNavigate, fenetre }: {
               </div>
 
               {/* ── Pied ── */}
-              <div className="nc-pied" style={{ padding: '14px 26px', borderTop: '1px solid #f1f5f9', background: '#fbfcfe', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flexShrink: 0 }}>
+              <div className="nc-pied" style={{ padding: '14px 26px', borderTop: '1px solid #f1f5f9', background: '#fdfcfc', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flexShrink: 0 }}>
                 {/* V3.50 : un contact qui existe peut-être déjà. Juste au-dessus
                     des boutons, pour qu'on le voie quelle que soit l'étape. */}
                 {doublon && doublon.cle === cleDoublon({ ...form, c2_email: form.couple ? form.c2_email : '', c2_tel: form.couple ? form.c2_tel : '' }) && (
@@ -2012,8 +2012,8 @@ export default function Clients({ onNavigate, fenetre }: {
                         const actif = tri.cle === t.cle;
                         return (
                           <button key={t.cle} className={styles.triItem} onClick={() => classer(t.cle, t.sensDefaut)}
-                            style={actif ? { background: '#fdfaf1' } : undefined}>
-                            <span style={{ width: 12, flexShrink: 0, color: '#c9a84c', fontSize: 12 }}>{actif ? '✓' : ''}</span>
+                            style={actif ? { background: '#fdf6f1' } : undefined}>
+                            <span style={{ width: 12, flexShrink: 0, color: '#ee7623', fontSize: 12 }}>{actif ? '✓' : ''}</span>
                             <span style={{ flexGrow: 1, minWidth: 0 }}>
                               <b>{t.nom}</b>
                               <small>{actif && tri.sens !== t.sensDefaut ? 'ordre inversé' : t.note}</small>
@@ -2056,7 +2056,7 @@ export default function Clients({ onNavigate, fenetre }: {
                     <div
                       key={client.id}
                       className={`${styles.ligne} ligne-entre ${ouvert ? styles.ligneOuverte : ''} sel-ligne`}
-                      style={{ animationDelay: `${Math.min(rang, 9) * 28}ms`, ...(clos ? { background: '#fbfcfe' } : {}), ...(choisis.has(client.id) ? STYLE_CHOISI : {}) }}
+                      style={{ animationDelay: `${Math.min(rang, 9) * 28}ms`, ...(clos ? { background: '#fdfcfc' } : {}), ...(choisis.has(client.id) ? STYLE_CHOISI : {}) }}
                       onClick={() => versFiche(client)}
                       onMouseEnter={e => entrer(client.id, e)}
                       onMouseMove={bouger}
@@ -2081,14 +2081,14 @@ export default function Clients({ onNavigate, fenetre }: {
                               /* Il vend aussi un bien (rubrique Biens) : on le dit. */
                               if (typesDe(client).includes('vendeur')) return (
                                 <span className={styles.proprio} title="Il vend aussi un bien : voir sa fiche ou la rubrique Biens">
-                                  <Ico t={10} d={D_CLE} c="#9a7d2e" />Vendeur aussi
+                                  <Ico t={10} d={D_CLE} c="#b9530f" />Vendeur aussi
                                 </span>
                               );
                               const sit = situationDe(client);
                               if (sit === 'vendeur' || sit === 'proprietaire') return (
                                 <span className={`${styles.proprio} ${sit === 'vendeur' ? styles.proprioVend : ''}`}
                                   title={sit === 'vendeur' ? 'Propriétaire, il revendra sans doute son bien après l\u2019achat : mandat vendeur possible' : 'Propriétaire de son logement actuel'}>
-                                  <Ico t={10} d={D_CLE} c={sit === 'vendeur' ? '#1a2332' : '#9a7d2e'} />
+                                  <Ico t={10} d={D_CLE} c={sit === 'vendeur' ? '#18181b' : '#b9530f'} />
                                   {sit === 'vendeur' ? 'Revente possible' : 'Propriétaire'}
                                 </span>
                               );
@@ -2102,7 +2102,7 @@ export default function Clients({ onNavigate, fenetre }: {
                       <span className={styles.colRech} title={phraseRecherche(client) + (indisp.length ? `\nIndispensable : ${indisp.join(', ')}` : '')}>
                         <span className={styles.pastilles} style={clos ? { opacity: 0.68 } : undefined}>
                           {/* V3.180 : le type déjà choisi dans « Ce qu'il cherche » ne se répète pas. */}
-                          {!typeVu && <span style={PA_TYPE}><Ico d={D_TYPE} c="#2d5c8f" />{texteType(client.type_bien)}</span>}
+                          {!typeVu && <span style={PA_TYPE}><Ico d={D_TYPE} c="#393836" />{texteType(client.type_bien)}</span>}
                           {(() => {
                             /* V3.75 : les chambres dans la même pastille que les pièces
                                (« 4 pièces · 3 ch. », deux minimums) : on peut filtrer
@@ -2141,7 +2141,7 @@ export default function Clients({ onNavigate, fenetre }: {
                           <span className={styles.indisp} style={clos ? { opacity: 0.68 } : undefined}>
                             {/* V3.181 : sur un écran moyen (901 à 1 359 px), la colonne
                                 est étroite : deux pastilles et « +N », sur une seule ligne. */}
-                            {indisp.slice(0, 3).map((x, i) => <span key={x} className={i === 2 ? styles.indisp3 : undefined} style={PA_INDISP}><Ico d={D_INDISP} c="#b7832c" t={12} />{x}</span>)}
+                            {indisp.slice(0, 3).map((x, i) => <span key={x} className={i === 2 ? styles.indisp3 : undefined} style={PA_INDISP}><Ico d={D_INDISP} c="#d25e11" t={12} />{x}</span>)}
                             {indisp.length > 2 && <span className={styles.plusEtroit} style={{ ...PA_INDISP, padding: '2px 7px' }}>{`+${indisp.length - 2}`}</span>}
                             {indisp.length > 3 && <span className={styles.plusLarge} style={{ ...PA_INDISP, padding: '2px 7px' }}>{`+${indisp.length - 3}`}</span>}
                           </span>
@@ -2225,8 +2225,8 @@ export default function Clients({ onNavigate, fenetre }: {
                           const actif = triL.cle === t.cle;
                           return (
                             <button key={t.cle} type="button" className={styles.triItem} onClick={() => classerListe(t.cle, t.sensDefaut)}
-                              style={actif ? { background: '#fdfaf1' } : undefined}>
-                              <span style={{ width: 12, flexShrink: 0, color: '#c9a84c', fontSize: 12 }}>{actif ? '✓' : ''}</span>
+                              style={actif ? { background: '#fdf6f1' } : undefined}>
+                              <span style={{ width: 12, flexShrink: 0, color: '#ee7623', fontSize: 12 }}>{actif ? '✓' : ''}</span>
                               <span style={{ flexGrow: 1, minWidth: 0 }}>
                                 <b>{t.nom}</b>
                                 <small>{actif && triL.sens !== t.sensDefaut ? 'ordre inversé' : t.note}</small>
@@ -2297,7 +2297,7 @@ export default function Clients({ onNavigate, fenetre }: {
                         <div className={styles.ficheTxt}>
                           {det === undefined ? 'Lecture…'
                             : det.journal
-                              ? <>{det.journal.titre} <span style={{ color: '#a3b0c2' }}>· {ilYA(det.journal.date)}</span></>
+                              ? <>{det.journal.titre} <span style={{ color: '#b6b2af' }}>· {ilYA(det.journal.date)}</span></>
                               : 'Aucun échange noté pour l\'instant.'}
                         </div>
 

@@ -39,33 +39,33 @@ import { copieDe } from '@/components/biens/outils';
  * même. « Prévenir le client » part par /api/send-mail, en mail simple.
  */
 
-const NAVY = '#34496e', OR = '#c9a84c', OR_FONCE = '#8a6a1f', BORD = '#e3e8f0', LIGNE = '#eef1f6';
-const DOUX = '#5b6678', PALE = '#8d99ab', FOND = '#f4f6fa', AUJ_FOND = '#fcfaf3', CHOISI = '#eef1f7';
+const NAVY = '#1d1d1f', OR = '#ee7623', OR_FONCE = '#9c460d', BORD = '#eaeae9', LIGNE = '#f2f2f2';
+const DOUX = '#5b6678', PALE = '#8d99ab', FOND = '#f7f7f7', AUJ_FOND = '#fcf7f3', CHOISI = '#f3f2f2';
 const JAK = "'Plus Jakarta Sans', system-ui, sans-serif";
 
 type TypeRdv = 'visite' | 'client' | 'libre' | 'appel' | 'signature' | 'estimation' | 'perso';
 const TYPES: Record<TypeRdv, { nom: string; fond: string; trait: string; encre: string; point: string; ico: string }> = {
-  visite: { nom: 'Visite', fond: '#fbf4e1', trait: '#ecdcae', encre: '#5f450c', point: '#c9a84c', ico: 'maison' },
-  client: { nom: 'Rendez-vous client', fond: '#e9edf5', trait: '#cdd5e4', encre: '#34496e', point: '#34496e', ico: 'personne' },
+  visite: { nom: 'Visite', fond: '#fbece1', trait: '#f9c7a1', encre: '#632c08', point: '#ee7623', ico: 'maison' },
+  client: { nom: 'Rendez-vous client', fond: '#f0efee', trait: '#dad9d7', encre: '#1d1d1f', point: '#1d1d1f', ico: 'personne' },
   /* Un rendez-vous sans client : notaire, banque, partenaire, agence… */
   libre: { nom: 'Rendez-vous libre', fond: '#e6f5f3', trait: '#bfe5df', encre: '#115e59', point: '#0d9488', ico: 'groupe' },
-  appel: { nom: 'Appel · visio', fond: '#eaf1fe', trait: '#c8d9fb', encre: '#1e3a8a', point: '#2563eb', ico: 'visio' },
+  appel: { nom: 'Appel · visio', fond: '#f5f4f3', trait: '#e4e2df', encre: '#1e3a8a', point: '#2563eb', ico: 'visio' },
   signature: { nom: 'Signature', fond: '#e5f4ec', trait: '#bfe3cf', encre: '#0b5e41', point: '#0f8a5f', ico: 'stylo' },
   estimation: { nom: 'Estimation', fond: '#f1ecfb', trait: '#dccff6', encre: '#4c1d95', point: '#7c3aed', ico: 'estimer' },
-  perso: { nom: 'Personnel', fond: '#f2f4f7', trait: '#dfe4eb', encre: '#475569', point: '#94a3b8', ico: 'lune' },
+  perso: { nom: 'Personnel', fond: '#f5f4f4', trait: '#e6e5e4', encre: '#475569', point: '#94a3b8', ico: 'lune' },
 };
 const ORDRE: TypeRdv[] = ['visite', 'client', 'libre', 'appel', 'signature', 'estimation', 'perso'];
-const FAIT = { fond: '#f5f6f9', trait: '#e6e9ef', encre: '#7d899b' };
+const FAIT = { fond: '#f7f7f7', trait: '#ebebea', encre: '#7d899b' };
 /* Une visite passée dont le compte rendu n'est pas fait reste visible, en
    ambre : c'est une chose à faire, pas une chose finie. */
-const A_FAIRE = { fond: '#fff1d9', trait: '#efc178', encre: '#8a4b0f' };
+const A_FAIRE = { fond: '#ffe9d9', trait: '#f6ab71', encre: '#8a4b0f' };
 function teinte(e: Ev) { return e.crAFaire ? A_FAIRE : e.fait ? FAIT : TYPES[e.type]; }
 
 type Genre = 'signature' | 'mandat' | 'visite';
 const TACHES: Record<Genre, { fond: string; encre: string; trait: string }> = {
   signature: { fond: '#e5f4ec', encre: '#0b5e41', trait: '#bfe3cf' },
-  mandat: { fond: '#e9edf5', encre: '#34496e', trait: '#cdd5e4' },
-  visite: { fond: '#fbf4e1', encre: '#5f450c', trait: '#ecdcae' },
+  mandat: { fond: '#f0efee', encre: '#1d1d1f', trait: '#dad9d7' },
+  visite: { fond: '#fbece1', encre: '#632c08', trait: '#f9c7a1' },
 };
 
 /* La grille horaire : de 7 h à 22 h. On arrive défilé sur 9 h 30. */
@@ -750,14 +750,14 @@ function StylesAgenda() {
       @keyframes agPouls{0%{box-shadow:0 0 0 0 rgba(214,84,60,.55)}70%{box-shadow:0 0 0 10px rgba(214,84,60,0)}100%{box-shadow:0 0 0 0 rgba(214,84,60,0)}}
       .ag-vue{animation:agVue .38s cubic-bezier(.2,.9,.3,1) both}
       .ag-ev{animation:agEv .45s cubic-bezier(.2,.9,.3,1) both;transition:transform .18s cubic-bezier(.2,.9,.3,1),box-shadow .18s ease}
-      .ag-ev:hover{transform:translateY(-2px);box-shadow:0 12px 26px -14px rgba(20,28,42,.55);z-index:4}
+      .ag-ev:hover{transform:translateY(-2px);box-shadow:0 12px 26px -14px rgba(22, 21, 20,.55);z-index:4}
       .ag-appui{transition:transform .15s ease,background-color .15s ease,box-shadow .15s ease}
       .ag-appui:hover{transform:translateY(-1px)}
       .ag-appui:active{transform:scale(.98)}
-      .ag-lien:hover{background-color:#f6f8fb !important;transform:none}
-      .ag-lienBien:hover{border-color:#e6cf8f !important;background-color:#fffaf0 !important}
+      .ag-lien:hover{background-color:#f9f8f8 !important;transform:none}
+      .ag-lienBien:hover{border-color:#f7b27e !important;background-color:#fff6f0 !important}
       .ag-case{transition:background-color .15s ease}
-      .ag-case:hover{background-color:#f8f9fc !important}
+      .ag-case:hover{background-color:#fafafa !important}
       .ag-seg{transition:transform .45s cubic-bezier(.2,.8,.2,1)}
       .ag-maintenant{position:absolute;left:0;right:0;height:2px;background:#d6543c;z-index:5;pointer-events:none}
       .ag-maintenant::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:#d6543c;animation:agPouls 2.2s ease-out infinite}
@@ -780,10 +780,10 @@ function StylesAgenda() {
       .ag-pouls-point{animation:agBattement 1.8s ease-out infinite}
       .ag-carte-jour{animation:agSection .5s cubic-bezier(.2,.9,.3,1) both}
       .ag-champ{transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
-      .ag-champ:hover:not(:focus):not(:disabled){border-color:#cfd7e3 !important}
-      .ag-champ:focus{border-color:${OR} !important;box-shadow:0 0 0 4px rgba(201,168,76,.16);background:#fff !important}
+      .ag-champ:hover:not(:focus):not(:disabled){border-color:#dad9d8 !important}
+      .ag-champ:focus{border-color:${OR} !important;box-shadow:0 0 0 4px rgba(238, 118, 35,.16);background:#fff !important}
       .ag-champ-bouton{transition:border-color .15s ease,box-shadow .2s ease,background-color .2s ease,transform .15s ease}
-      .ag-champ-bouton:hover:not([data-ouvert]){border-color:#cfd7e3 !important;transform:translateY(-1px)}
+      .ag-champ-bouton:hover:not([data-ouvert]){border-color:#dad9d8 !important;transform:translateY(-1px)}
       .ag-jour{transition:background-color .12s ease,transform .12s ease}
       @keyframes agMoisG{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
       @keyframes agMoisD{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
@@ -796,11 +796,11 @@ function StylesAgenda() {
       .ag-modale-fond[data-sortie]{animation:agSortieFond .24s ease both !important}
       .ag-modale-fond[data-sortie] .ag-modale{animation:agSortie .24s cubic-bezier(.4,0,.2,1) both !important}
       @media (max-width: 760px){.ag-cal-raccourcis{max-width:none !important;flex-direction:row !important;flex-wrap:wrap !important}.ag-cal-raccourcis > span{width:100%}.ag-cal-raccourcis > button{flex:1 1 40%}.ag-cal-raccourcis > button > span:last-child{display:none}}
-      .ag-jour:hover:not(:disabled):not([aria-pressed="true"]){background:#f1f4f9 !important}
+      .ag-jour:hover:not(:disabled):not([aria-pressed="true"]){background:#f5f5f5 !important}
       .ag-jour:active:not(:disabled){transform:scale(.94)}
       @media (prefers-reduced-motion: reduce){.ag-section,.ag-panneau{animation:none}}
       @media (max-width: 760px){.ag-heure-ligne{grid-template-columns:1fr !important;gap:6px !important}}
-      .ag-grille-defil::-webkit-scrollbar{width:8px}.ag-grille-defil::-webkit-scrollbar-thumb{background:#dde3ec;border-radius:8px}
+      .ag-grille-defil::-webkit-scrollbar{width:8px}.ag-grille-defil::-webkit-scrollbar-thumb{background:#e5e4e4;border-radius:8px}
       /* V3.55 : les en-têtes de la semaine gardent la place de la barre de
          défilement de la grille (8 px) : sans elle, chaque colonne du haut
          était un peu plus large que celle du dessous, et la colonne jaune
@@ -827,8 +827,8 @@ function Segment({ vue, setVue, largeur = 84 }: { vue: string; setVue: (v: 'jour
   const vues: { id: 'jour' | 'semaine' | 'mois'; lib: string }[] = [{ id: 'jour', lib: 'Jour' }, { id: 'semaine', lib: 'Semaine' }, { id: 'mois', lib: 'Mois' }];
   const i = vues.findIndex(v => v.id === vue);
   return (
-    <div style={{ position: 'relative', display: 'flex', padding: 4, background: '#e8ecf3', borderRadius: 14, flexShrink: 0 }}>
-      <span className="ag-seg" style={{ position: 'absolute', top: 4, left: 4, width: largeur, height: 36, borderRadius: 10, background: 'white', boxShadow: '0 2px 10px -3px rgba(16,24,40,.28)', transform: `translateX(${i * largeur}px)` }} />
+    <div style={{ position: 'relative', display: 'flex', padding: 4, background: '#eeeeed', borderRadius: 14, flexShrink: 0 }}>
+      <span className="ag-seg" style={{ position: 'absolute', top: 4, left: 4, width: largeur, height: 36, borderRadius: 10, background: 'white', boxShadow: '0 2px 10px -3px rgba(20, 19, 19,.28)', transform: `translateX(${i * largeur}px)` }} />
       {vues.map(v => (
         <button key={v.id} type="button" onClick={() => setVue(v.id)} aria-pressed={vue === v.id}
           style={{ position: 'relative', width: largeur, height: 36, border: 'none', background: 'transparent', borderRadius: 10, fontSize: 13, fontWeight: 700, color: vue === v.id ? NAVY : '#6b778a', cursor: 'pointer', fontFamily: 'inherit', transition: 'color .3s ease' }}>{v.lib}</button>
@@ -859,8 +859,8 @@ const jourCourt = (e: Ev, maintenant: Date) => e.jour === cleDe(maintenant) ? 'A
 /* Une journée sans rendez-vous : on le dit joliment, avec de quoi en poser un. */
 function JourneeLibre({ sous, action, onAction }: { sous: string; action?: string; onAction?: () => void }) {
   return (
-    <div className="ag-panneau" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '26px 22px', borderRadius: 20, background: 'linear-gradient(180deg, #fffaf0 0%, #ffffff 100%)', border: '1px solid #f0e2bd', textAlign: 'center', pointerEvents: onAction ? 'auto' : 'none' }}>
-      <span className="ag-soleil" style={{ width: 58, height: 58, borderRadius: 20, background: '#fbf1d8', color: OR_FONCE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="soleil" t={30} ep={1.8} /></span>
+    <div className="ag-panneau" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '26px 22px', borderRadius: 20, background: 'linear-gradient(180deg, #fff6f0 0%, #ffffff 100%)', border: '1px solid #fad2b3', textAlign: 'center', pointerEvents: onAction ? 'auto' : 'none' }}>
+      <span className="ag-soleil" style={{ width: 58, height: 58, borderRadius: 20, background: '#fbe7d8', color: OR_FONCE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="soleil" t={30} ep={1.8} /></span>
       <b style={{ fontFamily: JAK, fontSize: 18, fontWeight: 800 }}>Journée libre</b>
       <span style={{ fontSize: 13, color: DOUX, lineHeight: 1.5, maxWidth: 300 }}>{sous}</span>
       {action && onAction && (
@@ -882,20 +882,20 @@ function CarteDuJour({ maintenant, evs, prochain, onNouveau, onVoirEv }: { maint
   const e = enCours || suivant || (libre ? prochain : null);
   const etiquette = !e ? '' : enCours ? 'En ce moment' : suivant ? dans(e.debut, maintenant) : `${jourCourt(e, maintenant)} à ${hhmm(e.debut)}`;
   return (
-    <div className="ag-carte-jour" style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, borderRadius: 18, background: 'white', border: `1px solid ${BORD}`, boxShadow: '0 1px 2px rgba(16,24,40,.04)' }}>
+    <div className="ag-carte-jour" style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, borderRadius: 18, background: 'white', border: `1px solid ${BORD}`, boxShadow: '0 1px 2px rgba(20, 19, 19,.04)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 2px' }}>
         <span style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase', color: OR_FONCE }}>Aujourd’hui</span>
           <b style={{ fontFamily: JAK, fontSize: 15, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{maj(jourLong(maintenant))}</b>
         </span>
         {libre
-          ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0, fontSize: 11.5, fontWeight: 800, color: OR_FONCE, background: '#fbf4e1', borderRadius: 20, padding: '4px 10px' }}><span className="ag-soleil" style={{ display: 'flex' }}><Ic n="soleil" t={13} ep={2.2} /></span>Libre</span>
-          : <span style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 800, color: NAVY, background: '#f1f4f9', borderRadius: 20, padding: '4px 10px', fontVariantNumeric: 'tabular-nums' }}>{`${auj.length} rdv`}</span>}
+          ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0, fontSize: 11.5, fontWeight: 800, color: OR_FONCE, background: '#fbece1', borderRadius: 20, padding: '4px 10px' }}><span className="ag-soleil" style={{ display: 'flex' }}><Ic n="soleil" t={13} ep={2.2} /></span>Libre</span>
+          : <span style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 800, color: NAVY, background: '#f5f5f5', borderRadius: 20, padding: '4px 10px', fontVariantNumeric: 'tabular-nums' }}>{`${auj.length} rdv`}</span>}
       </div>
 
       {e ? (
         <button type="button" className="ag-appui" onClick={() => onVoirEv(e)}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 9px', borderRadius: 12, border: `1px solid ${LIGNE}`, background: '#fbfcfe', color: NAVY, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 9px', borderRadius: 12, border: `1px solid ${LIGNE}`, background: '#fdfcfc', color: NAVY, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}>
           <span style={{ width: 4, alignSelf: 'stretch', borderRadius: 4, background: TYPES[e.type].point, flexShrink: 0 }} />
           <span style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0, flex: 1 }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 800, color: enCours ? '#b4452c' : OR_FONCE }}>
@@ -911,7 +911,7 @@ function CarteDuJour({ maintenant, evs, prochain, onNouveau, onVoirEv }: { maint
       )}
 
       <button type="button" className="ag-appui" onClick={onNouveau}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 40, borderRadius: 12, border: 'none', background: OR, color: NAVY, fontSize: 13.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 18px -12px rgba(201,168,76,.9)' }}>
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 40, borderRadius: 12, border: 'none', background: OR, color: NAVY, fontSize: 13.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 18px -12px rgba(238, 118, 35,.9)' }}>
         <Ic n="plus" t={16} ep={2.4} />Nouveau rendez-vous
       </button>
     </div>
@@ -939,13 +939,13 @@ function Rail({ maintenant, jour, setJour, evs, legende, masques, basculer, proc
       <CarteDuJour maintenant={maintenant} evs={evs} prochain={prochains[0] || null} onNouveau={onNouveau} onVoirEv={onVoirEv} />
 
       {crAFaire.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 12px 10px', borderRadius: 16, background: '#fff8e8', border: '1px solid #f3dcae' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 12px 10px', borderRadius: 16, background: '#fff2e8', border: '1px solid #f9cba8' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#8a4b0f', fontSize: 12.5, fontWeight: 800 }}>
             <Ic n="note" t={15} />{`${pl(crAFaire.length, 'compte rendu')} à faire`}
           </div>
           {crAFaire.slice(0, 2).map(e => (
             <button key={e.cle} type="button" className="ag-appui" onClick={() => onCR(e)}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1, padding: '7px 10px', borderRadius: 10, border: '1px solid #f3dcae', background: 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: NAVY }}>
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1, padding: '7px 10px', borderRadius: 10, border: '1px solid #f9cba8', background: 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: NAVY }}>
               <b style={{ fontSize: 12.5, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.titre}</b>
               <span style={{ fontSize: 11.5, color: DOUX }}>{`${maj(jourLong(e.debut))} · ${e.qui}`}</span>
             </button>
@@ -955,13 +955,13 @@ function Rail({ maintenant, jour, setJour, evs, legende, masques, basculer, proc
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 18, background: 'white', border: `1px solid ${BORD}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 2px' }}>
-          <span style={{ width: 26, height: 26, borderRadius: 8, background: '#fbf4e1', color: OR_FONCE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="horloge" t={14} ep={2.2} /></span>
+          <span style={{ width: 26, height: 26, borderRadius: 8, background: '#fbece1', color: OR_FONCE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="horloge" t={14} ep={2.2} /></span>
           <b style={{ fontFamily: JAK, fontSize: 14, fontWeight: 800 }}>À venir</b>
         </div>
         {venir.length === 0 && <span style={{ fontSize: 12.5, color: PALE, padding: '2px 4px 4px' }}>Rien de prévu pour l’instant.</span>}
         {venir.map(e => (
           <button key={e.cle} type="button" className="ag-appui" onClick={() => onVoirEv(e)}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: `1px solid ${LIGNE}`, borderRadius: 12, background: '#fbfcfe', cursor: 'pointer', textAlign: 'left', color: NAVY, fontFamily: 'inherit' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: `1px solid ${LIGNE}`, borderRadius: 12, background: '#fdfcfc', cursor: 'pointer', textAlign: 'left', color: NAVY, fontFamily: 'inherit' }}>
             <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 48, padding: '4px 0', borderRadius: 9, background: TYPES[e.type].fond, color: TYPES[e.type].encre }}>
               <b style={{ fontSize: 12.5, fontVariantNumeric: 'tabular-nums' }}>{hhmm(e.debut)}</b>
               <span style={{ fontSize: 9.5, fontWeight: 700, opacity: .8 }}>{jourCourt(e, maintenant)}</span>
@@ -989,7 +989,7 @@ function Rail({ maintenant, jour, setJour, evs, legende, masques, basculer, proc
             const estAuj = k === auj, choisi = k === jour, hors = d.getMonth() !== mois.getMonth();
             return (
               <button key={k} type="button" onClick={() => setJour(k)} aria-label={maj(jourLong(d))}
-                style={{ height: 28, border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', fontSize: 11.5, fontVariantNumeric: 'tabular-nums', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, background: estAuj ? OR : choisi ? CHOISI : 'transparent', color: estAuj ? NAVY : hors ? '#b9c2d0' : NAVY, fontWeight: estAuj || choisi ? 800 : 500 }}>
+                style={{ height: 28, border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', fontSize: 11.5, fontVariantNumeric: 'tabular-nums', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, background: estAuj ? OR : choisi ? CHOISI : 'transparent', color: estAuj ? NAVY : hors ? '#c7c4c2' : NAVY, fontWeight: estAuj || choisi ? 800 : 500 }}>
                 {d.getDate()}
                 <span style={{ width: 3.5, height: 3.5, borderRadius: '50%', background: jours.has(k) ? (estAuj ? NAVY : OR_FONCE) : 'transparent' }} />
               </button>
@@ -1006,7 +1006,7 @@ function Rail({ maintenant, jour, setJour, evs, legende, masques, basculer, proc
             return (
               <button key={t} type="button" className="ag-appui" onClick={() => basculer(t)} aria-pressed={actif} title={actif ? `Masquer : ${TYPES[t].nom}` : `Afficher : ${TYPES[t].nom}`}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 28, padding: '0 10px', borderRadius: 20, border: `1px solid ${actif ? TYPES[t].trait : BORD}`, background: actif ? TYPES[t].fond : 'white', color: actif ? TYPES[t].encre : PALE, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textDecoration: actif ? 'none' : 'line-through' }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: actif ? TYPES[t].point : '#cbd3df' }} />
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: actif ? TYPES[t].point : '#d6d5d4' }} />
                 {COURT[t]}
                 <span style={{ fontVariantNumeric: 'tabular-nums', opacity: .7 }}>{n}</span>
               </button>
@@ -1080,7 +1080,7 @@ function Bloc({ e, onVoir, large, rang }: { e: Ev & { col: number; cols: number 
         )}
       </span>
       {large && (e.crAFaire || e.fait) && (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0, fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 20, background: e.crAFaire ? '#ffffff' : '#eef1f6', color: e.crAFaire ? '#8a4b0f' : DOUX }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0, fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 20, background: e.crAFaire ? '#ffffff' : '#f2f2f2', color: e.crAFaire ? '#8a4b0f' : DOUX }}>
           <Ic n={e.crAFaire ? 'note' : 'coche'} t={12} ep={2.4} />{e.crAFaire ? 'Compte rendu à faire' : 'Passé'}
         </span>
       )}
@@ -1108,7 +1108,7 @@ function Bande({ e, onVoir }: { e: Ev; onVoir: (e: Ev) => void }) {
       borderLeft: `4px solid ${t.point}`, boxShadow: `inset 0 0 0 1px ${c.trait}`,
       background: `repeating-linear-gradient(135deg, ${c.fond} 0 9px, rgba(255,255,255,.55) 9px 18px)` }}>
       <button type="button" className="ag-appui" onClick={ev => { ev.stopPropagation(); onVoir(e); }} title={`${e.titre} · ${quandLongue(e)}`}
-        style={{ position: 'sticky', top: 6, display: 'flex', flexDirection: 'column', gap: 1, maxWidth: 'calc(100% - 12px)', boxSizing: 'border-box', margin: 6, padding: '6px 9px', borderRadius: 10, border: `1px solid ${c.trait}`, background: 'rgba(255,255,255,.92)', color: c.encre, textAlign: 'left', cursor: 'pointer', pointerEvents: 'auto', fontFamily: 'inherit', boxShadow: '0 6px 16px -10px rgba(16,24,40,.45)' }}>
+        style={{ position: 'sticky', top: 6, display: 'flex', flexDirection: 'column', gap: 1, maxWidth: 'calc(100% - 12px)', boxSizing: 'border-box', margin: 6, padding: '6px 9px', borderRadius: 10, border: `1px solid ${c.trait}`, background: 'rgba(255,255,255,.92)', color: c.encre, textAlign: 'left', cursor: 'pointer', pointerEvents: 'auto', fontFamily: 'inherit', boxShadow: '0 6px 16px -10px rgba(20, 19, 19,.45)' }}>
         <b style={{ fontSize: 12, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{e.titre}</b>
         <span style={{ fontSize: 10.5, fontWeight: 700, opacity: .8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{quandLongue(e)}</span>
       </button>
@@ -1243,7 +1243,7 @@ function VueJour({ jour, evs, taches, auj, maintenant, onVoirEv, onCreneau }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', borderBottom: `1px solid ${BORD}`, flexWrap: 'wrap', minHeight: 26 }}>
         {liste.length
           ? <span style={{ fontSize: 12.5, fontWeight: 700, color: DOUX }}>{rdv(liste.length)}</span>
-          : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 800, color: OR_FONCE, background: '#fbf4e1', borderRadius: 20, padding: '5px 12px' }}><Ic n="soleil" t={14} ep={2.2} />Journée libre</span>}
+          : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 800, color: OR_FONCE, background: '#fbece1', borderRadius: 20, padding: '5px 12px' }}><Ic n="soleil" t={14} ep={2.2} />Journée libre</span>}
         {longs.map(e => <span key={e.cle} style={{ display: 'flex', maxWidth: 360, minWidth: 0 }}><PuceLongue e={e} onVoir={onVoirEv} /></span>)}
         {tJ.map(t => <PuceTache key={t.cle} t={t} />)}
       </div>
@@ -1286,7 +1286,7 @@ function VueMois({ debutMois, evs, taches, auj, jourSel, onJour }: {
           const hors = d.getMonth() !== debutMois.getMonth(), estAuj = k === auj;
           return (
             <button key={k} type="button" className="ag-case" onClick={() => onJour(k)} aria-label={`${maj(jourLong(d))}${liste.length ? `, ${liste.length} rendez-vous` : ''}`}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 4, padding: 8, boxSizing: 'border-box', border: 'none', borderRight: `1px solid ${LIGNE}`, borderBottom: `1px solid ${LIGNE}`, background: estAuj ? AUJ_FOND : hors ? '#fafbfd' : 'white', boxShadow: k === jourSel && !estAuj ? `inset 0 0 0 2px ${NAVY}` : 'none', textAlign: 'left', cursor: 'pointer', overflow: 'hidden', opacity: hors ? .55 : 1, color: NAVY, fontFamily: 'inherit', minWidth: 0, animation: `agEv .35s cubic-bezier(.2,.9,.3,1) ${20 + i * 10}ms both` }}>
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 4, padding: 8, boxSizing: 'border-box', border: 'none', borderRight: `1px solid ${LIGNE}`, borderBottom: `1px solid ${LIGNE}`, background: estAuj ? AUJ_FOND : hors ? '#fcfcfb' : 'white', boxShadow: k === jourSel && !estAuj ? `inset 0 0 0 2px ${NAVY}` : 'none', textAlign: 'left', cursor: 'pointer', overflow: 'hidden', opacity: hors ? .55 : 1, color: NAVY, fontFamily: 'inherit', minWidth: 0, animation: `agEv .35s cubic-bezier(.2,.9,.3,1) ${20 + i * 10}ms both` }}>
               <span style={{ alignSelf: 'flex-start', minWidth: 26, height: 26, padding: '0 7px', boxSizing: 'border-box', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: JAK, fontSize: 13, fontWeight: estAuj ? 800 : 700, background: estAuj ? OR : 'transparent' }}>
                 {d.getDate() === 1 ? `1 ${MOIS[d.getMonth()].slice(0, 4)}.` : d.getDate()}
               </span>
@@ -1320,18 +1320,18 @@ const telLisible = (t: string) => {
 function IndicationsVisite({ p, titre }: { p: PourVisite; titre: string }) {
   const petit: React.CSSProperties = { fontSize: 10.5, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: PALE };
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, borderRadius: 14, border: '1px solid #dbe7fb', background: '#f7faff' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, borderRadius: 14, border: '1px solid #ecebea', background: '#fbfbfb' }}>
       {titre && <b style={{ fontSize: 12.5, color: NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{titre}</b>}
       {(p.occupation || p.dispo) && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {p.occupation && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, background: 'white', border: '1px solid #cfe0fb', color: '#1d4ed8', fontSize: 12, fontWeight: 800 }}><i style={{ width: 7, height: 7, borderRadius: '50%', background: '#2563eb' }} />{p.occupation.l}</span>}
+          {p.occupation && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, background: 'white', border: '1px solid #e7e5e3', color: '#1d4ed8', fontSize: 12, fontWeight: 800 }}><i style={{ width: 7, height: 7, borderRadius: '50%', background: '#2563eb' }} />{p.occupation.l}</span>}
           {p.dispo && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, background: 'white', border: `1px solid ${BORD}`, color: DOUX, fontSize: 12, fontWeight: 700 }}><Ic n="calendrier" t={12} />{`Disponible ${p.dispo}`}</span>}
         </div>
       )}
       {p.codes.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(118px, 1fr))', gap: 6 }}>
           {p.codes.map(x => (
-            <div key={x.l} style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '7px 10px', borderRadius: 10, background: 'white', border: '1px solid #dbe7fb', minWidth: 0 }}>
+            <div key={x.l} style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '7px 10px', borderRadius: 10, background: 'white', border: '1px solid #ecebea', minWidth: 0 }}>
               <small style={petit}>{x.l}</small>
               <b style={{ fontFamily: JAK, fontSize: x.v.length > 12 ? 13.5 : 15, fontWeight: 800, color: NAVY, letterSpacing: .3, overflowWrap: 'break-word' }}>{x.v}</b>
             </div>
@@ -1339,7 +1339,7 @@ function IndicationsVisite({ p, titre }: { p: PourVisite; titre: string }) {
         </div>
       )}
       {p.contact && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 8px 7px 10px', borderRadius: 11, background: 'white', border: '1px solid #dbe7fb' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 8px 7px 10px', borderRadius: 11, background: 'white', border: '1px solid #ecebea' }}>
           <span style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1, minWidth: 0 }}>
             <small style={petit}>Sur place</small>
             <b style={{ fontSize: 13, color: NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.contact.nom || 'Contact sur place'}</b>
@@ -1358,7 +1358,7 @@ function IndicationsVisite({ p, titre }: { p: PourVisite; titre: string }) {
         </div>
       ))}
       {p.encarts.map(x => (
-        <div key={x.l} style={{ display: 'flex', flexDirection: 'column', gap: 3, padding: '9px 11px', borderRadius: 11, background: 'white', border: '1px solid #dbe7fb' }}>
+        <div key={x.l} style={{ display: 'flex', flexDirection: 'column', gap: 3, padding: '9px 11px', borderRadius: 11, background: 'white', border: '1px solid #ecebea' }}>
           <small style={petit}>{x.l}</small>
           <span style={{ fontSize: 13, lineHeight: 1.5, color: DOUX, whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>{x.v}</span>
         </div>
@@ -1405,17 +1405,17 @@ function Detail({ ev, etroit, onFerme, onModifier, onAnnuler, onCR, onDossier, o
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9990, fontFamily: "'DM Sans', system-ui, sans-serif", color: NAVY }}>
       <StylesAgenda />
-      <button type="button" className="ag-voile" aria-label="Fermer le détail" onClick={onFerme} style={{ position: 'absolute', inset: 0, border: 'none', background: 'rgba(10,15,24,.28)', cursor: 'default' }} />
+      <button type="button" className="ag-voile" aria-label="Fermer le détail" onClick={onFerme} style={{ position: 'absolute', inset: 0, border: 'none', background: 'rgba(14, 13, 13,.28)', cursor: 'default' }} />
       <section className={etroit ? 'ag-feuille' : 'ag-tiroir'} role="dialog" aria-label="Détail du rendez-vous"
         style={etroit
-          ? { position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '88dvh', overflowY: 'auto', background: 'white', borderRadius: '24px 24px 0 0', padding: '10px 20px calc(22px + env(safe-area-inset-bottom, 0px))', display: 'flex', flexDirection: 'column', gap: 16, boxShadow: '0 -20px 50px -20px rgba(10,15,24,.4)' }
-          : { position: 'absolute', top: 0, right: 0, bottom: 0, width: 400, maxWidth: '100%', boxSizing: 'border-box', overflowY: 'auto', background: 'white', boxShadow: '-24px 0 60px -30px rgba(16,24,40,.45)', padding: '26px 26px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {etroit && <span style={{ alignSelf: 'center', width: 40, height: 4, borderRadius: 4, background: '#d5dbe5' }} />}
+          ? { position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '88dvh', overflowY: 'auto', background: 'white', borderRadius: '24px 24px 0 0', padding: '10px 20px calc(22px + env(safe-area-inset-bottom, 0px))', display: 'flex', flexDirection: 'column', gap: 16, boxShadow: '0 -20px 50px -20px rgba(14, 13, 13,.4)' }
+          : { position: 'absolute', top: 0, right: 0, bottom: 0, width: 400, maxWidth: '100%', boxSizing: 'border-box', overflowY: 'auto', background: 'white', boxShadow: '-24px 0 60px -30px rgba(20, 19, 19,.45)', padding: '26px 26px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {etroit && <span style={{ alignSelf: 'center', width: 40, height: 4, borderRadius: 4, background: '#dedddc' }} />}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 11px', borderRadius: 20, background: t.fond, color: t.encre, fontSize: 12, fontWeight: 800 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: t.point }} />{t.nom}
           </span>
-          <span style={{ fontSize: 11.5, fontWeight: 700, padding: '5px 10px', borderRadius: 20, background: ev.crAFaire ? '#fff6e3' : ev.fait ? '#eef1f6' : '#fdf6e3', color: ev.crAFaire ? '#8a4b0f' : DOUX }}>
+          <span style={{ fontSize: 11.5, fontWeight: 700, padding: '5px 10px', borderRadius: 20, background: ev.crAFaire ? '#ffefe3' : ev.fait ? '#f2f2f2' : '#fdeee3', color: ev.crAFaire ? '#8a4b0f' : DOUX }}>
             {ev.crAFaire ? 'Compte rendu à faire' : ev.fait ? 'Passé' : 'À venir'}
           </span>
           <button type="button" aria-label="Fermer" onClick={onFerme} style={{ marginLeft: 'auto', width: 36, height: 36, borderRadius: 11, border: `1px solid ${BORD}`, background: 'white', color: DOUX, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Ic n="fermer" t={15} /></button>
@@ -1445,7 +1445,7 @@ function Detail({ ev, etroit, onFerme, onModifier, onAnnuler, onCR, onDossier, o
               const ouvrir = b.venteId ? () => onBienVente(b.venteId as string) : ev.clientId ? () => onBienDossier(b) : null;
               const dedans = (
                 <>
-                  <span style={{ width: 52, height: 40, borderRadius: 9, overflow: 'hidden', background: '#eef2f8', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b6c1d1' }}>
+                  <span style={{ width: 52, height: 40, borderRadius: 9, overflow: 'hidden', background: '#f4f3f2', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c6c3c1' }}>
                     {b.photo ? <img src={b.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Ic n="maison" t={16} />}
                   </span>
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 }}>
@@ -1472,7 +1472,7 @@ function Detail({ ev, etroit, onFerme, onModifier, onAnnuler, onCR, onDossier, o
           <div style={{ padding: '11px 13px', borderRadius: 13, background: CHOISI, fontSize: 13, lineHeight: 1.55, color: DOUX, whiteSpace: 'pre-line' }}>{ev.notes}</div>
         )}
         {ev.source === 'visite' && !ev.fait && ev.clientId && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 12px', borderRadius: 14, background: ev.details?.rappelLe ? '#ecfdf5' : '#fffaf0', border: `1px solid ${ev.details?.rappelLe ? '#bfe3cf' : '#ecdcae'}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 12px', borderRadius: 14, background: ev.details?.rappelLe ? '#ecfdf5' : '#fff6f0', border: `1px solid ${ev.details?.rappelLe ? '#bfe3cf' : '#f9c7a1'}` }}>
             <span style={{ width: 34, height: 34, borderRadius: 10, background: 'white', color: ev.details?.rappelLe ? '#0b5e41' : OR_FONCE, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n={ev.details?.rappelLe ? 'coche' : 'mail'} t={16} ep={ev.details?.rappelLe ? 2.6 : 2} /></span>
             <span style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1, minWidth: 0 }}>
               <b style={{ fontSize: 13, color: ev.details?.rappelLe ? '#0b5e41' : NAVY }}>{ev.details?.rappelLe ? libelleRappel(ev.details.rappelLe) : 'Pas encore de rappel au client'}</b>
@@ -1611,7 +1611,7 @@ function VueTelephone({ vue, setVue, jour, setJour, semaine, evs, taches, auj, t
               const pts = listeDe(k).slice(0, 4);
               return (
                 <button key={k} type="button" onClick={() => { setJour(k); if (vue === 'semaine') setVue('jour'); }} aria-label={maj(jourLong(d))}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '7px 0 6px', borderRadius: 14, border: `1px solid ${choisi ? OR : BORD}`, background: choisi ? '#fffaf0' : 'white', color: NAVY, fontFamily: 'inherit' }}>
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '7px 0 6px', borderRadius: 14, border: `1px solid ${choisi ? OR : BORD}`, background: choisi ? '#fff6f0' : 'white', color: NAVY, fontFamily: 'inherit' }}>
                   <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: estAuj ? OR_FONCE : PALE }}>{JOURS[d.getDay()].slice(0, 3)}</span>
                   <span style={{ width: 30, height: 30, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: JAK, fontSize: 15, fontWeight: 800, background: estAuj ? OR : 'transparent' }}>{d.getDate()}</span>
                   <span style={{ display: 'flex', gap: 2, height: 5 }}>{pts.map(e => <span key={e.cle} style={{ width: 5, height: 5, borderRadius: '50%', background: TYPES[e.type].point }} />)}</span>
@@ -1692,7 +1692,7 @@ function BoutonFlottant({ onClick }: { onClick: () => void }) {
   if (!monte) return null;
   return createPortal(
     <button type="button" className="ag-appui" aria-label="Nouveau rendez-vous" onClick={onClick}
-      style={{ position: 'fixed', right: 18, bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))', width: 56, height: 56, borderRadius: 18, border: 'none', background: OR, color: NAVY, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 14px 28px -12px rgba(201,168,76,.95)', zIndex: 50, cursor: 'pointer' }}>
+      style={{ position: 'fixed', right: 18, bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))', width: 56, height: 56, borderRadius: 18, border: 'none', background: OR, color: NAVY, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 14px 28px -12px rgba(238, 118, 35,.95)', zIndex: 50, cursor: 'pointer' }}>
       <Ic n="plus" t={24} ep={2.4} />
     </button>,
     document.body,
@@ -1701,7 +1701,7 @@ function BoutonFlottant({ onClick }: { onClick: () => void }) {
 
 /* ══ Créer / modifier un rendez-vous ═══════════════════════════ */
 
-const CHAMP: React.CSSProperties = { width: '100%', boxSizing: 'border-box', height: 48, padding: '0 14px', borderRadius: 14, border: `1.5px solid ${BORD}`, background: '#fbfcfe', color: NAVY, fontSize: 14, fontWeight: 600, outline: 'none', fontFamily: 'inherit' };
+const CHAMP: React.CSSProperties = { width: '100%', boxSizing: 'border-box', height: 48, padding: '0 14px', borderRadius: 14, border: `1.5px solid ${BORD}`, background: '#fdfcfc', color: NAVY, fontSize: 14, fontWeight: 600, outline: 'none', fontFamily: 'inherit' };
 /* Les durées proposées. « Journée » cale aussi le début à 9 h. */
 const DUREES: { v: number; lib: string }[] = [
   { v: 30, lib: '30 min' }, { v: 60, lib: '1 h' }, { v: 90, lib: '1 h 30' }, { v: 120, lib: '2 h' },
@@ -1753,7 +1753,7 @@ function Pastille({ nom, personne, taille = 38 }: { nom: string; personne?: Pers
    l'enregistrement. */
 function CarteRetenue({ nom, personne, sous, hors, fige, onChanger }: { nom: string; personne?: Personne; sous: string; hors?: boolean; fige?: boolean; onChanger: () => void }) {
   return (
-    <div className="ag-retenu" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, border: `1.5px solid ${hors ? '#cbd5e1' : OR}`, background: hors ? '#f8fafc' : '#fffaf0' }}>
+    <div className="ag-retenu" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, border: `1.5px solid ${hors ? '#cbd5e1' : OR}`, background: hors ? '#f8fafc' : '#fff6f0' }}>
       <Pastille nom={nom} personne={personne} />
       <span style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
@@ -1832,7 +1832,7 @@ function ChoixDossier({ dossiers, valeur, fige, onChange, libre = '', onLibre, o
         {liste.length === 0 && <span style={{ padding: '2px 12px 10px', fontSize: 12.5, color: DOUX }}>{onLibre ? `Aucun client ne s’appelle « ${q.trim()} ». Tu peux garder ce nom juste pour ce rendez-vous.` : `Aucun acheteur ne correspond à « ${q.trim()} ».`}</span>}
         {liste.map((d, i) => (
           <button key={d.rechercheId} type="button" role="option" aria-selected={i === actif} onClick={() => choisir(d)} onMouseEnter={() => setActif(i)}
-            style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '8px 12px', border: 'none', borderTop: i ? `1px solid ${LIGNE}` : 'none', background: i === actif ? '#f6f8fc' : 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: NAVY }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '8px 12px', border: 'none', borderTop: i ? `1px solid ${LIGNE}` : 'none', background: i === actif ? '#f9f9f9' : 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: NAVY }}>
             <Pastille nom={d.nom} personne={d.personne} taille={34} />
             <span style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1, minWidth: 0 }}>
               <b style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.nom}</b>
@@ -1843,8 +1843,8 @@ function ChoixDossier({ dossiers, valeur, fige, onChange, libre = '', onLibre, o
         ))}
         {avecLibre && (
           <button type="button" role="option" aria-selected={actif === liste.length} onClick={garder} onMouseEnter={() => setActif(liste.length)}
-            style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 12px', border: 'none', borderTop: `1px dashed ${BORD}`, background: actif === liste.length ? '#f6f8fc' : '#fbfcfe', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: NAVY }}>
-            <span style={{ width: 34, height: 34, borderRadius: 10, border: `1.5px dashed #c3ccda`, color: DOUX, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n="plus" t={15} ep={2.4} /></span>
+            style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 12px', border: 'none', borderTop: `1px dashed ${BORD}`, background: actif === liste.length ? '#f9f9f9' : '#fdfcfc', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: NAVY }}>
+            <span style={{ width: 34, height: 34, borderRadius: 10, border: `1.5px dashed #d0cecd`, color: DOUX, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n="plus" t={15} ep={2.4} /></span>
             <span style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1, minWidth: 0 }}>
               <b style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{`Garder « ${q.trim()} » pour ce rendez-vous`}</b>
               <span style={{ fontSize: 11.5, color: DOUX }}>Pas ajouté à tes contacts : seulement noté sur le rendez-vous.</span>
@@ -1865,9 +1865,9 @@ function ChoixDossier({ dossiers, valeur, fige, onChange, libre = '', onLibre, o
 
 function Section({ n, ico, titre, aide, rang, children }: { n: number; ico: string; titre: string; aide?: string; rang: number; children: React.ReactNode }) {
   return (
-    <section className="ag-section" style={{ animationDelay: `${60 + rang * 70}ms`, background: 'white', border: `1px solid ${BORD}`, borderRadius: 16, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 1px 2px rgba(16,24,40,.04), 0 12px 28px -24px rgba(16,24,40,.35)' }}>
+    <section className="ag-section" style={{ animationDelay: `${60 + rang * 70}ms`, background: 'white', border: `1px solid ${BORD}`, borderRadius: 16, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 1px 2px rgba(20, 19, 19,.04), 0 12px 28px -24px rgba(20, 19, 19,.35)' }}>
       <header style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-        <span style={{ position: 'relative', width: 34, height: 34, borderRadius: 11, background: '#fbf4e1', color: OR_FONCE, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ position: 'relative', width: 34, height: 34, borderRadius: 11, background: '#fbece1', color: OR_FONCE, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Ic n={ico} t={16} ep={2.1} />
           <span style={{ position: 'absolute', top: -5, right: -5, width: 17, height: 17, borderRadius: '50%', background: NAVY, color: OR, fontSize: 9.5, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: JAK }}>{n}</span>
         </span>
@@ -1896,8 +1896,8 @@ function ChampIcone({ ico, children }: { ico: string; children: React.ReactNode 
 function BoutonChamp({ ico, valeur, aide, ouvert, onClick, etiquette }: { ico: string; valeur: string; aide?: string; ouvert: boolean; onClick: () => void; etiquette: string }) {
   return (
     <button type="button" className="ag-champ-bouton" aria-expanded={ouvert} aria-label={etiquette} onClick={onClick} data-ouvert={ouvert || undefined}
-      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', minHeight: 58, padding: '8px 14px 8px 9px', boxSizing: 'border-box', borderRadius: 15, border: `1.5px solid ${ouvert ? OR : BORD}`, background: ouvert ? '#fffaf0' : '#fbfcfe', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: NAVY, boxShadow: ouvert ? '0 0 0 4px rgba(201,168,76,.14)' : 'none' }}>
-      <span style={{ width: 40, height: 40, borderRadius: 12, background: ouvert ? OR : '#fbf4e1', color: ouvert ? NAVY : OR_FONCE, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .2s ease, color .2s ease' }}><Ic n={ico} t={18} ep={2} /></span>
+      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', minHeight: 58, padding: '8px 14px 8px 9px', boxSizing: 'border-box', borderRadius: 15, border: `1.5px solid ${ouvert ? OR : BORD}`, background: ouvert ? '#fff6f0' : '#fdfcfc', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: NAVY, boxShadow: ouvert ? '0 0 0 4px rgba(238, 118, 35,.14)' : 'none' }}>
+      <span style={{ width: 40, height: 40, borderRadius: 12, background: ouvert ? OR : '#fbece1', color: ouvert ? NAVY : OR_FONCE, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .2s ease, color .2s ease' }}><Ic n={ico} t={18} ep={2} /></span>
       <span style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1, minWidth: 0 }}>
         <b style={{ fontFamily: JAK, fontSize: 15, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{valeur}</b>
         {aide && <span style={{ fontSize: 12, color: DOUX, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{aide}</span>}
@@ -1948,14 +1948,14 @@ function PanneauCalendrier({ valeur, onChoisir, min, occupes, raccourcis: propre
   const fl: React.CSSProperties = { width: 32, height: 32, borderRadius: 10, border: `1px solid ${BORD}`, background: 'white', color: NAVY, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' };
   const ref = useMontrer<HTMLDivElement>();
   return (
-    <div ref={ref} className="ag-panneau ag-cal" style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'flex-start', border: `1px solid ${BORD}`, borderRadius: 16, background: 'white', padding: 14, boxShadow: '0 18px 40px -26px rgba(16,24,40,.45)' }}>
+    <div ref={ref} className="ag-panneau ag-cal" style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'flex-start', border: `1px solid ${BORD}`, borderRadius: 16, background: 'white', padding: 14, boxShadow: '0 18px 40px -26px rgba(20, 19, 19,.45)' }}>
       <div className="ag-cal-raccourcis" style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: '1 1 150px', maxWidth: 200 }}>
         <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: PALE, padding: '2px 2px 4px' }}>{titreRaccourcis}</span>
         {raccourcis.map(r => {
           const k = cleDe(r.d), actif = k === valeur;
           return (
             <button key={r.lib} type="button" className="ag-appui" onClick={() => onChoisir(k)} aria-pressed={actif}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, height: 38, padding: '0 12px', borderRadius: 11, border: `1px solid ${actif ? OR : BORD}`, background: actif ? '#fffaf0' : '#fbfcfe', color: NAVY, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, height: 38, padding: '0 12px', borderRadius: 11, border: `1px solid ${actif ? OR : BORD}`, background: actif ? '#fff6f0' : '#fdfcfc', color: NAVY, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
               <span>{r.lib}</span><span style={{ fontSize: 11.5, fontWeight: 600, color: PALE }}>{court(r.d)}</span>
             </button>
           );
@@ -1987,16 +1987,16 @@ function PanneauCalendrier({ valeur, onChoisir, min, occupes, raccourcis: propre
             const n = occupes[k] || 0;
             return (
               <button key={k} type="button" className="ag-jour" disabled={interdit} onClick={() => onChoisir(k)} aria-pressed={choisi} aria-label={`${maj(jourLong(d))}${n ? `, ${rdv(n)}` : ''}`}
-                style={{ position: 'relative', height: 38, borderRadius: 11, border: estAuj && !choisi ? `1.5px solid ${OR}` : '1.5px solid transparent', background: choisi ? NAVY : 'transparent', color: choisi ? OR : interdit ? '#cfd6e0' : passe ? '#a7b1c0' : NAVY, fontFamily: JAK, fontSize: 13.5, fontWeight: choisi || estAuj ? 800 : 600, cursor: interdit ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontVariantNumeric: 'tabular-nums' }}>
+                style={{ position: 'relative', height: 38, borderRadius: 11, border: estAuj && !choisi ? `1.5px solid ${OR}` : '1.5px solid transparent', background: choisi ? NAVY : 'transparent', color: choisi ? OR : interdit ? '#d9d8d6' : passe ? '#a7b1c0' : NAVY, fontFamily: JAK, fontSize: 13.5, fontWeight: choisi || estAuj ? 800 : 600, cursor: interdit ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontVariantNumeric: 'tabular-nums' }}>
                 {d.getDate()}
-                {n > 0 && <span style={{ position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: choisi ? OR : '#9aa7b9' }} />}
+                {n > 0 && <span style={{ position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: choisi ? OR : '#adaaa6' }} />}
               </button>
             );
           })}
         </div>
         {/* V3.165 : la légende des points, seulement quand il y en a. */}
         {Object.keys(occupes).length > 0 && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: PALE, paddingTop: 2 }}><span style={{ width: 5, height: 5, borderRadius: '50%', background: '#9aa7b9' }} />déjà des rendez-vous ce jour-là</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: PALE, paddingTop: 2 }}><span style={{ width: 5, height: 5, borderRadius: '50%', background: '#adaaa6' }} />déjà des rendez-vous ce jour-là</span>
         )}
       </div>
     </div>
@@ -2019,7 +2019,7 @@ function PanneauHeure({ valeur, onChoisir, onFini, prises }: { valeur: string; o
      deux lignes. */
   const puce = (actif: boolean): React.CSSProperties => ({ position: 'relative', height: 40, padding: 0, whiteSpace: 'nowrap', minWidth: 0, borderRadius: 11, border: `1.5px solid ${actif ? NAVY : BORD}`, background: actif ? NAVY : 'white', color: actif ? OR : NAVY, fontFamily: JAK, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontVariantNumeric: 'tabular-nums' });
   return (
-    <div ref={ref} className="ag-panneau" style={{ border: `1px solid ${BORD}`, borderRadius: 16, background: 'white', padding: 14, display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 18px 40px -26px rgba(16,24,40,.45)' }}>
+    <div ref={ref} className="ag-panneau" style={{ border: `1px solid ${BORD}`, borderRadius: 16, background: 'white', padding: 14, display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 18px 40px -26px rgba(20, 19, 19,.45)' }}>
       {moments.map(m => (
         <div key={m.lib} className="ag-heure-ligne" style={{ display: 'grid', gridTemplateColumns: '92px 1fr', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: PALE }}>{m.lib}</span>
@@ -2161,8 +2161,8 @@ function Interrupteur({ actif, onChange, titre, sous, desactive }: { actif: bool
     <button type="button" role="switch" aria-checked={actif} onClick={desactive ? undefined : onChange} disabled={desactive}
       style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', borderRadius: 14, border: `1.5px solid ${BORD}`, background: 'white', cursor: desactive ? 'default' : 'pointer', textAlign: 'left', color: NAVY, fontFamily: 'inherit', opacity: desactive ? .55 : 1 }}>
       <span style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}><b style={{ fontSize: 13.5 }}>{titre}</b><span style={{ fontSize: 12, color: DOUX }}>{sous}</span></span>
-      <span style={{ width: 44, height: 26, borderRadius: 26, background: actif ? '#0f8a5f' : '#cbd3df', position: 'relative', flexShrink: 0, transition: 'background .2s ease' }}>
-        <span style={{ position: 'absolute', top: 3, left: 3, width: 20, height: 20, borderRadius: '50%', background: 'white', boxShadow: '0 2px 5px rgba(16,24,40,.25)', transform: `translateX(${actif ? 18 : 0}px)`, transition: 'transform .25s cubic-bezier(.34,1.4,.5,1)' }} />
+      <span style={{ width: 44, height: 26, borderRadius: 26, background: actif ? '#0f8a5f' : '#d6d5d4', position: 'relative', flexShrink: 0, transition: 'background .2s ease' }}>
+        <span style={{ position: 'absolute', top: 3, left: 3, width: 20, height: 20, borderRadius: '50%', background: 'white', boxShadow: '0 2px 5px rgba(20, 19, 19,.25)', transform: `translateX(${actif ? 18 : 0}px)`, transition: 'transform .25s cubic-bezier(.34,1.4,.5,1)' }} />
       </span>
     </button>
   );
@@ -2724,7 +2724,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
   const typesDispo = ev ? (ev.source === 'visite' || lie ? [ev.type] : ORDRE.filter(t => t !== 'visite')) : ORDRE;
 
   return createPortal(
-    <div className="ag-voile ag-modale-fond" data-sortie={sortie || undefined} style={{ position: 'fixed', inset: 0, zIndex: 9995, background: 'rgba(14,20,30,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, fontFamily: "'DM Sans', system-ui, sans-serif", color: NAVY }}
+    <div className="ag-voile ag-modale-fond" data-sortie={sortie || undefined} style={{ position: 'fixed', inset: 0, zIndex: 9995, background: 'rgba(16, 16, 15,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, fontFamily: "'DM Sans', system-ui, sans-serif", color: NAVY }}
       onClick={e => { if (e.target === e.currentTarget) setRetenue(Date.now()); }}>
       <StylesAgenda />
       <style>{`
@@ -2745,9 +2745,9 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
         }
       `}</style>
       <section ref={feuille} className="ag-modale ag-feuille" role="dialog" aria-modal="true" aria-label={ev ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
-        style={{ width: '100%', maxWidth: 1180, height: 'min(800px, 90dvh)', background: 'white', borderRadius: 22, boxShadow: '0 40px 100px -30px rgba(10,15,24,.6)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        style={{ width: '100%', maxWidth: 1180, height: 'min(800px, 90dvh)', background: 'white', borderRadius: 22, boxShadow: '0 40px 100px -30px rgba(14, 13, 13,.6)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 22px', background: NAVY, color: 'white', flexShrink: 0 }}>
-          <span style={{ width: 36, height: 36, borderRadius: 11, background: 'rgba(201,168,76,.16)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="calendrier" t={19} ep={1.9} /></span>
+          <span style={{ width: 36, height: 36, borderRadius: 11, background: 'rgba(238, 118, 35,.16)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="calendrier" t={19} ep={1.9} /></span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', color: OR }}>Agenda</div>
             <b style={{ fontFamily: JAK, fontSize: 17.5, fontWeight: 800 }}>{ev ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}</b>
@@ -2756,7 +2756,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
         </header>
 
         <div className="ag-modale-corps" style={{ flex: 1, minHeight: 0, display: 'flex' }}>
-          <div className="ag-modale-form" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: '18px 22px 24px', display: 'flex', flexDirection: 'column', gap: 12, background: '#f5f7fa' }}>
+          <div className="ag-modale-form" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: '18px 22px 24px', display: 'flex', flexDirection: 'column', gap: 12, background: '#f8f8f7' }}>
             <Section n={1} ico="calendrier" titre="Quel rendez-vous" rang={0}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div className="ag-modale-types" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>
@@ -2769,7 +2769,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
                       <button key={k} type="button" className="ag-appui" aria-pressed={actif}
                         onClick={() => { if (!actif) maj_({ type: k, titre: null, lieu: null, duree: k === 'appel' ? 30 : k === 'visite' || k === 'signature' ? 60 : f.duree }); }}
                         style={{ display: 'flex', alignItems: 'center', gap: 8, height: 46, padding: '0 10px', borderRadius: 13, border: `1.5px solid ${actif ? t.point : BORD}`, background: actif ? t.fond : 'white', color: actif ? t.encre : NAVY, cursor: 'pointer', textAlign: 'left', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', boxShadow: actif ? `0 10px 22px -16px ${t.point}` : 'none' }}>
-                        <span style={{ width: 28, height: 28, borderRadius: 8, background: actif ? t.point : '#f1f4f8', color: actif ? 'white' : DOUX, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n={t.ico} t={16} /></span>
+                        <span style={{ width: 28, height: 28, borderRadius: 8, background: actif ? t.point : '#f5f4f4', color: actif ? 'white' : DOUX, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n={t.ico} t={16} /></span>
                         {t.nom}
                       </button>
                     );
@@ -2826,18 +2826,18 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
               {f.type === 'visite' && dossier && !ev && (() => {
                 const carte = (o: { cle: string; titre: string; sous: string; photo: string | null; actif: boolean; pastille?: string; onClick: () => void; retirer?: boolean }) => (
                   <button key={o.cle} type="button" className="ag-appui" aria-pressed={o.actif} onClick={o.onClick}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 12px 7px 7px', borderRadius: 14, border: `1.5px solid ${o.actif ? OR : BORD}`, background: o.actif ? '#fffaf0' : 'white', cursor: 'pointer', textAlign: 'left', color: NAVY, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}>
-                    <span style={{ width: 54, height: 42, borderRadius: 9, overflow: 'hidden', background: '#eef2f8', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b6c1d1' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 12px 7px 7px', borderRadius: 14, border: `1.5px solid ${o.actif ? OR : BORD}`, background: o.actif ? '#fff6f0' : 'white', cursor: 'pointer', textAlign: 'left', color: NAVY, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}>
+                    <span style={{ width: 54, height: 42, borderRadius: 9, overflow: 'hidden', background: '#f4f3f2', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c6c3c1' }}>
                       {o.photo ? <img src={o.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Ic n="maison" t={16} />}
                     </span>
                     <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 }}>
                       <b style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.titre}</b>
-                      {o.pastille && <span style={{ alignSelf: 'flex-start', fontSize: 10.5, fontWeight: 800, padding: '2px 7px', borderRadius: 20, background: '#eef1f6', color: DOUX, whiteSpace: 'nowrap', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.pastille}</span>}
+                      {o.pastille && <span style={{ alignSelf: 'flex-start', fontSize: 10.5, fontWeight: 800, padding: '2px 7px', borderRadius: 20, background: '#f2f2f2', color: DOUX, whiteSpace: 'nowrap', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.pastille}</span>}
                       <span style={{ fontSize: 12, color: DOUX, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{o.sous}</span>
                     </span>
                     {o.retirer
                       ? <span aria-label="Retirer" style={{ width: 24, height: 24, borderRadius: 8, border: `1px solid ${BORD}`, background: 'white', color: DOUX, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n="fermer" t={12} /></span>
-                      : <span style={{ width: 22, height: 22, boxSizing: 'border-box', borderRadius: 7, border: `1.5px solid ${o.actif ? OR : '#c3ccda'}`, background: o.actif ? OR : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>{o.actif && <Ic n="coche" t={13} ep={3} />}</span>}
+                      : <span style={{ width: 22, height: 22, boxSizing: 'border-box', borderRadius: 7, border: `1.5px solid ${o.actif ? OR : '#d0cecd'}`, background: o.actif ? OR : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>{o.actif && <Ic n="coche" t={13} ep={3} />}</span>}
                   </button>
                 );
                 return (
@@ -2849,7 +2849,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
                         onKeyDown={e => { if (e.key === 'Escape' && qBien) { e.stopPropagation(); setQBien(''); } }} />
                     </ChampIcone>
                     {qBien.trim().length >= 2 && (
-                      <div className="ag-panneau" style={{ display: 'flex', flexDirection: 'column', gap: 6, border: `1px solid ${BORD}`, borderRadius: 16, background: '#fbfcfe', padding: 8, boxShadow: '0 18px 40px -26px rgba(16,24,40,.45)' }}>
+                      <div className="ag-panneau" style={{ display: 'flex', flexDirection: 'column', gap: 6, border: `1px solid ${BORD}`, borderRadius: 16, background: '#fdfcfc', padding: 8, boxShadow: '0 18px 40px -26px rgba(20, 19, 19,.45)' }}>
                         {agence === null
                           ? <span style={{ fontSize: 12.5, color: PALE, padding: '6px 6px' }}>Je cherche dans tes biens…</span>
                           : resultats.length === 0
@@ -2907,14 +2907,14 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
                     );
                   })}
                   <button type="button" className="ag-appui" aria-pressed={perso} onClick={() => { setPerso(true); setPanneau(null); }}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 40, padding: '0 15px', borderRadius: 12, border: `1.5px ${perso ? 'solid' : 'dashed'} ${perso ? OR : '#c9d2de'}`, background: perso ? '#fffaf0' : 'white', color: perso ? '#8a6a1f' : NAVY, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 40, padding: '0 15px', borderRadius: 12, border: `1.5px ${perso ? 'solid' : 'dashed'} ${perso ? OR : '#d5d3d2'}`, background: perso ? '#fff6f0' : 'white', color: perso ? '#9c460d' : NAVY, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                     <Ic n="crayon" t={14} />Personnalisé
                   </button>
                 </div>
               </div>
 
               {perso && (
-                <div className="ag-panneau" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 16, background: '#fffaf0', border: '1px solid #f0e2bd' }}>
+                <div className="ag-panneau" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 16, background: '#fff6f0', border: '1px solid #fad2b3' }}>
                   <Libelle texte="Fin" aide="sur plusieurs jours si besoin" />
                   <div className="ag-quand" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
                     <BoutonChamp ico="calendrier" etiquette="Date de fin" ouvert={panneau === 'finDate'} onClick={() => basculer('finDate')}
@@ -3014,11 +3014,11 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
           </aside>
         </div>
 
-        <footer className="ag-modale-pied" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '12px 22px', borderTop: `1px solid ${BORD}`, background: '#fbfcfe', flexShrink: 0 }}>
+        <footer className="ag-modale-pied" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '12px 22px', borderTop: `1px solid ${BORD}`, background: '#fdfcfc', flexShrink: 0 }}>
           <span role="status" style={{ fontSize: 12.5, color: retenue ? '#b45309' : DOUX, fontWeight: retenue ? 700 : 400, flex: '1 1 200px' }}>{retenue ? 'Pour fermer sans enregistrer, appuie sur Annuler.' : lie || bienEstim ? 'Rendez-vous lié à un bien.' : avecDossier && dossier ? `Rangé dans le dossier de ${dossier.nom}.` : personneLibre ? `Avec ${personneLibre}, noté sur le rendez-vous (pas dans tes contacts).` : enAttente ? (libreOk ? `« ${enAttente} » n’est pas encore retenu : choisis un client de la liste, ou garde ce nom.` : `« ${enAttente} » n’est pas choisi : clique sur le bon dossier.`) : dossierObligatoire ? 'Choisis le dossier du client.' : 'Rendez-vous sans client.'}</span>
           <button type="button" className="ag-appui" onClick={fermer} style={{ height: 44, padding: '0 18px', borderRadius: 12, border: `1px solid ${BORD}`, background: 'white', color: DOUX, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
           <button type="button" onClick={enregistrer} disabled={envoi}
-            style={{ height: 44, padding: '0 22px', borderRadius: 12, border: 'none', background: OR, color: NAVY, fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: envoi ? 'default' : 'pointer', fontFamily: 'inherit', opacity: envoi ? .7 : 1, boxShadow: '0 12px 24px -12px rgba(201,168,76,.95)' }}>
+            style={{ height: 44, padding: '0 22px', borderRadius: 12, border: 'none', background: OR, color: NAVY, fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: envoi ? 'default' : 'pointer', fontFamily: 'inherit', opacity: envoi ? .7 : 1, boxShadow: '0 12px 24px -12px rgba(238, 118, 35,.95)' }}>
             <Ic n="coche" t={16} ep={2.6} />{envoi ? 'Enregistrement…' : ev ? 'Enregistrer les changements' : 'Enregistrer dans l’agenda'}
           </button>
         </footer>

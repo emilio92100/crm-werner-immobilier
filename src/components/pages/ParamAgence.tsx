@@ -16,7 +16,7 @@ import { BAREME, BAREME_VENTE, HONORAIRES_TAUX, tauxTexte } from '@/lib/mandat';
    datée, avec l'ancienne et la nouvelle valeur. */
 
 const SIGNATURE = 'agence/signature.png';
-const NAVY = '#34496e', OR = '#c9a84c', OR_FONCE = '#a07c28', GRIS = '#64748b', GRIS_CLAIR = '#94a3b8', TRAIT = '#e3e8f0';
+const NAVY = '#1d1d1f', OR = '#ee7623', OR_FONCE = '#b4560f', GRIS = '#64748b', GRIS_CLAIR = '#94a3b8', TRAIT = '#eaeae9';
 
 const jourLong = (ymd: string) => new Date(ymd.slice(0, 10) + 'T12:00:00Z')
   .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' });
@@ -58,7 +58,7 @@ function ChampAgence({ c, valeur, erreur, change, onChange }: {
       <input id={`ag-${c.cle}`} className={styles.input} type={c.type === 'date' ? 'date' : c.type === 'email' ? 'email' : 'text'}
         value={valeur} maxLength={c.max} placeholder={c.exemple ? `Ex : ${c.exemple}` : undefined}
         onChange={e => onChange(e.target.value)}
-        style={{ borderColor: erreur ? '#f87171' : change ? OR : undefined, background: change && !erreur ? '#fffdf5' : undefined }} />
+        style={{ borderColor: erreur ? '#f87171' : change ? OR : undefined, background: change && !erreur ? '#fff9f5' : undefined }} />
       {erreur
         ? <div style={{ fontSize: 12, color: '#b91c1c', marginTop: 4 }}>{erreur}</div>
         : c.aide ? <div style={{ fontSize: 12, color: GRIS_CLAIR, marginTop: 4, lineHeight: 1.45 }}>{c.aide}</div> : null}
@@ -345,7 +345,7 @@ export default function ParamAgence() {
       {/* La barre d'enregistrement : seulement quand quelque chose a changé */}
       {modifs.length > 0 && (
         <div style={{ position: 'sticky', bottom: 12, zIndex: 5, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-          background: NAVY, color: 'white', borderRadius: 14, padding: '12px 14px', boxShadow: '0 10px 30px rgba(26,35,50,.28)' }}>
+          background: NAVY, color: 'white', borderRadius: 14, padding: '12px 14px', boxShadow: '0 10px 30px rgba(24, 24, 27,.28)' }}>
           <div style={{ flex: '1 1 260px', minWidth: 0, fontSize: 13.5, lineHeight: 1.4 }}>
             <b>{`${modifs.length} modification${modifs.length > 1 ? 's' : ''}`}</b>
             <span style={{ color: '#cbd5e1' }}>

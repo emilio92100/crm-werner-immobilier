@@ -22,7 +22,7 @@ export async function lireOffresAgence(clientId: string, rechercheId: string | n
 type Copie = { id: string; bien_vente_id?: string | null; titre?: string | null; ville?: string | null; photos?: string[] | null };
 
 const PUCE: Record<string, { l: string; c: string; f: string }> = {
-  en_attente: { l: 'En attente du vendeur', c: '#7a5d1c', f: '#fbf6e9' },
+  en_attente: { l: 'En attente du vendeur', c: '#8b3e0b', f: '#fbf0e9' },
   contre: { l: 'À lui de répondre', c: '#1d4ed8', f: '#eff6ff' },
   acceptee: { l: 'Acceptée', c: '#15803d', f: '#dcfce7' },
   refusee: { l: 'Refusée', c: '#475569', f: '#f1f5f9' },

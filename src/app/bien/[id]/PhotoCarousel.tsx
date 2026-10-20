@@ -12,8 +12,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
  * arriver pendant qu'on pousse.
  */
 
-const BLEU = '#1a2332';
-const DORE = '#c9a84c';
+const BLEU = '#18181b';
+const DORE = '#ee7623';
 
 /* Assez long pour qu'on voie le mouvement, assez court pour ne pas attendre.
    La courbe part vite et freine à l'arrivée : c'est ce qui donne le poids. */
@@ -42,7 +42,7 @@ export default function PhotoCarousel({ photos }: { photos: string[] }) {
 
   if (photos.length === 0) {
     return (
-      <div style={{ height: 440, background: 'linear-gradient(135deg, #6b7c93 0%, #4a5d7e 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ height: 440, background: 'linear-gradient(135deg, #6b7c93 0%, #3d3b39 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
           <div style={{ fontSize: 48 }}>📷</div>
           <div style={{ fontSize: 12, marginTop: 8, letterSpacing: 1 }}>Photos en cours d&apos;ajout</div>
@@ -65,7 +65,7 @@ export default function PhotoCarousel({ photos }: { photos: string[] }) {
       >
         <button
           onClick={() => setShowGallery(true)}
-          style={{ position: 'absolute', bottom: 16, right: 16, background: 'rgba(26,35,50,0.85)', color: 'white', padding: '7px 15px', borderRadius: 20, fontSize: 11.5, fontWeight: 500, border: 'none', cursor: 'pointer', fontFamily: 'inherit', zIndex: 3 }}
+          style={{ position: 'absolute', bottom: 16, right: 16, background: 'rgba(24, 24, 27,0.85)', color: 'white', padding: '7px 15px', borderRadius: 20, fontSize: 11.5, fontWeight: 500, border: 'none', cursor: 'pointer', fontFamily: 'inherit', zIndex: 3 }}
         >
           📷 {current + 1} / {photos.length}{' '}· Voir tout
         </button>
@@ -97,7 +97,7 @@ export default function PhotoCarousel({ photos }: { photos: string[] }) {
             style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, maxWidth: 1200, width: '100%' }}>
             {photos.map((url, i) => (
               <div key={i} onClick={() => setLightbox(i)}
-                style={{ position: 'relative', paddingBottom: '68%', overflow: 'hidden', borderRadius: 8, background: '#1a2332', cursor: 'zoom-in' }}>
+                style={{ position: 'relative', paddingBottom: '68%', overflow: 'hidden', borderRadius: 8, background: '#18181b', cursor: 'zoom-in' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt={`Photo ${i + 1}`} loading="lazy" decoding="async"
                   style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />

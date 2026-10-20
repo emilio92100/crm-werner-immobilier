@@ -249,11 +249,11 @@ export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { cl
 /* ══ Le mail ════════════════════════════════════════════════════════════ */
 
 /* V3.118 : les couleurs du site emilio-immo.com (src/lib/mail-charte.ts). */
-const BLEU = '#22497D';
-const DORE = '#E68B23';
-const ENCRE = '#13243D';
-const DORE_TEXTE = '#A95808';
-const DORE_CLAIR = '#F2B266';
+const BLEU = '#1d1d1f';
+const DORE = '#ee7623';
+const ENCRE = '#141416';
+const DORE_TEXTE = '#b4560f';
+const DORE_CLAIR = '#f6a15e';
 
 const echappe = (t: unknown) => String(t ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -356,11 +356,11 @@ export function mailPoint(o: { prenom: string; recherche: any; tokenClient: stri
   const lien = (x: Reponse) => lienReponse(tokenClient, recherche.id, x, site);
 
   const lignesHtml = res.lignes.map((l) => `
-            <tr><td style="padding:11px 16px;border-top:1px solid #F2F5F9;vertical-align:top;width:104px;font-size:12px;font-weight:700;color:#8FA3BF;">${echappe(l.cle)}</td>
-                <td style="padding:11px 16px 11px 0;border-top:1px solid #F2F5F9;vertical-align:top;font-size:14.5px;font-weight:700;color:${BLEU};line-height:1.45;">${echappe(l.valeur)}${l.sous ? `<div style="font-size:12.5px;font-weight:500;color:#5B6B80;margin-top:3px;">${echappe(l.sous)}</div>` : ''}</td></tr>`).join('');
+            <tr><td style="padding:11px 16px;border-top:1px solid #f6f5f5;vertical-align:top;width:104px;font-size:12px;font-weight:700;color:#aba7a3;">${echappe(l.cle)}</td>
+                <td style="padding:11px 16px 11px 0;border-top:1px solid #f6f5f5;vertical-align:top;font-size:14.5px;font-weight:700;color:${BLEU};line-height:1.45;">${echappe(l.valeur)}${l.sous ? `<div style="font-size:12.5px;font-weight:500;color:#5B6B80;margin-top:3px;">${echappe(l.sous)}</div>` : ''}</td></tr>`).join('');
   const pointsHtml = res.points.length ? `
-            <tr><td style="padding:11px 16px;border-top:1px solid #F2F5F9;vertical-align:top;width:104px;font-size:12px;font-weight:700;color:#8FA3BF;">Ce qui compte</td>
-                <td style="padding:9px 16px 7px 0;border-top:1px solid #F2F5F9;vertical-align:top;">${res.points.map((p) => `<span style="display:inline-block;margin:0 5px 5px 0;padding:3px 10px;border-radius:99px;font-size:12.5px;font-weight:700;${p.fort ? `background:#FFF6EC;border:1px solid #F2B266;color:#A95808;` : `background:#ffffff;border:1px solid #E8EDF3;color:#13243D;`}">${echappe(p.texte)}</span>`).join('')}</td></tr>` : '';
+            <tr><td style="padding:11px 16px;border-top:1px solid #f6f5f5;vertical-align:top;width:104px;font-size:12px;font-weight:700;color:#aba7a3;">Ce qui compte</td>
+                <td style="padding:9px 16px 7px 0;border-top:1px solid #f6f5f5;vertical-align:top;">${res.points.map((p) => `<span style="display:inline-block;margin:0 5px 5px 0;padding:3px 10px;border-radius:99px;font-size:12.5px;font-weight:700;${p.fort ? `background:#FFF6EC;border:1px solid #f6a15e;color:#b4560f;` : `background:#ffffff;border:1px solid #eeeeed;color:#141416;`}">${echappe(p.texte)}</span>`).join('')}</td></tr>` : '';
 
   const bouton = (x: Reponse, texte: string, style: string) => `
           <tr><td style="padding:0 0 9px;"><a href="${echappe(lien(x))}" style="display:block;text-align:center;text-decoration:none;border-radius:12px;padding:14px 12px;font-size:15px;font-weight:700;${style}">${texte}</a></td></tr>`;
@@ -383,10 +383,10 @@ ${LIEN_POLICE_MAIL}
   }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#E6EDF6;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E6EDF6;">
+<body style="margin:0;padding:0;background:#efeeed;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#efeeed;">
     <tr><td align="center" class="cadre" style="padding:26px 12px;">
-      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #DCE3EC;border-radius:18px;overflow:hidden;">
+      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:18px;overflow:hidden;">
 
         <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
           <table role="presentation" width="100%"><tr>
@@ -395,15 +395,15 @@ ${LIEN_POLICE_MAIL}
           </tr></table>
         </td></tr>
 
-        <tr><td class="bord" style="padding:26px 28px 6px;font-size:14.5px;color:#46566B;line-height:1.7;">
+        <tr><td class="bord" style="padding:26px 28px 6px;font-size:14.5px;color:#363533;line-height:1.7;">
           <p style="margin:0 0 14px;">Bonjour ${prenom},</p>
           <p style="margin:0 0 18px;">Cela fait quelques semaines que nous n'avons pas fait le point ensemble. Voici la recherche que nous menons pour vous aujourd'hui&nbsp;:</p>
 
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E8EDF3;border-radius:14px;border-collapse:separate;overflow:hidden;">
-            <tr><td colspan="2" style="background:#F5F8FC;padding:11px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #eeeeed;border-radius:14px;border-collapse:separate;overflow:hidden;">
+            <tr><td colspan="2" style="background:#f6f6f7;padding:11px 16px;">
               <table role="presentation" width="100%"><tr>
-                <td style="font-size:11px;font-weight:800;letter-spacing:1px;color:#22497D;">VOTRE RECHERCHE AUJOURD'HUI</td>
-                ${res.depuis ? `<td align="right" style="font-size:11.5px;color:#8FA3BF;font-weight:600;">depuis le ${echappe(res.depuis)}</td>` : ''}
+                <td style="font-size:11px;font-weight:800;letter-spacing:1px;color:#1d1d1f;">VOTRE RECHERCHE AUJOURD'HUI</td>
+                ${res.depuis ? `<td align="right" style="font-size:11.5px;color:#aba7a3;font-weight:600;">depuis le ${echappe(res.depuis)}</td>` : ''}
               </tr></table>
             </td></tr>${lignesHtml}${pointsHtml}
           </table>
@@ -416,7 +416,7 @@ ${LIEN_POLICE_MAIL}
           }${
             bouton('trouve', 'J’ai trouvé mon bien', `background:${DORE};color:${ENCRE};border:1.5px solid ${DORE};`)
           }${
-            bouton('pause', 'J’ai mis ma recherche en pause ou arrêtée', `background:#ffffff;color:#5B6B80;border:1.5px solid #DCE3EC;`)
+            bouton('pause', 'J’ai mis ma recherche en pause ou arrêtée', `background:#ffffff;color:#5B6B80;border:1.5px solid #e5e4e3;`)
           }
           </table>
           <p style="margin:10px 0 22px;">Bonne journée,<br />Alexandre</p>
@@ -435,7 +435,7 @@ ${LIEN_POLICE_MAIL}
 
       <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
         <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
-          <div style="font-size:11.5px;color:#8FA3BF;line-height:1.7;">
+          <div style="font-size:11.5px;color:#aba7a3;line-height:1.7;">
             Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.<br />Chaque bouton ouvre votre espace personnel, au bon endroit.
           </div>
         </td></tr>

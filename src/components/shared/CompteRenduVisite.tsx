@@ -21,7 +21,7 @@ export type ValeursCR = {
   etoiles: number; commentaire: string; retenir: boolean;
 };
 
-const NAVY = '#34496e', OR = '#c9a84c', GRIS = '#64748b', CLAIR = '#94a3b8', BORD = '#e3e8f0';
+const NAVY = '#1d1d1f', OR = '#ee7623', GRIS = '#64748b', CLAIR = '#94a3b8', BORD = '#eaeae9';
 const JAK = "'Plus Jakarta Sans', system-ui, sans-serif";
 
 const QUESTION: Record<Issue, string> = {
@@ -122,7 +122,7 @@ export async function enregistrerCompteRendu(
 function Pastille({ on, children, onClick, ton }: { on: boolean; children: React.ReactNode; onClick: () => void; ton?: string }) {
   return (
     <button type="button" onClick={onClick} aria-pressed={on} className="crv-pas"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 99, border: `1px solid ${on ? (ton || NAVY) : '#dfe5ee'}`, background: on ? (ton || NAVY) : 'white', color: on ? 'white' : '#475569', fontWeight: 600, fontSize: 12.5, cursor: 'pointer', fontFamily: 'inherit' }}>
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 99, border: `1px solid ${on ? (ton || NAVY) : '#e7e6e6'}`, background: on ? (ton || NAVY) : 'white', color: on ? 'white' : '#475569', fontWeight: 600, fontSize: 12.5, cursor: 'pointer', fontFamily: 'inherit' }}>
       {on && <span aria-hidden="true">✓</span>}{children}
     </button>
   );
@@ -212,7 +212,7 @@ export default function CompteRenduVisite({ visite, titre, sous, prenom, onFerme
                 <b>{`${qui} a déjà répondu dans son espace`}</b>{`, ${quandCourt(visite.avis_client_le)} : ${ISSUES[visite.issue as Issue]?.crm || ''}`}
                 {visite.prix_envisage ? `, autour de ${euros(visite.prix_envisage)}` : ''}{'.'}
                 {visite.mot_client ? <div style={{ marginTop: 4 }}>{`« ${visite.mot_client} »`}</div> : null}
-                <div style={{ marginTop: 4, color: '#3b5b9a' }}>{'Son avis est repris ci-dessous : tu complètes, ou tu corriges.'}</div>
+                <div style={{ marginTop: 4, color: '#403e3d' }}>{'Son avis est repris ci-dessous : tu complètes, ou tu corriges.'}</div>
               </div>
             </div>
           )}
@@ -234,7 +234,7 @@ export default function CompteRenduVisite({ visite, titre, sous, prenom, onFerme
               })}
             </div>
             {issue === 'offre' && visite?.prix_envisage ? (
-              <div style={{ marginTop: 9, fontSize: 13, color: '#8a6a1f', background: '#fdfaf1', border: '1px solid #ecdcb4', borderRadius: 10, padding: '8px 11px' }}>{`Son prix en tête : ${euros(visite.prix_envisage)}. L’offre elle-même se saisit dans l’onglet Transaction.`}</div>
+              <div style={{ marginTop: 9, fontSize: 13, color: '#9c460d', background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 10, padding: '8px 11px' }}>{`Son prix en tête : ${euros(visite.prix_envisage)}. L’offre elle-même se saisit dans l’onglet Transaction.`}</div>
             ) : null}
           </div>
 
@@ -260,7 +260,7 @@ export default function CompteRenduVisite({ visite, titre, sous, prenom, onFerme
               <div style={{ display: 'flex', gap: 4 }}>
                 {[1, 2, 3, 4, 5].map(n => (
                   <button key={n} type="button" aria-label={`${n} sur 5`} onClick={() => setEtoiles(etoiles === n ? 0 : n)}
-                    style={{ background: 'none', border: 'none', padding: 2, fontSize: 24, lineHeight: 1, cursor: 'pointer', color: etoiles >= n ? OR : '#dbe2ea' }}>★</button>
+                    style={{ background: 'none', border: 'none', padding: 2, fontSize: 24, lineHeight: 1, cursor: 'pointer', color: etoiles >= n ? OR : '#e3e2e2' }}>★</button>
                 ))}
               </div>
             </div>
@@ -268,13 +268,13 @@ export default function CompteRenduVisite({ visite, titre, sous, prenom, onFerme
               <div style={{ fontSize: 12, fontWeight: 700, color: GRIS, marginBottom: 6 }}>{`Ton compte rendu, lu par ${prenom || 'le client'} dans son espace`}</div>
               <textarea value={commentaire} onChange={e => setCommentaire(e.target.value)} rows={4}
                 placeholder="Ce que tu retiens de la visite, écrit pour lui : ce qui a plu, ce qui pose question, ce qui reste à vérifier…"
-                style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #dfe5ee', borderRadius: 10, padding: '10px 12px', fontSize: 13.5, lineHeight: 1.5, color: NAVY, fontFamily: 'inherit', resize: 'vertical' }} />
+                style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #e7e6e6', borderRadius: 10, padding: '10px 12px', fontSize: 13.5, lineHeight: 1.5, color: NAVY, fontFamily: 'inherit', resize: 'vertical' }} />
             </div>
           </div>
 
           {pourRecherche.length > 0 && (
             <button type="button" onClick={() => setRetenir(!retenir)} aria-pressed={retenir}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1px solid #dfe5ee', borderRadius: 12, padding: '10px 12px', background: 'white', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1px solid #e7e6e6', borderRadius: 12, padding: '10px 12px', background: 'white', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}>
               <span style={{ flex: 1 }}>
                 <span style={{ display: 'block', fontWeight: 700, fontSize: 13, color: NAVY }}>Retenir pour la recherche</span>
                 <span style={{ display: 'block', fontSize: 12, color: GRIS, marginTop: 2 }}>
@@ -290,7 +290,7 @@ export default function CompteRenduVisite({ visite, titre, sous, prenom, onFerme
           )}
         </div>
 
-        <div style={{ padding: '12px 22px 16px', borderTop: '1px solid #f1f5f9', background: '#fbfcfe', display: 'flex', alignItems: 'center', gap: 10, borderRadius: '0 0 18px 18px' }}>
+        <div style={{ padding: '12px 22px 16px', borderTop: '1px solid #f1f5f9', background: '#fdfcfc', display: 'flex', alignItems: 'center', gap: 10, borderRadius: '0 0 18px 18px' }}>
           <button type="button" onClick={onFermer} disabled={enCours}
             style={{ height: 40, padding: '0 16px', borderRadius: 11, border: `1px solid ${BORD}`, background: 'white', color: NAVY, fontWeight: 700, fontSize: 13.5, cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
           <span style={{ flexGrow: 1 }} />

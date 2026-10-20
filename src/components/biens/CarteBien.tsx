@@ -53,11 +53,11 @@ const venteSansHono = (suivi: SuiviVente[]) => {
 
 export function Anneau({ note, t = 46 }: { note: number; t?: number }) {
   const r = t / 2 - 4, c = 2 * Math.PI * r;
-  const couleur = note >= 80 ? '#c9a84c' : note >= 65 ? '#d9bf74' : '#cbd5e1';
+  const couleur = note >= 80 ? '#ee7623' : note >= 65 ? '#f49c59' : '#cbd5e1';
   return (
     <span className={b.anneau} style={{ width: t, height: t }}>
       <svg width={t} height={t} aria-hidden="true">
-        <circle cx={t / 2} cy={t / 2} r={r} fill="none" stroke="#eef1f6" strokeWidth={4} />
+        <circle cx={t / 2} cy={t / 2} r={r} fill="none" stroke="#f2f2f2" strokeWidth={4} />
         <circle cx={t / 2} cy={t / 2} r={r} fill="none" stroke={couleur} strokeWidth={4} strokeLinecap="round" strokeDasharray={`${(c * note) / 100} ${c}`} />
       </svg>
       <b className={note >= 100 ? b.cent : undefined}>{note}<small>%</small></b>

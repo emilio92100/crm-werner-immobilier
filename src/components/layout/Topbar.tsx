@@ -398,7 +398,7 @@ export default function Topbar({ onNavigate, onMenu, menuReduit = false, onBascu
                         const coul = statutColor[c.statut] || '#94a3b8';
                         const lib = STATUT_LIB[c.statut];
                         return (
-                          <span className={styles.searchEtiqT} style={{ background: `${coul}14`, color: `color-mix(in srgb, ${coul} 78%, #1a2332)`, borderColor: `${coul}33` }}>
+                          <span className={styles.searchEtiqT} style={{ background: `${coul}14`, color: `color-mix(in srgb, ${coul} 78%, #18181b)`, borderColor: `${coul}33` }}>
                             <i style={{ background: coul }} />
                             {lib ? `Acheteur – ${lib}` : 'Acheteur'}
                           </span>

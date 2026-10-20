@@ -52,11 +52,11 @@ import { CHAUFFAGE_MODES, CHAUFFAGE_ENERGIES, CHAUFFAGE_EMETTEURS, optionsAvec }
    s'alignait. */
 const CRIT_CHIP: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,.72)',
-  border: '1px solid #efe3c6', borderRadius: 10, padding: '7px 13px',
+  border: '1px solid #fbd6ba', borderRadius: 10, padding: '7px 13px',
   fontSize: 13, fontWeight: 600, color: '#6b6045',
 };
 const CRIT_CHIP_FORT: React.CSSProperties = {
-  ...CRIT_CHIP, background: '#ffffff', border: '1px solid #e3d3ab',
+  ...CRIT_CHIP, background: '#ffffff', border: '1px solid #f8c096',
   fontSize: 14.5, fontWeight: 800, color: 'var(--emilio)',
 };
 
@@ -173,11 +173,11 @@ const PASTILLE_DIFF: React.CSSProperties = {
 
 function DiffCriteres({ changements }: { changements: ChangementCrit[] }) {
   return (
-    <div style={{ marginTop: 8, border: '1px solid #e8edf4', borderRadius: 11, overflow: 'hidden', background: 'white' }}>
+    <div style={{ marginTop: 8, border: '1px solid #efeeed', borderRadius: 11, overflow: 'hidden', background: 'white' }}>
       {changements.map((c, i) => (
         <div key={i} style={{
           display: 'grid', gridTemplateColumns: 'minmax(96px, 36%) minmax(0, 1fr)', gap: 10,
-          padding: '8px 11px', borderTop: i ? '1px solid #f0f3f8' : 'none', fontSize: 12.5, lineHeight: 1.45,
+          padding: '8px 11px', borderTop: i ? '1px solid #f4f4f4' : 'none', fontSize: 12.5, lineHeight: 1.45,
         }}>
           <span style={{ color: '#64748b', fontWeight: 600 }}>{c.l}</span>
           {'plus' in c ? (
@@ -196,7 +196,7 @@ function DiffCriteres({ changements }: { changements: ChangementCrit[] }) {
           ) : (
             <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '2px 7px' }}>
               <s style={{ color: '#94a3b8', textDecorationColor: 'rgba(148,163,184,.8)' }}>{c.a}</s>
-              <span style={{ color: '#c9a84c', fontWeight: 800 }}>→</span>
+              <span style={{ color: '#ee7623', fontWeight: 800 }}>→</span>
               <b style={{ color: 'var(--emilio)' }}>{c.p}</b>
             </span>
           )}
@@ -229,7 +229,7 @@ const ETATS_CLIENT: { cle: string; nom: string; quand: string; point: string }[]
 
 /* « minimum » en toutes lettres : « min » se confondait avec le chiffre. */
 function Mini({ fort }: { fort?: boolean }) {
-  return <span style={{ fontSize: 11.5, color: fort ? '#a9822f' : '#94a3b8', fontWeight: 600 }}> minimum</span>;
+  return <span style={{ fontSize: 11.5, color: fort ? '#c85a10' : '#94a3b8', fontWeight: 600 }}> minimum</span>;
 }
 
 type LigneC = { lib: string; val: React.ReactNode; fort?: boolean };
@@ -249,11 +249,11 @@ function FamilleCrit({ titre, couleur, fond, trait, ico, lignes }:
           <div key={l.lib} style={{
             display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10,
             padding: l.fort ? '9px 14px' : '9px 0', margin: l.fort ? '0 -14px' : undefined,
-            background: l.fort ? '#fdfaf1' : undefined,
+            background: l.fort ? '#fdf6f1' : undefined,
             borderBottom: i === lignes.length - 1 ? 'none' : '1px solid #f1f5f9',
           }}>
-            <span style={{ fontSize: 13, color: l.fort ? '#a9822f' : '#64748b', fontWeight: l.fort ? 700 : 600 }}>{l.lib}</span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: l.fort ? '#a9822f' : 'var(--emilio)' }}>{l.val}</span>
+            <span style={{ fontSize: 13, color: l.fort ? '#c85a10' : '#64748b', fontWeight: l.fort ? 700 : 600 }}>{l.lib}</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: l.fort ? '#c85a10' : 'var(--emilio)' }}>{l.val}</span>
           </div>
         ))}
       </div>
@@ -282,7 +282,7 @@ function SecteursListe({ secteurs }: { secteurs: string[] }) {
       {Object.entries(bv).map(([ville, qs]) => (
         <div key={ville} style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 9, background: '#eff4fb', border: '1px solid #d6e3f5', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#3b6ea8' }}>
+            <span style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 9, background: '#f6f5f4', border: '1px solid #e7e6e4', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#76726d' }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round"><path d="M12 21.5S19 15 19 10a7 7 0 1 0-14 0c0 5 7 11.5 7 11.5z" /><circle cx="12" cy="10" r="2.6" /></svg>
             </span>
             <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--emilio)' }}>{ville}</span>
@@ -454,7 +454,7 @@ function rechercheRemplie(r: Recherche): boolean {
    déjà dans le chiffre d'affaires). */
 function CarteMandatAgence({ titre, onOuvrir }: { titre?: string | null; onOuvrir: () => void }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: '#fdfaf1', border: '1px solid #ecdcb4', borderRadius: 12, padding: '12px 14px', marginBottom: 14, textAlign: 'left' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 12, padding: '12px 14px', marginBottom: 14, textAlign: 'left' }}>
       <span style={{ flex: '1 1 240px', minWidth: 0, fontSize: 13, color: '#55647a', lineHeight: 1.55 }}>
         {titre ? <b style={{ display: 'block', color: 'var(--emilio)', fontSize: 13.5, marginBottom: 2 }}>{titre}</b> : null}
         {'Ce bien est un mandat de l’agence : l’offre, le compromis et l’acte se suivent sur la fiche du bien.'}
@@ -496,12 +496,12 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
   const set = (key: string, value: any) => setBienForm((f: any) => ({ ...f, [key]: value }));
   const toggle = (key: string) => setBienForm((f: any) => ({ ...f, [key]: !f[key] }));
 
-  const sectionTitle: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#c9a84c', letterSpacing: 1.5, textTransform: 'uppercase', margin: '8px 0 10px', paddingBottom: 6, borderBottom: '1px solid #f1f5f9' };
+  const sectionTitle: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#ee7623', letterSpacing: 1.5, textTransform: 'uppercase', margin: '8px 0 10px', paddingBottom: 6, borderBottom: '1px solid #f1f5f9' };
   const chip = (active: boolean): React.CSSProperties => ({
     padding: '7px 12px',
     borderRadius: 20,
-    border: `1.5px solid ${active ? '#c9a84c' : '#e3e8f0'}`,
-    background: active ? '#fdf6e3' : 'white',
+    border: `1.5px solid ${active ? '#ee7623' : '#eaeae9'}`,
+    background: active ? '#fdeee3' : 'white',
     fontSize: 12,
     fontWeight: 600,
     cursor: 'pointer',
@@ -3777,7 +3777,7 @@ ${signatureMail()}`,
     const j = Math.round((d.getTime() - auj.getTime()) / 86400000);
     if (j < 0) return { label: `Relance en retard de ${-j}j`, note: r.note || '', couleur: '#b91c1c', fond: '#fef2f2', trait: '#fecaca' };
     if (j === 0) return { label: "Relance aujourd'hui", note: r.note || '', couleur: '#b45309', fond: '#fffbeb', trait: '#fde68a' };
-    return { label: `Relance dans ${j}j`, note: r.note || '', couleur: '#64748b', fond: '#f8fafc', trait: '#e3e8f0' };
+    return { label: `Relance dans ${j}j`, note: r.note || '', couleur: '#64748b', fond: '#f8fafc', trait: '#eaeae9' };
   })();
 
   const AVIS_CR: Record<string, { label: string; color: string; bg: string }> = {
@@ -3811,14 +3811,14 @@ ${signatureMail()}`,
   const vusRappro = rapprochements.flatMap(j => (Array.isArray(j.metadata?.vus) ? (j.metadata.vus as string[]) : []));
   const illuRappro = (
     <svg className={styles.rapproIllu} width="150" height="76" viewBox="0 0 150 76" aria-hidden="true">
-      <rect width="150" height="76" rx="14" fill="#fbf6e9" />
-      <path className={styles.rapproTrait} d="M40 38 C 62 28, 78 20, 96 20" fill="none" stroke="#c9a84c" strokeWidth="1.6" />
-      <path className={styles.rapproTrait} d="M40 38 C 62 48, 78 56, 96 56" fill="none" stroke="#c9a84c" strokeWidth="1.6" />
-      <circle className={styles.rapproOnde} cx="36" cy="38" r="19" fill="none" stroke="#c9a84c" strokeWidth="2" />
-      <circle cx="36" cy="38" r="19" fill="#2e4166" />
-      <foreignObject x="19" y="21" width="34" height="34"><AvatarContact c={client as never} teinte={{ bg: '#2e4166', fg: '#e8c96a' }} taille={34} /></foreignObject>
-      <g className={styles.rapproFlotte1}><rect x="94" y="8" width="44" height="24" rx="8" fill="#fff" stroke="#e3e8f0" /><path d="M108 22l6-5 6 5M110 21v5h8v-5" fill="none" stroke="#34496e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></g>
-      <g className={styles.rapproFlotte2}><rect x="94" y="44" width="44" height="24" rx="8" fill="#fff" stroke="#e3e8f0" /><circle cx="114" cy="55" r="4.2" fill="none" stroke="#a07c28" strokeWidth="1.6" /><path d="M117.2 58.2l2.8 2.8" stroke="#a07c28" strokeWidth="1.6" strokeLinecap="round" /></g>
+      <rect width="150" height="76" rx="14" fill="#fbf0e9" />
+      <path className={styles.rapproTrait} d="M40 38 C 62 28, 78 20, 96 20" fill="none" stroke="#ee7623" strokeWidth="1.6" />
+      <path className={styles.rapproTrait} d="M40 38 C 62 48, 78 56, 96 56" fill="none" stroke="#ee7623" strokeWidth="1.6" />
+      <circle className={styles.rapproOnde} cx="36" cy="38" r="19" fill="none" stroke="#ee7623" strokeWidth="2" />
+      <circle cx="36" cy="38" r="19" fill="#161618" />
+      <foreignObject x="19" y="21" width="34" height="34"><AvatarContact c={client as never} teinte={{ bg: '#161618', fg: '#f6a15e' }} taille={34} /></foreignObject>
+      <g className={styles.rapproFlotte1}><rect x="94" y="8" width="44" height="24" rx="8" fill="#fff" stroke="#eaeae9" /><path d="M108 22l6-5 6 5M110 21v5h8v-5" fill="none" stroke="#1d1d1f" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></g>
+      <g className={styles.rapproFlotte2}><rect x="94" y="44" width="44" height="24" rx="8" fill="#fff" stroke="#eaeae9" /><circle cx="114" cy="55" r="4.2" fill="none" stroke="#b4560f" strokeWidth="1.6" /><path d="M117.2 58.2l2.8 2.8" stroke="#b4560f" strokeWidth="1.6" strokeLinecap="round" /></g>
     </svg>
   );
 
@@ -4007,14 +4007,14 @@ ${signatureMail()}`,
               {menuStatut && (
                 <Portail>
                   <div onClick={() => setMenuStatut(null)} style={{ position: 'fixed', inset: 0, zIndex: 190 }} />
-                  <div className="emilio-menu" role="menu" style={{ position: 'fixed', left: menuStatut.x, top: menuStatut.y, zIndex: 191, width: 286, maxHeight: `calc(100dvh - ${Math.round(menuStatut.y)}px - 12px)`, background: 'white', border: '1px solid #e3e8f0', borderRadius: 15, boxShadow: '0 3px 8px rgba(15,22,35,.06), 0 18px 44px rgba(15,22,35,.2)', overflowX: 'hidden', overflowY: 'auto', overscrollBehavior: 'contain' }}>
+                  <div className="emilio-menu" role="menu" style={{ position: 'fixed', left: menuStatut.x, top: menuStatut.y, zIndex: 191, width: 286, maxHeight: `calc(100dvh - ${Math.round(menuStatut.y)}px - 12px)`, background: 'white', border: '1px solid #eaeae9', borderRadius: 15, boxShadow: '0 3px 8px rgba(18, 18, 17,.06), 0 18px 44px rgba(18, 18, 17,.2)', overflowX: 'hidden', overflowY: 'auto', overscrollBehavior: 'contain' }}>
                     {/* V3.128 : ses types (acheteur, vendeur…) montent ici, avec la pastille. */}
                     <div style={{ padding: '10px 15px 11px', borderBottom: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: 7 }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: '#a3b0c2', textTransform: 'uppercase', letterSpacing: 1.1 }}>Ce contact est</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: '#b6b2af', textTransform: 'uppercase', letterSpacing: 1.1 }}>Ce contact est</span>
                       <TypesEnLigne client={client} onMaj={tt => { setClient(c => ({ ...c, types: tt } as Client)); if (!tt.includes('acheteur')) onNavigate('fiche', { ...client, types: tt }); }} />
                     </div>
-                    <div style={{ padding: '10px 15px 9px', borderBottom: '1px solid #f1f5f9', background: '#fbfcfe' }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: '#a3b0c2', textTransform: 'uppercase', letterSpacing: 1.1 }}>État du dossier</span>
+                    <div style={{ padding: '10px 15px 9px', borderBottom: '1px solid #f1f5f9', background: '#fdfcfc' }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: '#b6b2af', textTransform: 'uppercase', letterSpacing: 1.1 }}>État du dossier</span>
                     </div>
                     {ETATS_CLIENT.map(e => {
                       const courant = e.cle === st;
@@ -4026,7 +4026,7 @@ ${signatureMail()}`,
                             setSuspendre(s ? { choix: 'date', date: s.jusqu_au } : { choix: 'sans', date: '' });
                           } else changeStatut(e.cle);
                         }}
-                          style={{ display: 'flex', alignItems: 'flex-start', gap: 11, width: '100%', textAlign: 'left', padding: '10px 15px', border: 'none', borderBottom: '1px solid #f4f7fb', background: courant ? '#f8fafc' : 'white', cursor: 'pointer', fontFamily: 'inherit' }}>
+                          style={{ display: 'flex', alignItems: 'flex-start', gap: 11, width: '100%', textAlign: 'left', padding: '10px 15px', border: 'none', borderBottom: '1px solid #f8f8f7', background: courant ? '#f8fafc' : 'white', cursor: 'pointer', fontFamily: 'inherit' }}>
                           <span style={{ width: 9, height: 9, borderRadius: '50%', background: e.point, flexShrink: 0, marginTop: 5, boxShadow: courant ? `0 0 0 3px ${e.point}26` : 'none' }} />
                           <span style={{ flexGrow: 1, minWidth: 0 }}>
                             <span style={{ display: 'block', fontSize: 13.5, fontWeight: courant ? 800 : 700, color: 'var(--emilio)' }}>{e.nom}</span>
@@ -4038,8 +4038,8 @@ ${signatureMail()}`,
                     })}
 
                     {/* Ce ne sont pas des états, ce sont des gestes : ils se détachent. */}
-                    <div style={{ padding: '9px 15px 7px', background: '#fbfcfe', borderTop: '1px solid #eef2f7' }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: '#a3b0c2', textTransform: 'uppercase', letterSpacing: 1.1 }}>Actions</span>
+                    <div style={{ padding: '9px 15px 7px', background: '#fdfcfc', borderTop: '1px solid #f3f2f2' }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: '#b6b2af', textTransform: 'uppercase', letterSpacing: 1.1 }}>Actions</span>
                     </div>
                     {dossierClos ? (
                       <button onClick={() => { setMenuStatut(null); rouvrirDossier(); }}
@@ -4058,18 +4058,18 @@ ${signatureMail()}`,
                           setMenuStatut(null); setTab('transaction');
                           if (!transaction && biensPourTx().length > 0) setShowChoixTx('creer');
                         }}
-                          style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', textAlign: 'left', padding: '11px 15px', border: 'none', borderBottom: '1px solid #f4f7fb', background: 'white', cursor: 'pointer', fontFamily: 'inherit', color: '#a9822f', fontWeight: 700, fontSize: 13 }}>
+                          style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', textAlign: 'left', padding: '11px 15px', border: 'none', borderBottom: '1px solid #f8f8f7', background: 'white', cursor: 'pointer', fontFamily: 'inherit', color: '#c85a10', fontWeight: 700, fontSize: 13 }}>
                           💼 {transaction ? 'Voir la transaction' : 'Ouvrir une transaction'}
                         </button>
                         <button onClick={() => { setMenuStatut(null); setShowCloture(true); }}
-                          style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', textAlign: 'left', padding: '11px 15px', border: 'none', background: '#fdfaf1', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--emilio)', fontWeight: 700, fontSize: 13 }}>
+                          style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', textAlign: 'left', padding: '11px 15px', border: 'none', background: '#fdf6f1', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--emilio)', fontWeight: 700, fontSize: 13 }}>
                           🏁 Clôturer la recherche
                         </button>
                       </>
                     )}
                     {/* V3.73 : l'archive, comme pour les autres contacts. */}
                     <button onClick={() => { setMenuStatut(null); void basculerArchive(); }}
-                      style={{ display: 'flex', alignItems: 'flex-start', gap: 9, width: '100%', textAlign: 'left', padding: '11px 15px', border: 'none', borderTop: '1px solid #f4f7fb', background: 'white', cursor: 'pointer', fontFamily: 'inherit', color: '#475569', fontWeight: 700, fontSize: 13 }}>
+                      style={{ display: 'flex', alignItems: 'flex-start', gap: 9, width: '100%', textAlign: 'left', padding: '11px 15px', border: 'none', borderTop: '1px solid #f8f8f7', background: 'white', cursor: 'pointer', fontFamily: 'inherit', color: '#475569', fontWeight: 700, fontSize: 13 }}>
                       <span>🗄️</span>
                       <span style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                         <span>{estArchive(client) ? 'Sortir des archives' : 'Archiver le contact'}</span>
@@ -4096,7 +4096,7 @@ ${signatureMail()}`,
               <div className={styles.teteG}>
                 <div className={styles.teteQui}>
                   <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <AvatarContact c={client as never} teinte={{ bg: '', fg: '#e0c36e' }} className={styles.teteAvatar} libre />
+                    <AvatarContact c={client as never} teinte={{ bg: '', fg: '#f49d5a' }} className={styles.teteAvatar} libre />
                     <span className={styles.teteEtat} style={{ background: teinte }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -4125,7 +4125,7 @@ ${signatureMail()}`,
                       </span>
                       {libelleSource((client as unknown as { source?: string }).source, (client as unknown as { source_detail?: string }).source_detail) && (
                         <span style={{ fontSize: 12, color: 'rgba(255,255,255,.55)', fontWeight: 500 }}>
-                          {'Source : '}<b style={{ color: '#e2c979', fontWeight: 700 }}>{libelleSource((client as unknown as { source?: string }).source, (client as unknown as { source_detail?: string }).source_detail)}</b>
+                          {'Source : '}<b style={{ color: '#f5a466', fontWeight: 700 }}>{libelleSource((client as unknown as { source?: string }).source, (client as unknown as { source_detail?: string }).source_detail)}</b>
                         </span>
                       )}
                     </div>
@@ -4206,7 +4206,7 @@ ${signatureMail()}`,
         .fiche-tab-garde { display: flex; flex-direction: column; }
         .fiche-tab-garde > .fiche-tab { flex: 1 1 auto; }
         .fiche-tab { min-height: 240px;
-          background: #f7f9fc; border: 1px solid #e3e8f0; border-top: none;
+          background: #fafaf9; border: 1px solid #eaeae9; border-top: none;
           border-radius: 0 0 16px 16px; padding: 16px; }
         @media (max-width: 720px) { .fiche-tab { padding: 12px; } }
 
@@ -4216,22 +4216,22 @@ ${signatureMail()}`,
         .suivi-actions { opacity: 0; transition: opacity .16s ease; }
         /* L'action d'où vient la relance, quand on arrive depuis la page Relances. */
         @keyframes suiviLueur {
-          0% { background: rgba(201,168,76,0); box-shadow: 0 0 0 0 rgba(201,168,76,0); }
-          15% { background: #fff6dd; box-shadow: 0 0 0 6px #fff6dd; }
-          75% { background: #fff6dd; box-shadow: 0 0 0 6px #fff6dd; }
-          100% { background: rgba(255,246,221,0); box-shadow: 0 0 0 6px rgba(255,246,221,0); }
+          0% { background: rgba(238, 118, 35,0); box-shadow: 0 0 0 0 rgba(238, 118, 35,0); }
+          15% { background: #ffebdd; box-shadow: 0 0 0 6px #ffebdd; }
+          75% { background: #ffebdd; box-shadow: 0 0 0 6px #ffebdd; }
+          100% { background: rgba(255, 235, 221,0); box-shadow: 0 0 0 6px rgba(255, 235, 221,0); }
         }
         .suivi-surligne { border-radius: 12px; animation: suiviLueur 5.5s ease both; }
         .suivi-ligne:hover .suivi-actions, .suivi-actions:focus-within { opacity: 1; }
         @media (hover: none) { .suivi-actions { opacity: 1; } }
 
         .fiche-suivi { margin-top: 22px; padding: 13px 14px 0;
-          background: linear-gradient(105deg, #3d5878 0%, #4d6f95 100%);
+          background: linear-gradient(105deg, #373634 0%, #76716c 100%);
           border-radius: 16px 16px 0 0; }
         .fiche-suivi-tete { display: flex; align-items: baseline; gap: 10px;
           flex-wrap: wrap; padding: 0 4px 11px; }
         .fiche-suivi-tete b { font-family: 'Plus Jakarta Sans', sans-serif;
-          font-size: 12px; font-weight: 800; color: #e0c479;
+          font-size: 12px; font-weight: 800; color: #f5a364;
           text-transform: uppercase; letter-spacing: 1.1px; }
         .fiche-suivi-tete i { font-style: normal; font-size: 11.5px; color: rgba(255,255,255,.55); }
         /* Remettre le suivi à zéro se décide en regardant le suivi : le bouton
@@ -4243,10 +4243,10 @@ ${signatureMail()}`,
           color: rgba(255,255,255,.72); transition: background .14s, color .14s, border-color .14s; }
         .fiche-suivi-reinit:hover { background: #dc2626; border-color: #dc2626; color: #fff; }
         .fiche-suivi-rappro { margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
-          background: #c9a84c; border: 1px solid #c9a84c; border-radius: 99px; padding: 5px 13px; cursor: pointer;
-          font-family: 'DM Sans', sans-serif; font-size: 11.5px; font-weight: 800; color: #1a2332;
+          background: #ee7623; border: 1px solid #ee7623; border-radius: 99px; padding: 5px 13px; cursor: pointer;
+          font-family: 'DM Sans', sans-serif; font-size: 11.5px; font-weight: 800; color: #18181b;
           transition: background .14s, transform .14s; }
-        .fiche-suivi-rappro:hover { background: #d8b85c; transform: translateY(-1px); }
+        .fiche-suivi-rappro:hover { background: #ee7320; transform: translateY(-1px); }
         .fiche-suivi-rappro + .fiche-suivi-reinit { margin-left: 0; }
 
         /* ═══════════ La transaction ═══════════
@@ -4255,7 +4255,7 @@ ${signatureMail()}`,
            haut, les chiffres juste dessous, une seule étape ouverte. */
 
         .tx-bien { display: flex; align-items: center; gap: 12px; margin-bottom: 18px;
-          background: #fff; border: 1px solid #e8edf5; border-radius: 14px; padding: 10px 14px; }
+          background: #fff; border: 1px solid #efeeee; border-radius: 14px; padding: 10px 14px; }
         .tx-photo { width: 46px; height: 46px; border-radius: 11px; background: #e2e8f0; flex-shrink: 0;
           display: inline-flex; align-items: center; justify-content: center; font-size: 20px; overflow: hidden; }
         .tx-photo img { width: 100%; height: 100%; object-fit: cover; }
@@ -4272,24 +4272,24 @@ ${signatureMail()}`,
           gap: 7px; cursor: pointer; }
         .tx-pas:disabled { cursor: default; }
         .tx-fil { display: flex; align-items: center; width: 100%; }
-        .tx-fil i { flex: 1; height: 2px; background: #e3e8f0; transition: background .35s ease; }
-        .tx-fil i.on { background: #c9a84c; }
+        .tx-fil i { flex: 1; height: 2px; background: #eaeae9; transition: background .35s ease; }
+        .tx-fil i.on { background: #ee7623; }
         .tx-fil i.vide { background: transparent; }
         .tx-rond { width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%;
           display: inline-flex; align-items: center; justify-content: center;
-          font-size: 15px; font-weight: 800; background: #fff; border: 2px solid #e3e8f0; color: #b0bec5;
+          font-size: 15px; font-weight: 800; background: #fff; border: 2px solid #eaeae9; color: #b0bec5;
           transition: transform .22s cubic-bezier(.3,1.5,.5,1), box-shadow .22s, background .3s, border-color .3s, color .3s; }
-        .tx-pas[data-etat="fait"] .tx-rond { background: #c9a84c; border-color: #c9a84c; color: var(--emilio); }
+        .tx-pas[data-etat="fait"] .tx-rond { background: #ee7623; border-color: #ee7623; color: var(--emilio); }
         .tx-pas[data-etat="encours"] .tx-rond { background: var(--emilio); border-color: var(--emilio); color: #fff; }
-        .tx-pas[data-vue="true"] .tx-rond { transform: scale(1.14); box-shadow: 0 0 0 5px rgba(201,168,76,.2); }
+        .tx-pas[data-vue="true"] .tx-rond { transform: scale(1.14); box-shadow: 0 0 0 5px rgba(238, 118, 35,.2); }
         .tx-pas:not(:disabled):hover .tx-rond { transform: scale(1.09); }
-        .tx-nom { font-size: 11.5px; font-weight: 700; color: #a8b3c4; text-align: center;
+        .tx-nom { font-size: 11.5px; font-weight: 700; color: #b9b6b3; text-align: center;
           line-height: 1.25; padding: 0 3px; transition: color .25s; }
         .tx-pas[data-etat="fait"] .tx-nom { color: #64748b; }
         .tx-pas[data-etat="encours"] .tx-nom, .tx-pas[data-vue="true"] .tx-nom { color: var(--emilio); font-weight: 800; }
 
         .tx-chiffres { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 16px; }
-        .tx-chiffre { flex: 1 1 145px; background: #fff; border: 1px solid #e8edf5;
+        .tx-chiffre { flex: 1 1 145px; background: #fff; border: 1px solid #efeeee;
           border-radius: 12px; padding: 9px 13px; }
         .tx-chiffre b { display: block; font-size: 9.5px; font-weight: 800; color: #94a3b8;
           text-transform: uppercase; letter-spacing: .8px; }
@@ -4299,26 +4299,26 @@ ${signatureMail()}`,
 
         @keyframes txPanneau { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
         .tx-panneau { animation: txPanneau .28s cubic-bezier(.22,.9,.3,1) both;
-          background: #fff; border: 1px solid #e8edf5; border-radius: 16px; overflow: hidden; }
+          background: #fff; border: 1px solid #efeeee; border-radius: 16px; overflow: hidden; }
 
         .tx-tete { display: flex; align-items: center; gap: 11px; padding: 13px 16px;
           border-bottom: 1px solid #f1f5f9; background: #f8fafc; }
-        .tx-tete[data-encours="true"] { background: #fdfaf1; border-bottom-color: #f0e4c6; }
+        .tx-tete[data-encours="true"] { background: #fdf6f1; border-bottom-color: #fbd7bb; }
         .tx-tete-nom { display: block; font-family: 'Plus Jakarta Sans', sans-serif;
           font-weight: 800; font-size: 16px; color: var(--emilio); letter-spacing: -.2px; }
         .tx-tete-quoi { display: block; font-size: 12px; color: #8593a8; margin-top: 1px; }
-        .tx-franchie { flex-shrink: 0; font-size: 11px; font-weight: 800; color: #a9822f;
-          background: #fff; border: 1px solid #ecdcb4; border-radius: 99px; padding: 3px 10px; }
+        .tx-franchie { flex-shrink: 0; font-size: 11px; font-weight: 800; color: #c85a10;
+          background: #fff; border: 1px solid #f9caa7; border-radius: 99px; padding: 3px 10px; }
 
         .tx-corps { padding: 16px; display: flex; flex-direction: column; gap: 13px; }
-        .tx-note { background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px;
+        .tx-note { background: #f8fafc; border: 1px solid #f3f2f2; border-radius: 10px;
           padding: 9px 13px; font-size: 12.5px; color: #55647a; line-height: 1.55; }
-        .tx-ajout { background: #f8fafc; border: 1px dashed #d9e2ee; border-radius: 12px;
+        .tx-ajout { background: #f8fafc; border: 1px dashed #e5e3e2; border-radius: 12px;
           padding: 12px 13px; display: flex; flex-direction: column; gap: 7px; }
 
         .tx-co { display: flex; align-items: center; gap: 10px; padding: 8px 12px;
-          border-radius: 11px; border: 1px solid #e8edf5; background: #fff; font-size: 13.5px; }
-        .tx-co[data-partie="acheteur"] { border-color: #dbe7fa; background: #f7fbff; }
+          border-radius: 11px; border: 1px solid #efeeee; background: #fff; font-size: 13.5px; }
+        .tx-co[data-partie="acheteur"] { border-color: #eceae9; background: #fbfbfb; }
         .tx-co[data-partie="vendeur"] { border-color: #fbe0e0; background: #fffafa; }
         .tx-co-qui { font-size: 12px; font-weight: 700; color: #55647a; flex-shrink: 0; }
         .tx-co b { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 14.5px; color: var(--emilio); }
@@ -4328,14 +4328,14 @@ ${signatureMail()}`,
 
         .tx-alerte { border-radius: 10px; padding: 10px 13px; font-size: 12.5px; line-height: 1.55;
           background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
-        .tx-alerte[data-ton="calme"] { background: #f8fafc; border-color: #e8edf5; color: #55647a; }
+        .tx-alerte[data-ton="calme"] { background: #f8fafc; border-color: #efeeee; color: #55647a; }
         .tx-alerte[data-ton="vert"] { background: #ecfdf5; border-color: #bbf7d0; color: #15803d; }
-        .tx-alerte[data-ton="veille"] { background: #eef4fb; border-color: #d6e3f5; color: #2d5c8f; }
+        .tx-alerte[data-ton="veille"] { background: #f5f4f4; border-color: #e7e6e4; color: #393836; }
 
         .tx-pied { display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
-          padding: 12px 16px; border-top: 1px solid #f1f5f9; background: #fbfcfe; }
+          padding: 12px 16px; border-top: 1px solid #f1f5f9; background: #fdfcfc; }
         .tx-abandon { background: none; border: none; padding: 0; cursor: pointer;
-          font-family: 'DM Sans', sans-serif; font-size: 12.5px; color: #a8b3c4; text-decoration: underline; }
+          font-family: 'DM Sans', sans-serif; font-size: 12.5px; color: #b9b6b3; text-decoration: underline; }
         .tx-abandon:hover { color: #ef4444; }
         .tx-cloture { background: #10b981; color: #fff; border: none; border-radius: 10px;
           padding: 10px 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700;
@@ -4411,7 +4411,7 @@ ${signatureMail()}`,
                   const champs: [string, React.ReactNode][] = [];
                   if (occ.statut_occupation) champs.push(['Statut', labelStatut]);
                   if (aVendre && occ.bien_actuel_type) champs.push(['Bien à revendre', `${occ.bien_actuel_type}${occ.bien_actuel_surface ? ` · ${occ.bien_actuel_surface} m²` : ''}`]);
-                  if (aVendre && occ.bien_actuel_valeur) champs.push(['Valeur estimée', <b key="v" style={{ color: '#a9822f' }}>{`${occ.bien_actuel_valeur.toLocaleString('fr-FR')} €`}</b>]);
+                  if (aVendre && occ.bien_actuel_valeur) champs.push(['Valeur estimée', <b key="v" style={{ color: '#c85a10' }}>{`${occ.bien_actuel_valeur.toLocaleString('fr-FR')} €`}</b>]);
                   if (aVendre) champs.push(['Adresse du bien', occ.bien_actuel_adresse || 'Même adresse que le contact']);
                   return (
                     <div className={styles.carteEns}>
@@ -4666,9 +4666,9 @@ ${signatureMail()}`,
             {posRecherche && (
               <Portail>
                 <div onClick={() => setPosRecherche(null)} style={{ position: 'fixed', inset: 0, zIndex: 190 }} />
-                <div className="emilio-menu" style={{ position: 'fixed', left: posRecherche.x, top: posRecherche.y, zIndex: 191, width: 280, background: 'white', border: '1px solid #e3e8f0', borderRadius: 14, boxShadow: '0 3px 8px rgba(15,22,35,.06), 0 18px 44px rgba(15,22,35,.2)', overflow: 'hidden' }}>
+                <div className="emilio-menu" style={{ position: 'fixed', left: posRecherche.x, top: posRecherche.y, zIndex: 191, width: 280, background: 'white', border: '1px solid #eaeae9', borderRadius: 14, boxShadow: '0 3px 8px rgba(18, 18, 17,.06), 0 18px 44px rgba(18, 18, 17,.2)', overflow: 'hidden' }}>
                   {recherches.map(r => (
-                    <div key={r.id} style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid #f4f7fb', background: r.id === rechercheId ? '#f8fafc' : 'white' }}>
+                    <div key={r.id} style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid #f8f8f7', background: r.id === rechercheId ? '#f8fafc' : 'white' }}>
                       <button onClick={() => { setRechercheId(r.id); setPosRecherche(null); setTab('presentes'); }} style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', padding: '11px 15px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
                         <span style={{ fontSize: 14, fontWeight: r.id === rechercheId ? 800 : 600, color: 'var(--emilio)' }}>{r.nom}</span>
                         {r.id === rechercheId && <span style={{ color: '#10b981', fontSize: 13 }}>✓</span>}
@@ -4678,7 +4678,7 @@ ${signatureMail()}`,
                       <button title="Supprimer cette recherche" onClick={() => { setPosRecherche(null); supprimerRecherche(r); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#cbd5e1', fontSize: 14, padding: '0 14px', alignSelf: 'stretch' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#cbd5e1')}>🗑️</button>
                     </div>
                   ))}
-                  <button onClick={() => { setPosRecherche(null); creerRecherche(); }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', padding: '12px 16px', border: 'none', background: '#fbfcfe', cursor: 'pointer', fontFamily: 'inherit', color: '#2d5c8f', fontWeight: 700, fontSize: 13.5 }}>+ Nouvelle recherche</button>
+                  <button onClick={() => { setPosRecherche(null); creerRecherche(); }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', padding: '12px 16px', border: 'none', background: '#fdfcfc', cursor: 'pointer', fontFamily: 'inherit', color: '#393836', fontWeight: 700, fontSize: 13.5 }}>+ Nouvelle recherche</button>
                 </div>
               </Portail>
             )}
@@ -4687,7 +4687,7 @@ ${signatureMail()}`,
               {rechercheRemplie(cr) ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {/* Le bandeau : le client et son enveloppe */}
-                  <div className="fc-bandeau" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', borderRadius: 14, padding: '15px 18px', color: 'var(--emilio)', background: '#fdfaf1', border: '1px solid #ecdcb4' }}>
+                  <div className="fc-bandeau" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', borderRadius: 14, padding: '15px 18px', color: 'var(--emilio)', background: '#fdf6f1', border: '1px solid #f9caa7' }}>
                     {cr.type_bien && <span style={CRIT_CHIP_FORT}>🏡 {cr.type_bien}</span>}
                     {cr.urgence && <span style={CRIT_CHIP}>⏱️ {texteChoix(URGENCES, cr.urgence)}</span>}
                     {cr.financement && <span style={CRIT_CHIP}>💳 {texteChoix(FINANCEMENTS, cr.financement)}</span>}
@@ -4695,7 +4695,7 @@ ${signatureMail()}`,
                     <span style={{ flexGrow: 1 }} />
                     <span className="fc-budget" style={{ textAlign: 'right' }}>
                       <span style={{ display: 'block', fontSize: 10.5, fontWeight: 800, color: '#b09a63', textTransform: 'uppercase', letterSpacing: 1.1 }}>Budget</span>
-                      <span style={{ display: 'block', fontSize: 25, fontWeight: 800, color: '#a9822f', letterSpacing: -0.6, marginTop: 2 }}>
+                      <span style={{ display: 'block', fontSize: 25, fontWeight: 800, color: '#c85a10', letterSpacing: -0.6, marginTop: 2 }}>
                         {cr.budget_min && cr.budget_max ? fourchetteBudget(cr.budget_min, cr.budget_max)
                           : cr.budget_max ? `Jusqu'à ${budgetLisible(cr.budget_max)}`
                             : cr.budget_min ? `À partir de ${budgetLisible(cr.budget_min)}`
@@ -4758,12 +4758,12 @@ ${signatureMail()}`,
                     const ENTETE: React.CSSProperties = { padding: '9px 14px', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 };
                     const TITRE = (couleur: string): React.CSSProperties => ({ fontSize: 11, fontWeight: 800, color: couleur, textTransform: 'uppercase', letterSpacing: 0.9, whiteSpace: 'nowrap' });
                     const NOTE = (couleur: string): React.CSSProperties => ({ marginLeft: 'auto', minWidth: 0, fontSize: 11, fontWeight: 600, color: couleur, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' });
-                    const PUCE_FORTE: React.CSSProperties = { background: 'var(--emilio-fond)', color: '#f2dfa6', border: '1px solid #c9a84c', padding: '4px 12px', borderRadius: 20, fontSize: 13.5, fontWeight: 700 };
+                    const PUCE_FORTE: React.CSSProperties = { background: 'var(--emilio-fond)', color: '#f9c69f', border: '1px solid #ee7623', padding: '4px 12px', borderRadius: 20, fontSize: 13.5, fontWeight: 700 };
                     const PUCE: React.CSSProperties = { background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', padding: '4px 12px', borderRadius: 20, fontSize: 13.5, fontWeight: 600 };
 
                     const familles: React.ReactNode[] = [];
-                    if (logement.length) familles.push(<FamilleCrit key="logement" titre="Le logement" couleur="#2d5c8f" fond="#eff4fb" trait="#d6e3f5" lignes={logement}
-                      ico={ICO(<><path d="M3 21h18" /><path d="M5 21V9.5L12 4l7 5.5V21" /><path d="M10 21v-6h4v6" /></>, '#2d5c8f')} />);
+                    if (logement.length) familles.push(<FamilleCrit key="logement" titre="Le logement" couleur="#393836" fond="#f6f5f4" trait="#e7e6e4" lignes={logement}
+                      ico={ICO(<><path d="M3 21h18" /><path d="M5 21V9.5L12 4l7 5.5V21" /><path d="M10 21v-6h4v6" /></>, '#393836')} />);
                     if (immeuble.length) familles.push(<FamilleCrit key="immeuble" titre="L'immeuble" couleur="#6d28d9" fond="#f5f3ff" trait="#ddd6fe" lignes={immeuble}
                       ico={ICO(<><path d="M4 21V4h9v17" /><path d="M13 10h7v11" /><path d="M7 8h2" /><path d="M7 12h2" /><path d="M7 16h2" /></>, '#6d28d9')} />);
                     if (aTransport) familles.push(
@@ -4808,10 +4808,10 @@ ${signatureMail()}`,
                           </div>
                     );
                     const carteSecteurs = cr.secteurs?.length > 0 ? (
-                      <div key="secteurs" style={{ border: '1px solid #efe2bf', borderRadius: 14, overflow: 'hidden' }}>
-                        <div style={{ ...ENTETE, background: '#fbf6e9' }}>
-                          {ICO(<><path d="M12 21.5S19 15 19 10a7 7 0 1 0-14 0c0 5 7 11.5 7 11.5z" /><circle cx="12" cy="10" r="2.6" /></>, '#a07c28')}
-                          <span style={TITRE('#a07c28')}>Secteurs recherchés</span>
+                      <div key="secteurs" style={{ border: '1px solid #fad2b4', borderRadius: 14, overflow: 'hidden' }}>
+                        <div style={{ ...ENTETE, background: '#fbf0e9' }}>
+                          {ICO(<><path d="M12 21.5S19 15 19 10a7 7 0 1 0-14 0c0 5 7 11.5 7 11.5z" /><circle cx="12" cy="10" r="2.6" /></>, '#b4560f')}
+                          <span style={TITRE('#b4560f')}>Secteurs recherchés</span>
                         </div>
                         <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 9 }}>
                           <SecteursListe secteurs={cr.secteurs} />
@@ -4819,11 +4819,11 @@ ${signatureMail()}`,
                       </div>
                     ) : null;
                     const carteIndispensables = indispensables.length ? (
-                      <div key="indispensables" style={{ border: '1px solid #c9a84c', borderRadius: 14, overflow: 'hidden' }}>
+                      <div key="indispensables" style={{ border: '1px solid #ee7623', borderRadius: 14, overflow: 'hidden' }}>
                         <div style={{ ...ENTETE, background: 'var(--emilio-fond)' }}>
-                          {ICO(<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />, '#e8c96a')}
-                          <span style={TITRE('#f2dfa6')}>Indispensables</span>
-                          <span style={NOTE('rgba(242,223,166,.62)')} title="Un bien qui ne les a pas n’est pas envoyé">sinon, pas d’envoi</span>
+                          {ICO(<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />, '#f6a15e')}
+                          <span style={TITRE('#f9c69f')}>Indispensables</span>
+                          <span style={NOTE('rgba(249, 198, 159,.62)')} title="Un bien qui ne les a pas n’est pas envoyé">sinon, pas d’envoi</span>
                         </div>
                         <div style={{ padding: '12px 14px 14px', display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                           {indispensables.map(e => <span key={e.cle} style={PUCE_FORTE}>{e.texte}</span>)}
@@ -4874,7 +4874,7 @@ ${signatureMail()}`,
 
                   {/* Notes */}
                   {cr.notes && (
-                    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '10px 14px', borderLeft: '4px solid #c9a84c' }}>
+                    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '10px 14px', borderLeft: '4px solid #ee7623' }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>💬 Précisions sur la recherche</div>
                       <div style={{ fontSize: 14, color: 'var(--emilio)', lineHeight: 1.6 }}>{cr.notes}</div>
                     </div>
@@ -4945,7 +4945,7 @@ ${signatureMail()}`,
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 5 }}>
                       <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: 15, color: 'var(--emilio)' }}>{b.titre || `${b.type_bien||'Bien'} — ${b.ville||'—'}`}</div>
                       <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                        <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 17, color: '#c9a84c' }}>{b.prix_acquereur ? `${b.prix_acquereur.toLocaleString('fr-FR')}€` : '—'}</div>
+                        <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 17, color: '#ee7623' }}>{b.prix_acquereur ? `${b.prix_acquereur.toLocaleString('fr-FR')}€` : '—'}</div>
                         {b.prix_vendeur && b.commission_val && (
                           <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
                             {b.prix_vendeur.toLocaleString('fr-FR')}€ + {b.commission_type === 'pourcentage' ? `${b.commission_val}%` : `${b.commission_val.toLocaleString('fr-FR')}€`}{' '}commission
@@ -4969,7 +4969,7 @@ ${signatureMail()}`,
                         {b.pdf_statut === 'pret' && b.pdf_url ? (
                           <a href={b.pdf_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, background: 'var(--emilio-fond)', color: 'white', border: '1px solid var(--emilio)', padding: '4px 12px', borderRadius: 20, fontWeight: 600, textDecoration: 'none' }}>📄 Fiche client</a>
                         ) : b.pdf_statut === 'demande' ? (
-                          <span style={{ fontSize: 12, background: '#fdfaf1', color: '#a17d2c', border: '1px solid #ecdcb4', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>⏳ Fiche en attente</span>
+                          <span style={{ fontSize: 12, background: '#fdf6f1', color: '#be550f', border: '1px solid #f9caa7', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>⏳ Fiche en attente</span>
                         ) : (
                           <button onClick={() => demanderPdf(b.id)} style={{ fontSize: 12, background: '#f8fafc', color: 'var(--emilio)', border: '1px solid #e2e8f0', padding: '4px 12px', borderRadius: 20, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>📄 Demander une fiche soignée</button>
                         )}
@@ -5103,10 +5103,10 @@ ${signatureMail()}`,
                    fallait déplier chaque étape pour retrouver le montant de
                    l'offre ou le prix retenu. */
                 const chiffres: any[] = [];
-                if (offre !== null) chiffres.push({ k: 'Offre initiale', v: eur(offre), d: tx.offre_date ? jourFr(tx.offre_date) : null, c: '#a9822f' });
+                if (offre !== null) chiffres.push({ k: 'Offre initiale', v: eur(offre), d: tx.offre_date ? jourFr(tx.offre_date) : null, c: '#c85a10' });
                 if (derniere) {
                   const m = lireMontant(derniere.montant);
-                  chiffres.push({ k: 'Dernière contre-offre', v: m !== null ? eur(m) : '—', d: derniere.partie === 'acheteur' ? 'de votre client' : 'du vendeur', c: '#2d5c8f' });
+                  chiffres.push({ k: 'Dernière contre-offre', v: m !== null ? eur(m) : '—', d: derniere.partie === 'acheteur' ? 'de votre client' : 'du vendeur', c: '#393836' });
                 }
                 if (prixFinal !== null) chiffres.push({ k: 'Prix retenu', v: eur(prixFinal), d: ecart !== null ? `${ecart > 0 ? '+' : ''}${eur(ecart)} vs offre` : null, c: '#15803d' });
                 if (hono !== null) chiffres.push({ k: 'Honoraires', v: `${eur(hono)} HT`, d: `${eur(Math.round(hono * 1.2 * 100) / 100)} TTC`, c: 'var(--emilio)' });
@@ -5134,7 +5134,7 @@ ${signatureMail()}`,
                         {bienTx.prix_acquereur ? (
                           <span style={{ textAlign: 'right', flexShrink: 0 }}>
                             <span className="tx-sur">Prix affiché</span>
-                            <span style={{ display: 'block', fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 17, color: '#a9822f' }}>
+                            <span style={{ display: 'block', fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 17, color: '#c85a10' }}>
                               {eur(bienTx.prix_acquereur)}
                             </span>
                           </span>
@@ -5509,7 +5509,7 @@ ${signatureMail()}`,
               enPlus={nbAutresRecherches > 0 ? (
                 <button type="button" onClick={() => setSuiviToutesPour(suiviToutes ? null : rechercheId)}
                   title={suiviToutes ? 'Ne montrer que cette recherche' : 'Montrer aussi ce qui a été noté sur ses autres recherches'}
-                  style={{ height: 34, padding: '0 13px', borderRadius: 99, border: '1px dashed #c9a84c', background: suiviToutes ? '#fbf6e9' : 'white', color: '#8a6d22', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  style={{ height: 34, padding: '0 13px', borderRadius: 99, border: '1px dashed #ee7623', background: suiviToutes ? '#fbf0e9' : 'white', color: '#9f470d', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>
                   {suiviToutes ? 'Cette recherche seulement' : `+ ${nbAutresRecherches} d’une autre recherche`}
                 </button>
               ) : null}
@@ -5552,8 +5552,8 @@ ${signatureMail()}`,
               {/* Un couple : chaque personne dans son cadre, avec son e-mail et
                   son téléphone. La personne 1 reçoit les mails et a l'espace. */}
               {cf.couple ? (
-                <div style={{ border: '1px solid #e3e8f0', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8, margin: '6px 0 0' }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: '#a9822f' }}>Personne 1 · contact principal</div>
+                <div style={{ border: '1px solid #eaeae9', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8, margin: '6px 0 0' }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: '#c85a10' }}>Personne 1 · contact principal</div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     {(['Monsieur', 'Madame'] as const).map(c => (
                       <button type="button" key={c} onClick={() => setCf(f => ({ ...f, civilite: c }))}
@@ -5570,8 +5570,8 @@ ${signatureMail()}`,
                 <div className={styles.formRow}><div><label className={styles.lbl}>Prénom</label><input className={styles.inp} value={cf.prenom} onChange={e => setCf(f => ({ ...f, prenom: e.target.value }))} /></div><div><label className={styles.lbl}>Nom</label><input className={styles.inp} value={cf.nom} onChange={e => setCf(f => ({ ...f, nom: e.target.value }))} /></div></div>
               )}
               {cf.couple && (
-                <div style={{ border: '1px solid #e3e8f0', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8, margin: '6px 0' }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: '#a9822f' }}>Personne 2</div>
+                <div style={{ border: '1px solid #eaeae9', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8, margin: '6px 0' }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: '#c85a10' }}>Personne 2</div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     {(['Monsieur', 'Madame'] as const).map(c => (
                       <button type="button" key={c} onClick={() => setCf(f => ({ ...f, c2_civilite: c }))}
@@ -5668,7 +5668,7 @@ ${signatureMail()}`,
                 return (
                   <div key={ev.id} style={{
                     display: 'flex', gap: 11, padding: '11px 13px', borderRadius: 12,
-                    border: `1px solid ${neuf ? '#fed7aa' : '#e3e8f0'}`,
+                    border: `1px solid ${neuf ? '#fed7aa' : '#eaeae9'}`,
                     background: neuf ? '#fffaf3' : 'white',
                   }}>
                     <span style={{ fontSize: 17, lineHeight: 1.2 }}>{msg ? '💬' : '🎯'}</span>
@@ -5766,7 +5766,7 @@ ${signatureMail()}`,
               <button className={styles.modalClose} onClick={() => setShowChoixTx(null)}>✕</button>
             </div>
             <div className={styles.modalBody}>
-              <div style={{ background: '#f8fafc', border: '1px solid #eef2f7', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #f3f2f2', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
                 Sur quel bien porte cette transaction&nbsp;? Seuls les biens <b>visités</b>{' '}par le client
                 sont proposés — c'est là que se joue une offre.
               </div>
@@ -5779,7 +5779,7 @@ ${signatureMail()}`,
                   return (
                     <button type="button" key={b.id} onClick={() => choisirBienTx(b.id)} disabled={actif || saving}
                       style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 12,
-                        border: `1.5px solid ${actif ? '#c9a84c' : '#e3e8f0'}`, background: actif ? '#faf6ee' : 'white',
+                        border: `1.5px solid ${actif ? '#ee7623' : '#eaeae9'}`, background: actif ? '#faf3ee' : 'white',
                         cursor: actif ? 'default' : 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all .14s' }}>
                       <span style={{ width: 52, height: 52, borderRadius: 10, background: '#e2e8f0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, overflow: 'hidden', flexShrink: 0 }}>
                         {b.photos?.[0] ? <img src={b.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏠'}
@@ -5800,11 +5800,11 @@ ${signatureMail()}`,
                         </span>
                       </span>
                       {b.prix_acquereur ? (
-                        <span style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 15, color: '#a9822f', flexShrink: 0 }}>
+                        <span style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 15, color: '#c85a10', flexShrink: 0 }}>
                           {b.prix_acquereur.toLocaleString('fr-FR')} €
                         </span>
                       ) : null}
-                      {actif && <span style={{ fontSize: 11, fontWeight: 800, color: '#a9822f', flexShrink: 0 }}>en cours</span>}
+                      {actif && <span style={{ fontSize: 11, fontWeight: 800, color: '#c85a10', flexShrink: 0 }}>en cours</span>}
                     </button>
                   );
                 })}
@@ -5824,12 +5824,12 @@ ${signatureMail()}`,
           <div className={styles.modal} style={{ maxWidth: 520 }}>
             <div className={styles.modalHeader}><h2 className={styles.modalTitle}>🏁 Clôturer la recherche</h2><button className={styles.modalClose} onClick={() => setShowCloture(false)}>✕</button></div>
             <div className={styles.modalBody}>
-              <div style={{ background: '#f8fafc', border: '1px solid #eef2f7', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #f3f2f2', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
                 {'La veille s’arrête sur ce dossier, ses relances d’acheteur sont soldées, ses visites à venir annulées, et le motif reste au journal. Tout est réversible : « Rouvrir le dossier » dans le menu d’état.'}
               </div>
               {/* V3.50 : trouvé avec nous et une transaction ouverte = un acte signé. */}
               {cloture.motif === 'trouve_avec_moi' && transaction && transaction.etape_actuelle !== 'finalise' && (
-                <div style={{ background: '#fdfaf1', border: '1px solid #ecdcb4', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#7a5d1c', lineHeight: 1.55 }}>
+                <div style={{ background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#8b3e0b', lineHeight: 1.55 }}>
                   {'Une transaction est en cours : elle passera « Acte signé », pour que la vente compte dans ton chiffre d’affaires. Tu confirmeras la date de l’acte juste après.'}
                 </div>
               )}
@@ -5840,9 +5840,9 @@ ${signatureMail()}`,
                     const actif = cloture.motif === m.cle;
                     return (
                       <button type="button" key={m.cle} onClick={() => setCloture(f => ({ ...f, motif: m.cle }))}
-                        style={{ display: 'flex', alignItems: 'flex-start', gap: 11, padding: '11px 13px', borderRadius: 11, border: `1.5px solid ${actif ? '#c9a84c' : '#e3e8f0'}`, background: actif ? '#faf6ee' : 'white', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
-                        <span style={{ flexShrink: 0, width: 16, height: 16, borderRadius: '50%', border: `2px solid ${actif ? '#c9a84c' : '#cbd5e1'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
-                          {actif && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#c9a84c' }} />}
+                        style={{ display: 'flex', alignItems: 'flex-start', gap: 11, padding: '11px 13px', borderRadius: 11, border: `1.5px solid ${actif ? '#ee7623' : '#eaeae9'}`, background: actif ? '#faf3ee' : 'white', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                        <span style={{ flexShrink: 0, width: 16, height: 16, borderRadius: '50%', border: `2px solid ${actif ? '#ee7623' : '#cbd5e1'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+                          {actif && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ee7623' }} />}
                         </span>
                         <span style={{ flexGrow: 1, minWidth: 0 }}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -5893,7 +5893,7 @@ ${signatureMail()}`,
               </div>
               <div className={styles.modalBody}>
                 {acte.portee === 'dossier' && (
-                  <div style={{ background: '#f8fafc', border: '1px solid #eef2f7', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
+                  <div style={{ background: '#f8fafc', border: '1px solid #f3f2f2', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
                     {`La transaction${nomActe ? ` sur « ${nomActe} »` : ''} passe « Acte signé » : la vente compte dans ton chiffre d’affaires, puis le dossier se clôture.`}
                   </div>
                 )}
@@ -5933,7 +5933,7 @@ ${signatureMail()}`,
           <div className={styles.modal} style={{ maxWidth: 480 }}>
             <div className={styles.modalHeader}><h2 className={styles.modalTitle}>⏸️ Suspendre le dossier</h2><button className={styles.modalClose} onClick={() => setSuspendre(null)}>✕</button></div>
             <div className={styles.modalBody}>
-              <div style={{ background: '#f8fafc', border: '1px solid #eef2f7', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #f3f2f2', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
                 La veille s'arrête sur ses recherches. Avec une date de reprise, ce jour-là le dossier repasse tout seul en « Actif », la veille repart et une relance vous rappelle d'appeler le client.
               </div>
               <div>
@@ -5949,7 +5949,7 @@ ${signatureMail()}`,
                     const actif = suspendre.choix === o.k;
                     return (
                       <button type="button" key={o.k} onClick={() => setSuspendre(v => v && ({ ...v, choix: o.k }))}
-                        style={{ padding: '8px 13px', borderRadius: 99, border: `1.5px solid ${actif ? '#c9a84c' : '#e3e8f0'}`, background: actif ? '#faf6ee' : 'white', color: actif ? '#8a6a1f' : '#55647a', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        style={{ padding: '8px 13px', borderRadius: 99, border: `1.5px solid ${actif ? '#ee7623' : '#eaeae9'}`, background: actif ? '#faf3ee' : 'white', color: actif ? '#9c460d' : '#55647a', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                         {o.l}
                       </button>
                     );
@@ -6028,14 +6028,14 @@ ${signatureMail()}`,
 
               {/* V3.184 : la fiche vient d'une annonce envoyée par le client. */}
               {depuisAnnonce && (
-                <div style={{ background: '#fdfaf1', border: '1px solid #ecdcb4', borderRadius: 12, padding: '11px 14px', display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#a17d2c', letterSpacing: .3 }}>{`📩 Proposée par ${client.prenom || 'le client'}, le ${new Date(depuisAnnonce.created_at).toLocaleDateString('fr-FR')}`}</div>
-                  {depuisAnnonce.mot && <div style={{ fontSize: 14, fontWeight: 600, color: '#1a2332', lineHeight: 1.5 }}>{`« ${depuisAnnonce.mot} »`}</div>}
+                <div style={{ background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 12, padding: '11px 14px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#be550f', letterSpacing: .3 }}>{`📩 Proposée par ${client.prenom || 'le client'}, le ${new Date(depuisAnnonce.created_at).toLocaleDateString('fr-FR')}`}</div>
+                  {depuisAnnonce.mot && <div style={{ fontSize: 14, fontWeight: 600, color: '#18181b', lineHeight: 1.5 }}>{`« ${depuisAnnonce.mot} »`}</div>}
                   {(depuisAnnonce.aime || []).length > 0 && <div style={{ fontSize: 12.5, color: '#64748b' }}>{`Ce qui lui plaît : ${(depuisAnnonce.aime || []).join(', ').toLowerCase()}`}</div>}
                   {(depuisAnnonce.photos || []).length > 0 && (
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                       {(depuisAnnonce.photos || []).map((p, i) => (
-                        <a key={i} href={p} target="_blank" rel="noopener noreferrer"><img src={p} alt="" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 7, border: '1px solid #e3e8f0', display: 'block' }} /></a>
+                        <a key={i} href={p} target="_blank" rel="noopener noreferrer"><img src={p} alt="" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 7, border: '1px solid #eaeae9', display: 'block' }} /></a>
                       ))}
                       <span style={{ fontSize: 12, color: '#94a3b8' }}>{'Ses photos : gardées pour la fiche si l’annonce n’en donne pas.'}</span>
                     </div>
@@ -6093,7 +6093,7 @@ ${signatureMail()}`,
                     {photosInput && (
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
                         {photosInput.split('\n').map((u: string) => u.trim()).filter((u: string) => u.startsWith('http')).slice(0, 6).map((u: string, i: number) => (
-                          <img key={i} src={u} alt="" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid #e3e8f0' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          <img key={i} src={u} alt="" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid #eaeae9' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         ))}
                       </div>
                     )}
@@ -6108,7 +6108,7 @@ ${signatureMail()}`,
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             {bienForm.photos.map((p: string, i: number) => (
                               <div key={i} style={{ position: 'relative' }}>
-                                <img src={p} alt="" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #e3e8f0' }} onError={e => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }} />
+                                <img src={p} alt="" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #eaeae9' }} onError={e => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }} />
                                 <button onClick={() => setBienForm((f: any) => ({ ...f, photos: f.photos.filter((_: string, j: number) => j !== i) }))} style={{ position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', fontSize: 10, cursor: 'pointer' }}>✕</button>
                               </div>
                             ))}
@@ -6174,11 +6174,11 @@ ${signatureMail()}`,
               <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>
                 Revenir à l'étape <strong style={{ color: 'var(--emilio)' }}>« {ETAPES_LABELS[etapePrecTx]} »</strong> ?
               </p>
-              <div style={{ background: '#f8fafc', border: '1px solid #eef2f7', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#55647a', lineHeight: 1.55 }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #f3f2f2', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#55647a', lineHeight: 1.55 }}>
                 Rien n'est effacé : les montants et les dates déjà saisis restent en place.
               </div>
               {transaction.etape_actuelle === 'compromis' && (
-                <div style={{ background: '#eef4fb', border: '1px solid #d6e3f5', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#2d5c8f', lineHeight: 1.55 }}>
+                <div style={{ background: '#f5f4f4', border: '1px solid #e7e6e4', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#393836', lineHeight: 1.55 }}>
                   🔍 La veille, mise en pause à la signature du compromis, <b>repartira</b>{' '}sur cette recherche.
                 </div>
               )}
@@ -6401,15 +6401,15 @@ ${signatureMail()}`,
                 {CHOIX.map(x => (
                   <button key={x.k} type="button" disabled={!x.ok} className="fc-envoi-choix"
                     onClick={() => { setShowEnvoi(false); x.go(); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '14px 16px', borderRadius: 14, border: `1.5px solid ${x.ok ? '#e3e8f0' : '#eef1f6'}`, background: x.ok ? 'white' : '#fafbfc', cursor: x.ok ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left', opacity: x.ok ? 1 : 0.62, transition: 'border-color .15s, background .15s, box-shadow .15s' }}>
-                    <span style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: x.ok ? 'var(--emilio-fond)' : '#eef2f7', color: x.ok ? '#e8c96a' : '#94a3b8' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '14px 16px', borderRadius: 14, border: `1.5px solid ${x.ok ? '#eaeae9' : '#f2f2f2'}`, background: x.ok ? 'white' : '#fbfbfb', cursor: x.ok ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left', opacity: x.ok ? 1 : 0.62, transition: 'border-color .15s, background .15s, box-shadow .15s' }}>
+                    <span style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: x.ok ? 'var(--emilio-fond)' : '#f3f2f2', color: x.ok ? '#f6a15e' : '#94a3b8' }}>
                       <Icone nom={x.ic} taille={20} epaisseur={1.9} />
                     </span>
                     <span style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 0 }}>
                       <b style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15, fontWeight: 800, color: 'var(--emilio)' }}>{x.lib}</b>
                       <span style={{ fontSize: 12.5, lineHeight: 1.45, color: '#64748b' }}>{x.sous}</span>
                     </span>
-                    {x.ok && <span style={{ color: '#a07c28', display: 'flex', flexShrink: 0, transform: 'rotate(-90deg)' }}><Icone nom="chevron" taille={18} epaisseur={2.2} /></span>}
+                    {x.ok && <span style={{ color: '#b4560f', display: 'flex', flexShrink: 0, transform: 'rotate(-90deg)' }}><Icone nom="chevron" taille={18} epaisseur={2.2} /></span>}
                   </button>
                 ))}
               </div>
@@ -6444,7 +6444,7 @@ ${signatureMail()}`,
               {envoiMode === 'unique' && (() => {
                 const b = biens.find(x => x.id === envoiBienId);
                 return b ? (
-                  <div style={{ background: '#faf6ee', border: '1px solid #e3e8f0', borderRadius: 12, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div style={{ background: '#faf3ee', border: '1px solid #eaeae9', borderRadius: 12, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'center' }}>
                     <div style={{ width: 56, height: 56, borderRadius: 10, background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, overflow: 'hidden', flexShrink: 0 }}>
                       {b.photos?.[0] ? <img src={b.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏠'}
                     </div>
@@ -6452,7 +6452,7 @@ ${signatureMail()}`,
                       <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--emilio)' }}>{b.titre || `${b.type_bien||'Bien'} — ${b.ville||'—'}`}</div>
                       <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{[b.surface && `${b.surface}m²`, b.nb_pieces && `${b.nb_pieces}P`, b.ville].filter(Boolean).join(' · ')}</div>
                     </div>
-                    {b.prix_acquereur && <div style={{ fontWeight: 800, fontSize: 16, color: '#c9a84c' }}>{b.prix_acquereur.toLocaleString('fr-FR')}€</div>}
+                    {b.prix_acquereur && <div style={{ fontWeight: 800, fontSize: 16, color: '#ee7623' }}>{b.prix_acquereur.toLocaleString('fr-FR')}€</div>}
                   </div>
                 ) : null;
               })()}
@@ -6465,12 +6465,12 @@ ${signatureMail()}`,
                     <button type="button" onClick={() => setEnvoiBienIds(biensDuMail.map(b => b.id))} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontFamily: 'inherit', color: '#64748b' }}>Tout sélectionner</button>
                     <button type="button" onClick={() => setEnvoiBienIds([])} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontFamily: 'inherit', color: '#64748b' }}>Tout désélectionner</button>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto', border: '1px solid #e3e8f0', borderRadius: 10, padding: 8, background: '#fafbfc' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto', border: '1px solid #eaeae9', borderRadius: 10, padding: 8, background: '#fbfbfb' }}>
                     {biensDuMail.map(b => {
                       const checked = envoiBienIds.includes(b.id);
                       return (
-                        <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: `1.5px solid ${checked ? '#c9a84c' : '#e3e8f0'}`, background: checked ? '#faf6ee' : 'white', cursor: 'pointer', transition: 'all 0.12s' }}>
-                          <input type="checkbox" checked={checked} onChange={e => { if (e.target.checked) setEnvoiBienIds(prev => [...prev, b.id]); else setEnvoiBienIds(prev => prev.filter(id => id !== b.id)); }} style={{ accentColor: '#34496e', width: 16, height: 16, flexShrink: 0 }} />
+                        <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: `1.5px solid ${checked ? '#ee7623' : '#eaeae9'}`, background: checked ? '#faf3ee' : 'white', cursor: 'pointer', transition: 'all 0.12s' }}>
+                          <input type="checkbox" checked={checked} onChange={e => { if (e.target.checked) setEnvoiBienIds(prev => [...prev, b.id]); else setEnvoiBienIds(prev => prev.filter(id => id !== b.id)); }} style={{ accentColor: '#1d1d1f', width: 16, height: 16, flexShrink: 0 }} />
                           <div style={{ width: 38, height: 38, borderRadius: 6, background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, overflow: 'hidden', flexShrink: 0 }}>
                             {b.photos?.[0] ? <img src={b.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏠'}
                           </div>
@@ -6478,7 +6478,7 @@ ${signatureMail()}`,
                             <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--emilio)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.titre || `${b.type_bien||'Bien'} — ${b.ville||'—'}`}</div>
                             <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{[b.surface && `${b.surface}m²`, b.nb_pieces && `${b.nb_pieces}P`, b.ville].filter(Boolean).join(' · ')}</div>
                           </div>
-                          {b.prix_acquereur && <div style={{ fontWeight: 700, fontSize: 13, color: '#c9a84c', flexShrink: 0 }}>{b.prix_acquereur.toLocaleString('fr-FR')}€</div>}
+                          {b.prix_acquereur && <div style={{ fontWeight: 700, fontSize: 13, color: '#ee7623', flexShrink: 0 }}>{b.prix_acquereur.toLocaleString('fr-FR')}€</div>}
                         </label>
                       );
                     })}
@@ -6536,7 +6536,7 @@ ${signatureMail()}`,
                       <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 10, borderRadius: 12, border: '2px solid var(--emilio)', background: '#f8fafc' }}>
                         {b.photos?.[0]
                           ? <img src={b.photos[0]} alt="" style={{ width: 52, height: 52, borderRadius: 9, objectFit: 'cover', flexShrink: 0 }} />
-                          : <div style={{ width: 52, height: 52, borderRadius: 9, background: '#eef2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🏠</div>}
+                          : <div style={{ width: 52, height: 52, borderRadius: 9, background: '#f3f2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🏠</div>}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--emilio)' }}>{b.titre || `${b.type_bien||'Bien'} — ${b.ville||'—'}`}</div>
                           <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
@@ -6569,16 +6569,16 @@ ${signatureMail()}`,
                     );
                   }
                   return (
-                    <div style={{ marginTop: 10, border: '1px solid #e3e8f0', borderRadius: 12, padding: 10, background: '#fbfcfe' }}>
+                    <div style={{ marginTop: 10, border: '1px solid #eaeae9', borderRadius: 12, padding: 10, background: '#fdfcfc' }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: .6, marginBottom: 8 }}>À ajouter au même créneau</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
                         {dispo.map(b => (
                           <button key={b.id}
                             onClick={() => { setPlanVisiteForm(f => ({ ...f, bien_ids: [...f.bien_ids, b.id] })); setAjoutVisite(false); }}
-                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 8, borderRadius: 10, border: '1px solid #e3e8f0', background: 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', width: '100%' }}>
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 8, borderRadius: 10, border: '1px solid #eaeae9', background: 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', width: '100%' }}>
                             {b.photos?.[0]
                               ? <img src={b.photos[0]} alt="" style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
-                              : <div style={{ width: 40, height: 40, borderRadius: 8, background: '#eef2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏠</div>}
+                              : <div style={{ width: 40, height: 40, borderRadius: 8, background: '#f3f2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏠</div>}
                             <span style={{ flex: 1, minWidth: 0 }}>
                               <span style={{ display: 'block', fontWeight: 700, fontSize: 13, color: 'var(--emilio)' }}>{b.titre || `${b.type_bien||'Bien'} — ${b.ville||'—'}`}</span>
                               <span style={{ display: 'block', fontSize: 11.5, color: '#64748b', marginTop: 1 }}>
@@ -6654,20 +6654,20 @@ ${signatureMail()}`,
               {!actionEdit && !appelDirect && rechercheActive && (
                 <button type="button" className="fc-rdv-agenda"
                   onClick={() => { demanderRendezVous(rechercheActive.id); fermerAction(); onNavigate('agenda'); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid #ecdcae', background: 'linear-gradient(135deg, #fffaf0 0%, #fbf1d8 100%)', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'var(--emilio)' }}>
-                  <span style={{ width: 46, height: 46, borderRadius: 13, background: 'var(--emilio-fond)', color: '#c9a84c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid #f9c7a1', background: 'linear-gradient(135deg, #fff6f0 0%, #fbe7d8 100%)', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'var(--emilio)' }}>
+                  <span style={{ width: 46, height: 46, borderRadius: 13, background: 'var(--emilio-fond)', color: '#ee7623', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Icone nom="calendrier" taille={21} epaisseur={2} />
                   </span>
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
                     <b style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15.5, fontWeight: 800 }}>Créer un rendez-vous</b>
                     <span style={{ fontSize: 12.5, color: '#5b6678', lineHeight: 1.45 }}>{`Visite, rendez-vous, appel ou signature, dans l’agenda. ${client.prenom || 'Le client'} est déjà choisi.`}</span>
                   </span>
-                  <span style={{ color: '#8a6a1f', display: 'flex', flexShrink: 0 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></span>
+                  <span style={{ color: '#9c460d', display: 'flex', flexShrink: 0 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></span>
                 </button>
               )}
               {!actionEdit && !appelDirect && rechercheActive && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#94a3b8', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' }}>
-                  <span style={{ flex: 1, height: 1, background: '#eef1f6' }} /><span>ou noter une action</span><span style={{ flex: 1, height: 1, background: '#eef1f6' }} />
+                  <span style={{ flex: 1, height: 1, background: '#f2f2f2' }} /><span>ou noter une action</span><span style={{ flex: 1, height: 1, background: '#f2f2f2' }} />
                 </div>
               )}
               <div>
@@ -6693,7 +6693,7 @@ ${signatureMail()}`,
                         const on = actionF.titre.trim() === x.titre;
                         return (
                           <button type="button" key={x.k} onClick={() => choisir(x)} aria-pressed={on}
-                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 8px', borderRadius: 11, border: `1.5px solid ${on ? x.c : '#e3e8f0'}`, background: on ? x.bg : 'white', color: on ? x.c : '#52607a', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all .12s' }}>
+                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 8px', borderRadius: 11, border: `1.5px solid ${on ? x.c : '#eaeae9'}`, background: on ? x.bg : 'white', color: on ? x.c : '#3e3c3a', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all .12s' }}>
                             <span style={{ width: 8, height: 8, borderRadius: '50%', background: x.c, flexShrink: 0 }} />{x.lib}
                           </button>
                         );
@@ -6720,13 +6720,13 @@ ${signatureMail()}`,
                 const RACCOURCIS: [string, number][] = [['Demain', 1], ['Dans 3 j', 3], [`Dans ${delaiJours} j`, delaiJours], ['Dans 15 j', 15], ['Dans 1 mois', 30]];
                 const pose = !!actionF.relance;
                 return (
-                  <div style={{ background: pose ? '#fffbf4' : '#fbfcfe', border: `1px solid ${pose ? '#ecdcb4' : '#eef2f7'}`, borderRadius: 12, padding: '12px 14px' }}>
+                  <div style={{ background: pose ? '#fff9f4' : '#fdfcfc', border: `1px solid ${pose ? '#f9caa7' : '#f3f2f2'}`, borderRadius: 12, padding: '12px 14px' }}>
                     <label className={styles.lbl} style={{ marginBottom: 8 }}>
                       🔔 Prochaine relance <span style={{ fontWeight: 400, color: '#94a3b8' }}>(optionnel)</span>
                     </label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 9 }}>
                       <button type="button" onClick={() => setActionF(f => ({ ...f, relance: '' }))}
-                        style={{ padding: '5px 12px', borderRadius: 99, border: `1px solid ${!pose ? '#94a3b8' : '#e3e8f0'}`, background: !pose ? '#f1f4f8' : 'white', color: !pose ? 'var(--emilio)' : '#64748b', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        style={{ padding: '5px 12px', borderRadius: 99, border: `1px solid ${!pose ? '#94a3b8' : '#eaeae9'}`, background: !pose ? '#f5f4f4' : 'white', color: !pose ? 'var(--emilio)' : '#64748b', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                         Aucune
                       </button>
                       {RACCOURCIS.map(([lib, j]) => {
@@ -6734,7 +6734,7 @@ ${signatureMail()}`,
                         const actif = actionF.relance === d;
                         return (
                           <button type="button" key={lib} onClick={() => setActionF(f => ({ ...f, relance: actif ? '' : d }))}
-                            style={{ padding: '5px 12px', borderRadius: 99, border: `1px solid ${actif ? '#c9a84c' : '#e3e8f0'}`, background: actif ? 'var(--emilio)' : 'white', color: actif ? '#f2dfa6' : '#64748b', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                            style={{ padding: '5px 12px', borderRadius: 99, border: `1px solid ${actif ? '#ee7623' : '#eaeae9'}`, background: actif ? 'var(--emilio)' : 'white', color: actif ? '#f9c69f' : '#64748b', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                             {lib}
                           </button>
                         );
@@ -6745,7 +6745,7 @@ ${signatureMail()}`,
                         placeholder="Choisir une autre date"
                         onChange={(v) => setActionF(f => ({ ...f, relance: v }))} />
                     </div>
-                    <div style={{ fontSize: 11.5, color: pose ? '#a9822f' : '#94a3b8', marginTop: 8, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 11.5, color: pose ? '#c85a10' : '#94a3b8', marginTop: 8, lineHeight: 1.5 }}>
                       {pose
                         ? (actionRelanceId
                           ? `Relance déplacée au ${new Date(`${actionF.relance}T12:00:00`).toLocaleDateString('fr-FR')} — videz le champ pour la supprimer.`
@@ -6768,14 +6768,14 @@ ${signatureMail()}`,
                 return (
                   <div>
                     <label className={styles.lbl}>🏠 Concerne un bien <span style={{ fontWeight: 400, color: '#94a3b8' }}>(optionnel · {proposes.length} présenté{proposes.length > 1 ? 's' : ''})</span></label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 252, overflowY: 'auto', border: '1px solid #e3e8f0', borderRadius: 10, padding: 8, background: '#fafbfc' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 252, overflowY: 'auto', border: '1px solid #eaeae9', borderRadius: 10, padding: 8, background: '#fbfbfb' }}>
 
                       <button type="button" onClick={() => setActionF(f => ({ ...f, bien_id: '' }))}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 8, border: `1.5px solid ${aucun ? '#c9a84c' : '#e3e8f0'}`, background: aucun ? '#faf6ee' : 'white', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all 0.12s' }}>
-                        <span style={{ flexShrink: 0, width: 16, height: 16, borderRadius: '50%', border: `2px solid ${aucun ? '#c9a84c' : '#cbd5e1'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {aucun && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#c9a84c' }} />}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 8, border: `1.5px solid ${aucun ? '#ee7623' : '#eaeae9'}`, background: aucun ? '#faf3ee' : 'white', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all 0.12s' }}>
+                        <span style={{ flexShrink: 0, width: 16, height: 16, borderRadius: '50%', border: `2px solid ${aucun ? '#ee7623' : '#cbd5e1'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {aucun && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ee7623' }} />}
                         </span>
-                        <span style={{ width: 38, height: 38, borderRadius: 6, background: '#eef2f7', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>💬</span>
+                        <span style={{ width: 38, height: 38, borderRadius: 6, background: '#f3f2f2', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>💬</span>
                         <span style={{ flex: 1, minWidth: 0 }}>
                           <span style={{ display: 'block', fontWeight: 600, fontSize: 13, color: 'var(--emilio)' }}>Aucun bien en particulier</span>
                           <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', marginTop: 1 }}>Suivi général du dossier</span>
@@ -6787,9 +6787,9 @@ ${signatureMail()}`,
                         const badge = BADGES[b.badge_retour] || BADGES.propose;
                         return (
                           <button type="button" key={b.id} onClick={() => setActionF(f => ({ ...f, bien_id: b.id }))}
-                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: `1.5px solid ${actif ? '#c9a84c' : '#e3e8f0'}`, background: actif ? '#faf6ee' : 'white', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all 0.12s' }}>
-                            <span style={{ flexShrink: 0, width: 16, height: 16, borderRadius: '50%', border: `2px solid ${actif ? '#c9a84c' : '#cbd5e1'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {actif && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#c9a84c' }} />}
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: `1.5px solid ${actif ? '#ee7623' : '#eaeae9'}`, background: actif ? '#faf3ee' : 'white', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all 0.12s' }}>
+                            <span style={{ flexShrink: 0, width: 16, height: 16, borderRadius: '50%', border: `2px solid ${actif ? '#ee7623' : '#cbd5e1'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {actif && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ee7623' }} />}
                             </span>
                             <span style={{ width: 38, height: 38, borderRadius: 6, background: '#e2e8f0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, overflow: 'hidden', flexShrink: 0 }}>
                               {b.photos?.[0] ? <img src={b.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏠'}
@@ -6801,7 +6801,7 @@ ${signatureMail()}`,
                                 <span style={{ fontSize: 10.5, fontWeight: 700, color: badge.color, background: badge.bg, border: `1px solid ${badge.color}2e`, borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>{badge.label}</span>
                               </span>
                             </span>
-                            {b.prix_acquereur ? <span style={{ fontWeight: 700, fontSize: 13, color: '#c9a84c', flexShrink: 0 }}>{b.prix_acquereur.toLocaleString('fr-FR')} €</span> : null}
+                            {b.prix_acquereur ? <span style={{ fontWeight: 700, fontSize: 13, color: '#ee7623', flexShrink: 0 }}>{b.prix_acquereur.toLocaleString('fr-FR')} €</span> : null}
                           </button>
                         );
                       })}

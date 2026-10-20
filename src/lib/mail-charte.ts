@@ -9,10 +9,10 @@
    au logo, un filet orange, le titre, puis le texte. */
 
 export const MAIL = {
-  marque: '#22497D', marqueFonce: '#1B3D6B', encre: '#13243D',
-  texte: '#46566B', plume: '#5B6B80', plumeClair: '#8FA3BF',
-  or: '#E68B23', orTexte: '#A95808', orClair: '#F2B266', orFond: '#FFF6EC', orTrait: '#F7D5B0',
-  fond: '#F5F8FC', fondPage: '#E6EDF6', trait: '#E8EDF3', traitFort: '#DCE3EC',
+  marque: '#1d1d1f', marqueFonce: '#2a2927', encre: '#141416',
+  texte: '#363533', plume: '#5B6B80', plumeClair: '#aba7a3',
+  or: '#ee7623', orTexte: '#b4560f', orClair: '#f6a15e', orFond: '#FFF6EC', orTrait: '#F7D5B0',
+  fond: '#f6f6f7', fondPage: '#efeeed', trait: '#eeeeed', traitFort: '#e5e4e3',
 };
 
 /* Plus Jakarta Sans, la police du site, là où la messagerie sait la charger

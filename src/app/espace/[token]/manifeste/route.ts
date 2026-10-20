@@ -72,8 +72,8 @@ export async function GET(
        même que celle de l'écran de chargement (voir loading.tsx) : le passage
        de l'un à l'autre devient invisible, et l'ouverture paraît immédiate.
        V3.29 : plus claire, à la demande d'Alexandre, avec son logo. */
-    background_color: '#F5F8FC',
-    theme_color: '#22497D',
+    background_color: '#f6f6f7',
+    theme_color: '#1d1d1f',
     /* Le « E » d'Emilio (V3.29), rangé dans public/logos/. */
     icons: [
       { src: '/logos/e-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },

@@ -91,7 +91,7 @@ export function finRetractationDe(l: Pick<LigneMandat, 'signe_le'>, cos: Co[], q
 /* ── Les mails ─────────────────────────────────────────────────────────── */
 
 const bouton = (href: string, texte: string) =>
-  `<a href="${href}" style="display:inline-block;margin:6px 0 4px;background:#E68B23;color:#13243D;text-decoration:none;padding:13px 22px;border-radius:12px;font-weight:800;font-size:15px">${echappe(texte)}</a>`;
+  `<a href="${href}" style="display:inline-block;margin:6px 0 4px;background:#ee7623;color:#141416;text-decoration:none;padding:13px 22px;border-radius:12px;font-weight:800;font-size:15px">${echappe(texte)}</a>`;
 
 /* L'invitation, et ses deux rappels (2 et 7 jours). Ton simple : c'est
    Alexandre qui écrit, de la part de quelqu'un qu'elle connaît. */

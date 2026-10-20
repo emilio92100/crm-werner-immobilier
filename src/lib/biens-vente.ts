@@ -33,7 +33,7 @@ export const ETAPES_VENTE: { k: EtapeVente; lib: string; court: string; pluriel:
   { k: 'suspendu', lib: 'En pause', court: 'En pause', pluriel: 'En pause', c: '#94a3b8' },
   { k: 'offre', lib: 'Sous offre', court: 'Sous offre', pluriel: 'Sous offre', c: '#f59e0b' },
   { k: 'compromis', lib: 'Sous compromis', court: 'Sous compromis', pluriel: 'Sous compromis', c: '#3b82f6' },
-  { k: 'vendu', lib: 'Vendu', court: 'Vendu', pluriel: 'Vendus', c: '#34496e' },
+  { k: 'vendu', lib: 'Vendu', court: 'Vendu', pluriel: 'Vendus', c: '#1d1d1f' },
   { k: 'retire', lib: 'Retiré de la vente', court: 'Retiré', pluriel: 'Retirés', c: '#b4532a' },
   /* V3.79 (Alexandre : « une annonce un peu similaire au bien d'un client qui
      ne veut pas que le sien soit diffusé, pour capter des acheteurs ; pas

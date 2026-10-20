@@ -15,7 +15,7 @@ import { HOTE_ESPACE } from '@/lib/jeton';
  */
 
 export const viewport: Viewport = {
-  themeColor: '#22497D',
+  themeColor: '#1d1d1f',
 };
 
 export async function generateMetadata(

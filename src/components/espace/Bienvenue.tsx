@@ -77,10 +77,10 @@ const D = {
 /* ── 0 · Bienvenue : la maison au centre, les quatre atouts en orbite ── */
 function Scene0() {
   const orbite = [
-    { x: '50%', y: '0%', c: '#E68B23', d: D.cloche },
+    { x: '50%', y: '0%', c: '#ee7623', d: D.cloche },
     { x: '100%', y: '50%', c: '#15803d', d: D.coeur },
     { x: '50%', y: '100%', c: '#6d28d9', d: D.agenda },
-    { x: '0%', y: '50%', c: '#22497D', d: D.repere },
+    { x: '0%', y: '50%', c: '#1d1d1f', d: D.repere },
   ];
   return (
     <div className={s.s0}>
@@ -94,7 +94,7 @@ function Scene0() {
       <span className={s.maisonPulse} />
       <span className={s.maison}>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d={D.maison} /><path d="M9 21v-6h6v6" stroke="#E68B23" strokeWidth="2.2" />
+          <path d={D.maison} /><path d="M9 21v-6h6v6" stroke="#ee7623" strokeWidth="2.2" />
         </svg>
       </span>
     </div>
@@ -104,15 +104,15 @@ function Scene0() {
 /* ── 1 · Tout le marché, chaque jour : le balayage tourne, les biens s'allument ── */
 function Scene1() {
   const reperes = [
-    { x: '30%', y: '34%', c: '#E68B23', r: '0s' }, { x: '72%', y: '28%', c: '#22497D', r: '.9s' },
-    { x: '80%', y: '70%', c: '#E68B23', r: '1.8s' }, { x: '24%', y: '74%', c: '#22497D', r: '2.7s' },
-    { x: '58%', y: '82%', c: '#E68B23', r: '3.6s' }, { x: '44%', y: '24%', c: '#22497D', r: '4.5s' },
+    { x: '30%', y: '34%', c: '#ee7623', r: '0s' }, { x: '72%', y: '28%', c: '#1d1d1f', r: '.9s' },
+    { x: '80%', y: '70%', c: '#ee7623', r: '1.8s' }, { x: '24%', y: '74%', c: '#1d1d1f', r: '2.7s' },
+    { x: '58%', y: '82%', c: '#ee7623', r: '3.6s' }, { x: '44%', y: '24%', c: '#1d1d1f', r: '4.5s' },
   ];
   const sources = [{ l: 'Nouvelles annonces', r: '.2s' }, { l: 'Biens en avant-première', r: '.45s' }, { l: 'Nos partenaires', r: '.7s' }];
   return (
     <div className={s.s1}>
       <svg width="342" height="230" viewBox="0 0 342 230" aria-hidden="true" style={{ position: 'absolute', inset: 0 }}>
-        <path d="M-10 160 C 60 130, 120 190, 200 150 S 300 110, 360 140" fill="none" stroke="#CFE0F2" strokeWidth="16" strokeLinecap="round" />
+        <path d="M-10 160 C 60 130, 120 190, 200 150 S 300 110, 360 140" fill="none" stroke="#e3e0de" strokeWidth="16" strokeLinecap="round" />
         <path d="M0 60 H342 M0 112 H342 M0 196 H342 M52 0 V230 M140 0 V230 M232 0 V230 M300 0 V230" stroke="#fff" strokeWidth="5" />
         <path d="M90 0 L190 230 M260 0 L170 230" stroke="#fff" strokeWidth="3" />
       </svg>
@@ -141,8 +141,8 @@ function Scene2() {
       <div className={s.carteBien}>
         <div className={s.photo}>
           <img src={PHOTO_1} alt="" className={`${s.photoImg} ${s.zoom}`} />
-          <span className={s.pastille} style={{ left: 8, top: 8, height: 20, padding: '0 8px', background: '#E68B23', color: '#fff' }}>Nouveau</span>
-          <span className={s.pastille} style={{ right: 8, bottom: 8, height: 22, padding: '0 8px', background: 'rgba(255,255,255,.95)', color: '#13243D' }}>96 % pour vous</span>
+          <span className={s.pastille} style={{ left: 8, top: 8, height: 20, padding: '0 8px', background: '#ee7623', color: '#fff' }}>Nouveau</span>
+          <span className={s.pastille} style={{ right: 8, bottom: 8, height: 22, padding: '0 8px', background: 'rgba(255,255,255,.95)', color: '#141416' }}>96 % pour vous</span>
         </div>
         <div style={{ padding: '9px 11px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           <b className={s.prixL}>895 000 €</b>
@@ -167,7 +167,7 @@ function Scene3() {
       <div className={`${s.ligneBien} ${s.monte}`} style={{ animationDelay: '.05s' }}>
         <span className={s.vignette}><img src={PHOTO_1} alt="" className={`${s.photoImg} ${s.zoom}`} /></span>
         <span style={{ display: 'flex', flexDirection: 'column' }}><b style={{ fontSize: 13.5, fontWeight: 800 }}>895 000 €</b><span className={s.petit}>5 pièces · Clamart</span></span>
-        <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 800, color: '#A95808' }}>{'Qu’en pensez-vous\u00a0?'}</span>
+        <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 800, color: '#b4560f' }}>{'Qu’en pensez-vous\u00a0?'}</span>
       </div>
       <div className={`${s.avis3} ${s.monte}`} style={{ animationDelay: '.2s' }}>
         <span className={`${s.avisB} ${s.appui}`} style={{ background: '#dcfce7', color: '#15803d' }}>
@@ -178,7 +178,7 @@ function Scene3() {
       </div>
       <div className={`${s.justesse} ${s.monte}`} style={{ animationDelay: '.35s' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#46566B' }}>Vos prochains biens vous ressemblent</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#363533' }}>Vos prochains biens vous ressemblent</span>
           <span className={s.chiffres}><b className={s.avant46}>46 %</b><b className={s.apres93}>93 %</b></span>
         </div>
         <span className={s.jauge}><i /></span>
@@ -193,7 +193,7 @@ function Scene4() {
     <div className={s.s4}>
       <div className={`${s.criteres} ${s.monte}`} style={{ animationDelay: '.05s' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 26, height: 26, borderRadius: 8, background: '#E8EFF8', color: '#22497D', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Svg d={D.reglages} t={15} /></span>
+          <span style={{ width: 26, height: 26, borderRadius: 8, background: '#f1f0ef', color: '#1d1d1f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Svg d={D.reglages} t={15} /></span>
           <b style={{ fontSize: 13, fontWeight: 800 }}>Mes critères</b>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -211,7 +211,7 @@ function Scene4() {
         <span className={s.ok}><Svg d={D.check} t={13} w={3} style={{ color: '#fff' }} /></span>
         <span style={{ display: 'flex', flexDirection: 'column' }}>
           <b style={{ fontSize: 11.5, fontWeight: 800 }}>Votre conseiller est prévenu</b>
-          <span style={{ fontSize: 10.5, color: '#C9D5E6' }}>La recherche suit vos nouveaux critères</span>
+          <span style={{ fontSize: 10.5, color: '#d9d8d6' }}>La recherche suit vos nouveaux critères</span>
         </span>
       </div>
     </div>
@@ -221,9 +221,9 @@ function Scene4() {
 /* ── 5 · Visites et carte : le rendez-vous s'ajoute, les biens sautillent ── */
 function Scene5() {
   const pins = [
-    { x: '18%', y: '22%', l: '895 k€', f: '#E68B23', t: '#13243D', r: '0s' },
-    { x: '56%', y: '48%', l: '920 k€', f: '#22497D', t: '#fff', r: '.5s' },
-    { x: '30%', y: '62%', l: '870 k€', f: '#22497D', t: '#fff', r: '1s' },
+    { x: '18%', y: '22%', l: '895 k€', f: '#ee7623', t: '#141416', r: '0s' },
+    { x: '56%', y: '48%', l: '920 k€', f: '#1d1d1f', t: '#fff', r: '.5s' },
+    { x: '30%', y: '62%', l: '870 k€', f: '#1d1d1f', t: '#fff', r: '1s' },
   ];
   return (
     <div className={s.s5}>
@@ -231,17 +231,17 @@ function Scene5() {
         <div className={s.agendaH}>SAMEDI</div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '6px 8px' }}>
           <b style={{ fontSize: 34, lineHeight: 1, fontWeight: 800 }}>18</b>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#46566B' }}>octobre · 10 h 30</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#363533' }}>octobre · 10 h 30</span>
           <span style={{ fontSize: 10.5, color: '#5B6B80' }}>Visite · 5 pièces, Clamart</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 8, borderTop: '1px solid #E8EDF3', fontSize: 10.5, fontWeight: 800, color: '#15803d' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 8, borderTop: '1px solid #eeeeed', fontSize: 10.5, fontWeight: 800, color: '#15803d' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path className={s.coche} d={D.check} /></svg>
           Ajouté à votre agenda
         </div>
       </div>
       <div className={`${s.miniCarte} ${s.monte}`} style={{ animationDelay: '.2s' }}>
         <svg width="170" height="202" viewBox="0 0 170 202" aria-hidden="true" style={{ position: 'absolute', inset: 0 }}>
-          <path d="M-10 140 C 40 120, 80 170, 180 120" fill="none" stroke="#CFE0F2" strokeWidth="12" strokeLinecap="round" />
+          <path d="M-10 140 C 40 120, 80 170, 180 120" fill="none" stroke="#e3e0de" strokeWidth="12" strokeLinecap="round" />
           <path d="M0 50 H170 M0 100 H170 M0 170 H170 M40 0 V202 M100 0 V202 M150 0 V202" stroke="#fff" strokeWidth="4" />
         </svg>
         {pins.map(p => (

@@ -193,7 +193,7 @@ export default function OngletVeille({ clientId, rechercheId, onChange, prenom, 
     return <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8', fontSize: 14, minHeight: 200 }}>{'Pas encore de recherche sur ce dossier : la veille démarre dès qu’une recherche est ouverte.'}</div>;
   }
   if (chargement) {
-    return <div style={{ padding: 48, textAlign: 'center', color: '#b6c1d1', fontSize: 14, minHeight: 200 }}>Chargement de la veille…</div>;
+    return <div style={{ padding: 48, textAlign: 'center', color: '#c6c3c1', fontSize: 14, minHeight: 200 }}>Chargement de la veille…</div>;
   }
 
   /* Le liseré de gauche d'une ligne : le verdict de la veille. */

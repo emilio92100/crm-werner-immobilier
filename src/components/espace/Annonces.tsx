@@ -329,20 +329,20 @@ export const CSS_ANNONCES = `
   border-radius:99px; border:1.5px solid #F2C08A; background:#FFF8EF; color:var(--or-fonce);
   font-size:13px; font-weight:800; -webkit-tap-highlight-color:transparent; transition:background .15s}
 .ra-env:hover{background:var(--or-fond)}
-.ra-aide{width:24px; height:24px; border-radius:50%; border:1.5px solid #C9D6E8; background:var(--carte);
+.ra-aide{width:24px; height:24px; border-radius:50%; border:1.5px solid #dad8d7; background:var(--carte);
   color:var(--encre2); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center;
   flex:0 0 auto; padding:0}
 .ra-aide:hover{color:var(--or-fonce); border-color:var(--or-trait); background:var(--or-fond)}
-.ra-der{display:flex; flex-direction:column; gap:8px; width:100%; padding:10px 14px 12px 16px; border-top:1px solid #EEF2F7;
-  background:#FAFBFD; text-align:left; -webkit-tap-highlight-color:transparent}
-.ra-der:hover{background:#F5F8FC}
+.ra-der{display:flex; flex-direction:column; gap:8px; width:100%; padding:10px 14px 12px 16px; border-top:1px solid #f3f2f2;
+  background:#FCFCFB; text-align:left; -webkit-tap-highlight-color:transparent}
+.ra-der:hover{background:#f6f6f7}
 .ra-der-h{display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:11px; font-weight:800;
   letter-spacing:.8px; text-transform:uppercase; color:#6B7A90}
 .ra-voir{display:inline-flex; align-items:center; gap:1px; letter-spacing:0; text-transform:none; font-size:12.5px; color:var(--encre2); white-space:nowrap}
 .ra-der-l{display:flex; align-items:center; gap:11px; min-width:0}
 .ra-der-tx{display:flex; flex-direction:column; gap:2px; min-width:0}
 .ra-der-tx b{font-size:13.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.ra-vig{width:44px; height:34px; border-radius:8px; overflow:hidden; flex:0 0 auto; background:#E8EFF8; color:var(--encre2);
+.ra-vig{width:44px; height:34px; border-radius:8px; overflow:hidden; flex:0 0 auto; background:#f1f0ef; color:var(--encre2);
   display:flex; align-items:center; justify-content:center}
 .ra-vig img{width:100%; height:100%; object-fit:cover; display:block}
 .ra-vig.grande{width:64px; height:50px; border-radius:11px}
@@ -381,16 +381,16 @@ export const CSS_ANNONCES = `
   font-size:13.5px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:8px}
 .ra-f-ph button:disabled{opacity:.6}
 .ra-f-vigs{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:10px}
-.ra-f-vig{position:relative; aspect-ratio:1; border-radius:12px; overflow:hidden; background:#E8EFF8}
+.ra-f-vig{position:relative; aspect-ratio:1; border-radius:12px; overflow:hidden; background:#f1f0ef}
 .ra-f-vig img{width:100%; height:100%; object-fit:cover; display:block}
-.ra-f-vig button{position:absolute; top:5px; right:5px; width:24px; height:24px; border-radius:50%; background:rgba(19,36,61,.72);
+.ra-f-vig button{position:absolute; top:5px; right:5px; width:24px; height:24px; border-radius:50%; background:rgba(20, 20, 22,.72);
   color:#fff; display:flex; align-items:center; justify-content:center; padding:0}
-.ra-f-vig.attente{background:linear-gradient(100deg,#E8EFF8 30%,#F5F8FC 50%,#E8EFF8 70%); background-size:300% 100%;
+.ra-f-vig.attente{background:linear-gradient(100deg,#f1f0ef 30%,#f6f6f7 50%,#f1f0ef 70%); background-size:300% 100%;
   animation:raAttente 1.2s linear infinite}
 @keyframes raAttente{from{background-position:100% 0} to{background-position:0 0}}
 .ra-f-aime{display:flex; flex-wrap:wrap; gap:7px}
 .ra-f-aime button{height:38px; padding:0 13px; border-radius:99px; border:1.5px solid var(--trait); background:var(--carte);
-  color:#3D4C63; font-size:13px; font-weight:700; -webkit-tap-highlight-color:transparent}
+  color:#31302e; font-size:13px; font-weight:700; -webkit-tap-highlight-color:transparent}
 .ra-f-aime button.on{border-color:var(--marque); background:var(--marque); color:#fff}
 .ra-f textarea{min-height:84px; resize:none; font-size:14.5px; line-height:1.5}
 .ra-f-go{margin-top:18px}

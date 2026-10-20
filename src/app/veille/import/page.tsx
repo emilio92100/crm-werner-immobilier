@@ -29,8 +29,8 @@ import { champsChauffage } from '@/lib/chauffage';
  * Aucune clé ne circule : c'est la page, déjà authentifiée, qui écrit.
  */
 
-const NAVY = '#1a2332';
-const OR = '#c9a84c';
+const NAVY = '#18181b';
+const OR = '#ee7623';
 
 type Ligne = { t: string; msg: string; ok: boolean };
 
@@ -706,7 +706,7 @@ export default function PageImportVeille() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#f4f6fa',
+        background: '#f7f7f7',
         padding: '40px 24px',
         fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
       }}
@@ -725,7 +725,7 @@ export default function PageImportVeille() {
         <div
           style={{
             background: 'white',
-            border: '1px solid #e3e8f0',
+            border: '1px solid #eaeae9',
             borderRadius: 16,
             padding: '18px 22px',
             display: 'flex',
@@ -772,7 +772,7 @@ export default function PageImportVeille() {
         <div
           style={{
             background: 'white',
-            border: '1px solid #e3e8f0',
+            border: '1px solid #eaeae9',
             borderRadius: 16,
             padding: '16px 22px',
           }}

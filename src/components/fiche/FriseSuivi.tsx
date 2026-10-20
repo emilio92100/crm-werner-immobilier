@@ -36,9 +36,9 @@ export type RelanceAVenir = { id: string; date_echeance: string; note: string | 
    écrit le titre, la frise le relit pour poser la pastille. ── */
 export const ISSUES_APPEL = [
   { k: 'repondu', lib: 'A répondu', titre: 'Appel — a répondu', c: '#15803d', bg: '#ecfdf3', bord: '#bbf0cf' },
-  { k: 'messagerie', lib: 'Messagerie', titre: 'Appel — messagerie', c: '#8a6a1f', bg: '#fdf6e3', bord: '#efdcae' },
+  { k: 'messagerie', lib: 'Messagerie', titre: 'Appel — messagerie', c: '#9c460d', bg: '#fdeee3', bord: '#f9c9a4' },
   { k: 'sans', lib: 'Pas de réponse', titre: 'Appel — pas de réponse', c: '#b4531f', bg: '#fff3eb', bord: '#f8d3bb' },
-  { k: 'recu', lib: 'Appel reçu', titre: 'Appel reçu', c: '#2d5c8f', bg: '#eaf2fb', bord: '#c9dcf1' },
+  { k: 'recu', lib: 'Appel reçu', titre: 'Appel reçu', c: '#393836', bg: '#f3f2f2', bord: '#dfdddb' },
 ] as const;
 export const issueAppel = (titre?: string | null) => ISSUES_APPEL.find(x => x.titre === (titre || '').trim()) || null;
 
@@ -50,39 +50,39 @@ export const issueAppel = (titre?: string | null) => ISSUES_APPEL.find(x => x.ti
    préciser (« Appel passé ») est « Sans précision ». */
 const ISSUES_TIROIR: { k: string; lib: string; c: string; bg: string; bord: string }[] = [
   ...ISSUES_APPEL.map(x => ({ k: x.k as string, lib: x.lib as string, c: x.c as string, bg: x.bg as string, bord: x.bord as string })),
-  { k: 'autre', lib: 'Sans précision', c: '#64748b', bg: '#f1f5f9', bord: '#d8e0ea' },
+  { k: 'autre', lib: 'Sans précision', c: '#64748b', bg: '#f1f5f9', bord: '#e2e1e0' },
 ];
 const issueDe = (it: LigneSuivi): string | null => (it.kind === 'event' && it.data?.type === 'appel' ? issueAppel(it.data.titre)?.k || 'autre' : null);
 
 /* ── Les familles, leur couleur et leur icône ── */
 type Famille = { ic: string; c: string; bg: string; carte: boolean };
 const FAMILLES: Record<string, Famille> = {
-  appel:    { ic: 'tel',      c: '#2d5c8f', bg: '#e9f1fb', carte: true },
-  rdv:      { ic: 'gens',     c: '#a07c28', bg: '#fbf4e2', carte: true },
-  note:     { ic: 'note',     c: '#475569', bg: '#eef2f7', carte: true },
+  appel:    { ic: 'tel',      c: '#393836', bg: '#f3f2f1', carte: true },
+  rdv:      { ic: 'gens',     c: '#b4560f', bg: '#fbece2', carte: true },
+  note:     { ic: 'note',     c: '#475569', bg: '#f3f2f2', carte: true },
   message:  { ic: 'bulle',    c: '#6d4fa3', bg: '#f2edfa', carte: true },
   comm:     { ic: 'mail',     c: '#0f766e', bg: '#e5f4f1', carte: true },
-  mandat:   { ic: 'mandat',   c: '#2e4166', bg: '#e8eef8', carte: true },
+  mandat:   { ic: 'mandat',   c: '#161618', bg: '#f1f0ef', carte: true },
   visite:   { ic: 'calendrier', c: '#15803d', bg: '#eaf7ef', carte: false },
   /* V3.214 : ce qui arrive aux biens du dossier (ses avis, un bien ajouté,
      un lien ouvert, une agence qui propose) — avant, en gris dans « Système ». */
   bien:     { ic: 'maison',   c: '#b4531f', bg: '#fff3eb', carte: false },
-  affaire:  { ic: 'euro',     c: '#a07c28', bg: '#fbf4e2', carte: false },
-  systeme:  { ic: 'point',    c: '#94a3b8', bg: '#f1f4f8', carte: false },
+  affaire:  { ic: 'euro',     c: '#b4560f', bg: '#fbece2', carte: false },
+  systeme:  { ic: 'point',    c: '#94a3b8', bg: '#f5f4f4', carte: false },
 };
 /* Les grandes étapes d'une vente (V3.47) : mandat, offre, offre acceptée,
    compromis, compromis tombé, acte. Écrites par le CRM, mais ce sont les
    moments qu'on vient chercher : une carte à leur couleur, pas une ligne
    discrète (`metadata.jalon`, posé par noterJalon dans biens/outils.ts). */
 const JALONS: Record<string, Famille> = {
-  mandat:          { ic: 'mandat',    c: '#2e4166', bg: '#e8eef8', carte: true },
-  offre_faite:     { ic: 'euro',      c: '#a07c28', bg: '#fbf4e2', carte: true },
-  offre_recue:     { ic: 'euro',      c: '#a07c28', bg: '#fbf4e2', carte: true },
+  mandat:          { ic: 'mandat',    c: '#161618', bg: '#f1f0ef', carte: true },
+  offre_faite:     { ic: 'euro',      c: '#b4560f', bg: '#fbece2', carte: true },
+  offre_recue:     { ic: 'euro',      c: '#b4560f', bg: '#fbece2', carte: true },
   offre_acceptee:  { ic: 'accord',    c: '#0f766e', bg: '#e5f4f1', carte: true },
   /* V3.172 : chaque tour de la négociation, et l'offre qui tombe. */
-  negociation:     { ic: 'euro',      c: '#1d4ed8', bg: '#eaf2fb', carte: true },
-  offre_close:     { ic: 'retour',    c: '#64748b', bg: '#f1f4f8', carte: true },
-  compromis:       { ic: 'signature', c: '#1d4ed8', bg: '#eaf2fb', carte: true },
+  negociation:     { ic: 'euro',      c: '#1d4ed8', bg: '#f3f2f2', carte: true },
+  offre_close:     { ic: 'retour',    c: '#64748b', bg: '#f5f4f4', carte: true },
+  compromis:       { ic: 'signature', c: '#1d4ed8', bg: '#f3f2f2', carte: true },
   compromis_tombe: { ic: 'retour',    c: '#b91c1c', bg: '#fef2f2', carte: true },
   acte:            { ic: 'cle',       c: '#15803d', bg: '#eaf7ef', carte: true },
 };
@@ -706,12 +706,12 @@ export default function FriseSuivi({ items, filtre, comptes, onFiltre, enPlus, a
             const action = actionDe.get(r.id);
             return (
               <li key={`r-${r.id}`} className={s.ligne} data-sorte="avenir">
-                <span className={s.noeud} data-bord="oui" style={{ color: retard ? '#be123c' : '#a07c28', background: retard ? '#fff1f2' : '#fdf6e3', borderColor: retard ? '#fbd0d6' : '#efdcae' }}><IcSuivi n="cloche" t={16} /></span>
+                <span className={s.noeud} data-bord="oui" style={{ color: retard ? '#be123c' : '#b4560f', background: retard ? '#fff1f2' : '#fdeee3', borderColor: retard ? '#fbd0d6' : '#f9c9a4' }}><IcSuivi n="cloche" t={16} /></span>
                 <div className={`${s.carte} ${s.carteRelance}`} data-retard={retard ? 'oui' : 'non'}>
                   <div className={s.carteTete}>
                     {/* V3.127 (Alexandre : « relance à faire le », pour qu'on comprenne mieux). */}
                     <span className={s.titre}>{`Relance à faire le ${midi(r.date_echeance).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}`}</span>
-                    <span className={s.pastille} style={retard ? { color: '#be123c', background: '#fff1f2', borderColor: '#fbd0d6' } : { color: '#8a6a1f', background: '#fff', borderColor: '#efdcae' }}>{delai(j)}</span>
+                    <span className={s.pastille} style={retard ? { color: '#be123c', background: '#fff1f2', borderColor: '#fbd0d6' } : { color: '#9c460d', background: '#fff', borderColor: '#f9c9a4' }}>{delai(j)}</span>
                     {onReporter && (
                       <button type="button" className={s.reporter} data-on={reportId === r.id ? 'oui' : 'non'} aria-expanded={reportId === r.id} onClick={() => ouvrirReport(r.id)} title="Reporter cette relance à un autre jour">
                         <IcSuivi n="report" t={13} e={2.2} />Reporter

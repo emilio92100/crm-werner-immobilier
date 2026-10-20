@@ -50,8 +50,8 @@ const STYLE: Record<string, string> = {
   ul: 'margin:4px 0 12px;padding-left:22px',
   ol: 'margin:4px 0 12px;padding-left:22px',
   li: 'margin:0 0 4px',
-  a: 'color:#22497D;text-decoration:underline',
-  blockquote: 'margin:0 0 12px;padding-left:12px;border-left:3px solid #DCE3EC;color:#5B6B80',
+  a: 'color:#1d1d1f;text-decoration:underline',
+  blockquote: 'margin:0 0 12px;padding-left:12px;border-left:3px solid #e5e4e3;color:#5B6B80',
 };
 
 /* L'adresse d'un lien : http(s), mailto ou tel ; « www.… » devient https. */
@@ -176,9 +176,9 @@ export type LienPiece = { nom: string; url: string; taille: number };
 const tailleFr = (o: number) => (o >= 1_000_000 ? `${String(Math.round(o / 100_000) / 10).replace('.', ',')} Mo` : `${Math.max(1, Math.round(o / 1000))} ko`);
 function blocLiens(liens: LienPiece[], jours: number): string {
   if (!liens.length) return '';
-  return `<div style="margin:18px 0 6px;padding:14px 16px;border:1px solid #E8EDF3;border-radius:12px;background:#F5F8FC">
-  <div style="font-size:12px;font-weight:700;letter-spacing:.6px;color:#A95808;margin-bottom:8px">DOCUMENTS À TÉLÉCHARGER · LIENS VALABLES ${jours} JOURS</div>
-  ${liens.map(l => `<div style="margin:6px 0"><a href="${esc(l.url)}" style="color:#13243D;font-weight:700">${esc(l.nom)}</a> <span style="color:#8FA3BF;font-size:12px">· ${tailleFr(l.taille)}</span></div>`).join('')}
+  return `<div style="margin:18px 0 6px;padding:14px 16px;border:1px solid #eeeeed;border-radius:12px;background:#f6f6f7">
+  <div style="font-size:12px;font-weight:700;letter-spacing:.6px;color:#b4560f;margin-bottom:8px">DOCUMENTS À TÉLÉCHARGER · LIENS VALABLES ${jours} JOURS</div>
+  ${liens.map(l => `<div style="margin:6px 0"><a href="${esc(l.url)}" style="color:#141416;font-weight:700">${esc(l.nom)}</a> <span style="color:#aba7a3;font-size:12px">· ${tailleFr(l.taille)}</span></div>`).join('')}
 </div>`;
 }
 export const texteLiens = (liens: LienPiece[], jours: number) => (liens.length
@@ -191,28 +191,28 @@ export function mailLibreHtml(o: { style: StyleMail; corps: string; h: Habillage
   const tete = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title>${LIEN_POLICE_MAIL}</head>`;
   if (o.style === 'simple') {
     return `${tete}<body style="margin:0;padding:0;background:#ffffff;">
-<div style="font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14.5px;line-height:1.6;color:#13243D;max-width:640px;padding:6px 4px;">${corps}</div>
+<div style="font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14.5px;line-height:1.6;color:#141416;max-width:640px;padding:6px 4px;">${corps}</div>
 </body></html>`;
   }
   const h = o.h;
-  return `${tete}<body style="margin:0;padding:0;background:#E6EDF6;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E6EDF6;">
+  return `${tete}<body style="margin:0;padding:0;background:#efeeed;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#efeeed;">
   <tr><td align="center" style="padding:24px 10px;">
-    <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #DCE3EC;border-radius:16px;overflow:hidden;">
-      <tr><td style="background:#22497D;border-bottom:3px solid #E68B23;padding:18px 26px;">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:16px;overflow:hidden;">
+      <tr><td style="background:#1d1d1f;border-bottom:3px solid #ee7623;padding:18px 26px;">
         <img src="${esc(h.logo)}" alt="${esc(h.agence)}" height="30" style="height:30px;width:auto;display:block;border:0;color:#ffffff;font-weight:700;font-size:16px;" />
       </td></tr>
       <tr><td style="padding:26px 26px 22px;">
-        <div style="font-size:14.5px;line-height:1.7;color:#46566B;">${corps}</div>
+        <div style="font-size:14.5px;line-height:1.7;color:#363533;">${corps}</div>
       </td></tr>
-      <tr><td style="background:#22497D;padding:16px 26px;">
+      <tr><td style="background:#1d1d1f;padding:16px 26px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
           <td style="font-size:14px;font-weight:700;color:#ffffff;">${esc(h.conseiller)}<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,.6);margin-top:3px;">${esc(h.agence)} · Paris &amp; Hauts-de-Seine</div></td>
-          <td align="right" style="font-size:15px;font-weight:700;color:#F2B266;white-space:nowrap;"><a href="tel:${esc(h.telephone.replace(/[^+0-9]/g, ''))}" style="color:#F2B266;text-decoration:none;">${esc(h.telephone)}</a></td>
+          <td align="right" style="font-size:15px;font-weight:700;color:#f6a15e;white-space:nowrap;"><a href="tel:${esc(h.telephone.replace(/[^+0-9]/g, ''))}" style="color:#f6a15e;text-decoration:none;">${esc(h.telephone)}</a></td>
         </tr></table>
       </td></tr>
     </table>
-    <div style="max-width:600px;margin:12px auto 0;font-size:11px;line-height:1.6;color:#8FA3BF;text-align:center;">${esc(h.mentions)}</div>
+    <div style="max-width:600px;margin:12px auto 0;font-size:11px;line-height:1.6;color:#aba7a3;text-align:center;">${esc(h.mentions)}</div>
   </td></tr>
 </table>
 </body></html>`;

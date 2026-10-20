@@ -56,8 +56,8 @@ export type DemandeSite = {
    la range à part, sans colonne ni SQL de plus. */
 export type Provenance = 'site' | 'pub' | 'seloger' | 'logicimmo' | 'bellesdemeures';
 export const PROVENANCES: { k: Provenance; lib: string; court: string; c: string; fond: string; trait: string; portail: boolean }[] = [
-  { k: 'site', lib: 'Mon site', court: 'Site', c: '#22497c', fond: '#eef3fa', trait: '#c9d8ee', portail: false },
-  { k: 'pub', lib: 'Pub estimation', court: 'Pub', c: '#a95808', fond: '#fdf1e3', trait: '#f2d3ad', portail: false },
+  { k: 'site', lib: 'Mon site', court: 'Site', c: '#1d1d1f', fond: '#f5f4f3', trait: '#dedcd9', portail: false },
+  { k: 'pub', lib: 'Pub estimation', court: 'Pub', c: '#b4560f', fond: '#fdf1e3', trait: '#f2d3ad', portail: false },
   { k: 'seloger', lib: 'SeLoger', court: 'SL', c: '#b4233c', fond: '#fdf0f2', trait: '#f3c7cf', portail: true },
   { k: 'logicimmo', lib: 'Logic-Immo', court: 'LI', c: '#0b6e6a', fond: '#e9f5f4', trait: '#bfe3df', portail: true },
   { k: 'bellesdemeures', lib: 'Belles Demeures', court: 'BD', c: '#5b2d6e', fond: '#f5eef8', trait: '#dfc9e8', portail: true },
@@ -86,10 +86,10 @@ export const CATEGORIES: {
 }[] = [
   /* V3.137 : une demande d'estimation fait un Propriétaire ; il devient
      Vendeur quand son bien passe en mandat (src/lib/contacts.ts). */
-  { k: 'estimation', lib: 'Estimation', court: 'Estimation', pluriel: 'Estimations', ic: 'euro', c: '#a07c28', fond: '#fbf6e9', trait: '#ecdcb0', type: 'proprietaire' },
+  { k: 'estimation', lib: 'Estimation', court: 'Estimation', pluriel: 'Estimations', ic: 'euro', c: '#b4560f', fond: '#fbf0e9', trait: '#f9c8a3', type: 'proprietaire' },
   { k: 'mandat_recherche', lib: 'Accompagnement acheteur', court: 'Acheteur', pluriel: 'Accompagnements', ic: 'loupe', c: '#0f7a4f', fond: '#ecfdf5', trait: '#bfe8d3', type: 'acheteur' },
-  { k: 'rappel_bien', lib: 'Info sur un bien', court: 'Info bien', pluriel: 'Infos sur un bien', ic: 'maison', c: '#2f5fb3', fond: '#eef4ff', trait: '#c9daf8', type: 'acheteur' },
-  { k: 'contact', lib: 'Demande générale', court: 'Message', pluriel: 'Messages', ic: 'bulle', c: '#34496e', fond: '#eef2f8', trait: '#d3dcea', type: null },
+  { k: 'rappel_bien', lib: 'Info sur un bien', court: 'Info bien', pluriel: 'Infos sur un bien', ic: 'maison', c: '#76716c', fond: '#f7f6f6', trait: '#e3e0de', type: 'acheteur' },
+  { k: 'contact', lib: 'Demande générale', court: 'Message', pluriel: 'Messages', ic: 'bulle', c: '#1d1d1f', fond: '#f4f3f2', trait: '#e0dedd', type: null },
 ];
 /* Un type inconnu (un futur formulaire) se range avec les demandes générales. */
 export const categorieDe = (k: string | null | undefined) => CATEGORIES.find(c => c.k === k) || CATEGORIES[3];

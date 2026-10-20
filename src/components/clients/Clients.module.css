@@ -20,16 +20,16 @@
   display: inline-flex; align-items: center; gap: 5px;
   padding: 8px 16px; border-radius: 10px;
   background: white; color: #4a5568;
-  border: 1px solid #e3e8f0;
+  border: 1px solid #eaeae9;
   font-size: 13px; font-weight: 600; cursor: pointer;
   font-family: 'DM Sans', sans-serif; transition: background 0.15s;
 }
-.btnSecondary:hover { background: #f7f9fc; }
+.btnSecondary:hover { background: #fafaf9; }
 
 /* FILTRES */
 .filtres { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
-.filtreGroup { display: flex; background: white; border: 1px solid #e3e8f0; border-radius: 10px; padding: 3px; gap: 2px; }
+.filtreGroup { display: flex; background: white; border: 1px solid #eaeae9; border-radius: 10px; padding: 3px; gap: 2px; }
 
 .filtreBtn {
   display: flex; align-items: center; gap: 5px;
@@ -38,8 +38,8 @@
   font-size: 12px; font-weight: 500; cursor: pointer;
   font-family: 'DM Sans', sans-serif; transition: all 0.12s;
 }
-.filtreBtn:hover { background: #f7f9fc; color: #1a2332; }
-.filtreBtnActive { background: #1a2332 !important; color: white !important; font-weight: 600; }
+.filtreBtn:hover { background: #fafaf9; color: #18181b; }
+.filtreBtnActive { background: #18181b !important; color: white !important; font-weight: 600; }
 
 .filtreBadge {
   font-size: 10px; font-weight: 700;
@@ -51,11 +51,11 @@
 
 .searchBox {
   display: flex; align-items: center; gap: 7px;
-  background: white; border: 1.5px solid #e3e8f0;
+  background: white; border: 1.5px solid #eaeae9;
   border-radius: 10px; padding: 7px 12px;
   transition: all 0.15s;
 }
-.searchBox:focus-within { border-color: #c9a84c; box-shadow: 0 0 0 3px rgba(201,168,76,0.1); }
+.searchBox:focus-within { border-color: #ee7623; box-shadow: 0 0 0 3px rgba(238, 118, 35,0.1); }
 
 .searchInput {
   border: none; outline: none; background: none;
@@ -68,13 +68,13 @@
 .list { display: flex; flex-direction: column; gap: 8px; }
 
 .clientRow {
-  background: white; border-radius: 14px; border: 1px solid #e3e8f0;
+  background: white; border-radius: 14px; border: 1px solid #eaeae9;
   padding: 14px 16px; display: flex; align-items: center; gap: 12px;
   cursor: pointer; transition: all 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 .clientRow:hover {
   transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.07);
-  border-color: rgba(201,168,76,0.3);
+  border-color: rgba(238, 118, 35,0.3);
 }
 
 .clientAv {
@@ -82,7 +82,7 @@
   background: var(--emilio-fond);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.clientAv span { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; color: #c9a84c; font-size: 13px; }
+.clientAv span { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; color: #ee7623; font-size: 13px; }
 
 .clientInfo { flex: 1; min-width: 0; }
 .clientTop  { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; flex-wrap: wrap; }
@@ -110,7 +110,7 @@
 
 /* MODAL */
 .modalOverlay {
-  position: fixed; inset: 0; background: rgba(15,22,35,0.5);
+  position: fixed; inset: 0; background: rgba(18, 18, 17,0.5);
   display: flex; align-items: center; justify-content: center;
   z-index: 100; padding: 20px; backdrop-filter: blur(4px);
 }
@@ -133,10 +133,10 @@
 
 .modalClose {
   width: 30px; height: 30px; border-radius: 8px;
-  border: 1px solid #e3e8f0; background: white; color: #64748b;
+  border: 1px solid #eaeae9; background: white; color: #64748b;
   font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
-.modalClose:hover { background: #f7f9fc; }
+.modalClose:hover { background: #fafaf9; }
 
 .modalBody { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
 
@@ -153,12 +153,12 @@
 .label { font-size: 11px; font-weight: 600; color: #4a5568; }
 
 .input, .textarea {
-  background: #f8fafc; border: 1.5px solid #e3e8f0; border-radius: 8px;
+  background: #f8fafc; border: 1.5px solid #eaeae9; border-radius: 8px;
   padding: 8px 11px; font-size: 12.5px; color: var(--emilio);
   font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.15s;
   width: 100%;
 }
-.input:focus, .textarea:focus { border-color: #c9a84c; background: white; }
+.input:focus, .textarea:focus { border-color: #ee7623; background: white; }
 .textarea { resize: vertical; line-height: 1.5; }
 
 .modalFooter {
@@ -183,7 +183,7 @@
 .entete {
   display: flex; align-items: center;
   padding: 11px 18px; margin-bottom: 7px;
-  background: #eef2f8; border: 1px solid #e3e9f2; border-radius: 11px;
+  background: #f4f3f2; border: 1px solid #ebeaea; border-radius: 11px;
 }
 .entete > span {
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -202,12 +202,12 @@
 .ligne {
   position: relative;
   display: flex; align-items: center;
-  background: white; border: 1px solid #e8edf5; border-radius: 13px;
+  background: white; border: 1px solid #efeeee; border-radius: 13px;
   padding: 12px 18px; cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.ligne:hover { border-color: #d8c48a; box-shadow: 0 5px 20px rgba(26,35,50,0.08); }
-.ligneOuverte { border-color: #d8c48a; box-shadow: 0 5px 20px rgba(26,35,50,0.08); z-index: 20; }
+.ligne:hover { border-color: #f6a86c; box-shadow: 0 5px 20px rgba(24, 24, 27,0.08); }
+.ligneOuverte { border-color: #f6a86c; box-shadow: 0 5px 20px rgba(24, 24, 27,0.08); z-index: 20; }
 
 .avatar {
   width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
@@ -223,7 +223,7 @@
   font-size: 14.5px; font-weight: 800; color: var(--emilio); letter-spacing: -0.15px;
   line-height: 1.18; overflow: hidden;
 }
-.ref { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 700; color: #b0bccd; letter-spacing: 0.4px; }
+.ref { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 700; color: #c1bebc; letter-spacing: 0.4px; }
 
 .rech {
   display: block; font-size: 13.5px; color: #55647a; font-weight: 500;
@@ -232,15 +232,15 @@
 
 .ville {
   display: inline-flex; align-items: center; gap: 4px;
-  background: #f5f8fc; border: 1px solid #e6edf6; color: #4a6b90;
+  background: #f6f6f7; border: 1px solid #efeeed; color: #716d69;
   border-radius: 99px; padding: 2px 9px; font-size: 11.5px; font-weight: 600;
   max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.villePlus { font-size: 11.5px; font-weight: 600; color: #a3b0c2; flex-shrink: 0; }
+.villePlus { font-size: 11.5px; font-weight: 600; color: #b6b2af; flex-shrink: 0; }
 
 .budget {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 15.5px; font-weight: 800; color: #a9822f;
+  font-size: 15.5px; font-weight: 800; color: #c85a10;
   letter-spacing: -0.3px; white-space: nowrap;
 }
 
@@ -252,8 +252,8 @@
 /* ─── La carte de survol ─── */
 .fiche {
   position: fixed; width: 306px; z-index: 300;
-  background: white; border: 1px solid #ece3d0; border-radius: 15px;
-  box-shadow: 0 2px 6px rgba(26,35,50,0.05), 0 12px 28px rgba(26,35,50,0.11);
+  background: white; border: 1px solid #ecdcd0; border-radius: 15px;
+  box-shadow: 0 2px 6px rgba(24, 24, 27,0.05), 0 12px 28px rgba(24, 24, 27,0.11);
   overflow: hidden; cursor: default;
   animation: ficheEntre 0.13s cubic-bezier(.16,1,.3,1);
   transform-origin: top left;
@@ -262,13 +262,13 @@
 @keyframes ficheEntre { from { opacity: 0; transform: translateY(-5px) scale(.975); } to { opacity: 1; transform: none; } }
 
 .ficheTete {
-  background: #fdfaf1; border-bottom: 1px solid #f0e6cd;
+  background: #fdf6f1; border-bottom: 1px solid #f0dccd;
   padding: 12px 15px; display: flex; align-items: center; gap: 11px;
 }
 .ficheAv {
   width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
-  background: white; color: #a9822f; box-shadow: inset 0 0 0 2px #e3d3ab;
+  background: white; color: #c85a10; box-shadow: inset 0 0 0 2px #f8c096;
   font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 800;
 }
 .ficheNom {
@@ -286,7 +286,7 @@
 
 .ficheChiffres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .chiffre {
-  background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px;
+  background: #f8fafc; border: 1px solid #f3f2f2; border-radius: 10px;
   padding: 8px 6px; text-align: center;
 }
 .chiffre b {
@@ -297,14 +297,14 @@
   display: block; font-style: normal; font-size: 9.5px; font-weight: 800;
   color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 2px;
 }
-.chiffreOr { background: #fdfaf1; border-color: #ecdcb4; }
-.chiffreOr b { color: #a9822f; }
+.chiffreOr { background: #fdf6f1; border-color: #f9caa7; }
+.chiffreOr b { color: #c85a10; }
 .chiffreOr i { color: #b09a63; }
 
 .ficheTrait { height: 1px; background: #f1f5f9; margin: 11px 0; }
 
 .ficheRub {
-  font-size: 10px; font-weight: 800; color: #a3b0c2;
+  font-size: 10px; font-weight: 800; color: #b6b2af;
   text-transform: uppercase; letter-spacing: 0.9px; margin-bottom: 4px;
 }
 .ficheTxt { font-size: 12.5px; color: #55647a; line-height: 1.5; }
@@ -316,7 +316,7 @@
 
 .ficheDuo { display: flex; gap: 7px; }
 .ficheCase {
-  flex: 1; background: #f8fafc; border: 1px solid #eef2f7;
+  flex: 1; background: #f8fafc; border: 1px solid #f3f2f2;
   border-radius: 10px; padding: 8px 10px; min-width: 0;
 }
 .ficheCase i {
@@ -332,11 +332,11 @@
 .ficheBtn {
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 9px; padding: 8px 11px; font-size: 12.5px; font-weight: 700;
-  background: white; border: 1px solid #e3e8f0; color: #475569;
+  background: white; border: 1px solid #eaeae9; color: #475569;
   text-decoration: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
   transition: background 0.12s;
 }
-.ficheBtn:hover { background: #f7f9fc; }
+.ficheBtn:hover { background: #fafaf9; }
 .ficheBtnFort { flex-grow: 1; background: var(--emilio-fond); border-color: var(--emilio); color: white; }
 .ficheBtnFort:hover { background: var(--emilio-clair); }
 
@@ -370,21 +370,21 @@
 /* ─── Classer la liste : les en-têtes deviennent des commandes ─── */
 .triBtn, .triFleche {
   display: inline-flex; align-items: center; gap: 5px;
-  background: #ffffff; border: 1px solid #dde4ee; border-radius: 8px;
+  background: #ffffff; border: 1px solid #e7e6e4; border-radius: 8px;
   padding: 3px 8px; cursor: pointer;
   font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 800;
   color: #5d6b80; text-transform: uppercase; letter-spacing: 0.9px;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 .triFleche { padding: 3px 6px; }
-.triBtn:hover, .triFleche:hover { border-color: #c9a84c; }
-.triBtnActif { background: #1a2332; border-color: #1a2332; color: #ffffff; }
-.triBtnActif:hover { background: #243044; border-color: #243044; }
+.triBtn:hover, .triFleche:hover { border-color: #ee7623; }
+.triBtnActif { background: #18181b; border-color: #18181b; color: #ffffff; }
+.triBtnActif:hover { background: #21201f; border-color: #21201f; }
 
 .triMenu {
   position: absolute; top: calc(100% + 9px); left: 0; z-index: 60;
-  width: 232px; background: #ffffff; border: 1px solid #e3e8f0; border-radius: 13px;
-  box-shadow: 0 14px 34px rgba(15,22,35,0.16); overflow: hidden;
+  width: 232px; background: #ffffff; border: 1px solid #eaeae9; border-radius: 13px;
+  box-shadow: 0 14px 34px rgba(18, 18, 17,0.16); overflow: hidden;
   display: flex; flex-direction: column;
   animation: triMenuEntre 0.14s cubic-bezier(.16,1,.3,1);
   transform-origin: top left;
@@ -393,7 +393,7 @@
 
 .triItem {
   display: flex; align-items: flex-start; gap: 9px;
-  padding: 9px 13px; border: none; border-bottom: 1px solid #f4f7fb;
+  padding: 9px 13px; border: none; border-bottom: 1px solid #f8f8f7;
   background: #ffffff; cursor: pointer; text-align: left;
   font-family: 'DM Sans', sans-serif;
 }
@@ -404,7 +404,7 @@
   text-transform: none; letter-spacing: 0;
 }
 .triItem small {
-  display: block; font-size: 11px; font-weight: 600; color: #a3b0c2;
+  display: block; font-size: 11px; font-weight: 600; color: #b6b2af;
   margin-top: 1px; text-transform: none; letter-spacing: 0;
 }
 
@@ -434,10 +434,10 @@
     grid-template-areas: "client bud" "rech rech" "sect sig";
     align-items: center; gap: 9px 10px;
     padding: 12px 12px 11px; border-radius: 15px;
-    box-shadow: 0 1px 2px rgba(16,24,40,.04);
+    box-shadow: 0 1px 2px rgba(20, 19, 19,.04);
     -webkit-tap-highlight-color: transparent;
   }
-  .ligne:active { background: #fbfaf6; border-color: #d8c48a; }
+  .ligne:active { background: #fbf8f6; border-color: #f6a86c; }
   .ligne > .colClient { grid-area: client; width: auto; }
   .ligne > .colRech { grid-area: rech; padding-right: 0; }
   .ligne > .colSect { grid-area: sect; width: auto; }
@@ -475,9 +475,9 @@
   .filtreGroup::-webkit-scrollbar { display: none; }
   .filtreBtn {
     flex-shrink: 0; padding: 7px 12px; border-radius: 99px; font-size: 13px; font-weight: 600;
-    background: #fff; border: 1px solid #e3e8f0; white-space: nowrap;
+    background: #fff; border: 1px solid #eaeae9; white-space: nowrap;
   }
-  .filtreBtnActive { border-color: #1a2332; }
+  .filtreBtnActive { border-color: #18181b; }
   .filtreBadge { font-size: 11px; padding: 1px 6px; }
 
   .searchBox { padding: 0 13px; height: 42px; border-radius: 13px; gap: 9px; }
@@ -503,20 +503,20 @@
    Un propriétaire qui achète est un mandat vendeur en puissance.
    L'or ne sert qu'à lui, pour qu'il se voie d'un coup d'œil. */
 .situations { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: -6px; }
-.situationsTitre { font-size: 10.5px; font-weight: 800; color: #a3b0c2; text-transform: uppercase; letter-spacing: 0.9px; margin-right: 4px; }
+.situationsTitre { font-size: 10.5px; font-weight: 800; color: #b6b2af; text-transform: uppercase; letter-spacing: 0.9px; margin-right: 4px; }
 .sitBtn {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 10px; border-radius: 99px; border: 1px solid #e3e8f0;
+  padding: 4px 10px; border-radius: 99px; border: 1px solid #eaeae9;
   background: #fff; color: #64748b; font-size: 12px; font-weight: 600;
   cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.12s; white-space: nowrap;
 }
-.sitBtn:hover { border-color: #cfd8e4; color: #1a2332; }
-.sitBtnOr { color: #8a6d1f; border-color: #eadcb0; background: #fffdf6; }
-.sitBtnOr:hover { border-color: #d9c27e; color: #6f5714; }
+.sitBtn:hover { border-color: #dbdad8; color: #18181b; }
+.sitBtnOr { color: #9c460d; border-color: #f9c7a1; background: #fffaf6; }
+.sitBtnOr:hover { border-color: #f5a262; color: #79360a; }
 /* Le bouton choisi garde ses couleurs au survol : sinon le texte marine
    disparaissait sur le fond marine. */
-.sitBtnActif, .sitBtnActif:hover { background: #1a2332; border-color: #1a2332; color: #fff; }
-.sitBtnOr.sitBtnActif, .sitBtnOr.sitBtnActif:hover { background: #c9a84c; border-color: #c9a84c; color: #1a2332; }
+.sitBtnActif, .sitBtnActif:hover { background: #18181b; border-color: #18181b; color: #fff; }
+.sitBtnOr.sitBtnActif, .sitBtnOr.sitBtnActif:hover { background: #ee7623; border-color: #ee7623; color: #18181b; }
 .sitBadge { font-size: 10px; font-weight: 800; padding: 0 6px; border-radius: 99px; background: #f1f5f9; color: #64748b; }
 .sitBtnActif .sitBadge { background: rgba(255,255,255,0.22); color: inherit; }
 
@@ -524,16 +524,16 @@
   display: inline-flex; align-items: center; gap: 4px; margin-left: 7px;
   font-size: 9.5px; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase;
   border-radius: 99px; padding: 1px 7px 1px 6px; vertical-align: 1px; white-space: nowrap;
-  color: #8a6d1f; background: #fdf8ea; border: 1px solid #ecdcae;
+  color: #9c460d; background: #fdf2ea; border: 1px solid #f9c7a1;
 }
-.proprioVend { color: #1a2332; background: #e9d49a; border-color: #c9a84c; }
+.proprioVend { color: #18181b; background: #f8ba8b; border-color: #ee7623; }
 .occupe {
   display: inline-block; margin-left: 7px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.4px;
-  text-transform: uppercase; color: #94a3b8; border: 1px solid #e6ebf2; border-radius: 99px; padding: 1px 7px; vertical-align: 1px; white-space: nowrap;
+  text-transform: uppercase; color: #94a3b8; border: 1px solid #edeceb; border-radius: 99px; padding: 1px 7px; vertical-align: 1px; white-space: nowrap;
 }
 .aRenseigner {
   display: inline-block; margin-left: 7px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.3px;
-  color: #b6c1cf; border: 1px dashed #d5dde8; border-radius: 99px; padding: 0 7px; vertical-align: 1px; white-space: nowrap;
+  color: #c5c2c0; border: 1px dashed #e0dedd; border-radius: 99px; padding: 0 7px; vertical-align: 1px; white-space: nowrap;
 }
 
 @media (max-width: 760px) {

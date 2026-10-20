@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     apple: [{ url: '/logos/e-180.png', sizes: '180x180' }],
   },
 };
-export const viewport: Viewport = { themeColor: '#22497D' };
+export const viewport: Viewport = { themeColor: '#1d1d1f' };
 
 export default async function PageProposer({ params, searchParams }: {
   params: Promise<{ token: string }>; searchParams: Promise<Record<string, string | string[] | undefined>>;

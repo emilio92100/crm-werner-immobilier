@@ -28,13 +28,13 @@ export const modeAcheteurs = (etape: string): ModeAcheteurs =>
 /* ── Petits morceaux ── */
 const C = 113.1; // périmètre du cercle de la note (r = 18)
 export function Note({ n, t = 48, gris }: { n: number; t?: number; gris?: boolean }) {
-  const coul = gris ? '#cbd5e1' : n >= 85 ? '#16a34a' : n >= SEUIL_CORRESPOND ? '#c9a84c' : '#94a3b8';
+  const coul = gris ? '#cbd5e1' : n >= 85 ? '#16a34a' : n >= SEUIL_CORRESPOND ? '#ee7623' : '#94a3b8';
   return (
     <svg className={a.note} width={t} height={t} viewBox="0 0 48 48" role="img" aria-label={`${n} pour cent`}>
-      <circle cx="24" cy="24" r="18" fill="none" stroke="#eef1f6" strokeWidth="4.5" />
+      <circle cx="24" cy="24" r="18" fill="none" stroke="#f2f2f2" strokeWidth="4.5" />
       <circle cx="24" cy="24" r="18" fill="none" stroke={coul} strokeWidth="4.5" strokeLinecap="round"
         strokeDasharray={`${(C * n / 100).toFixed(1)} ${C}`} transform="rotate(-90 24 24)" />
-      <text x="24" y="28.5" textAnchor="middle" fill={gris ? '#94a3b8' : '#1a2332'} style={{ font: "800 12.5px 'Plus Jakarta Sans', sans-serif" }}>{n}</text>
+      <text x="24" y="28.5" textAnchor="middle" fill={gris ? '#94a3b8' : '#18181b'} style={{ font: "800 12.5px 'Plus Jakarta Sans', sans-serif" }}>{n}</text>
     </svg>
   );
 }
@@ -124,7 +124,7 @@ export function CarteAcheteurs({ acheteurs, mode, onVoir }: { acheteurs: Acheteu
       {n > 0 ? (
         <div className={a.pile}>
           {tete.map((x, i) => <span key={x.recherche.id} className={a[`f${(i % 3) + 1}`]}><Avatar acheteur={x} petit /></span>)}
-          {reste > 0 && <span className={a.avPetit} style={{ background: '#eef1f6', color: '#475569' }}>{`+${reste}`}</span>}
+          {reste > 0 && <span className={a.avPetit} style={{ background: '#f2f2f2', color: '#475569' }}>{`+${reste}`}</span>}
           {!avant && nouveaux > 0 && <span className={a.nouveaux}><i className={a.ping} />{nouveaux > 1 ? `${nouveaux} nouveaux` : '1 nouveau'}</span>}
         </div>
       ) : <span className={a.kpiSous}>{avant ? 'Aucune recherche ne correspond encore.' : 'Aucune recherche ne correspond pour l’instant.'}</span>}

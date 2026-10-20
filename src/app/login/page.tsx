@@ -104,11 +104,11 @@ function FormulaireAcces() {
   const champ: React.CSSProperties = {
     width: '100%',
     boxSizing: 'border-box',
-    border: '1px solid #e3e8f0',
+    border: '1px solid #eaeae9',
     borderRadius: 11,
     padding: '13px 15px',
     fontSize: 16,
-    color: '#1a2332',
+    color: '#18181b',
     fontFamily: 'inherit',
     outline: 'none',
     background: '#f8fafc',
@@ -128,7 +128,7 @@ function FormulaireAcces() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#1a2332',
+        background: '#18181b',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -151,7 +151,7 @@ function FormulaireAcces() {
             style={{
               fontSize: 12,
               fontWeight: 700,
-              color: '#c9a84c',
+              color: '#ee7623',
               textTransform: 'uppercase',
               letterSpacing: 2,
             }}
@@ -236,7 +236,7 @@ function FormulaireAcces() {
             style={{
               width: '100%',
               marginTop: 18,
-              background: envoi || !pret ? '#d8c89a' : '#c9a84c',
+              background: envoi || !pret ? '#f7b17b' : '#ee7623',
               color: '#ffffff',
               border: 'none',
               borderRadius: 11,
@@ -268,7 +268,7 @@ function FormulaireAcces() {
 
 export default function PageLogin() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#1a2332' }} />}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#18181b' }} />}>
       <FormulaireAcces />
     </Suspense>
   );
