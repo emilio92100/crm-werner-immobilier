@@ -55,6 +55,11 @@ export function dossierRecherche(r: Record<string, unknown>, m: MemoireRecherche
   const visites = m.visites.filter(v => v.recherche_id === rid);
   const appris = apprisDe(visites as Parameters<typeof apprisDe>[0], (r.appris_masques as string[] | null) || []);
   const x: Record<string, unknown> = garder(r, CLES_RECHERCHE);
+  /* Werner : ce que le demandeur veut faire (location, droit au bail, fonds,
+     murs), son activité, son loyer annuel HT HC, la vitrine, les postes,
+     les emplacements (recherches.criteres_pro). */
+  const pro = r.criteres_pro && typeof r.criteres_pro === 'object' ? garder(r.criteres_pro as Record<string, unknown>, ['natures', 'activite', 'loyerMin', 'loyerMax', 'vitrineMin', 'postesMin', 'emplacements']) : {};
+  if (Object.keys(pro).length) x.criteres_pro = pro;
   if (Array.isArray(r.transport_arrets) && r.transport_arrets.length) {
     x.arrets = (r.transport_arrets as { nom?: string; minutes?: number }[]).map(a => `${a.nom || ''}${a.minutes ? ` (${a.minutes} min à pied)` : ''}`);
   }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
 import { avantMandat, type BienVente } from '@/lib/biens-vente';
+import { proDuBien, nomNature, nomLocal } from '@/lib/affaires';
 import { garder, court, memoireRecherches, dossierRecherche } from '@/lib/dossier-recherche';
 
 export const runtime = 'nodejs';
@@ -58,7 +59,7 @@ const ko = (erreur: string, status = 400) => NextResponse.json({ ok: false, erre
 type Avis = { v: 'oui' | 'a_voir' | 'non'; r: string; le: string; cle: string; s?: number; p?: string[]; m?: string[] };
 /* La version de ce qui est demandé : la changer fait relire les avis gardés. */
 /* V3.128 : v3, la règle des quartiers — les avis déjà rendus sont relus une fois. */
-const VERSION = 'v3';
+const VERSION = 'w1'; // Werner : les règles de l'immobilier d'entreprise
 
 /* La forme de la réponse, imposée à l'IA (V3.124 ; plus, moins, note : V3.125). */
 const OUTIL = {
@@ -99,6 +100,11 @@ const CLES_BIEN = [
   'vitrage', 'volets', 'annexes', 'surfBalcon', 'surfTerrasse', 'surfJardin', 'surfLoggia', 'surfCave', 'nbParking', 'stationnement', 'expo', 'vue', 'visAVis',
   'situation', 'proxMetro', 'proxBus', 'proxRer', 'proxTram', 'proxEcole', 'proxCommerces', 'dpe', 'ges', 'chargesAn', 'taxeFonciere', 'lots',
   'travaux', 'travauxVotes', 'coproAVenir', 'equipements', 'interieurNote', 'exterieurNote', 'visiteAtouts', 'visiteDefauts', 'quartier', 'ville', 'cp',
+  /* Werner : l'immobilier d'entreprise (src/lib/biens-vente.ts, ETAPES_BIEN). */
+  'surfRdc', 'surfEtage', 'surfSousSol', 'surfMezzanine', 'surfReserve', 'surfBureaux', 'surfPonderee', 'divisible', 'surfDivMin', 'postes', 'hsp',
+  'emplacement', 'vitrine', 'angle', 'flux', 'voisins', 'config', 'nbBureaux', 'nbReunion', 'extraction', 'licence', 'couverts', 'erp', 'clim',
+  'destinationType', 'destination', 'bailType', 'bailDuree', 'bailDebut', 'bailEcheance', 'bailFin', 'cessionBail', 'sousLocation', 'bailNote',
+  'activite', 'enseigne', 'creeEn', 'salaries', 'accompagnement', 'fondsNote', 'office', 'surfCour', 'terrasseRue', 'disponible', 'occupation',
 ];
 function bienPourIA(b: BienVente): Record<string, unknown> {
   const d = (b.donnees || {}) as Record<string, unknown>;
@@ -115,6 +121,13 @@ function bienPourIA(b: BienVente): Record<string, unknown> {
   }
   const texte = court(d.annonceTexte, 2500);
   if (texte) x.description = texte;
+  /* Werner : la nature de l'affaire et ses montants, en clair. */
+  const p = proDuBien(d);
+  if (p.nature) x.nature = nomNature(p.nature);
+  if (p.type) x.type_de_local = nomLocal(p.type);
+  if (p.loyerAn) x.loyer_annuel_ht_hc = p.loyerAn;
+  if (p.prix) x.prix_de_cession_ou_de_vente = p.prix;
+  if (p.nature === 'location') delete x.prix;
   return x;
 }
 
@@ -169,25 +182,25 @@ export async function POST(req: NextRequest) {
 
     let modele = '';
     if (aLire.length) {
-      const consigne = `Tu aides Werner, chasseur immobilier à Paris et dans les Hauts-de-Seine, à décider à quels demandeurs de sa base proposer ses biens.
+      const consigne = `Tu aides Werner, agent en immobilier d'entreprise à Paris (Werner Immobilier : bureaux, boutiques et locaux commerciaux, restaurants, locaux d'activité, entrepôts), à décider à quels demandeurs de sa base proposer ses affaires (une location, une cession de droit au bail, un fonds de commerce, des murs).
 
-Un premier tri en chiffres a déjà retenu ces couples bien × demandeur (budget, secteur, type, surface, chambres). Ton rôle : tout relire, comme le ferait Werner, et repérer ce que les chiffres ne voient pas.
+Un premier tri en chiffres a déjà retenu ces couples affaire × demandeur (nature, type de local, loyer ou prix, secteur, surface). Ton rôle : tout relire, comme le ferait Werner, et repérer ce que les chiffres ne voient pas.
 
-Lis pour chaque recherche : ses critères et ses « exigences » (indispensable = bloquant), ses notes, « son_parcours » (ce qui ne lui a pas convenu, surtout ce qui « revient souvent », et ce qui lui a plu), ce que ses visites ont appris, ses comptes rendus, ce qu'il a dit des biens montrés, les annonces écartées et leur motif. Et pour chaque bien : toute la fiche, sa description, sa visite sur place (visiteAtouts, visiteDefauts), l'immeuble, l'étage et l'ascenseur, l'exposition, la vue, le vis-à-vis, l'état, les travaux.
+Lis pour chaque recherche : ses critères, « criteres_pro » (ce qu'il veut faire : louer, reprendre un bail, racheter un fonds, acheter des murs ; son activité ; son loyer annuel HT HC ; la vitrine, les postes de travail, les emplacements), ses « exigences » (indispensable = bloquant : rez-de-chaussée, vitrine, extraction, terrasse, réserve, climatisation, accès PMR, parking, quai…), ses notes, « son_parcours » (ce qui ne lui a pas convenu, surtout ce qui « revient souvent », et ce qui lui a plu), ce que ses visites ont appris, ses comptes rendus, ce qu'il a dit des locaux montrés, les annonces écartées et leur motif. Et pour chaque affaire : sa nature, son loyer annuel HT HC ou son prix, toute la fiche, sa description, la répartition des surfaces, la vitrine, l'emplacement, l'aménagement, l'extraction, la destination du bail et le bail, pour un fonds l'activité, sa visite sur place (visiteAtouts, visiteDefauts), l'immeuble et les accès.
 
 Règles :
-- « non » : un point bloquant, ou exactement ce qu'il refuse souvent (ex. il cherche un accès PMR et l'immeuble ancien n'a qu'un petit ascenseur ; il a refusé trois biens pour le vis-à-vis et celui-ci est sur cour face à un immeuble).
-- « a_voir » : ça peut lui plaire mais un point est à vérifier ou à discuter avec lui (une information manque sur le bien, un critère est juste à la limite).
-- « oui » : rien ne s'y oppose, et de préférence le bien a ce qui lui a plu.
-- Budget : la même règle que la veille. Jusqu'à environ 7 % au-dessus de son budget, c'est négociable (900 000 € → jusqu'à 960 000 €) : ce n'est pas une raison de dire « non ». Au-delà de 10 %, « non » sauf s'il a dit être souple.
+- « non » : un point bloquant, ou exactement ce qu'il refuse souvent. Sont bloquants : une nature qui n'est pas ce qu'il veut faire (il veut louer un local vide et l'affaire est un droit au bail à payer, sauf si ses notes l'ouvrent) ; une destination du bail qui ne permet pas son activité (bail « sauf restauration » pour un restaurateur) ; pas d'extraction possible pour une activité de cuisine ; un étage pour un commerce qui vit de sa vitrine.
+- « a_voir » : ça peut lui plaire mais un point est à vérifier ou à discuter avec lui (une information manque, comme la destination du bail ou l'extraction ; un critère est juste à la limite).
+- « oui » : rien ne s'y oppose, et de préférence l'affaire a ce qui lui a plu.
+- Loyer et prix : la même règle que la veille. Jusqu'à environ 7 % au-dessus de son loyer maximum ou de son budget, c'est négociable : ce n'est pas une raison de dire « non ». Au-delà de 10 %, « non » sauf s'il a dit être souple. Les honoraires, le dépôt de garantie et les droits d'enregistrement n'entrent pas dans la comparaison.
 - Une information absente de la fiche n'est jamais un « non » : c'est « a_voir », et tu dis quoi vérifier.
 - Quartiers : un secteur écrit « Quartier (Ville) » veut dire qu'il ne cherche que dans ces quartiers-là de la ville. Si le quartier du bien est renseigné et n'en fait pas partie, ce n'est jamais « oui » : « a_voir » au mieux, avec « Hors de ses quartiers » dans les moins. Un début de nom vaut le nom entier (« Silly » = « Silly-Gallieni »). Lis aussi ses notes : un secteur qu'elles précisent (« Boulogne-Nord », « près du parc ») compte comme un critère ; si tu ne peux pas savoir si le bien y est, c'est « a_voir », et tu le dis.
 - N'invente rien : ne t'appuie que sur ce qui est écrit.
 
 Pour chaque couple, Werner lit d'un coup d'œil :
-- « raison » : une phrase (140 caractères au plus), en français simple, qui résume ton avis et cite le fait précis. Exemples : « Cherche un accès PMR : immeuble de 1932 au petit ascenseur. », « Lumineux et traversant, ce qu'il a aimé ; le budget passe. », « Exposition non renseignée : il a refusé deux biens trop sombres. »
-- « plus » : de 0 à 3 points forts POUR CET DEMANDEUR, 6 mots au plus chacun, du plus fort au moins fort. Ce qui colle à ce qu'il cherche ou à ce qui lui a plu : « Traversant et lumineux », « 3e étage avec ascenseur », « Dans son secteur », « Budget respecté ».
-- « moins » : de 0 à 3 points faibles ou à vérifier, 6 mots au plus chacun, le plus gênant d'abord : « Pas de balcon », « 6 % au-dessus du budget », « Exposition non renseignée ». Rien de gênant : une liste vide.
+- « raison » : une phrase (140 caractères au plus), en français simple, qui résume ton avis et cite le fait précis. Exemples : « Restaurateur : extraction en place et bail tous commerces. », « Bail sauf restauration : ne permet pas son activité. », « Destination du bail non précisée : à vérifier avant de proposer. »
+- « plus » : de 0 à 3 points forts POUR CE DEMANDEUR, 6 mots au plus chacun, du plus fort au moins fort. Ce qui colle à ce qu'il cherche ou à ce qui lui a plu : « Vitrine d'angle de 8 m », « Extraction en place », « Dans son secteur », « Loyer dans son budget ».
+- « moins » : de 0 à 3 points faibles ou à vérifier, 6 mots au plus chacun, le plus gênant d'abord : « Pas de réserve », « 6 % au-dessus de son loyer », « Destination non précisée ». Rien de gênant : une liste vide.
 - « score » : ses chances d'être intéressé, sur 100, selon tout ce que tu as lu. Cohérent avec le verdict : « oui » de 70 à 100, « a_voir » de 40 à 69, « non » de 0 à 39. Deux « oui » ne se valent pas : départage-les.
 
 Ne répète pas la phrase dans les plus et les moins : ils la complètent.

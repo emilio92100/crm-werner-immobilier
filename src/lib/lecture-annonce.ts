@@ -15,7 +15,8 @@ import { CHAUFFAGE_MODES, CHAUFFAGE_ENERGIES, CHAUFFAGE_EMETTEURS, versListe } f
 /** La forme de la réponse demandée à l'IA, champ par champ. */
 export const CHAMPS_ANNONCE = `{
   "titre": "titre court descriptif (max 80 chars)",
-  "type_bien": "Appartement|Maison|Studio|Loft|Duplex|Villa|Terrain|Autre",
+  "type_bien": "Bureaux|Local commercial|Restaurant|Local d’activité|Entrepôt|Immeuble|Terrain|Parking|Autre (une boutique est un Local commercial ; un café, un bar, un restaurant est un Restaurant)",
+  "nature": "ce qui est proposé : location (un local vide, un bail neuf) | cession_bail (cession de droit au bail) | fonds (cession de fonds de commerce) | murs (vente des murs libres) | murs_occupes (vente de murs loués) ; sinon null",
   "ville": "nom de la ville",
   "code_postal": "code postal 5 chiffres",
   "quartier": "nom du quartier si mentionné, sinon null",
@@ -56,7 +57,23 @@ export const CHAMPS_ANNONCE = `{
   "climatisation": "true si le bien est climatisé",
   "traversant": "true si le bien est traversant",
   "surface_balcon": "surface du balcon en m² si précisée (nombre)",
-  "surface_terrasse": "surface de la terrasse en m² si précisée (nombre)"
+  "surface_terrasse": "surface de la terrasse en m² si précisée (nombre)",
+  "loyer_annuel_ht_hc": "le loyer ANNUEL hors taxes hors charges en € (entier) : un loyer mensuel se multiplie par 12 ; un loyer annoncé TTC se divise par 1,2 seulement si l'annonce dit TTC ; pour une cession de bail, un fonds ou des murs occupés, c'est le loyer du bail en cours ; sinon null",
+  "loyer_tel_quel": "le loyer tel que l'annonce l'écrit, mot pour mot (ex. « 4 000 € HT HC / mois »), sinon null",
+  "prix_cession": "pour une cession de bail, un fonds ou des murs : le prix demandé en € (entier), sinon null",
+  "droit_entree": "droit d'entrée ou pas-de-porte demandé pour une location, en € (entier), sinon null",
+  "charges_annuelles": "provision sur charges ANNUELLE en € (entier ; une charge mensuelle se multiplie par 12, trimestrielle par 4), sinon null",
+  "depot_garantie_mois": "dépôt de garantie en mois de loyer (nombre), sinon null",
+  "bail_type": "commercial | professionnel | derogatoire | precaire | civil, sinon null",
+  "bail_fin": "fin ou échéance du bail en cours si elle est donnée (AAAA-MM-JJ, ou l'année AAAA), sinon null",
+  "destination": "les activités autorisées ou la destination du bail, telles qu'écrites (ex. « tous commerces sauf restauration »), sinon null",
+  "activite": "pour un fonds de commerce : l'activité exploitée, sinon null",
+  "vitrine_ml": "linéaire de vitrine en mètres (nombre), sinon null",
+  "extraction": "oui | possible | non selon ce que dit l'annonce (extraction, conduit de fumées), sinon null",
+  "divisible": "true si le local est divisible",
+  "emplacement": "n1 | n1bis | n2 | quartier | centre | zone quand l'annonce le dit (« emplacement n° 1 », « centre commercial »…), sinon null",
+  "date_creation_annonce": "la date de création ou de publication de l'annonce si les données de la page la donnent (AAAA-MM-JJ), sinon null",
+  "date_maj_annonce": "la date de dernière mise à jour de l'annonce si elle est donnée (AAAA-MM-JJ), sinon null"
 }`;
 
 const entier = (v: unknown) => (typeof v === 'string' ? parseInt(v.replace(/[\s  ]/g, '')) : v);
@@ -73,6 +90,15 @@ export function nettoyerLecture(parsed: Record<string, unknown>): Record<string,
     'annee_construction', 'dpe_conso', 'ges_emissions', 'charges_trimestrielles', 'taxe_fonciere']) out[k] = entier(parsed[k]);
   for (const k of Object.keys(out)) if (typeof out[k] === 'number' && !isFinite(out[k] as number)) out[k] = null;
   for (const k of ['parking', 'balcon', 'terrasse', 'jardin', 'cave', 'ascenseur', 'gardien', 'cuisine_equipee', 'climatisation', 'traversant']) out[k] = vrai(parsed[k]);
+  /* Werner : les champs de l'immobilier d'entreprise. */
+  for (const k of ['loyer_annuel_ht_hc', 'prix_cession', 'droit_entree', 'charges_annuelles']) out[k] = entier(parsed[k]);
+  for (const k of ['depot_garantie_mois', 'vitrine_ml']) out[k] = decimal(parsed[k]);
+  out.divisible = vrai(parsed.divisible);
+  for (const k of ['nature', 'loyer_tel_quel', 'bail_type', 'bail_fin', 'destination', 'activite', 'extraction', 'emplacement', 'date_creation_annonce', 'date_maj_annonce']) {
+    const t = String(parsed[k] ?? '').trim();
+    out[k] = t && !/^(null|non précisé|inconnu|n\/a)$/i.test(t) ? t : null;
+  }
+  for (const k of Object.keys(out)) if (typeof out[k] === 'number' && !isFinite(out[k] as number)) out[k] = null;
   out.dpe = lettre(parsed.dpe);
   out.ges = lettre(parsed.ges);
   for (const k of ['quartier', 'adresse', 'situation', 'exposition', 'etat_general', 'agence_tel']) {

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-/* ═══ Reformuler l'annonce d'un bien à vendre (V3.79) ════════════════════════
+/* ═══ Reformuler l'annonce d'une affaire (V3.79 ; Werner : l'immobilier d'entreprise) ═══
    Alexandre : « un bouton Reformuler l'annonce, autant de fois que je veux ;
    ça reprend tous les éléments de la fiche du bien et ça me génère une
    présentation du logement », et « minimum 2 100 caractères, pour que ce soit
@@ -19,32 +19,32 @@ export const maxDuration = 60;
    Protégée par le code d'accès, comme le reste du CRM (src/proxy.ts).
      POST { faits, texte?, titre?, version? }  →  { ok, titre, texte } | { ok: false, erreur } */
 
-const MIN = 2100;
+const MIN = 2000;
 const MODELES = ['claude-sonnet-4-5-20250929', 'claude-haiku-4-5-20251001'];
 
 const ko = (erreur: string, status = 200) => NextResponse.json({ ok: false, erreur }, { status });
 const court = (x: unknown, n: number) => (typeof x === 'string' ? x.slice(0, n) : '');
 
 function consigne(faits: string, texte: string, titre: string, version: number, plusLong: boolean): string {
-  return `Tu rédiges le texte d'une annonce de vente immobilière pour une agence, destiné aux portails (SeLoger, Leboncoin, Bien'ici) et au site de l'agence. Il doit donner envie de visiter et être bien référencé.
+  return `Tu rédiges le texte d'une annonce d'immobilier d'entreprise pour Werner Immobilier (bureaux, boutiques et locaux commerciaux, restaurants, locaux d'activité, entrepôts ; en location, en cession de droit au bail, en cession de fonds de commerce ou en vente des murs), destiné aux portails (SeLoger Bureaux & Commerces, BureauxLocaux, Geolocaux, Leboncoin) et au site de l'agence. Il s'adresse à un commerçant, un restaurateur, une entreprise ou un investisseur : il doit donner envie de visiter et être bien référencé.
 
-LES FAITS — la fiche du bien, seule source de vérité :
+LES FAITS — la fiche de l'affaire, seule source de vérité :
 ${faits || '(fiche presque vide)'}
 ${texte ? `
-LE TEXTE ACTUEL DE L'ANNONCE — il peut apporter des précisions absentes de la fiche ; ses phrases sur le prix, les honoraires, les charges, le DPE, la copropriété ou Géorisques ne sont pas à reprendre :
+LE TEXTE ACTUEL DE L'ANNONCE — il peut apporter des précisions absentes de la fiche ; ses phrases sur le loyer, le prix, le droit au bail, les honoraires, les charges, la taxe foncière, le dépôt de garantie, le DPE ou Géorisques ne sont pas à reprendre :
 ${texte}
 ` : ''}${titre ? `
 LE TITRE ACTUEL : ${titre}
 ` : ''}
 RÈGLES STRICTES :
-- N'écris que des faits donnés ci-dessus. N'invente rien, ne déduis rien (pas de « lumineux » si ce n'est pas écrit, pas de distance ni de station qui ne sont pas données).
-- Longueur : entre 2 200 et 2 900 caractères, espaces compris. ${plusLong ? 'Ta version précédente était trop courte : développe davantage chaque partie, sans rien inventer.' : 'Développe chaque partie pour atteindre cette longueur, sans remplissage creux.'}
-- Cinq à sept paragraphes, séparés par une ligne vide, dans cet ordre quand la matière existe : 1) l'accroche : le type de bien, la ville et le quartier, la surface, l'étage et ce qui le distingue ; 2) la pièce de vie et la cuisine ; 3) la partie nuit, les salles d'eau et les rangements ; 4) l'état, les prestations, le chauffage, les fenêtres ; 5) l'extérieur et les annexes (balcon, terrasse, cave, parking) ; 6) l'immeuble ; 7) le quartier, les commerces, les écoles et les transports, et la disponibilité.
-- Référencement : reprends naturellement, deux ou trois fois dans le texte, le type de bien, le nombre de pièces, la ville et le quartier, et les atouts recherchés (balcon, terrasse, parking, ascenseur…) — sans bourrage.
-- Ton chaleureux mais précis, phrases simples. Pas de formules creuses (« coup de cœur », « rare », « à saisir », « ne tardez pas », « idéalement situé » sans fait derrière). Pas de majuscules d'insistance, pas d'émoji, pas de markdown, pas de liste à puces, pas de titre dans le texte.
-- N'écris jamais : le prix, les honoraires, les charges, la taxe foncière, les valeurs du DPE et du GES, le nombre de lots, les procédures, Géorisques (le CRM les ajoute après ton texte), ni l'adresse exacte, un nom de personne, un code, un téléphone, un nom d'agence.
+- N'écris que des faits donnés ci-dessus. N'invente rien, ne déduis rien (pas de « lumineux » ni de « fort passage » si ce n'est pas écrit, pas d'enseigne voisine, de distance ni de station qui ne sont pas données, pas d'activité autorisée que la fiche ne dit pas).
+- Longueur : entre 2 000 et 2 800 caractères, espaces compris. ${plusLong ? 'Ta version précédente était trop courte : développe davantage chaque partie, sans rien inventer.' : 'Développe chaque partie pour atteindre cette longueur, sans remplissage creux.'}
+- Cinq à sept paragraphes, séparés par une ligne vide, dans cet ordre quand la matière existe : 1) l'accroche : ce qui est proposé (un local à louer, un droit au bail à céder, un fonds de commerce, des murs), le type de local, la ville et le quartier ou l'arrondissement, la surface, l'emplacement (angle, rue commerçante, emplacement n° 1) et ce qui le distingue ; 2) le local : la répartition des surfaces (rez-de-chaussée, sous-sol, mezzanine, réserve), la vitrine et son linéaire, la hauteur sous plafond, la configuration (plateau ouvert, bureaux cloisonnés, salle de réunion, nombre de postes), la divisibilité ; 3) l'aménagement et les équipements : l'état, la climatisation, l'extraction, la cuisine professionnelle, le câblage et la fibre, les sanitaires, l'accès des personnes à mobilité réduite ; 4) l'immeuble et les accès : l'étage, l'ascenseur, le monte-charge, le parking, le quai ou l'accès de livraison ; 5) le bail ou l'activité : le type de bail, la destination autorisée (les activités possibles, telles que la fiche les écrit), la durée qui reste pour une cession ; pour un fonds, l'activité, l'enseigne, l'ancienneté, la licence, l'accompagnement du cédant ; pour des murs occupés, le locataire en place et son activité, sans chiffre ; 6) le quartier, l'environnement commercial, les transports et la disponibilité.
+- Référencement : reprends naturellement, deux ou trois fois dans le texte, ce qui est proposé (« local commercial à louer », « cession de droit au bail », « fonds de commerce », « bureaux à louer »…), le type de local, la ville, l'arrondissement ou le quartier, la surface et les atouts recherchés (vitrine, angle, extraction, terrasse, réserve, parking…) — sans bourrage.
+- Ton professionnel et chaleureux, précis, phrases simples. Pas de formules creuses (« coup de cœur », « rare », « à saisir », « ne tardez pas », « idéalement situé » ou « emplacement premium » sans fait derrière). Pas de majuscules d'insistance, pas d'émoji, pas de markdown, pas de liste à puces, pas de titre dans le texte.
+- N'écris jamais : le loyer, le prix du droit au bail, du fonds ou des murs, les honoraires, les charges, la taxe foncière, le dépôt de garantie, le chiffre d'affaires et les résultats d'un fonds, le loyer perçu de murs occupés, les valeurs du DPE, Géorisques (le CRM ajoute les mentions chiffrées après ton texte), ni l'adresse exacte (le nom de la rue seulement s'il est donné et utile), un nom de personne, un code, un téléphone, un nom d'agence.
 - C'est la version n° ${version} : propose une rédaction nettement différente d'une version précédente (autre accroche, autres tournures, autre façon d'enchaîner).
-- Le titre : 70 caractères au plus — le type de bien, le nombre de pièces, la ville ou le quartier et l'atout principal. Sans prix.
+- Le titre : 70 caractères au plus — ce qui est proposé, le type de local, la surface, la ville ou l'arrondissement et l'atout principal (par exemple « Cession de droit au bail · Boutique 75 m² · Paris 11e · vitrine d'angle »). Sans prix ni loyer.
 
 Réponds UNIQUEMENT avec un objet JSON, sans rien autour : {"titre": "...", "texte": "..."}. Dans "texte", les paragraphes sont séparés par \\n\\n.`;
 }

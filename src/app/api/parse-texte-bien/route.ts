@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 }
 
 async function parseWithClaude(texte: string, url: string, apiKey: string) {
-  const prompt = `Tu es un expert immobilier. Analyse ce texte d'annonce immobilière copié-collé depuis un portail (SeLoger, Logic-Immo, Bien'ici...) et extrait TOUTES les informations.
+  const prompt = `Tu es un expert en immobilier d'entreprise (bureaux, boutiques et locaux commerciaux, restaurants, locaux d'activité, entrepôts). Analyse ce texte d'annonce copié-collé depuis un portail (SeLoger Bureaux & Commerces, BureauxLocaux, Geolocaux, Leboncoin…) ou le site d'une agence, et extrais TOUTES les informations du local : la nature de l'affaire (location, cession de droit au bail, fonds de commerce, murs), le loyer (annuel ou mensuel, HT ou TTC, hors charges ou non), le prix de cession, le bail et sa destination, la vitrine, l'extraction.
 
 Réponds UNIQUEMENT avec un JSON valide, sans markdown ni texte autour. Ne JAMAIS inventer une valeur — mettre null si non trouvée.
 
