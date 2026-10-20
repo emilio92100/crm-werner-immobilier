@@ -71,7 +71,7 @@ export async function annulerVisites(ids: string[], o: { pourquoi?: string; jour
     if (o.journal !== false) {
       for (const v of annulees) {
         if (!v.client_id) continue;
-        const titre = v.biens?.titre || v.biens?.ville || 'le bien';
+        const titre = v.biens?.titre || v.biens?.ville || 'le local';
         await addJournal(v.client_id, 'visite_annulee', `✕ Visite annulée — ${titre}`,
           [quand(v), o.pourquoi || ''].filter(Boolean).join(' '), undefined,
           { rechercheId: v.recherche_id, bienId: v.bien_id });

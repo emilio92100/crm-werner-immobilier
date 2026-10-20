@@ -17,7 +17,7 @@ import { cleCommune } from '@/lib/communes';
 export type RaisonEcart = 'budget' | 'secteur' | 'surface' | 'chambres' | 'indispensable';
 export const RAISONS_ECART: Record<RaisonEcart, string> = {
   budget: 'budget trop court', secteur: 'autre secteur', surface: 'trop petit',
-  chambres: 'pas assez de chambres', indispensable: 'il manque un indispensable',
+  chambres: 'pas assez de bureaux fermés', indispensable: 'il manque un indispensable',
 };
 const DE_L_IMMEUBLE = new Set(['Ascenseur', 'Gardien']);
 

@@ -332,7 +332,7 @@ export function lotSeLoger(biens: BienVente[], gps?: Map<string, { lat: number; 
     if (!portails.length) continue;
     const nom = b.reference || b.titre || b.id;
     const id = idSeLoger(b);
-    if (vus.has(id)) { out.avertissements.push(`${nom} : même identifiant qu’un autre bien (${id}), laissé de côté`); continue; }
+    if (vus.has(id)) { out.avertissements.push(`${nom} : même identifiant qu’une autre affaire (${id}), laissé de côté`); continue; }
     const annonce = annonceSeLoger(b, gps?.get(b.id) || null);
     const dt = annonce.data as Json;
     const loc = dt.location as Json;

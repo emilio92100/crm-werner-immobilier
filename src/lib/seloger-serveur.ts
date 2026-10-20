@@ -223,7 +223,7 @@ export async function deposerSeLoger(o: { forcer?: boolean } = {}): Promise<Resu
   const vide = { env, crees: 0, modifies: 0, retires: 0, erreurs: [] as string[] };
   let lot: Awaited<ReturnType<typeof preparerSeLoger>>;
   try { lot = await preparerSeLoger(sb); } catch (e) {
-    return { ok: false, erreur: `Les biens n’ont pas pu être lus (${(e as Error).message}).`, annonces: 0, avertissements: [], ...vide };
+    return { ok: false, erreur: `Les affaires n’ont pas pu être lues (${(e as Error).message}).`, annonces: 0, avertissements: [], ...vide };
   }
   const base = { annonces: lot.annonces.length, avertissements: lot.avertissements };
   const a = acces();

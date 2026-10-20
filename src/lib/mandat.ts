@@ -363,8 +363,8 @@ export function horsMandat(signe: Contenu, r: Recherche): string[] {
       const lib = f.startsWith('autre:') ? x.toLowerCase() : f;
       if (!couverte && !absentes.includes(lib)) absentes.push(lib);
     }
-    for (const lib of absentes.sort()) out.push(`Type de bien absent du mandat : ${lib}`);
-    if (!types(r.typeBien).length) out.push(`Il ne précise plus de type de bien (le mandat dit : ${String(signe.recherche.typeBien).toLowerCase()})`);
+    for (const lib of absentes.sort()) out.push(`Type de local absent du mandat : ${lib}`);
+    if (!types(r.typeBien).length) out.push(`Il ne précise plus de type de local (le mandat dit : ${String(signe.recherche.typeBien).toLowerCase()})`);
   }
   return out;
 }
@@ -372,7 +372,7 @@ export function horsMandat(signe: Contenu, r: Recherche): string[] {
 /* Le bien recherché, en une phrase. */
 export function decrireRecherche(r: Recherche): string {
   const types = String(r.typeBien || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
-  const quoi = types.length ? types.join(' ou ') : 'bien immobilier à usage d’habitation';
+  const quoi = types.length ? types.join(' ou ') : 'local à usage professionnel ou commercial';
   const bouts: string[] = [];
   /* Volontairement « environ » : le mandat décrit l'essentiel, sans
      enfermer la recherche. Un bien de 78 m² trouvé pour un client qui en
@@ -380,10 +380,10 @@ export function decrireRecherche(r: Recherche): string {
      d'Alexandre qui en sort. Les « plus » (balcon, étage, DPE…) ne sont pas
      repris ici : ils vivent dans l'espace et évoluent avec lui. */
   if (r.piecesMin) {
-    const ch = r.chambresMin ? `, dont ${r.chambresMin} chambre${r.chambresMin > 1 ? 's' : ''}` : '';
-    bouts.push(`de ${r.piecesMin} pièce${r.piecesMin > 1 ? 's' : ''} environ${ch}`);
+    const ch = r.chambresMin ? `, dont ${r.chambresMin} bureau${r.chambresMin > 1 ? 'x fermés' : ' fermé'}` : '';
+    bouts.push(`de ${r.piecesMin} espace${r.piecesMin > 1 ? 's' : ''} environ${ch}`);
   } else if (r.chambresMin) {
-    bouts.push(`de ${r.chambresMin} chambre${r.chambresMin > 1 ? 's' : ''} environ`);
+    bouts.push(`de ${r.chambresMin} bureau${r.chambresMin > 1 ? 'x fermés' : ' fermé'} environ`);
   }
   if (r.surfaceMin) bouts.push(`d’une surface de ${r.surfaceMin}\u00a0m² environ ou plus`);
   const ou = r.secteurs.length ? `, situé à ${r.secteurs.join(', ').replace(/, ([^,]*)$/, ' ou $1')}, ou à proximité` : '';
@@ -395,8 +395,8 @@ export function decrireRecherche(r: Recherche): string {
    4 pièces et plus » puis « Boulogne-Billancourt, Paris 16e · 80 m² et plus ». */
 export function decrireCourt(r: Recherche): { valeur: string; detail: string } {
   const types = String(r.typeBien || '').split(',').map(x => x.trim()).filter(Boolean);
-  const quoi = types.length ? types.join(' ou ') : 'Bien à usage d’habitation';
-  const pieces = r.piecesMin ? `${r.piecesMin} pièce${r.piecesMin > 1 ? 's' : ''} environ` : '';
+  const quoi = types.length ? types.join(' ou ') : 'Local professionnel ou commercial';
+  const pieces = r.piecesMin ? `${r.piecesMin} espace${r.piecesMin > 1 ? 's' : ''} environ` : '';
   const ou = r.secteurs.length > 2 ? `${r.secteurs.slice(0, 2).join(', ')} et ${r.secteurs.length - 2} autre${r.secteurs.length > 3 ? 's' : ''} secteur${r.secteurs.length > 3 ? 's' : ''}` : r.secteurs.join(', ');
   const surf = r.surfaceMin ? `${r.surfaceMin}\u00a0m² environ` : '';
   return {
@@ -410,11 +410,11 @@ export function decrireCourt(r: Recherche): { valeur: string; detail: string } {
 export type Resume = { titre: string; valeur: string; detail: string }[];
 /* Les deux cas de l'article « Honoraires », en une ligne (V3.144). Le
    mandat de Documents dit la même chose. */
-export const HONO_DETAIL = 'rien si l’agence du mandant partage ses honoraires · sinon à l’acte';
+export const HONO_DETAIL = 'rien si l’agence qui propose le local partage ses honoraires · sinon à l’acte';
 export function resumeMandat(r: Recherche): Resume {
   const c = figerContenu(r);
   return [
-    { titre: 'Le bien recherché', ...decrireCourt(r) },
+    { titre: 'Le local recherché', ...decrireCourt(r) },
     c.prixMax
       ? { titre: 'Prix maximum', valeur: `${euros(c.prixMax)} hors honoraires`, detail: `soit ${euros(r.budget || 0)} honoraires compris` }
       : { titre: 'Prix maximum', valeur: 'Votre budget', detail: 'tel qu’indiqué dans votre espace' },
@@ -580,7 +580,7 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
           P('Les autres signataires chargent le premier de faire évoluer pour eux, depuis son espace personnel, les critères de la recherche et le budget.'),
         ] : []),
       ] },
-      { titre: 'Le bien recherché', ic: 'maison', blocs: [
+      { titre: 'Le local recherché', ic: 'maison', blocs: [
         P(decrireRecherche(d.recherche), true),
         P('Ainsi que tout bien correspondant aux critères du MANDANT tels qu’ils figurent, et évoluent, dans son espace personnel.'),
       ] },

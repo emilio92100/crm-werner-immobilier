@@ -241,7 +241,7 @@ export function fichierPoliris(biens: BienVente[], gps?: Map<string, { lat: numb
     const f = lignePoliris(b, gps?.get(b.id) || null);
     const id = f[174];
     const nom = b.reference || b.titre || b.id;
-    if (ids.includes(id)) { avertissements.push(`${nom} : même identifiant qu’un autre bien (${id}), laissé de côté`); continue; }
+    if (ids.includes(id)) { avertissements.push(`${nom} : même identifiant qu’une autre affaire (${id}), laissé de côté`); continue; }
     const manque = [[5, 'code postal'], [6, 'ville'], [11, 'prix'], [20, 'titre'], [21, 'texte de l’annonce']].filter(([r]) => !f[(r as number) - 1]).map(([, l]) => l);
     if (manque.length) { avertissements.push(`${nom} : il manque ${manque.join(', ')}, laissé de côté`); continue; }
     if (!f[84]) avertissements.push(`${nom} : aucune photo`);

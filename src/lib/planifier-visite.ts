@@ -28,7 +28,7 @@ export async function bienVisitable(biens: BienAVisiter[], acceptes: Set<string>
   for (const b of copies) {
     const v = ventes.find(x => x.id === b.bien_vente_id);
     if (!v) continue;
-    const nom = b.titre || b.ville || 'Ce bien';
+    const nom = b.titre || b.ville || 'Ce local';
     if (v.etape === 'vendu') { alert(`Cette affaire est conclue.\n\n« ${nom} » ne peut plus être visité.`); return false; }
     if (v.archive || v.etape === 'retire' || v.etape === 'suspendu') { alert(`Ce local n’est plus disponible.\n\n« ${nom} » ne peut plus être visité.`); return false; }
     if (v.etape === 'compromis' && !acceptes.has(b.id)) {

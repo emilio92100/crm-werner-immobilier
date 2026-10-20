@@ -288,7 +288,7 @@ export function ModaleRappelVisite({ visiteId, onFerme, onEnvoye }: { visiteId: 
                         : <span style={{ width: 52, height: 42, borderRadius: 8, background: NAVY, flexShrink: 0 }} />}
                       <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 }}>
                         <b style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{`${l.heure ? heureFr(l.heure) : 'Heure à confirmer'} · ${l.titre}`}</b>
-                        <span style={{ fontSize: 12, color: l.lieu ? DOUX : '#c05d12', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.lieu || 'Pas d’adresse sur le bien'}</span>
+                        <span style={{ fontSize: 12, color: l.lieu ? DOUX : '#c05d12', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.lieu || 'Pas d’adresse sur le local'}</span>
                       </span>
                       {lignes.length > 1 && (
                         <span style={{ width: 22, height: 22, borderRadius: 7, border: `1.5px solid ${actif ? OR : '#d6d5d4'}`, background: actif ? OR : 'white', color: NAVY, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, fontWeight: 900 }}>{actif ? '✓' : ''}</span>

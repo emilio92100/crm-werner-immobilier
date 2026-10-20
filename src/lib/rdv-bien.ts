@@ -184,7 +184,7 @@ export async function etatVenteDesCopies(copies: { titre?: string | null; ville?
   for (const c of copies) {
     const b = c.bien_vente_id ? parId.get(c.bien_vente_id) : null;
     if (!b) continue;
-    const nom = c.titre || c.ville || 'Ce bien';
+    const nom = c.titre || c.ville || 'Ce local';
     if (b.etape === 'vendu') out.bloque.push(`« ${nom} » : l’affaire est conclue.`);
     else if (b.archive || b.etape === 'retire' || b.etape === 'suspendu') out.bloque.push(`« ${nom} » : ce local n’est plus disponible.`);
     else if (b.etape === 'compromis') out.secours.push(nom);

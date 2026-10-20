@@ -492,7 +492,7 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
                 {/* V3.159 — Alexandre : « il faut préciser d'où viennent les
                     biens, ajouter les photos et une petite recherche (par
                     une surface…) ». */}
-                <label htmlFor="nd-bien">{m.id === 'bon_visite' ? 'Le bien visité' : 'Le bien'}</label>
+                <label htmlFor="nd-bien">{m.id === 'bon_visite' ? 'Le local visité' : 'Le local'}</label>
                 <div className={s.chAide} style={{ marginTop: -2 }}>{`Parmi les biens de ${client.prenom || 'sa fiche'} : sa Sélection et les biens présentés dans son espace.`}</div>
                 {biens === null ? <div className={s.chAide}>Chargement de ses biens…</div>
                   : biens.length === 0 ? <div className={s.chAide}>Aucun bien sur sa fiche : tu saisiras l’adresse dans le document.</div>
