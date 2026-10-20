@@ -238,6 +238,12 @@ export function affaireDepuisSeLoger(c: Brut, resume: Brut = {}): AffaireImporte
     else if (/ebe|excedent/.test(l) && !d.ebe) d.ebe = Math.round(v);
   }
 
+  /* L'activité d'un fonds : le titre de l'annonce sans la surface (« Restaurant, Restauration rapide »). */
+  if (nature === 'fonds') {
+    const act = String(c.title?.annonceTitle || '').replace(/,?\s*\d[\d\s,.]*\s*m²\s*$/i, '').trim();
+    if (act) d.activite = act.charAt(0).toUpperCase() + act.slice(1).toLowerCase();
+  }
+
   /* L'accès. */
   const tr = stations(c);
   if (tr.texte) d.stations = tr.texte;
@@ -261,6 +267,16 @@ export function affaireDepuisSeLoger(c: Brut, resume: Brut = {}): AffaireImporte
   const url = `https://www.seloger-bureaux-commerces.com${String(c.urlDetail || resume.detailUrl || '')}`;
   const reference = String(c.title?.refAnnonce || resume.refAnnonce || '').trim();
   d.portail = { nom: 'seloger', id: idPortail, url, reference, importeLe: new Date().toISOString().slice(0, 10) };
+  /* Ce que l'annonce disait de ses montants, à vérifier une fois (notes
+     internes, jamais dans l'annonce) : un loyer publié « T.T.C. », un prix
+     publié hors honoraires ou honoraires inclus. */
+  const complements = (Array.isArray(c.financial?.montantList) ? c.financial.montantList : []).filter((m: Brut) => m.isMontantPrincipal).map((m: Brut) => String(m.libelleComplement || ''));
+  const aVerifier: string[] = [];
+  if (complements.some(x => /T\.T\.C/.test(x))) aVerifier.push('le loyer est publié « toutes taxes comprises » sur SeLoger : vérifier s’il est hors taxes');
+  if (complements.some(x => /H\.H\./.test(x))) aVerifier.push('le prix est publié hors honoraires');
+  if (complements.some(x => /H\.I\./.test(x))) aVerifier.push('le prix est publié honoraires inclus');
+  if (/nous consulter/i.test(hono)) aVerifier.push('les honoraires disaient « Nous consulter »');
+  d.notes = [`Reprise de l’annonce SeLoger${reference ? ` ${reference}` : ''} le ${new Date().toLocaleDateString('fr-FR')}.`, aVerifier.length ? `À vérifier : ${aVerifier.join(' ; ')}.` : ''].filter(Boolean).join(' ');
   const publieLe = String(c.dateCreation || resume.publicationDateTime || '') || null;
   return { idPortail, url, reference, photos, donnees: d, publieLe };
 }
