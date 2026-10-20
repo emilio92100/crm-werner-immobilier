@@ -51,16 +51,16 @@ const aujourdhui = () => {
 export function phraseAppel(l: AppelVisible): { t: string; sous: string } | null {
   if (l.dispo === 'vendu') return null;
   const creneaux = (l.creneaux || []).filter(c => c && c.date >= aujourdhui());
-  if (l.reponse === 'message') return { t: 'Werner a laissé un message au mandant', sous: 'Il attend son retour.' };
-  if (l.reponse === 'sans_reponse') return { t: 'Werner a appelé le mandant', sous: 'Pas de réponse pour l’instant : il le rappelle.' };
-  if (creneaux.length) return { t: 'Le mandant a proposé des créneaux', sous: 'Werner organise la visite.' };
+  if (l.reponse === 'message') return { t: 'Werner a laissé un message au propriétaire', sous: 'Il attend son retour.' };
+  if (l.reponse === 'sans_reponse') return { t: 'Werner a appelé le propriétaire', sous: 'Pas de réponse pour l’instant : il le rappelle.' };
+  if (creneaux.length) return { t: 'Le propriétaire a proposé des créneaux', sous: 'Werner organise la visite.' };
   if (l.ensuite === 'rappeler' && l.rappel_le) {
     const j = jour(l.rappel_le);
-    return { t: 'Werner a parlé au mandant', sous: j ? `Il le rappelle ${j.replace(/\.$/, '')}.` : 'Il le rappelle.' };
+    return { t: 'Werner a parlé au propriétaire', sous: j ? `Il le rappelle ${j.replace(/\.$/, '')}.` : 'Il le rappelle.' };
   }
-  if (l.ensuite === 'attente') return { t: 'Werner a parlé au mandant', sous: 'Il attend son retour.' };
-  if (l.dispo === 'disponible') return { t: 'Werner a parlé au mandant', sous: 'Le bien est toujours disponible.' };
-  return { t: 'Werner a parlé au mandant', sous: '' };
+  if (l.ensuite === 'attente') return { t: 'Werner a parlé au propriétaire', sous: 'Il attend son retour.' };
+  if (l.dispo === 'disponible') return { t: 'Werner a parlé au propriétaire', sous: 'Le local est toujours disponible.' };
+  return { t: 'Werner a parlé au propriétaire', sous: '' };
 }
 
 /** Les appels que le client voit : montrés et avec une phrase, du plus
@@ -84,7 +84,7 @@ export function suiviPourClient(appels: AppelVisible[], o: {
   if (!vus.length) return null;
   const etapes: EtapeClient[] = [];
   if (o.avis === 'souhaite_visiter') etapes.push({ t: 'Vous voulez le visiter', le: o.retourLe || undefined, etat: 'fait' });
-  else if (o.avis === 'interesse') etapes.push({ t: 'Ce bien vous plaît', le: o.retourLe || undefined, etat: 'fait' });
+  else if (o.avis === 'interesse') etapes.push({ t: 'Ce local vous plaît', le: o.retourLe || undefined, etat: 'fait' });
   vus.forEach(({ a, p }, i) => {
     const dernier = i === vus.length - 1 && !o.visite;
     const mot = String(a.mot_client || '').trim();

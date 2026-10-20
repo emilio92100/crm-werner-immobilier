@@ -261,7 +261,7 @@ function visiteDuBon(d: Record<string, unknown>): NonNullable<DocEspace['visite'
   const [b, ...autres] = biensDuBon(d);
   const lieu = (x: typeof b) => [x.adresse, x.ville].filter(Boolean).join(', ');
   const ou = autres.map(lieu).filter(Boolean).join(' ; ');
-  const suite = autres.length ? `et ${autres.length} autre${autres.length > 1 ? 's' : ''} bien${autres.length > 1 ? 's' : ''}${ou ? ` : ${ou}` : ''}` : '';
+  const suite = autres.length ? `et ${autres.length} autre${autres.length > 1 ? 's locaux' : ' local'}${ou ? ` : ${ou}` : ''}` : '';
   return {
     date: /^\d{4}-\d{2}-\d{2}/.test(b.dateVisite) ? b.dateVisite.slice(0, 10) : null, heure: b.heure, adresse: b.adresse, ville: b.ville,
     bien: [b.description, suite].filter(Boolean).join(' · '),

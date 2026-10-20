@@ -135,18 +135,18 @@ export async function cloturerRelancesAuto(
 export async function solderRelancesAcheteur(clientId: string, rechercheId?: string | null): Promise<void> {
   try {
     const v = await supabase.from('biens_vente').select('id').eq('client_id', clientId).not('etape', 'in', '(vendu,retire)').limit(1);
-    if (v.error) signalerEchec('Les biens en vente de l’demandeur', v.error.message);
+    if (v.error) signalerEchec('Les affaires de ce contact', v.error.message);
     let q = supabase.from('relances').select('id, note').eq('client_id', clientId).eq('statut', 'en_attente');
     if (rechercheId) q = q.eq('recherche_id', rechercheId);
     else if (v.error || v.data?.length) q = q.not('recherche_id', 'is', null);
     const { data, error: eL } = await q;
-    if (eL) { signalerEchec('Les relances de l’demandeur', eL.message); return; }
+    if (eL) { signalerEchec('Les relances du demandeur', eL.message); return; }
     const ids = ((data || []) as { id: string; note: string | null }[]).filter(r => !relanceAGarder(r.note)).map(r => r.id);
     if (!ids.length) return;
     const { error } = await supabase.from('relances').update({ statut: 'cloturee' }).in('id', ids).eq('statut', 'en_attente');
-    if (error) signalerEchec('Les relances de l’demandeur', error.message);
+    if (error) signalerEchec('Les relances du demandeur', error.message);
   } catch (e) {
-    signalerEchec('Les relances de l’demandeur', (e as Error)?.message || '');
+    signalerEchec('Les relances du demandeur', (e as Error)?.message || '');
   }
 }
 

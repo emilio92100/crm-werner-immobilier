@@ -106,13 +106,13 @@ async function traiterPost(req: NextRequest) {
       const id = String(body.id || '');
       const quoi = String(body.cle || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
       const ext = String(body.ext || '').toLowerCase().replace(/[^a-z]/g, '');
-      if (!UUID.test(id)) return ko('Bien inconnu');
+      if (!UUID.test(id)) return ko('Affaire inconnue');
       if (!quoi) return ko('Pièce inconnue');
       if (!EXT.has(ext)) return ko('Format refusé : PDF, JPG ou PNG');
       /* Le bien doit exister : on ne dépose rien pour un identifiant inventé. */
       const { data: bien, error: eBien } = await sb.from('biens_vente').select('id').eq('id', id).maybeSingle();
       if (eBien) return ko(eBien.message, 500);
-      if (!bien) return ko('Bien introuvable', 404);
+      if (!bien) return ko('Affaire introuvable', 404);
       const chemin = `biens-vente/${id}/${quoi}-${Date.now()}.${ext === 'jpeg' ? 'jpg' : ext}`;
       const { data, error } = await sb.storage.from(BUCKET).createSignedUploadUrl(chemin);
       if (error || !data) return ko(error?.message || 'Dépôt impossible', 500);
@@ -144,7 +144,7 @@ async function traiterPost(req: NextRequest) {
 
     if (action === 'tout') {
       const id = String(body.id || '');
-      if (!UUID.test(id)) return ko('Bien inconnu');
+      if (!UUID.test(id)) return ko('Affaire inconnue');
       const { data, error } = await sb.storage.from(BUCKET).list(`biens-vente/${id}`, { limit: 200 });
       if (error) return ko(error.message, 500);
       const chemins = (data || []).map(f => `biens-vente/${id}/${f.name}`);
@@ -158,7 +158,7 @@ async function traiterPost(req: NextRequest) {
 
     if (action === 'envoyer') {
       const id = String(body.id || '');
-      if (!UUID.test(id)) return ko('Bien inconnu');
+      if (!UUID.test(id)) return ko('Affaire inconnue');
       const sujet = String(body.sujet || '').trim().slice(0, 200);
       const message = String(body.message || '').trim().slice(0, 20_000);
       if (!sujet) return ko('L’objet du mail est vide');
@@ -178,11 +178,11 @@ async function traiterPost(req: NextRequest) {
         return { chemin: String(o.chemin || ''), nom: nomPropre(String(o.nom || '')) };
       });
       if (!pieces.length) return ko('Aucun document choisi');
-      if (pieces.some((p: { chemin: string }) => !CHEMIN.test(p.chemin) || !p.chemin.startsWith(`biens-vente/${id}/`))) return ko('Un document n’appartient pas à ce bien');
+      if (pieces.some((p: { chemin: string }) => !CHEMIN.test(p.chemin) || !p.chemin.startsWith(`biens-vente/${id}/`))) return ko('Un document n’appartient pas à cette affaire');
 
       const { data: bien, error: eBien } = await sb.from('biens_vente').select('id, titre').eq('id', id).maybeSingle();
       if (eBien) return ko(eBien.message, 500);
-      if (!bien) return ko('Bien introuvable', 404);
+      if (!bien) return ko('Affaire introuvable', 404);
 
       /* Les fichiers, lus dans le stockage privé. */
       const fichiers: { nom: string; type: string; octets: Buffer; chemin: string }[] = [];
@@ -229,7 +229,7 @@ async function traiterPost(req: NextRequest) {
       const noms = fichiers.map(f => f.nom);
       const partis = dests.filter(x => envoyes.includes(x.email));
       const qui = partis.map(x => x.nom || x.email).join(', ');
-      await ecritServeur('L’historique du bien', sb.from('biens_vente_suivi').insert({
+      await ecritServeur('L’historique de l’affaire', sb.from('biens_vente_suivi').insert({
         bien_id: id, type: 'envoi', qui, client_id: partis.find(x => x.clientId)?.clientId || null,
         recherche_id: partis.find(x => x.rechercheId)?.rechercheId || null, commentaire: sujet,
         donnees: { a: envoyes, pieces: noms, mode, taille: total },
@@ -237,7 +237,7 @@ async function traiterPost(req: NextRequest) {
       for (const dst of partis.filter(x => x.clientId)) {
         await ecritServeur('Le Suivi du contact', sb.from('journal').insert({
           client_id: dst.clientId, recherche_id: dst.rechercheId, type: 'mail_envoye',
-          titre: `✉️ Documents envoyés — ${bien.titre || 'le bien'}`,
+          titre: `✉️ Documents envoyés — ${bien.titre || 'l’affaire'}`,
           description: `À : ${dst.email}\nObjet : ${sujet}\n\n${message}\n\n${mode === 'pj' ? 'Pièces jointes' : `Liens de téléchargement (${LIENS_JOURS} jours)`} : ${noms.join(', ')}`,
         }), avertissements);
       }
@@ -246,7 +246,7 @@ async function traiterPost(req: NextRequest) {
 
     if (action === 'presenter') {
       const ids = (Array.isArray(body.ids) ? body.ids : []).map(String).filter(x => UUID.test(x)).slice(0, 12);
-      if (!ids.length) return ko('Aucun bien à présenter');
+      if (!ids.length) return ko('Aucune affaire à présenter');
       const objet = String(body.objet || '').trim().slice(0, 200);
       const corps = String(body.corps || '').trim().slice(0, 20_000);
       if (!objet) return ko('L’objet du mail est vide');
@@ -265,7 +265,7 @@ async function traiterPost(req: NextRequest) {
       const { data: lus, error: eB } = await sb.from('biens_vente').select('*').in('id', ids);
       if (eB) return ko(eB.message, 500);
       const biens = ids.map(id => ((lus || []) as BienVente[]).find(b => b.id === id)).filter((b): b is BienVente => !!b);
-      if (!biens.length) return ko('Bien introuvable', 404);
+      if (!biens.length) return ko('Affaire introuvable', 404);
       const { data: ps } = await sb.from('parametres').select('cle, valeur').in('cle', CLES_MAIL);
       const conseiller = conseillerDe(Object.fromEntries(((ps || []) as { cle: string; valeur: string | null }[]).map(r => [r.cle, r.valeur || ''])));
 
@@ -274,9 +274,9 @@ async function traiterPost(req: NextRequest) {
         const x = bienPourSite(b, null);
         const prix = !avantMandat(b.etape) && x.price > 0 ? x.price : null;
         const lien = lienBienPublic(b.id);
-        const carac = [x.surface ? `${x.surface} m²` : '', x.rooms ? `${x.rooms} pièce${x.rooms > 1 ? 's' : ''}` : '', x.bedrooms ? `${x.bedrooms} chambre${x.bedrooms > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
+        const carac = [x.surface ? `${x.surface} m²` : '', x.rooms ? `${x.rooms} espace${x.rooms > 1 ? 's' : ''}` : '', x.bedrooms ? `${x.bedrooms} chambre${x.bedrooms > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
         const lieu = [b.quartier, x.city].filter(Boolean).join(', ');
-        return { b, titre: x.title || 'Le bien', photo: x.images[0] || '', prix, lien, carac, lieu };
+        return { b, titre: x.title || 'Le local', photo: x.images[0] || '', prix, lien, carac, lieu };
       });
       const eur = (n: number) => `${n.toLocaleString('fr-FR')} €`;
       /* V3.152 : le bouton « Voir le bien » porte le code de CE mail (sans
@@ -288,7 +288,7 @@ async function traiterPost(req: NextRequest) {
           ${f.lieu ? `<div style="color:${CHARTE.plume};margin-top:5px;font-size:13px"><span style="color:${CHARTE.or}">&#9679;</span> ${echappe(f.lieu)}</div>` : ''}
           ${f.carac ? `<div style="color:${CHARTE.plume};margin-top:4px;font-size:13px">${echappe(f.carac)}</div>` : ''}
           ${f.prix ? `<div style="font-weight:800;font-size:20px;color:${CHARTE.encre};margin-top:10px">${eur(f.prix)}</div>` : ''}
-          ${f.lien ? `<a href="${echappe(lienBienSuivi(f.b.id, code))}" style="display:inline-block;margin-top:14px;background:${CHARTE.or};color:${CHARTE.encre};text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:700">Voir le bien</a>` : ''}
+          ${f.lien ? `<a href="${echappe(lienBienSuivi(f.b.id, code))}" style="display:inline-block;margin-top:14px;background:${CHARTE.or};color:${CHARTE.encre};text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:700">Voir le local</a>` : ''}
         </div>
       </div>`).join('');
       const texteBiensPour = (code: string | null) => fiches.map(f => [f.titre, [f.lieu, f.carac, f.prix ? eur(f.prix) : ''].filter(Boolean).join(' · '), f.lien ? lienBienSuivi(f.b.id, code) : ''].filter(Boolean).join('\n')).join('\n\n');
@@ -339,7 +339,7 @@ async function traiterPost(req: NextRequest) {
         if (s) codes[s.code] = { email: x.email, nom: nomDe(x), client_id: x.clientId, recherche_id: x.rechercheId };
       }
       for (const f of fiches) {
-        await ecritServeur('L’historique du bien', sb.from('biens_vente_suivi').insert({
+        await ecritServeur('L’historique de l’affaire', sb.from('biens_vente_suivi').insert({
           bien_id: f.b.id, type: 'envoi', qui, client_id: partis.find(x => x.clientId)?.clientId || null, commentaire: objet,
           donnees: { a: envoyes, presentation: true, lien: !!f.lien, codes },
         }), avertissements);
@@ -349,7 +349,7 @@ async function traiterPost(req: NextRequest) {
         for (const f of fiches) {
           await ecritServeur('Le Suivi du contact', sb.from('journal').insert({
             client_id: dst.clientId, recherche_id: dst.rechercheId, type: 'envoi_bien',
-            titre: 'Bien de l’agence présenté · mail simple',
+            titre: 'Affaire de l’agence présentée · mail simple',
             /* Le lien sans code : celui du Suivi ne doit pas compter comme une ouverture. */
             description: `${f.titre}${f.prix ? ` · ${eur(f.prix)}` : ''}\nÀ : ${dst.email}${f.lien ? `\n${f.lien}` : ''}`,
             metadata: {
@@ -369,7 +369,7 @@ async function traiterPost(req: NextRequest) {
        pièce jointe, noté dans l'historique du bien et le Suivi du contact. */
     if (action === 'demander') {
       const id = String(body.id || '');
-      if (!UUID.test(id)) return ko('Bien inconnu');
+      if (!UUID.test(id)) return ko('Affaire inconnue');
       const sujet = String(body.sujet || '').trim().slice(0, 200);
       const message = String(body.message || '').trim().slice(0, 20_000);
       if (!sujet) return ko('L’objet du mail est vide');
@@ -388,7 +388,7 @@ async function traiterPost(req: NextRequest) {
       if (!dests.length) return ko('Aucune adresse e-mail valable');
       const { data: bien, error: eBien } = await sb.from('biens_vente').select('id, titre').eq('id', id).maybeSingle();
       if (eBien) return ko(eBien.message, 500);
-      if (!bien) return ko('Bien introuvable', 404);
+      if (!bien) return ko('Affaire introuvable', 404);
 
       /* V3.118 : dans l'enveloppe de la charte, le logo Emilio en tête. */
       const html = enveloppeMail({ corps: message.split(/\n{2,}/).map(t => `<p style="margin:0 0 14px">${echappe(t).replace(/\n/g, '<br>')}</p>`).join('') });
@@ -403,7 +403,7 @@ async function traiterPost(req: NextRequest) {
       const avertissements: string[] = [...echecs.map(e => `Pas parti à ${e}`)];
       const partis = dests.filter(x => envoyes.includes(x.email));
       const qui = partis.map(x => x.nom || x.email).join(', ');
-      await ecritServeur('L’historique du bien', sb.from('biens_vente_suivi').insert({
+      await ecritServeur('L’historique de l’affaire', sb.from('biens_vente_suivi').insert({
         bien_id: id, type: 'envoi', qui, client_id: partis.find(x => x.clientId)?.clientId || null,
         recherche_id: partis.find(x => x.rechercheId)?.rechercheId || null, commentaire: sujet,
         donnees: { a: envoyes, demande: true, demandes },
@@ -411,7 +411,7 @@ async function traiterPost(req: NextRequest) {
       for (const dst of partis.filter(x => x.clientId)) {
         await ecritServeur('Le Suivi du contact', sb.from('journal').insert({
           client_id: dst.clientId, recherche_id: dst.rechercheId, type: 'mail_envoye',
-          titre: `📋 Documents demandés — ${bien.titre || 'le bien'}`,
+          titre: `📋 Documents demandés — ${bien.titre || 'l’affaire'}`,
           description: `À : ${dst.email}\nObjet : ${sujet}\n\n${message}`,
         }), avertissements);
       }

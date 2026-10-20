@@ -595,8 +595,9 @@ const cpDeVille = (ville: string) =>
 
 /* Mêmes intitulés que le CRM : ce que le client lit ici est ce qu'Alexandre voit. */
 const TYPES_E: [string, string][] = [
-  ['Appartement', '🏢'], ['Maison', '🏡'], ['Loft', '🏗️'],
-  ['Duplex', '🪜'], ['Terrain', '🌱'], ['Autre', '✳️'],
+  ['Bureaux', '🏢'], ['Local commercial', '🏪'], ['Restaurant', '🍽️'],
+  ['Local d’activité', '🏭'], ['Entrepôt', '📦'], ['Immeuble', '🏬'],
+  ['Terrain', '🌱'], ['Parking', '🅿️'],
 ];
 const ETATS_E: [string, string, string][] = [
   ['a_renover', 'À rénover', '🔨'], ['travaux_legers', 'Travaux légers', '🧰'],
@@ -606,13 +607,13 @@ const ETATS_E: [string, string, string][] = [
    Rien = pas de préférence. Mêmes règles que le CRM (CriteresRecherche.tsx). */
 const etatsListe = (v?: string | null) => { const l = String(v || '').split(',').map(x => x.trim()); return ETATS_E.map(e => e[0]).filter(k => l.includes(k)); };
 const CUISINES_E: [string, string, string][] = [
-  ['', 'Indifférent', '🤷'], ['ouverte', 'Ouverte sur le séjour', '🍽️'], ['separee', 'Séparée', '🚪'],
+  ['', 'Indifférent', '🤷'], ['ouverte', 'Ouverte sur la salle', '🍽️'], ['separee', 'Séparée', '🚪'],
 ];
 const EXPO_E: [string, string, string][] = [['sud','Sud','☀️'],['est','Est','🌅'],['ouest','Ouest','🌇'],['nord','Nord','❄️'],['traversant','Traversant','↔️']];
 /* clé technique (colonne en base) ↔ libellé lisible ↔ emoji */
 const EQUIP_E: [string, string, string][] = [
-  ['parking','Parking','🅿️'], ['cave','Cave','📦'], ['balcon','Balcon','🌿'],
-  ['terrasse','Terrasse','☀️'], ['jardin','Jardin','🌳'], ['ascenseur','Ascenseur','🛗'],
+  ['parking','Parking','🅿️'], ['cave','Cave','📦'], ['balcon','Espace extérieur','🌿'],
+  ['terrasse','Terrasse','☀️'], ['jardin','Cour','🌳'], ['ascenseur','Ascenseur','🛗'],
   ['gardien','Gardien','👮'],
 ];
 const URGENCES_E: [string, string, string][] = [
@@ -3348,7 +3349,7 @@ function Liste({ biens, onOuvrir, vide, sansEtiq, crit }: { biens: Bien[]; onOuv
               <h4>{b.titre}</h4>
               <span className="meta">{[
                 b.surface && b.surface + ' m²', b.pieces && b.pieces + (b.pieces > 1 ? ' espaces' : ' espace'),
-                b.chambres && b.chambres + ' chambres', b.secteur,
+                b.chambres && b.chambres + ' bureaux', b.secteur,
               ].filter(Boolean).join(' · ')}</span>
               <span className="prix tab">{PRIX(b.prix)}</span>
               {b.prix && b.hono ? <span className="hono-c">{`+ ${EUR(b.hono)} HT de nos honoraires`}</span> : null}
@@ -3577,7 +3578,7 @@ function Marche({ passage, semaine, maxLues, aller, biens, crit, onAide }: any) 
         {nbJours >= 2 ? (
           <>
             <div className="gr-note"><span><b>{`${nombre(total)} annonces`}</b>
-              {` lues ces 7 derniers jours${nbJours < 7 ? `, sur ${nbJours} journées de recherche` : ''}. Chaque barre est une journée : ce que nous avons regardé ce jour-là sur vos secteurs et votre budget. La barre dorée est la dernière journée de recherche.`}</span></div>
+              {` lues ces 7 derniers jours${nbJours < 7 ? `, sur ${nbJours} journées de recherche` : ''}. Chaque barre est une journée : ce que nous avons regardé ce jour-là sur vos secteurs et votre budget. La barre orange vif est la dernière journée de recherche.`}</span></div>
             <div className="barres">
               {semaine.map((d: any, i: number) => {
                 const x = new Date(String(d.quand).slice(0, 10) + 'T12:00:00');
@@ -3645,7 +3646,7 @@ function morceauxResume(crit: any, villes: { ville: string }[]) {
   }
   if (crit.chambresMin) {
     m.push({ t: ' avec ' });
-    m.push({ t: `${crit.chambresMin} chambre${crit.chambresMin > 1 ? 's' : ''}`, fort: true });
+    m.push({ t: `${crit.chambresMin} bureau${crit.chambresMin > 1 ? 'x' : ''}`, fort: true });
   }
   if (villes.length) {
     const courts = villes.map(v => v.ville.replace(/-sur-Seine$/i, '').replace(/-Billancourt$/i, ''));
@@ -3673,7 +3674,8 @@ function morceauxResume(crit: any, villes: { ville: string }[]) {
 const ICO_EQUIP: Record<string, string> = {
   parking: 'parking', cave: 'cave', balcon: 'balcon', terrasse: 'terrasse', jardin: 'jardin', ascenseur: 'ascenseur', gardien: 'gardien',
 };
-const ICO_TYPE: Record<string, string> = { Appartement: 'immeuble', Maison: 'maison', Loft: 'immeuble', Duplex: 'immeuble', Terrain: 'jardin', Autre: 'maison' };
+const ICO_TYPE: Record<string, string> = { Appartement: 'immeuble', Maison: 'maison', Loft: 'immeuble', Duplex: 'immeuble', Terrain: 'jardin', Autre: 'maison',
+  Bureaux: 'immeuble', 'Local commercial': 'immeuble', Restaurant: 'cuisine', 'Local d’activité': 'travaux', Entrepôt: 'cave', Immeuble: 'immeuble', Parking: 'parking' };
 const ICO_EXPO: Record<string, string> = { sud: 'soleil', est: 'soleil', ouest: 'soleil', nord: 'boussole', traversant: 'traversant' };
 
 function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
@@ -3691,7 +3693,7 @@ function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
     if (crit.equip.includes(lib) || ex[cle]) equips.push({ ico: ICO_EQUIP[cle] || 'check', texte: lib, fort: ex[cle] === 'indispensable' });
   });
   if (ex.exterieur) equips.push({ ico: 'terrasse', texte: `Extérieur${crit.exterieurSurfaceMin ? ` de ${crit.exterieurSurfaceMin} m² mini` : ''}`, fort: ex.exterieur === 'indispensable' });
-  if (crit.cuisineType) equips.push({ ico: 'cuisine', texte: `Cuisine ${crit.cuisineType === 'ouverte' ? 'ouverte' : 'séparée'}`, fort: ex.cuisine === 'indispensable' });
+  if (crit.cuisineType) equips.push({ ico: 'cuisine', texte: `Cuisine professionnelle ${crit.cuisineType === 'ouverte' ? 'ouverte' : 'séparée'}`, fort: ex.cuisine === 'indispensable' });
 
   /* V3.68 : chaque pastille d'étage a son icône (Alexandre : « à partir du
      deuxième, pas de rez-de-chaussée… il n'y a pas d'icône »). */
@@ -3738,13 +3740,13 @@ function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
         <div className="trio">
           <div className="mini-t"><span className="mini-i"><Ico n="regle" t={17} /></span><div className="v tab">{crit.surfaceMin ? crit.surfaceMin + ' m²' : '—'}</div><div className="l">surface min.</div></div>
           <div className="mini-t"><span className="mini-i"><Ico n="plan" t={17} /></span><div className="v tab">{crit.piecesMin ?? '—'}</div><div className="l">espaces min.</div></div>
-          <div className="mini-t"><span className="mini-i"><Ico n="lit" t={17} /></span><div className="v tab">{crit.chambresMin ?? '—'}</div><div className="l">chambres min.</div></div>
+          <div className="mini-t"><span className="mini-i"><Ico n="lit" t={17} /></span><div className="v tab">{crit.chambresMin ?? '—'}</div><div className="l">bureaux min.</div></div>
         </div>
         {(crit.surfaceMax || crit.surfaceSejourMin || crit.piecesMax) && (
           <div className="faits">
             {crit.surfaceMax ? <Fait ico="regle" lib="Surface maximum" val={<span className="tab">{crit.surfaceMax} m²</span>} /> : null}
             {crit.piecesMax ? <Fait ico="plan" lib="Espaces maximum" val={<span className="tab">{crit.piecesMax}</span>} /> : null}
-            {crit.surfaceSejourMin ? <Fait ico="canape" lib="Séjour d’au moins" val={<span className="tab">{crit.surfaceSejourMin} m²</span>} /> : null}
+            {crit.surfaceSejourMin ? <Fait ico="canape" lib="Surface de vente d’au moins" val={<span className="tab">{crit.surfaceSejourMin} m²</span>} /> : null}
           </div>
         )}
       </CatE>
@@ -4241,7 +4243,7 @@ function AvisVisite({ v, onRepondre, sansNote, sansSuite, onFaireOffre }: { v: V
         <span className="etiq offre"><Ico n={ICO_ISSUE.offre} t={13} />{ISSUES.offre.choix}</span>
         <div className="apres-avis vv-suite">
           <div className="aa-t">{'Préparez votre offre ici'}</div>
-          <p className="aa-p">{'En quelques minutes : votre prix, avec le calcul des frais, puis vos informations. Vous la signez vous-même, ou vous la confiez à votre conseiller pour qu’il la relise.'}</p>
+          <p className="aa-p">{'En quelques minutes : votre montant, avec le calcul des frais, puis vos informations. Vous la signez vous-même, ou vous la confiez à votre conseiller pour qu’il la relise.'}</p>
           <div className="ofr-faire">
             <button type="button" className="btn or" onClick={onFaireOffre}><Ico n="euro" t={16} /><span>Faire mon offre</span></button>
             <button type="button" className="btn fant" onClick={() => setRappel(true)}><Ico n="tel" t={16} /><span>{'Je préfère que mon conseiller m’appelle'}</span></button>
@@ -5038,10 +5040,10 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
         <div className="specs">
           {b.surface ? <div className="spec"><div className="v tab">{b.surface} m²</div><div className="l">Surface</div></div> : null}
           {b.pieces ? <div className="spec"><div className="v tab">{b.pieces}</div><div className="l">Espaces</div></div> : null}
-          {b.chambres ? <div className="spec"><div className="v tab">{b.chambres}</div><div className="l">Chambres</div></div> : null}
+          {b.chambres ? <div className="spec"><div className="v tab">{b.chambres}</div><div className="l">Bureaux</div></div> : null}
           {b.etage != null ? <div className="spec"><div className="v tab">{b.etage === 0 ? 'RDC' : b.etage + 'e'}{b.etageTotal ? '/' + b.etageTotal : ''}</div><div className="l">Étage</div></div> : null}
           {b.expo ? <div className="spec"><div className="v">{b.expo}</div><div className="l">Exposition</div></div> : null}
-          {b.sejour ? <div className="spec"><div className="v tab">{nb(b.sejour)} m²</div><div className="l">Séjour</div></div> : null}
+          {b.sejour ? <div className="spec"><div className="v tab">{nb(b.sejour)} m²</div><div className="l">Surface de vente</div></div> : null}
           {ext ? <div className="spec"><div className="v tab">{nb(ext)} m²</div><div className="l">Extérieur</div></div> : null}
           {b.annee ? <div className="spec"><div className="v tab">{b.annee}</div><div className="l">Construction</div></div> : null}
         </div>
@@ -5486,11 +5488,11 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
         <label className="lab">Espaces minimum</label>
         <div className="choix">{[2, 3, 4, 5, 6].map(n => (
           <button key={n} className="ch" aria-pressed={t.piecesMin === n} onClick={() => setT(v => ({ ...v, piecesMin: n }))}>{n}{n === 6 ? '+' : ''}</button>))}</div>
-        <label className="lab">Chambres minimum</label>
+        <label className="lab">Bureaux minimum</label>
         <div className="choix">{[1, 2, 3, 4, 5].map(n => (
           <button key={n} className="ch" aria-pressed={t.chambresMin === n} onClick={() => setT(v => ({ ...v, chambresMin: n }))}>{n}{n === 5 ? '+' : ''}</button>))}</div>
-        <label className="lab">Séjour d’au moins</label>
-        <ChampNum val={t.surfaceSejourMin} onChange={num('surfaceSejourMin')} suffixe="m²" aide="Vide si vous n’avez pas d’exigence sur le séjour" />
+        <label className="lab">Surface de vente d’au moins</label>
+        <ChampNum val={t.surfaceSejourMin} onChange={num('surfaceSejourMin')} suffixe="m²" aide="Vide si vous n’avez pas d’exigence sur la surface de vente" />
       </>),
     },
     {
@@ -5540,7 +5542,7 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
           <div className="borne" style={{ marginTop: 12 }}>D’au moins</div>
           <ChampNum val={t.exterieurSurfaceMin} onChange={num('exterieurSurfaceMin')} suffixe="m²" aide="Vide si la taille importe peu" />
         </>) : null}
-        <label className="lab">Cuisine</label>
+        <label className="lab">Cuisine professionnelle</label>
         <div className="choix">
           {CUISINES_E.map(([k, l, i]) => (
             <button key={k || 'ind'} className="ch" aria-pressed={t.cuisineType === k} onClick={() => setT(x => ({ ...x, cuisineType: k }))}>{i} {l}</button>))}
@@ -5639,7 +5641,7 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
     }
     if (surfaceMin !== (crit.surfaceMin ?? null)) c.push(t.surfaceMin + ' m² minimum');
     if (piecesMin !== (crit.piecesMin ?? null)) c.push(t.piecesMin + ' espaces minimum');
-    if (chambresMin !== (crit.chambresMin ?? null)) c.push(t.chambresMin + ' chambres minimum');
+    if (chambresMin !== (crit.chambresMin ?? null)) c.push(t.chambresMin + ' bureaux minimum');
     if (t.typesBien.join() !== (crit.typesBien || []).join()) c.push(t.typesBien.length ? 'type de local : ' + t.typesBien.join(', ') : 'plus de contrainte de type');
     if (t.secteurs.join() !== crit.secteurs.join()) c.push(t.secteurs.length + ' secteurs');
     if (JSON.stringify(t.exigences) !== JSON.stringify(crit.exigences || {})) c.push('équipements souhaités');
@@ -6117,7 +6119,7 @@ const AIDES: Record<string, { ico: string; sur: string; titre: string; texte: st
       'Les barres bougent d’un jour à l’autre : le marché ne sort pas le même volume tous les jours, le lundi et le samedi n’ont rien à voir.',
       'Une barre basse ne veut pas dire qu’on a moins travaillé : elle veut dire qu’il est sorti moins d’annonces à regarder.',
       'Un tiret : pas de recherche ce jour-là.',
-      'La barre dorée est la dernière journée de recherche.',
+      'La barre orange vif est la dernière journée de recherche.',
     ],
   },
   jours: {

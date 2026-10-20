@@ -311,7 +311,7 @@ export async function POST(req: NextRequest) {
         if (!ouvert) return ko('etat', 409, { statut: co.statut });
         const le = new Date().toISOString();
         const coD: Co = { ...co, statut: 'decline', decline_le: le, code_hash: null,
-          deroule: [...(co.deroule || []), { t: le, x: 'A indiqué ne pas être concerné par cet achat' }] };
+          deroule: [...(co.deroule || []), { t: le, x: 'A indiqué ne pas être concerné par cette recherche' }] };
         const cosN = cos.map(c => (c.id === co.id ? coD : c));
         /* Plus personne à attendre : le mandat est refait sans lui, et
            scellé une dernière fois. */
@@ -327,7 +327,7 @@ export async function POST(req: NextRequest) {
           statut: 'decline', decline_le: le, code_hash: null, deroule: coD.deroule,
         }).eq('id', co.id);
         if (error) return ko('enregistrement', 500, { detail: error.message });
-        await journal(`🙅 ${moi} n’est pas concerné par cet achat`, `Mandat n° ${l.numero} : invitation déclinée depuis son lien, le ${dateCourte(le)} à ${heureParis(le)}. Le mandat continue avec ${premier}.`);
+        await journal(`🙅 ${moi} n’est pas concerné par cette recherche`, `Mandat n° ${l.numero} : invitation déclinée depuis son lien, le ${dateCourte(le)} à ${heureParis(le)}. Le mandat continue avec ${premier}.`);
         await evt(`${moi} a décliné l’invitation au mandat n° ${l.numero}`);
         const fin = finRetractationDe(l, cosN);
         if (signe) {
@@ -336,17 +336,17 @@ export async function POST(req: NextRequest) {
         await envoyerMail({
           a: l.mandant.email, nomA: premier, repondreA: 'contact@wernerimmobilier.com',
           sujet: `${co.personne.prenom} ne signera pas le mandat de recherche n° ${l.numero}`,
-          texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a indiqué ne pas être concerné par cet achat : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.\n\nS'il s'agit d'une erreur, appelez Werner : il lui renverra un lien.\n\nWerner Immobilier`,
+          texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a indiqué ne pas être concerné par cette recherche : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.\n\nS'il s'agit d'une erreur, appelez Werner : il lui renverra un lien.\n\nWerner Immobilier`,
           html: gabarit('Le mandat continue avec vous', `<p>Bonjour ${echappe(l.mandant.prenom)},</p>
-            <p>${echappe(moi)} a indiqué ne pas être concerné par cet achat : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.</p>
+            <p>${echappe(moi)} a indiqué ne pas être concerné par cette recherche : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.</p>
             <p>S’il s’agit d’une erreur, appelez Werner : il lui renverra un lien.</p>
             <p>Werner Immobilier</p>`),
         });
         await envoyerMail({
           a: ALERTES(), deLaPartDe: 'crm',
           sujet: `🙅 ${moi} ne signera pas le mandat de ${premier} (n° ${l.numero})`,
-          texte: `${moi} a indiqué, depuis son lien, ne pas être concerné par l'achat de ${premier}. Le mandat n° ${l.numero} continue avec ${premier}.\n\n${lienCrm}`,
-          html: gabarit(`${moi} ne signera pas`, `<p><b>${echappe(moi)}</b> a indiqué, depuis son lien, ne pas être concerné par l’achat de ${echappe(premier)}.</p>
+          texte: `${moi} a indiqué, depuis son lien, ne pas être concerné par la recherche de ${premier}. Le mandat n° ${l.numero} continue avec ${premier}.\n\n${lienCrm}`,
+          html: gabarit(`${moi} ne signera pas`, `<p><b>${echappe(moi)}</b> a indiqué, depuis son lien, ne pas être concerné par la recherche de ${echappe(premier)}.</p>
             <p>Le mandat <b>n° ${echappe(l.numero)}</b> continue avec ${echappe(premier)}.</p>${bouton(lienCrm, 'Ouvrir la fiche')}`),
         });
         return NextResponse.json({ ok: true });

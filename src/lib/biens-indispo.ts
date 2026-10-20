@@ -20,7 +20,7 @@ export type MotifIndispo = 'vendu' | 'compromis' | 'retire' | 'autre';
 export type Indispo = { le: string; motif: MotifIndispo; note: string | null };
 
 export const MOTIFS_INDISPO: { k: MotifIndispo; l: string; client: string }[] = [
-  { k: 'vendu', l: 'Loué ou vendu', client: 'Ce local a trouvé preneur.' },
+  { k: 'vendu', l: 'Loué ou cédé', client: 'Ce local a trouvé preneur.' },
   { k: 'compromis', l: 'En signature', client: 'Ce local est en cours de signature.' },
   { k: 'retire', l: 'Retiré du marché', client: 'Ce local a été retiré du marché.' },
   { k: 'autre', l: 'Autre raison', client: 'Ce local n’est plus disponible.' },
@@ -46,7 +46,7 @@ export async function marquerIndispo(o: { bien: BienIndispo; clientId: string; r
   const r = await supabase.from('biens').update({ indispo: valeur }).eq('id', o.bien.id).select('id');
   if (r.error && colonneAbsente(r.error.message)) { signalerEchec('« Plus disponible »', SQL_ABSENT); return false; }
   if (!(await verifie('« Plus disponible »', Promise.resolve(r), { ligne: true }))) return false;
-  const nom = o.bien.titre || o.bien.ville || 'Un bien';
+  const nom = o.bien.titre || o.bien.ville || 'Un local';
   const m = motifIndispo(o.motif);
   await addJournal(o.clientId, 'bien_modifie', `🔒 Plus disponible : ${nom}`,
     [m.l, note ? `Son mot : « ${note} »` : ''].filter(Boolean).join(' · '),
@@ -64,7 +64,7 @@ export async function remettreDispo(o: { bien: BienIndispo; clientId: string; re
   const r = await supabase.from('biens').update({ indispo: null }).eq('id', o.bien.id).select('id');
   if (r.error && colonneAbsente(r.error.message)) { signalerEchec('« Remettre disponible »', SQL_ABSENT); return false; }
   if (!(await verifie('« Remettre disponible »', Promise.resolve(r), { ligne: true }))) return false;
-  await addJournal(o.clientId, 'bien_modifie', `🔓 De nouveau disponible : ${o.bien.titre || o.bien.ville || 'un bien'}`,
+  await addJournal(o.clientId, 'bien_modifie', `🔓 De nouveau disponible : ${o.bien.titre || o.bien.ville || 'un local'}`,
     'Il revient dans ses biens présentés, et dans son espace.', { indispo: false }, { rechercheId: o.rechercheId || null, bienId: o.bien.id });
   return true;
 }

@@ -746,7 +746,7 @@ export default async function PageEspace({ params, searchParams }: {
         transportLignes: recherche.transport_lignes || [],
         transportArrets: recherche.transport_arrets || [],
         equip: [
-          recherche.terrasse && 'Terrasse', recherche.balcon && 'Balcon', recherche.jardin && 'Jardin',
+          recherche.terrasse && 'Terrasse', recherche.balcon && 'Espace extérieur', recherche.jardin && 'Cour',
           recherche.parking && 'Parking', recherche.ascenseur && 'Ascenseur', recherche.cave && 'Cave',
           recherche.gardien && 'Gardien',
         ].filter(Boolean) as string[],

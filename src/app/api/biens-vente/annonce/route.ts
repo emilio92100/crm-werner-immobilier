@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
   const texte = court(body.texte, 8000).trim();
   const titre = court(body.titre, 200).trim();
   const version = Math.max(1, Math.min(99, Math.round(Number(body.version) || 1)));
-  if (faits.length < 20 && texte.length < 80) return ko('La fiche est presque vide : renseigne d’abord le bien (type, ville, surfaces, pièces…).');
+  if (faits.length < 20 && texte.length < 80) return ko('La fiche est presque vide : renseigne d’abord le local (type, ville, surface, vitrine…).');
 
   const debut = Date.now();
   let r = await demander(cle, consigne(faits, texte, titre, version, false));
