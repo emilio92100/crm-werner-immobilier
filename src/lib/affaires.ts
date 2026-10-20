@@ -106,7 +106,7 @@ export function rentabilite(loyerAn: number | null | undefined, prix: number | n
 /* ── Les baux ─────────────────────────────────────────────────────────── */
 export const TYPES_BAIL: Option[] = [
   { v: 'commercial', l: 'Bail commercial 3/6/9', aide: 'Neuf ans, résiliable tous les trois ans', ic: 'bail' },
-  { v: 'professionnel', l: 'Bail professionnel', aide: 'Six ans, pour une profession libérale', ic: 'mallette' },
+  { v: 'professionnel', l: 'Bail professionnel', aide: 'Six ans, pour une profession libérale', ic: 'valise' },
   { v: 'derogatoire', l: 'Bail dérogatoire', aide: 'Trois ans au plus, hors statut', ic: 'chrono' },
   { v: 'precaire', l: 'Convention d’occupation précaire', ic: 'horloge' },
   { v: 'civil', l: 'Bail civil', aide: 'Un parking, un entrepôt, une SCI', ic: 'doc' },
@@ -117,3 +117,55 @@ export const INDICES: Option[] = [
   { v: 'icc', l: 'ICC', aide: 'Coût de la construction', ic: 'courbe' },
   { v: 'aucun', l: 'Pas d’indexation', ic: 'croix' },
 ];
+
+/* ── Ce que le preneur peut faire du local ───────────────────────────── */
+export const DESTINATIONS: Option[] = [
+  { v: 'tous', l: 'Tous commerces', aide: 'Toute activité commerciale', ic: 'sac' },
+  { v: 'sauf', l: 'Tous commerces sauf…', aide: 'Souvent sauf restauration, nuisances', ic: 'croix' },
+  { v: 'restauration', l: 'Restauration possible', aide: 'Avec ou sans extraction', ic: 'table' },
+  { v: 'precise', l: 'Une activité précise', ic: 'cible' },
+  { v: 'bureaux', l: 'Bureaux, activité tertiaire', ic: 'bureau' },
+  { v: 'liberal', l: 'Profession libérale', ic: 'balance' },
+];
+
+/* ── L'emplacement d'un commerce ─────────────────────────────────────── */
+export const EMPLACEMENTS: Option[] = [
+  { v: 'n1', l: 'N° 1', aide: 'La meilleure rue commerçante du quartier', ic: 'etoilePleine' },
+  { v: 'n1bis', l: 'N° 1 bis', aide: 'Juste à côté du meilleur passage', ic: 'etoile' },
+  { v: 'n2', l: 'N° 2', aide: 'Une rue secondaire, un commerce de destination', ic: 'lieu' },
+  { v: 'quartier', l: 'Commerce de quartier', ic: 'immeuble' },
+  { v: 'centre', l: 'Centre commercial, galerie', ic: 'sac' },
+  { v: 'zone', l: 'Zone commerciale ou d’activité', ic: 'voiture' },
+];
+
+/* ── Les équipements d'un local ───────────────────────────────────────
+   Les mêmes clés pour l'affaire (`donnees.equipements`) et pour les critères
+   d'un demandeur (`recherches.exigences`, souhaité ou indispensable) : le
+   rapprochement compare clé à clé. `pour` : les types de local où on le
+   propose (rien : tous). */
+export const EQUIPEMENTS: (Option & { ic: string; pour?: string[] })[] = [
+  { v: 'clim', l: 'Climatisation', ic: 'flocon' },
+  { v: 'fauxPlafond', l: 'Faux plafond', ic: 'toit', pour: ['bureaux', 'activite', 'local'] },
+  { v: 'plancherTech', l: 'Plancher technique', ic: 'sol', pour: ['bureaux'] },
+  { v: 'cablage', l: 'Câblage informatique', ic: 'wifi', pour: ['bureaux', 'activite'] },
+  { v: 'fibre', l: 'Fibre', ic: 'wifi' },
+  { v: 'ascenseur', l: 'Ascenseur', ic: 'ascenseur' },
+  { v: 'monteCharge', l: 'Monte-charge', ic: 'cube', pour: ['activite', 'entrepot', 'local', 'restaurant'] },
+  { v: 'pmr', l: 'Accès PMR', ic: 'pmr' },
+  { v: 'parking', l: 'Parking', ic: 'parking' },
+  { v: 'extraction', l: 'Extraction', ic: 'flamme', pour: ['local', 'restaurant', 'activite'] },
+  { v: 'rideau', l: 'Rideau métallique', ic: 'volet', pour: ['local', 'restaurant'] },
+  { v: 'vitrineEq', l: 'Vitrine', ic: 'vitrine', pour: ['local', 'restaurant'] },
+  { v: 'reserve', l: 'Réserve', ic: 'cube', pour: ['local', 'restaurant'] },
+  { v: 'cuisinePro', l: 'Cuisine équipée', ic: 'cuisine', pour: ['restaurant'] },
+  { v: 'chambreFroide', l: 'Chambre froide', ic: 'flocon', pour: ['restaurant', 'local'] },
+  { v: 'terrasse', l: 'Terrasse', ic: 'parasol' },
+  { v: 'quai', l: 'Quai de chargement', ic: 'voiture', pour: ['activite', 'entrepot'] },
+  { v: 'acces', l: 'Accès poids lourds', ic: 'voiture', pour: ['activite', 'entrepot'] },
+  { v: 'alarme', l: 'Alarme', ic: 'alarme' },
+  { v: 'surveillance', l: 'Vidéosurveillance', ic: 'oeil' },
+  { v: 'accueil', l: 'Accueil, gardien', ic: 'personne', pour: ['bureaux'] },
+  { v: 'lumineux', l: 'Lumineux', ic: 'soleil' },
+  { v: 'meuble', l: 'Loué équipé, meublé', ic: 'canape', pour: ['bureaux'] },
+];
+export const nomEquipement = (v: unknown) => EQUIPEMENTS.find(e => e.v === v)?.l || '';

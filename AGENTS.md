@@ -4,19 +4,56 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# Emilio Immo — Chasse immobilière : règles de travail
+# Werner Immobilier — CRM de l'immobilier d'entreprise : règles de travail
 
-`context.md` = l'histoire complète du projet (architecture, tables, sessions).
-**Ce fichier-ci = ce qu'il faut savoir avant d'écrire une seule ligne.** Il est
-court exprès. Le lire en entier prend deux minutes et fait gagner des heures.
+Ce dépôt est une **copie** du CRM d'Emilio Immobilier (chasse immobilière, dépôt
+`emilio92100/emilio-immo-chasseimmo`), adaptée en octobre 2026 pour Werner,
+agent en immobilier d'entreprise à Paris (bureaux, boutiques, cessions de droit
+au bail, fonds de commerce, murs). Werner travaille sous la carte T de
+RT CONSEILS (CPI 9201 2020 000 045 344). Base Supabase « CRM Werner
+Immobilier », projet Vercel `crm-werner-immobilier`.
+
+**Ne jamais toucher au dépôt ni à la base d'Emilio** : ce sont deux CRM
+séparés. `context.md` raconte l'histoire du CRM d'origine (architecture,
+tables, sessions) ; ce fichier-ci dit ce qu'il faut savoir avant d'écrire une
+seule ligne. Le lire en entier prend deux minutes et fait gagner des heures.
 
 ---
 
-## 1. Comment Alexandre travaille
+## 0. Le métier de Werner : les mots et les données
 
-- **Il colle les fichiers lui-même** dans l'interface web de GitHub.
-  **Ne jamais pousser sur le dépôt.** Livrer le **fichier complet modifié**,
-  jamais un diff, jamais un extrait, et dire où il va : `src/…/Fichier.tsx`.
+- **Les clés internes n'ont pas changé** (la base et ses déclencheurs les
+  lisent) ; seuls les mots ont changé. `acheteur` = un **demandeur** (il cherche
+  un local), `vendeur` = un **bailleur ou cédant** (un **mandant**),
+  `vendeur_signe` = un **ancien mandant**. `biens_vente` = les **affaires** de
+  la rubrique « Affaires ». Les étapes : `mandat` = disponible (« Affaires en
+  cours »), `offre` = sous offre, `compromis` = **en signature** (bail,
+  promesse ou acte de cession), `vendu` = **affaire conclue**.
+- Une affaire a une **nature** (`donnees.nature` : location, cession de droit
+  au bail, fonds de commerce, murs, murs occupés) et un **type de local**
+  (`donnees.typeBien` : bureaux, local commercial, restaurant, activité,
+  entrepôt…). Tout est dans `src/lib/affaires.ts` : les listes, `libPrix`,
+  `montantAffaire`. Pour une location, la colonne `prix` est le **loyer annuel
+  HT HC**.
+- **Aucun mot du résidentiel** dans un texte : appartement, maison, chambre,
+  pièces, séjour, logement, foyer, conjoint, compromis (sauf vente des murs),
+  notaire seul (« notaire ou avocat »). Les honoraires se disent **HT**.
+- `outils/vocabulaire-werner.mjs` et `outils/identite-werner.mjs` ont fait le
+  gros du changement de mots : les relancer est sans danger (une clé en
+  minuscules n'est jamais touchée).
+- Les coordonnées de Werner encore inconnues sont des repères :
+  « 01 00 00 00 00 », contact@wernerimmobilier.com, « Werner » seul. Son vrai
+  logo remplacera ceux de `outils/logos-werner.py` (mêmes noms, mêmes tailles).
+- Ne jamais ouvrir wernerimmobilier.com : le site est piraté (fausse
+  vérification Cloudflare, octobre 2026).
+
+---
+
+## 1. Comment on travaille ici
+
+- Le travail se fait dans l'espace de Claude, puis se **pousse sur `main`** :
+  Vercel déploie tout seul. (Le CRM d'Emilio, lui, se livre fichier par
+  fichier : ne pas confondre.)
 - Un fichier livré est un fichier qui compile et qui a été **regardé à l'écran**
   (§3). Il déploie sur Vercel dans la foulée et teste en prod : une régression
   se paie comptant.
@@ -312,13 +349,14 @@ de fond, pas de style.
 
 ### Langage visuel
 
-- **Les couleurs et la police du site emilio-immo.com** (depuis la V3.116, à la
-  demande d'Alexandre — plus de marine, de doré ni de noir) : encre `#13243D`
-  pour le texte, bleu de la marque `#22497D` pour les aplats sombres
-  (`--marque`), orange `#E68B23` pour l'accent (`--or` ; `--or-fonce` `#A95808`
-  pour un texte orange sur fond clair, `--or-clair` `#F2B266` sur fond bleu),
-  fond `#F5F8FC`, Plus Jakarta Sans partout. Les variables ont gardé leurs noms
-  (`--or`, `--encre`) : seules leurs valeurs ont changé. Un seul accent par
+- **Les couleurs de Werner** (octobre 2026, choix d'Alexandre : « un noir
+  grisé, pas trop noir, et un orange pas trop clair ») : anthracite `#2e3034`
+  pour les aplats sombres (`--emilio`, `--marque`), encre `#232528`, orange
+  `#f08c42` pour l'accent (`--or` ; `#c2621c` pour un texte orange sur fond
+  clair, `#f7b07a` sur fond sombre). `outils/couleurs-werner.py` a converti les
+  bleus et les dorés d'origine ; les couleurs qui portent un sens (palettes
+  Tailwind : vert, rouge, ambre…) sont restées. Les variables ont gardé leurs
+  noms (`--or`, `--emilio`) : seules leurs valeurs ont changé. Un seul accent par
   page : l'orange souligne le chiffre qui compte, rien d'autre. Quatre cartes
   de quatre couleurs = arc-en-ciel (refusé une fois déjà).
 - **Icônes dessinées, pas d'émoji**, dans les nouvelles interfaces : composant

@@ -78,21 +78,20 @@ type Msg = string | { titre?: string; texte: string };
    n'était sur aucune carte du tout. */
 const CATS_CONTACTS: Cat[] = [
   ...(['acheteur', 'vendeur', 'vendeur_signe', 'proprietaire'] as const).map(k => ({ k, lib: typeDe(k).pluriel, c: typeDe(k).c, ic: typeDe(k).ic })),
-  { k: 'vente_possible', lib: 'Reventes possibles', c: '#c2621c', ic: 'maison' },
   ...(['notaire', 'confrere', 'gardien', 'partenaire'] as const).map(k => ({ k, lib: typeDe(k).pluriel, c: typeDe(k).c, ic: typeDe(k).ic })),
 ];
 const CATS_BIENS: Cat[] = [
   { k: 'b:a_suivre', lib: 'À suivre', c: etapeDe('a_suivre').c, ic: 'oeil', etapes: ['a_suivre'] },
   { k: 'b:estimation', lib: 'Estimations', c: etapeDe('estimation').c, ic: 'euro', etapes: ['estimation'] },
-  { k: 'b:mandat', lib: 'Mandats en cours', c: etapeDe('mandat').c, ic: 'panneau', etapes: ['mandat'] },
-  { k: 'b:offre', lib: 'Sous offre ou compromis', c: etapeDe('offre').c, ic: 'accord', etapes: ['offre', 'compromis'] },
+  { k: 'b:mandat', lib: 'Affaires en cours', c: etapeDe('mandat').c, ic: 'panneau', etapes: ['mandat'] },
+  { k: 'b:offre', lib: 'Sous offre ou en signature', c: etapeDe('offre').c, ic: 'accord', etapes: ['offre', 'compromis'] },
   { k: 'b:suspendu', lib: 'En pause', c: etapeDe('suspendu').c, ic: 'pause', etapes: ['suspendu'] },
   /* V3.155 — Alexandre : « je ne vois pas Annonces type, ils sont dans À
      suivre ». L'étape existait depuis la V3.79, pas sa pastille : toute
      étape sans pastille tombait dans « À suivre ». */
   { k: 'b:annonce_type', lib: 'Annonces type', c: etapeDe('annonce_type').c, ic: 'megaphone', etapes: ['annonce_type'] },
-  { k: 'b:vendu', lib: 'Vendus', c: etapeDe('vendu').c, ic: 'cle', etapes: ['vendu'], eteint: true },
-  { k: 'b:retire', lib: 'Retirés', c: etapeDe('retire').c, ic: 'croix', etapes: ['retire'], eteint: true },
+  { k: 'b:vendu', lib: 'Conclues', c: etapeDe('vendu').c, ic: 'cle', etapes: ['vendu'], eteint: true },
+  { k: 'b:retire', lib: 'Retirées', c: etapeDe('retire').c, ic: 'croix', etapes: ['retire'], eteint: true },
 ];
 const TOUTES = [...CATS_CONTACTS, ...CATS_BIENS];
 const actifsParDefaut = () => Object.fromEntries(TOUTES.map(c => [c.k, !c.eteint]));
