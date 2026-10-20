@@ -7,6 +7,7 @@
    Isomorphe : aucune dépendance serveur. */
 
 import type { Arret } from '@/lib/arrets';
+import type { ProBien } from '@/lib/affaires';
 
 /* Ce que la note lit d'un bien : le sous-ensemble du `Bien` de l'espace. */
 export type BienCorr = {
@@ -23,6 +24,8 @@ export type BienCorr = {
      découpé par un portail. Hors des quartiers demandés, le secteur passe en
      « presque » (src/lib/biens-vente.ts, versCorrespondance). */
   quartierSur?: boolean;
+  /* Werner : la nature, le loyer, la vitrine, les équipements (src/lib/affaires.ts). */
+  pro?: ProBien;
 };
 /* Ce que la note lit d'une recherche : le sous-ensemble des `Criteres` de l'espace. */
 export type CriteresCorr = {

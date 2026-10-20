@@ -169,3 +169,54 @@ export const EQUIPEMENTS: (Option & { ic: string; pour?: string[] })[] = [
   { v: 'meuble', l: 'Loué équipé, meublé', ic: 'canape', pour: ['bureaux'] },
 ];
 export const nomEquipement = (v: unknown) => EQUIPEMENTS.find(e => e.v === v)?.l || '';
+
+/* ── Ce qu'une affaire dit d'elle-même, en dehors de sa fiche ─────────────
+   Le résumé que lisent le rapprochement (BienCorr.pro), l'espace d'un
+   demandeur et la page publique (`biens.pro`). Rien de privé : ni le mandant,
+   ni les chiffres du fonds, ni les notes. */
+export type ProBien = {
+  nature: NatureAffaire | null; type: string | null;
+  /* Le loyer annuel HT HC que paiera le preneur (une location, un bail repris). */
+  loyerAn: number | null;
+  /* Le prix d'une cession ou d'une vente (droit au bail, fonds, murs). */
+  prix: number | null;
+  droitEntree: number | null; chargesAn: number | null; taxeFonciere: number | null; depotMois: number | null;
+  divisible: boolean; surfDivMin: number | null; vitrine: number | null; emplacement: string | null;
+  extraction: string | null; destinationType: string | null; destination: string | null;
+  bailType: string | null; bailFin: string | null; activite: string | null;
+  equipements: string[];
+};
+const n0 = (d: Donnees, k: string): number | null => {
+  const v = d[k];
+  const x = typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v.replace(/\s/g, '').replace(',', '.')) : NaN;
+  return Number.isFinite(x) && x > 0 ? x : null;
+};
+const t0 = (d: Donnees, k: string): string | null => (typeof d[k] === 'string' && String(d[k]).trim() ? String(d[k]).trim() : null);
+export function proDuBien(d: Donnees): ProBien {
+  const nat = natureDe(d);
+  const prix = n0(d, 'prix');
+  const eq = Array.isArray(d.equipements) ? (d.equipements as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+  /* Les équipements tenus ailleurs dans la fiche comptent aussi. */
+  const imm = Array.isArray(d.immeuble) ? (d.immeuble as unknown[]) : [];
+  const ann = Array.isArray(d.annexes) ? (d.annexes as unknown[]) : [];
+  const tous = new Set(eq);
+  if (imm.includes('ascenseur')) tous.add('ascenseur');
+  if (imm.includes('monteCharge')) tous.add('monteCharge');
+  if (ann.includes('parking') || ann.includes('box')) tous.add('parking');
+  if (ann.includes('terrasse')) tous.add('terrasse');
+  if (ann.includes('quai')) tous.add('quai');
+  if (d.extraction === 'oui') tous.add('extraction');
+  if (d.clim === 'reversible' || d.clim === 'froid') tous.add('clim');
+  return {
+    nature: nat, type: typeof d.typeBien === 'string' && d.typeBien ? d.typeBien : null,
+    loyerAn: nat === 'location' ? prix : bailEnCours(d) ? n0(d, 'loyerAn') : null,
+    prix: nat && nat !== 'location' ? prix : null,
+    droitEntree: nat === 'location' ? n0(d, 'droitEntree') : null,
+    chargesAn: n0(d, 'chargesAn'), taxeFonciere: n0(d, 'taxeFonciere'), depotMois: n0(d, 'depotMois'),
+    divisible: d.divisible === 'oui', surfDivMin: d.divisible === 'oui' ? n0(d, 'surfDivMin') : null,
+    vitrine: n0(d, 'vitrine'), emplacement: t0(d, 'emplacement'),
+    extraction: t0(d, 'extraction'), destinationType: t0(d, 'destinationType'), destination: t0(d, 'destination'),
+    bailType: t0(d, 'bailType'), bailFin: t0(d, 'bailFin'), activite: nat === 'fonds' ? t0(d, 'activite') : null,
+    equipements: [...tous],
+  };
+}

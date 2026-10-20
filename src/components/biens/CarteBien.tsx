@@ -5,6 +5,7 @@ import {
   argentBien, avantMandat, etapeDe, ligneEtat, lirePhotos, motMandat, nomProprio, specsBien, villeAffichee, type BienVente, type EtatMandatDoc, type SuiviVente,
 } from '@/lib/biens-vente';
 import { Ic } from '@/components/documents/ApercuActe';
+import { estLocation, montantAffaire, unitePrix } from '@/lib/affaires';
 import { etatDiffusion } from '@/lib/diffusion';
 import b from './Biens.module.css';
 
@@ -21,11 +22,13 @@ export function prixCarte(bien: BienVente): { t: string; vide: boolean } {
   const d = bien.donnees || {};
   const p = bien.prix ?? num(d, 'prix');
   const a = num(d, 'estimBasse'), h = num(d, 'estimHaute');
-  const fourchette = a && h ? `${euros(a).replace(/\s€$/, '')} – ${euros(h)}` : a || h ? euros((a || h) as number) : '';
+  /* Werner : un loyer se lit « 48 000 € HT HC / an ». */
+  const u = unitePrix(d);
+  const fourchette = a && h ? `${euros(a).replace(/\s€$/, '')} – ${euros(h)}${u ? ` ${u}` : ''}` : a || h ? montantAffaire((a || h) as number, d) : '';
   if (avantMandat(bien.etape) && fourchette) return { t: fourchette, vide: false };
-  if (p) return { t: euros(p), vide: false };
+  if (p) return { t: montantAffaire(p, d), vide: false };
   if (fourchette) return { t: fourchette, vide: false };
-  return { t: bien.etape === 'a_suivre' ? 'Projet de vente' : bien.etape === 'estimation' ? 'Estimation à définir' : 'Prix à fixer', vide: true };
+  return { t: bien.etape === 'a_suivre' ? 'Projet à suivre' : bien.etape === 'estimation' ? 'Estimation à définir' : estLocation(d) ? 'Loyer à fixer' : 'Prix à fixer', vide: true };
 }
 
 /* Les honoraires d'une vente conclue (TTC) : ceux saisis au compromis ou à
@@ -162,7 +165,7 @@ export default function CarteBien({ bien, suivi, nbVisites, nbPrevues = 0, nbCR 
   const conclu = bien.etape === 'compromis' || bien.etape === 'vendu';
   const hono = conclu ? honorairesVente(bien, suivi) : null;
   /* Vendu sans honoraires de l'acte : on le dit, plutôt qu'un chiffre qui n'est pas compté. */
-  const motHono = hono ? `Honoraires : ${euros(hono)} HT` : bien.etape === 'vendu' ? (venteSansHono(suivi) ? 'Vente sans honoraires' : 'Honoraires non renseignés') : '';
+  const motHono = hono ? `Honoraires : ${euros(hono)} HT` : bien.etape === 'vendu' ? (venteSansHono(suivi) ? 'Affaire sans honoraires' : 'Honoraires non renseignés') : '';
   const Tag = onClick ? 'button' : 'div';
 
   return (

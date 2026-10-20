@@ -41,6 +41,10 @@ import s from '@/components/documents/Documents.module.css';
 import b from './Biens.module.css';
 import { signalerFicheOuverte, signalerBienActif } from '@/components/layout/FichesOuvertes';
 import { lirePro, lireStructure } from '@/lib/contacts';
+import {
+  EMPLACEMENTS, NATURES, TYPES_BAIL, avecLoyer, bailEnCours, estActivite, estBureaux, estCommerce, estFonds, estLocal, estLocation, estMurs, estMursOccupes,
+  libPrix, loyerM2, montantAffaire, natureCourte, natureDe, nomLocal, proDuBien, rentabilite,
+} from '@/lib/affaires';
 import { issueAppel } from '@/components/fiche/FriseSuivi';
 import { lireOngletBien, oublierOngletBien } from '@/lib/intentions';
 import { retenirPlace, useHauteur, usePlace } from '@/lib/place-fiche';
@@ -252,32 +256,29 @@ function exterieurCourt(d: Donnees): string {
    « Le bien ». */
 const PICTO_ANNEXE: Record<string, string> = { balcon: 'balcon', terrasse: 'parasol', loggia: 'balcon', jardin: 'terrain', cave: 'cave', parking: 'parking', box: 'voiture', garage: 'voiture', piscine: 'eau' };
 function Faits({ d, vide }: { d: Donnees; vide?: ReactNode }) {
-  const enImm = !['maison', 'terrain'].includes(String(d.typeBien || ''));
-  const asc = liste(d, 'immeuble').includes('ascenseur');
+  /* Werner : les faits qui comptent pour un local professionnel, sur une
+     ligne — la nature et le montant, la surface (divisible ou non), l'étage,
+     la vitrine, l'extraction ou les postes, le bail, le DPE, les charges. */
   const n = (k: string) => num(d, k);
-  const ann = liste(d, 'annexes');
-  const icExt = PICTO_ANNEXE[['terrasse', 'jardin', 'balcon', 'loggia'].find(x => ann.includes(x)) || ann[0] || ''] || 'terrain';
-  /* V3.30 : chaque tuile a sa teinte (la même famille que dans « Le bien »),
-     sur fond blanc : sur le gris de la page, les tuiles grises se perdaient. */
+  const asc = liste(d, 'immeuble').includes('ascenseur');
   type Ton = 'or' | 'bleu' | 'violet' | 'cyan' | 'ardoise' | 'vert' | 'ambre';
   const items: { ic: string; v: string; l: string; dpe?: string; ton: Ton }[] = [];
-  const pl = (x: number, mot: string) => `${x} ${mot}${x > 1 ? 's' : ''}`;
-  if (n('surface')) items.push({ ic: 'regle', ton: 'or', v: m2(n('surface') as number), l: n('carrez') ? `Carrez ${m2(n('carrez') as number)}` : 'Habitable' });
+  const nat = natureDe(d);
+  const p = proDuBien(d);
+  if (nat) items.push({ ic: NATURES.find(x => x.v === nat)?.ic || 'agence', ton: 'or', v: natureCourte(nat), l: nomLocal(d.typeBien) || 'Local' });
+  if (n('surface')) items.push({ ic: 'regle', ton: 'or', v: m2(n('surface') as number), l: d.divisible === 'oui' ? (n('surfDivMin') ? `Divisible dès ${m2(n('surfDivMin') as number)}` : 'Divisible') : 'Surface totale' });
   else if (n('terrain')) items.push({ ic: 'terrain', ton: 'vert', v: m2(n('terrain') as number), l: 'Terrain' });
-  const ch = n('chambres');
-  if (n('pieces')) items.push({ ic: 'plan', ton: 'bleu', v: pl(n('pieces') as number, 'pièce'), l: ch ? `dont ${pl(ch, 'chambre')}` : n('sejour') ? `Séjour ${m2(n('sejour') as number)}` : 'Pièces' });
-  else if (ch) items.push({ ic: 'lit', ton: 'violet', v: pl(ch, 'chambre'), l: 'Chambres' });
-  if (enImm && n('etage') !== null) items.push({ ic: asc ? 'ascenseur' : 'escalier', ton: 'ardoise', v: etageTexte(n('etage'), n('etages')).replace(' étage', ''), l: (n('niveaux') || 0) >= 2 ? (n('niveaux') === 2 ? 'En duplex' : n('niveaux') === 3 ? 'En triplex' : `Sur ${n('niveaux')} niveaux`) : n('etage') === 0 ? (asc ? 'Avec ascenseur' : 'Étage') : asc ? 'Avec ascenseur' : 'Sans ascenseur' });
-  else if (enImm && (n('niveaux') || 0) >= 2) items.push({ ic: 'escalier', ton: 'ardoise', v: n('niveaux') === 2 ? 'Duplex' : n('niveaux') === 3 ? 'Triplex' : `${n('niveaux')} niveaux`, l: `Sur ${n('niveaux')} niveaux` });
-  if (!enImm && n('etages')) items.push({ ic: 'escalier', ton: 'ardoise', v: n('etages') === 1 ? 'Plain-pied' : pl(n('etages') as number, 'niveau'), l: n('etages') === 1 ? 'Un seul niveau' : 'Niveaux' });
-  if (d.typeBien === 'terrain' && d.constructible) items.push({ ic: 'terrain', ton: 'vert', v: d.constructible === 'oui' ? 'Constructible' : d.constructible === 'partiel' ? 'En partie' : 'Non constructible', l: d.viabilise === 'oui' ? 'Viabilisé' : d.viabilise === 'non' ? 'Non viabilisé' : 'Terrain' });
-  if (ann.length) items.push({ ic: icExt, ton: 'vert', v: exterieurCourt(d), l: ['terrasse', 'jardin', 'balcon', 'loggia'].some(x => ann.includes(x)) ? 'Extérieur' : 'Annexes' });
-  if (d.expo) items.push({ ic: 'boussole', ton: 'ambre', v: d.expo === 'traversant' ? 'Traversant' : nomExpo(d.expo).replace(/^./, x => x.toUpperCase()), l: 'Exposition' });
+  if (p.loyerAn && n('surface')) items.push({ ic: 'euro', ton: 'bleu', v: loyerM2(p.loyerAn, n('surface')).replace(' HT HC / m² / an', ''), l: 'HT HC le m² par an' });
+  if (n('etage') !== null && !['terrain', 'immeuble', 'entrepot'].includes(String(d.typeBien || ''))) items.push({ ic: asc ? 'ascenseur' : 'escalier', ton: 'ardoise', v: etageTexte(n('etage'), n('etages')).replace(' étage', '').replace('Rez-de-chaussée', 'RDC'), l: n('etage') === 0 ? (n('surfSousSol') ? 'Avec sous-sol' : 'Rez-de-chaussée') : asc ? 'Avec ascenseur' : 'Sans ascenseur' });
+  if (estCommerce(d) && n('vitrine')) items.push({ ic: 'vitrine', ton: 'violet', v: `${String(n('vitrine')).replace('.', ',')} m`, l: EMPLACEMENTS.find(x => x.v === d.emplacement)?.l ? `Vitrine · ${EMPLACEMENTS.find(x => x.v === d.emplacement)?.l}` : 'De vitrine' });
+  if ((estCommerce(d) || estActivite(d)) && d.extraction) items.push({ ic: 'flamme', ton: 'ambre', v: d.extraction === 'oui' ? 'Extraction' : d.extraction === 'possible' ? 'Possible' : 'Non', l: d.extraction === 'oui' ? 'En place' : 'Extraction' });
+  if (estBureaux(d) && n('postes')) items.push({ ic: 'bureau', ton: 'violet', v: `${n('postes')} postes`, l: n('nbBureaux') ? `${n('nbBureaux')} bureaux fermés` : 'De travail' });
+  if (avecLoyer(d) && d.bailType) items.push({ ic: 'bail', ton: 'cyan', v: (TYPES_BAIL.find(x => x.v === d.bailType)?.l || 'Bail').replace('Convention d’occupation précaire', 'Précaire').replace('Bail ', ''), l: txt(d, 'bailFin') ? `Jusqu’au ${dateCourte(txt(d, 'bailFin'))}` : 'Bail' });
   if (d.dpe) items.push({ ic: '', ton: 'ambre', dpe: String(d.dpe), v: n('dpeValeur') ? `${n('dpeValeur')} kWh` : `Classe ${d.dpe}`, l: n('dpeValeur') ? 'DPE, m² par an' : 'DPE' });
   else if (d.dpeStatut === 'vierge') items.push({ ic: 'eclair', ton: 'ambre', v: 'Vierge', l: 'DPE' });
-  if (n('chargesAn')) items.push({ ic: 'lots', ton: 'ardoise', v: `${euros((n('chargesAn') as number) / 12)}`, l: 'Charges / mois' });
+  if (n('chargesAn')) items.push({ ic: 'lots', ton: 'ardoise', v: euros(n('chargesAn') as number), l: 'Charges HT par an' });
   else if (n('taxeFonciere')) items.push({ ic: 'fiscal', ton: 'ardoise', v: euros(n('taxeFonciere') as number), l: 'Taxe foncière' });
-  if (!items.length) return <div className={b.vide}>{vide || 'Les caractéristiques du bien s’afficheront ici.'}</div>;
+  if (!items.length) return <div className={b.vide}>{vide || 'Les caractéristiques du local s’afficheront ici.'}</div>;
   return (
     <div className={b.faits} data-defile="">
       {items.map((x, i) => (
@@ -295,13 +296,13 @@ function Faits({ d, vide }: { d: Donnees; vide?: ReactNode }) {
    « Modifier ». */
 function BlocBref({ d, onSurfaces, onModifier }: { d: Donnees; onSurfaces: () => void; onModifier: () => void }) {
   return (
-    <section className={b.bref} aria-label="Le bien en bref">
+    <section className={b.bref} aria-label="Le local en bref">
       <div className={b.brefT}>
-        <h3>Le bien en bref</h3>
-        <button type="button" className={`${b.lien} ${b.lienOr}`} onClick={onSurfaces}><Ic n="regle" t={14} />Surfaces et pièces</button>
+        <h3>Le local en bref</h3>
+        <button type="button" className={`${b.lien} ${b.lienOr}`} onClick={onSurfaces}><Ic n="regle" t={14} />Surfaces et espaces</button>
         <Modifier onClick={onModifier} />
       </div>
-      <Faits d={d} vide="Surface, pièces, étage, extérieur… : « Modifier » pour les saisir." />
+      <Faits d={d} vide="Nature, surface, étage, vitrine, bail… : « Modifier » pour les saisir." />
     </section>
   );
 }
@@ -600,12 +601,12 @@ const etageLong = (e: number | null, tot: number | null) => {
    L'annonce et les photos en haut, puis une carte par famille, chacune de sa
    couleur, puis les pièces, en liste ou en cartes. */
 /* V3.48 : la loggia avait sa surface dans la fiche, mais pas ici. */
-const SURF_ANNEXE: Record<string, string> = { balcon: 'surfBalcon', terrasse: 'surfTerrasse', loggia: 'surfLoggia', jardin: 'surfJardin', cave: 'surfCave', parking: 'nbParking' };
+const SURF_ANNEXE: Record<string, string> = { terrasse: 'surfTerrasse', cour: 'surfCour', cave: 'surfCave', parking: 'nbParking' };
 
 /* ══ ONGLET « SURFACES » (V3.30, OngletsBien.tsx) ═══════════════════════════ */
-const PICTO_ANN: Record<string, string> = { balcon: 'balcon', terrasse: 'parasol', jardin: 'terrain', cave: 'cave', loggia: 'loggia', parking: 'parking', box: 'box', garage: 'voiture', piscine: 'piscine' };
+const PICTO_ANN: Record<string, string> = { terrasse: 'parasol', cour: 'cour', jardin: 'terrain', cave: 'cave', parking: 'parking', box: 'box', quai: 'voiture' };
 /* « l’appartement du 68 avenue d’Iéna » : pour le message d'envoi des documents. */
-const LE_TYPE: Record<string, string> = { appartement: 'l’appartement', maison: 'la maison', duplex: 'le duplex', studio: 'le studio', loft: 'le loft', terrain: 'le terrain', local: 'le local', parking: 'le parking', immeuble: 'l’immeuble' };
+const LE_TYPE: Record<string, string> = { bureaux: 'les bureaux', local: 'le local', restaurant: 'le restaurant', activite: 'le local d’activité', entrepot: 'l’entrepôt', terrain: 'le terrain', parking: 'le parking', immeuble: 'l’immeuble' };
 function lieuDe(d: Donnees): string {
   const t = LE_TYPE[String(d.typeBien || '')] || 'le bien';
   const adr = txt(d, 'adresse'), ville = txt(d, 'ville');
@@ -619,17 +620,19 @@ function surfacesDe(d: Donnees): SurfacesBien {
     const n = cle ? num(d, cle) : null;
     const l = OPTIONS.annexes?.[v] || v;
     if (v === 'parking') annexes.push({ ic: PICTO_ANN.parking, l: n ? 'Parking' : 'Nombre de places non saisi', v: n ? `${n} place${n > 1 ? 's' : ''}` : 'Parking' });
-    /* Box, garage, piscine n'ont pas de surface à saisir : pas de « surface non saisie ». */
+    /* Un box, un quai n'ont pas de surface à saisir : pas de « surface non saisie ». */
     else annexes.push({ ic: PICTO_ANN[v] || 'plan', l: n ? l : cle ? 'Surface non saisie' : 'Annexe', v: n ? m2(n) : l });
   }
   /* V3.90 : la date du mesurage Carrez, s'il est reçu dans le dossier. */
   const carrez = lireDossier(d.dossier).carrez;
   const typeB = String(d.typeBien || '');
   return {
-    surface: num(d, 'surface'), carrez: num(d, 'carrez'), sejour: num(d, 'sejour'), terrain: num(d, 'terrain'),
-    carrezAttendu: d.copro === 'oui', chambres: num(d, 'chambres'), pieces: num(d, 'pieces'), annexes,
-    etage: num(d, 'etage'), etages: num(d, 'etages'), ascenseur: liste(d, 'immeuble').includes('ascenseur'), expo: txt(d, 'expo'),
-    maison: typeB === 'maison' || typeB === 'terrain', carrezLe: carrez?.etat === 'recu' ? carrez.date : '', lots: txt(d, 'annexesNum'),
+    surface: num(d, 'surface'), carrez: num(d, 'carrez'), sejour: null, terrain: num(d, 'terrain'),
+    carrezAttendu: d.copro === 'oui' && estMurs(d), chambres: null, pieces: null, annexes,
+    etage: ['terrain', 'immeuble', 'entrepot'].includes(typeB) ? null : num(d, 'etage'), etages: num(d, 'etages'), ascenseur: liste(d, 'immeuble').includes('ascenseur'), expo: '',
+    maison: false, carrezLe: carrez?.etat === 'recu' ? carrez.date : '', lots: txt(d, 'annexesNum'),
+    rdc: num(d, 'surfRdc'), etageS: num(d, 'surfEtage'), sousSol: num(d, 'surfSousSol'), mezzanine: num(d, 'surfMezzanine'), reserve: num(d, 'surfReserve'), bureaux: num(d, 'surfBureaux'),
+    ponderee: num(d, 'surfPonderee'), divisible: d.divisible === 'oui', divMin: num(d, 'surfDivMin'), hsp: num(d, 'hsp'), vitrine: num(d, 'vitrine'), postes: num(d, 'postes'),
   };
 }
 
@@ -638,116 +641,110 @@ function surfacesDe(d: Donnees): SurfacesBien {
    joli, avec des icônes ») : une rangée de sous-onglets en tête — « Tout »
    (la vue d'ensemble d'avant, les cartes en colonnes), puis une carte à la
    fois, en grand, ses lignes sur deux colonnes. Mêmes cartes, même ordre. */
-export type SousVue = 'tout' | 'surfaces' | 'interieur' | 'immeuble' | 'exterieur' | 'quartier' | 'energie' | 'copro' | 'prix';
+export type SousVue = 'tout' | 'surfaces' | 'interieur' | 'immeuble' | 'exterieur' | 'quartier' | 'energie' | 'copro' | 'prix' | 'bail' | 'fonds';
 /* Les sous-onglets, leur icône dans la couleur de leur carte. « Tout » en
    premier (V3.81). V3.81 : ils vivent dans le tiroir de la barre des
    rubriques (FicheBien), plus dans l'onglet lui-même. */
 export function vuesDuBien(d: Donnees, avant: boolean): { k: SousVue; l: string; ic: string; c: string }[] {
-  const enImm = !['maison', 'terrain'].includes(String(d.typeBien || ''));
+  /* Werner : les sous-onglets d'une affaire. Le bail ne vient qu'avec un
+     loyer, le fonds qu'avec une cession de fonds. */
   return [
-    { k: 'tout', l: 'Tout', ic: 'maison', c: '#f08c42' },
-    /* V3.99 (Alexandre : « le prix est trop à droite, mettez-le tout à
-       gauche, à côté de Surfaces ») : juste après « Tout ». */
-    { k: 'prix', l: avant ? 'Estimation et prix' : 'Prix', ic: 'etiquette', c: '#d36a1a' },
-    /* V3.91 (Alexandre : « il y a beaucoup d'onglets ») : l'onglet Surfaces
-       devient une sous-rubrique de « Le bien », la même page (OngletSurfaces). */
+    { k: 'tout', l: 'Tout', ic: 'agence', c: '#f08c42' },
+    { k: 'prix', l: avant ? 'Estimation et prix' : estLocation(d) ? 'Loyer' : 'Prix', ic: 'etiquette', c: '#d36a1a' },
     { k: 'surfaces', l: 'Surfaces', ic: 'regle', c: '#475569' },
-    { k: 'interieur', l: 'Intérieur', ic: 'canape', c: '#393836' },
-    { k: 'immeuble', l: enImm ? 'Immeuble' : 'Maison', ic: enImm ? 'immeuble' : 'maison', c: '#6d28d9' },
-    { k: 'exterieur', l: 'Extérieur', ic: 'terrain', c: '#16a34a' },
-    { k: 'quartier', l: 'Quartier', ic: 'carte', c: '#0891b2' },
+    ...(avecLoyer(d) ? [{ k: 'bail' as SousVue, l: 'Bail', ic: 'bail', c: '#1d4ed8' }] : []),
+    ...(estFonds(d) ? [{ k: 'fonds' as SousVue, l: 'Fonds', ic: 'sac', c: '#b45309' }] : []),
+    ...(estLocal(d) ? [{ k: 'interieur' as SousVue, l: 'Aménagement', ic: 'bureau', c: '#393836' }] : []),
+    { k: 'immeuble', l: 'Immeuble', ic: 'immeuble', c: '#6d28d9' },
+    { k: 'exterieur', l: 'Annexes', ic: 'parking', c: '#16a34a' },
+    { k: 'quartier', l: 'Accès', ic: 'carte', c: '#0891b2' },
     { k: 'energie', l: 'Énergie', ic: 'eclair', c: '#d97706' },
-    { k: 'copro', l: d.copro === 'non' ? 'Charges et taxes' : 'Copropriété et charges', ic: 'lots', c: '#0d9488' },
+    { k: 'copro', l: 'Charges et taxes', ic: 'lots', c: '#0d9488' },
   ];
 }
 const FR_NB = (n: number) => String(n).replace('.', ',');
 export function OngletBien({ bien, vue = 'tout', onModifier, onSurfaces, onEstimation, onAnnonce }: { bien: BienVente; vue?: SousVue; onModifier: (etape: string) => void; onSurfaces: () => void; onEstimation: () => void; onAnnonce?: (titre: string, texte: string) => void }) {
   const d = bien.donnees || {};
   const a = argentBien(d);
-  const enImm = !['maison', 'terrain'].includes(String(d.typeBien || ''));
   const imm = liste(d, 'immeuble');
   const pieces = lirePieces(d.detailPieces);
   const avant = avantMandat(bien.etape);
   const chargesAn = num(d, 'chargesAn');
-  const surf = num(d, 'carrez') || num(d, 'surface');
+  const surf = num(d, 'surface');
   const M = (e: string) => () => onModifier(e);
   /* V3.107 — « etape:@champ » : chaque ligne mène droit à son champ dans
      l'éditeur ; « etape:t-… », chaque « Modifier » à sa partie. */
   const A = (etape: string, champ: string) => () => onModifier(`${etape}:@${champ}`);
   const large = vue !== 'tout';
-  const chauffage = [lib(d, 'chauffageMode'), lib(d, 'chauffageEnergie').toLowerCase()].filter(Boolean).join(', ');
-  const cuisine = [lib(d, 'cuisine'), lib(d, 'cuisineEquip').toLowerCase()].filter(Boolean).join(', ');
+  const loc = estLocation(d);
+  const p = proDuBien(d);
+  const chauffage = d.chauffageMode === 'aucun' ? 'aucun' : [lib(d, 'chauffageMode'), lib(d, 'chauffageEnergie').toLowerCase()].filter(Boolean).join(', ');
   const equip = libs(d, 'equipements');
-  /* Les fenêtres : « Double vitrage, aluminium » (V3.79). */
-  const fenetres = [lib(d, 'vitrage'), lib(d, 'menuiseries').toLowerCase()].filter(Boolean).join(', ');
-  const volets = d.volets === 'aucun' ? 'aucun' : [lib(d, 'volets'), lib(d, 'voletsMateriau').replace(/^(?!PVC)./, c => c.toLowerCase())].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase());
-  const videInt = !d.etat && !chauffage && !cuisine && !equip.length && !fenetres && !volets && !txt(d, 'interieurNote') && !txt(d, 'travaux');
-  /* Les gros travaux votés (la liste de l'étape Copropriété) et les
-     remarques libres : « Autres remarques sur la copropriété » dans
-     l'éditeur. Jusqu'à la V3.29, ces remarques s'affichaient ici sous le mot
-     « Travaux votés », en gras, calées à droite : un paragraphe entier
-     tenait dans une colonne de trois mots. */
+  const videInt = !d.etat && !chauffage && !d.clim && !equip.length && !txt(d, 'interieurNote') && !d.config && !num(d, 'wc') && !d.extraction;
   const votes = d.copro === 'oui' ? lireObservations(d.coproVotes) : [];
   const remarquesCopro = d.copro === 'oui' ? txt(d, 'travauxVotes') : '';
   const ann = liste(d, 'annexes');
   const nbPark = num(d, 'nbParking');
-  /* Les annexes sans ligne à elles (loggia, box, piscine…, ou sans surface) : en pastilles. */
   const annPuces = ann.filter(v => !SURF_ANNEXE[v] || !num(d, SURF_ANNEXE[v])).map(v => OPTIONS.annexes?.[v] || v);
-  const videExt = !ann.length && !d.expo && !lib(d, 'vue') && !txt(d, 'exterieurNote');
+  const videExt = !ann.length && !txt(d, 'exterieurNote') && !d.terrasseRue;
   const cout = num(d, 'coutMin') && num(d, 'coutMax') ? `${euros(num(d, 'coutMin') as number).replace(/\s€$/, '')} à ${euros(num(d, 'coutMax') as number)} par an` : '';
   const dpeV = num(d, 'dpeValeur');
   const gesV = num(d, 'gesValeur');
   const fr = (n: number) => String(n).replace('.', ',');
-  /* La construction : « 1930 · pierre de taille » (V3.79). */
-  const construction = [num(d, 'annee') ? String(num(d, 'annee')) : '', txt(d, 'constructionType').toLowerCase()].filter(Boolean).join(' · ');
-  /* Le quartier (V3.79) : la proximité, repris d'ImmoFacile ou saisi. */
   const minutes = (k: string) => (num(d, k) ? `${FR_NB(num(d, k) as number)} min` : '');
   const quartierLignes = [
     { l: 'Quartier', v: txt(d, 'quartier'), c: 'quartier' },
-    { l: 'Commerces', v: num(d, 'proxCommerces') ? `à ${FR_NB(num(d, 'proxCommerces') as number)} km` : '', c: 'proxCommerces' },
-    { l: 'École', v: minutes('proxEcole'), c: 'proxEcole' }, { l: 'Bus', v: minutes('proxBus'), c: 'proxBus' },
-    { l: 'Métro', v: minutes('proxMetro'), c: 'proxMetro' }, { l: 'Tramway', v: minutes('proxTram'), c: 'proxTram' }, { l: 'RER, train', v: minutes('proxRer'), c: 'proxRer' },
+    { l: 'Métro', v: minutes('proxMetro'), c: 'proxMetro' }, { l: 'RER, train', v: minutes('proxRer'), c: 'proxRer' },
+    { l: 'Bus', v: minutes('proxBus'), c: 'proxBus' }, { l: 'Tramway', v: minutes('proxTram'), c: 'proxTram' },
+    { l: 'Les stations', v: txt(d, 'stations'), c: 'stations' },
   ];
   const videQuartier = !quartierLignes.some(x => x.v) && !txt(d, 'situation');
+  const oui = (v: unknown) => (v === 'oui' ? 'oui' : v === 'non' ? 'non' : '');
 
-  const interieur = (
-    <Famille key="int" ton="bleu" ic="canape" titre="L’intérieur" onModifier={M('interieur')} large={large}>
+  const interieur = !estLocal(d) ? null : (
+    <Famille key="int" ton="bleu" ic="bureau" titre="L’aménagement" onModifier={M('interieur')} large={large}>
       <Kv l="État" v={lib(d, 'etat')} aller={A('interieur', 'etat')} />
-      <Kv l="Cuisine" v={cuisine} aller={A('interieur', 'cuisine')} />
+      <Kv l="Configuration" v={lib(d, 'config')} aller={A('interieur', 'config')} />
+      <Kv l="Bureaux fermés" v={num(d, 'nbBureaux') ?? ''} aller={A('interieur', 'nbBureaux')} />
+      <Kv l="Salles de réunion" v={num(d, 'nbReunion') ?? ''} aller={A('interieur', 'nbReunion')} />
+      <Kv l="Sanitaires" v={num(d, 'wc') ?? ''} aller={A('interieur', 'wc')} />
+      <Kv l="Coin repas" v={lib(d, 'office').toLowerCase()} aller={A('interieur', 'office')} />
+      <Kv l="Extraction" v={lib(d, 'extraction').toLowerCase()} aller={A('interieur', 'extraction')} />
+      <Kv l="Licence" v={lib(d, 'licence')} aller={A('interieur', 'licence')} />
+      <Kv l="Places assises" v={num(d, 'couverts') ?? ''} aller={A('interieur', 'couverts')} />
+      <Kv l="Recevant du public" v={d.erp === 'oui' ? txt(d, 'erpCategorie') || 'oui' : oui(d.erp)} aller={A('interieur', 'erp')} />
+      <Kv l="Climatisation" v={lib(d, 'clim').toLowerCase()} aller={A('interieur', 'clim')} />
       <Kv l="Chauffage" v={chauffage} aller={A('interieur', 'chauffageMode')} />
-      <Kv l="Par" v={lib(d, 'chauffageEmetteurs')} aller={A('interieur', 'chauffageEmetteurs')} />
-      <Kv l="Eau chaude" v={lib(d, 'eauChaude')} aller={A('interieur', 'eauChaude')} />
-      <Kv l="Fenêtres" v={fenetres} aller={A('interieur', 'vitrage')} />
-      <Kv l="Volets" v={volets} aller={A('interieur', 'volets')} />
       <Puces l={equip} />
-      {txt(d, 'travaux') && <Note><b>Autres remarques sur les travaux :</b>{` ${txt(d, 'travaux')}`}</Note>}
       {txt(d, 'interieurNote') && <Note>{txt(d, 'interieurNote')}</Note>}
       {videInt && <ADecrire />}
     </Famille>
   );
   const immeuble = (
-    <Famille key="imm" ton="violet" ic={enImm ? 'immeuble' : 'maison'} titre={enImm ? 'L’immeuble' : 'La maison'} onModifier={M(enImm ? 'bien:t-imm' : 'bien:t-constr')} large={large}>
-      {enImm && <Kv l="Étage" v={etageLong(num(d, 'etage'), num(d, 'etages'))} aller={A('bien', 'etage')} />}
-      {!enImm && <Kv l="Niveaux" v={num(d, 'etages') ?? ''} aller={A('bien', 'etages')} />}
-      {enImm && <Kv l="Ascenseur" v={d.typeBien ? (imm.includes('ascenseur') ? 'oui' : 'non') : ''} aller={A('bien', 'immeuble')} />}
-      <Kv l="Construction" v={construction} aller={A('bien', 'annee')} />
+    <Famille key="imm" ton="violet" ic="immeuble" titre="L’immeuble et l’emplacement" onModifier={M('bien:t-imm')} large={large}>
+      <Kv l="Étage" v={etageLong(num(d, 'etage'), num(d, 'etages'))} aller={A('bien', 'etage')} />
+      <Kv l="Ascenseur" v={d.typeBien ? (imm.includes('ascenseur') ? 'oui' : 'non') : ''} aller={A('bien', 'immeuble')} />
+      <Kv l="Construction" v={num(d, 'annee') ? String(num(d, 'annee')) : ''} aller={A('bien', 'annee')} />
       <Kv l="Standing" v={lib(d, 'standing')} aller={A('bien', 'standing')} />
-      {enImm && <Kv l="Parties communes" v={lib(d, 'etatCommuns').toLowerCase()} aller={A('bien', 'etatCommuns')} />}
-      <Kv l="Extérieur, façade" v={lib(d, 'etatExterieur').toLowerCase()} aller={A('bien', 'etatExterieur')} />
-      <Kv l="Style" v={txt(d, 'style')} aller={A('bien', 'style')} />
-      {!enImm && <Kv l="Mitoyenneté" v={lib(d, 'mitoyennete').toLowerCase()} aller={A('bien', 'mitoyennete')} />}
-      {!enImm && <Kv l="Assainissement" v={lib(d, 'assainissement').toLowerCase().replace(/^tout/, 'Tout')} aller={A('bien', 'assainissement')} />}
+      <Kv l="Parties communes" v={lib(d, 'etatCommuns').toLowerCase()} aller={A('bien', 'etatCommuns')} />
+      <Kv l="Façade" v={lib(d, 'etatExterieur').toLowerCase()} aller={A('bien', 'etatExterieur')} />
+      <Kv l="Certification" v={lib(d, 'certification')} aller={A('bien', 'certification')} />
+      {estCommerce(d) && <Kv l="Emplacement" v={lib(d, 'emplacement')} aller={A('bien', 'emplacement')} />}
+      {estCommerce(d) && <Kv l="Linéaire de vitrine" v={num(d, 'vitrine') ? `${fr(num(d, 'vitrine') as number)} m` : ''} aller={A('bien', 'vitrine')} />}
+      {estCommerce(d) && <Kv l="En angle" v={oui(d.angle)} aller={A('bien', 'angle')} />}
+      {estCommerce(d) && <Kv l="Passage" v={lib(d, 'flux').toLowerCase()} aller={A('bien', 'flux')} />}
+      {estCommerce(d) && <Kv l="Enseignes voisines" v={txt(d, 'voisins')} aller={A('bien', 'voisins')} />}
       <Kv l="N° de lot" v={txt(d, 'lot')} aller={A('bien', 'lot')} />
       <Kv l="Cadastre" v={txt(d, 'cadastre')} aller={A('bien', 'cadastre')} />
       <Puces l={libs(d, 'immeuble').filter((x, i) => imm[i] !== 'ascenseur')} />
-      {!d.typeBien && !construction && !imm.length && <ADecrire />}
+      {!d.typeBien && !imm.length && <ADecrire />}
     </Famille>
   );
   const copro = (
-    <Famille key="copro" ton="sarcelle" ic="lots" titre="Copropriété" onModifier={M('copro')} large={large}>
+    <Famille key="copro" ton="sarcelle" ic="lots" titre="Copropriété" onModifier={M('copro:t-copro')} large={large}>
       {d.copro === 'oui' ? (
         <>
-          <Kv l="Lots" v={num(d, 'lots') ? `${num(d, 'lots')}${num(d, 'lotsHabitation') ? ` dont ${num(d, 'lotsHabitation')} d’habitation` : ''}` : ''} aller={A('copro', 'lots')} />
+          <Kv l="Lots" v={num(d, 'lots') ?? ''} aller={A('copro', 'lots')} />
           <Kv l="Procédure en cours" v={d.procedure === 'oui' ? txt(d, 'procedureNature') || 'oui' : d.procedure === 'non' ? 'aucune' : ''} alerte={d.procedure === 'oui'} aller={A('copro', 'procedure')} />
           <Kv l="Syndic" v={txt(d, 'syndic')} aller={A('copro', 'syndic')} />
           <Kv l="Fonds de travaux" v={eur(num(d, 'fondsTravaux'))} aller={A('copro', 'fondsTravaux')} />
@@ -765,29 +762,27 @@ export function OngletBien({ bien, vue = 'tout', onModifier, onSurfaces, onEstim
     </Famille>
   );
   const exterieur = (
-    <Famille key="ext" ton="vert" ic="terrain" titre="Extérieur et annexes" onModifier={M('exterieur')} large={large}>
-      <Kv l="Balcon" v={num(d, 'surfBalcon') ? m2(num(d, 'surfBalcon') as number) : ''} aller={A('exterieur', 'surfBalcon')} />
+    <Famille key="ext" ton="vert" ic="parking" titre="Annexes et stationnement" onModifier={M('exterieur')} large={large}>
       <Kv l="Terrasse" v={num(d, 'surfTerrasse') ? m2(num(d, 'surfTerrasse') as number) : ''} aller={A('exterieur', 'surfTerrasse')} />
-      <Kv l="Jardin" v={num(d, 'surfJardin') ? m2(num(d, 'surfJardin') as number) : ''} aller={A('exterieur', 'surfJardin')} />
+      <Kv l="Terrasse sur le trottoir" v={lib(d, 'terrasseRue').toLowerCase()} aller={A('exterieur', 'terrasseRue')} />
+      <Kv l="Cour" v={num(d, 'surfCour') ? m2(num(d, 'surfCour') as number) : ''} aller={A('exterieur', 'surfCour')} />
       <Kv l="Cave" v={num(d, 'surfCave') ? m2(num(d, 'surfCave') as number) : ''} aller={A('exterieur', 'surfCave')} />
       <Kv l="Parking" v={nbPark ? `${nbPark} place${nbPark > 1 ? 's' : ''}` : ''} aller={A('exterieur', 'nbParking')} />
       <Kv l="Stationnement" v={lib(d, 'stationnement').toLowerCase()} aller={A('exterieur', 'stationnement')} />
-      <Kv l="Exposition" v={d.expo ? (d.expo === 'traversant' ? 'traversant' : nomExpo(d.expo).toLowerCase()) : ''} aller={A('exterieur', 'expo')} />
-      <Kv l="Vue" v={lib(d, 'vue').toLowerCase()} aller={A('exterieur', 'vue')} />
-      <Kv l="Vis-à-vis" v={lib(d, 'visAVis').toLowerCase()} aller={A('exterieur', 'visAVis')} />
+      <Kv l="Loyer d’une place" v={num(d, 'loyerParking') ? `${euros(num(d, 'loyerParking') as number)} HT par an` : ''} aller={A('exterieur', 'loyerParking')} />
       <Puces l={annPuces} />
       {txt(d, 'exterieurNote') && <Note>{txt(d, 'exterieurNote')}</Note>}
       {videExt && <ADecrire />}
     </Famille>
   );
   const quartier = videQuartier && !large ? null : (
-    <Famille key="quartier" ton="ciel" ic="carte" titre="Le quartier" onModifier={M('bien:t-prox')} large={large}>
+    <Famille key="quartier" ton="ciel" ic="carte" titre="Accès et transports" onModifier={M('bien:t-prox')} large={large}>
       {quartierLignes.map(x => <Kv key={x.l} l={x.l} v={x.v} aller={A('bien', x.c)} />)}
       {txt(d, 'situation') && <Note>{txt(d, 'situation')}</Note>}
-      {videQuartier && <ADecrire t="À renseigner : les commerces, l’école, les transports, la situation." />}
+      {videQuartier && <ADecrire t="À renseigner : le métro, le RER, les bus, la situation." />}
     </Famille>
   );
-  const energie = !avant || d.dpe || d.dpeStatut || large ? (
+  const energie = d.typeBien === 'parking' ? null : !avant || d.dpe || d.dpeStatut || large ? (
     <Famille key="energie" ton="ambre" ic="eclair" titre="L’énergie" onModifier={M('energie')} large={large}>
       {d.dpeStatut === 'vierge' ? <Note>DPE vierge.</Note> : d.dpeStatut === 'non' ? <Note>Non soumis au DPE.</Note> : (
         <>
@@ -796,19 +791,55 @@ export function OngletBien({ bien, vue = 'tout', onModifier, onSurfaces, onEstim
           <Kv l="Diagnostic fait le" v={txt(d, 'dpeDate') ? dateLongueCourt(txt(d, 'dpeDate')) : d.dpeStatut === 'encours' ? 'commandé' : ''} aller={A('energie', 'dpeDate')} />
           <Kv l="Coût estimé" v={cout} aller={A('energie', 'coutMin')} />
           <Kv l="N° ADEME" v={txt(d, 'dpeNumero')} aller={A('energie', 'dpeNumero')} />
-          {passoire(d) && <Encart>Classe F ou G : local à consommation énergétique excessive. L’annonce doit le dire.</Encart>}
         </>
       )}
     </Famille>
   ) : null;
   const charges = (
     <Famille key="charges" ton="ardoise" ic="lignes" titre="Charges et taxes" onModifier={M('copro:t-fin')} large={large}>
-      <Kv l="Charges" v={chargesAn ? `${euros(chargesAn)} par an · ${euros(chargesAn / 12)} par mois` : ''} aller={A('copro', 'chargesAn')} />
+      <Kv l="Charges" v={chargesAn ? `${euros(chargesAn)} HT par an${surf ? ` · ${euros(chargesAn / surf)} le m²` : ''}` : ''} aller={A('copro', 'chargesAn')} />
+      <Kv l="Elles se règlent" v={lib(d, 'chargesMode').toLowerCase()} aller={A('copro', 'chargesMode')} />
       <Kv l="Elles comprennent" v={libs(d, 'chargesInclus').join(', ').toLowerCase()} aller={A('copro', 'chargesInclus')} />
-      <Kv l="Taxe foncière" v={num(d, 'taxeFonciere') ? `${euros(num(d, 'taxeFonciere') as number)} par an` : ''} aller={A('copro', 'taxeFonciere')} />
-      <Kv l="Loyer (bien loué)" v={num(d, 'loyer') ? `${euros(num(d, 'loyer') as number)} par mois` : ''} aller={A('pratique', 'loyer')} />
-      <Kv l="Fin du bail" v={txt(d, 'finBail') ? dateLongueCourt(txt(d, 'finBail')) : ''} aller={A('pratique', 'finBail')} />
-      {!chargesAn && !num(d, 'taxeFonciere') && !num(d, 'loyer') && <ADecrire t="À renseigner." />}
+      <Kv l="Taxe foncière" v={num(d, 'taxeFonciere') ? `${euros(num(d, 'taxeFonciere') as number)} par an${d.tfRefacturee === 'oui' ? ', remboursée par le locataire' : d.tfRefacturee === 'non' ? ', à la charge du bailleur' : ''}` : ''} aller={A('copro', 'taxeFonciere')} />
+      <Kv l="Taxe sur les bureaux" v={num(d, 'taxeBureaux') ? `${euros(num(d, 'taxeBureaux') as number)} par an` : ''} aller={A('copro', 'taxeBureaux')} />
+      {!chargesAn && !num(d, 'taxeFonciere') && <ADecrire t="À renseigner." />}
+    </Famille>
+  );
+  const bail = !avecLoyer(d) ? null : (
+    <Famille key="bail" ton="bleu" ic="bail" titre={loc ? 'Le bail proposé' : 'Le bail en cours'} onModifier={M('bail')} large={large}>
+      <Kv l="Type de bail" v={lib(d, 'bailType')} aller={A('bail', 'bailType')} />
+      <Kv l="Durée" v={num(d, 'bailDuree') ? `${num(d, 'bailDuree')} ans` : ''} aller={A('bail', 'bailDuree')} />
+      {!loc && <Kv l="Loyer annuel" v={p.loyerAn ? `${euros(p.loyerAn)} HT HC${surf ? ` · ${loyerM2(p.loyerAn, surf).replace(' HT HC', '')}` : ''}` : ''} aller={A('bail', 'loyerAn')} />}
+      {!loc && <Kv l="Commencé le" v={txt(d, 'bailDebut') ? dateLongueCourt(txt(d, 'bailDebut')) : ''} aller={A('bail', 'bailDebut')} />}
+      {!loc && <Kv l="Prochaine échéance" v={txt(d, 'bailEcheance') ? dateLongueCourt(txt(d, 'bailEcheance')) : ''} aller={A('bail', 'bailEcheance')} />}
+      {!loc && <Kv l="Fin du bail" v={txt(d, 'bailFin') ? dateLongueCourt(txt(d, 'bailFin')) : ''} aller={A('bail', 'bailFin')} />}
+      <Kv l="TVA sur le loyer" v={oui(d.tvaLoyer)} aller={A('bail', 'tvaLoyer')} />
+      <Kv l="Payable" v={lib(d, 'loyerPaiement').toLowerCase()} aller={A('bail', 'loyerPaiement')} />
+      <Kv l="Indexation" v={lib(d, 'indexation')} aller={A('bail', 'indexation')} />
+      <Kv l="Dépôt de garantie" v={num(d, 'depotMois') ? `${fr(num(d, 'depotMois') as number)} mois de loyer` : ''} aller={A('bail', 'depotMois')} />
+      {loc && <Kv l="Franchise" v={num(d, 'franchise') ? `${fr(num(d, 'franchise') as number)} mois` : ''} aller={A('bail', 'franchise')} />}
+      <Kv l="Activités permises" v={lib(d, 'destinationType')} aller={A('bail', 'destinationType')} />
+      {!loc && <Kv l="Cession du bail" v={lib(d, 'cessionBail').toLowerCase()} aller={A('bail', 'cessionBail')} />}
+      <Kv l="Sous-location" v={lib(d, 'sousLocation').toLowerCase()} aller={A('bail', 'sousLocation')} />
+      {txt(d, 'destination') && <Note><b>Destination :</b>{` ${txt(d, 'destination')}`}</Note>}
+      {txt(d, 'bailNote') && <Note>{txt(d, 'bailNote')}</Note>}
+      {!d.bailType && !p.loyerAn && !d.destinationType && <ADecrire t="À renseigner : le type de bail, sa durée, ce qu’on peut y faire." />}
+    </Famille>
+  );
+  const fonds = !estFonds(d) ? null : (
+    <Famille key="fonds" ton="ambre" ic="sac" titre="Le fonds de commerce" onModifier={M('fonds')} large={large}>
+      <Kv l="Activité" v={txt(d, 'activite')} aller={A('fonds', 'activite')} />
+      <Kv l="Enseigne" v={txt(d, 'enseigne')} aller={A('fonds', 'enseigne')} />
+      <Kv l="Créé en" v={num(d, 'creeEn') ? String(num(d, 'creeEn')) : ''} aller={A('fonds', 'creeEn')} />
+      <Kv l="Chiffre d’affaires HT" v={eur(num(d, 'caHt'))} aller={A('fonds', 'caHt')} />
+      <Kv l="Excédent brut d’exploitation" v={eur(num(d, 'ebe'))} aller={A('fonds', 'ebe')} />
+      <Kv l="Résultat net" v={eur(num(d, 'resultat'))} aller={A('fonds', 'resultat')} />
+      <Kv l="Salariés" v={num(d, 'salaries') ?? ''} aller={A('fonds', 'salaries')} />
+      <Kv l="Stock" v={num(d, 'stock') ? `${euros(num(d, 'stock') as number)}, en plus du prix` : ''} aller={A('fonds', 'stock')} />
+      <Kv l="Accompagnement" v={num(d, 'accompagnement') ? `${num(d, 'accompagnement')} semaines` : ''} aller={A('fonds', 'accompagnement')} />
+      {txt(d, 'materiel') && <Note><b>Matériel :</b>{` ${txt(d, 'materiel')}`}</Note>}
+      {txt(d, 'fondsNote') && <Note>{txt(d, 'fondsNote')}</Note>}
+      {!txt(d, 'activite') && !num(d, 'caHt') && <ADecrire t="À renseigner : l’activité, les chiffres, ce qui est cédé." />}
     </Famille>
   );
   const fourchetteE = num(d, 'estimBasse') || num(d, 'estimHaute') ? [eur(num(d, 'estimBasse')), eur(num(d, 'estimHaute'))].filter(Boolean).join(' à ') : '';
@@ -816,22 +847,26 @@ export function OngletBien({ bien, vue = 'tout', onModifier, onSurfaces, onEstim
   const ecart = conseille && a.prix && conseille !== a.prix ? Math.round(((a.prix - conseille) / conseille) * 1000) / 10 : null;
   const histoEstim = [
     { l: 'Fourchette', v: fourchetteE },
-    { l: 'Prix conseillé', v: conseille ? `${euros(conseille)}${ecart !== null ? ` · affiché ${ecart > 0 ? '+' : '−'}${pourcent(Math.abs(ecart))}` : ''}` : '' },
-    { l: 'Le propriétaire espérait', v: eur(num(d, 'prixSouhaite')) },
+    { l: 'Montant conseillé', v: conseille ? `${euros(conseille)}${ecart !== null ? ` · affiché ${ecart > 0 ? '+' : '−'}${pourcent(Math.abs(ecart))}` : ''}` : '' },
+    { l: 'Le mandant espérait', v: eur(num(d, 'prixSouhaite')) },
   ].filter(x => x.v);
+  const quiPaie = loc ? (a.acq ? 'du preneur' : 'du bailleur') : (a.acq ? 'de l’acquéreur' : estMurs(d) ? 'du vendeur' : 'du cédant');
   const prix = (
     /* Avant le mandat, « Modifier » ouvre la fenêtre de l'estimation (rendez-vous,
-       fourchette, prix conseillé, avis de valeur), comme le parcours de la Vue
-       d'ensemble, et non tout l'éditeur (V3.31). */
-    <Famille key="prix" ton="or" ic="etiquette" titre={avant ? 'Estimation et prix' : 'Prix et honoraires'} onModifier={avant ? onEstimation : M('prix:t-prix')} large={large}>
+       fourchette, montant conseillé, avis de valeur), et non tout l'éditeur (V3.31). */
+    <Famille key="prix" ton="or" ic="etiquette" titre={avant ? 'Estimation et prix' : loc ? 'Loyer et honoraires' : 'Prix et honoraires'} onModifier={avant ? onEstimation : M('prix:t-prix')} large={large}>
       {avant && <Kv l="Estimation" v={fourchetteE} aller={onEstimation} />}
-      <Kv l={avant ? 'Prix conseillé' : 'Prix affiché'} v={eur(a.prix)} aller={avant ? onEstimation : A('prix', 'prix')} />
-      <Kv l="Net mandant" v={eur(a.net)} aller={avant ? onEstimation : A('prix', 'prix')} />
-      <Kv l="Honoraires" v={a.hono !== null ? `${euros(a.hono)} HT, à la charge ${a.acq ? 'du demandeur' : 'du mandant'}${a.taux ? ` · ${pourcent(a.taux)}` : ''}` : ''} aller={avant ? onEstimation : A('prix', 'honoMode')} />
-      <Kv l="Prix au m²" v={a.prix && surf ? euros(a.prix / surf) : ''} aller={avant ? onEstimation : A('prix', 'prix')} />
-      {avant && <Kv l="Le propriétaire espère" v={eur(num(d, 'prixSouhaite'))} aller={onEstimation} />}
+      <Kv l={avant ? 'Montant conseillé' : libPrix(d)} v={a.prix ? montantAffaire(a.prix, d) : ''} aller={avant ? onEstimation : A('prix', 'prix')} />
+      {loc && <Kv l="Loyer au m²" v={a.prix && surf ? loyerM2(a.prix, surf) : ''} aller={avant ? onEstimation : A('prix', 'prix')} />}
+      {loc && <Kv l="Loyer mensuel" v={a.prix ? `${euros(a.prix / 12)} HT HC` : ''} aller={avant ? onEstimation : A('prix', 'prix')} />}
+      {loc && <Kv l="Droit d’entrée" v={eur(num(d, 'droitEntree'))} aller={A('prix', 'droitEntree')} />}
+      {!loc && a.acq && <Kv l="Hors honoraires" v={eur(a.net)} aller={avant ? onEstimation : A('prix', 'prix')} />}
+      {!loc && bailEnCours(d) && <Kv l="Loyer du bail" v={p.loyerAn ? `${euros(p.loyerAn)} HT HC par an` : ''} aller={A('bail', 'loyerAn')} />}
+      {estMursOccupes(d) && <Kv l="Rentabilité brute" v={rentabilite(p.loyerAn, a.prix)} aller={A('bail', 'loyerAn')} />}
+      <Kv l="Honoraires" v={a.hono !== null ? `${euros(a.hono)} HT, à la charge ${quiPaie}${a.taux ? ` · ${pourcent(a.taux)}${loc ? ' du loyer annuel' : ''}` : ''}` : ''} aller={avant ? onEstimation : A('prix', 'honoMode')} />
+      {!loc && <Kv l="Prix au m²" v={a.prix && surf ? euros(a.prix / surf) : ''} aller={avant ? onEstimation : A('prix', 'prix')} />}
+      {avant && <Kv l="Le mandant espère" v={eur(num(d, 'prixSouhaite'))} aller={onEstimation} />}
       {!a.prix && !num(d, 'estimBasse') && !num(d, 'estimHaute') && <ADecrire t="À renseigner." />}
-      {/* Après le mandat, ce qui avait été estimé reste lisible (V3.32). */}
       {!avant && histoEstim.length > 0 && (
         <div className={b.histoEstim}>
           <span className={b.histoEstimT}>{txt(d, 'avisEnvoye') ? `L’estimation · avis de valeur du ${dateCourte(txt(d, 'avisEnvoye'))}` : 'L’estimation, avant le mandat'}</span>
@@ -844,7 +879,7 @@ export function OngletBien({ bien, vue = 'tout', onModifier, onSurfaces, onEstim
   /* Les cartes de chaque sous-onglet. */
   const CARTES: Record<SousVue, ReactNode[]> = {
     tout: [], surfaces: [], interieur: [interieur], immeuble: [immeuble], exterieur: [exterieur], quartier: [quartier],
-    energie: [energie], copro: [copro, charges], prix: [prix],
+    energie: [energie], copro: [charges, copro], prix: [prix], bail: [bail], fonds: [fonds],
   };
   const ordre = vuesDuBien(d, avant).map(x => x.k);
   return (
@@ -852,19 +887,18 @@ export function OngletBien({ bien, vue = 'tout', onModifier, onSurfaces, onEstim
       <CorpsOnglet k={vue} ordre={ordre}>
         {vue === 'tout' ? (
           <Col>
-            {/* Plus de bande de photos ici (V3.31) : elles sont dans l'onglet Photos. */}
-            {/* À toutes les étapes (V3.81), l'estimation comprise. */}
             <CarteAnnonce titre={txt(d, 'annonceTitre')} texte={txt(d, 'annonceTexte')} mentions={controleAnnonce(d)} mentionsTexte={mentionsAnnonce(d)} onEcrire={M('annonce')} onReformuler={onAnnonce ? x => reformulerAnnonce(d, x) : undefined} onAppliquer={onAnnonce} />
-            {/* V3.99 : le prix en tête, comme dans les sous-rubriques. */}
             <Familles>
               {prix}
+              {bail}
+              {fonds}
               {interieur}
               {immeuble}
-              {copro}
+              {charges}
               {exterieur}
               {quartier}
               {energie}
-              {charges}
+              {copro}
             </Familles>
           </Col>
         ) : (
@@ -874,7 +908,7 @@ export function OngletBien({ bien, vue = 'tout', onModifier, onSurfaces, onEstim
 
       <button type="button" className={b.versSurfaces} onClick={onSurfaces}>
         <span className={b.versSurfacesIc}><Ic n="regle" t={18} /></span>
-        <span><b>Les surfaces et les pièces</b><small>{pieces.length ? `${pieces.length} pièce${pieces.length > 1 ? 's' : ''} saisie${pieces.length > 1 ? 's' : ''}${surf ? ` · ${m2(surf)}` : ''} · dans la rubrique Surfaces` : 'Pièce par pièce, dans la rubrique Surfaces'}</small></span>
+        <span><b>Les surfaces et les espaces</b><small>{pieces.length ? `${pieces.length} espace${pieces.length > 1 ? 's' : ''} saisi${pieces.length > 1 ? 's' : ''}${surf ? ` · ${m2(surf)}` : ''} · dans la rubrique Surfaces` : 'Espace par espace, dans la rubrique Surfaces'}</small></span>
         <Ic n="droite" t={16} e={2.4} />
       </button>
     </Col>

@@ -366,17 +366,18 @@ const CLE_VUE = 'emilio.pieces.vue';
    · « Hors surface habitable » : les annexes, et leurs numéros de lots. */
 type GenrePiece = 'vie' | 'nuit' | 'cuisine' | 'eau' | 'passage' | 'autre';
 const FAMILLES: Record<GenrePiece, { l: string; c: string; f: string; ic: string }> = {
-  vie: { l: 'Pièces de vie', c: '#393836', f: '#f5f4f4', ic: 'canape' },
-  nuit: { l: 'Chambres', c: '#7c3aed', f: '#f4f0ff', ic: 'lit' },
-  cuisine: { l: 'Cuisine', c: '#e58b45', f: '#fff4ea', ic: 'cuisine' },
-  eau: { l: 'Eau et WC', c: '#0e98b4', f: '#e9f8f9', ic: 'bain' },
-  passage: { l: 'Entrée, dégagements', c: '#94a3b8', f: '#f6f5f5', ic: 'couloir' },
-  autre: { l: 'Le reste', c: '#94a3b8', f: '#f6f5f5', ic: 'plan' },
+  /* Werner : les familles d'un local professionnel ; les clés sont restées. */
+  vie: { l: 'Bureaux et salles', c: '#393836', f: '#f5f4f4', ic: 'bureau' },
+  nuit: { l: 'Vente et salle', c: '#7c3aed', f: '#f4f0ff', ic: 'vitrine' },
+  cuisine: { l: 'Cuisine et repas', c: '#e58b45', f: '#fff4ea', ic: 'cuisine' },
+  eau: { l: 'Sanitaires', c: '#0e98b4', f: '#e9f8f9', ic: 'wc' },
+  passage: { l: 'Accueil, circulations', c: '#94a3b8', f: '#f6f5f5', ic: 'porte' },
+  autre: { l: 'Stockage, technique, le reste', c: '#94a3b8', f: '#f6f5f5', ic: 'cube' },
 };
 const familleDe = (nom: string): GenrePiece => {
   const ic = pictoPiece(nom);
-  if (['canape', 'table', 'bureau', 'vitrine'].includes(ic)) return 'vie';
-  if (['lit', 'cintre'].includes(ic)) return 'nuit';
+  if (['canape', 'table', 'bureau', 'groupe'].includes(ic)) return 'vie';
+  if (['vitrine', 'cintre'].includes(ic)) return 'nuit';
   if (ic === 'cuisine') return 'cuisine';
   if (['bain', 'douche', 'wc', 'machine'].includes(ic)) return 'eau';
   if (['porte', 'couloir', 'escalier'].includes(ic)) return 'passage';
@@ -405,15 +406,15 @@ export function LesPieces({ pieces, onModifier }: { pieces: Piece[]; onModifier:
   /* « 3 pièces principales », comme on dit « un 3 pièces » ; sans séjour ni
      chambre saisis, le simple nombre de lignes. */
   const princ = nbPrincipales(pieces);
-  const nombre = princ ? `${princ} pièce${princ > 1 ? 's' : ''} principale${princ > 1 ? 's' : ''}` : `${pieces.length} pièce${pieces.length > 1 ? 's' : ''}`;
-  const sous = pieces.length ? `${nombre}${total ? ` · ${m2(total)} habitables` : ''}${plusieurs ? ` · ${niveaux.length} niveaux` : ''}` : '';
+  const nombre = `${pieces.length} espace${pieces.length > 1 ? 's' : ''}${princ ? `, dont ${princ} bureau${princ > 1 ? 'x' : ''} ou salle${princ > 1 ? 's' : ''}` : ''}`;
+  const sous = pieces.length ? `${nombre}${total ? ` · ${m2(total)}` : ''}${plusieurs ? ` · ${niveaux.length} niveaux` : ''}` : '';
   const teteNiveau = (n: string, ps: Piece[]) => {
     const surf = ps.filter(habitable).reduce((t, p) => t + (p.surface || 0), 0);
     return (
       <div className={o.niveau}>
         <span className={o.niveauIc}><Ic n={n === 'Extérieur' ? 'terrain' : 'escalier'} t={14} /></span>
         <b>{n || 'Sans niveau'}</b>
-        <i>{`${ps.length} pièce${ps.length > 1 ? 's' : ''}${surf ? ` · ${m2(Math.round(surf * 100) / 100)}` : ''}`}</i>
+        <i>{`${ps.length} espace${ps.length > 1 ? 's' : ''}${surf ? ` · ${m2(Math.round(surf * 100) / 100)}` : ''}`}</i>
       </div>
     );
   };
@@ -426,7 +427,7 @@ export function LesPieces({ pieces, onModifier }: { pieces: Piece[]; onModifier:
     return (
       <div key={p.id} className={o.piece}>
         <span className={o.pieceIc} style={{ background: fond, color: c }}><Ic n={ic} t={18} /></span>
-        <b className={o.pieceNom}>{p.nom || 'Pièce'}</b>
+        <b className={o.pieceNom}>{p.nom || 'Espace'}</b>
         <b className={o.pieceM2}>{p.surface ? m2(p.surface) : '—'}</b>
         <div className={o.jauge}><span style={{ width: `${Math.max(4, ((p.surface || 0) / plusGrande) * 100)}%`, opacity: p.surface ? 1 : 0 }} /></div>
         {p.expo ? <span className={o.expo}><Ic n="boussole" t={11} e={2.2} />{nomExpo(p.expo)}</span> : <span className={o.expoVide}>—</span>}
@@ -442,7 +443,7 @@ export function LesPieces({ pieces, onModifier }: { pieces: Piece[]; onModifier:
     .filter(g => g.ps.length);
   const horsHab = pieces.filter(p => !habitable(p));
   const carteGroupe = (k: GenrePiece | 'hors', ps: Piece[], i: number) => {
-    const fam = k === 'hors' ? { l: 'Hors surface habitable', c: '#15803d', f: '#eefaf2', ic: 'terrain' } : FAMILLES[k];
+    const fam = k === 'hors' ? { l: 'Hors surface du local', c: '#15803d', f: '#eefaf2', ic: 'parking' } : FAMILLES[k];
     const st = Math.round(ps.reduce((t, p) => t + (p.surface || 0), 0) * 100) / 100;
     const part = k !== 'hors' && total ? Math.round((st / total) * 100) : null;
     return (
@@ -452,14 +453,14 @@ export function LesPieces({ pieces, onModifier }: { pieces: Piece[]; onModifier:
           <b>{fam.l}</b>
           <span className={o.grTot}>
             <strong>{st ? m2(st) : '—'}</strong>
-            <small>{[part !== null ? `${part}${NBSP}%` : '', `${ps.length} pièce${ps.length > 1 ? 's' : ''}`].filter(Boolean).join(' · ')}</small>
+            <small>{[part !== null ? `${part}${NBSP}%` : '', `${ps.length} espace${ps.length > 1 ? 's' : ''}`].filter(Boolean).join(' · ')}</small>
           </span>
         </div>
         {ps.map(p => {
           const mot = motPiece(p);
           return (
             <div key={p.id} className={o.grL}>
-              <span className={o.grN}>{p.nom || 'Pièce'}{mot && <em>{mot}</em>}{plusieurs && p.niveau && <em>{p.niveau}</em>}</span>
+              <span className={o.grN}>{p.nom || 'Espace'}{mot && <em>{mot}</em>}{plusieurs && p.niveau && <em>{p.niveau}</em>}</span>
               <span className={o.grB} aria-hidden="true"><i style={{ width: `${Math.max(3, ((p.surface || 0) / plusGrande) * 100)}%`, opacity: p.surface ? 1 : 0 }} /></span>
               <b>{p.surface ? m2(p.surface) : '—'}</b>
             </div>
@@ -470,12 +471,12 @@ export function LesPieces({ pieces, onModifier }: { pieces: Piece[]; onModifier:
   };
 
   return (
-    <section className={o.pieces} aria-label="Les pièces">
+    <section className={o.pieces} aria-label="Les espaces">
       <div className={o.piecesT}>
-        <b>Les pièces</b>
+        <b>Les espaces</b>
         <span>{sous}</span>
         {pieces.length > 0 && (
-          <div className={o.vues} role="group" aria-label="Affichage des pièces">
+          <div className={o.vues} role="group" aria-label="Affichage des espaces">
             <Curseur cle={vue} />
             <button type="button" className={o.vue} aria-pressed={vue === 'usage'} onClick={() => choisir('usage')}>
               <Ic n="groupe" t={14} e={2.1} />Par usage
@@ -487,13 +488,13 @@ export function LesPieces({ pieces, onModifier }: { pieces: Piece[]; onModifier:
         )}
         <button type="button" className={o.act} onClick={onModifier}>Modifier</button>
       </div>
-      {!pieces.length ? <div className={o.vide}>Les pièces une à une : la pièce, sa surface, son exposition et un mot pour la fiche.</div>
+      {!pieces.length ? <div className={o.vide}>Les espaces un à un : l’espace, sa surface, son niveau et un mot pour la fiche.</div>
         : vue === 'usage' ? (
           <div className={o.grs}>
             {groupes.map((g, i) => carteGroupe(g.k, g.ps, i))}
             {horsHab.length > 0 && carteGroupe('hors', horsHab, groupes.length)}
             <button type="button" className={o.grAjout} onClick={onModifier}>
-              <span><Ic n="plus" t={15} e={2.4} /></span>Ajouter une pièce (placard, loggia, cellier…)
+              <span><Ic n="plus" t={15} e={2.4} /></span>Ajouter un espace (réserve, local technique, mezzanine…)
             </button>
           </div>
         ) : (
@@ -509,7 +510,7 @@ export function LesPieces({ pieces, onModifier }: { pieces: Piece[]; onModifier:
             })}
           </div>
         )}
-      {total > 0 && <div className={o.total}><span>Total des pièces habitables</span><b>{m2(total)}</b></div>}
+      {total > 0 && <div className={o.total}><span>Total des espaces du local</span><b>{m2(total)}</b></div>}
     </section>
   );
 }
@@ -517,14 +518,14 @@ export function LesPieces({ pieces, onModifier }: { pieces: Piece[]; onModifier:
 export type SurfacesBien = {
   surface: number | null; carrez: number | null; sejour: number | null; terrain: number | null;
   carrezAttendu: boolean; chambres: number | null;
-  /* V3.80 : le nombre de pièces de la fiche (« Pièces : 4 »). Avant, la tuile
-     ne comptait que le détail pièce par pièce : vide pour un bien repris
-     d'ImmoFacile, elle affichait « — » alors que la fiche dit 4. */
   pieces: number | null;
   annexes: { ic: string; l: string; v: string }[];
   /* V3.90 : pour la fiche technique. `carrezLe` : la date du mesurage reçu
-     dans le dossier ; `lots` : « Cave 14 · box 7 » (annexesNum). */
+     dans le dossier ; `lots` : « Cave 14 · places 7 et 8 » (annexesNum). */
   etage?: number | null; etages?: number | null; ascenseur?: boolean; expo?: string; maison?: boolean; carrezLe?: string; lots?: string;
+  /* Werner : la répartition d'un local professionnel. */
+  rdc?: number | null; etageS?: number | null; sousSol?: number | null; mezzanine?: number | null; reserve?: number | null; bureaux?: number | null;
+  ponderee?: number | null; divMin?: number | null; divisible?: boolean; hsp?: number | null; vitrine?: number | null; postes?: number | null;
 };
 const jourCourt = (ymd: string) => {
   const d = new Date(`${ymd.slice(0, 10)}T12:00:00`);
@@ -544,13 +545,24 @@ export function OngletSurfaces({ s: x, pieces, onPieces, onBien }: { s: Surfaces
   const nbP = x.pieces || princ;
   const nbBureaux = pieces.filter(p => pictoPiece(p.nom) === 'bureau').length;
 
-  /* La fiche technique : une cellule par chiffre qui compte. */
+  /* La fiche technique : une cellule par chiffre qui compte. Werner : la
+     surface totale, sa répartition par niveau, la divisibilité, la hauteur,
+     la vitrine, les postes de travail. */
   const cels: { ic: string; l: string; v: ReactNode; sous: ReactNode; or?: boolean }[] = [];
   const nombreM2 = (n: number) => <>{String(Math.round(n * 100) / 100).replace('.', ',')}<i>m²</i></>;
+  const fr = (n: number) => String(Math.round(n * 100) / 100).replace('.', ',');
   cels.push({
-    ic: 'regle', l: 'Surface habitable', or: true, v: x.surface ? nombreM2(x.surface) : somme ? nombreM2(somme) : '—',
-    sous: x.surface ? 'Saisie dans la fiche' : somme ? 'Somme des pièces' : 'À saisir',
+    ic: 'regle', l: 'Surface totale', or: true, v: x.surface ? nombreM2(x.surface) : somme ? nombreM2(somme) : '—',
+    sous: x.divisible ? (x.divMin ? `Divisible dès ${m2(x.divMin)}` : 'Divisible') : x.surface ? 'Saisie dans la fiche' : somme ? 'Somme des espaces' : 'À saisir',
   });
+  const part = (n: number) => (x.surface ? `${Math.round((n / x.surface) * 100)}${NBSP}% de la surface` : '');
+  if (x.rdc) cels.push({ ic: 'vitrine', l: 'Rez-de-chaussée', v: nombreM2(x.rdc), sous: part(x.rdc) || 'De plain-pied' });
+  if (x.etageS) cels.push({ ic: 'escalier', l: 'Étage', v: nombreM2(x.etageS), sous: part(x.etageS) || 'En étage' });
+  if (x.sousSol) cels.push({ ic: 'cave', l: 'Sous-sol', v: nombreM2(x.sousSol), sous: part(x.sousSol) || 'En sous-sol' });
+  if (x.mezzanine) cels.push({ ic: 'escalier', l: 'Mezzanine', v: nombreM2(x.mezzanine), sous: part(x.mezzanine) || 'En mezzanine' });
+  if (x.reserve) cels.push({ ic: 'cube', l: 'Réserve', v: nombreM2(x.reserve), sous: part(x.reserve) || 'Stockage' });
+  if (x.bureaux) cels.push({ ic: 'bureau', l: 'Bureaux', v: nombreM2(x.bureaux), sous: part(x.bureaux) || 'Dans le local' });
+  if (x.ponderee) cels.push({ ic: 'regle', l: 'Surface pondérée', v: nombreM2(x.ponderee), sous: 'Celle qui juge le loyer' });
   if (x.carrezAttendu || x.carrez) {
     cels.push({
       ic: 'regle', l: 'Loi Carrez', v: x.carrez ? nombreM2(x.carrez) : 'À mesurer',
@@ -561,28 +573,23 @@ export function OngletSurfaces({ s: x, pieces, onPieces, onBien }: { s: Surfaces
   }
   if (somme) {
     cels.push({
-      ic: 'plan', l: 'Somme des pièces', v: nombreM2(somme),
-      sous: !x.surface ? `${hab.length} pièce${hab.length > 1 ? 's' : ''} saisie${hab.length > 1 ? 's' : ''}`
+      ic: 'plan', l: 'Somme des espaces', v: nombreM2(somme),
+      sous: !x.surface ? `${hab.length} espace${hab.length > 1 ? 's' : ''} saisi${hab.length > 1 ? 's' : ''}`
         : !ecartNet ? <span className={o.sfOk}><Ic n="check" t={12} e={3} />Même total que la surface</span>
           : <><span className={o.sfPuce}>{`${ecart! > 0 ? '+' : '−'}${m2(Math.abs(ecart!))}`}</span>{' à expliquer'}</>,
     });
   }
-  if (sejour) cels.push({ ic: 'canape', l: 'Séjour', v: nombreM2(sejour), sous: x.surface ? `${Math.round((sejour / x.surface) * 100)}${NBSP}% de la surface` : 'La pièce de vie' });
-  if (nbP || x.chambres) {
-    cels.push({
-      ic: 'porte', l: 'Pièces', v: nbP ? <>{nbP}<i>{nbP > 1 ? 'pièces' : 'pièce'}</i></> : '—',
-      sous: [x.chambres ? `${x.chambres} chambre${x.chambres > 1 ? 's' : ''}` : '', nbBureaux ? `${nbBureaux} bureau${nbBureaux > 1 ? 'x' : ''}` : ''].filter(Boolean).join(' · ') || 'Nombre de la fiche',
-    });
-  }
-  if (x.maison) {
-    if (x.terrain) cels.push({ ic: 'terrain', l: 'Terrain', v: nombreM2(x.terrain), sous: x.etages ? `${x.etages} niveau${x.etages > 1 ? 'x' : ''}` : 'La parcelle' });
-    else if (x.etages) cels.push({ ic: 'escalier', l: 'Niveaux', v: <>{x.etages}<i>{x.etages > 1 ? 'niveaux' : 'niveau'}</i></>, sous: x.etages === 1 ? 'De plain-pied' : 'Sur plusieurs étages' });
-  } else if (x.etage !== null && x.etage !== undefined) {
+  if (x.hsp) cels.push({ ic: 'regle', l: 'Hauteur sous plafond', v: <>{fr(x.hsp)}<i>m</i></>, sous: 'Sous plafond' });
+  if (x.vitrine) cels.push({ ic: 'vitrine', l: 'Vitrine', v: <>{fr(x.vitrine)}<i>m</i></>, sous: 'De linéaire' });
+  if (x.postes || nbBureaux) cels.push({ ic: 'bureau', l: 'Postes', v: x.postes ? <>{x.postes}<i>postes</i></> : '—', sous: nbBureaux ? `${nbBureaux} bureau${nbBureaux > 1 ? 'x' : ''} saisi${nbBureaux > 1 ? 's' : ''}` : 'De travail' });
+  if (x.terrain) cels.push({ ic: 'terrain', l: 'Terrain', v: nombreM2(x.terrain), sous: 'La parcelle' });
+  if (x.etage !== null && x.etage !== undefined) {
     cels.push({
       ic: 'ascenseur', l: 'Étage', v: x.etage === 0 ? 'RDC' : <>{x.etage}<i>{`${x.etage === 1 ? 'er' : 'e'}${x.etages ? ` sur ${x.etages}` : ''}`}</i></>,
-      sous: [x.ascenseur ? 'Ascenseur' : '', x.expo ? nomExpo(x.expo) : ''].filter(Boolean).join(' · ') || (x.etages ? `Immeuble de ${x.etages} étages` : 'De l’immeuble'),
+      sous: x.ascenseur ? 'Ascenseur' : x.etages ? `Immeuble de ${x.etages} étages` : 'De l’immeuble',
     });
-  } else if (x.terrain) cels.push({ ic: 'terrain', l: 'Terrain', v: nombreM2(x.terrain), sous: 'La parcelle' });
+  }
+  void sejour; void nbP;
 
   return (
     <div className={o.col}>
@@ -605,15 +612,15 @@ export function OngletSurfaces({ s: x, pieces, onPieces, onBien }: { s: Surfaces
           <div className={o.sfAlerte}>
             <Ic n="info" t={18} />
             <span>
-              <b>{ecart! < 0 ? `Les pièces font ${m2(Math.abs(ecart!))} de moins que la surface habitable.` : `Les pièces font ${m2(ecart!)} de plus que la surface habitable.`}</b>
-              {ecart! < 0 ? ' Il manque peut-être un placard, un couloir ou une pièce non saisie.' : ' Une pièce comptée deux fois, ou une annexe (cave, balcon) rangée dans les pièces ?'}
+              <b>{ecart! < 0 ? `Les espaces font ${m2(Math.abs(ecart!))} de moins que la surface totale.` : `Les espaces font ${m2(ecart!)} de plus que la surface totale.`}</b>
+              {ecart! < 0 ? ' Il manque peut-être une circulation, une réserve ou un espace non saisi.' : ' Un espace compté deux fois, ou une annexe (cave, parking) rangée dans les espaces ?'}
             </span>
-            <button type="button" className={o.sfAlerteBtn} onClick={onPieces}><Ic n={ecart! < 0 ? 'plus' : 'crayon'} t={13} e={2.4} />{ecart! < 0 ? 'Compléter les pièces' : 'Revoir les pièces'}</button>
+            <button type="button" className={o.sfAlerteBtn} onClick={onPieces}><Ic n={ecart! < 0 ? 'plus' : 'crayon'} t={13} e={2.4} />{ecart! < 0 ? 'Compléter les espaces' : 'Revoir les espaces'}</button>
           </div>
         )}
         {total > 0 && (
           <div className={o.rep}>
-            <div className={o.repT}><b>Comment se partage la surface</b><span>{`sur ${m2(Math.round(total * 100) / 100)} de pièces habitables`}</span></div>
+            <div className={o.repT}><b>Comment se partage la surface</b><span>{`sur ${m2(Math.round(total * 100) / 100)} d’espaces`}</span></div>
             <div className={o.repBarre} role="img" aria-label={parts.map(y => `${FAMILLES[y.k].l} ${Math.round((y.m / total) * 100)} %`).join(', ')}>
               {parts.map((y, i) => <span key={y.k} style={{ flexGrow: y.m, background: FAMILLES[y.k].c, animationDelay: `${0.1 + i * 0.08}s` }} />)}
             </div>
@@ -629,12 +636,12 @@ export function OngletSurfaces({ s: x, pieces, onPieces, onBien }: { s: Surfaces
       {(x.annexes.length > 0 || x.lots) && (
         <section className={o.sf}>
           <div className={o.sfT}>
-            <b className={o.titreSec}>Hors surface habitable</b>
-            <span className={o.sfNote}>{x.lots ? `Lots : ${x.lots}` : 'annexes, extérieurs, stationnement'}</span>
+            <b className={o.titreSec}>Hors surface du local</b>
+            <span className={o.sfNote}>{x.lots ? `Lots : ${x.lots}` : 'annexes, terrasse, stationnement'}</span>
           </div>
           <div className={o.annexes}>
             {x.annexes.map((a, i) => <div key={`${i}-${a.v}`} className={o.annexe}><span><Ic n={a.ic} t={17} /></span><div><b>{a.v}</b><small>{a.l}</small></div></div>)}
-            <button type="button" className={`${o.annexe} ${o.annexeAjout}`} onClick={onBien}><span><Ic n="plus" t={16} e={2.4} /></span><div><b>Ajouter une annexe</b><small>Box, grenier, terrasse…</small></div></button>
+            <button type="button" className={`${o.annexe} ${o.annexeAjout}`} onClick={onBien}><span><Ic n="plus" t={16} e={2.4} /></span><div><b>Ajouter une annexe</b><small>Parking, cave, terrasse…</small></div></button>
           </div>
         </section>
       )}

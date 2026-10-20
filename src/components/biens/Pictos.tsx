@@ -290,8 +290,8 @@ export function Picto({ n, t = 40, className }: { n: string; t?: number; classNa
 
 /* Le dessin de chaque partie du formulaire (ETAPES_BIEN). */
 export const PICTO_ETAPE: Record<string, string> = {
-  proprio: 'personne', bien: 'maison', interieur: 'canape', exterieur: 'arbre', pieces: 'plan', energie: 'dpe',
-  copro: 'immeuble', observations: 'loupe', prix: 'etiquette', pratique: 'cle', annonce: 'megaphone', photos: 'appareil',
+  proprio: 'personne', bien: 'vitrine', interieur: 'mallette', exterieur: 'parking', pieces: 'plan', energie: 'dpe',
+  copro: 'immeuble', bail: 'contrat', fonds: 'cartons', observations: 'loupe', prix: 'etiquette', pratique: 'cle', annonce: 'megaphone', photos: 'appareil',
 };
 
 /* Le dessin de chaque bloc d'une partie (les titres : « La cuisine »…). */
@@ -301,6 +301,9 @@ export const PICTO_BLOC: Record<string, string> = {
   't-equip': 'etincelles', 't-vue': 'horizon', 't-copro': 'immeuble', 't-fin': 'pieces', 't-cout': 'facture', 't-obs-log': 'marteau',
   't-obs-copro': 'doc', 't-obs-notes': 'cadenas', 't-estim': 'jauge', 't-prix': 'etiquette', 't-mandat': 'contrat', 't-occup': 'porteOuverte',
   't-cles': 'cle', 't-acces': 'carte', 't-contact': 'telephone',
+  /* Werner : les blocs de l'immobilier d'entreprise. */
+  't-commerce': 'vitrine', 't-config': 'plan', 't-activite': 'mallette', 't-bail': 'contrat', 't-bail-cours': 'contrat',
+  't-destination': 'etiquette', 't-chiffres': 'courbe', 't-cede': 'cartons',
 };
 
 /* La pastille douce derrière le dessin d'une partie ou d'un bloc. */
@@ -310,6 +313,7 @@ const TEINTES: Record<string, string> = {
   metre: '#fdede1', carte: '#ECF8F0', terrain: '#ECF8F0', rouleau: '#EAF7EF', casserole: '#FFF2E4', radiateur: '#FFEFE9',
   fenetreVolets: '#f4f3f2', etincelles: '#fdecdf', horizon: '#ECF8F0', pieces: '#fdede1', facture: '#f7f7f7', marteau: '#f5f5f5',
   doc: '#f7f7f7', cadenas: '#fbece1', jauge: '#fbece1', contrat: '#f7f7f7', porteOuverte: '#fbefe6', telephone: '#f5f4f4',
+  vitrine: '#fbefe6', mallette: '#f5f4f4', parking: '#f4f3f2', courbe: '#ECF8F0',
 };
 export const teinte = (n: string) => TEINTES[n] || '#f5f5f5';
 
@@ -319,18 +323,19 @@ export const teinte = (n: string) => TEINTES[n] || '#f5f5f5';
 const ETATS = { tres_bon: 'neuf', bon: 'pouce', moyen: 'moyen', a_refaire: 'rouleau' };
 const MATIERES = { bois: 'bois', pvc: 'pvc', alu: 'alu', boisAlu: 'boisAlu', metal: 'metal' };
 const CHOIX: Record<string, Record<string, string>> = {
-  qui: { personne: 'personne', couple: 'couple', indivision: 'groupe', sci: 'mallette' },
-  motif: { plusGrand: 'plusGrand', plusPetit: 'plusPetit', achat: 'cle', mutation: 'valise', succession: 'succession', separation: 'separation', investissement: 'courbe', autre: 'points' },
+  qui: { personne: 'personne', indivision: 'groupe', sci: 'mallette' },
+  motif: { vacant: 'porteOuverte', demenagement: 'valise', retraite: 'sablier', arbitrage: 'courbe', succession: 'succession', difficultes: 'separation', autre: 'points' },
+  nature: { location: 'cle', cession_bail: 'bail', fonds: 'cartons', murs: 'immeuble', murs_occupes: 'courbe' },
   delai: { vite: 'eclair', '3mois': 'cal3', '6mois': 'cal6', libre: 'sablier' },
-  origine: { recommandation: 'bulles', client: 'etoile5', estimation: 'ecran', boitage: 'enveloppe', portail: 'globe', autre: 'points' },
-  typeBien: { appartement: 'appart', maison: 'maison', duplex: 'duplex', studio: 'canape', loft: 'verriere', terrain: 'terrain', local: 'vitrine', parking: 'parking', immeuble: 'immeuble', autre: 'points' },
+  origine: { recommandation: 'bulles', client: 'etoile5', prospection: 'loupe', boitage: 'enveloppe', portail: 'globe', autre: 'points' },
+  typeBien: { bureaux: 'mallette', local: 'vitrine', restaurant: 'casserole', activite: 'marteau', entrepot: 'cartons', immeuble: 'immeuble', terrain: 'terrain', parking: 'parking', autre: 'points' },
   constructible: { oui: 'oui', partiel: 'moitie', non: 'non' },
   assainissement: { collectif: 'egout', fosse: 'fosse', micro: 'microStation', aRefaire: 'marteau' },
   mitoyennete: { independante: 'maison1', un: 'maisons2', deux: 'maisons3' },
   standing: { standard: 'etoiles1', bon: 'etoiles2', haut: 'etoiles3', prestige: 'couronne' },
   etatCommuns: ETATS, etatExterieur: ETATS,
   immeuble: { ascenseur: 'ascenseur', gardien: 'gardien', digicode: 'digicode', interphone: 'interphone', velos: 'velo', fibre: 'wifi' },
-  etat: { a_renover: 'marteau', travaux_legers: 'rouleau', bon_etat: 'pouce', refait_neuf: 'neuf' },
+  etat: { brut: 'cartons', a_renover: 'marteau', travaux_legers: 'rouleau', bon_etat: 'pouce', refait_neuf: 'neuf' },
   cuisine: { independante: 'porte', semiOuverte: 'verriere', ouverte: 'bar', kitchenette: 'kitchenette', aucune: 'sansCuisine' },
   cuisineEquip: { equipee: 'four', amenagee: 'placards', non: 'vide' },
   chauffageMode: { individuel: 'maisonFeu', collectif: 'immeubleFeu' },
@@ -344,21 +349,18 @@ const CHOIX: Record<string, Record<string, string>> = {
     traversant: 'traversant', lumineux: 'soleil', calme: 'lune', dernierEtage: 'dernierEtage', parquet: 'parquet', moulures: 'moulures', cheminee: 'cheminee',
     placards: 'placards', doubleVitrage: 'vitre2', voletsElec: 'voletElec', clim: 'air', alarme: 'alarme', pmr: 'pmr', meuble: 'canape', solaire: 'solaire', sejourDouble: 'canape',
   },
-  annexes: {
-    balcon: 'balcon', terrasse: 'parasol', loggia: 'loggia', jardin: 'arbre', cave: 'cave', parking: 'parking', box: 'box', garage: 'voiture', piscine: 'piscine',
-    veranda: 'veranda', grenier: 'grenier', sousSol: 'escalierBas',
-  },
+  annexes: { terrasse: 'parasol', cour: 'cour', parking: 'parking', box: 'box', cave: 'cave', quai: 'voiture', jardin: 'arbre' },
   stationnement: { sousSol: 'escalierBas', exterieur: 'parking', couvert: 'abri', ferme: 'box' },
   expo: { N: 'dirN', NE: 'dirNE', E: 'dirE', SE: 'dirSE', S: 'dirS', SO: 'dirSO', O: 'dirO', NO: 'dirNO', traversant: 'traversant' },
   vue: { degagee: 'horizon', jardin: 'arbre', cour: 'cour', rue: 'rue', monument: 'monument' },
   visAVis: { aucun: 'horizon', leger: 'visLoin', direct: 'visDirect' },
   dpeStatut: { fait: 'dpe', encours: 'sablier', vierge: 'docVide', non: 'non' },
-  chargesInclus: { chauffage: 'radiateur', eauChaude: 'ballon', eauFroide: 'robinetFroid', gardien: 'gardien', ascenseur: 'ascenseur' },
+  chargesInclus: { chauffage: 'radiateur', clim: 'air', eau: 'robinetFroid', gardien: 'gardien', ascenseur: 'ascenseur', menage: 'etincelles' },
   sinistre: { non: 'oui', oui: 'degat' },
-  charge: { acquereur: 'cle', vendeur: 'maison' },
+  charge: { acquereur: 'cle', vendeur: 'immeuble' },
   honoMode: { taux: 'pourcent', forfait: 'euroPiece' },
   mandatType: { simple: 'doc', semi: 'docs2', exclusif: 'medaille' },
-  occupation: { libre: 'porteOuverte', occupe: 'occupe', loue: 'bail' },
+  occupation: { libre: 'porteOuverte', exploite: 'vitrine', occupe: 'occupe', loue: 'bail' },
   cles: { agence: 'vitrine', vendeur: 'personne', gardien: 'gardien', autre: 'pin' },
   accesBas: { gardien: 'gardien', vigile: 'bouclier', interphone: 'interphone', digicode: 'digicode', badge: 'badge', libre: 'porteOuverte' },
   accesAscenseur: { gauche: 'gauche', droite: 'droite', face: 'face', aucun: 'escalier' },

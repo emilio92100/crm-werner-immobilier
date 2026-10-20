@@ -96,17 +96,18 @@ function ChampLettres({ genre, v, onChange, off, lib }: { genre: 'dpe' | 'ges'; 
 }
 
 /* ══ Les pièces : niveau · pièce · surface · exposition · commentaire ════ */
-const HORS_HABITABLE = new Set(PIECES_GROUPES.filter(g => g.g === 'Annexes' || g.g === 'Extérieur').flatMap(g => g.l));
+/* Werner : ce qui ne compte pas dans la surface du local (une cave, un
+   parking, une terrasse, une cour). Un sous-sol, une mezzanine, une réserve
+   en font partie. Le nom `habitable` est resté. */
+const HORS_HABITABLE = new Set(['Cave', 'Parking', 'Terrasse', 'Cour', 'Box']);
+void PIECES_GROUPES;
 export const habitable = (p: Piece) => p.niveau !== 'Extérieur' && !HORS_HABITABLE.has(p.nom.replace(/\s+\d+$/, ''));
-/* Les pièces principales, celles qui font « un 3 pièces » : séjour, salon,
-   salle à manger, bureau, chambres. L'entrée, la cuisine, les salles d'eau,
-   les WC et les dégagements comptent dans la surface habitable, pas dans le
-   nombre de pièces. Un séjour double en vaut deux. */
-const PRINCIPALES = new Set(['Séjour', 'Salon', 'Salle à manger', 'Pièce à vivre', 'Bureau', 'Chambre', 'Suite parentale']);
+/* Les bureaux fermés et les salles : ce qu'un preneur de bureaux compte. */
+const PRINCIPALES = new Set(['Bureau', 'Bureau de direction', 'Salle de réunion']);
 export const nbPrincipales = (l: Piece[]) => l.reduce((n, p) => {
   if (p.niveau === 'Extérieur') return n;
   const base = p.nom.replace(/\s+\d+$/, '');
-  return n + (base === 'Séjour double' ? 2 : PRINCIPALES.has(base) ? 1 : 0);
+  return n + (PRINCIPALES.has(base) ? 1 : 0);
 }, 0);
 export const nouvelId = () => `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
@@ -131,7 +132,7 @@ function CartePiece({ p, off, ouverte, auto, premier, dernier, onOuvrir, onMaj, 
       <div className={b.pcNom}>
         {/* Le champ a la largeur de son nom : « Changer » vient juste à côté,
             pas tout à droite (V3.33). */}
-        <input className={b.pcNomIn} disabled={off} value={p.nom} placeholder="Nom de la pièce" aria-label="Nom de la pièce"
+        <input className={b.pcNomIn} disabled={off} value={p.nom} placeholder="Nom de l’espace" aria-label="Nom de l’espace"
           style={{ width: p.nom ? `${Math.max(4, p.nom.length + 1.5)}ch` : '16ch' }}
           onChange={e => onMaj('nom', e.target.value)} />
         {!off && <button type="button" className={b.pcChanger} aria-expanded={ouverte} onClick={() => onOuvrir(!ouverte)}>{ouverte ? 'Fermer' : 'Changer'}</button>}
@@ -144,7 +145,7 @@ function CartePiece({ p, off, ouverte, auto, premier, dernier, onOuvrir, onMaj, 
         <div className={b.pcOutils}>
           <button type="button" className={b.icBtn} disabled={premier} aria-label="Monter" title="Monter" onClick={() => onBouger(-1)}><Ic n="haut" t={16} e={2.2} /></button>
           <button type="button" className={b.icBtn} disabled={dernier} aria-label="Descendre" title="Descendre" onClick={() => onBouger(1)}><Ic n="bas" t={16} e={2.2} /></button>
-          <button type="button" className={`${b.icBtn} ${b.icBtnDanger}`} aria-label="Retirer la pièce" title="Retirer" onClick={onRetirer}><Ic n="corbeille" t={16} /></button>
+          <button type="button" className={`${b.icBtn} ${b.icBtnDanger}`} aria-label="Retirer l’espace" title="Retirer" onClick={onRetirer}><Ic n="corbeille" t={16} /></button>
         </div>
       )}
       {!off && (
@@ -166,7 +167,7 @@ function CartePiece({ p, off, ouverte, auto, premier, dernier, onOuvrir, onMaj, 
         </Depliant>
       )}
       <div className={b.pcBas}>
-        <div className={b.pcSurf}><SaisieNombre v={p.surface} unite="m²" off={off} auto={auto} ph="Surface" lib={`Surface ${p.nom || 'de la pièce'}`} onChange={x => onMaj('surface', x)} /></div>
+        <div className={b.pcSurf}><SaisieNombre v={p.surface} unite="m²" off={off} auto={auto} ph="Surface" lib={`Surface ${p.nom || 'de l’espace'}`} onChange={x => onMaj('surface', x)} /></div>
         <div className={b.pcExpo} role="radiogroup" aria-label="Exposition">
           {EXPOSITIONS.map(x => (
             <button key={x.v} type="button" role="radio" aria-checked={p.expo === x.v} title={x.l} disabled={off}
@@ -184,7 +185,7 @@ function ChampPieces({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
   const l = lirePieces(d.detailPieces);
   const [ouverte, setOuverte] = useState<string | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
-  const defaut = d.typeBien === 'maison' ? 'Rez-de-chaussée' : 'Niveau principal';
+  const defaut = d.typeBien === 'local' || d.typeBien === 'restaurant' ? 'Rez-de-chaussée' : 'Niveau principal';
   const [niveauAjout, setNiveauAjout] = useState<string>(() => (l.length ? l[l.length - 1].niveau || defaut : defaut));
   const ecrire = (x: Piece[]) => maj('detailPieces', x);
   const ajouter = (nom = '') => {
@@ -217,7 +218,7 @@ function ChampPieces({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
         const surf = ps.reduce((t, x) => t + (habitable(x.p) ? x.p.surface || 0 : 0), 0);
         return (
           <div key={n || '-'} className={b.pcGroupe}>
-            {groupes && <div className={b.niveauT}><span>{n || 'Sans niveau'}</span><i>{`${ps.length} pièce${ps.length > 1 ? 's' : ''}${surf ? ` · ${m2(surf)}` : ''}`}</i></div>}
+            {groupes && <div className={b.niveauT}><span>{n || 'Sans niveau'}</span><i>{`${ps.length} espace${ps.length > 1 ? 's' : ''}${surf ? ` · ${m2(surf)}` : ''}`}</i></div>}
             {ps.map(({ p, i }, k) => (
               <CartePiece key={p.id} p={p} off={off} ouverte={ouverte === p.id} auto={focus === p.id} premier={k === 0} dernier={k === ps.length - 1}
                 onOuvrir={x => setOuverte(x ? p.id : null)}
@@ -232,7 +233,7 @@ function ChampPieces({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
       {!off && (
         <div className={b.ajoutPiece}>
           <div className={b.ajoutT}>
-            <span><Ic n="plus" t={15} e={2.6} />{l.length ? 'Ajouter une pièce' : 'Ajoute les pièces une par une, dans l’ordre de la visite'}</span>
+            <span><Ic n="plus" t={15} e={2.6} />{l.length ? 'Ajouter un espace' : 'Ajoute les espaces un par un, dans l’ordre de la visite'}</span>
             <label className={b.ajoutNiv}>
               <span>au niveau</span>
               <select className={b.pcNiv} value={niveauAjout} onChange={e => setNiveauAjout(e.target.value)}>
@@ -247,16 +248,16 @@ function ChampPieces({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
               </button>
             ))}
             <button type="button" className={`${b.tuileP} ${b.tuileAutre}`} onClick={() => ajouter()}>
-              <span><Ic n="plus" t={20} e={2.2} /></span>Autre pièce…
+              <span><Ic n="plus" t={20} e={2.2} /></span>Autre espace…
             </button>
           </div>
         </div>
       )}
       {l.length > 0 && (
         <div className={b.totaux}>
-          <span><b>{l.length}</b>{` pièce${l.length > 1 ? 's' : ''}${niveaux.length > 1 ? ` sur ${niveaux.length} niveaux` : ''}${princ ? ` · dont ${princ} principale${princ > 1 ? 's' : ''}` : ''}`}</span>
-          {total > 0 && <span>Surface habitable : <b>{m2(total)}</b></span>}
-          {total > 0 && declaree && ecart > 0.03 && <span className={b.totauxAlerte}>{`La surface habitable déclarée est de ${m2(declaree)} : écart de ${m2(Math.abs(total - declaree))}.`}</span>}
+          <span><b>{l.length}</b>{` espace${l.length > 1 ? 's' : ''}${niveaux.length > 1 ? ` sur ${niveaux.length} niveaux` : ''}${princ ? ` · dont ${princ} bureau${princ > 1 ? 'x' : ''} ou salle${princ > 1 ? 's' : ''}` : ''}`}</span>
+          {total > 0 && <span>Surface des espaces : <b>{m2(total)}</b></span>}
+          {total > 0 && declaree && ecart > 0.03 && <span className={b.totauxAlerte}>{`La surface totale déclarée est de ${m2(declaree)} : écart de ${m2(Math.abs(total - declaree))}.`}</span>}
         </div>
       )}
     </div>
@@ -334,7 +335,7 @@ export function ChampPhotos({ d, maj, off, bienId, grand = false }: { d: Donnees
                 </div>
               )}
             </div>
-            <input className={b.legende} disabled={off} value={p.legende} placeholder="Légende (séjour, vue…)"
+            <input className={b.legende} disabled={off} value={p.legende} placeholder="Légende (vitrine, open space…)"
               onChange={e => ecrire(l.map(x => (x.url === p.url ? { ...x, legende: e.target.value } : x)))} />
           </div>
         ))}
