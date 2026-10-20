@@ -841,13 +841,13 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
             const nomC = acheteur ? [a.client?.prenom, a.client?.nom].filter(Boolean).join(' ') || 'Un demandeur' : '';
             const m0 = acheteur ? a.mandats[0] : null;
             const titre = acheteur
-              ? (a.mandats.length > 1 ? `${nomC} correspond à ${a.mandats.length} de vos mandats, jusqu’à ${m0!.note}\u00a0%` : `${nomC} correspond à votre « ${m0!.titre} »${m0!.ville ? ` à ${m0!.ville}` : ''} · ${m0!.note}\u00a0%`)
-              : `Votre mandat « ${a.titre} »${a.bien.ville ? ` à ${a.bien.ville}` : ''} intéresse ${a.n > 1 ? `${a.n} de vos demandeurs` : 'un de vos demandeurs'}`;
+              ? (a.mandats.length > 1 ? `${nomC} correspond à ${a.mandats.length} de vos affaires, jusqu’à ${m0!.note}\u00a0%` : `${nomC} correspond à votre « ${m0!.titre} »${m0!.ville ? ` à ${m0!.ville}` : ''} · ${m0!.note}\u00a0%`)
+              : `Votre affaire « ${a.titre} »${a.bien.ville ? ` à ${a.bien.ville}` : ''} intéresse ${a.n > 1 ? `${a.n} de vos demandeurs` : 'un de vos demandeurs'}`;
             const j = Math.max(0, Math.floor((Date.now() - Date.parse(a.le)) / 86400000));
             const quand = j === 0 ? 'aujourd’hui' : j === 1 ? 'hier' : `il y a ${j} jours`;
             const autres = acheteur ? 0 : a.n - a.noms.length;
             const sous = acheteur
-              ? `Sa recherche a été ouverte ${quand}. « Voir » ouvre sa fiche sur les biens trouvés, ${a.mandats.length > 1 ? 'ces mandats déjà cochés' : 'ce mandat déjà coché'}.`
+              ? `Sa recherche a été ouverte ${quand}. « Voir » ouvre sa fiche sur les biens trouvés, ${a.mandats.length > 1 ? 'ces affaires déjà cochées' : 'cette affaire déjà cochée'}.`
               : `${j === 0 ? 'Disponible depuis aujourd’hui' : j === 1 ? 'Disponible depuis hier' : `Disponible depuis ${j} jours`}${a.noms.length ? ` · ${a.noms.join(', ')}${autres > 0 ? ` et ${autres > 1 ? `${autres} autres` : 'un autre'}` : ''}` : ''}. « Voir les demandeurs » ouvre sa fiche sur l’onglet Demandeurs.`;
             const occupe = alerteEnCours === a.cle;
             return (
@@ -856,7 +856,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
                   <Ic n={acheteur ? 'groupe' : 'drapeau'} t={22} ep={2} />
                 </span>
                 <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: acheteur ? '#c2621c' : NAVY }}>{acheteur ? 'Un demandeur arrive' : 'Un mandat arrive'}</span>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: acheteur ? '#c2621c' : NAVY }}>{acheteur ? 'Un demandeur arrive' : 'Une affaire arrive'}</span>
                   <b style={{ fontFamily: JAK, fontSize: 15.5, fontWeight: 800, color: '#25272b', lineHeight: 1.35 }}>{titre}</b>
                   <span style={{ fontSize: 13.5, color: DOUX, lineHeight: 1.5 }}>{sous}</span>
                 </span>
@@ -919,7 +919,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
         <div className="rl-entre rl-vide" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '44px 24px', borderRadius: 22, background: 'linear-gradient(180deg, #f0fdf6 0%, #ffffff 100%)', border: '1px solid #cdeedd', textAlign: 'center' }}>
           <span style={{ width: 62, height: 62, borderRadius: 20, background: '#dcfce8', color: '#047857', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="coche" t={30} ep={2.4} /></span>
           <b style={{ fontFamily: JAK, fontSize: 19, fontWeight: 800 }}>Tout est à jour</b>
-          <span style={{ fontSize: 13.5, color: DOUX, lineHeight: 1.55, maxWidth: 440 }}>{tri.length ? 'Aucune relance en attente, en dehors du tri juste en dessous.' : 'Aucune relance en attente. Une relance se programme toute seule quand un bien part chez un client, et se clôture dès qu’il répond.'}</span>
+          <span style={{ fontSize: 13.5, color: DOUX, lineHeight: 1.55, maxWidth: 440 }}>{tri.length ? 'Aucune relance en attente, en dehors du tri juste en dessous.' : 'Aucune relance en attente. Une relance se programme toute seule quand un local part chez un client, et se clôture dès qu’il répond.'}</span>
         </div>
       ) : visibles.length === 0 ? (
         <div className="rl-entre rl-vide" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '34px 24px', borderRadius: 20, background: 'white', border: `1px solid ${BORD}`, textAlign: 'center' }}>

@@ -22,7 +22,7 @@ type Ligne = Omit<Alerte, 'cle' | 'groupe'> & { cle: Cle; groupe: Alerte['groupe
 const DEMANDE_SITE: Ligne = {
   cle: CLE_ALERTE_DEMANDE, groupe: 'site', titre: 'Une nouvelle demande du site',
   objet: 'Nouvelle demande du site — Estimation — Paul Martin',
-  quand: 'Quelqu’un remplit un formulaire de wernerimmobilier.com : estimation, accompagnement demandeur, question sur un bien, message. Rien ne part pour une demande qui ressemble à un robot.',
+  quand: 'Quelqu’un remplit un formulaire de wernerimmobilier.com : estimation, accompagnement demandeur, question sur un local, message. Rien ne part pour une demande qui ressemble à un robot.',
   crm: 'La demande dans Demandes Internet, en « Nouvelle », avec ses réponses.',
 };
 const LISTE: Ligne[] = ALERTES_MAIL.some(a => (a.cle as string) === CLE_ALERTE_DEMANDE) ? ALERTES_MAIL : [...ALERTES_MAIL, DEMANDE_SITE];

@@ -128,7 +128,7 @@ function BienDemande({ d }: { d: DemandeVisite }) {
         ? <img src={photo} alt="" className={dv.photo} onError={e => { (e.target as HTMLImageElement).style.visibility = 'hidden'; }} />
         : <span className={`${dv.photo} ${dv.photoVide}`}><Picto n="maison" t={22} /></span>}
       <span className={dv.bienTx}>
-        <b>{d.bien.titre || lieu || 'Bien présenté'}</b>
+        <b>{d.bien.titre || lieu || 'Local présenté'}</b>
         {(lieu || carac) && <small>{[lieu, carac].filter(Boolean).join(' · ')}</small>}
       </span>
       {d.bien.prix ? <span className={dv.prix}>{euros(d.bien.prix)}</span> : null}
@@ -200,7 +200,7 @@ function FenetreVisite({ d, revu, onFermer, onFait }: { d: DemandeVisite; revu: 
         </div>
         <div className={dv.fPied}>
           {!d.bien.bien_vente_id && d.client && (
-            <button type="button" className={dv.lienIndispo} onClick={() => setIndispo(true)} disabled={envoi}>🔒 Ce bien n’est plus disponible</button>
+            <button type="button" className={dv.lienIndispo} onClick={() => setIndispo(true)} disabled={envoi}>🔒 Ce local n’est plus disponible</button>
           )}
           <button type="button" className={dv.btn} onClick={onFermer} disabled={envoi}>Annuler</button>
           <button type="button" className={`${dv.btn} ${dv.btnV}`} onClick={() => { void valider(); }} disabled={envoi}>
@@ -212,7 +212,7 @@ function FenetreVisite({ d, revu, onFermer, onFait }: { d: DemandeVisite; revu: 
         <FenetreIndispo bien={{ id: d.bien.id, titre: d.bien.titre, ville: d.bien.ville, badge_retour: 'souhaite_visiter' }}
           clientId={d.client.id} rechercheId={d.rechercheId} prenom={d.client.prenom}
           onFermer={() => setIndispo(false)}
-          onFait={() => { setIndispo(false); onFait(`« ${d.bien.titre || 'Le bien'} » est passé dans « Plus disponible » : ${nom} le voit dans son espace, et sa demande de visite est close.`); }} />
+          onFait={() => { setIndispo(false); onFait(`« ${d.bien.titre || 'Le local'} » est passé dans « Plus disponible » : ${nom} le voit dans son espace, et sa demande de visite est close.`); }} />
       )}
     </div>,
     document.body,
@@ -284,7 +284,7 @@ function departBon(v: any): DepartBon {
 function BoutonBon({ onBon, enCours, etat }: { onBon: () => void; enCours: boolean; etat?: EtatBon | null }) {
   return (
     <button type="button" className={cv.btn} onClick={onBon} disabled={enCours}
-      title={etat ? 'Ouvrir le bon de visite' : 'Le bon de visite, prérempli avec le client et le bien'}>
+      title={etat ? 'Ouvrir le bon de visite' : 'Le bon de visite, prérempli avec le client et le local'}>
       <Picto n="bon" t={15} /><LibelleBon etat={etat} enCours={enCours} />
     </button>
   );
@@ -324,7 +324,7 @@ function CarteVisite({ v, groupe, auj, rang, onClient, onBien, onCR, onAnnuler, 
      fiche » ; son téléphone à la place du rappel par mail. */
   const sansFiche = !!v.libre && !v.client_id;
   const voir = sansFiche
-    ? <button type="button" className={cv.btn} onClick={onBien}><Picto n="maison" t={15} /><span>Voir le bien</span></button>
+    ? <button type="button" className={cv.btn} onClick={onBien}><Picto n="maison" t={15} /><span>Voir l’affaire</span></button>
     : <button type="button" className={cv.btn} onClick={onClient}><Picto n="fiche" t={15} /><span>Voir sa fiche</span></button>;
   const telLien = v.libre && v.tel ? `tel:${String(v.tel).replace(/[^\d+]/g, '')}` : '';
   return (
@@ -336,15 +336,15 @@ function CarteVisite({ v, groupe, auj, rang, onClient, onBien, onCR, onAnnuler, 
 
       <div className={cv.milieu}>
         <div className={cv.qui}>
-          <button type="button" className={cv.nom} onClick={onClient} title={sansFiche ? 'Ouvrir la fiche du bien' : `Ouvrir la fiche de ${nom}`}>
+          <button type="button" className={cv.nom} onClick={onClient} title={sansFiche ? 'Ouvrir la fiche de l’affaire' : `Ouvrir la fiche de ${nom}`}>
             {v.clients && <AvatarContact c={v.clients} teinte={{ bg: '#f4f3f2', fg: '#2e3034' }} taille={34} />}
             <b>{nom}</b>
           </button>
-          {v.libre && <span className={cv.hors} title="Noté sur la fiche du bien, sans fiche demandeur">Hors CRM</span>}
+          {v.libre && <span className={cv.hors} title="Noté sur la fiche de l’affaire, sans fiche demandeur">Hors CRM</span>}
           {iso && <span className={`${cv.past} ${ton.past}`}><i />{quandRelatif(ecartJours(iso, auj))}</span>}
         </div>
 
-        <button type="button" className={cv.bien} onClick={onBien} title="Ouvrir la fiche du bien">
+        <button type="button" className={cv.bien} onClick={onBien} title="Ouvrir la fiche du local">
           {photo
             ? <img src={photo} alt="" className={cv.photo} onError={e => { (e.target as HTMLImageElement).style.visibility = 'hidden'; }} />
             : <span className={`${cv.photo} ${cv.photoVide}`}><Picto n="maison" t={22} /></span>}
@@ -448,11 +448,11 @@ function CarteJournee({ visites, groupe, auj, rang, onClient, onBien, onCR, onAn
 
       <div className={cv.milieu}>
         <div className={cv.qui}>
-          <button type="button" className={cv.nom} onClick={onClient} title={sansFiche ? 'Ouvrir la fiche du bien' : `Ouvrir la fiche de ${nom}`}>
+          <button type="button" className={cv.nom} onClick={onClient} title={sansFiche ? 'Ouvrir la fiche de l’affaire' : `Ouvrir la fiche de ${nom}`}>
             {v0.clients && <AvatarContact c={v0.clients} teinte={{ bg: '#f4f3f2', fg: '#2e3034' }} taille={34} />}
             <b>{nom}</b>
           </button>
-          {horsCrm && <span className={cv.hors} title="Noté sur la fiche du bien, sans fiche demandeur">Hors CRM</span>}
+          {horsCrm && <span className={cv.hors} title="Noté sur la fiche de l’affaire, sans fiche demandeur">Hors CRM</span>}
           <span className={`${cv.past} ${ton.past}`}><i />{quandRelatif(ecartJours(iso, auj))}</span>
         </div>
 
@@ -465,7 +465,7 @@ function CarteJournee({ visites, groupe, auj, rang, onClient, onBien, onCR, onAn
             return (
               <div key={v.id} className={cv.ligne}>
                 <span className={cv.heureL}>{heure || '—'}</span>
-                <button type="button" className={cv.bien} onClick={() => onBien(v)} title="Ouvrir la fiche du bien">
+                <button type="button" className={cv.bien} onClick={() => onBien(v)} title="Ouvrir la fiche du local">
                   {photo
                     ? <img src={photo} alt="" className={cv.photo} onError={e => { (e.target as HTMLImageElement).style.visibility = 'hidden'; }} />
                     : <span className={`${cv.photo} ${cv.photoVide}`}><Picto n="maison" t={22} /></span>}
@@ -480,7 +480,7 @@ function CarteJournee({ visites, groupe, auj, rang, onClient, onBien, onCR, onAn
                   {groupe === 'a_faire'
                     ? <button type="button" className={`${cv.btn} ${cv.btnOr} ${cv.btnPetit}`} onClick={() => onCR(v)}><Picto n="cr" t={14} /><span>Compte rendu</span></button>
                     : <button type="button" className={`${cv.btn} ${cv.btnBleu} ${cv.btnPetit}`} onClick={() => onCR(v)}><Picto n="check" t={14} /><span>Effectuée</span></button>}
-                  <button type="button" className={`${cv.btn} ${cv.btnDiscret} ${cv.btnPetit}`} onClick={() => onAnnuler(v)} aria-label={`Annuler la visite de ${heure || 'ce bien'}`} title="Annuler cette visite"><Picto n="croix" t={14} /><span className={cv.surTel}>Annuler</span></button>
+                  <button type="button" className={`${cv.btn} ${cv.btnDiscret} ${cv.btnPetit}`} onClick={() => onAnnuler(v)} aria-label={`Annuler la visite de ${heure || 'ce local'}`} title="Annuler cette visite"><Picto n="croix" t={14} /><span className={cv.surTel}>Annuler</span></button>
                 </div>
                 {repondu && (
                   <div className={`${cv.bulle} ${cv.ligneBulle}`}>
@@ -751,7 +751,7 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
           disait en petit ce que les tuiles disent en grand. */}
       <EnteteRubrique titre="Visites" icone={PictoVisites} arrondi
         phrase={visites.length === 0 && demandes.length === 0 ? (loading ? undefined : 'Aucune visite pour l’instant') : phraseProchaine}
-        recherche={visites.length > 0 || demandes.length > 0 ? { valeur: cherche, onChange: setCherche, placeholder: 'Chercher un bien ou un client…', label: 'Chercher une visite' } : undefined}
+        recherche={visites.length > 0 || demandes.length > 0 ? { valeur: cherche, onChange: setCherche, placeholder: 'Chercher un local ou un client…', label: 'Chercher une visite' } : undefined}
         /* V3.146 (Alexandre) : « Organiser une visite », le joli bouton doré
            dans la partie bleue, qui ouvre la fenêtre en douceur. */
         bouton={{ lib: 'Organiser une visite', onClick: () => setOrganiser(true), vedette: true, ic: <Picto n="cal" t={15} /> }}
@@ -786,7 +786,7 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
         <div className={styles.empty}>
           <div className={styles.emptyIcon}>📅</div>
           <div className={styles.emptyTitle}>Aucune visite planifiée</div>
-          <div className={styles.emptySub}>{'« Organiser une visite », en haut, ou depuis l’agenda, la fiche d’un client ou d’un bien.'}</div>
+          <div className={styles.emptySub}>{'« Organiser une visite », en haut, ou depuis l’agenda, la fiche d’un client ou d’une affaire.'}</div>
         </div>
       ) : (
         /* V3.152 (Alexandre : « quand j'appuie sur Effectuées, ça arrive
@@ -817,7 +817,7 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
                 {`Demandes de visite — ${demandesTrouvees.length}`}
               </div>
               <div className={cv.titreGroupe} style={{ fontSize: 12.5, color: '#94a3b8', marginBottom: 10, lineHeight: 1.45 }}>
-                {'Demandées par le client depuis son espace. Dès qu’une visite est calée sur le bien, la demande passe dans « À venir ».'}
+                {'Demandées par le client depuis son espace. Dès qu’une visite est calée sur le local, la demande passe dans « À venir ».'}
               </div>
               {/* V3.129 (Alexandre, maquette 1) : le client, puis le bien en petite
                   carte, ses disponibilités en bulle ; « Planifier la visite »
@@ -831,7 +831,7 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
                       onClick={() => ouvrirDemande(d)} onKeyDown={e => { if (e.key === 'Enter') ouvrirDemande(d); }}>
                       <div className={dv.qui}>
                         {d.client && <AvatarContact c={d.client} teinte={{ bg: '#f4f3f2', fg: '#2e3034' }} taille={42} />}
-                        <span className={dv.quiTx}><b>{nom}</b><span>veut visiter ce bien</span></span>
+                        <span className={dv.quiTx}><b>{nom}</b><span>veut visiter ce local</span></span>
                         <span className={`${dv.attente} ${att.vieux ? dv.attenteVieille : ''}`}><i />{att.texte}</span>
                       </div>
                       <div className={dv.actions}>

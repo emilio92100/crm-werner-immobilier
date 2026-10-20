@@ -265,7 +265,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
             <div className={`${styles.statIcon} ${styles.iconGold}`}>📄</div>
           </div>
           <div className={styles.statVal}>{chiffres.presentes}</div>
-          <div className={styles.statLabel}>Biens présentés ce mois</div>
+          <div className={styles.statLabel}>Locaux présentés ce mois</div>
         </div>
 
         <div className={styles.statCard} onClick={() => onNavigate('visites')}>

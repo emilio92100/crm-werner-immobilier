@@ -102,7 +102,7 @@ function sujetMail(d: DemandeSite): string {
   switch (cleCategorie(d)) {
     case 'estimation': return 'Votre demande d’estimation';
     case 'mandat_recherche': return 'Votre recherche de local';
-    case 'rappel_bien': return d.property_title ? `Votre demande sur le bien « ${d.property_title} »` : 'Votre demande sur un de nos biens';
+    case 'rappel_bien': return d.property_title ? `Votre demande sur le local « ${d.property_title} »` : 'Votre demande sur l’un de nos locaux';
     default: return 'Votre message sur wernerimmobilier.com';
   }
 }
@@ -394,7 +394,7 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
 
   /* Les pastilles du tiroir (V3.129, maquette A) : les formulaires du site,
      ou les portails, puis « Toutes » / « Tous les portails » tout à droite. */
-  const COURT_CAT: Record<string, string> = { estimation: 'Estimations', mandat_recherche: 'Demandeurs', rappel_bien: 'Infos bien', contact: 'Messages' };
+  const COURT_CAT: Record<string, string> = { estimation: 'Estimations', mandat_recherche: 'Demandeurs', rappel_bien: 'Infos local', contact: 'Messages' };
   const tuilesTiroir = prov === 'site'
     ? [...CATEGORIES.map(c => ({ k: c.k as string, lib: c.pluriel, libCourt: COURT_CAT[c.k] || c.pluriel, c: c.c, ic: c.ic, court: '', tous: false })), { k: 'toutes', lib: 'Toutes', libCourt: 'Toutes', c: BLEU, ic: 'liste', court: '', tous: true }].map(t => {
       const l = dansLaProv.filter(d => !d.archive && (t.k === 'toutes' || cleCategorie(d) === t.k));
@@ -418,7 +418,7 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
           cheval sur le bandeau. Mon site · Pub estimation · Portails, puis Tout
           à droite. */}
       <EnteteRubrique titre="Demandes Internet" icone={<PictoBoite />} phrase={phrase} arrondi
-        recherche={demandes.length > 0 ? { valeur: cherche, onChange: setCherche, placeholder: 'Nom, téléphone, ville, bien…', label: 'Chercher une demande' } : undefined}
+        recherche={demandes.length > 0 ? { valeur: cherche, onChange: setCherche, placeholder: 'Nom, téléphone, ville, local…', label: 'Chercher une demande' } : undefined}
         label="D’où viennent les demandes" actif={prov} onChoisir={k => choisirProv(k as Prov)} aCheval
         tuiles={[
           { cle: 'site', lib: 'Mon site', n: trouvees.filter(d => !d.archive && provenanceDe(d).k === 'site').length, couleur: '#2e3034' },
@@ -534,7 +534,7 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
           <div className={s.vide}>
             <span className={s.videIc}><PictoBoite taille={26} /></span>
             <div className={s.videTitre}>Aucune demande pour l’instant</div>
-            <div className={s.videSous}>Les estimations, les demandes d’accompagnement, les questions sur un bien et les messages laissés sur wernerimmobilier.com arriveront ici, puis celles des portails.</div>
+            <div className={s.videSous}>Les estimations, les demandes d’accompagnement, les questions sur un local et les messages laissés sur wernerimmobilier.com arriveront ici, puis celles des portails.</div>
           </div>
         ) : (
           <div key={cleListe} className={s.liste}>
@@ -730,7 +730,7 @@ function BandeauPub({ p }: { p: LecturePub }) {
    coche ce que la page sait déjà (le type, l'adresse s'il les a donnés). */
 const QUESTIONS_EXPRESS = (p: LecturePub) => [
   { ic: ICONE_TYPE(p.type), q: 'Le type de local', r: p.type },
-  { ic: 'regle', q: 'La surface et le nombre d’espaces', r: [p.surface && `${p.surface} m²`, p.pieces && `${p.pieces} p.`].filter(Boolean).join(' · ') },
+  { ic: 'regle', q: 'La surface et le nombre d’espaces', r: [p.surface && `${p.surface} m²`, p.pieces && `${p.pieces} esp.`].filter(Boolean).join(' · ') },
   { ic: 'escalier', q: 'L’étage, l’accès et la vitrine', r: '' },
   { ic: 'etincelle', q: 'L’état général', r: '' },
   { ic: 'balcon', q: 'Les annexes (réserve, terrasse, parking…)', r: '' },
@@ -771,7 +771,7 @@ function BienPub({ p }: { p: LecturePub }) {
         {p.adresse && (
           <div className={s.pubAdresse}>
             <span className={s.pubAdresseIc}><Ic n="lieu" t={19} e={2} /></span>
-            <span className={s.pubAdresseTx}><small>{'Adresse du bien'}</small><b>{p.adresse}</b></span>
+            <span className={s.pubAdresseTx}><small>{'Adresse du local'}</small><b>{p.adresse}</b></span>
             <a className={s.pubCarte} href={carte} target="_blank" rel="noopener noreferrer"><Ic n="carte" t={15} e={2.1} /><span>{'Voir sur la carte'}</span></a>
           </div>
         )}
@@ -781,14 +781,14 @@ function BienPub({ p }: { p: LecturePub }) {
   const tuiles = [
     { ic: ICONE_TYPE(p.type), l: 'Type', v: p.type },
     { ic: 'regle', l: 'Surface', v: p.surface ? `${p.surface} m²` : '' },
-    { ic: 'plan', l: 'Pièces', v: p.pieces },
-    { ic: 'lit', l: 'Chambres', v: p.chambres },
+    { ic: 'plan', l: 'Espaces', v: p.pieces },
+    { ic: 'porte', l: 'Bureaux fermés', v: p.chambres },
     { ic: 'escalier', l: 'Étage', v: p.etage === 'RDC' ? 'Rez-de-chaussée' : p.etage ? (p.etage === '1' ? '1er étage' : `${p.etage}e étage`) : '' },
     { ic: 'etincelle', l: 'État', v: p.etat },
   ];
   return (
-    <section className={`${s.pubBien} ${s.zReponses}`} aria-label="Le bien">
-      <div className={s.sectionTitre}><Ic n="maison" t={14} e={2} /><span>Le bien</span></div>
+    <section className={`${s.pubBien} ${s.zReponses}`} aria-label="Le local">
+      <div className={s.sectionTitre}><Ic n="maison" t={14} e={2} /><span>Le local</span></div>
       <div className={s.pubTuiles}>
         {tuiles.map((t, i) => (
           <div key={t.l} className={`${s.pubTuile} ${t.v ? '' : s.pubTuileVide}`} style={{ animationDelay: `${i * 45}ms` }}>
@@ -812,7 +812,7 @@ function BienPub({ p }: { p: LecturePub }) {
       {p.adresse && (
         <div className={s.pubAdresse}>
           <span className={s.pubAdresseIc}><Ic n="lieu" t={19} e={2} /></span>
-          <span className={s.pubAdresseTx}><small>{'Adresse du bien'}</small><b>{p.adresse}</b></span>
+          <span className={s.pubAdresseTx}><small>{'Adresse du local'}</small><b>{p.adresse}</b></span>
           <a className={s.pubCarte} href={carte} target="_blank" rel="noopener noreferrer"><Ic n="carte" t={15} e={2.1} /><span>{'Voir sur la carte'}</span></a>
         </div>
       )}
@@ -949,9 +949,9 @@ function Fiche({ d, maintenant, onFermer, onStatut, onRappel, onNote, onArchiver
           ? <img className={s.bienPhoto} src={bienCrm.photo} alt="" />
           : <span className={s.bienIc}><Ic n="maison" t={19} /></span>}
         <span className={s.bienTx}>
-          <span className={s.bienSur}>{'Le bien demandé'}</span>
+          <span className={s.bienSur}>{'Le local demandé'}</span>
           <span className={s.bienTitre}>{b.titre}</span>
-          <span className={s.bienRef}>{[b.ref ? `Réf. ${b.ref}` : 'Bien du site', bienCrm?.prix ? `${bienCrm.prix.toLocaleString('fr-FR')} €` : ''].filter(Boolean).join(' · ')}</span>
+          <span className={s.bienRef}>{[b.ref ? `Réf. ${b.ref}` : 'Local du site', bienCrm?.prix ? `${bienCrm.prix.toLocaleString('fr-FR')} €` : ''].filter(Boolean).join(' · ')}</span>
           <span className={s.bienLiens}>
             {bienCrm && onVoirBien && <button type="button" className={s.bienLien} onClick={() => onVoirBien(bienCrm.id)}><Ic n="maison" t={13} e={2.2} /><span>{'Sa fiche'}</span></button>}
             {b.lien && <a className={s.bienLien} href={b.lien} target="_blank" rel="noopener noreferrer"><Ic n="globe" t={13} e={2.2} /><span>{'L’annonce sur le site'}</span></a>}
@@ -1107,7 +1107,7 @@ function Fiche({ d, maintenant, onFermer, onStatut, onRappel, onNote, onArchiver
                 <div style={{ minWidth: 0 }}>
                   <div className={s.dvfLib}>Estimation DVF montrée sur le site</div>
                   <div className={s.dvfVal}>{pr.dvf.fourchette || 'Non disponible'}</div>
-                  <div className={s.dvfSous}>{pr.dvf.ventes ? `D’après ${pluriel(Number(pr.dvf.ventes), 'vente', 'ventes')} autour du bien` : pr.dvf.fourchette ? 'D’après les ventes autour du bien' : 'Pas assez de ventes récentes autour du bien'}</div>
+                  <div className={s.dvfSous}>{pr.dvf.ventes ? `D’après ${pluriel(Number(pr.dvf.ventes), 'vente', 'ventes')} autour du local` : pr.dvf.fourchette ? 'D’après les ventes autour du local' : 'Pas assez de ventes récentes autour du local'}</div>
                 </div>
               </div>
             )}

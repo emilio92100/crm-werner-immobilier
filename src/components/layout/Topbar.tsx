@@ -434,14 +434,14 @@ export default function Topbar({ onNavigate, onMenu, menuReduit = false, onBascu
                   );
                 })}
                 {/* V3.191 — Les biens de ses clients, retrouvés par leur agence. */}
-                {lesSuivis.length > 0 && <div className={styles.searchSection}>{`Biens de vos clients · par l’agence · ${lesSuivis.length}`}</div>}
+                {lesSuivis.length > 0 && <div className={styles.searchSection}>{`Locaux de vos clients · par l’agence · ${lesSuivis.length}`}</div>}
                 {lesSuivis.map((b, i) => {
                   const nomC = (() => { const c = index.current?.clients.find((x: any) => x.id === b.client_id); return c ? `${c.prenom || ''} ${c.nom || ''}`.trim() : ''; })();
                   const tel = numeroTape ? b.tels.find(t => t.includes(telNational(cherchee))) || '' : '';
                   const ph = photosSuivis[b.id];
                   return (
                     <button key={`${b.onglet}-${b.id}`} type="button" className={`${styles.searchItem} ${styles.searchSuivi}`} onClick={() => selectSuivi(b)}
-                      style={{ animationDelay: `${Math.min(lesClients.length + i, 10) * 28}ms` }} title="Ouvrir ce bien dans la fiche du client">
+                      style={{ animationDelay: `${Math.min(lesClients.length + i, 10) * 28}ms` }} title="Ouvrir ce local dans la fiche du client">
                       <span className={styles.searchBienPh}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         {ph ? <img src={ph} alt="" /> : <Ic n="maison" t={15} />}

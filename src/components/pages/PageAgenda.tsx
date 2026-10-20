@@ -233,7 +233,7 @@ function construire(visites: any[], rdvs: any[], transactions: any[], recherches
       const vt = venteId ? ventes[venteId] : null;
       const pv = vt ? visitePourCarte(vt.donnees || {}) : null;
       return {
-        id: v.bien_id, titre: v.biens?.titre || v.biens?.ville || 'Bien', photo: v.biens?.photos?.[0],
+        id: v.bien_id, titre: v.biens?.titre || v.biens?.ville || 'Local', photo: v.biens?.photos?.[0],
         venteId, adresse: (vt && adresseVente(vt)) || lieuDuBien(v.biens), visite: pv && !pourVisiteVide(pv) ? pv : null,
         etape: v.biens?.etape || null,
       };
@@ -266,7 +266,7 @@ function construire(visites: any[], rdvs: any[], transactions: any[], recherches
     const vt = venteId ? ventes[venteId] : null;
     const pv = vt ? visitePourCarte(vt.donnees || {}) : null;
     const biens = venteId ? [{
-      id: venteId, titre: vt?.titre || String(r.titre || '').replace(/^Visite · /, '') || 'Bien', photo: vt?.photo || undefined,
+      id: venteId, titre: vt?.titre || String(r.titre || '').replace(/^Visite · /, '') || 'Local', photo: vt?.photo || undefined,
       venteId, adresse: (vt && adresseVente(vt)) || r.lieu || '', visite: pv && !pourVisiteVide(pv) ? pv : null,
     }] : [];
     evs.push({
@@ -1487,7 +1487,7 @@ function Detail({ ev, etroit, onFerme, onModifier, onAnnuler, onCR, onDossier, o
           )}
           {itineraire && <a className="ag-appui" href={itineraire} target="_blank" rel="noopener noreferrer" style={bouton}><Ic n="route" t={15} />Itinéraire</a>}
           {ev.clientId && !ficheDuNom && <button type="button" className="ag-appui" onClick={onDossier} style={bouton}><Ic n="dossier" t={15} />Sa fiche</button>}
-          {ev.source === 'rdv' && bienDuRdv(ev) && !ev.biens.length && <button type="button" className="ag-appui" onClick={onBien} style={bouton}><Ic n="maison" t={15} />Ouvrir le bien</button>}
+          {ev.source === 'rdv' && bienDuRdv(ev) && !ev.biens.length && <button type="button" className="ag-appui" onClick={onBien} style={bouton}><Ic n="maison" t={15} />Ouvrir l’affaire</button>}
           {!ev.fait && <button type="button" className="ag-appui" onClick={onModifier} style={bouton}><Ic n="crayon" t={15} />Modifier</button>}
           {!ev.fait && <button type="button" className="ag-appui" onClick={onAnnuler} style={{ ...bouton, color: '#b42318' }}><Ic n="corbeille" t={15} />Annuler</button>}
         </div>
@@ -2234,7 +2234,7 @@ async function lireBiensAEstimer(): Promise<BienEstim[]> {
     const proprietaire = nomDe(c) || `${p0?.prenom || ''} ${p0?.nom || ''}`.trim();
     const telephone = (c?.telephones || []).filter(Boolean)[0] || p0?.telephone || '';
     const lieu = [b.adresse, [b.code_postal, b.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-    return { id: b.id, titre: b.titre || b.ville || 'Bien sans titre', lieu, client_id: b.client_id, proprietaire, telephone };
+    return { id: b.id, titre: b.titre || b.ville || 'Affaire sans titre', lieu, client_id: b.client_id, proprietaire, telephone };
   });
 }
 
@@ -2397,13 +2397,13 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
       .filter(b => { const v = venteDe(b); return trouveBien([b.titre, b.ville, b.quartier, b.adresse, b.agence_nom, v?.adresse, v?.code_postal, v?.reference, v?.proprio], b.prix_acquereur || b.prix_vendeur || v?.prix, qBien); })
       .map(b => {
         const v = venteDe(b);
-        return { cle: 'd-' + b.id, dossier: true, id: b.id, titre: b.titre || b.ville || 'Bien', photo: b.photos?.[0] || null, actif: !!f.choisis[b.id],
+        return { cle: 'd-' + b.id, dossier: true, id: b.id, titre: b.titre || b.ville || 'Local', photo: b.photos?.[0] || null, actif: !!f.choisis[b.id],
           sous: [prixCourt(b.prix_acquereur || b.prix_vendeur), lieuChoisi(b), v?.proprio ? `${['a_suivre', 'estimation'].includes(v.etape) ? 'Propriétaire' : 'Mandant'} : ${v.proprio}` : ''].filter(Boolean).join(' · '),
           pastille: b.etape === 'presente' ? 'Présenté' : 'En sélection' };
       });
     const deLAgence = (agence || [])
       .filter(a => !biens.some(b => b.bien_vente_id === a.id) && trouveBien([a.titre, a.adresse, a.code_postal, a.ville, a.reference, a.proprio], a.prix, qBien))
-      .map(a => ({ cle: 'a-' + a.id, dossier: false, id: a.id, titre: a.titre || a.ville || 'Bien', photo: a.photo, actif: ajouts.includes(a.id),
+      .map(a => ({ cle: 'a-' + a.id, dossier: false, id: a.id, titre: a.titre || a.ville || 'Local', photo: a.photo, actif: ajouts.includes(a.id),
         sous: [prixCourt(a.prix), adresseVente(a), a.proprio ? `${['a_suivre', 'estimation'].includes(a.etape) ? 'Propriétaire' : 'Mandant'} : ${a.proprio}` : ''].filter(Boolean).join(' · '),
         pastille: etapeDe(a.etape).court }));
     return [...duDossier, ...deLAgence].slice(0, 8);
@@ -2462,7 +2462,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
   const ecartJours = Math.round((depuisCle(f.date || cleDe(new Date())).getTime() - depuisCle(cleDe(new Date())).getTime()) / 86400000);
   const relatif = ecartJours === 0 ? 'Aujourd’hui' : ecartJours === 1 ? 'Demain' : ecartJours === -1 ? 'Hier' : ecartJours > 1 ? `Dans ${ecartJours} jours` : `Il y a ${-ecartJours} jours`;
   const peutPrevenir = avecDossier && !!dossier && dossier.emails.length > 0;
-  const mail = peutPrevenir ? texteMail({ type: f.type, prenom: dossier!.prenom, debut, lieu, biens: [...choisis.map(b => ({ titre: b.titre || b.ville || 'Bien', lieu: lieuChoisi(b) })), ...ajoutes.map(a => ({ titre: a.titre || a.ville || 'Bien', lieu: adresseVente(a) }))], mode: f.mode, etape: f.etape }) : null;
+  const mail = peutPrevenir ? texteMail({ type: f.type, prenom: dossier!.prenom, debut, lieu, biens: [...choisis.map(b => ({ titre: b.titre || b.ville || 'Local', lieu: lieuChoisi(b) })), ...ajoutes.map(a => ({ titre: a.titre || a.ville || 'Local', lieu: adresseVente(a) }))], mode: f.mode, etape: f.etape }) : null;
   const rdvImpossible = f.type !== 'visite' && tableAbsente;
 
   const effets: string[] = [`Ajouté à ton agenda le ${jourLong(debut)} à ${hhmm(debut)}.`];
@@ -2495,7 +2495,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
     const titre = f.titre !== null ? f.titre : autoPour(dossier?.nom || personneFinale).titreAuto;
     if (!f.date || !f.heure) { alert('Indique la date et l’heure.'); return; }
     if (dossierObligatoire && !dossier && !(ev && ev.source === 'visite')) { alert(enAttente ? `« ${enAttente} » n’est pas choisi : clique sur le bon dossier dans la liste.` : 'Choisis le dossier du client.'); return; }
-    if (f.type === 'visite' && !ev && !nbBiens) { alert('Choisis au moins un bien à visiter : cherche-le, ou coche-le dans son dossier.'); return; }
+    if (f.type === 'visite' && !ev && !nbBiens) { alert('Choisis au moins un local à visiter : cherche-le, ou coche-le dans son dossier.'); return; }
     if (!titre.trim()) { alert('Donne un titre au rendez-vous.'); return; }
     if (rdvImpossible) { alert('Lance d’abord le SQL de l’agenda dans Supabase (agenda-rendez-vous.sql).'); return; }
     setEnvoi(true);
@@ -2608,7 +2608,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
           const copies: any[] = [];
           try {
             for (const bv of bvs as BienVente[]) copies.push((await copieDe(bv, dossier!.clientId, dossier!.rechercheId, 'souhaite_visiter')).copie);
-          } catch (e) { await echec(`Le bien n’a pas pu entrer dans son dossier : la visite n’est pas planifiée.\n\n${(e as Error).message}`); return; }
+          } catch (e) { await echec(`Le local n’a pas pu entrer dans son dossier : la visite n’est pas planifiée.\n\n${(e as Error).message}`); return; }
           tous = [...choisis, ...copies];
         }
         const { data: creees, error } = await supabase.from('visites').insert(tous.map(b => ({
@@ -2626,7 +2626,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
         const aMarquer = tous.filter(b => !['visite', 'offre_faite', 'souhaite_visiter'].includes(b.badge_retour)).map(b => b.id);
         if (aMarquer.length) {
           const r = await supabase.from('biens').update({ badge_retour: 'souhaite_visiter' }).in('id', aMarquer);
-          if (r.error) alert("La visite est enregistrée, mais le bien n'a pas pu passer en « veut visiter ».\n\n" + r.error.message);
+          if (r.error) alert("La visite est enregistrée, mais le local n'a pas pu passer en « veut visiter ».\n\n" + r.error.message);
         }
         /* Une demande de visite faite depuis l'espace est servie : sa relance
            « Veut visiter » se solde (voir src/lib/demandes-visite.ts). */
@@ -2637,10 +2637,10 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
         const errRetour = await solderRelancesRetourVisite(dossier!.clientId, tous.map(b => b.titre), { garder: 'offre' });
         if (errRetour) alert("La visite est enregistrée, mais les relances « Veut revoir » ou « Il réfléchit » n'ont pas pu être soldées.\n\n" + errRetour);
         await addJournal(dossier!.clientId, 'visite_planifiee',
-          tous.length > 1 ? `📅 Visite planifiée — ${tous.length} biens : ${tous.map(b => b.titre || b.ville).join(' · ')}` : `📅 Visite planifiée — ${tous[0].titre || tous[0].ville || ''}`,
+          tous.length > 1 ? `📅 Visite planifiée — ${tous.length} locaux : ${tous.map(b => b.titre || b.ville).join(' · ')}` : `📅 Visite planifiée — ${tous[0].titre || tous[0].ville || ''}`,
           `Le ${debut.toLocaleDateString('fr-FR')} à ${f.heure}${contact ? ` · Contact : ${contact}` : ''}`,
           /* V3.213 : le bien de la visite, cliquable dans le Suivi. */
-          { biens: tous.map(b => ({ id: b.id, lib: b.titre || b.ville || 'Bien' })) },
+          { biens: tous.map(b => ({ id: b.id, lib: b.titre || b.ville || 'Local' })) },
           { rechercheId: dossier!.rechercheId, bienId: tous.length === 1 ? tous[0].id : null });
       }
     } else {
@@ -2858,13 +2858,13 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
                                 onClick: () => { basculerResultat(r); setQBien(''); } }))}
                       </div>
                     )}
-                    {ajoutes.map(a => carte({ cle: 'aj-' + a.id, titre: a.titre || a.ville || 'Bien', photo: a.photo, actif: true, retirer: true,
+                    {ajoutes.map(a => carte({ cle: 'aj-' + a.id, titre: a.titre || a.ville || 'Local', photo: a.photo, actif: true, retirer: true,
                       sous: [prixCourt(a.prix), adresseVente(a), 'entre dans son dossier'].filter(Boolean).join(' · '),
                       onClick: () => { setAjouts(l => l.filter(x => x !== a.id)); maj_({ titre: null, lieu: null }); } }))}
                     {biens.length > 0 ? (
                       <>
                         <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase', color: PALE, paddingTop: 2 }}>Dans son dossier</span>
-                        {biens.map(b => carte({ cle: b.id, titre: b.titre || b.ville || 'Bien', photo: b.photos?.[0] || null, actif: !!f.choisis[b.id],
+                        {biens.map(b => carte({ cle: b.id, titre: b.titre || b.ville || 'Local', photo: b.photos?.[0] || null, actif: !!f.choisis[b.id],
                           sous: [prixCourt(b.prix_acquereur || b.prix_vendeur), b.etape === 'presente' ? 'Présenté' : 'En sélection'].filter(Boolean).join(' · '),
                           onClick: () => maj_({ choisis: { ...f.choisis, [b.id]: !f.choisis[b.id] }, titre: null, lieu: null, contact: null }) }))}
                       </>
@@ -2937,13 +2937,13 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
 
             <Section n={avecDossier ? 4 : 3} ico="crayon" titre="Titre, lieu et notes" rang={3}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <Libelle texte="Titre" aide={lie ? 'repris du bien' : 'proposé tout seul, tu peux le changer'} />
+                <Libelle texte="Titre" aide={lie ? 'repris de l’affaire' : 'proposé tout seul, tu peux le changer'} />
                 <ChampIcone ico="crayon">
                   <input className="ag-champ" value={titre} onChange={e => maj_({ titre: e.target.value })} style={{ ...CHAMP, paddingLeft: 42, fontSize: 15, fontWeight: 700, opacity: lie ? .8 : 1 }} aria-label="Titre" disabled={lie} />
                 </ChampIcone>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <Libelle texte="Lieu" aide={lie || (f.type === 'visite' && choisis.length) ? 'repris du bien' : undefined} />
+                <Libelle texte="Lieu" aide={lie ? 'repris de l’affaire' : f.type === 'visite' && choisis.length ? 'repris du local' : undefined} />
                 <ChampIcone ico="lieu">
                   <input className="ag-champ" value={lieu} onChange={e => maj_({ lieu: e.target.value })} placeholder="Adresse, agence, visio…" style={{ ...CHAMP, paddingLeft: 42, opacity: f.type === 'visite' || lie ? .8 : 1 }} aria-label="Lieu" disabled={f.type === 'visite' || lie} />
                 </ChampIcone>
@@ -3002,8 +3002,8 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
                       <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                         {b.photos?.[0] ? <img src={b.photos[0]} alt="" style={{ width: 40, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} /> : <span style={{ width: 40, height: 32, borderRadius: 6, background: NAVY, flexShrink: 0 }} />}
                         <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                          <b style={{ fontSize: 12.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{`${heureFr(debut)} · ${b.titre || b.ville || 'Bien'}`}</b>
-                          <span style={{ fontSize: 11.5, color: PALE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lieuDuBien(b) || 'Pas d’adresse sur le bien'}</span>
+                          <b style={{ fontSize: 12.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{`${heureFr(debut)} · ${b.titre || b.ville || 'Local'}`}</b>
+                          <span style={{ fontSize: 11.5, color: PALE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lieuDuBien(b) || 'Pas d’adresse sur le local'}</span>
                         </span>
                       </div>
                     ))}
