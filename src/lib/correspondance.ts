@@ -7,7 +7,7 @@
    Isomorphe : aucune dépendance serveur. */
 
 import type { Arret } from '@/lib/arrets';
-import type { ProBien } from '@/lib/affaires';
+import { EMPLACEMENTS, EQUIPEMENTS, NATURES, type ProBien } from '@/lib/affaires';
 
 /* Ce que la note lit d'un bien : le sous-ensemble du `Bien` de l'espace. */
 export type BienCorr = {
@@ -36,7 +36,27 @@ export type CriteresCorr = {
   exposition: string; equip: string[]; exigences: Record<string, string>;
   exterieurSurfaceMin: number | null; dpeMax: string | null;
   transportMinutes: number | null; transportArrets: Arret[];
+  /* Werner : ce qu'un demandeur cherche en plus (recherches.criteres_pro) —
+     la nature (location, droit au bail, fonds, murs), le loyer annuel, la
+     vitrine, l'emplacement. */
+  natures?: string[]; loyerMin?: number | null; loyerMax?: number | null;
+  vitrineMin?: number | null; postesMin?: number | null; emplacements?: string[];
 };
+/* Les critères de l'immobilier d'entreprise (recherches.criteres_pro). */
+export type CriteresPro = {
+  natures: string[]; activite: string; loyerMin: number | null; loyerMax: number | null;
+  vitrineMin: number | null; postesMin: number | null; emplacements: string[];
+};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function lireCriteresPro(x: any): CriteresPro {
+  const o = x && typeof x === 'object' && !Array.isArray(x) ? x : {};
+  const n = (v: unknown) => { const y = typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v.replace(/\s/g, '').replace(',', '.')) : NaN; return Number.isFinite(y) && y > 0 ? y : null; };
+  const l = (v: unknown) => (Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string' && !!s) : []);
+  return {
+    natures: l(o.natures), activite: typeof o.activite === 'string' ? o.activite : '',
+    loyerMin: n(o.loyerMin), loyerMax: n(o.loyerMax), vitrineMin: n(o.vitrineMin), postesMin: n(o.postesMin), emplacements: l(o.emplacements),
+  };
+}
 
 const EUR = (n?: number | null) =>
   n == null ? '—' : n.toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, ' ') + ' €';
@@ -74,6 +94,7 @@ export function criteresDepuisRecherche(r: Record<string, any>): CriteresCorr {
     dpeMax: r.dpe_max ?? null,
     transportMinutes: r.transport_minutes ?? null,
     transportArrets: r.transport_arrets || [],
+    ...(() => { const p = lireCriteresPro(r.criteres_pro); return { natures: p.natures, loyerMin: p.loyerMin, loyerMax: p.loyerMax, vitrineMin: p.vitrineMin, postesMin: p.postesMin, emplacements: p.emplacements }; })(),
     equip: [
       r.terrasse && 'Terrasse', r.balcon && 'Balcon', r.jardin && 'Jardin',
       r.parking && 'Parking', r.ascenseur && 'Ascenseur', r.cave && 'Cave',
@@ -117,8 +138,36 @@ export function correspondance(b: BienCorr, c: CriteresCorr | null | undefined):
   const nb = (v: number) => String(v).replace('.', ',');
   const min = (v: number | string, u = '') => `${v}${u} minimum`;
 
-  /* Le budget : au-dessus, même d'un euro, ce n'est plus coché — c'est « presque ». */
-  if (c.budgetMax && b.prix) {
+  /* Werner : ce que le demandeur cherche (louer, reprendre un bail, un
+     fonds, acheter des murs) face à ce que l'affaire propose. */
+  const p = b.pro;
+  if (p?.nature && c.natures?.length) {
+    const nom = (v: string) => NATURES.find(x => x.v === v)?.court || v;
+    L.push({ ico: 'cle', lib: 'Ce qu’il cherche', demande: c.natures.map(nom).join(', '), valeur: nom(p.nature), etat: c.natures.includes(p.nature) ? 'oui' : 'non', poids: 3 });
+  }
+  /* Le loyer annuel (une location, un bail repris) et le prix (un droit au
+     bail, un fonds, des murs) ont chacun leur plafond. */
+  if (p && p.loyerAn && c.loyerMax) {
+    const r = p.loyerAn / c.loyerMax;
+    L.push({ ico: 'euro', lib: 'Loyer annuel', demande: `jusqu’à ${EUR(c.loyerMax)} HT HC`, valeur: `${EUR(p.loyerAn)} HT HC`, etat: r <= 1 ? 'oui' : r <= 1.1 ? 'presque' : 'non', poids: 2 });
+  }
+  if (p && p.prix && c.budgetMax) {
+    const r = p.prix / c.budgetMax;
+    const lib = p.nature === 'cession_bail' ? 'Droit au bail' : p.nature === 'fonds' ? 'Prix du fonds' : 'Prix';
+    L.push({ ico: 'euro', lib, demande: `jusqu’à ${EUR(c.budgetMax)}`, valeur: EUR(p.prix), etat: r <= 1 ? 'oui' : r <= 1.1 ? 'presque' : 'non', poids: 2 });
+  }
+  if (p && c.vitrineMin && p.vitrine) {
+    const r = p.vitrine / c.vitrineMin;
+    L.push({ ico: 'vitrine', lib: 'Vitrine', demande: `${nb(c.vitrineMin)} m minimum`, valeur: `${nb(p.vitrine)} m`, etat: r >= 1 ? 'oui' : r >= 0.85 ? 'presque' : 'non', poids: 1 });
+  }
+  if (p && c.emplacements?.length && p.emplacement) {
+    const nom = (v: string) => EMPLACEMENTS.find(x => x.v === v)?.l || v;
+    L.push({ ico: 'cible', lib: 'Emplacement', demande: c.emplacements.map(nom).join(', '), valeur: nom(p.emplacement), etat: c.emplacements.includes(p.emplacement) ? 'oui' : 'presque', poids: 1 });
+  }
+
+  /* Le budget : au-dessus, même d'un euro, ce n'est plus coché — c'est « presque ».
+     Une affaire de Werner a ses propres lignes (loyer, prix) juste au-dessus. */
+  if (!p && c.budgetMax && b.prix) {
     const r = b.prix / c.budgetMax;
     L.push({ ico: 'euro', lib: 'Budget', demande: `jusqu’à ${EUR(c.budgetMax)}`, valeur: EUR(b.prix),
       etat: r <= 1 ? 'oui' : r <= 1.1 ? 'presque' : 'non', poids: 2 });
@@ -211,7 +260,7 @@ export function correspondance(b: BienCorr, c: CriteresCorr | null | undefined):
   /* Les équipements : cochés dans la recherche, ou notés « souhaité » / « indispensable ». */
   const voulus = new Set<string>();
   (c.equip || []).forEach(l => { const k = EQUIP_CLE[l]; if (k) voulus.add(k); });
-  Object.keys(ex).forEach(k => { if (ex[k] && EQUIP_NOM[k]) voulus.add(k); });
+  Object.keys(ex).forEach(k => { if (ex[k] && (EQUIP_NOM[k] || (p && (EQUIPEMENTS.some(e => e.v === k) || k === 'rdc')))) voulus.add(k); });
   const ext = b.exterieur || ((b.surfaceTerrasse || 0) + (b.surfaceBalcon || 0)) || 0;
   voulus.forEach(k => {
     const indis = ex[k] === 'indispensable';
@@ -222,6 +271,13 @@ export function correspondance(b: BienCorr, c: CriteresCorr | null | undefined):
       const presque = a && !!c.exterieurSurfaceMin && ext > 0 && ext < c.exterieurSurfaceMin;
       L.push({ ico: EQUIP_ICO[k], lib: 'Extérieur', demande: c.exterieurSurfaceMin ? `${nb(c.exterieurSurfaceMin)} m² minimum, ${demande}` : demande,
         valeur: a ? (ext > 0 ? `${nb(ext)} m²` : 'Oui') : 'Non annoncé', etat: !a ? 'non' : presque ? 'presque' : 'oui', poids });
+      return;
+    }
+    /* Werner : les équipements d'une affaire, clé à clé ; « rdc » : le local est au rez-de-chaussée. */
+    if (p && (EQUIPEMENTS.some(e => e.v === k) || k === 'rdc')) {
+      const a = k === 'rdc' ? b.etage === 0 : p.equipements.includes(k);
+      const lib = k === 'rdc' ? 'Rez-de-chaussée' : EQUIPEMENTS.find(e => e.v === k)?.l || k;
+      L.push({ ico: k === 'rdc' ? 'vitrine' : 'check', lib, demande, valeur: a ? 'Oui' : k === 'rdc' && b.etage != null ? `${b.etage}e étage` : 'Non annoncé', etat: a ? 'oui' : 'non', poids });
       return;
     }
     const a = !!(b as unknown as Record<string, unknown>)[k];

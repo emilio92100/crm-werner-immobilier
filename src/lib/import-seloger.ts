@@ -267,6 +267,8 @@ export function affaireDepuisSeLoger(c: Brut, resume: Brut = {}): AffaireImporte
   const url = `https://www.seloger-bureaux-commerces.com${String(c.urlDetail || resume.detailUrl || '')}`;
   const reference = String(c.title?.refAnnonce || resume.refAnnonce || '').trim();
   d.portail = { nom: 'seloger', id: idPortail, url, reference, importeLe: new Date().toISOString().slice(0, 10) };
+  /* Elle est en ligne sur SeLoger : la diffusion le dit (src/lib/diffusion.ts). */
+  d.diffusion = { actif: true, supports: { site: false, seloger: true, bd: false, jinka: false }, le: new Date().toISOString() };
   /* Ce que l'annonce disait de ses montants, à vérifier une fois (notes
      internes, jamais dans l'annonce) : un loyer publié « T.T.C. », un prix
      publié hors honoraires ou honoraires inclus. */

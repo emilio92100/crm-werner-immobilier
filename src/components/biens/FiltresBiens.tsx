@@ -4,17 +4,18 @@ import { num } from '@/lib/actes';
 import { TYPES_BIEN, villeAffichee, type BienVente } from '@/lib/biens-vente';
 import { txt } from '@/lib/actes';
 import { Ic } from '@/components/documents/ApercuActe';
+import { NATURES, natureDe, proDuBien } from '@/lib/affaires';
 import { COULEURS, SaisieNombre } from './ChampsBien';
 import s from '@/components/documents/Documents.module.css';
 import b from './Biens.module.css';
 import l from '@/components/clients/FiltresAcheteurs.module.css';
 import Curseur from '@/components/shared/Curseur';
 
-/* ═══ Affiner la liste des biens (V3.16) ══════════════════════════════════
-   Une ligne sous les catégories : le type, la surface, les pièces, le
-   budget, le DPE au plus, et l'ordre (étape, prix croissant ou
-   décroissant, surface, les plus récents). Chaque bouton ouvre son petit
-   panneau juste en dessous ; ce qui est choisi s'écrit sur le bouton. */
+/* ═══ Affiner la liste des affaires (V3.16) ═══════════════════════════════
+   Une ligne sous les catégories. Werner : la nature (location, droit au
+   bail, fonds, murs), le type de local, la ville, la surface, le loyer
+   annuel et le prix, puis l'ordre. Chaque bouton ouvre son petit panneau
+   juste en dessous ; ce qui est choisi s'écrit sur le bouton. */
 
 export type Tri = 'etape' | 'prixC' | 'prixD' | 'surface' | 'recents';
 export type Filtres = {
@@ -23,14 +24,17 @@ export type Filtres = {
   /* V3.80 (Alexandre : « dans Affiner, je n'ai pas Ville ; faire pareil que
      pour les contacts ») : « Paris 16e », « Boulogne-Billancourt »… */
   villes: string[];
+  /* Werner : la nature de l'affaire, et le loyer annuel (à part du prix). */
+  natures: string[]; loyMin: number | null; loyMax: number | null;
 };
-export const FILTRES_VIDES: Filtres = { types: [], pieces: [], dpeMax: '', surfMin: null, surfMax: null, budMin: null, budMax: null, villes: [] };
+export const FILTRES_VIDES: Filtres = { types: [], pieces: [], dpeMax: '', surfMin: null, surfMax: null, budMin: null, budMax: null, villes: [], natures: [], loyMin: null, loyMax: null };
 export const nbFiltres = (f: Filtres) =>
-  (f.types.length ? 1 : 0) + (f.pieces.length ? 1 : 0) + (f.dpeMax ? 1 : 0) + (f.surfMin || f.surfMax ? 1 : 0) + (f.budMin || f.budMax ? 1 : 0) + (f.villes.length ? 1 : 0);
+  (f.types.length ? 1 : 0) + (f.pieces.length ? 1 : 0) + (f.dpeMax ? 1 : 0) + (f.surfMin || f.surfMax ? 1 : 0) + (f.budMin || f.budMax ? 1 : 0) + (f.villes.length ? 1 : 0)
+  + (f.natures.length ? 1 : 0) + (f.loyMin || f.loyMax ? 1 : 0);
 
 const LETTRES = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 const TRIS: { v: Tri; l: string; ic: string }[] = [
-  { v: 'etape', l: 'Par étape', ic: 'lignes' }, { v: 'prixC', l: 'Prix croissant', ic: 'haut' }, { v: 'prixD', l: 'Prix décroissant', ic: 'bas' },
+  { v: 'etape', l: 'Par étape', ic: 'lignes' }, { v: 'prixC', l: 'Montant croissant', ic: 'haut' }, { v: 'prixD', l: 'Montant décroissant', ic: 'bas' },
   { v: 'surface', l: 'Surface, la plus grande d’abord', ic: 'regle' }, { v: 'recents', l: 'Les plus récents', ic: 'historique' },
 ];
 
@@ -54,6 +58,11 @@ const MAX_VILLES = 30;
 export function filtrer(l: BienVente[], f: Filtres): BienVente[] {
   return l.filter(x => {
     if (f.types.length && !f.types.includes(typeDe(x))) return false;
+    if (f.natures.length && !f.natures.includes(natureDe(x.donnees || {}) || '')) return false;
+    if (f.loyMin || f.loyMax) {
+      const m = proDuBien(x.donnees || {}).loyerAn;
+      if (!m || (f.loyMin && m < f.loyMin) || (f.loyMax && m > f.loyMax)) return false;
+    }
     if (f.villes.length && !f.villes.includes(villeDe(x))) return false;
     if (f.pieces.length) {
       const n = piecesDe(x);
@@ -64,7 +73,9 @@ export function filtrer(l: BienVente[], f: Filtres): BienVente[] {
       if (!m || (f.surfMin && m < f.surfMin) || (f.surfMax && m > f.surfMax)) return false;
     }
     if (f.budMin || f.budMax) {
-      const p = prixDe(x);
+      /* Le prix d'une cession ou d'une vente ; une location n'en a pas (son loyer a son filtre). */
+      const nat = natureDe(x.donnees || {});
+      const p = nat === 'location' ? null : nat ? proDuBien(x.donnees || {}).prix ?? prixDe(x) : prixDe(x);
       if (!p || (f.budMin && p < f.budMin) || (f.budMax && p > f.budMax)) return false;
     }
     if (f.dpeMax) {
@@ -94,7 +105,7 @@ const entre = (a: number | null, z: number | null, u: string, f: (n: number) => 
   a && z ? `${f(a)} – ${f(z)} ${u}` : a ? `dès ${f(a)} ${u}` : z ? `jusqu’à ${f(z)} ${u}` : '';
 const nomType = (v: string) => TYPES_BIEN.find(t => t.v === v)?.l || v;
 
-type Panneau = 'type' | 'ville' | 'surface' | 'pieces' | 'budget' | 'dpe' | 'tri' | null;
+type Panneau = 'nature' | 'type' | 'ville' | 'surface' | 'loyer' | 'budget' | 'tri' | null;
 
 function Puce({ l, on, ic, n, onClick }: { l: string; on: boolean; ic?: string; n?: number; onClick: () => void }) {
   return (
@@ -132,17 +143,18 @@ export default function FiltresBiens({ biens, f, onF, tri, onTri, n, total, vue,
   const plusieurs = (l2: string[], mot: string) => (l2.length === 1 ? l2[0] : l2.length ? `${l2.length} ${mot}` : '');
 
   const boutons: { p: Exclude<Panneau, null>; l: string; ic: string; v: string }[] = [
-    { p: 'type', l: 'Type', ic: 'maison', v: f.types.length === 1 ? nomType(f.types[0]) : f.types.length ? `${f.types.length} types` : '' },
+    { p: 'nature', l: 'Nature', ic: 'cle', v: f.natures.length === 1 ? (NATURES.find(x => x.v === f.natures[0])?.court || '') : f.natures.length ? `${f.natures.length} natures` : '' },
+    { p: 'type', l: 'Type', ic: 'agence', v: f.types.length === 1 ? nomType(f.types[0]) : f.types.length ? `${f.types.length} types` : '' },
     { p: 'ville', l: 'Ville', ic: 'lieu', v: plusieurs(f.villes, 'villes') },
     { p: 'surface', l: 'Surface', ic: 'regle', v: entre(f.surfMin, f.surfMax, 'm²') },
-    { p: 'pieces', l: 'Pièces', ic: 'plan', v: [...f.pieces].sort((x, y) => x - y).map(x => (x >= 5 ? '5+' : String(x))).join(', ') },
-    { p: 'budget', l: 'Budget', ic: 'euro', v: entre(f.budMin, f.budMax, '€', k) },
-    { p: 'dpe', l: 'DPE', ic: 'eclair', v: f.dpeMax ? (f.dpeMax === 'A' ? 'A' : `A à ${f.dpeMax}`) : '' },
+    { p: 'loyer', l: 'Loyer', ic: 'euro', v: entre(f.loyMin, f.loyMax, '€/an', k) },
+    { p: 'budget', l: 'Prix', ic: 'etiquette', v: entre(f.budMin, f.budMax, '€', k) },
   ];
+  const parNature = (v: string) => biens.filter(x => natureDe(x.donnees || {}) === v).length;
   const triL = TRIS.find(x => x.v === tri) || TRIS[0];
   const compte = (
     <span className={b.affN}>
-      {`${n} bien${n > 1 ? 's' : ''} sur ${total}`}
+      {`${n} affaire${n > 1 ? 's' : ''} sur ${total}`}
       <button type="button" className={b.lien} onClick={() => { onF(FILTRES_VIDES); setOuvert(null); }}>Effacer</button>
     </span>
   );
@@ -175,9 +187,17 @@ export default function FiltresBiens({ biens, f, onF, tri, onTri, n, total, vue,
       {actifs > 0 && <div className={b.affNBas}>{compte}</div>}
       {ouvert && (
         <div className={b.affP}>
+          {ouvert === 'nature' && (
+            <div className={s.pills}>
+              {NATURES.map(x => (
+                <Puce key={x.v} l={x.court} ic={x.ic} n={parNature(x.v)} on={f.natures.includes(x.v)}
+                  onClick={() => onF({ ...f, natures: f.natures.includes(x.v) ? f.natures.filter(y => y !== x.v) : [...f.natures, x.v] })} />
+              ))}
+            </div>
+          )}
           {ouvert === 'type' && (
             <div className={s.pills}>
-              {types.length === 0 && <span className={b.vide}>Aucun type saisi sur les biens.</span>}
+              {types.length === 0 && <span className={b.vide}>Aucun type saisi sur les affaires.</span>}
               {types.map(t => (
                 <Puce key={t.v} l={t.l} ic={t.ic} on={f.types.includes(t.v)}
                   onClick={() => onF({ ...f, types: f.types.includes(t.v) ? f.types.filter(x => x !== t.v) : [...f.types, t.v] })} />
@@ -210,7 +230,7 @@ export default function FiltresBiens({ biens, f, onF, tri, onTri, n, total, vue,
                   </label>
                 )}
                 <div className={s.pills}>
-                  {villes.length === 0 && <span className={b.vide}>Aucune ville saisie sur ces biens.</span>}
+                  {villes.length === 0 && <span className={b.vide}>Aucune ville saisie sur ces affaires.</span>}
                   {q && trouvees.length === 0 && <span className={b.vide}>{`Aucune ville ne contient « ${qVille.trim()} ».`}</span>}
                   {vues.map(v => <Puce key={v} l={v} n={combien(v)} on={f.villes.includes(v)} onClick={() => onF({ ...f, villes: f.villes.includes(v) ? f.villes.filter(x => x !== v) : [...f.villes, v] })} />)}
                 </div>
@@ -221,7 +241,7 @@ export default function FiltresBiens({ biens, f, onF, tri, onTri, n, total, vue,
           {ouvert === 'surface' && (
             <>
               <div className={s.pills}>
-                {([[null, 40, 'Moins de 40 m²'], [40, 70, '40 à 70 m²'], [70, 100, '70 à 100 m²'], [100, 150, '100 à 150 m²'], [150, null, 'Plus de 150 m²']] as const).map(([a, z, l]) => (
+                {([[null, 50, 'Moins de 50 m²'], [50, 100, '50 à 100 m²'], [100, 200, '100 à 200 m²'], [200, 500, '200 à 500 m²'], [500, null, 'Plus de 500 m²']] as const).map(([a, z, l]) => (
                   <Puce key={l} l={l} on={f.surfMin === a && f.surfMax === z} onClick={() => onF({ ...f, surfMin: f.surfMin === a && f.surfMax === z ? null : a, surfMax: f.surfMin === a && f.surfMax === z ? null : z })} />
                 ))}
               </div>
@@ -231,43 +251,36 @@ export default function FiltresBiens({ biens, f, onF, tri, onTri, n, total, vue,
               </div>
             </>
           )}
-          {ouvert === 'pieces' && (
-            <div className={s.pills}>
-              {[1, 2, 3, 4, 5].map(x => (
-                <Puce key={x} l={x === 1 ? '1 pièce' : x >= 5 ? '5 pièces et plus' : `${x} pièces`} on={f.pieces.includes(x)}
-                  onClick={() => onF({ ...f, pieces: f.pieces.includes(x) ? f.pieces.filter(y => y !== x) : [...f.pieces, x] })} />
-              ))}
-            </div>
+          {ouvert === 'loyer' && (
+            <>
+              <div className={s.pills}>
+                {([[null, 20_000], [20_000, 40_000], [40_000, 80_000], [80_000, 150_000], [150_000, null]] as const).map(([a, z]) => {
+                  const l = entre(a, z, '€/an', k);
+                  const on = f.loyMin === a && f.loyMax === z;
+                  return <Puce key={l} l={l} on={on} onClick={() => onF({ ...f, loyMin: on ? null : a, loyMax: on ? null : z })} />;
+                })}
+              </div>
+              <div className={b.affMM}>
+                <label><span>À partir de</span><SaisieNombre v={f.loyMin} euros unite="€/an" off={false} onChange={x => onF({ ...f, loyMin: x })} ph="Min." lib="Loyer annuel minimum" /></label>
+                <label><span>Jusqu’à</span><SaisieNombre v={f.loyMax} euros unite="€/an" off={false} onChange={x => onF({ ...f, loyMax: x })} ph="Max." lib="Loyer annuel maximum" /></label>
+              </div>
+              <p className={b.affAide}>Le loyer annuel hors taxes et hors charges : celui d’une location, ou celui du bail repris avec un droit au bail ou un fonds.</p>
+            </>
           )}
           {ouvert === 'budget' && (
             <>
               <div className={s.pills}>
-                {([[null, 300_000], [300_000, 500_000], [500_000, 800_000], [800_000, 1_200_000], [1_200_000, null]] as const).map(([a, z]) => {
+                {([[null, 100_000], [100_000, 250_000], [250_000, 500_000], [500_000, 1_000_000], [1_000_000, null]] as const).map(([a, z]) => {
                   const l = entre(a, z, '€', k);
                   const on = f.budMin === a && f.budMax === z;
                   return <Puce key={l} l={l} on={on} onClick={() => onF({ ...f, budMin: on ? null : a, budMax: on ? null : z })} />;
                 })}
               </div>
               <div className={b.affMM}>
-                <label><span>À partir de</span><SaisieNombre v={f.budMin} euros unite="€" off={false} onChange={x => onF({ ...f, budMin: x })} ph="Min." lib="Budget minimum" /></label>
-                <label><span>Jusqu’à</span><SaisieNombre v={f.budMax} euros unite="€" off={false} onChange={x => onF({ ...f, budMax: x })} ph="Max." lib="Budget maximum" /></label>
+                <label><span>À partir de</span><SaisieNombre v={f.budMin} euros unite="€" off={false} onChange={x => onF({ ...f, budMin: x })} ph="Min." lib="Prix minimum" /></label>
+                <label><span>Jusqu’à</span><SaisieNombre v={f.budMax} euros unite="€" off={false} onChange={x => onF({ ...f, budMax: x })} ph="Max." lib="Prix maximum" /></label>
               </div>
-              <p className={b.affAide}>Le prix affiché ; avant le mandat, le milieu de la fourchette d’estimation.</p>
-            </>
-          )}
-          {ouvert === 'dpe' && (
-            <>
-              <div className={b.affDpe} role="radiogroup" aria-label="DPE au plus">
-                {LETTRES.map(l => {
-                  const dans = !!f.dpeMax && LETTRES.indexOf(l) <= LETTRES.indexOf(f.dpeMax);
-                  const c = COULEURS.dpe[l];
-                  return (
-                    <button key={l} type="button" role="radio" aria-checked={f.dpeMax === l} className={`${b.affDpeL} ${dans ? b.affDpeOn : ''}`}
-                      style={{ background: c.f, color: c.t }} onClick={() => onF({ ...f, dpeMax: f.dpeMax === l ? '' : l })}>{l}</button>
-                  );
-                })}
-              </div>
-              <p className={b.affAide}>{f.dpeMax ? `Classés de A à ${f.dpeMax}. Les biens sans DPE saisi n’apparaissent pas.` : 'Choisis la classe la plus basse acceptée : D montre A, B, C et D.'}</p>
+              <p className={b.affAide}>Le prix d’un droit au bail, d’un fonds ou de murs ; avant le mandat, le milieu de la fourchette d’estimation. Les locations n’ont pas de prix : elles ont leur loyer.</p>
             </>
           )}
           {ouvert === 'tri' && (

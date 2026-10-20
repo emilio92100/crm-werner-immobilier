@@ -30,11 +30,12 @@ import { etapeDe, type BienVente, type EtapeVente } from '@/lib/biens-vente';
 
 export type Support = 'site' | 'seloger' | 'bd' | 'jinka';
 
+/* Werner : SeLoger Bureaux & Commerces et son site. Belles Demeures et
+   Jinka (résidentiel) ne sont plus proposés : leurs clés restent dans le
+   type pour les réglages déjà enregistrés, jamais cochées. */
 export const SUPPORTS: { k: Support; lib: string; court: string; sous: string; c: string; fond: string }[] = [
+  { k: 'seloger', lib: 'SeLoger Bureaux & Commerces', court: 'SL', sous: 'Le portail de l’immobilier d’entreprise', c: '#b4233c', fond: '#fdf0f2' },
   { k: 'site', lib: 'Mon site', court: 'Site', sous: 'wernerimmobilier.com', c: '#2e3034', fond: '#f5f4f3' },
-  { k: 'seloger', lib: 'SeLoger', court: 'SL', sous: 'Et Logic-Immo, automatiquement', c: '#b4233c', fond: '#fdf0f2' },
-  { k: 'bd', lib: 'Belles Demeures', court: 'BD', sous: 'Pour les biens que tu choisis', c: '#5b2d6e', fond: '#f5eef8' },
-  { k: 'jinka', lib: 'Jinka', court: 'JK', sous: 'L’appli qui regroupe les annonces', c: '#0e7490', fond: '#ecfeff' },
 ];
 export const supportDe = (k: Support) => SUPPORTS.find(x => x.k === k)!;
 
@@ -45,9 +46,8 @@ export const ETAPES_DIFFUSEES: EtapeVente[] = ['mandat', 'offre', 'compromis', '
 const ETAPES_REGLABLES: EtapeVente[] = [...ETAPES_DIFFUSEES, 'suspendu'];
 export const etapeDiffusee = (e: string | null | undefined) => ETAPES_DIFFUSEES.includes(e as EtapeVente);
 
-/* Ce qu'on propose quand rien n'est encore réglé : tout, sauf Belles
-   Demeures, qu'Alexandre réserve à certains biens. */
-export const SUPPORTS_DEFAUT: Record<Support, boolean> = { site: true, seloger: true, bd: false, jinka: true };
+/* Ce qu'on propose quand rien n'est encore réglé : SeLoger Bureaux & Commerces. */
+export const SUPPORTS_DEFAUT: Record<Support, boolean> = { site: false, seloger: true, bd: false, jinka: false };
 
 export type Diffusion = {
   /* Le bouton « Diffusion en cours / Non diffusé ». */

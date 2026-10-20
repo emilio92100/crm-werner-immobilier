@@ -53,16 +53,14 @@ export const LegendeNiveaux = () => (
 /* Listes de choix, chacune avec son icône. Mêmes clés et mêmes intitulés
    que l'espace acheteur : le client et le chasseur lisent la même chose. */
 export const ETATS: [string, string, string][] = [
-  ['a_renover', 'À rénover', '🔨'], ['travaux_legers', 'Travaux légers', '🧰'],
+  ['brut', 'Brut, à aménager', '🧱'], ['a_renover', 'À rénover', '🔨'], ['travaux_legers', 'À rafraîchir', '🧰'],
   ['bon_etat', 'Bon état', '✨'], ['refait_neuf', 'Refait à neuf', '💎'],
 ];
+/* Werner : le financement d'un acquéreur de murs ou d'un fonds. */
 export const FINANCEMENTS: [string, string, string][] = [
-  ['cash', 'Cash', '💵'], ['pret_valide', 'Prêt validé', '✅'],
-  ['pret_en_cours', 'Prêt en cours', '⏳'], ['a_monter', 'Prêt à monter', '📝'],
-  ['pret_relais', 'Prêt relais', '🔁'],
-  ['mixte_cash_pret', 'Mixte · cash + prêt', '🔀'],
-  ['mixte_cash_relais', 'Mixte · cash + prêt relais', '🔀'],
-  ['mixte_pret_relais', 'Mixte · prêt + prêt relais', '🔀'],
+  ['fonds_propres', 'Fonds propres', '💵'], ['pret_valide', 'Prêt accordé', '✅'],
+  ['pret_en_cours', 'Prêt en cours', '⏳'], ['a_monter', 'Financement à monter', '📝'],
+  ['mixte', 'Fonds propres et prêt', '🔀'], ['credit_bail', 'Crédit-bail', '🏦'],
 ];
 export const URGENCES: [string, string, string][] = [
   ['immediate', 'Immédiate', '🔥'], ['3_mois', 'Sous 3 mois', '⏱️'],
@@ -149,9 +147,33 @@ export const ICONE_EXPO: Record<string, string> = Object.fromEntries(EXPOSITIONS
 /* Types de biens proposés dans les critères. Les valeurs déjà enregistrées
    qui ne sont plus dans cette liste restent affichées, pour rester modifiables. */
 export const TYPES_BIEN = [
-  { t: 'Appartement', i: '🏢' }, { t: 'Maison', i: '🏡' }, { t: 'Loft', i: '🏗️' },
-  { t: 'Duplex', i: '🪜' }, { t: 'Terrain', i: '🌱' }, { t: 'Autre', i: '✳️' },
+  { t: 'Bureaux', i: '🏢' }, { t: 'Local commercial', i: '🏪' }, { t: 'Restaurant', i: '🍽️' },
+  { t: 'Local d’activité', i: '🏭' }, { t: 'Entrepôt', i: '📦' }, { t: 'Immeuble', i: '🏬' },
+  { t: 'Terrain', i: '🌱' }, { t: 'Parking', i: '🅿️' },
 ];
+/* Werner : ce que le demandeur cherche (src/lib/affaires.ts, NATURES). */
+export const NATURES_RECHERCHE = [
+  { k: 'location', t: 'Louer', i: '🔑', aide: 'Un local vide, un bail neuf' },
+  { k: 'cession_bail', t: 'Reprendre un bail', i: '📄', aide: 'Un droit au bail' },
+  { k: 'fonds', t: 'Racheter un fonds', i: '🛍️', aide: 'Une affaire en activité' },
+  { k: 'murs', t: 'Acheter des murs', i: '🏛️', aide: 'Pour s’y installer' },
+  { k: 'murs_occupes', t: 'Investir', i: '📈', aide: 'Des murs déjà loués' },
+];
+export const EMPLACEMENTS_RECHERCHE = [
+  { k: 'n1', t: 'N° 1' }, { k: 'n1bis', t: 'N° 1 bis' }, { k: 'n2', t: 'N° 2' },
+  { k: 'quartier', t: 'Commerce de quartier' }, { k: 'centre', t: 'Centre commercial' }, { k: 'zone', t: 'Zone commerciale' },
+];
+/* Ce qu'un demandeur peut exiger : les mêmes clés que les équipements d'une
+   affaire (src/lib/affaires.ts, EQUIPEMENTS), pour que le rapprochement
+   compare clé à clé ; « rdc » : un rez-de-chaussée. */
+export const EXIGENCES_PRO: { k: string; l: string; i: string }[] = [
+  { k: 'rdc', l: 'Rez-de-chaussée', i: '🚪' }, { k: 'vitrineEq', l: 'Vitrine', i: '🪟' }, { k: 'extraction', l: 'Extraction', i: '🔥' },
+  { k: 'terrasse', l: 'Terrasse', i: '☀️' }, { k: 'reserve', l: 'Réserve', i: '📦' }, { k: 'clim', l: 'Climatisation', i: '❄️' },
+  { k: 'pmr', l: 'Accès PMR', i: '♿' }, { k: 'parking', l: 'Parking', i: '🅿️' }, { k: 'ascenseur', l: 'Ascenseur', i: '🛗' },
+  { k: 'fibre', l: 'Fibre', i: '🌐' }, { k: 'cablage', l: 'Câblage', i: '🔌' }, { k: 'plancherTech', l: 'Plancher technique', i: '🧩' },
+  { k: 'quai', l: 'Quai de chargement', i: '🚚' }, { k: 'cuisinePro', l: 'Cuisine équipée', i: '🍳' }, { k: 'chambreFroide', l: 'Chambre froide', i: '🧊' },
+];
+
 
 
 /* En-tête de section dans la pop-up « Critères de recherche ». */
@@ -184,7 +206,15 @@ export type CritForm = {
      il s'écrit à part (`recherches.parcours`), pour qu'une colonne pas encore
      créée n'empêche jamais d'enregistrer les critères. */
   parcours?: Parcours;
+  /* Werner : les critères de l'immobilier d'entreprise (recherches.criteres_pro). */
+  pro?: ProForm;
 };
+export type ProForm = {
+  natures: string[]; activite: string; loyerMin: string; loyerMax: string;
+  vitrineMin: string; postesMin: string; emplacements: string[];
+};
+export const PRO_VIDE: ProForm = { natures: [], activite: '', loyerMin: '', loyerMax: '', vitrineMin: '', postesMin: '', emplacements: [] };
+const proDe = (f: CritForm): ProForm => ({ ...PRO_VIDE, ...(f.pro || {}) });
 
 export const CRIT_VIDE: CritForm = {
   exigences: {}, etage_max_sans_ascenseur: '', cuisine_type: '', exterieur_surface_min: '',
@@ -195,7 +225,7 @@ export const CRIT_VIDE: CritForm = {
   ascenseur: false, gardien: false, interphone: false, digicode: false,
   rdc_exclu: false, dernier_etage: false, etage_min: '', etage_max: '', dpe_max: '',
   annee_min: '', etat_souhaite: '', exposition_souhaitee: '', surface_sejour_min: '',
-  urgence: '', financement: '', apport: '', parcours: {},
+  urgence: '', financement: '', apport: '', parcours: {}, pro: PRO_VIDE,
 };
 
 /* Les colonnes de `recherches` que portent les critères, tirées du
@@ -232,7 +262,25 @@ export function colonnesCriteres(cr: CritForm) {
     financement: cr.financement || null,
     apport: ent(cr.apport),
     notes: cr.notes || null,
+    criteres_pro: proPourBase(cr.pro),
   };
+}
+/* Les critères de l'immobilier d'entreprise, tels que la base les garde. */
+export function proPourBase(p?: ProForm) {
+  const x = { ...PRO_VIDE, ...(p || {}) };
+  const ent = (v: string) => { const n = parseInt(String(v).replace(/\s/g, ''), 10); return Number.isFinite(n) && n > 0 ? n : null; };
+  return {
+    natures: x.natures, activite: x.activite.trim(), loyerMin: ent(x.loyerMin), loyerMax: ent(x.loyerMax),
+    vitrineMin: x.vitrineMin ? parseFloat(x.vitrineMin.replace(',', '.')) || null : null, postesMin: ent(x.postesMin), emplacements: x.emplacements,
+  };
+}
+/* Le formulaire rempli depuis une ligne de `recherches` (la fiche du contact). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function proDepuisRecherche(r: any): ProForm {
+  const o = r?.criteres_pro && typeof r.criteres_pro === 'object' ? r.criteres_pro : {};
+  const t = (v: unknown) => (typeof v === 'number' && v > 0 ? String(v) : typeof v === 'string' ? v : '');
+  const l = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+  return { natures: l(o.natures), activite: t(o.activite), loyerMin: t(o.loyerMin), loyerMax: t(o.loyerMax), vitrineMin: t(o.vitrineMin), postesMin: t(o.postesMin), emplacements: l(o.emplacements) };
 }
 
 export type EtapeCrit = { id: string; ico: string; titre: string; note?: string; sous: string; contenu: React.ReactNode };
@@ -240,7 +288,7 @@ export type SetCrit = (maj: (f: CritForm) => CritForm) => void;
 
 /* L'ordre des étapes, pour en ouvrir une précise (« Modifier ma note » →
    « Contexte du projet », le bloc « Son parcours » → son étape). */
-export const ORDRE_ETAPES_CRIT = ['bien', 'surfaces', 'etage', 'equipements', 'energie', 'lieu', 'transports', 'budget', 'parcours', 'contexte'];
+export const ORDRE_ETAPES_CRIT = ['projet', 'surfaces', 'budget', 'equipements', 'lieu', 'transports', 'parcours', 'contexte'];
 
 /* Les dix catégories : affichées à la suite (mode « tout ») ou une par une. */
 export function etapesCriteres(crit: CritForm, setCrit: SetCrit): EtapeCrit[] {
@@ -252,156 +300,104 @@ export function etapesCriteres(crit: CritForm, setCrit: SetCrit): EtapeCrit[] {
           if (k in f) maj[k] = !!n;
           return { ...f, ...maj } as typeof f;
         });
-        /* Les dix catégories : affichées à la suite (mode « tout ») ou une par une (mode « étapes »). */
+        /* Werner : les critères de l'immobilier d'entreprise. */
+        const pro = proDe(crit);
+        const setPro = (maj: Partial<ProForm>) => setCrit(f => ({ ...f, pro: { ...proDe(f), ...maj } }));
+        const basculer = (l: string[], k: string) => (l.includes(k) ? l.filter(x => x !== k) : [...l, k]);
+        const pastille = (sel: boolean): React.CSSProperties => ({ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 20, border: `1px solid ${sel ? 'var(--emilio)' : '#e2e8f0'}`, background: sel ? 'var(--emilio)' : 'white', color: sel ? 'white' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' });
+        const cherche = (k: string) => pro.natures.includes(k);
+        const avecLoyer = !pro.natures.length || cherche('location') || cherche('cession_bail') || cherche('fonds');
+        const avecPrix = !pro.natures.length || cherche('cession_bail') || cherche('fonds') || cherche('murs') || cherche('murs_occupes');
+        const achat = cherche('fonds') || cherche('murs') || cherche('murs_occupes');
+        const commerce = !crit.types_bien.length || crit.types_bien.some(t => /commercial|restaurant/i.test(t));
+        const bureaux = crit.types_bien.some(t => /bureau/i.test(t));
         const etapesCrit: { id: string; ico: string; titre: string; note?: string; sous: string; contenu: React.ReactNode }[] = [
           {
-            id: 'bien', ico: '🏠', titre: 'LE BIEN', note: 'plusieurs choix possibles',
-            sous: 'Quel type de bien, dans quel état',
+            id: 'projet', ico: '🎯', titre: 'SON PROJET', note: 'plusieurs choix possibles',
+            sous: 'Ce qu’il cherche, quel local, pour quelle activité',
             contenu: (<>
               <div>
+                <label className={styles.lbl}>Il veut</label>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {[...TYPES_BIEN, ...crit.types_bien.filter(t => !TYPES_BIEN.some(o => o.t === t)).map(t => ({ t, i: '✳️' }))].map(o => { const sel = crit.types_bien.includes(o.t); return <button key={o.t} onClick={() => setCrit(f => ({ ...f, types_bien: sel ? f.types_bien.filter(x=>x!==o.t) : [...f.types_bien, o.t] }))} style={{ padding: '7px 15px', borderRadius: 20, border: `1px solid ${sel ? 'var(--emilio)' : '#e2e8f0'}`, background: sel ? 'var(--emilio)' : 'white', color: sel ? 'white' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>{o.i} {o.t}</button>; })}
+                  {NATURES_RECHERCHE.map(o => { const sel = cherche(o.k); return <button type="button" key={o.k} title={o.aide} aria-pressed={sel} onClick={() => setPro({ natures: basculer(pro.natures, o.k) })} style={pastille(sel)}>{o.i} {o.t}</button>; })}
+                </div>
+              </div>
+              <div>
+                <label className={styles.lbl}>Type de local</label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {[...TYPES_BIEN, ...crit.types_bien.filter(t => !TYPES_BIEN.some(o => o.t === t)).map(t => ({ t, i: '✳️' }))].map(o => { const sel = crit.types_bien.includes(o.t); return <button type="button" key={o.t} aria-pressed={sel} onClick={() => setCrit(f => ({ ...f, types_bien: sel ? f.types_bien.filter(x => x !== o.t) : [...f.types_bien, o.t] }))} style={pastille(sel)}>{o.i} {o.t}</button>; })}
                 </div>
               </div>
               <div className={styles.formRow}>
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <label className={styles.lbl}>État souhaité <span style={{ fontWeight: 500, color: '#94a3b8', textTransform: 'none', letterSpacing: 0 }}>· plusieurs choix possibles</span></label>
+                  <label className={styles.lbl}>Son activité <span style={{ fontWeight: 500, color: '#94a3b8', textTransform: 'none', letterSpacing: 0 }}>· ce qu’il fera dans le local</span></label>
+                  <input className={styles.inp} value={pro.activite} onChange={e => setPro({ activite: e.target.value })} placeholder="Boulangerie, cabinet d’architectes, prêt-à-porter…" />
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label className={styles.lbl}>État accepté <span style={{ fontWeight: 500, color: '#94a3b8', textTransform: 'none', letterSpacing: 0 }}>· plusieurs choix possibles</span></label>
                   <ChoixEtats valeur={crit.etat_souhaite} onChange={v => setCrit(f => ({ ...f, etat_souhaite: v }))} />
                 </div>
-                <div><label className={styles.lbl}>📅 Année de construction min</label><input className={styles.inp} type="number" value={crit.annee_min} onChange={e=>setCrit(f=>({...f,annee_min:e.target.value}))} /></div>
               </div>
             </>),
           },
           {
-            id: 'surfaces', ico: '📐', titre: 'SURFACES & VOLUMES', note: undefined,
-            sous: 'Surface, pièces et chambres',
+            id: 'surfaces', ico: '📐', titre: 'SURFACES', note: undefined,
+            sous: 'La surface, la vitrine, les postes de travail',
             contenu: (<>
               <div className={styles.formRow}>
                 <div><label className={styles.lbl}>Surface m²</label><div style={{display:'flex',gap:6}}><input className={styles.inp} type="number" value={crit.surface_min} onChange={e=>setCrit(f=>({...f,surface_min:e.target.value}))} placeholder="Min" /><input className={styles.inp} type="number" value={crit.surface_max} onChange={e=>setCrit(f=>({...f,surface_max:e.target.value}))} placeholder="Max" /></div></div>
-                <div><label className={styles.lbl}>Surface séjour min m²</label><input className={styles.inp} type="number" value={crit.surface_sejour_min} onChange={e=>setCrit(f=>({...f,surface_sejour_min:e.target.value}))} /></div>
+                {commerce && <div><label className={styles.lbl}>Linéaire de vitrine min (m)</label><input className={styles.inp} type="number" value={pro.vitrineMin} onChange={e => setPro({ vitrineMin: e.target.value })} /></div>}
+                {bureaux && <div><label className={styles.lbl}>Postes de travail min</label><input className={styles.inp} type="number" value={pro.postesMin} onChange={e => setPro({ postesMin: e.target.value })} /></div>}
               </div>
-              <div className={styles.formRow}>
-                <div><label className={styles.lbl}>Pièces</label><div style={{display:'flex',gap:6}}><input className={styles.inp} type="number" value={crit.nb_pieces_min} onChange={e=>setCrit(f=>({...f,nb_pieces_min:e.target.value}))} placeholder="Min" /><input className={styles.inp} type="number" value={crit.nb_pieces_max} onChange={e=>setCrit(f=>({...f,nb_pieces_max:e.target.value}))} placeholder="Max" /></div></div>
-                <div><label className={styles.lbl}>Chambres min</label><input className={styles.inp} type="number" value={crit.chambres_min} onChange={e=>setCrit(f=>({...f,chambres_min:e.target.value}))} /></div>
-              </div>
+              {commerce && (
+                <div>
+                  <label className={styles.lbl}>Emplacement <span style={{ fontWeight: 500, color: '#94a3b8', textTransform: 'none', letterSpacing: 0 }}>· plusieurs choix possibles</span></label>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {EMPLACEMENTS_RECHERCHE.map(o => { const sel = pro.emplacements.includes(o.k); return <button type="button" key={o.k} aria-pressed={sel} onClick={() => setPro({ emplacements: basculer(pro.emplacements, o.k) })} style={pastille(sel)}>{o.t}</button>; })}
+                  </div>
+                </div>
+              )}
             </>),
           },
           {
-            id: 'etage', ico: '🏢', titre: 'ÉTAGE & EXPOSITION', note: 'ascenseur compris',
-            sous: 'Niveau dans l\'immeuble, ascenseur et orientation',
+            id: 'budget', ico: '💶', titre: 'BUDGET', note: 'hors taxes',
+            sous: 'Le loyer annuel, le prix, le financement',
             contenu: (<>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                {[{k:'rdc_exclu',l:'🚫 Exclure RDC'},{k:'dernier_etage',l:'🏙️ Dernier étage'}].map(o => (<button key={o.k} onClick={() => setCrit(f=>({...f,[o.k]:!(f as any)[o.k]}))} style={{ padding: '7px 14px', borderRadius: 20, border: `1px solid ${(crit as any)[o.k] ? 'var(--emilio)' : '#e2e8f0'}`, background: (crit as any)[o.k] ? 'var(--emilio)' : 'white', color: (crit as any)[o.k] ? 'white' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>{o.l}</button>))}
-                <div style={{display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:13,color:'#64748b',fontWeight:600}}>Étage min</span><input className={styles.inp} type="number" value={crit.etage_min} onChange={e=>setCrit(f=>({...f,etage_min:e.target.value}))} style={{width:80}} /></div>
-                <div style={{display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:13,color:'#64748b',fontWeight:600}}>Étage max</span><input className={styles.inp} type="number" value={crit.etage_max} onChange={e=>setCrit(f=>({...f,etage_max:e.target.value}))} style={{width:80}} /></div>
-              </div>
-
-              {/* Ascenseur : indispensable, ou bien « je monte jusqu'au Xe sans ». */}
-              <div style={{ background: '#f8fafc', border: '1px solid #eaeae9', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <PastilleExigence ico="🛗" libelle="Ascenseur" niveau={niv('ascenseur')} onChange={n => setNiv('ascenseur', n)} />
-                  {niv('ascenseur') !== 'indispensable' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Sans ascenseur, jusqu&apos;au</span>
-                      <input className={styles.inp} type="number" min={0} max={12} value={crit.etage_max_sans_ascenseur} onChange={e => setCrit(f => ({ ...f, etage_max_sans_ascenseur: e.target.value }))} style={{ width: 72 }} />
-                      <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>e étage</span>
-                    </div>
-                  )}
+              {avecLoyer && (
+                <div className={styles.formRow}>
+                  <div><label className={styles.lbl}>Loyer annuel HT HC · min €</label><input className={styles.inp} type="number" value={pro.loyerMin} onChange={e => setPro({ loyerMin: e.target.value })} /></div>
+                  <div><label className={styles.lbl}>Loyer annuel HT HC · max €</label><input className={styles.inp} type="number" value={pro.loyerMax} onChange={e => setPro({ loyerMax: e.target.value })} /></div>
                 </div>
-                <div style={{ fontSize: 12, color: '#94a3b8' }}>
-                  {niv('ascenseur') === 'indispensable'
-                    ? 'Tout bien sans ascenseur est écarté, quel que soit l\u2019étage.'
-                    : crit.etage_max_sans_ascenseur
-                      ? `Sans ascenseur, on ne propose rien au-dessus du ${crit.etage_max_sans_ascenseur}e étage.`
-                      : 'Laissez vide si l\u2019étage sans ascenseur n\u2019est pas un problème.'}
+              )}
+              {avecPrix && (
+                <div className={styles.formRow}>
+                  <div><label className={styles.lbl}>{cherche('cession_bail') && !achat ? 'Droit au bail · min €' : 'Prix · min €'}</label><input className={styles.inp} type="number" value={crit.budget_min} onChange={e => setCrit(f => ({ ...f, budget_min: e.target.value }))} /></div>
+                  <div><label className={styles.lbl}>{cherche('cession_bail') && !achat ? 'Droit au bail · max €' : 'Prix · max €'}</label><input className={styles.inp} type="number" value={crit.budget_max} onChange={e => setCrit(f => ({ ...f, budget_max: e.target.value }))} /></div>
                 </div>
-              </div>
-
-              <div>
-                <label className={styles.lbl}>Exposition souhaitée <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(plusieurs possibles)</span></label>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {EXPOSITIONS.map(o => {
-                    const sel = crit.exposition_souhaitee.split(',').map(x=>x.trim()).filter(Boolean);
-                    const active = sel.includes(o.k);
-                    return (
-                      <button type="button" key={o.k} onClick={() => { const next = active ? sel.filter(x=>x!==o.k) : [...sel, o.k]; setCrit(f=>({...f,exposition_souhaitee: next.join(', ')})); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 20, border: `1px solid ${active ? '#10b981' : '#e2e8f0'}`, background: active ? '#ecfdf5' : 'white', color: active ? '#10b981' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}><span style={{ fontSize: 14 }}>{o.i}</span> {o.l}</button>
-                    );
-                  })}
-                </div>
-              </div>
+              )}
+              {achat && (
+                <>
+                  <div className={styles.formRow}>
+                    <div><label className={styles.lbl}>Apport €</label><input className={styles.inp} type="number" value={crit.apport} onChange={e=>setCrit(f=>({...f,apport:e.target.value}))} /></div>
+                  </div>
+                  <div>
+                    <label className={styles.lbl}>Financement</label>
+                    <ChoixIco table={FINANCEMENTS} valeur={crit.financement} onChange={v => setCrit(f => ({ ...f, financement: v }))} couleur="#0f766e" />
+                  </div>
+                </>
+              )}
             </>),
           },
           {
-            id: 'equipements', ico: '✨', titre: 'ÉQUIPEMENTS', note: 'souhaité ou indispensable',
-            sous: 'Ce qui ferait plaisir, et ce sans quoi c\'est non',
+            id: 'equipements', ico: '✨', titre: 'CE QU’IL LUI FAUT', note: 'souhaité ou indispensable',
+            sous: 'Ce qui ferait plaisir, et ce sans quoi c’est non',
             contenu: (<>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {[{k:'parking',ico:'🅿️',l:'Parking'},{k:'cave',ico:'📦',l:'Cave'},{k:'balcon',ico:'🌿',l:'Balcon'},{k:'terrasse',ico:'☀️',l:'Terrasse'},{k:'jardin',ico:'🌳',l:'Jardin'},{k:'gardien',ico:'👮',l:'Gardien'},{k:'interphone',ico:'🔔',l:'Interphone'},{k:'digicode',ico:'🔢',l:'Digicode'}].map(o => (
-                  <PastilleExigence key={o.k} ico={o.ico} libelle={o.l} niveau={niv(o.k)} onChange={n => setNiv(o.k, n)} />
+                {EXIGENCES_PRO.map(o => (
+                  <PastilleExigence key={o.k} ico={o.i} libelle={o.l} niveau={niv(o.k)} onChange={n => setNiv(o.k, n)} />
                 ))}
               </div>
               <LegendeNiveaux />
-
-              {/* Extérieur : au-delà du simple balcon/terrasse coché, sa taille compte. */}
-              <div style={{ background: '#f8fafc', border: '1px solid #eaeae9', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <PastilleExigence ico="🌤️" libelle="Un extérieur" niveau={niv('exterieur')} onChange={n => setNiv('exterieur', n)} />
-                  {niv('exterieur') && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>D&apos;au moins</span>
-                      <input className={styles.inp} type="number" min={1} value={crit.exterieur_surface_min} onChange={e => setCrit(f => ({ ...f, exterieur_surface_min: e.target.value }))} style={{ width: 76 }} />
-                      <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>m²</span>
-                    </div>
-                  )}
-                </div>
-                <div style={{ fontSize: 12, color: '#94a3b8' }}>
-                  {!niv('exterieur') ? 'Balcon, terrasse, loggia ou jardin — peu importe lequel.'
-                    : crit.exterieur_surface_min ? `Un extérieur de moins de ${crit.exterieur_surface_min} m² ne compte pas.`
-                    : 'Laissez vide si la taille importe peu.'}
-                </div>
-              </div>
-
-              {/* Cuisine : ouverte ou séparée, et à quel point c'est ferme. */}
-              <div style={{ background: '#f8fafc', border: '1px solid #eaeae9', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>🍳 Cuisine</span>
-                  {CUISINES.map(([v, l, i]) => {
-                    const actif = crit.cuisine_type === v;
-                    return <button type="button" key={v || 'ind'} onClick={() => setCrit(f => ({ ...f, cuisine_type: v }))} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 20, border: `1px solid ${actif ? 'var(--emilio)' : '#e2e8f0'}`, background: actif ? 'var(--emilio)' : 'white', color: actif ? 'white' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}><span style={{ fontSize: 14 }}>{i}</span>{l}</button>;
-                  })}
-                </div>
-                {crit.cuisine_type && (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    {[{v:'souhaite' as Niveau,l:'Simple préférence'},{v:'indispensable' as Niveau,l:'Indispensable'}].map(o => {
-                      const actif = niv('cuisine') === o.v;
-                      return <button type="button" key={o.v} onClick={() => setNiv('cuisine', actif ? '' : o.v)} style={{ padding: '6px 12px', borderRadius: 20, border: `1px solid ${actif ? (o.v === 'indispensable' ? '#f08c42' : '#10b981') : '#e2e8f0'}`, background: actif ? (o.v === 'indispensable' ? '#fdf5ef' : '#ecfdf5') : 'white', color: actif ? (o.v === 'indispensable' ? '#c46318' : '#10b981') : '#94a3b8', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{actif ? '✓ ' : ''}{o.l}</button>;
-                    })}
-                  </div>
-                )}
-              </div>
-            </>),
-          },
-          {
-            id: 'energie', ico: '⚡', titre: 'PERFORMANCE ÉNERGÉTIQUE', note: 'la plus mauvaise lettre acceptée',
-            sous: 'La plus mauvaise lettre acceptée',
-            contenu: (<>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {['A','B','C','D','E','F','G'].map(d => {
-                  const lettres = ['A','B','C','D','E','F','G'];
-                  const passe = crit.dpe_max ? lettres.indexOf(d) <= lettres.indexOf(crit.dpe_max) : false;
-                  const choisi = crit.dpe_max === d;
-                  return (<button key={d} onClick={() => setCrit(f=>({...f,dpe_max:f.dpe_max===d?'':d}))} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${choisi ? 'var(--emilio)' : passe ? '#bbf7d0' : '#e2e8f0'}`, background: choisi ? 'var(--emilio)' : passe ? '#f0fdf4' : 'white', color: choisi ? 'white' : passe ? '#15803d' : '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>{d}</button>);
-                })}
-              </div>
-              {crit.dpe_max ? (() => {
-                const lettres = ['A','B','C','D','E','F','G'];
-                const i = lettres.indexOf(crit.dpe_max);
-                const ok = lettres.slice(0, i + 1).join(' '); const ko = lettres.slice(i + 1).join(' ');
-                return <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 2 }}>
-                  Vous gardez <b style={{ color: '#15803d' }}>{ok}</b>
-                  {ko ? <> · vous écartez <b style={{ color: '#dc2626' }}>{ko}</b></> : null}
-                </div>;
-              })() : <div style={{ fontSize: 12.5, color: '#94a3b8', marginTop: 2 }}>Aucune exigence — toutes les lettres passent.</div>}
             </>),
           },
           {
@@ -422,27 +418,8 @@ export function etapesCriteres(crit: CritForm, setCrit: SetCrit): EtapeCrit[] {
             </>),
           },
           {
-            id: 'budget', ico: '💶', titre: 'BUDGET', note: undefined,
-            sous: 'Enveloppe, apport et financement',
-            contenu: (<>
-              <div className={styles.formRow}>
-                <div><label className={styles.lbl}>Minimum €</label><input className={styles.inp} type="number" value={crit.budget_min} onChange={e => setCrit(f => ({ ...f, budget_min: e.target.value }))} /></div>
-                <div><label className={styles.lbl}>Maximum €</label><input className={styles.inp} type="number" value={crit.budget_max} onChange={e => setCrit(f => ({ ...f, budget_max: e.target.value }))} /></div>
-              </div>
-              <div className={styles.formRow}>
-                <div><label className={styles.lbl}>Apport €</label><input className={styles.inp} type="number" value={crit.apport} onChange={e=>setCrit(f=>({...f,apport:e.target.value}))} /></div>
-              </div>
-              <div>
-                <label className={styles.lbl}>Financement</label>
-                <ChoixIco table={FINANCEMENTS} valeur={crit.financement} onChange={v => setCrit(f => ({ ...f, financement: v }))} couleur="#0f766e" />
-              </div>
-            </>),
-          },
-          {
-            /* V3.122 : vers la fin, après le budget (Alexandre : « on parle des
-               visites qu'il a faites… plutôt après »). */
             id: 'parcours', ico: '🧭', titre: 'SON PARCOURS', note: 'visible de toi seul',
-            sous: 'Ce qu\'il a déjà visité, et ce qui n\'allait pas',
+            sous: 'Ce qu’il a déjà visité, et ce qui n’allait pas',
             contenu: (<EtapeParcours valeur={crit.parcours} onChange={x => setCrit(f => ({ ...f, parcours: x }))} />),
           },
           {
@@ -453,7 +430,7 @@ export function etapesCriteres(crit: CritForm, setCrit: SetCrit): EtapeCrit[] {
                 <label className={styles.lbl}>Urgence du projet</label>
                 <ChoixIco table={URGENCES} valeur={crit.urgence} onChange={v => setCrit(f => ({ ...f, urgence: v }))} couleur="#c05d12" />
               </div>
-              <div><label className={styles.lbl}>Notes libres <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>— visibles par le client dans son espace</span></label><textarea className={styles.inp} rows={3} value={crit.notes} onChange={e => setCrit(f=>({...f,notes:e.target.value}))} placeholder="Particularités, préférences, exclusions, quartiers à éviter..." /></div>
+              <div><label className={styles.lbl}>Notes libres <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>— visibles par le client dans son espace</span></label><textarea className={styles.inp} rows={3} value={crit.notes} onChange={e => setCrit(f=>({...f,notes:e.target.value}))} placeholder="Une ouverture prévue au printemps, une enseigne à respecter, une activité à faire accepter par le bailleur…" /></div>
             </>),
           },
         ];
