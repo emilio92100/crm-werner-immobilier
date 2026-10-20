@@ -96,7 +96,7 @@ export function criteresDepuisRecherche(r: Record<string, any>): CriteresCorr {
     transportArrets: r.transport_arrets || [],
     ...(() => { const p = lireCriteresPro(r.criteres_pro); return { natures: p.natures, loyerMin: p.loyerMin, loyerMax: p.loyerMax, vitrineMin: p.vitrineMin, postesMin: p.postesMin, emplacements: p.emplacements }; })(),
     equip: [
-      r.terrasse && 'Terrasse', r.balcon && 'Balcon', r.jardin && 'Jardin',
+      r.terrasse && 'Terrasse', r.balcon && 'Espace extérieur', r.jardin && 'Cour',
       r.parking && 'Parking', r.ascenseur && 'Ascenseur', r.cave && 'Cave',
       r.gardien && 'Gardien',
     ].filter(Boolean) as string[],
@@ -119,11 +119,14 @@ export type LigneCorr = { ico: string; lib: string; demande: string; valeur: str
 export type Correspondance = { note: number; lignes: LigneCorr[] };
 
 const EQUIP_CLE: Record<string, string> = {
+  /* Werner : l'espace écrit « Espace extérieur » et « Cour » ; les anciens
+     libellés restent reconnus. */
+  'Espace extérieur': 'balcon', Extérieur: 'balcon', Cour: 'jardin',
   Terrasse: 'terrasse', Balcon: 'balcon', Jardin: 'jardin', Parking: 'parking',
   Ascenseur: 'ascenseur', Cave: 'cave', Gardien: 'gardien',
 };
 const EQUIP_NOM: Record<string, string> = {
-  terrasse: 'Terrasse', balcon: 'Balcon', jardin: 'Jardin', parking: 'Parking',
+  terrasse: 'Terrasse', balcon: 'Espace extérieur', jardin: 'Cour', parking: 'Parking',
   ascenseur: 'Ascenseur', cave: 'Cave', gardien: 'Gardien', exterieur: 'Extérieur',
 };
 const EQUIP_ICO: Record<string, string> = {

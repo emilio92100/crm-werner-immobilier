@@ -1,3 +1,5 @@
+import type { ProBien } from '@/lib/affaires';
+import { lireCriteresPro } from '@/lib/correspondance';
 import { createClient } from '@supabase/supabase-js';
 import { notFound, redirect } from 'next/navigation';
 import { headers } from 'next/headers';
@@ -380,6 +382,8 @@ export default async function PageEspace({ params, searchParams }: {
       return !pb.agence && pb.hono > 0 && v > 0 ? { mode: b.commission_type === 'fixe' ? 'forfait' as const : 'taux' as const, val: v } : { mode: 'aucun' as const, val: 0 };
     })(),
     offreSuivi: null as OffreEspace | null,
+    /* Werner : nature, loyer, vitrine… de l'affaire, pour la note (biens.pro). */
+    pro: b.pro && typeof b.pro === 'object' && Object.keys(b.pro).length ? b.pro as ProBien : undefined,
   }));
 
   /* Les rendez-vous à venir, et eux seuls. Une visite passée n'est plus « votre
@@ -745,6 +749,7 @@ export default async function PageEspace({ params, searchParams }: {
         transportMinutes: recherche.transport_minutes ?? null,
         transportLignes: recherche.transport_lignes || [],
         transportArrets: recherche.transport_arrets || [],
+        ...(() => { const p = lireCriteresPro(recherche.criteres_pro); return { natures: p.natures, loyerMin: p.loyerMin, loyerMax: p.loyerMax, vitrineMin: p.vitrineMin, postesMin: p.postesMin, emplacements: p.emplacements }; })(),
         equip: [
           recherche.terrasse && 'Terrasse', recherche.balcon && 'Espace extérieur', recherche.jardin && 'Cour',
           recherche.parking && 'Parking', recherche.ascenseur && 'Ascenseur', recherche.cave && 'Cave',

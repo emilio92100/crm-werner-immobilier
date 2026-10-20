@@ -1,4 +1,5 @@
 'use client';
+import type { ProBien } from '@/lib/affaires';
 import { useState, useCallback, useRef, useEffect, useLayoutEffect, useMemo, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
@@ -77,6 +78,8 @@ type Bien = {
   /* V3.193 : « Où en est Alexandre » — les étapes tirées de ses appels, et
      son mot (src/lib/suivi-client.ts). Jamais ce qui a été dit, ni l'agence. */
   suivi?: SuiviClient | null;
+  /* Werner : ce que l'affaire dit d'elle-même (biens.pro, lib/affaires.ts). */
+  pro?: ProBien;
 };
 const motVente = (v: NonNullable<Bien['vente']>) => (v.vous ? (v.etat === 'vendu' ? 'Votre local' : 'Votre accord')
   : v.etat === 'vendu' ? 'Affaire conclue' : v.etat === 'retire' ? 'Retiré du marché' : v.etat === 'pause' ? 'En pause' : 'En signature');
@@ -148,6 +151,9 @@ type Criteres = {
   apport: number | null; financement: string | null; urgence: string | null;
   notes: string;
   transportMinutes: number | null; transportLignes: string[]; transportArrets: Arret[];
+  /* Werner : nature, loyer annuel, vitrine, emplacement (recherches.criteres_pro). */
+  natures?: string[]; loyerMin?: number | null; loyerMax?: number | null;
+  vitrineMin?: number | null; postesMin?: number | null; emplacements?: string[];
 };
 type Props = {
   token: string;
@@ -686,6 +692,10 @@ const T: Record<string, string[]> = {
      lisent à 34 px dans une pastille, pas en pleine page. */
   terrasse:['M3 15h18','M3 21h18','M4.5 15v6','M9.5 15v6','M14.5 15v6','M19.5 15v6'],
   jardin:['c:12,9,5','M12 14v7','M8.6 17.4 12 18.8l3.4-1.4'],
+  /* Werner : les lignes de la note d'une affaire (lib/correspondance.ts) —
+     ce qu'il cherche (clé) et la vitrine. */
+  cle:['c:8,15.5,4.2','m11 12.5 8.8-8.8','m16.8 6.7 2.4 2.4','m14.6 8.9 1.9 1.9'],
+  vitrine:['M4 4h16l1.5 5h-19z','M4 9.5V20h16V9.5','M9.5 20v-5.5h5V20'],
   parking:['M4 16.5h16','M6.2 16.5v2','M17.8 16.5v2','M5.6 16.5v-4l1.9-4.2h9l1.9 4.2v4','M5.6 12.5h12.8'],
   cave:['M4 19.5h4v-4h4v-4h4v-4h4','M4 19.5V17'],
   ascenseur:['M6.2 3.5h11.6v17H6.2z','m10 10 2-2.6 2 2.6','m10 14 2 2.6 2-2.6'],
