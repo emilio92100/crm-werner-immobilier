@@ -42,7 +42,7 @@ export function objetProjet(m: Modele, d: Donnees) {
 }
 export function messageProjet(m: Modele, d: Donnees, signature: string) {
   const lieu = lieuDe(d);
-  const pour = lieu ? (m.id === 'mandat_vente' ? ` pour votre bien du ${lieu}` : ` pour le bien du ${lieu}`) : '';
+  const pour = lieu ? (m.id === 'mandat_vente' ? ` pour votre local du ${lieu}` : ` pour le local du ${lieu}`) : '';
   return `Bonjour {{prénom}},\n\nJe vous envoie ci-joint le projet ${deLe(m.titre)}${pour}.\n\nCe n’est pas encore la version à signer : prenez le temps de le relire, et dites-moi si quelque chose doit être modifié ou complété. Je vous enverrai ensuite la version définitive pour la signature.\n\n${signature}`;
 }
 

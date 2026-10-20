@@ -36,7 +36,7 @@ export function messageOffre(d: Donnees, signature: string) {
   const jusquau = txt(d, 'validite')
     ? `${jourLong(txt(d, 'validite'))}${txt(d, 'validiteHeure') ? ` à ${txt(d, 'validiteHeure').replace(':', ' h ')}` : ''}`
     : '';
-  const prixTxt = prix ? `, pour un montant de ${euros(prix)}${d.forme === 'fai' ? ', frais d’agence inclus' : ''}` : '';
+  const prixTxt = prix ? `, pour un montant de ${euros(prix)}${d.forme === 'fai' ? ', honoraires d’agence inclus' : ''}` : '';
   return `Bonjour,\n\nJe vous transmets ci-joint l’offre signée de ${pl ? 'mes clients' : 'mon client'} pour le local${lieu ? ` situé ${lieu}` : ''}${prixTxt}.\n\n${jusquau ? `Elle est valable jusqu’au ${jusquau}. ` : ''}Merci de la présenter au mandant et de me faire part de sa réponse${jusquau ? ' avant cette date' : ''}.\n\n${signature}`;
 }
 

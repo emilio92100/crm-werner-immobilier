@@ -516,8 +516,8 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
                               <button key={b.id} type="button" className={`${s.resultat} ${bien?.id === b.id ? s.resultatOn : ''}`} onClick={() => setBien(b)}>
                                 <span className={s.abPhoto} style={ph ? { backgroundImage: `url(${ph})` } : undefined}>{!ph && <Ic n="maison" t={16} />}</span>
                                 <span className={s.resDeux}>
-                                  <b>{b.titre || [b.adresse, b.ville].filter(Boolean).join(', ') || 'Bien sans titre'}</b>
-                                  <i>{[[b.adresse, b.quartier || b.ville].filter(Boolean).join(', '), b.bien_vente_id ? 'Mon mandat' : b.agence_nom || ''].filter(Boolean).join(' · ') || 'Adresse non notée'}</i>
+                                  <b>{b.titre || [b.adresse, b.ville].filter(Boolean).join(', ') || 'Local sans titre'}</b>
+                                  <i>{[[b.adresse, b.quartier || b.ville].filter(Boolean).join(', '), b.bien_vente_id ? 'Mon affaire' : b.agence_nom || ''].filter(Boolean).join(' · ') || 'Adresse non notée'}</i>
                                   <i>{[b.prix_acquereur ? `${new Intl.NumberFormat('fr-FR').format(b.prix_acquereur).replace(/[\u202f\u00a0]/g, ' ')} €` : '', b.etape ? (presente ? 'Présenté' : 'Sélection') : ''].filter(Boolean).join(' · ')}</i>
                                 </span>
                               </button>

@@ -16,10 +16,8 @@ locaux commerciaux, restaurants, locaux d'activité, entrepôts. Il fait des **l
 **cessions de droit au bail**, des **cessions de fonds de commerce** et des ventes de **murs**,
 libres ou occupés. Werner travaille sous la **carte T de RT CONSEILS** (CPI 9201 2020 000 045 344) :
 ses mandats sont au nom de RT CONSEILS. Ses coordonnées : **01 87 66 06 00**,
-**contact@wernerimmobilier.com**.
-
-**Ne jamais ouvrir wernerimmobilier.com** : le site est piraté (fausse vérification Cloudflare,
-octobre 2026).
+**contact@wernerimmobilier.com**. **Ne jamais ouvrir wernerimmobilier.com** : le site est piraté
+(fausse vérification Cloudflare, octobre 2026).
 
 L'outil a **trois faces** :
 
@@ -54,8 +52,7 @@ et 21 octobre 2026. **Ne jamais toucher au dépôt ni à la base d'Emilio** (Sup
 | Vercel | Hébergement. Quatre tâches planifiées dans `vercel.json` (point automatique, relances des signatures, diffusion, demandes SeLoger) |
 | Supabase | Base + Storage. RLS actif sur toutes les tables (AGENTS.md §3.4) |
 | Claude API | Lecture d'annonces, rédaction, analyse, rapprochement : **pas encore branchée** |
-| Mailjet | E-mail transactionnel : **pas encore branché** |
-| Ringover | Téléphonie (`/api/ringover/…`) : **pas encore branché** |
+| Mailjet · Ringover | E-mail transactionnel ; téléphonie (`/api/ringover/…`) : **pas encore branchés** |
 | geo.api.gouv.fr · api-adresse.data.gouv.fr | Communes et adresses |
 
 **Polices** : Plus Jakarta Sans (titres) · DM Sans (corps), dans `src/styles/globals.css`.
@@ -98,11 +95,8 @@ Les routes, une par une : l'historique, §5.
 `/api/login` après vérification de la session Supabase ; le nom d'origine est gardé) ouvre les
 pages ; la **session Supabase** du navigateur ouvre les données. Les comptes sont créés à la main
 dans Supabase, les inscriptions restent fermées. Les pages publiques lisent la base côté serveur,
-avec la clé de service.
-
-Sans `NEXT_PUBLIC_HOTE_ESPACE`, tous les liens donnés aux clients passent par l'adresse du CRM :
-`…/espace/<jeton>`, `…/bien/<id>`, `…/signer/<jeton>`, `…/proposer/<jeton>` (`basePublique()`,
-`src/lib/jeton.ts`).
+avec la clé de service. Sans `NEXT_PUBLIC_HOTE_ESPACE`, les liens donnés aux clients passent par
+l'adresse du CRM (`…/espace/<jeton>`, `…/bien/<id>`… : `basePublique()`, `src/lib/jeton.ts`).
 
 ### Couleurs
 
@@ -136,14 +130,12 @@ Les **étapes d'une affaire** (`biens_vente.etape`, `ETAPES_VENTE` dans `src/lib
 
 | `etape` | Libellé · court · pluriel |
 |---|---|
-| `a_suivre` | À suivre (un propriétaire qui y pense, pas encore estimé) |
-| `estimation` | Estimation · Estimations |
+| `a_suivre` · `estimation` | À suivre (pas encore estimé) · Estimation, Estimations |
 | `mandat` | Mandat en cours · **Disponible** · **Affaires en cours** |
 | `suspendu` | En pause |
 | `offre` | **Sous offre** |
 | `compromis` | **En signature** : le bail, la promesse ou l'acte de cession se prépare |
-| `vendu` | **Affaire conclue** · Conclue · Conclues |
-| `retire` | **Retirée du marché** · Retirée · Retirées |
+| `vendu` · `retire` | **Affaire conclue** (Conclue, Conclues) · **Retirée du marché** (Retirée, Retirées) |
 | `annonce_type` | Annonce type : une annonce pour faire venir des demandeurs, sans vraie affaire derrière (hors parcours, ni visite ni offre) |
 
 « En cours » (le compteur du menu) = `mandat`, `offre`, `compromis`. Une affaire est diffusée aux
@@ -167,9 +159,7 @@ dépend de la nature (`donnees.nature`) :
 Le **type de local** (`donnees.typeBien` et la colonne `type_bien`, `TYPES_LOCAL`) : `bureaux`,
 `local` (boutique, local commercial : la clé d'origine est gardée), `restaurant`, `activite`,
 `entrepot`, `immeuble`, `terrain`, `parking`, `autre`. Une recherche écrit le libellé court
-(« Bureaux, Local commercial »).
-
-Le même fichier tient les baux (3/6/9, professionnel, dérogatoire, précaire, civil ; indices ILC,
+(« Bureaux, Local commercial »). Le même fichier tient les baux (3/6/9, professionnel, dérogatoire, précaire, civil ; indices ILC,
 ILAT, ICC), les destinations, les emplacements d'un commerce et les **équipements** : les mêmes clés
 pour l'affaire et pour les exigences d'un demandeur, le rapprochement compare clé à clé.
 
@@ -181,19 +171,15 @@ adresse (`cp`, `ville`, `quartier`, `gps`), surfaces (`divisible`, `surfDivMin`)
 `destination`), commerce (`vitrine`, `emplacement`, `extraction`), fonds (`activite`, `caHt`,
 `resultat`, `ebe`), équipements, honoraires, annonce, photos, diffusion, `portail` (§4), notes, le
 mandant. Les colonnes de liste (`titre`, `prix`, `surface`, `ville`, `photo`, `client_id` = le
-mandant…) sont recalculées à chaque enregistrement par `colonnesBien()`.
-
-Une société mandante est rangée sous les clés d'origine d'une SCI : `donnees.qui = 'sci'` et
-`sciNom` = sa dénomination (`lierProprio`, `FicheBien.tsx`).
+mandant…) sont recalculées à chaque enregistrement par `colonnesBien()`. Une société mandante est
+rangée sous les clés d'origine d'une SCI : `donnees.qui = 'sci'`, `sciNom` = sa dénomination.
 
 ### Les critères d'un demandeur — `recherches.criteres_pro`
 
 `werner-commerce.sql` a ajouté **`recherches.criteres_pro`** (jsonb) : `natures[]` (louer,
 reprendre un bail, racheter un fonds, acheter des murs, investir), `activite`, `loyerMin`,
 `loyerMax` (loyer annuel HT HC), `vitrineMin` (mètres de linéaire), `postesMin`, `emplacements[]`.
-Écrit par `proPourBase()` (`src/components/shared/CriteresRecherche.tsx`), lu par
-`lireCriteresPro()` (`src/lib/correspondance.ts`).
-
+Écrit par `proPourBase()` (`CriteresRecherche.tsx`), lu par `lireCriteresPro()` (`correspondance.ts`).
 Le reste tient dans les colonnes d'origine : `type_bien` (les types de local), `surface_min/max`,
 `budget_min/max` (le prix d'une cession ou d'un achat, hors taxes), `secteurs`, les transports,
 `apport` et `financement` (pour un achat : fonds propres, prêt, crédit-bail…), `urgence`, `notes`,
@@ -212,12 +198,10 @@ la nature (poids 3), le loyer annuel face à `loyerMax` et le prix face à `budg
 surface, l'étage, le DPE et les équipements clé à clé (`rdc` : le local est au rez-de-chaussée).
 Moins de trois critères vérifiables : pas de note. Le CRM s'en sert dans l'onglet Rapprochement
 d'une affaire et dans les alertes (`src/lib/rapprochement.ts`, `src/lib/alertes-rappro.ts`).
+`werner-commerce.sql` a aussi ajouté **`biens.pro`** (jsonb) : ce résumé, copié quand une affaire est
+proposée à un demandeur (`versBienAcheteur()`) ; rien de privé (ni mandant, ni chiffres du fonds).
 
-`werner-commerce.sql` a aussi ajouté **`biens.pro`** (jsonb) : ce résumé, copié quand une affaire
-est proposée à un demandeur (`versBienAcheteur()`). Rien de privé : ni le mandant, ni les chiffres
-du fonds, ni les notes.
-
-### Le marché
+### Le marché, l'ancienneté d'une annonce
 
 Savoir **depuis quand une annonce est en ligne** se lit dans les données de la page SeLoger Bureaux &
 Commerces (`dateCreation`, `dateMiseAJour` dans `__NEXT_DATA__`), pas à l'écran ; la reprise ne garde
@@ -240,8 +224,7 @@ détail colonne par colonne : l'historique, §2.
 | `biens_vente` · `biens_vente_suivi` | Les affaires, et leur historique (visites hors CRM, offres, étapes, prix, notes, envois de pièces) |
 | `documents` · `documents_signataires` · `mandats_signatures` · `mandats_cosignataires` | Les documents juridiques et leurs signatures |
 | `registre_depart` · `registre_mandats` · `registre_observations` | Le registre des mandats |
-| `contact_submissions` | « Demandes Internet » |
-| `geocodes` · `push_abonnements` · `suivis_agence` · `propositions_agences` · `parametres` | La carte, les notifications, le suivi avec une agence, le lien pour les agences, les réglages |
+| `contact_submissions` · `geocodes` · `push_abonnements` · `suivis_agence` · `propositions_agences` · `parametres` | Demandes Internet, la carte, les notifications, le suivi avec une agence, le lien pour les agences, les réglages |
 
 ---
 
@@ -254,10 +237,9 @@ détail colonne par colonne : l'historique, §2.
   sous-menu : Mes affaires en cours · Sous offre, en signature · Mes estimations).
 - **Suivi** — Demandes Internet · Agenda · Visites · Relances.
 - **Outils** — Carte · Documents (Créer un document · Liste des documents · Registre des mandats).
-- **Analyse** — Mon activité · Paramètres.
-
-Sur téléphone, une barre en bas : Accueil · Contacts · « + » (contact, affaire, rendez-vous, mail) ·
-Visites · Relances. Les logos sont provisoires (§6).
+  **Analyse** — Mon activité · Paramètres.
+- Sur téléphone, une barre en bas : Accueil · Contacts · « + » (contact, affaire, rendez-vous, mail)
+  · Visites · Relances. Les logos sont provisoires (§6).
 
 ### Les écrans, en bref
 
@@ -271,9 +253,9 @@ Visites · Relances. Les logos sont provisoires (§6).
   · Rapprochement · Documents · Historique. « Le local » : Tout, Loyer (ou Prix), Surfaces, **Bail**
   (« proposé » ou « en cours », s'il y a un loyer), **Fonds**, Aménagement, Immeuble, Annexes, Accès,
   Énergie, Charges et taxes.
-- **« Ajouter le propriétaire »** (`FenAjoutProprio`, `FenetresBien.tsx`) — une petite fenêtre : on
-  cherche le mandant dans les contacts, ou on le crée en quelques champs, une société (son nom, son
-  interlocuteur) ou une personne. Le reste (SIREN, associés, adresse) se complète sur sa fiche.
+- **« Ajouter le propriétaire »** (`FenAjoutProprio`, `FenetresBien.tsx`) — une petite fenêtre : le
+  mandant se cherche dans les contacts, ou se crée en quelques champs (une société et son
+  interlocuteur, ou une personne) ; le reste se complète sur sa fiche.
 - **Contacts** (`Clients.tsx`, `FicheContact.tsx`) — des tuiles par type, une ligne par contact. **La
   société d'abord** : un nouveau contact part « Pour une société » (SAS par défaut), et « Sa
   société » passe en premier dans le formulaire d'un demandeur ou d'un mandant (`ChampsPro`). À la
@@ -281,8 +263,8 @@ Visites · Relances. Les logos sont provisoires (§6).
 - **La fiche d'un demandeur** (`FicheClient.tsx`) — « Recherche active », le bloc des critères
   (l'assistant du §2), puis les onglets Veille · Sélection · Présentés · Visites · Transaction ·
   Suivi, comme à l'origine. La veille reçoit ses annonces par `/veille/import` (adresse directe).
-- **Carte** (`PageCarte.tsx`) — les contacts et les affaires, filtrés par type de contact, par étape,
-  par **nature** et par **type de local** ; un loyer s'affiche « / an ».
+- **Carte** (`PageCarte.tsx`) — contacts et affaires, filtrés par type de contact, étape, **nature** et
+  **type de local** ; un loyer s'affiche « / an ».
 - **Documents** — les catégories : Mandats de commercialisation (location, cession ou vente), Mandats
   de recherche, Offres et lettres d'intention, Bons de visite, Courriers, Délégations ; le registre
   des mandats à part. Les textes des modèles sont encore ceux de l'origine (§6).
@@ -314,8 +296,8 @@ fois, en **63 affaires « en cours »** (étape `mandat`), sans mandant :
   l'annonce publiait un loyer « toutes taxes comprises », un prix hors honoraires ou honoraires
   inclus, ou des honoraires « Nous consulter ». Une note interne, jamais dans l'annonce.
 
-Ce que l'annonce ne dit pas ne s'invente pas : le mandant, l'adresse exacte (SeLoger ne donne que
-la rue), le numéro de mandat, les honoraires « Nous consulter ». La fiche les montre à renseigner.
+Ce que l'annonce ne dit pas ne s'invente pas (le mandant, l'adresse exacte, le numéro de mandat, les
+honoraires « Nous consulter ») : la fiche les montre à renseigner.
 
 ### Comment ça marche
 
@@ -409,13 +391,13 @@ types TypeScript ne décrivent plus le schéma » (§2), `relances.statut = 'rep
 
 **Celles de Werner**, relevées en lisant le code le 21 octobre 2026 :
 
-1. **L'espace client ne connaît pas les critères de l'immobilier d'entreprise.** `page.tsx` lui
-   passe ses critères sans `criteres_pro` ; sa note « de vos critères » ignore la nature, le loyer,
-   la vitrine et l'emplacement. Il lit et écrit toujours `nb_pieces_min` et `chambres_min`
-   (`/api/espace/criteres`), rebaptisées « espaces » et « bureaux ».
-2. **`biens.pro` est écrit, lu nulle part.** Ni l'espace ni la page publique ne disent la nature
-   d'une affaire ni « loyer annuel HT HC » : la page publique écrit « Montant demandé » et un prix au
-   m² (montant ÷ surface) sans unité de loyer.
+1. **L'espace client modifie encore les critères d'origine.** Depuis le 21 octobre (fb1004a), sa
+   note lit `criteres_pro` (nature, loyer, vitrine, emplacement) et `biens.pro` ; mais quand le
+   client change ses critères depuis l'espace, il écrit toujours `nb_pieces_min` et `chambres_min`
+   (`/api/espace/criteres`), rebaptisées « espaces » et « bureaux », et rien dans `criteres_pro`.
+2. **La page publique d'un local ne lit pas `biens.pro`** : elle ne dit ni la nature de l'affaire ni
+   « loyer annuel HT HC », écrit « Montant demandé » et un prix au m² (montant ÷ surface) sans
+   unité de loyer.
 3. **Des colonnes résidentielles encore lues** : `nb_pieces`, `nb_chambres` (« Espaces », « Bureaux »
    sur la page publique), `chambres_min`, `surface_sejour_min`, `balcon`, `jardin`, `cave`
    (`criteresDepuisRecherche()`, `correspondance()`). Pour une affaire, `versCorrespondance()` laisse
@@ -423,9 +405,13 @@ types TypeScript ne décrivent plus le schéma » (§2), `relances.statut = 'rep
 4. **Le rapprochement garde sans les comparer** `loyerMin`, `postesMin` et `activite`.
 5. **Une société mandante passe pour une SCI** (`donnees.qui = 'sci'`, `sciNom`) : les modèles de
    l'origine la traiteront comme une SCI.
-6. **Des liens vers https://www.wernerimmobilier.com**, le site piraté : la redirection de l'adresse
-   nue de l'espace (`src/proxy.ts`), le barème des honoraires envoyé aux portails (`src/lib/seloger.ts`,
-   `src/lib/poliris.ts`), `SITE_PUBLIC` (`src/lib/demandes-site.ts`), `/api/flux-site/sitemap`.
+6. **Des liens vers https://www.wernerimmobilier.com**, le site piraté : le barème des honoraires
+   envoyé aux portails (`src/lib/seloger.ts`, `src/lib/poliris.ts`), `SITE_PUBLIC`
+   (`src/lib/demandes-site.ts`), `/api/flux-site/sitemap`, et le site imprimé dans les documents et
+   les mails (`IDENTITE_DEFAUT.site`). Aucun n'agit aujourd'hui (ni diffusion ni Mailjet branchés) ;
+   **avant de brancher Mailjet ou la diffusion, vérifier que le site est réparé**, sinon retirer
+   ces liens. La redirection de l'adresse nue de l'espace (`src/proxy.ts`) a été retirée le
+   21 octobre : elle mène à la page « lien introuvable ».
 7. **Le barème des honoraires est celui d'Emilio** (`src/lib/mandat.ts` : 2,5 % et 5 %), désormais
    écrit « HT » ; les commentaires disent encore TTC. Celui de Werner reste à poser.
 8. **La transaction d'un demandeur et l'agenda suivent une vente de logement** : compromis, délai SRU

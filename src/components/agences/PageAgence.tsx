@@ -70,7 +70,7 @@ const ressembleAUnLien = (s: string) => /^(https?:\/\/)?[a-z0-9-]+(\.[a-z0-9-]+)
 
 function ligneApercu(a: Apercu): string {
   const bouts = [
-    a.pieces ? `${a.pieces} pièce${a.pieces > 1 ? 's' : ''}` : null,
+    a.pieces ? `${a.pieces} espace${a.pieces > 1 ? 's' : ''}` : null,
     a.surface ? `${String(a.surface).replace('.', ',')} m²` : null,
     a.prix ? euros(a.prix) : null,
   ].filter(Boolean);
@@ -79,8 +79,8 @@ function ligneApercu(a: Apercu): string {
 /** « 3 pièces · 52 m² · 265 000 € » depuis ce que la page a trouvé dans le PDF. */
 function ligneInfos(i: InfosPdf): string {
   return [
-    i.pieces ? `${i.pieces} pièce${i.pieces > 1 ? 's' : ''}` : null,
-    i.chambres && !i.pieces ? `${i.chambres} chambre${i.chambres > 1 ? 's' : ''}` : null,
+    i.pieces ? `${i.pieces} espace${i.pieces > 1 ? 's' : ''}` : null,
+    i.chambres && !i.pieces ? `${i.chambres} bureau${i.chambres > 1 ? 'x fermés' : ' fermé'}` : null,
     i.surface ? `${String(i.surface).replace('.', ',')} m²` : null,
     i.prix ? euros(i.prix) : null,
   ].filter(Boolean).join(' · ');
@@ -123,7 +123,7 @@ const ERREURS: Record<string, string> = {
   pdf_protege: 'Ce PDF est protégé par un mot de passe : envoyez-le sans mot de passe, ou des photos.',
   pdf_indisponible: 'L’envoi de PDF n’est pas encore ouvert : envoyez des photos, ou appelez Werner.',
   agence: 'Indiquez le nom de votre agence.',
-  contact: 'Indiquez un téléphone ou un e-mail, pour qu’Werner puisse vous rappeler.',
+  contact: 'Indiquez un téléphone ou un e-mail, pour que Werner puisse vous rappeler.',
   trop: 'Beaucoup d’envois d’un coup : réessayez dans quelques minutes.',
   ferme: 'Cette recherche n’est plus ouverte.',
   lien: 'Ce lien n’est plus valable.',
@@ -197,11 +197,11 @@ function Etapes({ titre, etapes }: { titre: string; etapes: { t: string; s: stri
 }
 const ETAPES_FORM = [
   { t: 'Collez le lien, ou déposez un PDF', s: 'Votre site, SeLoger, Leboncoin… une plaquette, ou quelques photos.' },
-  { t: 'C’est lu automatiquement', s: 'Prix, surface, pièces : rien à ressaisir.' },
-  { t: 'Werner vous rappelle', s: 'Si le bien correspond à son client.' },
+  { t: 'C’est lu automatiquement', s: 'Montant, surface, photos : rien à ressaisir.' },
+  { t: 'Werner vous rappelle', s: 'Si le local correspond à son client.' },
 ];
 const ETAPES_FAIT = [
-  { t: 'Votre bien est arrivé', s: 'Chez Werner, avec vos coordonnées.', fait: true },
+  { t: 'Votre local est arrivé', s: 'Chez Werner, avec vos coordonnées.', fait: true },
   { t: 'Il l’étudie pour son client', s: 'Il le compare à sa recherche.' },
   { t: 'Il revient vers vous', s: 'S’il intéresse son client, pour organiser une visite.' },
 ];
@@ -340,7 +340,7 @@ function CartePdf({ pdf, onRetirer }: { pdf: EtatPdf; onRetirer: () => void }) {
         </span>
         {retirer}
       </div>
-      <span className="ag-pdf-aide">{'Werner le lira de son côté. Vous pouvez ajouter le prix et la surface juste en dessous, si vous voulez.'}</span>
+      <span className="ag-pdf-aide">{'Werner le lira de son côté. Vous pouvez ajouter le loyer ou le prix et la surface juste en dessous, si vous voulez.'}</span>
     </div>
   );
 }
@@ -351,7 +351,7 @@ function CarteVous({ vous, repris, onModifier }: { vous: Vous; repris: boolean; 
   const ini = (nom || vous.agence).split(/\s+/).filter(Boolean).slice(0, 2).map(m => m[0]?.toUpperCase() || '').join('') || '?';
   return (
     <section className="ag-carte" aria-label="Vous">
-      <TitreCarte n="personne" cote={<span className="ag-pastille">{repris ? 'Repris du message d’Werner' : 'Gardé sur cet appareil'}</span>}>Vous</TitreCarte>
+      <TitreCarte n="personne" cote={<span className="ag-pastille">{repris ? 'Repris du message de Werner' : 'Gardé sur cet appareil'}</span>}>Vous</TitreCarte>
       <div className="ag-vous">
         <span className="ag-av ag-av-plein" aria-hidden="true">{ini}</span>
         <span className="ag-vous-t">
@@ -556,14 +556,14 @@ export default function PageAgence({ etat, token, resume, repris, code }: {
         {fait ? (
           <>
             <Entete titre={fait.deja ? 'Werner l’a déjà' : 'C’est arrivé chez Werner'}
-              sous={fait.deja ? 'Ce bien est déjà chez lui pour ce client. Merci !' : `Il l’étudie pour son client et revient vers vous.${prenomAgent ? ` Merci, ${prenomAgent}.` : ' Merci !'}`}
+              sous={fait.deja ? 'Ce local est déjà chez lui pour ce client. Merci !' : `Il l’étudie pour son client et revient vers vous.${prenomAgent ? ` Merci, ${prenomAgent}.` : ' Merci !'}`}
               cote={fait.deja ? undefined : <Etapes titre="Et maintenant ?" etapes={ETAPES_FAIT} />} />
             <div className="ag-corps ag-corps-fait">
               <section className="ag-carte ag-recap">
                 <div className="ag-recap-haut">
                   <span className="ag-fait-ic"><Ic n="coche" t={24} /></span>
                   <span className="ag-recap-t">
-                    <b>{fait.deja ? 'Déjà chez Werner' : 'Bien envoyé'}</b>
+                    <b>{fait.deja ? 'Déjà chez Werner' : 'Local envoyé'}</b>
                     <small>{fait.deja ? 'Rien à refaire : il l’a pour ce client.' : `Aujourd’hui à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}`}</small>
                   </span>
                 </div>
@@ -574,7 +574,7 @@ export default function PageAgence({ etat, token, resume, repris, code }: {
                   </div>
                 )}
                 <div className="ag-recap-act">
-                  <button type="button" className="ag-btn ag-btn-bleu" onClick={autre}><Ic n="plus" t={18} /><span>Proposer un autre bien</span></button>
+                  <button type="button" className="ag-btn ag-btn-bleu" onClick={autre}><Ic n="plus" t={18} /><span>Proposer un autre local</span></button>
                   <a className="ag-btn ag-btn-blanc ag-mob" href={`tel:${TEL_URL}`}><Ic n="tel" t={17} /><span>{`Appeler Werner · ${TEL}`}</span></a>
                 </div>
               </section>
@@ -586,19 +586,19 @@ export default function PageAgence({ etat, token, resume, repris, code }: {
           </>
         ) : (
           <>
-            <Entete titre="Un bien pour mon client ?" sous="Déposez-le ici : il arrive directement chez moi. Je l’étudie et je reviens vers vous."
+            <Entete titre="Un local pour mon client ?" sous="Déposez-le ici : il arrive directement chez moi. Je l’étudie et je reviens vers vous."
               salut={salut ? `Bonjour ${salut},` : undefined}
               cote={<Etapes titre="Comment ça marche" etapes={ETAPES_FORM} />} />
             <div className="ag-corps">
               <div className="ag-gauche">
                 <CarteRecherche resume={resume} />
                 <CarteContact />
-                <p className="ag-note"><Ic n="cadenas" t={14} /><span>Vos coordonnées servent seulement à vous rappeler pour ce bien.</span></p>
+                <p className="ag-note"><Ic n="cadenas" t={14} /><span>Vos coordonnées servent seulement à vous rappeler pour ce local.</span></p>
               </div>
 
               <div className="ag-droite">
-                <section className="ag-carte" aria-label="Votre bien">
-                  <TitreCarte n="maison">Votre bien</TitreCarte>
+                <section className="ag-carte" aria-label="Votre local">
+                  <TitreCarte n="maison">Votre local</TitreCarte>
                   <div className="ag-champ">
                     <label htmlFor="ag-lien">Le lien de l’annonce</label>
                     <span className="ag-aide">{'Celui de votre site d’agence, de SeLoger, de Leboncoin ou de tout autre site : collez-le, tout est repris automatiquement, photos comprises.'}</span>
@@ -621,7 +621,7 @@ export default function PageAgence({ etat, token, resume, repris, code }: {
                     {(lecture.etat === 'echec' || lecture.etat === 'erreur') && (
                       <div className="ag-lu ag-lu-orange" role="status">
                         <Ic n="alerte" t={17} />
-                        <span className="ag-lu-t"><b>{'L’annonce n’a pas pu être lue automatiquement'}</b><small>{lecture.etat === 'erreur' ? lecture.message : 'Ajoutez quelques photos et le prix ci-dessous, ou envoyez le lien tel quel : Werner l’ouvrira.'}</small></span>
+                        <span className="ag-lu-t"><b>{'L’annonce n’a pas pu être lue automatiquement'}</b><small>{lecture.etat === 'erreur' ? lecture.message : 'Ajoutez quelques photos et le montant ci-dessous, ou envoyez le lien tel quel : Werner l’ouvrira.'}</small></span>
                       </div>
                     )}
                   </div>
@@ -649,7 +649,7 @@ export default function PageAgence({ etat, token, resume, repris, code }: {
                     <div className="ag-ajouts">
                       {!pdf && (
                         <button type="button" className="ag-ajout" onClick={() => fichierPdf.current?.click()}>
-                          <Ic n="pdf" t={19} /><span className="ag-ajout-t"><b>Déposer un PDF</b><small>Plaquette, fiche du bien</small></span>
+                          <Ic n="pdf" t={19} /><span className="ag-ajout-t"><b>Déposer un PDF</b><small>Plaquette, fiche du local</small></span>
                         </button>
                       )}
                       {photos.length < PHOTOS_MAX && (
@@ -662,7 +662,7 @@ export default function PageAgence({ etat, token, resume, repris, code }: {
                   <div className="ag-grille">
                     <div className="ag-champ ag-large"><label htmlFor="ag-adr">Adresse <i>(facultatif)</i></label>
                       <Saisie n="lieu"><input id="ag-adr" value={adresse} onChange={e => setAdresse(e.target.value)} placeholder="12 rue Jean-Jaurès, Paris" maxLength={300} /></Saisie></div>
-                    <div className="ag-champ"><label htmlFor="ag-prix">Prix</label>
+                    <div className="ag-champ"><label htmlFor="ag-prix">Loyer ou prix</label>
                       <Saisie n="budget"><input id="ag-prix" inputMode="numeric" value={prix} onChange={e => setPrix(e.target.value)} placeholder="265 000 €" maxLength={20} /></Saisie></div>
                     <div className="ag-champ"><label htmlFor="ag-surf">Surface</label>
                       <Saisie n="surface"><input id="ag-surf" inputMode="decimal" value={surface} onChange={e => setSurface(e.target.value)} placeholder="52 m²" maxLength={12} /></Saisie></div>

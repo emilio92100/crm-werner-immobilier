@@ -61,9 +61,12 @@ export async function proxy(request: NextRequest) {
    */
   const hote = (request.headers.get('host') || '').toLowerCase().split(':')[0];
   if (HOTE_ESPACE && hote === HOTE_ESPACE) {
-    /* Une adresse sans jeton ne mène nulle part : on renvoie vers le site. */
+    /* Une adresse sans jeton ne mène nulle part : la page « lien introuvable »
+       de l'espace, avec les coordonnées de Werner. Pas de renvoi vers
+       wernerimmobilier.com tant que le site n'est pas réparé (piraté en
+       octobre 2026 : fausse vérification Cloudflare). */
     if (pathname === '/') {
-      return NextResponse.redirect('https://www.wernerimmobilier.com');
+      return NextResponse.rewrite(new URL('/espace/lien-introuvable', request.url));
     }
     /* Ce qui porte déjà son vrai chemin, ce qui sert l'application, et tout
        fichier reconnaissable à son extension passent sans être touchés. */

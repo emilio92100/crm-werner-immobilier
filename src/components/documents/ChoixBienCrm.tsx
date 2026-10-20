@@ -145,7 +145,7 @@ export default function AjoutBien({ clientId, plein, onAjouter }: {
             <Ic n="retour" t={14} />
           </button>
         )}
-        <b>{chemin === 'mandats' ? 'Un de mes mandats' : chemin === 'dossier' ? 'Un de ses biens' : 'Quel bien ajouter ?'}</b>
+        <b>{chemin === 'mandats' ? 'Une de mes affaires' : chemin === 'dossier' ? 'Un de ses biens' : 'Quel bien ajouter ?'}</b>
         <button type="button" className={s.abFermer} onClick={fermer}>Annuler</button>
       </div>
 
@@ -153,7 +153,7 @@ export default function AjoutBien({ clientId, plein, onAjouter }: {
         <div className={s.abChoix}>
           <button type="button" className={s.abTuile} onClick={() => setChemin('mandats')}>
             <span className={s.abTuileIc}><Ic n="panneau" t={18} /></span>
-            <span><b>Depuis mes mandats</b><small>Par sa référence, le nom du mandant ou l’adresse.</small></span>
+            <span><b>Depuis mes affaires</b><small>Par sa référence, le nom du mandant ou l’adresse.</small></span>
           </button>
           {clientId && (
             <button type="button" className={s.abTuile} onClick={() => setChemin('dossier')}>
@@ -197,7 +197,7 @@ export default function AjoutBien({ clientId, plein, onAjouter }: {
                     <span className={s.resDeux}>
                       <b>{c.titre || 'Bien'}</b>
                       <i>{[c.adresse, c.ville].filter(Boolean).join(', ') || 'Adresse non notée'}</i>
-                      <i>{[c.bien_vente_id ? 'Mon mandat' : c.agence_nom || (c.est_particulier ? 'Sans agence' : ''), EUR(c.prix_acquereur)].filter(Boolean).join(' · ')}</i>
+                      <i>{[c.bien_vente_id ? 'Mon affaire' : c.agence_nom || (c.est_particulier ? 'Sans agence' : ''), EUR(c.prix_acquereur)].filter(Boolean).join(' · ')}</i>
                     </span>
                     {travail === c.id && <small>…</small>}
                   </button>
