@@ -27,7 +27,8 @@ import { nomFoyer, conjointDe } from '@/lib/foyer';
 import {
   BasculeCriteres, CorpsCriteres, CRIT_VIDE, EXPOSITIONS, etapesCriteres,
   FINANCEMENTS, FriseCriteres, ICONE_EXPO, lireModeCrit, ecrireModeCrit,
-  texteChoix, texteEtats, URGENCES, CUISINES, ORDRE_ETAPES_CRIT,
+  texteChoix, texteEtats, URGENCES, CUISINES, ORDRE_ETAPES_CRIT, proDepuisRecherche, proPourBase,
+  NATURES_RECHERCHE, EMPLACEMENTS_RECHERCHE, EXIGENCES_PRO,
 } from '@/components/shared/CriteresRecherche';
 import { BlocParcours } from '@/components/shared/Parcours';
 import { lireParcours, memeParcours, parcoursVide, texteParcours } from '@/lib/parcours';
@@ -443,9 +444,12 @@ function ChampAdresseAuto({ etiquette, valeur, onChange }: { etiquette: string; 
 function rechercheRemplie(r: Recherche): boolean {
   const x = r as Recherche & { type_bien?: unknown };
   const plein = (v: unknown) => (Array.isArray(v) ? v.length > 0 : !!v);
+  const p = proDepuisRecherche(r);
   return plein(x.type_bien) || !!r.budget_min || !!r.budget_max || !!r.surface_min || !!r.nb_pieces_min || plein(r.secteurs) || !!r.dpe_max
     || !!r.parking || !!r.balcon || !!r.terrasse || !!r.jardin || !!r.cave || !!r.ascenseur || !!r.cuisine_type || !!r.etage_max_sans_ascenseur
-    || Object.keys(r.exigences || {}).length > 0;
+    || Object.keys(r.exigences || {}).length > 0
+    /* Werner : ce qu'il veut faire, son activité, son loyer, sa vitrine… */
+    || p.natures.length > 0 || !!p.activite || !!p.loyerMin || !!p.loyerMax || !!p.vitrineMin || !!p.postesMin || p.emplacements.length > 0;
 }
 
 /* V3.50 — Un bien d'acheteur qui est en fait un mandat de l'agence (une copie
@@ -951,6 +955,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
   const [rechercheId, setRechercheId] = useState<string>(ouverture?.rechercheId || (typeof place?.recherche === 'string' ? place.recherche : ''));
   const rechercheActive = recherches.find(r => r.id === rechercheId) || null;
   const cr = rechercheActive || ({ secteurs: [] } as unknown as Recherche);
+  const proCr = proDepuisRecherche(cr);
   /* Deux niveaux depuis la V3.29 : les rubriques de la fiche (Vue
      d'ensemble, Sa recherche, Son espace, Documents, Suivi), et dans « Sa
      recherche », les étapes du dossier (Veille, Sélection, Présentés,
@@ -1546,6 +1551,8 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
       surface_sejour_min: r.surface_sejour_min?.toString() || '',
       urgence: r.urgence || '', financement: r.financement || '', apport: r.apport?.toString() || '',
       parcours: lireParcours((r as unknown as { parcours?: unknown }).parcours),
+      /* Werner : nature, loyer, vitrine, emplacement… (recherches.criteres_pro). */
+      pro: proDepuisRecherche(r),
     });
     setMandat({
       date_signature: r.mandat_date_signature || '', duree: r.mandat_duree?.toString() || '3',
@@ -2252,6 +2259,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
       urgence: crit.urgence || null,
       financement: crit.financement || null,
       apport: crit.apport ? parseInt(crit.apport) : null,
+      criteres_pro: proPourBase(crit.pro),
       updated_at: new Date().toISOString(),
     }).eq('id', cible).select().single();
     if (error) {
@@ -4688,13 +4696,26 @@ ${signatureMail()}`,
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {/* Le bandeau : le client et son enveloppe */}
                   <div className="fc-bandeau" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', borderRadius: 14, padding: '15px 18px', color: 'var(--emilio)', background: '#fdf6f1', border: '1px solid #f9caa7' }}>
-                    {cr.type_bien && <span style={CRIT_CHIP_FORT}>🏡 {cr.type_bien}</span>}
+                    {proCr.natures.map(k => { const n = NATURES_RECHERCHE.find(x => x.k === k); return n ? <span key={k} style={CRIT_CHIP_FORT}>{n.i} {n.t}</span> : null; })}
+                    {cr.type_bien && <span style={CRIT_CHIP_FORT}>🏢 {cr.type_bien}</span>}
+                    {proCr.activite && <span style={CRIT_CHIP}>🧾 {proCr.activite}</span>}
                     {cr.urgence && <span style={CRIT_CHIP}>⏱️ {texteChoix(URGENCES, cr.urgence)}</span>}
                     {cr.financement && <span style={CRIT_CHIP}>💳 {texteChoix(FINANCEMENTS, cr.financement)}</span>}
                     {cr.apport != null && <span style={CRIT_CHIP}>💰 Apport {cr.apport.toLocaleString('fr-FR')} €</span>}
                     <span style={{ flexGrow: 1 }} />
+                    {(proCr.loyerMin || proCr.loyerMax) && (
+                      <span className="fc-budget" style={{ textAlign: 'right' }}>
+                        <span style={{ display: 'block', fontSize: 10.5, fontWeight: 800, color: '#b09a63', textTransform: 'uppercase', letterSpacing: 1.1 }}>Loyer annuel HT HC</span>
+                        <span style={{ display: 'block', fontSize: 25, fontWeight: 800, color: '#d36a1a', letterSpacing: -0.6, marginTop: 2 }}>
+                          {proCr.loyerMin && proCr.loyerMax ? fourchetteBudget(Number(proCr.loyerMin), Number(proCr.loyerMax))
+                            : proCr.loyerMax ? `Jusqu'à ${budgetLisible(Number(proCr.loyerMax))}`
+                              : `À partir de ${budgetLisible(Number(proCr.loyerMin))}`}
+                        </span>
+                      </span>
+                    )}
+                    {(cr.budget_min || cr.budget_max || !(proCr.loyerMin || proCr.loyerMax)) && (
                     <span className="fc-budget" style={{ textAlign: 'right' }}>
-                      <span style={{ display: 'block', fontSize: 10.5, fontWeight: 800, color: '#b09a63', textTransform: 'uppercase', letterSpacing: 1.1 }}>Budget</span>
+                      <span style={{ display: 'block', fontSize: 10.5, fontWeight: 800, color: '#b09a63', textTransform: 'uppercase', letterSpacing: 1.1 }}>{proCr.natures.length && proCr.natures.every(k => k === 'location') ? 'Budget' : 'Prix'}</span>
                       <span style={{ display: 'block', fontSize: 25, fontWeight: 800, color: '#d36a1a', letterSpacing: -0.6, marginTop: 2 }}>
                         {cr.budget_min && cr.budget_max ? fourchetteBudget(cr.budget_min, cr.budget_max)
                           : cr.budget_max ? `Jusqu'à ${budgetLisible(cr.budget_max)}`
@@ -4702,6 +4723,7 @@ ${signatureMail()}`,
                               : 'À préciser'}
                       </span>
                     </span>
+                    )}
                   </div>
 
                   <button type="button" className="fc-crit-bascule" onClick={() => setCritsOuverts(v => !v)}
@@ -4722,6 +4744,9 @@ ${signatureMail()}`,
                     if (cr.chambres_min) logement.push({ lib: 'Bureaux fermés', val: <>{cr.chambres_min}<Mini fort /></>, fort: true });
                     if (cr.surface_sejour_min) logement.push({ lib: 'Surface de vente', val: <>{cr.surface_sejour_min} m²<Mini /></> });
                     if (texteEtats(cr.etat_souhaite)) logement.push({ lib: 'État', val: <span style={{ fontSize: 13.5 }}>{texteEtats(cr.etat_souhaite)}</span> });
+                    if (proCr.vitrineMin) logement.push({ lib: 'Vitrine', val: <>{proCr.vitrineMin} m linéaires<Mini /></> });
+                    if (proCr.postesMin) logement.push({ lib: 'Postes de travail', val: <>{proCr.postesMin}<Mini /></> });
+                    if (proCr.emplacements.length) logement.push({ lib: 'Emplacement', val: <span style={{ fontSize: 13.5 }}>{proCr.emplacements.map(k => EMPLACEMENTS_RECHERCHE.find(x => x.k === k)?.t || k).join(', ')}</span> });
 
                     const immeuble: LigneC[] = [];
                     if (cr.etage_min || cr.etage_max) immeuble.push({ lib: 'Étage', val: cr.etage_min && cr.etage_max ? `${ordinal(cr.etage_min)} – ${ordinal(cr.etage_max)}` : cr.etage_max ? `jusqu'au ${ordinal(cr.etage_max || 0)}` : `${ordinal(cr.etage_min || 0)} et plus` });
@@ -4748,7 +4773,13 @@ ${signatureMail()}`,
                        rangées se font plus bas ; au téléphone, une colonne (crm-mobile.css,
                        .fc-familles). Les précisions restent dessous, sur toute la largeur. */
                     const ex = (cr.exigences || {}) as Record<string, string>;
-                    const EQUIP: [string, string][] = [['parking','🅿️ Parking'],['balcon','🌿 Extérieur'],['terrasse','☀️ Terrasse'],['jardin','🌳 Cour'],['cave','📦 Cave'],['ascenseur','🛗 Ascenseur'],['gardien','👮 Gardien'],['interphone','🔔 Interphone'],['digicode','🔢 Digicode']];
+                    /* Werner : les exigences du commerce (EXIGENCES_PRO), puis les
+                       anciennes cases quand une recherche les a encore. */
+                    const EQUIP: [string, string][] = [
+                      ...EXIGENCES_PRO.map(e => [e.k, `${e.i} ${e.l}`] as [string, string]),
+                      ...([['balcon','🌿 Extérieur'],['jardin','🌳 Cour'],['cave','📦 Cave'],['gardien','👮 Gardien'],['interphone','🔔 Interphone'],['digicode','🔢 Digicode']] as [string, string][])
+                        .filter(([k]) => !EXIGENCES_PRO.some(e => e.k === k)),
+                    ];
                     const equip: { cle: string; texte: string; fort: boolean }[] = [];
                     EQUIP.forEach(([k, l]) => { if ((cr as any)[k] || ex[k]) equip.push({ cle: k, texte: l, fort: ex[k] === 'indispensable' }); });
                     if (ex.exterieur) equip.push({ cle: 'exterieur', texte: `🌤️ Extérieur${cr.exterieur_surface_min ? ` de ${cr.exterieur_surface_min} m² mini` : ''}`, fort: ex.exterieur === 'indispensable' });
