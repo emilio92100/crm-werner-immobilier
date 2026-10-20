@@ -125,7 +125,7 @@ function lireRetour(): Retour | null {
     const f = r.fa && typeof r.fa === 'object' ? r.fa : {};
     return {
       statuts: chaines(r.statuts), sit: typeof r.sit === 'string' ? r.sit : 'toutes',
-      fa: { types: chaines(f.types), pieces: nombres(f.pieces), chambres: nombres(f.chambres), surfMin: positif(f.surfMin), surfMax: positif(f.surfMax), budMin: positif(f.budMin), budMax: positif(f.budMax), villes: chaines(f.villes) },
+      fa: { types: chaines(f.types), pieces: nombres(f.pieces), chambres: nombres(f.chambres), natures: chaines(f.natures), surfMin: positif(f.surfMin), surfMax: positif(f.surfMax), budMin: positif(f.budMin), budMax: positif(f.budMax), loyMin: positif(f.loyMin), loyMax: positif(f.loyMax), villes: chaines(f.villes) },
       search: typeof r.search === 'string' ? r.search : '', typeArch: typeof r.typeArch === 'string' ? r.typeArch : 'tous',
       n: positif(r.n) || PAQUET, haut: positif(r.haut) || 0, hautZone: positif(r.hautZone) || 0,
     };
@@ -806,7 +806,7 @@ export default function Clients({ onNavigate, fenetre }: {
 
     /* V3.75 : `chambres_min` aussi. La pastille des chambres lisait
        `clients.chambres_min`, l'ancienne colonne qui n'est plus tenue à jour. */
-    const CRIT_FIELDS = ['type_bien', 'budget_min', 'budget_max', 'surface_min', 'surface_max', 'nb_pieces_min', 'nb_pieces_max', 'chambres_min', 'dpe_max', 'secteurs', 'parking', 'balcon', 'terrasse', 'jardin', 'cave', 'ascenseur', 'exigences', 'cuisine_type', 'exterieur_surface_min'];
+    const CRIT_FIELDS = ['criteres_pro', 'type_bien', 'budget_min', 'budget_max', 'surface_min', 'surface_max', 'nb_pieces_min', 'nb_pieces_max', 'chambres_min', 'dpe_max', 'secteurs', 'parking', 'balcon', 'terrasse', 'jardin', 'cave', 'ascenseur', 'exigences', 'cuisine_type', 'exterieur_surface_min'];
 
     const merged = clientsList.map(c => {
       const rechs = recherches.filter(r => r.client_id === c.id);

@@ -1,4 +1,5 @@
 'use client';
+import { NATURES_RECHERCHE } from '@/components/shared/CriteresRecherche';
 import { useEffect, useState } from 'react';
 import { Ic } from '@/components/documents/ApercuActe';
 import { SaisieNombre } from '@/components/biens/ChampsBien';
@@ -24,20 +25,29 @@ import l from './FiltresAcheteurs.module.css';
    filtraient rien et des statuts à 0 toujours affichés. Une seule ligne
    « Affiner », comme pour les biens. */
 
+/* Werner : les filtres de l'immobilier d'entreprise — ce qu'il veut faire
+   (`natures`), le loyer annuel HT HC (`loyMin`/`loyMax`) et le prix
+   (`budMin`/`budMax`, une cession ou des murs) ; les espaces et les bureaux
+   fermés restent lus pour les anciennes recherches, sans bouton. */
 export type FiltresA = {
-  types: string[]; pieces: number[]; chambres: number[];
-  surfMin: number | null; surfMax: number | null; budMin: number | null; budMax: number | null; villes: string[];
+  types: string[]; pieces: number[]; chambres: number[]; natures: string[];
+  surfMin: number | null; surfMax: number | null; budMin: number | null; budMax: number | null;
+  loyMin: number | null; loyMax: number | null; villes: string[];
 };
-export const FILTRES_A_VIDES: FiltresA = { types: [], pieces: [], chambres: [], surfMin: null, surfMax: null, budMin: null, budMax: null, villes: [] };
+export const FILTRES_A_VIDES: FiltresA = { types: [], pieces: [], chambres: [], natures: [], surfMin: null, surfMax: null, budMin: null, budMax: null, loyMin: null, loyMax: null, villes: [] };
 export const nbFiltresA = (f: FiltresA) =>
-  (f.types.length ? 1 : 0) + (f.pieces.length ? 1 : 0) + (f.chambres.length ? 1 : 0) + (f.surfMin || f.surfMax ? 1 : 0)
-  + (f.budMin || f.budMax ? 1 : 0) + (f.villes.length ? 1 : 0);
+  (f.types.length ? 1 : 0) + (f.pieces.length ? 1 : 0) + (f.chambres.length ? 1 : 0) + ((f.natures || []).length ? 1 : 0) + (f.surfMin || f.surfMax ? 1 : 0)
+  + (f.budMin || f.budMax ? 1 : 0) + (f.loyMin || f.loyMax ? 1 : 0) + (f.villes.length ? 1 : 0);
 
 /* Ce qu'on lit d'un acheteur (les colonnes de sa recherche). */
 type Acheteur = {
   type_bien?: unknown; nb_pieces_min?: unknown; nb_pieces_max?: unknown; chambres_min?: unknown;
   surface_min?: unknown; budget_min?: unknown; budget_max?: unknown; secteurs?: unknown;
+  criteres_pro?: unknown;
 };
+const proDe = (c: Acheteur) => (c.criteres_pro && typeof c.criteres_pro === 'object' ? c.criteres_pro as { natures?: unknown; loyerMin?: unknown; loyerMax?: unknown } : {});
+const naturesDe = (c: Acheteur) => { const n = proDe(c).natures; return Array.isArray(n) ? n.map(String) : []; };
+const loyerDe = (c: Acheteur) => nombre(proDe(c).loyerMax) ?? nombre(proDe(c).loyerMin);
 const nombre = (v: unknown) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : null; };
 const typesDe = (c: Acheteur) => String(c.type_bien || '').split(',').map(x => x.trim()).filter(Boolean);
 /* Les secteurs sont stockés « Quartier (Ville) » : on ne garde que les villes. */
@@ -60,6 +70,11 @@ export function correspond(c: Acheteur, f: FiltresA): boolean {
   if (f.types.length) {
     const t = typesDe(c).map(x => x.toLowerCase());
     if (!f.types.some(x => t.includes(x.toLowerCase()))) return false;
+  }
+  if ((f.natures || []).length && !f.natures.some(k => naturesDe(c).includes(k))) return false;
+  if (f.loyMin || f.loyMax) {
+    const l = loyerDe(c);
+    if (!l || (f.loyMin && l < f.loyMin) || (f.loyMax && l > f.loyMax)) return false;
   }
   if (f.pieces.length && !f.pieces.some(k => egal(piecesDe(c), k, PLUS_PIECES))) return false;
   if (f.chambres.length && !f.chambres.some(k => egal(chambresDe(c), k, PLUS_CHAMBRES))) return false;
@@ -86,7 +101,7 @@ const entre = (a: number | null, z: number | null, u: string, fmt: (n: number) =
 const liste = (l: number[], plus: number, u: string) => [...l].sort((x, y) => x - y).map(x => (x >= plus ? `${plus}+` : String(x))).join(', ') + (l.length ? ` ${u}` : '');
 const plusieurs = (l: string[], u: string) => (l.length === 1 ? l[0] : l.length ? `${l.length} ${u}` : '');
 
-type Panneau = 'statut' | 'logement' | 'type' | 'pieces' | 'chambres' | 'surface' | 'budget' | 'ville' | null;
+type Panneau = 'statut' | 'logement' | 'nature' | 'type' | 'pieces' | 'chambres' | 'surface' | 'loyer' | 'budget' | 'ville' | null;
 
 /* Un choix unique (le logement) : sa valeur « tout », ses options et leurs chiffres. */
 export type ChoixUnique = {
@@ -144,11 +159,11 @@ export default function FiltresAcheteurs({ base, f, onF, n, statut, logement }: 
   [...f.villes].forEach(v => { if (!villes.includes(v)) villes.push(v); });
 
   const boutons: { p: Exclude<Panneau, null>; l: string; ic: string; v: string }[] = [
-    { p: 'type', l: 'Type', ic: 'maison', v: plusieurs(f.types, 'types') },
-    { p: 'pieces', l: 'Espaces', ic: 'plan', v: liste(f.pieces, PLUS_PIECES, 'esp.') },
-    { p: 'chambres', l: 'Bureaux fermés', ic: 'porte', v: liste(f.chambres, PLUS_CHAMBRES, 'bur.') },
+    { p: 'nature', l: 'Projet', ic: 'cle', v: plusieurs((f.natures || []).map(x => NATURES_RECHERCHE.find(n => n.k === x)?.t || x), 'projets') },
+    { p: 'type', l: 'Type', ic: 'immeuble', v: plusieurs(f.types, 'types') },
     { p: 'surface', l: 'Surface', ic: 'regle', v: entre(f.surfMin, f.surfMax, 'm²') },
-    { p: 'budget', l: 'Budget', ic: 'euro', v: entre(f.budMin, f.budMax, '€', k) },
+    { p: 'loyer', l: 'Loyer', ic: 'euro', v: entre(f.loyMin, f.loyMax, '€/an', k) },
+    { p: 'budget', l: 'Prix', ic: 'euro', v: entre(f.budMin, f.budMax, '€', k) },
     { p: 'ville', l: 'Ville', ic: 'lieu', v: plusieurs(f.villes, 'villes') },
   ];
   const effacer = <button type="button" className={b.lien} onClick={() => { onF(FILTRES_A_VIDES); logement.onChange(logement.tout); setOuvert(null); }}>Effacer</button>;
@@ -247,6 +262,33 @@ export default function FiltresAcheteurs({ base, f, onF, n, statut, logement }: 
               </>
             );
           })()}
+          {ouvert === 'nature' && (
+            <>
+              <div className={s.pills}>
+                {NATURES_RECHERCHE.map(x => (
+                  <Puce key={x.k} l={x.t} n={combien({ natures: [x.k] })} on={(f.natures || []).includes(x.k)}
+                    onClick={() => onF({ ...f, natures: basculerDans(f.natures || [], x.k) })} />
+                ))}
+              </div>
+              <p className={b.affAide}>Ce qu’il veut faire : louer un local vide, reprendre un bail, racheter un fonds, acheter des murs ou investir.</p>
+            </>
+          )}
+          {ouvert === 'loyer' && (
+            <>
+              <div className={s.pills}>
+                {([[null, 24_000], [24_000, 48_000], [48_000, 96_000], [96_000, 180_000], [180_000, null]] as const).map(([a, z]) => {
+                  const l = entre(a, z, '€/an', k);
+                  const on = f.loyMin === a && f.loyMax === z;
+                  return <Puce key={l} l={l} n={combien({ loyMin: a, loyMax: z })} on={on} onClick={() => onF({ ...f, loyMin: on ? null : a, loyMax: on ? null : z })} />;
+                })}
+              </div>
+              <div className={b.affMM}>
+                <label><span>À partir de</span><SaisieNombre v={f.loyMin} euros unite="€/an" off={false} onChange={x => onF({ ...f, loyMin: x })} ph="Min." lib="Loyer annuel, à partir de" /></label>
+                <label><span>Jusqu’à</span><SaisieNombre v={f.loyMax} euros unite="€/an" off={false} onChange={x => onF({ ...f, loyMax: x })} ph="Max." lib="Loyer annuel, jusqu’à" /></label>
+              </div>
+              <p className={b.affAide}>Son loyer annuel HT HC maximum.</p>
+            </>
+          )}
           {ouvert === 'type' && (
             <div className={s.pills}>
               {types.length === 0 && <span className={b.vide}>Aucun type saisi dans leurs recherches.</span>}
@@ -278,7 +320,7 @@ export default function FiltresAcheteurs({ base, f, onF, n, statut, logement }: 
           {ouvert === 'surface' && (
             <>
               <div className={s.pills}>
-                {([[null, 50, 'Moins de 50 m²'], [50, 70, '50 à 70 m²'], [70, 90, '70 à 90 m²'], [90, 120, '90 à 120 m²'], [120, null, 'Plus de 120 m²']] as const).map(([a, z, l]) => {
+                {([[null, 50, 'Moins de 50 m²'], [50, 100, '50 à 100 m²'], [100, 200, '100 à 200 m²'], [200, 500, '200 à 500 m²'], [500, null, 'Plus de 500 m²']] as const).map(([a, z, l]) => {
                   const on = f.surfMin === a && f.surfMax === z;
                   return <Puce key={l} l={l} n={combien({ surfMin: a, surfMax: z })} on={on} onClick={() => onF({ ...f, surfMin: on ? null : a, surfMax: on ? null : z })} />;
                 })}
@@ -293,7 +335,7 @@ export default function FiltresAcheteurs({ base, f, onF, n, statut, logement }: 
           {ouvert === 'budget' && (
             <>
               <div className={s.pills}>
-                {([[null, 400_000], [400_000, 700_000], [700_000, 1_000_000], [1_000_000, 1_500_000], [1_500_000, null]] as const).map(([a, z]) => {
+                {([[null, 100_000], [100_000, 300_000], [300_000, 600_000], [600_000, 1_200_000], [1_200_000, null]] as const).map(([a, z]) => {
                   const l = entre(a, z, '€', k);
                   const on = f.budMin === a && f.budMax === z;
                   return <Puce key={l} l={l} n={combien({ budMin: a, budMax: z })} on={on} onClick={() => onF({ ...f, budMin: on ? null : a, budMax: on ? null : z })} />;
@@ -303,7 +345,7 @@ export default function FiltresAcheteurs({ base, f, onF, n, statut, logement }: 
                 <label><span>À partir de</span><SaisieNombre v={f.budMin} euros unite="€" off={false} onChange={x => onF({ ...f, budMin: x })} ph="Min." lib="Budget, à partir de" /></label>
                 <label><span>Jusqu’à</span><SaisieNombre v={f.budMax} euros unite="€" off={false} onChange={x => onF({ ...f, budMax: x })} ph="Max." lib="Budget, jusqu’à" /></label>
               </div>
-              <p className={b.affAide}>Son budget maximum.</p>
+              <p className={b.affAide}>Son budget maximum pour un droit au bail, un fonds ou des murs.</p>
             </>
           )}
           {/* V3.78 (Alexandre : « quand il y a beaucoup de villes, une petite
