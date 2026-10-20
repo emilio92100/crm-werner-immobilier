@@ -61,7 +61,7 @@ export function bienCourt(b: BienVente): string {
   const d = b.donnees || {};
   const ville = villeAffichee(b.ville, b.code_postal) || String(d.ville || '');
   const p = b.nb_pieces || Number(d.pieces) || 0;
-  return [ville || b.titre || titreBien(d), p ? `${p} p.` : ''].filter(Boolean).join(' · ') || b.reference || 'Bien';
+  return [ville || b.titre || titreBien(d), p ? `${p} p.` : ''].filter(Boolean).join(' · ') || b.reference || 'Affaire';
 }
 
 const presente = (c: Copie | null) => !!c && c.etape !== 'selection';
@@ -252,11 +252,11 @@ function finMail(ok: Envoi['gens']): string {
   const l1 = espace.length > 1;
   const l2 = simple.length > 1;
   const phraseEspace = simple.length
-    ? `${noms(espace)} : le bien est aussi dans ${l1 ? 'leur' : 'son'} espace, avec une relance « sans réponse ».`
+    ? `${noms(espace)} : l’affaire est aussi dans ${l1 ? 'leur' : 'son'} espace, avec une relance « sans réponse ».`
     : 'Une relance « sans réponse » est posée pour chacun, et ils sont prévenus sur leur téléphone s’ils l’ont accepté.';
   /* Où il le verra : le Suivi d'un contact du CRM, l'historique du bien pour tous. */
   const crm = simple.some(g => g.crm);
-  const ou = crm ? `${simple.every(g => g.crm) ? (l2 ? 'leur' : 'son') : 'le'} Suivi et l’historique du bien diront` : 'l’historique du bien dira';
+  const ou = crm ? `${simple.every(g => g.crm) ? (l2 ? 'leur' : 'son') : 'le'} Suivi et l’historique de l’affaire diront` : 'l’historique de l’affaire dira';
   const phraseSimple = espace.length
     ? `${noms(simple)} : un simple mail, avec un lien à ${l2 ? 'leur' : 'son'} nom vers la page du bien ; ${ou} quand ${l2 ? 'ils l’ouvrent' : 'il l’ouvre'}.`
     : `${l2 ? 'Chaque lien est au nom de son destinataire' : 'Le lien du mail est à son nom'} : ${ou} quand ${l2 ? 'ils ouvrent' : 'il ouvre'} la page du bien.`;
@@ -289,7 +289,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
   const envoyables = useMemo(() => biens.filter(b => ['vente', 'avant'].includes(modeAcheteurs(b.etape))), [biens]);
   const avantMandat = envoyables.filter(b => modeAcheteurs(b.etape) === 'avant');
   const ecartes = biens.filter(b => !envoyables.includes(b)).map(b => ({
-    nom: nomBien(b), pourquoi: modeAcheteurs(b.etape) === 'pause' ? 'Vente en pause : l’envoi reprend avec elle.' : 'Il n’est plus en vente.',
+    nom: nomBien(b), pourquoi: modeAcheteurs(b.etape) === 'pause' ? 'Affaire en pause : l’envoi reprend avec elle.' : 'Elle n’est plus sur le marché.',
   }));
   /* Les clients choisis par leur nom (des recherches), le dernier en tête. */
   const [manuels, setManuels] = useState<string[]>([]);
@@ -653,7 +653,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
     setEnvoi(null); setEtape('qui'); setManuels([]); setLibres([]); setChoisis(new Set()); setMail(null); setMailSimple(null); setApercu(null); setApercuPour(''); setVue('apercu');
   }
 
-  const titre = envoyables.length > 1 || (!envoyables.length && biens.length > 1) ? `Envoyer ${envoyables.length || biens.length} biens` : 'Envoyer ce bien';
+  const titre = envoyables.length > 1 || (!envoyables.length && biens.length > 1) ? `Envoyer ${envoyables.length || biens.length} affaires` : 'Envoyer cette affaire';
   const photo = envoyables.length === 1 ? (envoyables[0].photo || lirePhotos((envoyables[0].donnees || {}).photos)[0]?.url || '') : '';
   const plusieursBiens = envoyables.length > 1;
 
@@ -672,7 +672,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
     const avisSeul = seul ? avisDe(x.items[0].bien.id, x.cle) : null;
     return (
       <div key={x.cle} className={`${l.ligne} ${l.ligneRappro}`} data-on={on ? 'oui' : 'non'} data-rien={rien ? 'oui' : undefined} style={{ animationDelay: `${Math.min(rang, 8) * 0.035}s` }}>
-        {rien ? <span className={l.caseVide} title="Il a déjà tous ces biens" /> : <CaseLigne on={on} onBasculer={() => basculer(x.cle)} titre={on ? `Décocher ${nomClient(a.client)}` : `Cocher ${nomClient(a.client)}`} />}
+        {rien ? <span className={l.caseVide} title="Il a déjà toutes ces affaires" /> : <CaseLigne on={on} onBasculer={() => basculer(x.cle)} titre={on ? `Décocher ${nomClient(a.client)}` : `Cocher ${nomClient(a.client)}`} />}
         <AvecScore s={meilleur && typeof meilleur.s === 'number' ? meilleur.s : Math.max(...x.items.map(i => i.acheteur.corr.note))} v={meilleur?.v || null} legende={meilleur && typeof meilleur.s === 'number' ? 'potentiel' : 'critères'}>
           <AvatarContact c={a.client} teinte={{ bg: teinte(a.client.id).f, fg: teinte(a.client.id).t }} libre />
         </AvecScore>
@@ -706,7 +706,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
             </div>
           )}
         </div>
-        <span className={l.combien}>{rien ? 'Déjà reçu' : n ? (n > 1 ? `${n} biens` : '1 bien') : 'En sélection'}</span>
+        <span className={l.combien}>{rien ? 'Déjà reçu' : n ? (n > 1 ? `${n} affaires` : '1 affaire') : 'En sélection'}</span>
       </div>
     );
   };
@@ -721,7 +721,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
     const commun = { className: l.dLigne, 'data-sort': sortants.has(d.cle) ? 'oui' : undefined, style: { animationDelay: `${Math.min(rang, 6) * 0.03}s` } };
     /* V3.152 : ce qu'il recevra par mail — son espace, ou un simple mail. */
     const recoit = sorteDe(d) === 'espace'
-      ? <span className={l.recoit} data-sorte="espace" title="Client actif : le mail mène à son espace, où le bien arrive aussi."><Ic n="maison" t={12} e={2.2} />{'Son espace'}</span>
+      ? <span className={l.recoit} data-sorte="espace" title="Client actif : le mail mène à son espace, où l’affaire arrive aussi."><Ic n="maison" t={12} e={2.2} />{'Son espace'}</span>
       : <span className={l.recoit} data-sorte="simple" title="Un simple mail : la photo, les infos et un lien à son nom vers la page du bien. Rien n’entre dans un espace."><Ic n="mail" t={12} e={2.2} />{'Simple mail · page du bien'}</span>;
     if (d.genre === 'libre') {
       const x = d.libre;
@@ -735,10 +735,10 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
                 : <b className={l.nomLibre}>{x.email}</b>}
               <span className={l.tag}>{x.clientId ? 'Sans recherche' : 'Hors du CRM'}</span>
             </span>
-            <small>{x.clientId ? `${x.email} · noté dans son Suivi` : 'Noté dans l’historique du bien'}</small>
+            <small>{x.clientId ? `${x.email} · noté dans son Suivi` : 'Noté dans l’historique de l’affaire'}</small>
             {recoit}
           </div>
-          <span className={l.dCombien}>{plusieursBiens ? `${envoyables.length} biens` : '1 bien'}</span>
+          <span className={l.dCombien}>{plusieursBiens ? `${envoyables.length} affaires` : '1 affaire'}</span>
           {croix}
         </div>
       );
@@ -751,7 +751,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
     const statut = STATUT_COURT[String(a.client.statut || '')];
     const plusieurs = (parClient.get(a.client.id) || []).length > 1;
     const note = x.items.length === 1 ? x.items[0].acheteur.corr.note : -1;
-    const sous = !x.items.length ? 'C’est le propriétaire : rien à lui envoyer.'
+    const sous = !x.items.length ? 'C’est le mandant : rien à lui envoyer.'
       : [d.source === 'rappro' ? 'Rapprochement' : '', recherchePhrase(a.recherche, plusieurs), note >= 0 ? `${note} % de sa recherche` : ''].filter(Boolean).join(' · ');
     const tt = teinte(a.client.id);
     return (
@@ -771,7 +771,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
                 const deja = presente(i.acheteur.copie);
                 return (
                   <span key={i.bien.id} className={l.pastille} data-ton={deja ? 'deja' : nt >= SEUIL_CORRESPOND ? 'bon' : nt >= SEUIL_LISTE ? 'partiel' : 'libre'}
-                    title={deja ? 'Il l’a déjà reçu' : i.acheteur.copie ? 'Déjà dans sa sélection, pas encore envoyé' : nt >= 0 ? `Correspond à ${nt} % de sa recherche` : 'Pas de note : sa recherche ne se compare pas à ce bien'}>
+                    title={deja ? 'Il l’a déjà reçu' : i.acheteur.copie ? 'Déjà dans sa sélection, pas encore envoyé' : nt >= 0 ? `Correspond à ${nt} % de sa recherche` : 'Pas de note : sa recherche ne se compare pas à cette affaire'}>
                     {pct(nt) ? <b>{pct(nt)}</b> : null}{bienCourt(i.bien)}{deja ? ' · déjà reçu' : i.acheteur.copie ? ' · en sélection' : ''}
                   </span>
                 );
@@ -779,7 +779,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
             </span>
           )}
         </div>
-        <span className={l.dCombien} data-rien={rien ? 'oui' : undefined}>{rien ? (x.items.length ? 'Déjà reçu' : 'Son bien') : n ? (n > 1 ? `${n} biens` : '1 bien') : 'En sélection'}</span>
+        <span className={l.dCombien} data-rien={rien ? 'oui' : undefined}>{rien ? (x.items.length ? 'Déjà reçu' : 'Son affaire') : n ? (n > 1 ? `${n} affaires` : '1 affaire') : 'En sélection'}</span>
         {croix}
       </div>
     );
@@ -795,8 +795,8 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
     const reussi = e.fini && ok.length > 0;
     const titreFin = !e.fini ? '' : !ok.length ? 'Rien n’est parti'
       : e.quoi === 'mail' ? (pl ? 'Fiches envoyées à' : 'Fiche envoyée à')
-        : e.quoi === 'espace' ? (pl ? 'Biens envoyés dans l’espace de' : 'Bien envoyé dans l’espace de')
-          : (pl ? 'Biens mis en sélection pour' : 'Bien mis en sélection pour');
+        : e.quoi === 'espace' ? (pl ? 'Affaires envoyées dans l’espace de' : 'Affaire envoyée dans l’espace de')
+          : (pl ? 'Affaires mises en sélection pour' : 'Affaire mise en sélection pour');
     const titreEn = e.quoi === 'mail' ? (e.gens.length > 1 ? 'Envoi des mails…' : 'Envoi du mail…') : e.quoi === 'espace' ? 'Envoi dans leur espace…' : 'Mise en sélection…';
     const montres = e.fini ? ok : e.gens;
     return (
@@ -853,7 +853,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
             : <span className={l.teteIc}><Ic n={etape === 'mail' ? 'mail' : 'envoyer'} t={20} /></span>}
           <div className={l.teteTx}>
             <h2>{etape === 'mail' && !envoi ? (nbMails > 1 ? `${nbMails} mails, un par personne` : 'Le mail du client') : titre}</h2>
-            <p>{envoyables.map(bienCourt).join(' · ') || 'Aucun bien à envoyer dans la sélection.'}</p>
+            <p>{envoyables.map(bienCourt).join(' · ') || 'Aucune affaire à envoyer dans la sélection.'}</p>
           </div>
           <button type="button" className={l.fermer} aria-label="Fermer" disabled={occupe} onClick={onFermer}><Ic n="croix" t={15} e={2.3} /></button>
         </div>
@@ -888,12 +888,12 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
                   <textarea className={`${l.in} ${l.inMsg}`} rows={13} value={texte?.corps || ''} disabled={!texte} placeholder={texte ? '' : 'Chargement du modèle…'} onChange={e => setTexte(m => (m ? { ...m, corps: e.target.value } : m))} />
                 </label>
                 <p className={l.aide}><Ic n="info" t={14} /><span>{sorte === 'espace'
-                  ? `{{prénom}} devient le prénom de chacun. ${plusieursBiens ? 'Les biens s’ajoutent' : 'Le bien s’ajoute'} sous le texte, avec ${plusieursBiens ? 'leurs photos' : 'sa photo'} et un bouton vers ${plusieursBiens ? 'leur fiche' : 'sa fiche'}.`
-                  : `{{prénom}} devient le prénom de chacun${libres.some(x => !x.clientId) ? ' (rien pour une adresse hors du CRM : « Bonjour, »)' : ''}. ${plusieursBiens ? 'Les biens s’ajoutent' : 'Le bien s’ajoute'} sous le texte, avec ${plusieursBiens ? 'leurs photos' : 'sa photo'} et le bouton « Voir le bien » : un lien à son nom, qui te dit quand il ouvre la page.`}</span></p>
+                  ? `{{prénom}} devient le prénom de chacun. ${plusieursBiens ? 'Les affaires s’ajoutent' : 'L’affaire s’ajoute'} sous le texte, avec ${plusieursBiens ? 'leurs photos' : 'sa photo'} et un bouton vers ${plusieursBiens ? 'leur fiche' : 'sa fiche'}.`
+                  : `{{prénom}} devient le prénom de chacun${libres.some(x => !x.clientId) ? ' (rien pour une adresse hors du CRM : « Bonjour, »)' : ''}. ${plusieursBiens ? 'Les affaires s’ajoutent' : 'L’affaire s’ajoute'} sous le texte, avec ${plusieursBiens ? 'leurs photos' : 'sa photo'} et le bouton « Voir le bien » : un lien à son nom, qui te dit quand il ouvre la page.`}</span></p>
                 {sansMail.length > 0 && (
                   <div className={l.ignores}>
                     <b>{sansMail.length > 1 ? `${sansMail.length} sans adresse e-mail` : '1 sans adresse e-mail'}</b>
-                    <span>{`${sansMail.map(x => nomClient(x.acheteur.client)).join(', ')} : pas d’adresse sur ${sansMail.length > 1 ? 'leur' : 'sa'} fiche. « Dans leur espace » envoie les biens sans mail.`}</span>
+                    <span>{`${sansMail.map(x => nomClient(x.acheteur.client)).join(', ')} : pas d’adresse sur ${sansMail.length > 1 ? 'leur' : 'sa'} fiche. « Dans leur espace » envoie les affaires sans mail.`}</span>
                   </div>
                 )}
                 <button type="button" className={`${l.btn} ${l.voirMail}`} onClick={() => setVue('apercu')}><Ic n="oeil" t={15} />{'Voir le mail du client'}</button>
@@ -902,7 +902,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
               <section className={l.paneApercu}>
                 <div className={l.paneT}>
                   <b>{nbMails > 1 ? 'Aperçu pour' : `Ce que reçoit ${cible ? nomDest(cible) : 'le client'}`}</b>
-                  {nbMails > 1 && <span>{'Chacun reçoit son mail, à son prénom, avec ses biens.'}</span>}
+                  {nbMails > 1 && <span>{'Chacun reçoit son mail, à son prénom, avec ce qui lui correspond.'}</span>}
                 </div>
                 {nbMails > 1 && (
                   <div className={l.pourQui}>
@@ -939,20 +939,20 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
             <>
               {ecartes.length > 0 && (
                 <div className={l.ignores}>
-                  <b>{ecartes.length > 1 ? `${ecartes.length} biens laissés de côté` : '1 bien laissé de côté'}</b>
+                  <b>{ecartes.length > 1 ? `${ecartes.length} affaires laissées de côté` : '1 affaire laissée de côté'}</b>
                   <ul>{ecartes.map((x, i) => <li key={i}><span>{x.nom}</span><small>{x.pourquoi}</small></li>)}</ul>
                 </div>
               )}
               {!envoyables.length ? (
                 <div className={l.vide}>
                   <span className={l.videIc}><Ic n="groupe" t={24} /></span>
-                  <b>{'Aucun de ces biens n’est à envoyer.'}</b>
-                  <span>{'Un bien en pause, vendu ou retiré ne part plus chez les demandeurs.'}</span>
+                  <b>{'Aucune de ces affaires n’est à envoyer.'}</b>
+                  <span>{'Une affaire en pause, conclue ou retirée ne part plus chez les demandeurs.'}</span>
                 </div>
               ) : (
                 <>
                   {avantMandat.length > 0 && (
-                    <p className={l.aide}><Ic n="info" t={14} /><span>{`${avantMandat.map(bienCourt).join(', ')} : pas encore sous mandat. ${avantMandat.length > 1 ? 'Ils partent' : 'Il part'} quand même, comme les autres, sans prix : il arrivera chez l’demandeur à la signature du mandat.`}</span></p>
+                    <p className={l.aide}><Ic n="info" t={14} /><span>{`${avantMandat.map(bienCourt).join(', ')} : pas encore sous mandat. ${avantMandat.length > 1 ? 'Elles partent' : 'Elle part'} quand même, comme les autres, sans montant : il arrivera chez le demandeur à la signature du mandat.`}</span></p>
                   )}
 
                   {/* À qui : un client par son nom, ou une adresse e-mail (V3.121). */}
@@ -983,7 +983,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
                               <AvatarContact c={c} teinte={{ bg: tt.f, fg: tt.t }} className={l.resAv} libre />
                               <span className={l.resTx}>
                                 <b>{nomClient(c)}{statut ? <i className={l.tag}>{statut}</i> : null}</b>
-                                <small>{proprio ? 'C’est le propriétaire de ce bien.' : recherchePhrase(r, n > 1)}</small>
+                                <small>{proprio ? 'C’est le mandant de cette affaire.' : recherchePhrase(r, n > 1)}</small>
                               </span>
                               {proprio ? null : pris ? (
                                 <span className={l.resAct}><span className={l.resPris}><Ic n="check" t={13} e={2.8} />{'Ajouté'}</span><span className={l.resOter}><Ic n="croix" t={12} e={2.6} />{'Retirer'}</span></span>
@@ -1048,9 +1048,9 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
                   {rappro === 'tri' || rappro === 'relecture' ? (
                     <Progression etapes={[
                       { t: 'Le premier tri', etat: rappro === 'tri' ? 'en' : 'fait',
-                        d: rappro === 'tri' ? `Budget, secteur, type, surface : je compare ${plusieursBiens ? 'ces biens' : 'ce bien'} à tes ${nbRecherches} recherche${nbRecherches > 1 ? 's' : ''} ouverte${nbRecherches > 1 ? 's' : ''}.` : `${lignes.length} demandeur${lignes.length > 1 ? 's passent' : ' passe'} le premier tri, sur ${nbRecherches} recherche${nbRecherches > 1 ? 's' : ''} ouverte${nbRecherches > 1 ? 's' : ''}.` },
+                        d: rappro === 'tri' ? `Budget, secteur, type, surface : je compare ${plusieursBiens ? 'ces affaires' : 'cette affaire'} à tes ${nbRecherches} recherche${nbRecherches > 1 ? 's' : ''} ouverte${nbRecherches > 1 ? 's' : ''}.` : `${lignes.length} demandeur${lignes.length > 1 ? 's passent' : ' passe'} le premier tri, sur ${nbRecherches} recherche${nbRecherches > 1 ? 's' : ''} ouverte${nbRecherches > 1 ? 's' : ''}.` },
                       { t: 'La relecture de chaque dossier', etat: rappro === 'tri' ? 'attente' : 'en', fait: iaEtat.fait, total: iaEtat.total,
-                        d: rappro === 'tri' ? 'Indispensables, parcours, comptes rendus de visite, face à la fiche du bien.' : `${Math.min(iaEtat.fait, iaEtat.total)} sur ${iaEtat.total} relu${iaEtat.total > 1 ? 's' : ''}…` },
+                        d: rappro === 'tri' ? 'Indispensables, parcours, comptes rendus de visite, face à la fiche de l’affaire.' : `${Math.min(iaEtat.fait, iaEtat.total)} sur ${iaEtat.total} relu${iaEtat.total > 1 ? 's' : ''}…` },
                       { t: 'Le classement', etat: 'attente', d: 'Oui, à voir, non : les meilleures chances d’abord.' },
                     ]} />
                   ) : rappro === 'ferme' ? (
@@ -1067,7 +1067,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
                   ) : lignes.length === 0 ? (
                     <div className={l.vide}>
                       <span className={l.videIc}><Ic n="groupe" t={24} /></span>
-                      <b>{`Personne ne passe le premier tri pour ${plusieursBiens ? 'ces biens' : 'ce bien'}.`}</b>
+                      <b>{`Personne ne passe le premier tri pour ${plusieursBiens ? 'ces affaires' : 'cette affaire'}.`}</b>
                       <span>{'Aucune recherche ouverte ne va avec : trop cher pour eux, autre secteur, autre type… Pour l’envoyer à quelqu’un d’autre, cherche-le juste au-dessus.'}</span>
                     </div>
                   ) : (
@@ -1082,7 +1082,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
                       {iaEtat.manquent > 0 && (
                         <div className={l.alerte}>
                           <Ic n="info" t={14} />
-                          <span>{`${iaEtat.manquent} ${iaEtat.manquent > 1 ? 'couples n’ont' : 'couple n’a'} pas pu être relu${iaEtat.manquent > 1 ? 's' : ''}${iaEtat.erreur ? ` (${iaEtat.erreur})` : ''}.`}</span>
+                          <span>{`${iaEtat.manquent} ${iaEtat.manquent > 1 ? 'dossiers n’ont' : 'dossier n’a'} pas pu être relu${iaEtat.manquent > 1 ? 's' : ''}${iaEtat.erreur ? ` (${iaEtat.erreur})` : ''}.`}</span>
                           <button type="button" className={l.alerteBtn} onClick={() => { void lancerRappro(); }}>{'Relancer'}</button>
                         </div>
                       )}
@@ -1142,7 +1142,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
             <>
               <span className={l.piedTx}>{!envoyables.length ? '' : dests.length ? (dests.length > 1 ? `${dests.length} destinataires choisis` : '1 destinataire choisi') : 'Personne pour l’instant'}</span>
               <button type="button" className={l.btn} disabled={!total('selection')} onClick={() => { void lancer('selection'); }}
-                title="Pour les clients du CRM : les biens entrent dans leur dossier, à l’étape Sélection. Rien ne part : ils ne les voient pas encore.">
+                title="Pour les clients du CRM : les affaires entrent dans leur dossier, à l’étape Sélection. Rien ne part : ils ne les voient pas encore.">
                 <Ic n="liste" t={15} />Mettre en sélection
               </button>
               <button type="button" className={l.btn} disabled={!total('espace')} onClick={() => { void lancer('espace'); }}
@@ -1150,7 +1150,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
                 <Ic n="envoyer" t={15} />Dans leur espace
               </button>
               <button type="button" className={`${l.btn} ${l.btnOr}`} disabled={!total('mail') && !libres.length} onClick={() => { setVue('apercu'); setEtape('mail'); }}
-                title="Un mail par personne, à son prénom, avec les biens. Tu vois le mail tel qu’il le recevra avant qu’il parte.">
+                title="Un mail par personne, à son prénom, avec les affaires. Tu vois le mail tel qu’il le recevra avant qu’il parte.">
                 <Ic n="mail" t={15} />Envoyer par mail
               </button>
             </>
@@ -1166,9 +1166,9 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
 export type CibleEtape = 'a_suivre' | 'estimation' | 'suspendu' | 'retire';
 export const CIBLES_ETAPE: { k: CibleEtape; lib: string; sous: string }[] = [
   { k: 'a_suivre', lib: 'À suivre', sous: 'Une estimation mise en attente' },
-  { k: 'estimation', lib: 'Estimation', sous: 'Un bien à suivre passe à l’estimation' },
-  { k: 'suspendu', lib: 'En pause', sous: 'Une vente mise en pause' },
-  { k: 'retire', lib: 'Retiré', sous: 'Le mandant renonce, le mandat est terminé' },
+  { k: 'estimation', lib: 'Estimation', sous: 'Une affaire à suivre passe à l’estimation' },
+  { k: 'suspendu', lib: 'En pause', sous: 'Une affaire mise en pause' },
+  { k: 'retire', lib: 'Retirée', sous: 'Le mandant renonce, le mandat est terminé' },
 ];
 /* D'où chaque étape se rejoint, comme dans le menu d'étape de la fiche. */
 const DEPUIS: Record<CibleEtape, EtapeVente[]> = {
@@ -1182,13 +1182,13 @@ const DEPUIS: Record<CibleEtape, EtapeVente[]> = {
 export function bloqueEtape(b: BienVente, cible: CibleEtape, liste: ListeBiens): string | null {
   const court = etapeDe(cible).court;
   if (b.etape === cible) return `Déjà « ${court} ».`;
-  if (b.archive) return 'Archivé : sors-le des archives d’abord.';
+  if (b.archive) return 'Archivée : sors-la des archives d’abord.';
   const d = b.donnees || {};
   const jamaisEnVente = !b.en_vente_le && !String(d.mandatDate || '').trim();
   if (!DEPUIS[cible].includes(b.etape) || (cible === 'estimation' && b.etape === 'retire' && !jamaisEnVente)) {
-    if (b.etape === 'compromis' && cible === 'retire') return 'En signature : « Le compromis est tombé », depuis sa fiche.';
+    if (b.etape === 'compromis' && cible === 'retire') return 'En signature : « L’accord est tombé », depuis sa fiche.';
     if (cible === 'estimation' && (b.etape === 'mandat' || b.etape === 'suspendu')) return 'Un mandat noté : « Le mandat n’est pas encore signé » ou « Annuler ce mandat », depuis sa fiche.';
-    if (cible === 'estimation' && b.etape === 'retire') return 'Retiré après une mise en vente : « Remettre en vente », depuis sa fiche.';
+    if (cible === 'estimation' && b.etape === 'retire') return 'Retirée après une mise sur le marché : « Remettre sur le marché », depuis sa fiche.';
     return `« ${etapeDe(b.etape).court} » ne passe pas « ${court} ».`;
   }
   /* Ce qui demande une décision : sur sa fiche. */
@@ -1208,7 +1208,7 @@ export function bloqueEtape(b: BienVente, cible: CibleEtape, liste: ListeBiens):
   }
   if (cible === 'estimation') {
     const deja = liste.suivi.some(x => x.bien_id === b.id && x.type === 'etape' && x.statut === 'estimation');
-    if (deja && (String(d.rdvEstimation || '') || String(d.visiteLe || '') || String(d.avisEnvoye || ''))) return 'Déjà estimé une fois : depuis sa fiche, pour repartir de zéro ou non.';
+    if (deja && (String(d.rdvEstimation || '') || String(d.visiteLe || '') || String(d.avisEnvoye || ''))) return 'Déjà estimée une fois : depuis sa fiche, pour repartir de zéro ou non.';
   }
   return null;
 }

@@ -174,7 +174,7 @@ function CartePiece({ p, off, ouverte, auto, premier, dernier, onOuvrir, onMaj, 
               className={p.expo === x.v ? b.pcExpoOn : undefined} onClick={() => onMaj('expo', p.expo === x.v ? '' : x.v)}>{x.v}</button>
           ))}
         </div>
-        <input className={`${s.input} ${b.pcNote}`} disabled={off} value={p.note} placeholder="Un mot pour la fiche : parquet, placard, vue…"
+        <input className={`${s.input} ${b.pcNote}`} disabled={off} value={p.note} placeholder="Un mot pour la fiche : sol, cloisons, vue…"
           aria-label="Commentaire" onChange={e => onMaj('note', e.target.value)} />
       </div>
     </div>
@@ -496,7 +496,7 @@ function FormNouveauProprio({ depart, occupe, erreur, onCreer, onAnnuler }: {
     <div className={`${b.question} ${b.questionNouveau}`}>
       <div className={b.questionT}>
         <span className={b.questionIc}><Ic n="plus" t={18} e={2.4} /></span>
-        <div><b>Nouveau contact : le propriétaire</b><small>Sa fiche se crée dans tes contacts (type « mandant ») et se relie à ce bien. Seul le nom est obligatoire.</small></div>
+        <div><b>Nouveau contact : le propriétaire</b><small>Sa fiche se crée dans tes contacts (type « mandant ») et se relie à cette affaire. Seul le nom est obligatoire.</small></div>
       </div>
       <div className={b.npCivilite} role="group" aria-label="Civilité">
         {(['Madame', 'Monsieur'] as const).map(v => (
@@ -557,7 +557,7 @@ function ChampProprio({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
        Vendeur si l'un est en vente, Propriétaire sinon). La base le refait
        quand la fiche du bien est enregistrée avec lui. V3.50 : attendu, et
        un échec se dit. */
-    if (!(await marquerVendeur(c.id))) setErreur(`${nomClient(c)} est relié au bien, mais son type de contact n’a pas pu être mis à jour sur sa fiche.`);
+    if (!(await marquerVendeur(c.id))) setErreur(`${nomClient(c)} est relié à l’affaire, mais son type de contact n’a pas pu être mis à jour sur sa fiche.`);
     /* Ses coordonnées remplacent ce qui est saisi : d'office si rien ne
        l'est (ou si l'on change de propriétaire), sinon après accord (un
        autre nom avait été tapé). */
@@ -573,7 +573,7 @@ function ChampProprio({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
     /* Il représente une société (V3.30, « Sa société » sur sa fiche) : est-ce
        elle qui vend ? */
     const st = lireStructure(lirePro(c.pro).structure);
-    if (st?.denomination && !(d.qui === 'sci' && txt(d, 'sciNom')) && confirm(`${nomClient(c)} représente ${st.denomination}. C’est la société qui vend ce bien ?`)) {
+    if (st?.denomination && !(d.qui === 'sci' && txt(d, 'sciNom')) && confirm(`${nomClient(c)} représente ${st.denomination}. C’est la société qui confie l’affaire ?`)) {
       maj('qui', 'sci');
       maj('sciNom', st.denomination);
     }
@@ -624,7 +624,7 @@ function ChampProprio({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
   }
   function retirer() {
     const nom = lie ? nomClient(lie) : nomPremier || 'ce propriétaire';
-    if (!confirm(`Retirer ${nom} de ce bien ?\n\nSa fiche reste dans tes contacts. Le bien n’aura plus de propriétaire : ni fiche reliée, ni nom, ni coordonnées. Tu pourras en relier un autre.`)) return;
+    if (!confirm(`Retirer ${nom} de cette affaire ?\n\nSa fiche reste dans tes contacts. L’affaire n’aura plus de propriétaire : ni fiche reliée, ni nom, ni coordonnées. Tu pourras en relier un autre.`)) return;
     maj('clientId', '');
     maj('proprietaires', []);
     maj('proprioNouveau', false);
@@ -645,16 +645,16 @@ function ChampProprio({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
           </div>
           <span className={b.lieOk}><Ic n="check" t={12} e={3} />Fiche reliée</span>
         </div>
-        {sci && <div className={b.lieNote}>{`${lie?.civilite === 'Madame' ? 'Elle' : 'Il'} vend pour ${sci} : la société est notée plus bas, dans « Qui vend ? ».`}</div>}
+        {sci && <div className={b.lieNote}>{`${lie?.civilite === 'Madame' ? 'Elle' : 'Il'} agit pour ${sci} : la société est notée plus bas, dans « Qui confie l’affaire ? ».`}</div>}
         {!off && (
           <div className={b.lieActs}>
             <button type="button" className={b.mini} onClick={changer} title="Relier une autre fiche : le nouveau propriétaire remplace celui-ci, nom et coordonnées compris.">
               <Ic n="personne" t={13} />Changer de fiche
             </button>
-            <button type="button" className={`${b.mini} ${b.miniDanger}`} onClick={retirer} title="Le bien n’aura plus de propriétaire. Sa fiche reste dans tes contacts.">
-              <Ic n="croix" t={12} e={2.4} />Retirer du bien
+            <button type="button" className={`${b.mini} ${b.miniDanger}`} onClick={retirer} title="L’affaire n’aura plus de propriétaire. Sa fiche reste dans tes contacts.">
+              <Ic n="croix" t={12} e={2.4} />Retirer de l’affaire
             </button>
-            <span className={b.lieAide}>{'« Changer de fiche » relie quelqu’un d’autre à sa place ; « Retirer du bien » enlève aussi le nom et les coordonnées. Sa fiche, elle, reste dans tes contacts.'}</span>
+            <span className={b.lieAide}>{'« Changer de fiche » relie quelqu’un d’autre à sa place ; « Retirer de l’affaire » enlève aussi le nom et les coordonnées. Sa fiche, elle, reste dans tes contacts.'}</span>
           </div>
         )}
       </div>
@@ -687,7 +687,7 @@ function ChampProprio({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
         <span className={b.questionIc}><Ic n="loupe" t={18} /></span>
         <div>{enChange
           ? <><b>Qui est le nouveau propriétaire ?</b><small>{`${lie ? nomClient(lie) : 'Le propriétaire actuel'} reste relié tant que tu n’en choisis pas un autre.`}</small></>
-          : <><b>Qui est le propriétaire ?</b><small>S’il est déjà dans tes contacts, tape son nom : sa fiche se relie au bien et ses coordonnées se remplissent.</small></>}</div>
+          : <><b>Qui est le propriétaire ?</b><small>S’il est déjà dans tes contacts, tape son nom : sa fiche se relie à l’affaire et ses coordonnées se remplissent.</small></>}</div>
       </div>
       {enChange && (
         <button type="button" className={b.questionLien} onClick={() => { setEnChange(false); setQ(''); }}>{`Garder ${lie ? nomClient(lie) : 'le propriétaire actuel'}`}</button>
@@ -696,7 +696,7 @@ function ChampProprio({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
       {/* Des noms saisis sans fiche (les biens d'avant la V3.30) : on les garde, et on propose la fiche. */}
       {saisis.length > 0 && !enChange && (
         <div className={b.sansFiche}>
-          <span><b>{nomPremier}</b>{saisis.length > 1 ? ` et ${saisis.length - 1} autre${saisis.length > 2 ? 's' : ''}` : ''}{' est saisi sur le bien, sans fiche dans tes contacts.'}</span>
+          <span><b>{nomPremier}</b>{saisis.length > 1 ? ` et ${saisis.length - 1} autre${saisis.length > 2 ? 's' : ''}` : ''}{' est saisi sur l’affaire, sans fiche dans tes contacts.'}</span>
           {!off && (
             <button type="button" className={`${b.questionBtn} ${b.questionBtnOr}`} disabled={cree} onClick={() => creer(premier!)}>
               <Ic n="plus" t={15} e={2.4} />{cree ? 'Création…' : `Créer sa fiche`}
@@ -728,7 +728,7 @@ function ChampProprio({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
           )}
         </div>
       )}
-      {d.proprioSans === true && !saisis.length && <div className={b.lieAide}>Pas de propriétaire pour l’instant : la suite est ouverte, et tu pourras le relier plus tard, ici ou depuis la fiche du bien.</div>}
+      {d.proprioSans === true && !saisis.length && <div className={b.lieAide}>Pas de propriétaire pour l’instant : la suite est ouverte, et tu pourras le relier plus tard, ici ou depuis la fiche de l’affaire.</div>}
       {erreur && <div className={s.erreur}>{erreur}</div>}
     </div>
   );

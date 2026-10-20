@@ -182,7 +182,7 @@ export async function offreSigneeParTous(sb: SupabaseClient, doc: { id: string; 
     const vente = (b as { bien_vente_id?: string | null } | null)?.bien_vente_id;
     if (vente) {
       const pb = await poserDansDonnees(sb, doc.id, { bienVenteId: vente });
-      if (pb) pbs.push('le lien au bien en vente : ' + pb);
+      if (pb) pbs.push('le lien à l’affaire : ' + pb);
       else d = { ...d, bienVenteId: vente };
     }
   }
@@ -198,12 +198,12 @@ export async function offreSigneeParTous(sb: SupabaseClient, doc: { id: string; 
      note la réponse du vendeur. Si ça rate, « Offre signée, à envoyer » le
      lui dit, et « Son offre » propose de l'y ajouter. */
   const lie = estAgence(d) ? await relierOffreAgence(sb, { ...doc, donnees: d }) : null;
-  if (lie?.pb) pbs.push('les offres du bien : ' + lie.pb);
+  if (lie?.pb) pbs.push('les offres de l’affaire : ' + lie.pb);
   if (!lie?.relie) {
     const pb2 = await poserRelanceOffre(sb, {
       clientId: doc.client_id, rechercheId: doc.recherche_id, tete: TETES_OFFRE.envoyer, titre,
       detail: lie
-        ? `${total ? `${EUR(total)} · ` : ''}à ajouter aux offres de la fiche du bien, depuis « Son offre » (${lie.pb})`
+        ? `${total ? `${EUR(total)} · ` : ''}à ajouter aux offres de la fiche de l’affaire, depuis « Son offre » (${lie.pb})`
         : total ? `${EUR(total)} frais d’agence compris${prixOffre(d) !== total ? ` (${EUR(prixOffre(d) || 0)} pour le mandant)` : ''}` : undefined,
     });
     if (pb2) pbs.push('relance « à envoyer » : ' + pb2);
@@ -291,14 +291,14 @@ export async function relierOffreAgence(sb: SupabaseClient, doc: { id: string; d
   const d = (doc.donnees || {}) as Donnees;
   const rate = (pb: string): Reliure => ({ relie: false, pb });
   const venteId = txt(d, 'bienVenteId');
-  if (!venteId || !doc.bien_id || !doc.client_id) return rate('ce n’est pas une offre sur un bien de l’agence');
+  if (!venteId || !doc.bien_id || !doc.client_id) return rate('ce n’est pas une offre sur une affaire de l’agence');
   if (lienAgence({ id: doc.id, donnees: d })) return { relie: true, pb: null };
   if (lireSuivi(d).close || lireSuivi(d).remplacee_le) return rate('cette offre est close, ou remplacée par une plus récente');
   const prix = prixOffre(d);
   if (!prix) return rate('le prix de l’offre manque');
   let bv: VenteLue | null;
-  try { bv = await lireVente(sb, venteId); } catch (e) { return rate('le bien en vente : ' + (e as Error).message); }
-  if (!bv) return rate('le bien en vente est introuvable');
+  try { bv = await lireVente(sb, venteId); } catch (e) { return rate('l’affaire : ' + (e as Error).message); }
+  if (!bv) return rate('l’affaire est introuvable');
   const titreV = bv.titre || titreVente(bv.donnees || {});
   const s = lireSuivi(d);
   const jour = jourParis();
@@ -323,7 +323,7 @@ export async function relierOffreAgence(sb: SupabaseClient, doc: { id: string; d
   if (!ligne) {
     const { data, error } = await sb.from('biens_vente_suivi').select('*').eq('bien_id', venteId).eq('type', 'offre').eq('client_id', doc.client_id)
       .order('le', { ascending: false }).limit(10);
-    if (error) return rate('les offres du bien n’ont pas pu être lues : ' + error.message);
+    if (error) return rate('les offres de l’affaire n’ont pas pu être lues : ' + error.message);
     const l = (data || []) as SuiviVente[];
     ligne = l.find(x => x.donnees?.documentId === doc.id) || l.find(x => !x.statut || OUVERTES.includes(x.statut)) || null;
   }
@@ -396,7 +396,7 @@ export async function relierOffreAgence(sb: SupabaseClient, doc: { id: string; d
   if (pbR0) pbs.push('l’ancienne relance du propriétaire : ' + pbR0);
   if (bv.client_id && (s.depuisContre || (jusquau && jusquau >= jour))) {
     const note = s.depuisContre
-      ? `Offre de ${qui} à ${fr(prix)} € sur ${bv.titre || 'son bien'} : la contre-proposition du mandant est acceptée — note l’accord sur la fiche du bien.`
+      ? `Offre de ${qui} à ${fr(prix)} € sur ${bv.titre || 'son bien'} : la contre-proposition du mandant est acceptée — note l’accord sur la fiche de l’affaire.`
       : `Offre de ${qui} à ${fr(prix)} € sur ${bv.titre || 'son bien'} : réponse à donner aujourd’hui.`;
     const { data: rel, error: eR } = await sb.from('relances').insert({
       client_id: bv.client_id, type: 'manuelle', statut: 'en_attente',
@@ -413,12 +413,12 @@ export async function relierOffreAgence(sb: SupabaseClient, doc: { id: string; d
   if (bv.etape === 'mandat' || bv.etape === 'suspendu') {
     const { data: passe, error: eE } = await sb.from('biens_vente').update({ etape: 'offre', etape_le: maintenant, updated_at: maintenant })
       .eq('id', bv.id).eq('etape', bv.etape).select('id');
-    if (eE) pbs.push('le bien « Sous offre » : ' + eE.message);
+    if (eE) pbs.push('l’affaire « Sous offre » : ' + eE.message);
     else if (passe?.length) {
       const { error: eS } = await sb.from('biens_vente_suivi').insert({
         bien_id: bv.id, type: 'etape', statut: 'offre', le: maintenant, donnees: { de: bv.etape, offre: ligneId, montant: prix, qui },
       });
-      if (eS) pbs.push('l’historique du bien : ' + eS.message);
+      if (eS) pbs.push('l’historique de l’affaire : ' + eS.message);
     }
   }
 
@@ -619,7 +619,7 @@ export async function fermerSansSuite(sb: SupabaseClient, doc: DocOffre, par: 'c
   if (par === 'client' && doc.client_id && await alerteMailActive(sb, 'offre_espace')) {
     const nom = await nomClient(sb, doc.client_id);
     const lien = `${CRM()}/?page=fiche&client=${encodeURIComponent(doc.client_id)}`;
-    const bienAgence = lienAgence(doc) ? ' Son offre passe « retirée » sur la fiche du bien.' : '';
+    const bienAgence = lienAgence(doc) ? ' Son offre passe « retirée » sur la fiche de l’affaire.' : '';
     const e = await envoyerMail({
       a: ALERTES(), deLaPartDe: 'crm', sujet: `⏹️ ${nom} ne donne pas suite à son offre · ${titre}`,
       texte: `${nom} ne donne pas suite à son offre pour « ${titre} », depuis son espace.${bienAgence}\n\nOuvrir sa fiche : ${lien}`,
@@ -725,7 +725,7 @@ async function mailClientReponse(sb: SupabaseClient, doc: DocOffre, r: ReponseVe
     paras = [
       `${bonjour.replace(/,$/, '')}, félicitations !`,
       `Le mandant a accepté votre offre${accord ? ` de ${EUR(accord)}, frais d’agence compris,` : ''} pour « ${titre} ». C’est une très belle nouvelle.`,
-      'Je vous appelle très vite pour organiser la suite, à commencer par le compromis chez le notaire.',
+      'Je vous appelle très vite pour organiser la suite, jusqu’à la signature.',
     ];
   } else {
     sujet = 'Réponse du mandant à votre offre';

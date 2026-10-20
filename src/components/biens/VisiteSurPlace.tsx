@@ -32,9 +32,9 @@ type Suite = 'estimation' | 'mandat' | 'document' | undefined;
 type Enreg = 'ok' | 'attente' | 'encours' | 'horsligne' | { erreur: string };
 
 const ECRANS: { id: string; t: string; court: string; ic: string }[] = [
-  { id: 'qui', t: 'Le bien et son propriétaire', court: 'Le bien', ic: 'maison' },
+  { id: 'qui', t: 'Le local et son propriétaire', court: 'Le local', ic: 'maison' },
   { id: 'chiffres', t: 'Les chiffres', court: 'Chiffres', ic: 'regle' },
-  { id: 'pieces', t: 'Pièce par pièce', court: 'Pièces', ic: 'plan' },
+  { id: 'pieces', t: 'Espace par espace', court: 'Espaces', ic: 'plan' },
   { id: 'autour', t: 'L’intérieur et l’extérieur', court: 'Intérieur, extérieur', ic: 'canape' },
   { id: 'acces', t: 'Pour les visites', court: 'Accès', ic: 'cle' },
   { id: 'retenir', t: 'Ce qu’on retient', court: 'À retenir', ic: 'etoile' },
@@ -131,8 +131,8 @@ function EditeurPiece({ p, l, photos, typeBien, plusieursNiveaux, envoi, onMaj, 
     <div className={b.vPiece}>
       <div className={b.vPieceTete}>
         <span className={b.vPieceIc}><Ic n={pictoPiece(p.nom)} t={26} /></span>
-        <input className={`${s.input} ${b.vPieceNom}`} value={p.nom} onChange={e => onMaj({ nom: e.target.value })} aria-label="Nom de la pièce" placeholder="Nom de la pièce" />
-        <button type="button" className={b.vRetirer} onClick={onRetirer} aria-label="Retirer cette pièce"><Ic n="corbeille" t={18} /></button>
+        <input className={`${s.input} ${b.vPieceNom}`} value={p.nom} onChange={e => onMaj({ nom: e.target.value })} aria-label="Nom de l’espace" placeholder="Nom de l’espace" />
+        <button type="button" className={b.vRetirer} onClick={onRetirer} aria-label="Retirer cet espace"><Ic n="corbeille" t={18} /></button>
       </div>
 
       <div className={b.vPieceGrille}>
@@ -175,17 +175,17 @@ function EditeurPiece({ p, l, photos, typeBien, plusieursNiveaux, envoi, onMaj, 
       </div>
 
       <div className={b.vCh}>
-        <span className={b.vLib}><Ic n="etoile" t={16} />Ce qu’elle a</span>
+        <span className={b.vLib}><Ic n="etoile" t={16} />Ce qu’il a</span>
         <Pastilles options={ATOUTS_PIECE} v={p.atouts || []} onChange={x => onMaj({ atouts: x })} />
       </div>
 
       <div className={b.vCh}>
         <span className={b.vLib}><Ic n="crayon" t={16} />Un mot</span>
-        <textarea className={s.input} rows={2} value={p.note} onChange={e => onMaj({ note: e.target.value })} placeholder="Ex : placard intégré, ouvre sur le balcon" />
+        <textarea className={s.input} rows={2} value={p.note} onChange={e => onMaj({ note: e.target.value })} placeholder="Ex : fenêtres sur cour, ouvre sur la réserve" />
       </div>
 
       <div className={b.vCh}>
-        <span className={b.vLib}><Ic n="photo" t={16} />{`Photos de la pièce${photos.length ? ` · ${photos.length}` : ''}`}</span>
+        <span className={b.vLib}><Ic n="photo" t={16} />{`Photos de l’espace${photos.length ? ` · ${photos.length}` : ''}`}</span>
         <div className={b.vPhotos}>
           {photos.map(ph => (
             <span key={ph.url} className={b.vPhoto}>
@@ -203,7 +203,7 @@ function EditeurPiece({ p, l, photos, typeBien, plusieursNiveaux, envoi, onMaj, 
 
       <div className={b.vPieceSuite}>
         <button type="button" className={`${s.btn} ${s.btnNavy} ${b.vGros}`} onClick={onSuivante}>
-          {derniere ? 'Pièce suivante : en ajouter une' : `Pièce suivante : ${l[l.findIndex(x => x.id === p.id) + 1]?.nom || ''}`}<Ic n="droite" t={18} e={2.4} />
+          {derniere ? 'Espace suivant : en ajouter un' : `Espace suivant : ${l[l.findIndex(x => x.id === p.id) + 1]?.nom || ''}`}<Ic n="droite" t={18} e={2.4} />
         </button>
       </div>
     </div>
@@ -239,7 +239,7 @@ function EcranPieces({ d, maj, photosEnAttente, envoyerPhoto }: {
     ecrire(l.map(y => (y.id === p.id ? { ...y, ...x } : y)));
   };
   const retirer = () => {
-    if (!p || !confirm(`Retirer « ${p.nom || 'cette pièce'} » ?`)) return;
+    if (!p || !confirm(`Retirer « ${p.nom || 'cet espace'} » ?`)) return;
     const i = l.findIndex(x => x.id === p.id);
     const reste = l.filter(x => x.id !== p.id);
     ecrire(reste); setOuverte(reste[Math.min(i, reste.length - 1)]?.id || null); if (!reste.length) setAjout(true);
@@ -263,8 +263,8 @@ function EcranPieces({ d, maj, photosEnAttente, envoyerPhoto }: {
     <div className={b.vPieces}>
       <aside className={b.vListe}>
         <div className={b.vListeT}>
-          <b>{`${l.length} pièce${l.length > 1 ? 's' : ''}`}</b>
-          <span>{total ? `${m2(total)} à vivre${declaree ? ` sur ${m2(declaree)}` : ''}` : 'Les surfaces s’additionnent ici'}</span>
+          <b>{`${l.length} espace${l.length > 1 ? 's' : ''}`}</b>
+          <span>{total ? `${m2(total)} utiles${declaree ? ` sur ${m2(declaree)}` : ''}` : 'Les surfaces s’additionnent ici'}</span>
         </div>
         <div className={b.vListeL} data-defile="">
           {l.map(x => {
@@ -273,13 +273,13 @@ function EcranPieces({ d, maj, photosEnAttente, envoyerPhoto }: {
             return (
               <button key={x.id} type="button" className={`${b.vListeB} ${x.id === ouverte && !ajout ? b.vListeOn : ''}`} onClick={() => { setOuverte(x.id); setAjout(false); }}>
                 <span className={b.vListeIc}><Ic n={pictoPiece(x.nom)} t={18} /></span>
-                <span className={b.vListeNom}><b>{x.nom || 'Pièce'}</b><small>{[x.surface ? m2(x.surface) : '', x.expo ? nomExpo(x.expo) : '', nbP ? `${nbP} photo${nbP > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || 'À remplir'}</small></span>
+                <span className={b.vListeNom}><b>{x.nom || 'Espace'}</b><small>{[x.surface ? m2(x.surface) : '', x.expo ? nomExpo(x.expo) : '', nbP ? `${nbP} photo${nbP > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || 'À remplir'}</small></span>
                 {e && <i className={b.vListePoint} style={{ background: e.c }} title={e.l} />}
               </button>
             );
           })}
           <button type="button" className={`${b.vListeB} ${b.vListeAjout} ${ajout ? b.vListeOn : ''}`} onClick={() => setAjout(true)}>
-            <span className={b.vListeIc}><Ic n="plus" t={18} e={2.6} /></span><span className={b.vListeNom}><b>Ajouter une pièce</b></span>
+            <span className={b.vListeIc}><Ic n="plus" t={18} e={2.6} /></span><span className={b.vListeNom}><b>Ajouter un espace</b></span>
           </button>
         </div>
         {photosEnAttente > 0 && <div className={b.vAttente}>{`${photosEnAttente} photo${photosEnAttente > 1 ? 's' : ''} en attente de réseau`}</div>}
@@ -288,7 +288,7 @@ function EcranPieces({ d, maj, photosEnAttente, envoyerPhoto }: {
       <div className={b.vPieceZone}>
         {ajout || !p ? (
           <div className={b.vAjout}>
-            <h3 className={b.vBlocT}><span><Ic n="plus" t={18} e={2.6} /></span>Quelle pièce ?</h3>
+            <h3 className={b.vBlocT}><span><Ic n="plus" t={18} e={2.6} /></span>Quel espace ?</h3>
             <div className={b.vTuiles}>
               {PIECES_TUILES.map(t => (
                 <button key={t} type="button" className={b.vTuile} onClick={() => ajouter(t)}>
@@ -297,10 +297,10 @@ function EcranPieces({ d, maj, photosEnAttente, envoyerPhoto }: {
               ))}
             </div>
             <form className={b.vAutre} onSubmit={e => { e.preventDefault(); if (autre.trim()) ajouter(autre.trim()); }}>
-              <input className={s.input} value={autre} onChange={e => setAutre(e.target.value)} placeholder="Une autre : mezzanine, véranda…" aria-label="Autre pièce" />
+              <input className={s.input} value={autre} onChange={e => setAutre(e.target.value)} placeholder="Un autre : cabine d’essayage, quai de livraison…" aria-label="Autre espace" />
               <button type="submit" className={b.vPastB} disabled={!autre.trim()}><Ic n="plus" t={14} e={2.6} />Ajouter</button>
             </form>
-            {l.length > 0 && <button type="button" className={b.lien} onClick={() => setAjout(false)}>Revenir aux pièces</button>}
+            {l.length > 0 && <button type="button" className={b.lien} onClick={() => setAjout(false)}>Revenir aux espaces</button>}
           </div>
         ) : (
           <EditeurPiece key={p.id} p={p} l={l} photos={photos.filter(ph => ph.legende === p.nom)} typeBien={String(d.typeBien || '')}
@@ -328,7 +328,7 @@ function EcranFin({ bien, d, maj, onFin }: { bien: BienVente; d: Donnees; maj: (
   return (
     <div className={b.vFin}>
       <div className={b.vRecap}>
-        <div><b>{pieces.length}</b><span>{`pièce${pieces.length > 1 ? 's' : ''}${total ? ` · ${m2(total)}` : ''}`}</span></div>
+        <div><b>{pieces.length}</b><span>{`espace${pieces.length > 1 ? 's' : ''}${total ? ` · ${m2(total)}` : ''}`}</span></div>
         <div><b>{photos.length}</b><span>{`photo${photos.length > 1 ? 's' : ''}`}</span></div>
         <div><b>{atouts.length}</b><span>{`atout${atouts.length > 1 ? 's' : ''}`}</span></div>
         <div><b>{defauts.length}</b><span>{`point${defauts.length > 1 ? 's' : ''} à défendre`}</span></div>
@@ -336,7 +336,7 @@ function EcranFin({ bien, d, maj, onFin }: { bien: BienVente; d: Donnees; maj: (
 
       <section className={b.vBloc}>
         <h3 className={b.vBlocT}><span><Ic n="dossier" t={18} /></span>Ce qu’il faut demander au propriétaire</h3>
-        <p className={b.vAide}>Coche ce que tu lui demandes : ça passe « demandé » dans le dossier du bien.</p>
+        <p className={b.vAide}>Coche ce que tu lui demandes : ça passe « demandé » dans le dossier de l’affaire.</p>
         <div className={b.vDemandes}>
           {lignes.map(x => (
             <button key={x.k} type="button" className={`${b.vDemande} ${demande(x.k) ? b.vDemandeOn : ''}`} aria-pressed={demande(x.k)} onClick={() => basculer(x.k)}>
@@ -352,11 +352,11 @@ function EcranFin({ bien, d, maj, onFin }: { bien: BienVente; d: Donnees; maj: (
         <div className={b.vSuites}>
           {bien.etape === 'a_suivre' && (
             <button type="button" className={`${b.vSuiteB} ${b.vSuiteOr}`} onClick={() => onFin('estimation')}>
-              <Ic n="regle" t={22} /><span><b>Passer en estimation</b><small>La fourchette et le prix conseillé, sur la fiche</small></span>
+              <Ic n="regle" t={22} /><span><b>Passer en estimation</b><small>La fourchette et le montant conseillé, sur la fiche</small></span>
             </button>
           )}
           <button type="button" className={`${b.vSuiteB} ${bien.etape === 'estimation' ? b.vSuiteOr : ''}`} onClick={() => onFin('mandat')}>
-            <Ic n="plume" t={22} /><span><b>Le mandat est signé</b><small>Le prix, les honoraires : le bien passe « En vente »</small></span>
+            <Ic n="plume" t={22} /><span><b>Le mandat est signé</b><small>Le montant, les honoraires : l’affaire passe « Disponible »</small></span>
           </button>
           <button type="button" className={b.vSuiteB} onClick={() => onFin('document')}>
             <Ic n="doc" t={22} /><span><b>Préparer le mandat à signer</b><small>Prérempli, à signer sur la tablette ou en ligne</small></span>
@@ -567,7 +567,7 @@ export default function VisiteSurPlace({ bien, onFermer }: { bien: BienVente; on
           {e.id === 'chiffres' && (
             <>
               <Questions cles={CHAMPS.surfaces} d={d} maj={maj} bienId={row.id} titre="Les surfaces" ic="regle" />
-              <Questions cles={CHAMPS.compteurs} d={d} maj={maj} bienId={row.id} titre="Les pièces et les étages" ic="plan" />
+              <Questions cles={CHAMPS.compteurs} d={d} maj={maj} bienId={row.id} titre="Les espaces et les étages" ic="plan" />
               <Questions cles={CHAMPS.immeuble} d={d} maj={maj} bienId={row.id} titre="La construction" ic="immeuble" />
             </>
           )}
@@ -609,8 +609,8 @@ export default function VisiteSurPlace({ bien, onFermer }: { bien: BienVente; on
                 <h3 className={b.vBlocT}><span><Ic n="euro" t={18} /></span>Ce que le propriétaire a en tête</h3>
                 <div className={s.grille}>
                   <div className={b.vCh}>
-                    <span className={b.vLib}><Ic n="etiquette" t={16} />Le prix qu’il espère</span>
-                    <SaisieNombre v={num(d, 'prixSouhaite')} euros unite="€" off={false} onChange={n => maj('prixSouhaite', n)} ph="Ex : 950 000" lib="Prix espéré" />
+                    <span className={b.vLib}><Ic n="etiquette" t={16} />Le loyer ou le prix qu’il espère</span>
+                    <SaisieNombre v={num(d, 'prixSouhaite')} euros unite="€" off={false} onChange={n => maj('prixSouhaite', n)} ph="Ex : 950 000" lib="Montant espéré" />
                   </div>
                   <div className={b.vCh}>
                     <span className={b.vLib}><Ic n="calendrier" t={16} />Son délai</span>

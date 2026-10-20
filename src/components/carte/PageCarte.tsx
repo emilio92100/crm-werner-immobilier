@@ -10,6 +10,7 @@ import {
 } from '@/lib/carte';
 import { TYPES_CONTACT, estArchive, estPro, lirePro, reventePossible, typeDe, typesDe } from '@/lib/contacts';
 import { etapeDe, nomProprio, type Donnees } from '@/lib/biens-vente';
+import { NATURES, TYPES_LOCAL, estLocation } from '@/lib/affaires';
 import { nomFoyer } from '@/lib/foyer';
 import { signalerEchec } from '@/lib/ecritures';
 import { Ic } from '@/components/documents/ApercuActe';
@@ -56,8 +57,13 @@ type Point = {
   exact?: { lat: number; lng: number };
   photo?: string | null;
   prix?: number | null;
+  /* Le montant tel qu'on le lit : « 48 000 € / an » pour une location. */
+  prixLib?: string;
   tel?: string | null;
   client?: Record<string, unknown>;
+  /* Werner : les filtres de plus d'une affaire (« n:location », « t:bureaux ») :
+     chacun doit être allumé pour qu'elle se voie. */
+  filtres?: string[];
   proprio?: string;
   /* V3.156 : les vignettes du bas des fiches au téléphone — ses types pour
      un contact (Acheteur, Propriétaire…), son étape pour un bien. */
@@ -93,7 +99,18 @@ const CATS_BIENS: Cat[] = [
   { k: 'b:vendu', lib: 'Conclues', c: etapeDe('vendu').c, ic: 'cle', etapes: ['vendu'], eteint: true },
   { k: 'b:retire', lib: 'Retirées', c: etapeDe('retire').c, ic: 'croix', etapes: ['retire'], eteint: true },
 ];
-const TOUTES = [...CATS_CONTACTS, ...CATS_BIENS];
+/* Werner : sur la carte, les affaires se filtrent aussi par nature et par
+   type de local (Alexandre : « les filtres quand il est sur la carte »). */
+const TEINTES_NATURE: Record<string, string> = { location: '#0f7a4f', cession_bail: '#c2621c', fonds: '#b45309', murs: '#1d4ed8', murs_occupes: '#7c3aed' };
+const CATS_NATURES: Cat[] = [
+  ...NATURES.map(n => ({ k: `n:${n.v}`, lib: n.court, c: TEINTES_NATURE[n.v] || '#64748b', ic: n.ic })),
+  { k: 'n:', lib: 'Nature à préciser', c: '#94a3b8', ic: 'info' },
+];
+const CATS_TYPES: Cat[] = [
+  ...TYPES_LOCAL.filter(t => t.v !== 'autre').map(t => ({ k: `t:${t.v}`, lib: t.court, c: '#475569', ic: t.ic })),
+  { k: 't:', lib: 'Autre ou à préciser', c: '#94a3b8', ic: 'info' },
+];
+const TOUTES = [...CATS_CONTACTS, ...CATS_BIENS, ...CATS_NATURES, ...CATS_TYPES];
 const actifsParDefaut = () => Object.fromEntries(TOUTES.map(c => [c.k, !c.eteint]));
 
 /* Les teintes du statut d'un acheteur : les mêmes que la liste des contacts. */
@@ -195,7 +212,13 @@ type LigneBien = {
   id: string; etape: string; archive: boolean; client_id: string | null; titre: string | null;
   adresse: string | null; code_postal: string | null; ville: string | null; prix: number | null; photo: string | null;
   gps: { lat?: number; lon?: number } | null; proprietaires: unknown; qui: unknown; sciNom: unknown;
+  nature?: string | null; typeLocal?: string | null;
 };
+/* Les filtres de plus d'une affaire : sa nature, son type de local. */
+const filtresDe = (b: LigneBien) => [
+  `n:${NATURES.some(n => n.v === b.nature) ? b.nature : ''}`,
+  `t:${TYPES_LOCAL.some(t => t.v === b.typeLocal && t.v !== 'autre') ? b.typeLocal : ''}`,
+];
 function pointsDesBiens(biens: LigneBien[], clients: Map<string, Record<string, unknown>>): { points: Point[]; sansAdresse: { b: LigneBien; cats: string[] }[] } {
   const points: Point[] = [];
   const sansAdresse: { b: LigneBien; cats: string[] }[] = [];
@@ -205,13 +228,14 @@ function pointsDesBiens(biens: LigneBien[], clients: Map<string, Record<string, 
     const cat = CATS_BIENS.find(c => c.etapes?.includes(e.k))?.k || 'b:a_suivre';
     const adresse = composerAdresse(b.adresse, b.code_postal, b.ville);
     const exact = b.gps && typeof b.gps.lat === 'number' && typeof b.gps.lon === 'number' ? { lat: b.gps.lat, lng: b.gps.lon } : undefined;
-    if (!exact && !adresseUtile(b.adresse)) { sansAdresse.push({ b, cats: [cat] }); continue; }
+    if (!exact && !adresseUtile(b.adresse)) { sansAdresse.push({ b, cats: [cat, ...filtresDe(b)] }); continue; }
     const cl = b.client_id ? clients.get(b.client_id) : undefined;
     const proprio = (cl ? nomFoyer(cl as never) : '') || nomProprio({ proprietaires: b.proprietaires, qui: b.qui, sciNom: b.sciNom } as Donnees);
     points.push({
-      id: `b:${b.id}`, genre: 'bien', ref: b.id, cats: [cat], couleur: e.c, fond: `${e.c}18`,
-      titre: b.titre || 'Bien', sous: `${e.court}${b.adresse ? ` · ${rue(b.adresse)}` : ''}`, etiquette: e.lib,
+      id: `b:${b.id}`, genre: 'bien', ref: b.id, cats: [cat], filtres: filtresDe(b), couleur: e.c, fond: `${e.c}18`,
+      titre: b.titre || 'Affaire', sous: `${[NATURES.find(n => n.v === b.nature)?.court, e.court].filter(Boolean).join(' · ')}${b.adresse ? ` · ${rue(b.adresse)}` : ''}`, etiquette: e.lib,
       adresse, cle: cleAdresse(adresse), exact, photo: b.photo, prix: b.prix, proprio,
+      prixLib: b.prix ? `${EUR(b.prix)}${estLocation({ nature: b.nature }) ? ' / an' : ''}` : '',
       tel: cl && Array.isArray(cl.telephones) ? String(cl.telephones.find(Boolean) || '') || null : null,
       pastilles: [{ lib: e.lib, c: e.c }],
     });
@@ -414,7 +438,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
       const [cl, bv] = await Promise.all([
         /* Par pages de 1 000 (V3.43). */
         toutLire<Record<string, unknown>>((de, a) => supabase.from('clients').select('*').order('id').range(de, a)).then(r => ({ data: r.data, error: r.erreur ? { message: r.erreur } : null })),
-        supabase.from('biens_vente').select('id, etape, archive, client_id, titre, adresse, code_postal, ville, prix, photo, gps:donnees->gps, proprietaires:donnees->proprietaires, qui:donnees->qui, sciNom:donnees->sciNom'),
+        supabase.from('biens_vente').select('id, etape, archive, client_id, titre, adresse, code_postal, ville, prix, photo, gps:donnees->gps, proprietaires:donnees->proprietaires, qui:donnees->qui, sciNom:donnees->sciNom, nature:donnees->>nature, typeLocal:donnees->>typeBien'),
       ]);
       if (!vivant) return;
       if (cl.error) { setErreur(`Les contacts n’ont pas pu être lus : ${cl.error.message}`); setCharge(false); return; }
@@ -428,7 +452,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
       setPoints(tous);
       setSansAdresse([
         ...pc.sansAdresse.map(({ c, cats }) => ({ id: `c:${c.id}`, nom: nomFoyer(c as never) || 'Contact', genre: 'contact' as Genre, raison: 'pas d’adresse', cats })),
-        ...pb.sansAdresse.map(({ b, cats }) => ({ id: `b:${b.id}`, nom: b.titre || 'Bien', genre: 'bien' as Genre, raison: 'pas d’adresse', cats })),
+        ...pb.sansAdresse.map(({ b, cats }) => ({ id: `b:${b.id}`, nom: b.titre || 'Affaire', genre: 'bien' as Genre, raison: 'pas d’adresse', cats })),
       ]);
       setCharge(false);
       /* Rafraîchir l'écran par vagues, pas à chaque adresse trouvée. */
@@ -482,11 +506,11 @@ export default function PageCarte({ onNavigate, onMenu }: {
   const parId = useMemo(() => new Map(places.map(p => [p.id, p])), [places]);
 
   const q = normer(recherche.trim());
-  const visibles = useMemo(() => places.filter(p => p.cats.some(k => actifs[k])
+  const visibles = useMemo(() => places.filter(p => p.cats.some(k => actifs[k]) && (p.filtres || []).every(k => actifs[k] !== false)
     && (!q || normer(`${p.titre} ${p.sous} ${p.adresse} ${p.etiquette}`).includes(q))), [places, actifs, q]);
   const nbCat = useMemo(() => {
     const n: Record<string, number> = {};
-    for (const p of places) for (const k of p.cats) n[k] = (n[k] || 0) + 1;
+    for (const p of places) for (const k of [...p.cats, ...(p.filtres || [])]) n[k] = (n[k] || 0) + 1;
     return n;
   }, [places]);
   /* Ce que le CRM contient, placé ou non (V3.28) : un filtre s'affiche dès
@@ -495,7 +519,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
      adresse faisaient disparaître toute la section « Biens ». */
   const nbCrm = useMemo(() => {
     const n: Record<string, number> = {};
-    for (const p of points) for (const k of p.cats) n[k] = (n[k] || 0) + 1;
+    for (const p of points) for (const k of [...p.cats, ...(p.filtres || [])]) n[k] = (n[k] || 0) + 1;
     for (const x of sansAdresse) for (const k of x.cats) n[k] = (n[k] || 0) + 1;
     return n;
   }, [points, sansAdresse]);
@@ -858,7 +882,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
             <>
               {compacte && <span className={s.ficheTag2} style={{ '--c': p.couleur } as React.CSSProperties}><i />{p.etiquette}</span>}
               <b className={s.ficheTitre}>{p.titre}</b>
-              {!!p.prix && <span className={s.fichePrix}>{EUR(p.prix)}</span>}
+              {!!p.prix && <span className={s.fichePrix}>{p.prixLib || EUR(p.prix)}</span>}
             </>
           )}
           <span className={s.ficheLigne}><Ic n="lieu" t={13} /><span>{p.perso ? `Son bien : ${p.adresse}` : p.adresse}</span></span>
@@ -956,12 +980,28 @@ export default function PageCarte({ onNavigate, onMenu }: {
                     <div className={s.puces}>{puces(CATS_CONTACTS)}</div>
                   </div>}
                   {CATS_BIENS.some(c => nbCrm[c.k]) && <div className={s.section}>
-                    <div className={s.sectionTete}><span>Biens</span>
+                    <div className={s.sectionTete}><span>Affaires</span>
                       <button type="button" onClick={() => toutSection(CATS_BIENS, !CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]))}>
                         {CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucun' : 'Tous'}
                       </button>
                     </div>
                     <div className={s.puces}>{puces(CATS_BIENS)}</div>
+                  </div>}
+                  {CATS_NATURES.some(c => nbCrm[c.k]) && <div className={s.section}>
+                    <div className={s.sectionTete}><span>Nature de l’affaire</span>
+                      <button type="button" onClick={() => toutSection(CATS_NATURES, !CATS_NATURES.every(c => !nbCat[c.k] || actifs[c.k]))}>
+                        {CATS_NATURES.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucune' : 'Toutes'}
+                      </button>
+                    </div>
+                    <div className={s.puces}>{puces(CATS_NATURES)}</div>
+                  </div>}
+                  {CATS_TYPES.some(c => nbCrm[c.k]) && <div className={s.section}>
+                    <div className={s.sectionTete}><span>Type de local</span>
+                      <button type="button" onClick={() => toutSection(CATS_TYPES, !CATS_TYPES.every(c => !nbCat[c.k] || actifs[c.k]))}>
+                        {CATS_TYPES.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucun' : 'Tous'}
+                      </button>
+                    </div>
+                    <div className={s.puces}>{puces(CATS_TYPES)}</div>
                   </div>}
                   {!places.length && !progres && <p className={s.vide}>Aucune adresse à placer pour l’instant.</p>}
                 </>
@@ -1051,7 +1091,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
             {/* Deux boutons plutôt qu'une bande à faire défiler : chacun
                 déplie ses filtres, rangés sur plusieurs lignes. */}
             <div className={s.groupesTel}>
-              {([['contacts', 'Mes contacts', 'groupe', CATS_CONTACTS], ['biens', 'Mes biens', 'maison', CATS_BIENS]] as const)
+              {([['contacts', 'Mes contacts', 'groupe', CATS_CONTACTS], ['biens', 'Mes affaires', 'agence', CATS_BIENS]] as const)
                 .filter(([, , , cats]) => cats.some(c => nbCrm[c.k]))
                 .map(([k, lib, ico]) => {
                   const n = visibles.filter(p => (k === 'biens') === (p.genre === 'bien')).length;
@@ -1071,10 +1111,18 @@ export default function PageCarte({ onNavigate, onMenu }: {
               return (
                 <div className={s.pliTel} key={pliTel}>
                   <div className={s.sectionTete}>
-                    <span>{pliTel === 'contacts' ? 'Quels contacts voir' : 'Quels biens voir'}</span>
+                    <span>{pliTel === 'contacts' ? 'Quels contacts voir' : 'Quelles affaires voir'}</span>
                     <button type="button" onClick={() => toutSection(cats, !tous)}>{tous ? 'Aucun' : 'Tous'}</button>
                   </div>
                   <div className={s.puces}>{puces(cats)}</div>
+                  {pliTel === 'biens' && CATS_NATURES.some(c => nbCrm[c.k]) && <>
+                    <div className={s.sectionTete}><span>Nature</span></div>
+                    <div className={s.puces}>{puces(CATS_NATURES)}</div>
+                  </>}
+                  {pliTel === 'biens' && CATS_TYPES.some(c => nbCrm[c.k]) && <>
+                    <div className={s.sectionTete}><span>Type de local</span></div>
+                    <div className={s.puces}>{puces(CATS_TYPES)}</div>
+                  </>}
                 </div>
               );
             })()}
@@ -1107,7 +1155,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
                      Le nom (« Appartement 2 p. · 36,8 m² », ou le contact) et
                      le prix à droite ; l'adresse et son code postal ; ses
                      vignettes (l'étape du bien, les types du contact). */
-                  const prix = p.genre === 'bien' && p.prix ? EUR(p.prix) : '';
+                  const prix = p.genre === 'bien' && p.prix ? (p.prixLib || EUR(p.prix)) : '';
                   const vignettes = p.pastilles?.length ? p.pastilles : p.etiquette ? [{ lib: p.etiquette, c: p.couleur }] : [];
                   return (
                   <div key={p.id} data-id={p.id} className={`${s.carteTel} ${prix ? s.carteTelPrix : ''} ${sel === p.id ? s.carteTelSel : ''}`}

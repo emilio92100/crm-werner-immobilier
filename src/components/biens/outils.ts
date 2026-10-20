@@ -135,9 +135,9 @@ export async function chargerListe(): Promise<ListeBiens> {
     lireClientsListe(),
     toutLire<RechercheMini>((de, a) => supabase.from('recherches').select('*').eq('active', false).order('id').range(de, a)),
   ]);
-  if (b.erreur) lever('Les biens n’ont pas pu être lus', b.erreur);
-  if (s.erreur) lever('Le suivi des biens n’a pas pu être lu', s.erreur);
-  if (c.erreur) lever('Les demandeurs des biens n’ont pas pu être lus', /bien_vente_id/.test(c.erreur) ? 'biens_vente' : c.erreur);
+  if (b.erreur) lever('Les affaires n’ont pas pu être lues', b.erreur);
+  if (s.erreur) lever('Le suivi des affaires n’a pas pu être lu', s.erreur);
+  if (c.erreur) lever('Les demandeurs des affaires n’ont pas pu être lus', /bien_vente_id/.test(c.erreur) ? 'biens_vente' : c.erreur);
   const copies = c.data;
   /* Les visites des copies, par paquets de 100 identifiants : une liste plus
      longue ne tient plus dans l'adresse de la requête. */
@@ -175,7 +175,7 @@ export async function documentsDuBien(b: BienVente): Promise<DocLie[]> {
     supabase.from('documents').select(cols).eq('modele', 'bon_visite').contains('donnees', { autresBiens: [{ bienVenteId: b.id }] })
       .order('created_at', { ascending: false }).limit(60),
   ]);
-  if (a.error) throw new Error('Les documents du bien n’ont pas pu être lus : ' + a.error.message);
+  if (a.error) throw new Error('Les documents de l’affaire n’ont pas pu être lus : ' + a.error.message);
   /* Illisibles, ces bons-là seuls manquent : la fiche reste lisible. */
   if (v.error) console.error('[biens] les bons de visite à plusieurs biens :', v.error.message);
   let l = (a.data || []) as DocLie[];
@@ -246,8 +246,8 @@ export async function chargerFiche(b: BienVente): Promise<DetailBien> {
     supabase.from('biens_vente_suivi').select('*').eq('bien_id', b.id).order('le', { ascending: false }).limit(500),
     supabase.from('biens').select('*').eq('bien_vente_id', b.id).limit(300),
   ]);
-  if (s.error) lever('Le suivi du bien n’a pas pu être lu', s.error.message);
-  if (c.error) lever('Les demandeurs du bien n’ont pas pu être lus', c.error.message);
+  if (s.error) lever('Le suivi de l’affaire n’a pas pu être lu', s.error.message);
+  if (c.error) lever('Les demandeurs de l’affaire n’ont pas pu être lus', c.error.message);
   const copies = (c.data || []) as Copie[];
   let visites: VisiteRow[] = [];
   if (copies.length) {
@@ -337,14 +337,14 @@ export async function annulerVisitesPrevues(b: BienVente, pourquoi: string): Pro
 export async function solderDemandesDuBien(b: BienVente): Promise<void> {
   try {
     const { data, error } = await supabase.from('biens').select('client_id, titre').eq('bien_vente_id', b.id);
-    if (error) { signalerEchec('Les demandes des demandeurs sur ce bien', error.message); return; }
+    if (error) { signalerEchec('Les demandes en cours sur cette affaire', error.message); return; }
     for (const c of (data || []) as { client_id: string | null; titre: string | null }[]) {
       if (!c.client_id) continue;
       const e1 = await solderRelancesVisite(c.client_id, [c.titre]);
       const e2 = await solderRelancesRetourVisite(c.client_id, [c.titre]);
-      if (e1 || e2) signalerEchec('Les demandes des demandeurs sur ce bien', (e1 || e2) as string);
+      if (e1 || e2) signalerEchec('Les demandes en cours sur cette affaire', (e1 || e2) as string);
     }
-  } catch (e) { signalerEchec('Les demandes des demandeurs sur ce bien', (e as Error).message); }
+  } catch (e) { signalerEchec('Les demandes en cours sur cette affaire', (e as Error).message); }
 }
 
 /* Un horodatage déjà passé (une visite hors CRM : `le` porte son jour et son heure). */
@@ -580,10 +580,10 @@ export const noteJournal = (n: number) => (n >= 0 ? ` · correspondance ${n} %` 
 export type RaisonCache = RaisonEcart | 'loin' | 'type' | 'peu';
 export const RAISONS_CACHE: Record<RaisonCache, { lib: string; sous: string }> = {
   secteur: { lib: 'Autre secteur', sous: 'Le bien n’est pas dans les villes qu’ils cherchent.' },
-  type: { lib: 'Autre type de bien', sous: 'Ils cherchent autre chose.' },
+  type: { lib: 'Autre type de local', sous: 'Ils cherchent autre chose.' },
   budget: { lib: 'Trop cher pour eux', sous: 'Plus de 10 % au-dessus de leur budget.' },
   surface: { lib: 'Trop petit', sous: 'Moins de 90 % de la surface qu’ils demandent.' },
-  chambres: { lib: 'Pas assez de chambres', sous: 'Il leur en faut davantage.' },
+  chambres: { lib: 'Pas assez de bureaux', sous: 'Il leur en faut davantage.' },
   indispensable: { lib: 'Il manque un indispensable', sous: 'Un équipement qu’ils exigent n’y est pas.' },
   loin: { lib: 'Trop loin de leurs critères', sous: 'Moins de 50 % : trop de critères ne collent pas.' },
   peu: { lib: 'Trop peu de critères', sous: 'Leur recherche n’en dit pas assez pour comparer.' },
@@ -601,7 +601,7 @@ function detailEcart(raison: RaisonEcart, corr: Correspondance, bc: ReturnType<t
     return { detail: villes.slice(0, 3).join(', ') + (villes.length > 3 ? '…' : ''), ordre: -corr.note };
   }
   if (raison === 'surface') return { detail: cr.surfaceMin ? `${cr.surfaceMin} m² minimum` : '', ordre: -corr.note };
-  if (raison === 'chambres') return { detail: cr.chambresMin ? `${cr.chambresMin} chambres minimum` : '', ordre: -corr.note };
+  if (raison === 'chambres') return { detail: cr.chambresMin ? `${cr.chambresMin} bureaux minimum` : '', ordre: -corr.note };
   const manque = corr.lignes.filter(l => l.poids === 3 && l.etat === 'non').map(l => l.lib.toLowerCase());
   return { detail: manque.length ? `sans ${manque.join(', ')}` : '', ordre: -corr.note };
 }
@@ -650,7 +650,7 @@ export async function creerBien(references: (string | null)[], etape: EtapeVente
     donnees,
     ...(etape === 'mandat' ? { en_vente_le: maintenant } : {}),
   }).select().single();
-  if (error) lever('Le bien n’a pas pu être créé', error.message);
+  if (error) lever('L’affaire n’a pas pu être créée', error.message);
   if (etape === 'mandat') await ajouterSuivi({ bien_id: (data as BienVente).id, type: 'etape', statut: 'mandat', donnees: { de: 'creation', depuis: 'creation' } });
   const proprio = (data as BienVente).client_id;
   if (proprio && !o.sansSuivi) await noterProprioRelie(data as BienVente, proprio, true);
@@ -678,10 +678,10 @@ export async function nouvelleVente(b: BienVente, references: (string | null)[],
   const { data, error } = await supabase.from('biens_vente').insert({
     reference: referenceSuivante(references), etape: o.etape, etape_le: maintenant, ...colonnesBien(d), donnees: d,
   }).select().single();
-  if (error) lever('La nouvelle vente n’a pas pu être créée', error.message);
+  if (error) lever('La nouvelle affaire n’a pas pu être créée', error.message);
   const neuf = data as BienVente;
   try { await ajouterSuivi({ bien_id: neuf.id, type: 'etape', statut: o.etape, donnees: { de: 'creation', depuis: 'revente', venteAvant: b.reference || '' } }); }
-  catch (e) { signalerEchec('L’historique de la nouvelle vente', (e as Error).message); }
+  catch (e) { signalerEchec('L’historique de la nouvelle affaire', (e as Error).message); }
   if (o.proprio) { await marquerVendeur(o.proprio.id); await noterProprioRelie(neuf, o.proprio.id, true); }
   /* L'ancienne fiche dit qu'il y a une suite. */
   try {
@@ -690,7 +690,7 @@ export async function nouvelleVente(b: BienVente, references: (string | null)[],
     const dd = { ...(((frais as { donnees?: Donnees } | null)?.donnees) || ancien), venteSuivante: { id: neuf.id, reference: neuf.reference || null } };
     const { error: e2 } = await supabase.from('biens_vente').update({ donnees: dd }).eq('id', b.id);
     if (e2) throw new Error(e2.message);
-  } catch (e) { signalerEchec('Le lien vers la nouvelle vente', (e as Error).message); }
+  } catch (e) { signalerEchec('Le lien vers la nouvelle affaire', (e as Error).message); }
   return neuf;
 }
 
@@ -700,7 +700,7 @@ async function fusion(id: string, d: Donnees, base: Donnees): Promise<Donnees> {
   const cles = Array.from(new Set([...Object.keys(d), ...Object.keys(base)]));
   const changees = cles.filter(k => JSON.stringify(d[k]) !== JSON.stringify(base[k]));
   const { data: frais, error } = await supabase.from('biens_vente').select('donnees').eq('id', id).maybeSingle();
-  if (error) lever('Le bien n’a pas pu être relu avant l’enregistrement', error.message);
+  if (error) lever('L’affaire n’a pas pu être relue avant l’enregistrement', error.message);
   const out: Donnees = { ...(((frais as { donnees?: Donnees } | null)?.donnees) || base) };
   for (const k of changees) { if (d[k] === undefined) delete out[k]; else out[k] = d[k]; }
   return out;
@@ -729,7 +729,7 @@ export async function enregistrerBien(id: string, d: Donnees, base?: Donnees | n
   const { data, error } = await supabase.from('biens_vente').update({
     donnees: aEcrire, ...colonnesBien(aEcrire), updated_at: new Date().toISOString(),
   }).eq('id', id).select().single();
-  if (error) lever('Le bien n’a pas pu être enregistré', error.message);
+  if (error) lever('L’affaire n’a pas pu être enregistrée', error.message);
   let row = data as BienVente;
   await repercuterPrix(id, aEcrire, row.etape);
   /* V3.48 : un autre propriétaire relié (ou plus personne). */
@@ -768,7 +768,7 @@ async function changementProprio(b: BienVente, ancien: string, nouveau: string |
   try {
     if (nouveau) {
       const { data: lignes, error } = await supabase.from('biens_vente_suivi').select('type, statut, donnees').eq('bien_id', b.id).in('type', ['offre', 'etape']);
-      if (error) signalerEchec('Les relances du bien', error.message);
+      if (error) signalerEchec('Les relances de l’affaire', error.message);
       const ids = new Set<string>();
       /* V3.50 : les relances de l'estimation (faire le point, recontacter) aussi. */
       for (const k of ['relanceAvis', 'relanceReprise']) { const v = (b.donnees || {})[k]; if (typeof v === 'string' && v) ids.add(v); }
@@ -781,7 +781,7 @@ async function changementProprio(b: BienVente, ancien: string, nouveau: string |
       }
       if (ids.size) {
         const r = await supabase.from('relances').update({ client_id: nouveau }).in('id', Array.from(ids)).eq('client_id', ancien).eq('statut', 'en_attente');
-        if (r.error) signalerEchec('Les relances du bien, chez le nouveau propriétaire', r.error.message);
+        if (r.error) signalerEchec('Les relances de l’affaire, chez le nouveau propriétaire', r.error.message);
       }
     }
     /* V3.137 : l'ancien et le nouveau propriétaire prennent le type que
@@ -789,8 +789,8 @@ async function changementProprio(b: BienVente, ancien: string, nouveau: string |
        sinon). Le bien est déjà relié au nouveau en base. */
     await marquerVendeur(ancien);
     if (nouveau) await marquerVendeur(nouveau);
-    await addJournal(ancien, 'statut_change', `🏠 N’est plus le propriétaire de ${titre}`, nouveau ? 'Un autre propriétaire a été relié au bien.' : 'Le bien n’a plus de propriétaire relié.');
-    if (nouveau) await addJournal(nouveau, 'statut_change', `🏠 Propriétaire de ${titre}`, 'Relié au bien en cours de route : les relances du bien passent chez lui.');
+    await addJournal(ancien, 'statut_change', `🏠 N’est plus le propriétaire de ${titre}`, nouveau ? 'Un autre propriétaire a été relié à l’affaire.' : 'L’affaire n’a plus de propriétaire relié.');
+    if (nouveau) await addJournal(nouveau, 'statut_change', `🏠 Propriétaire de ${titre}`, 'Relié à l’affaire en cours de route : ses relances passent chez lui.');
   } catch (e) { signalerEchec('Le changement de propriétaire', (e as Error).message); }
 }
 
@@ -828,13 +828,13 @@ export async function majPrixDansAnnonces(bienId: string, vieux: string, neuf: s
 export async function poserDansBien(id: string, patch: Donnees): Promise<BienVente> {
   const out = await fusion(id, patch, {});
   const { data, error } = await supabase.from('biens_vente').update({ donnees: out, updated_at: new Date().toISOString() }).eq('id', id).select().single();
-  if (error) lever('Le bien n’a pas pu être enregistré', error.message);
+  if (error) lever('L’affaire n’a pas pu être enregistrée', error.message);
   return data as BienVente;
 }
 
 export async function majBien(id: string, patch: Partial<BienVente>): Promise<BienVente> {
   const { data, error } = await supabase.from('biens_vente').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select().single();
-  if (error) lever('Le bien n’a pas pu être modifié', error.message);
+  if (error) lever('L’affaire n’a pas pu être modifiée', error.message);
   return data as BienVente;
 }
 
@@ -856,12 +856,12 @@ export function bienVide(d: Donnees): boolean {
    les mêmes fichiers, dans leur espace et sur la page /bien/<id>. */
 /* V3.50 : un bien vendu ne se supprime pas — sa ligne « vendu » porte les
    honoraires du chiffre d'affaires. On l'archive. */
-export const MESSAGE_VENDU_SUPPR = 'Ce bien est vendu : le supprimer effacerait la vente de ton chiffre d’affaires. Archive-le plutôt.';
+export const MESSAGE_VENDU_SUPPR = 'Cette affaire est conclue : la supprimer effacerait ses honoraires de ton chiffre d’affaires. Archive-la plutôt.';
 export async function supprimerBien(b: BienVente): Promise<void> {
   if (b.etape === 'vendu') throw new Error(MESSAGE_VENDU_SUPPR);
   const partage = await bienPartage(b.id);
   const { error } = await supabase.from('biens_vente').delete().eq('id', b.id);
-  if (error) lever('Le bien n’a pas pu être supprimé', error.message);
+  if (error) lever('L’affaire n’a pas pu être supprimée', error.message);
   /* V3.50 : ses relances d'estimation se closent, son rendez-vous d'estimation
      encore à venir quitte l'agenda. */
   await cloreRelancesEstimation(b);
@@ -873,9 +873,9 @@ export async function supprimerBien(b: BienVente): Promise<void> {
   const chemins = lirePhotos(b.donnees?.photos).map(p => p.chemin).filter(Boolean);
   if (chemins.length && !partage) {
     const { error: e2 } = await supabase.storage.from('photos-vente').remove(chemins);
-    if (e2) signalerEchec('La suppression des photos du bien', e2.message);
+    if (e2) signalerEchec('La suppression des photos de l’affaire', e2.message);
   }
-  try { await api({ action: 'tout', id: b.id }); } catch (e) { signalerEchec('La suppression des pièces du dossier du bien', (e as Error).message); }
+  try { await api({ action: 'tout', id: b.id }); } catch (e) { signalerEchec('La suppression des pièces du dossier de l’affaire', (e as Error).message); }
 }
 
 /* Le bien a-t-il été présenté ou mis en sélection chez un acheteur ? Dans
@@ -943,7 +943,7 @@ export async function changerEtape(b: BienVente, etape: EtapeVente, o: {
    bien revient à l'étape choisie (src/lib/mandat-bien.ts). */
 export async function annulerMandatNote(b: BienVente, o: RetraitMandat): Promise<BienVente> {
   const r = await retirerMandatDuBien(supabase, b, o);
-  if (r.avertissement) signalerEchec('La fiche du bien', r.avertissement);
+  if (r.avertissement) signalerEchec('La fiche de l’affaire', r.avertissement);
   return r.bien;
 }
 
@@ -955,7 +955,7 @@ export async function annulerMandatNote(b: BienVente, o: RetraitMandat): Promise
    de l'agence qui n'est pas encore dans le dossier de l'acheteur. */
 export async function copieDe(b: BienVente, clientId: string, rechercheId: string, badge?: string): Promise<{ copie: Copie; neuve: boolean }> {
   const { data: deja, error: e1 } = await supabase.from('biens').select('*').eq('bien_vente_id', b.id).eq('recherche_id', rechercheId).limit(1);
-  if (e1) lever('Le dossier de l’demandeur n’a pas pu être lu', e1.message);
+  if (e1) lever('Le dossier du demandeur n’a pas pu être lu', e1.message);
   if (deja?.length) {
     const c = deja[0] as Copie;
     if (c.etape !== 'selection') return { copie: c, neuve: false };
@@ -969,7 +969,7 @@ export async function copieDe(b: BienVente, clientId: string, rechercheId: strin
   }
   const ligne = { ...versBienAcheteur(b, { clientId, rechercheId, quand: new Date().toISOString() }), ...(badge ? { badge_retour: badge } : {}) };
   const { data, error } = await supabase.from('biens').insert(ligne).select().single();
-  if (error) lever('Le bien n’a pas pu être ajouté au dossier de l’demandeur', error.message);
+  if (error) lever('Le bien n’a pas pu être ajouté au dossier du demandeur', error.message);
   return { copie: data as Copie, neuve: true };
 }
 
@@ -1209,7 +1209,7 @@ export async function enregistrerOffre(b: BienVente, o: SaisieOffre, proprio: Cl
     const copieId = cop?.[0]?.id as string | undefined;
     if (copieId) {
       const r = await supabase.from('biens').update({ badge_retour: 'offre_faite' }).eq('id', copieId);
-      if (r.error) signalerEchec('L’offre est notée, mais le bien « offre faite » chez l’demandeur', r.error.message);
+      if (r.error) signalerEchec('L’offre est notée, mais le bien « offre faite » chez le demandeur', r.error.message);
     }
     /* V3.47 : une carte « offre » dans son Suivi (metadata.jalon), datée du
        jour où elle a été faite ; acceptée d'emblée, elle le dit. */
@@ -1219,7 +1219,7 @@ export async function enregistrerOffre(b: BienVente, o: SaisieOffre, proprio: Cl
       description: [`Faite le ${dateLongue(o.recue)}`, o.dejaAcceptee ? 'Acceptée par le mandant' : o.jusquau ? `Valable jusqu’au ${dateLongue(o.jusquau)}` : ''].filter(Boolean).join(' · '),
       metadata: { bien_vente_id: b.id, suivi_id: ligne.id, jalon: o.dejaAcceptee ? 'offre_acceptee' : 'offre_faite', cote: 'acquereur' },
     });
-    if (eJ) signalerEchec('L’offre est notée, mais l’historique de l’demandeur', eJ.message);
+    if (eJ) signalerEchec('L’offre est notée, mais l’historique du demandeur', eJ.message);
   }
   /* Le vendeur : l'offre reçue, dans son Suivi (V3.47). */
   if (b.client_id) {
@@ -1433,14 +1433,14 @@ export function lireHono(d: Record<string, unknown> | null | undefined, prix: nu
 export function ligneHono(a: AccordHono): string | null {
   if (a.hono === null) return null;
   const net = netVendeur(a);
-  return `Honoraires : ${eurosSuivi(a.hono)} HT, à la charge ${a.charge === 'vendeur' ? 'du mandant' : 'du demandeur'}${net !== null ? ` · net vendeur : ${eurosSuivi(net)}` : ''}`;
+  return `Honoraires : ${eurosSuivi(a.hono)} HT, à la charge ${a.charge === 'vendeur' ? 'du mandant' : 'du demandeur'}${net !== null ? ` · net mandant : ${eurosSuivi(net)}` : ''}`;
 }
 
 export async function lireNotaires(): Promise<ContactNotaire[]> {
   const { data, error } = await supabase.from('clients').select('id, prenom, nom, emails, telephones, pro, types, adresse').contains('types', ['notaire']).order('nom').limit(300);
   if (error) {
     if (colonneContactAbsente(error.message)) return [];
-    throw new Error('Les notaires n’ont pas pu être lus : ' + error.message);
+    throw new Error('Les notaires et avocats n’ont pas pu être lus : ' + error.message);
   }
   return (data || []) as ContactNotaire[];
 }
@@ -1460,8 +1460,8 @@ export async function creerNotaire(x: { prenom: string; nom: string; etude: stri
   const { data, error } = await supabase.from('clients').insert(ligne).select('id, prenom, nom, emails, telephones, pro, adresse').single();
   if (error) {
     throw new Error(colonneContactAbsente(error.message)
-      ? 'Pour enregistrer un notaire, lance d’abord outils/sql/types-contact.sql dans Supabase.'
-      : 'Le notaire n’a pas pu être créé : ' + error.message);
+      ? 'Pour enregistrer un notaire ou un avocat, lance d’abord outils/sql/types-contact.sql dans Supabase.'
+      : 'Le notaire ou l’avocat n’a pas pu être créé : ' + error.message);
   }
   return data as ContactNotaire;
 }
@@ -1479,19 +1479,19 @@ export async function poserRappels(rappels: Rappel[], avant: Record<string, stri
     try {
       if (r.on && r.le && id) {
         const { error } = await supabase.from('relances').update({ date_echeance: new Date(`${r.le}T09:00:00`).toISOString(), note: r.note }).eq('id', id).eq('statut', 'en_attente');
-        if (error) signalerEchec('Un rappel du compromis', error.message);
+        if (error) signalerEchec('Un rappel de la signature', error.message);
       } else if (r.on && r.le && r.clientId) {
         const { data, error } = await supabase.from('relances').insert({
           client_id: r.clientId, type: 'manuelle', statut: 'en_attente', date_echeance: new Date(`${r.le}T09:00:00`).toISOString(), note: r.note,
         }).select('id').single();
-        if (error) signalerEchec('Un rappel du compromis', error.message);
+        if (error) signalerEchec('Un rappel de la signature', error.message);
         else if (data?.id) apres[r.cle] = data.id as string;
       } else if (!r.on && id) {
         const { error } = await supabase.from('relances').update({ statut: 'cloturee' }).eq('id', id).eq('statut', 'en_attente');
-        if (error) signalerEchec('Un rappel du compromis', error.message);
+        if (error) signalerEchec('Un rappel de la signature', error.message);
         delete apres[r.cle];
       }
-    } catch (e) { signalerEchec('Un rappel du compromis', (e as Error).message); }
+    } catch (e) { signalerEchec('Un rappel de la signature', (e as Error).message); }
   }
   return apres;
 }
@@ -1501,13 +1501,13 @@ export async function cloreRappelsCompromis(bienId: string): Promise<void> {
   try {
     const { data, error } = await supabase.from('biens_vente_suivi').select('donnees').eq('bien_id', bienId).eq('type', 'etape').eq('statut', 'compromis')
       .order('le', { ascending: false }).limit(1);
-    if (error) { signalerEchec('Les rappels du compromis', error.message); return; }
+    if (error) { signalerEchec('Les rappels de la signature', error.message); return; }
     const r = ((data?.[0]?.donnees || {}) as Record<string, unknown>).rappels;
     const ids = r && typeof r === 'object' ? Object.values(r as Record<string, unknown>).filter((x): x is string => typeof x === 'string' && !!x) : [];
     if (!ids.length) return;
     const { error: e2 } = await supabase.from('relances').update({ statut: 'cloturee' }).in('id', ids).eq('statut', 'en_attente');
-    if (e2) signalerEchec('Les rappels du compromis', e2.message);
-  } catch (e) { signalerEchec('Les rappels du compromis', (e as Error).message); }
+    if (e2) signalerEchec('Les rappels de la signature', e2.message);
+  } catch (e) { signalerEchec('Les rappels de la signature', (e as Error).message); }
 }
 /* Le compromis signé (PDF ou photo), joint à sa ligne. */
 export async function joindreCompromis(b: BienVente, ligne: SuiviVente, f: File): Promise<SuiviVente> {
@@ -1534,9 +1534,9 @@ export const eurosSuivi = (n: number) => `${Math.round(n).toLocaleString('fr-FR'
 export const nomNotaire = (n: NotaireChoisi | null) => (n ? `${n.nom}${n.etude ? ` (${n.etude})` : ''}` : '');
 /* « Notaires : Me Dupont pour le vendeur, Me Martin pour l'acquéreur ». */
 export function ligneNotaires(v: NotaireChoisi | null, a: NotaireChoisi | null): string | null {
-  if (v && a && v.nom === a.nom) return `Notaire : ${nomNotaire(v)}, pour les deux parties`;
+  if (v && a && v.nom === a.nom) return `Notaire ou avocat : ${nomNotaire(v)}, pour les deux parties`;
   const l = [v ? `${nomNotaire(v)} pour le mandant` : '', a ? `${nomNotaire(a)} pour le demandeur` : ''].filter(Boolean);
-  return l.length ? `${l.length > 1 ? 'Notaires' : 'Notaire'} : ${l.join(', ')}` : null;
+  return l.length ? `${l.length > 1 ? 'Notaires ou avocats' : 'Notaire ou avocat'} : ${l.join(', ')}` : null;
 }
 async function copieChez(bienId: string, rechercheId: string): Promise<string | null> {
   const { data } = await supabase.from('biens').select('id').eq('bien_vente_id', bienId).eq('recherche_id', rechercheId).limit(1);
@@ -1659,7 +1659,7 @@ export async function compromisTombe(b: BienVente, titre: string, raison: string
     if (!c) {
       const { data, error } = await supabase.from('biens_vente_suivi').select('donnees').eq('bien_id', b.id).eq('type', 'etape').eq('statut', 'compromis')
         .order('le', { ascending: false }).limit(1);
-      if (error) { signalerEchec('Le compromis tombé', error.message); return; }
+      if (error) { signalerEchec('L’accord tombé', error.message); return; }
       c = (data?.[0]?.donnees || {}) as Record<string, unknown>;
     }
     const p = c.acqPause as PauseAcquereur | undefined;
@@ -1668,11 +1668,11 @@ export async function compromisTombe(b: BienVente, titre: string, raison: string
     let offre: SuiviVente | null = null;
     if (typeof c.offre === 'string' && c.offre) {
       const o = await supabase.from('biens_vente_suivi').select('*').eq('id', c.offre).maybeSingle();
-      if (o.error) signalerEchec('L’offre du compromis', o.error.message);
+      if (o.error) signalerEchec('L’offre retenue', o.error.message);
       offre = (o.data as SuiviVente | null) || null;
       if (offre && offre.statut === 'acceptee') {
         const r = await supabase.from('biens_vente_suivi').update({ statut: 'retiree', donnees: { ...(offre.donnees || {}), compromisTombe: { le: jour, raison: raison.trim() } } }).eq('id', offre.id);
-        if (r.error) signalerEchec('L’offre « compromis tombé »', r.error.message);
+        if (r.error) signalerEchec('L’offre « accord tombé »', r.error.message);
       }
     }
     /* L'acquéreur : celui mis en pause, sinon celui de l'offre retenue. */
@@ -1692,7 +1692,7 @@ export async function compromisTombe(b: BienVente, titre: string, raison: string
           const r2 = await supabase.from('recherches').update({ active: true, updated_at: new Date().toISOString() }).eq('id', p.rechercheId);
           if (r2.error) signalerEchec('La reprise de la recherche du demandeur', r2.error.message);
         }
-        phraseAcq = p.statutAvant === 'suspendu' || p.activeAvant === false ? 'Il revient comme avant le compromis (sa recherche était déjà en pause).' : 'Sa recherche reprend : la veille repart.';
+        phraseAcq = p.statutAvant === 'suspendu' || p.activeAvant === false ? 'Il revient comme avant l’accord (sa recherche était déjà en pause).' : 'Sa recherche reprend : la veille repart.';
       } else if (suite.acq === 'pause') {
         const r = await supabase.from('clients').update({ statut: 'suspendu' }).eq('id', acq.clientId).in('statut', ['actif', 'prospect', 'suspendu']);
         if (r.error) signalerEchec('Le statut « Suspendu » du demandeur', r.error.message);
@@ -1703,7 +1703,7 @@ export async function compromisTombe(b: BienVente, titre: string, raison: string
         phraseAcq = 'Sa recherche reste en pause (« Suspendu ») : elle reprend depuis sa fiche.';
       } else if (suite.acq === 'arrete') {
         /* Comme « Clôturer le dossier » (FicheClient), motif « A renoncé ». */
-        const a = await supabase.from('clients').update({ statut: 'perdu', raison_perte: `A renoncé — compromis tombé${raison.trim() ? ` (${raison.trim()})` : ''}` }).eq('id', acq.clientId);
+        const a = await supabase.from('clients').update({ statut: 'perdu', raison_perte: `A renoncé — accord tombé${raison.trim() ? ` (${raison.trim()})` : ''}` }).eq('id', acq.clientId);
         if (a.error) signalerEchec('La clôture du dossier du demandeur', a.error.message);
         else {
           finalise = true;
@@ -1714,15 +1714,15 @@ export async function compromisTombe(b: BienVente, titre: string, raison: string
         }
       }
     }
-    const signe = typeof c.signe === 'string' && c.signe ? ` · compromis signé le ${dateLongue(c.signe)}` : '';
+    const signe = typeof c.signe === 'string' && c.signe ? ` · accord signé le ${dateLongue(c.signe)}` : '';
     const qui = offre?.qui || (typeof c.acquereur === 'string' ? c.acquereur : '');
     const pourquoi = raison.trim() ? `Pourquoi : ${raison.trim()}` : null;
     await noterJalon(b, 'compromis_tombe', {
-      vendeur: b.client_id ? { clientId: b.client_id, titre: '↩️ Compromis tombé', texte: [`${titre}${signe}${qui ? ` avec ${qui}` : ''}`, pourquoi,
-        suite.bien === 'retire' ? 'Il ne vend plus : le bien est retiré de la vente.' : 'Le bien est remis en vente.'] } : null,
-      acquereur: acq ? { ...acq, type: finalise ? 'dossier_finalise' : undefined, titre: '↩️ Compromis tombé', texte: [`${titre}${signe}`, pourquoi, phraseAcq] } : null,
+      vendeur: b.client_id ? { clientId: b.client_id, titre: '↩️ Accord tombé', texte: [`${titre}${signe}${qui ? ` avec ${qui}` : ''}`, pourquoi,
+        suite.bien === 'retire' ? 'Il arrête : l’affaire est retirée du marché.' : 'L’affaire est remise sur le marché.'] } : null,
+      acquereur: acq ? { ...acq, type: finalise ? 'dossier_finalise' : undefined, titre: '↩️ Accord tombé', texte: [`${titre}${signe}`, pourquoi, phraseAcq] } : null,
     });
-  } catch (e) { signalerEchec('Le compromis tombé', (e as Error).message); }
+  } catch (e) { signalerEchec('L’accord tombé', (e as Error).message); }
 }
 /* À l'acte : le dossier de l'acquéreur est finalisé (« Bien trouvé »), comme
    « L'acte est signé » d'une chasse (FicheClient) — la veille s'arrête, ses
@@ -1838,7 +1838,7 @@ export async function vendeurSigne(clientId: string, bienId: string): Promise<bo
     /* Un autre de ses biens encore en vente : il reste aussi « Vendeur ».
        V3.137 : « en vente » = mandat, sous offre ou sous compromis. */
     const autres = await supabase.from('biens_vente').select('id').eq('client_id', clientId).neq('id', bienId).in('etape', ETAPES_EN_VENTE).eq('archive', false).limit(1);
-    if (autres.error) signalerEchec('Les autres biens du mandant', autres.error.message);
+    if (autres.error) signalerEchec('Les autres affaires du mandant', autres.error.message);
     const encore = !!autres.data?.length;
     const t: string[] = typesDe(data).filter(x => encore || x !== 'vendeur');
     const types = TYPES_CONTACT_ORDRE.filter(k => k === 'vendeur_signe' || t.includes(k));
@@ -1849,7 +1849,7 @@ export async function vendeurSigne(clientId: string, bienId: string): Promise<bo
        « vendeur » sur la carte et dans la liste des contacts. */
     if (!encore) {
       const v = await supabase.from('clients').update({ bien_actuel_a_vendre: false }).eq('id', clientId).eq('bien_actuel_a_vendre', true);
-      if (v.error) signalerEchec('« Son bien est à vendre » sur la fiche du mandant', v.error.message);
+      if (v.error) signalerEchec('« Son local est à céder » sur la fiche du mandant', v.error.message);
     }
     return true;
   } catch (e) { signalerEchec('Le type « Mandant signé »', (e as Error).message); return false; }
@@ -1874,8 +1874,8 @@ async function suiteEspace(o: SuiviVente): Promise<void> {
   if (typeof o.donnees?.documentId !== 'string' || !o.donnees.documentId) return;
   try {
     const r = await avertirAcheteurOffre(o.id);
-    if (r.avertissements.length) signalerEchec(`L’espace de ${o.qui || 'l’demandeur'}`, r.avertissements.join(' · '));
-  } catch (e) { signalerEchec(`L’espace de ${o.qui || 'l’demandeur'}`, (e as Error).message); }
+    if (r.avertissements.length) signalerEchec(`L’espace de ${o.qui || 'ce demandeur'}`, r.avertissements.join(' · '));
+  } catch (e) { signalerEchec(`L’espace de ${o.qui || 'ce demandeur'}`, (e as Error).message); }
 }
 /* « L'offre est tombée » (V3.47) : les offres encore en jeu passent
    « retirées », leurs relances « réponse à donner » se closent. */
@@ -1886,7 +1886,7 @@ export async function offresTombees(b: BienVente, offres: SuiviVente[]): Promise
       const { statut, donnees } = apresReponse(o, { k: 'retire' }, aujourdhui());
       await majSuivi(o.id, { statut, donnees });
       await cloreRelanceOffre(b, o);
-      await noterOffreFermee(b, o, '↩️ Offre tombée', 'Le bien repasse en vente.');
+      await noterOffreFermee(b, o, '↩️ Offre tombée', 'L’affaire repasse « Disponible ».');
       await suiteEspace(o);
     } catch (e) { signalerEchec(`L’offre de ${o.qui || 'un demandeur'}`, (e as Error).message); }
   }
@@ -2182,20 +2182,20 @@ async function avisEnvoye(b: { id: string; client_id: string | null; titre: stri
   await suiviProprio(b.client_id, b.id, 'mail_envoye', `📨 Avis de valeur envoyé — ${t}${texte ? ` : ${texte}` : ''}`, `Envoyé le ${dateLongue(avis)}.`, 'avis');
   try {
     await ajouterSuivi({ bien_id: b.id, type: 'note', commentaire: `Le ${dateLongue(avis)}${texte ? ` : ${texte}` : ''}`, donnees: { avis: true, le: avis, basse, haute, prix } });
-  } catch (e) { signalerEchec('L’avis de valeur, dans l’historique du bien', (e as Error).message); }
+  } catch (e) { signalerEchec('L’avis de valeur, dans l’historique de l’affaire', (e as Error).message); }
   return poserRelanceEstimation({ ...b, donnees: d }, 'avis', plusJoursYmd(avis, 7));
 }
 
 /* Le bien créé avec son propriétaire, ou un propriétaire relié pour la
    première fois : une ligne dans son Suivi. */
 export async function noterProprioRelie(b: { id: string; titre: string | null; reference: string | null; etape: EtapeVente; donnees?: Donnees | null }, clientId: string, cree: boolean): Promise<void> {
-  const et = b.etape === 'a_suivre' ? 'projet à suivre' : b.etape === 'estimation' ? 'estimation' : b.etape === 'mandat' ? 'en vente' : '';
-  await suiviProprio(clientId, b.id, 'statut_change', `🏠 ${cree ? 'Nouveau bien à vendre' : 'Propriétaire du bien'} — ${titreSuivi(b)}`,
-    `${cree ? 'Le bien est créé dans la rubrique Biens' : 'Relié comme propriétaire dans la rubrique Biens'}${et ? ` (${et})` : ''}.`, 'proprio');
+  const et = b.etape === 'a_suivre' ? 'projet à suivre' : b.etape === 'estimation' ? 'estimation' : b.etape === 'mandat' ? 'disponible' : '';
+  await suiviProprio(clientId, b.id, 'statut_change', `🏠 ${cree ? 'Nouvelle affaire' : 'Propriétaire du bien'} — ${titreSuivi(b)}`,
+    `${cree ? 'L’affaire est créée dans la rubrique Affaires' : 'Relié comme propriétaire dans la rubrique Affaires'}${et ? ` (${et})` : ''}.`, 'proprio');
 }
 /* La visite sur place faite (VisiteSurPlace, à la première réponse). */
 export async function noterVisiteFaite(b: BienVente): Promise<void> {
-  await suiviProprio(b.client_id, b.id, 'rdv', `🏠 Visite d’estimation faite — ${titreSuivi(b)}`, 'Visite sur place, pièce par pièce, notée sur la tablette.', 'visite');
+  await suiviProprio(b.client_id, b.id, 'rdv', `🏠 Visite d’estimation faite — ${titreSuivi(b)}`, 'Visite sur place, espace par espace, notée sur la tablette.', 'visite');
 }
 /* L'estimation mise de côté (« Le propriétaire veut attendre ») : la ligne
    du Suivi, et la relance « recontacter » à la date notée. L'avis de valeur
@@ -2307,8 +2307,8 @@ export function brouillonVide(x: BienVente, l: Pick<ListeBiens, 'suivi' | 'copie
 /* La suppression d'un brouillon : refusée s'il a un document dans Documents. */
 export async function supprimerBrouillon(x: BienVente): Promise<void> {
   const { data, error } = await supabase.from('documents').select('id').eq('donnees->>bienVenteId', x.id).limit(1);
-  if (error) lever('Les documents du bien n’ont pas pu être lus', error.message);
-  if (data?.length) throw new Error('Ce bien a un document dans Documents : ouvre sa fiche pour le compléter, ou supprime-le depuis sa fiche.');
+  if (error) lever('Les documents de l’affaire n’ont pas pu être lus', error.message);
+  if (data?.length) throw new Error('Cette affaire a un document dans Documents : ouvre sa fiche pour le compléter, ou supprime-le depuis sa fiche.');
   await supprimerBien(x);
 }
 
@@ -2332,7 +2332,7 @@ export async function marquerVendeur(clientId: string): Promise<boolean> {
   /* Un archivé garde ses types (on le retrouve par type parmi les archivés). */
   if ((data as { archive?: boolean | null }).archive === true) return true;
   const { data: biens, error: eB } = await supabase.from('biens_vente').select('etape, archive').eq('client_id', clientId);
-  if (eB) { signalerEchec('Le type « mandant » du contact', `ses biens n’ont pas pu être lus (${eB.message})`); return false; }
+  if (eB) { signalerEchec('Le type « mandant » du contact', `ses affaires n’ont pas pu être lues (${eB.message})`); return false; }
   const n = typesSelonBiens(typesDe(data), (biens || []) as { etape: string | null; archive: boolean | null }[]);
   if (!n) return true;
   const { error: e2 } = await supabase.from('clients').update({ types: n }).eq('id', clientId);
@@ -2420,7 +2420,7 @@ export async function creerDocument(b: BienVente, x: PourDocument): Promise<stri
   const id = (data as { id: string }).id;
   if (x.modele === 'mandat_vente' && !b.document_id) {
     const r = await supabase.from('biens_vente').update({ document_id: id }).eq('id', b.id);
-    if (r.error) signalerEchec('Le mandat est créé, mais son lien avec le bien', r.error.message);
+    if (r.error) signalerEchec('Le mandat est créé, mais son lien avec l’affaire', r.error.message);
   }
   return id;
 }

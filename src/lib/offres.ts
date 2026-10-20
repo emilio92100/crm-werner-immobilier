@@ -370,7 +370,7 @@ export const ETATS_CRM: Record<EtatOffre, { l: string; ton: Ton }> = {
 export function etatCrmDe(d: Donnees | null | undefined, e: EtatOffre): { l: string; ton: Ton } {
   if (!estAgence(d)) return ETATS_CRM[e];
   if (e === 'envoyee') return { l: 'Chez le mandant', ton: 'bleu' };
-  if (e === 'signee') return { l: 'Signée, à ajouter au bien', ton: 'or' };
+  if (e === 'signee') return { l: 'Signée, à ajouter à l’affaire', ton: 'or' };
   return ETATS_CRM[e];
 }
 /** Pour le client (espace). Aucun mot de métier. */
@@ -423,7 +423,7 @@ export function historiqueFil(fil: DocOffre[], o: { client?: boolean; maintenant
     }
     if (x.statut === 'signe' && x.signe_le) out.push({ le: x.signe_le, ton: 'bleu', offre: x.id, t: o.client ? 'Offre signée' : 'Signée par tous' });
     for (const e of envoisOffre(x)) {
-      out.push({ le: e.le, ton: 'bleu', offre: x.id, t: o.client ? 'Transmise au mandant' : e.vendeur ? 'Ajoutée aux offres de la fiche du bien' : `Envoyée à ${e.a.join(', ') || 'l’agence'}` });
+      out.push({ le: e.le, ton: 'bleu', offre: x.id, t: o.client ? 'Transmise au mandant' : e.vendeur ? 'Ajoutée aux offres de la fiche de l’affaire' : `Envoyée à ${e.a.join(', ') || 'l’agence'}` });
     }
     const r = s.reponse;
     for (const a of s.avant || []) {
@@ -471,9 +471,9 @@ export function resumeCrm(doc: DocOffre, maintenant = Date.now(), pr: PronomsCrm
     case 'brouillon': return `${total ? `${EUR(total)} frais d’agence compris · ` : ''}brouillon dans Documents`;
     case 'a_finaliser': return `${total ? `${EUR(total)} frais d’agence compris · ` : ''}à envoyer pour signature`;
     case 'en_signature': return `${total ? `${EUR(total)} frais d’agence compris · ` : ''}en signature${fin ? `, valable jusqu’au ${JOUR(fin.toISOString())}` : ''}`;
-    case 'signee': return `${total ? `${EUR(total)} frais d’agence compris · ` : ''}${agence ? 'signée : ajoute-la aux offres de la fiche du bien' : 'signée : envoie-la à l’agence'}`;
+    case 'signee': return `${total ? `${EUR(total)} frais d’agence compris · ` : ''}${agence ? 'signée : ajoute-la aux offres de la fiche de l’affaire' : 'signée : envoie-la à l’agence'}`;
     case 'envoyee': return agence
-      ? `${total ? `${EUR(total)} · ` : ''}dans les offres du bien depuis le ${JOUR(env[env.length - 1].le)}${fin ? ` · réponse du mandant avant le ${JOUR(fin.toISOString())}` : ''}`
+      ? `${total ? `${EUR(total)} · ` : ''}dans les offres de l’affaire depuis le ${JOUR(env[env.length - 1].le)}${fin ? ` · réponse du mandant avant le ${JOUR(fin.toISOString())}` : ''}`
       : `${total ? `${EUR(total)} · ` : ''}envoyée le ${JOUR(env[env.length - 1].le)}${fin ? ` · réponse attendue avant le ${JOUR(fin.toISOString())}` : ''}`;
     case 'contre': {
       const r = s.reponse;

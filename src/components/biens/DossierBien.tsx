@@ -53,9 +53,9 @@ const GROUPES: { k: LigneDossier['groupe'] | 'autres'; l: string; ic: string }[]
 ];
 /* Des idées de pièces à ajouter, par groupe : un clic les pose. */
 const IDEES: Record<LigneDossier['groupe'], string[]> = {
-  diag: ['Diagnostic radon', 'Attestation de surface (loi Boutin)', 'Rapport de repérage avant travaux'],
+  diag: ['Diagnostic radon', 'Attestation d’accessibilité PMR', 'Rapport de repérage avant travaux'],
   copro: ['Relevés de charges (4 derniers trimestres)', 'Convocation à la prochaine AG', 'État daté', 'Attestation du syndic'],
-  vendeur: ['Pièces d’identité des mandants', 'Livret de famille, contrat de mariage ou de PACS', 'Plans du bien', 'Garanties décennales et dommages-ouvrage', 'Prêt en cours (pour la mainlevée)', 'Attestation d’entretien de la chaudière', 'Attestation d’assurance habitation', 'Contrat de gestion locative'],
+  vendeur: ['Pièces d’identité des mandants', 'Kbis et statuts de la société', 'Plans du local', 'Garanties décennales et dommages-ouvrage', 'Prêt en cours (pour la mainlevée)', 'Contrat d’entretien de la climatisation', 'Attestation d’assurance multirisque', 'Contrat de gestion locative'],
 };
 const IDEES_SCI = ['Kbis de la SCI', 'Statuts de la SCI', 'PV d’AG de la SCI autorisant la vente'];
 const VIDE: PieceDossier = { etat: '', date: '', chemin: '', nom: '' };
@@ -198,7 +198,7 @@ function MenuLigne({ choix, titre }: { choix: ChoixLigne[]; titre: string }) {
    mettre en vente, ce qui manque pour le compromis, et ce qui ne s'applique
    sans doute pas (une proposition : un clic la pose, le diagnostiqueur
    confirme). */
-const LE_BIEN: Record<string, string> = { appartement: 'Appartement', maison: 'Maison', duplex: 'Duplex', studio: 'Studio', loft: 'Loft', terrain: 'Terrain', local: 'Local', parking: 'Parking', immeuble: 'Immeuble' };
+const LE_BIEN: Record<string, string> = { bureaux: 'Bureaux', local: 'Local commercial', restaurant: 'Restaurant', activite: 'Local d’activité', entrepot: 'Entrepôt', terrain: 'Terrain', parking: 'Parking', immeuble: 'Immeuble' };
 const CLE_GUIDE = 'emilio.dossier.guide';
 type Proposition = { k: string; l: string; pourquoi: string };
 function propositionsNc(d: Donnees, lignes: LigneDossier[], st: (k: string) => StatutPiece): Proposition[] {
@@ -221,7 +221,7 @@ function Guide({ d, lignes, st, onNc, onDemander }: {
   const [replie, setReplie] = useState(() => { try { return localStorage.getItem(CLE_GUIDE) === 'replie'; } catch { return false; } });
   const plier = (v: boolean) => { setReplie(v); try { localStorage.setItem(CLE_GUIDE, v ? 'replie' : 'ouvert'); } catch { /* sans mémoire */ } };
   const annee = Number(d.annee) || 0;
-  const quoi = `${LE_BIEN[String(d.typeBien || '')] || 'Bien'}${d.copro === 'oui' ? ' en copropriété' : ''}`;
+  const quoi = `${LE_BIEN[String(d.typeBien || '')] || 'Local'}${d.copro === 'oui' ? ' en copropriété' : ''}`;
   const fiche = [quoi, annee ? `construit en ${annee}` : '', d.chauffageEnergie === 'gaz' ? 'chauffage au gaz' : '', d.occupation === 'loue' ? 'loué' : ''].filter(Boolean).join(', ');
   const dpe = lignes.some(l => l.k === 'dpe') ? st('dpe') : 'nc';
   const manquent = lignes.filter(l => !['recu', 'nc'].includes(st(l.k)));
@@ -233,13 +233,13 @@ function Guide({ d, lignes, st, onNc, onDemander }: {
     <div className={x.guide}>
       <button type="button" className={x.guideT} aria-expanded={!replie} onClick={() => plier(!replie)}>
         <span className={x.guideIc}><Ic n="boussole" t={17} /></span>
-        <span className={x.guideTx}><b>Ce qu’il faut pour ce bien</b><small>{`D’après sa fiche : ${fiche.charAt(0).toLowerCase()}${fiche.slice(1)}.`}</small></span>
+        <span className={x.guideTx}><b>Ce qu’il faut pour cette affaire</b><small>{`D’après sa fiche : ${fiche.charAt(0).toLowerCase()}${fiche.slice(1)}.`}</small></span>
         <PastillePli ouvert={!replie} />
       </button>
       <Depliant ouvert={!replie}>
         <div className={x.etapes}>
           <div className={x.et}>
-            <small>Pour mettre en vente</small>
+            <small>Pour mettre sur le marché</small>
             <b>{dpe === 'recu' || dpe === 'nc' ? 'C’est bon' : dpe === 'expire' ? 'Le DPE a expiré' : 'Il manque le DPE'}</b>
             <p>{dpe === 'recu' || dpe === 'nc' ? 'Le DPE suffit pour publier l’annonce.' : 'Il le faut pour publier l’annonce : la classe énergie y figure.'}</p>
             <div className={x.chips}>
@@ -248,9 +248,9 @@ function Guide({ d, lignes, st, onNc, onDemander }: {
             </div>
           </div>
           <div className={x.et}>
-            <small>Pour signer le compromis</small>
+            <small>Pour la signature</small>
             <b>{manquent.length ? `Il en manque ${manquent.length}` : 'C’est complet'}</b>
-            <p>{manquent.length ? 'Les diagnostics, les pièces de copropriété et celles du mandant que le notaire demandera.' : 'Tout ce que le notaire demandera est dans le dossier.'}</p>
+            <p>{manquent.length ? 'Les diagnostics, les pièces de copropriété et celles du mandant que le notaire ou l’avocat demandera.' : 'Tout ce que le notaire ou l’avocat demandera est dans le dossier.'}</p>
             {manquent.length > 0 && (
               <div className={x.chips}>
                 {manquent.slice(0, 6).map(l => <span key={l.k} className={x.chip} data-ton={st(l.k) === 'expire' ? 'expire' : 'manque'}>{`${court(l.l)}${st(l.k) === 'expire' ? ' expiré' : ''}`}</span>)}
@@ -260,7 +260,7 @@ function Guide({ d, lignes, st, onNc, onDemander }: {
             )}
           </div>
           <div className={x.et}>
-            <small>Pas pour ce bien</small>
+            <small>Pas pour ce local</small>
             <b>{props.length ? `${props.length} sans doute non concerné${props.length > 1 ? 's' : ''}` : deja.length ? `${deja.length} non concerné${deja.length > 1 ? 's' : ''}` : 'Rien à écarter'}</b>
             <p>{props.length ? 'Proposés d’après la fiche : un clic les écarte, le diagnostiqueur confirme.' : deja.length ? 'Écartés à la main : « ⋯ » sur la ligne pour les rétablir.' : annee ? 'D’après la fiche, tous les diagnostics peuvent s’appliquer.' : 'Renseigne l’année de construction : le CRM proposera ce qui ne s’applique pas.'}</p>
             {(props.length > 0 || deja.length > 0) && (
@@ -414,7 +414,7 @@ export function DossierBien({ bienId, d, maj, destinataires, lieu, onMessage, et
       }
     }
     setOccupe('');
-    if (n) onMessage({ t: `${n} document${n > 1 ? 's' : ''} enregistré${n > 1 ? 's' : ''} dans le dossier du bien.`, ok: true });
+    if (n) onMessage({ t: `${n} document${n > 1 ? 's' : ''} enregistré${n > 1 ? 's' : ''} dans le dossier de l’affaire.`, ok: true });
     /* Ce qui est passé quitte la liste ; ce qui a échoué y reste, avec son message. */
     setTimeout(() => setARanger(l => l.filter(y => y.etat !== 'ok')), 900);
   }
@@ -749,7 +749,7 @@ export function DossierBien({ bienId, d, maj, destinataires, lieu, onMessage, et
                     <option value={AUTRE}>Autre document, avec le nom de mon choix…</option>
                   </select>
                   {(a.cle === AUTRE || a.cle === DDT) && (
-                    <input value={a.titre} placeholder={a.cle === DDT ? TITRE_DDT : 'Son nom (ex. : bail, plan du garage)'} disabled={fige}
+                    <input value={a.titre} placeholder={a.cle === DDT ? TITRE_DDT : 'Son nom (ex. : bail, plan de la réserve)'} disabled={fige}
                       onChange={e => majRanger(a.id, { titre: e.target.value })} aria-label="Nom du document" />
                   )}
                 </div>
@@ -970,7 +970,7 @@ export function FenEnvoiDocuments({ bienId, pieces, depart, destinataires, lieu,
               <span>{destinataires.length ? 'Ou une autre adresse' : 'Adresse e-mail'}</span>
               <input type="email" value={autre} placeholder="notaire@etude.fr" onChange={e => setAutre(e.target.value)} />
             </label>
-            {!destinataires.length && <small className={x.aide}>Aucune adresse sur la fiche du propriétaire ni des demandeurs du bien : tape-la ici.</small>}
+            {!destinataires.length && <small className={x.aide}>Aucune adresse sur la fiche du mandant ni des demandeurs de l’affaire : tape-la ici.</small>}
           </div>
 
           <div className={x.bloc}>
@@ -1027,8 +1027,8 @@ export function FenEnvoiDocuments({ bienId, pieces, depart, destinataires, lieu,
 type Motif = 'estimation' | 'vente' | 'compromis';
 const MOTIFS: Record<Motif, { l: string; pour: string; objet: string }> = {
   estimation: { l: 'L’estimation', pour: 'l’estimation', objet: 'Les documents pour l’estimation de votre bien' },
-  vente: { l: 'La mise en vente', pour: 'la mise en vente', objet: 'Les documents pour la mise en vente de votre bien' },
-  compromis: { l: 'Le compromis', pour: 'la préparation du compromis', objet: 'Les documents pour le compromis' },
+  vente: { l: 'La mise sur le marché', pour: 'la mise sur le marché', objet: 'Les documents pour la mise sur le marché de votre bien' },
+  compromis: { l: 'La signature', pour: 'la préparation de la signature', objet: 'Les documents pour la signature' },
 };
 const motifDe = (etape: string): Motif => (etape === 'a_suivre' || etape === 'estimation' ? 'estimation' : etape === 'compromis' || etape === 'offre' ? 'compromis' : 'vente');
 function messageDemande(prenom: string, motif: Motif, lieu: string, titres: string[], signature: string) {
@@ -1180,7 +1180,7 @@ export function FenDemandeDocuments({ bienId, d, doss, lignes, destinataires, li
               </div>
             )}
             <div className={x.demAjout}>
-              <input value={saisie} placeholder="Un autre document (ex. : plan du garage)" aria-label="Ajouter un document à demander"
+              <input value={saisie} placeholder="Un autre document (ex. : plan de la réserve)" aria-label="Ajouter un document à demander"
                 onChange={e => setSaisie(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); ajouterExtra(saisie); } }} />
               <button type="button" className={x.btn} disabled={!saisie.trim()} onClick={() => ajouterExtra(saisie)}><Ic n="plus" t={14} e={2.4} />Ajouter</button>
             </div>
@@ -1204,9 +1204,9 @@ export function FenDemandeDocuments({ bienId, d, doss, lignes, destinataires, li
             )}
             <label className={x.champ}>
               <span>{destinataires.length ? 'Ou une autre adresse' : 'Adresse e-mail'}</span>
-              <input type="email" value={autre} placeholder="proprietaire@exemple.fr" onChange={e => setAutre(e.target.value)} />
+              <input type="email" value={autre} placeholder="nom@exemple.fr" onChange={e => setAutre(e.target.value)} />
             </label>
-            {!destinataires.length && <small className={x.aide}>Pas d’adresse sur la fiche du propriétaire : tape-la ici, ou ajoute-la sur sa fiche.</small>}
+            {!destinataires.length && <small className={x.aide}>Pas d’adresse sur la fiche du mandant : tape-la ici, ou ajoute-la sur sa fiche.</small>}
           </div>
 
           <div className={x.bloc}>

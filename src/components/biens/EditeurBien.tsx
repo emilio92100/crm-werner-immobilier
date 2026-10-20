@@ -114,7 +114,7 @@ function ListeParties({ etapes, cur, etats, onAller }: { etapes: EtapeBien[]; cu
   const restes = etapes.map((_, i) => i).filter(i => !GROUPES_SOMMAIRE.some(g => g.ids.includes(etapes[i].id)));
   if (restes.length) groupes.push({ titre: 'Autres', l: restes });
   return (
-    <nav className={b.sommListe} aria-label="Les parties du bien">
+    <nav className={b.sommListe} aria-label="Les parties de l’affaire">
       {groupes.map(g => (
         <div key={g.titre} className={b.sommGr}>
           <div className={b.sommGrT}>{g.titre}</div>
@@ -212,7 +212,7 @@ function BlocEtape({ e, i, n, d, maj, bienId, manques = 0, anime = false, sens =
           suite reste grisée tant qu'elle n'est ni trouvée ni à créer, puis
           s'ouvre sur fond clair pour une fiche nouvelle. */}
       {champProprio && <ChampBien c={champProprio} d={d} maj={maj} off={false} bienId={bienId} />}
-      {fige && <div className={b.verrouMot}><Ic n="cadenas" t={14} />{d._stade === 'vendu' ? 'Le bien est vendu : le prix et les honoraires sont ceux de l’acte.' : 'Le prix et les honoraires se changent avec « Changer le prix », sur la fiche : l’ancien reste dans l’historique.'}</div>}
+      {fige && <div className={b.verrouMot}><Ic n="cadenas" t={14} />{d._stade === 'vendu' ? 'L’affaire est conclue : le montant et les honoraires sont ceux de la signature.' : 'Le prix et les honoraires se changent avec « Changer le prix », sur la fiche : l’ancien reste dans l’historique.'}</div>}
       {champProprio && verrou && <div className={b.verrouMot}><Ic n="cadenas" t={14} />La suite s’ouvre dès que le propriétaire est choisi, créé, ou laissé pour plus tard.</div>}
       <div className={verrou ? b.suiteVerrou : champProprio && nouveau ? b.suiteNouveau : b.suite} inert={verrou || undefined} aria-disabled={verrou || undefined}>
         {groupes(reste, d).map((g, k) => {
@@ -260,14 +260,14 @@ function Apercu({ bien, d, ids, nbPhotos, onAller, onMasquer }: { bien: BienVent
   const nbP = num(d, 'pieces'), nbCh = num(d, 'chambres'), etage = num(d, 'etage');
   const faits = [
     num(d, 'surface') ? m2(num(d, 'surface') as number) : '',
-    nbP ? `${nbP} pièce${nbP > 1 ? 's' : ''}` : '',
-    nbCh ? `${nbCh} chambre${nbCh > 1 ? 's' : ''}` : '',
+    nbP ? `${nbP} espace${nbP > 1 ? 's' : ''}` : '',
+    nbCh ? `${nbCh} bureau${nbCh > 1 ? 'x' : ''}` : '',
     etage !== null && d.typeBien !== 'maison' ? `${etageTexte(etage)}${liste(d, 'immeuble').includes('ascenseur') ? ', ascenseur' : ''}` : '',
     num(d, 'terrain') ? `Terrain ${m2(num(d, 'terrain') as number)}` : '',
     typeof d.dpe === 'string' && d.dpe ? `DPE ${d.dpe}` : '',
     annexes.includes('balcon') ? `Balcon${num(d, 'surfBalcon') ? ` ${m2(num(d, 'surfBalcon') as number)}` : ''}` : '',
     annexes.includes('terrasse') ? `Terrasse${num(d, 'surfTerrasse') ? ` ${m2(num(d, 'surfTerrasse') as number)}` : ''}` : '',
-    annexes.includes('jardin') ? `Jardin${num(d, 'surfJardin') ? ` ${m2(num(d, 'surfJardin') as number)}` : ''}` : '',
+    annexes.includes('jardin') ? `Espace vert${num(d, 'surfJardin') ? ` ${m2(num(d, 'surfJardin') as number)}` : ''}` : '',
     annexes.includes('cave') ? 'Cave' : '',
     annexes.some(x => ['parking', 'box', 'garage'].includes(x)) ? 'Parking' : '',
   ].filter(Boolean);
@@ -289,25 +289,25 @@ function Apercu({ bien, d, ids, nbPhotos, onAller, onMasquer }: { bien: BienVent
           )}
         </div>
         <div className={b.directNom}>
-          <b>{d.typeBien ? titreBien(d) : 'Nouveau bien'}</b>
+          <b>{d.typeBien ? titreBien(d) : 'Nouvelle affaire'}</b>
           {lieu && <span>{lieu}</span>}
         </div>
         {aSuivre
-          ? <div className={b.directSans}>Le prix viendra à l’estimation.</div>
+          ? <div className={b.directSans}>Le montant viendra à l’estimation.</div>
           : a.prix
             ? (
               <div>
-                <span className={b.directPrixL}>{avant ? 'Prix conseillé' : 'Prix affiché'}</span>
+                <span className={b.directPrixL}>{avant ? 'Montant conseillé' : 'Montant affiché'}</span>
                 <div className={b.directPrix}>{euros(a.prix)}</div>
-                {a.hono !== null && <div className={b.directHono}>{`Honoraires ${a.taux ? `${pourcent(a.taux)} ` : ''}HT à la charge ${a.acq ? 'du demandeur' : 'du mandant'}${a.net ? ` · net vendeur ${euros(a.net)}` : ''}`}</div>}
+                {a.hono !== null && <div className={b.directHono}>{`Honoraires ${a.taux ? `${pourcent(a.taux)} ` : ''}HT à la charge ${a.acq ? 'du demandeur' : 'du mandant'}${a.net ? ` · net mandant ${euros(a.net)}` : ''}`}</div>}
               </div>
             )
-            : <div className={b.directSans}>Pas encore de prix.</div>}
+            : <div className={b.directSans}>Pas encore de montant.</div>}
         {faits.length > 0 && <div className={b.directFaits}>{faits.map(f => <span key={f}>{f}</span>)}</div>}
         {(a.prix && surf) || charges || taxe ? (
           <div className={b.directLignes}>
-            {a.prix && surf ? <div><span>Prix au m²</span><b>{euros(a.prix / surf)}</b></div> : null}
-            {charges ? <div><span>Charges de copropriété</span><b>{`${euros(charges / 12)} / mois`}</b></div> : null}
+            {a.prix && surf ? <div><span>Montant au m²</span><b>{euros(a.prix / surf)}</b></div> : null}
+            {charges ? <div><span>Charges</span><b>{`${euros(charges / 12)} / mois`}</b></div> : null}
             {taxe ? <div><span>Taxe foncière</span><b>{`${euros(taxe)} / an`}</b></div> : null}
           </div>
         ) : null}
@@ -328,22 +328,22 @@ function Apercu({ bien, d, ids, nbPhotos, onAller, onMasquer }: { bien: BienVent
       )}
       {pieces.length > 0 && (
         <div className={b.bloc}>
-          <div className={b.blocT}><span className={b.blocIc}><Ic n="plan" t={15} /></span><h3>{`Les pièces · ${pieces.length}`}</h3></div>
+          <div className={b.blocT}><span className={b.blocIc}><Ic n="plan" t={15} /></span><h3>{`Les espaces · ${pieces.length}`}</h3></div>
           <div className={b.tags}>{pieces.map(p => <span key={p.id} className={b.tag}>{`${p.nom || '…'}${p.surface ? ` · ${m2(p.surface)}` : ''}`}</span>)}</div>
-          {total > 0 && <div className={b.pied}>{`Surface habitable : ${m2(total)}`}</div>}
+          {total > 0 && <div className={b.pied}>{`Surface des espaces : ${m2(total)}`}</div>}
         </div>
       )}
     </div>
   );
 }
 /* Le lien d'un manque de l'annonce, vers sa partie. */
-const NOMS_COURTS: Record<string, string> = { prix: 'Prix', bien: 'Le bien', energie: 'Énergie', copro: 'Copro', annonce: 'Annonce', photos: 'Photos' };
+const NOMS_COURTS: Record<string, string> = { prix: 'Prix', bien: 'Le local', energie: 'Énergie', copro: 'Copro', annonce: 'Annonce', photos: 'Photos' };
 
 const NOTICES: Record<string, { t: string; x: string }> = {
-  prix: { t: 'Le prix se donne à l’estimation', x: 'Ce bien est « à suivre » : décris-le autant que tu veux, tout est ouvert. La fourchette et le prix conseillé viendront quand tu le passeras en estimation, avec le bouton d’étape de sa fiche.' },
+  prix: { t: 'Le montant se donne à l’estimation', x: 'Cette affaire est « à suivre » : décris-la autant que tu veux, tout est ouvert. La fourchette et le montant conseillé viendront quand tu la passeras en estimation, avec le bouton d’étape de sa fiche.' },
 };
 function Notice({ id, onFermer }: { id: string; onFermer: () => void }) {
-  const n = NOTICES[id] || { t: 'Cette partie s’ouvrira plus tard', x: 'Elle dépend de l’étape de vente du bien.' };
+  const n = NOTICES[id] || { t: 'Cette partie s’ouvrira plus tard', x: 'Elle dépend de l’étape de l’affaire.' };
   return (
     <div className={b.notice} role="status">
       <Ic n="info" t={18} />
@@ -361,12 +361,12 @@ function Semblables({ l, onOuvrir, onIgnorer }: { l: BienSemblable[]; onOuvrir: 
     <div className={`${b.ventile} ${b.ventileManque}`} role="status" style={{ marginBottom: 14 }}>
       <Ic n="info" t={16} />
       <span>
-        <b>{l.length > 1 ? 'Ces biens existent peut-être déjà :' : 'Ce bien existe peut-être déjà :'}</b>
+        <b>{l.length > 1 ? 'Ces affaires existent peut-être déjà :' : 'Cette affaire existe peut-être déjà :'}</b>
         {l.map(x => (
           <span key={x.bien.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 6 }}>
-            <span>{`${x.pourquoi === 'adresse' ? 'Même adresse' : 'Même propriétaire'} : ${[x.bien.titre || titreBien(x.bien.donnees || {}), x.bien.adresse || x.bien.ville || '', etapeDe(x.bien.etape).court + (x.bien.archive ? ', archivé' : ''), x.bien.reference || ''].filter(Boolean).join(' · ')}`}</span>
+            <span>{`${x.pourquoi === 'adresse' ? 'Même adresse' : 'Même propriétaire'} : ${[x.bien.titre || titreBien(x.bien.donnees || {}), x.bien.adresse || x.bien.ville || '', etapeDe(x.bien.etape).court + (x.bien.archive ? ', archivée' : ''), x.bien.reference || ''].filter(Boolean).join(' · ')}`}</span>
             <button type="button" className={b.lien} onClick={() => onOuvrir(x.bien.id)}>Ouvrir la fiche existante</button>
-            <button type="button" className={b.lien} onClick={() => onIgnorer(x.bien.id)}>{x.pourquoi === 'adresse' ? 'C’est un autre bien : continuer' : 'Un autre bien à lui : continuer'}</button>
+            <button type="button" className={b.lien} onClick={() => onIgnorer(x.bien.id)}>{x.pourquoi === 'adresse' ? 'C’est une autre affaire : continuer' : 'Une autre affaire à lui : continuer'}</button>
           </span>
         ))}
       </span>
@@ -576,7 +576,7 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
     if (!onOuvrirExistant) return;
     if (minuterie.current) clearTimeout(minuterie.current);
     if (enVol.current) await enVol.current;
-    if (!bienVide(dernier.current) && !confirm('Ouvrir la fiche existante ?\n\nLe bien commencé ici est supprimé, avec ce que tu y as déjà saisi.')) return;
+    if (!bienVide(dernier.current) && !confirm('Ouvrir la fiche existante ?\n\nL’affaire commencée ici est supprimée, avec ce que tu y as déjà saisi.')) return;
     try { await supprimerBien({ ...rowRef.current, donnees: dernier.current }); }
     catch (e) { setEnreg({ erreur: (e as Error).message }); return; }
     aEnregistrer.current = false;
@@ -667,7 +667,7 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
       <div className={`${s.edBarre} ${b.edBarre}`}>
         <button type="button" className={s.edRetour} onClick={fermer}><Ic n="retour" t={16} /><span>{nouveau ? 'Affaires' : 'La fiche'}</span></button>
         <div className={s.edTitre}>
-          <b>{nouveau && !d.typeBien ? 'Nouveau bien' : titreBien(d)}</b>
+          <b>{nouveau && !d.typeBien ? 'Nouvelle affaire' : titreBien(d)}</b>
           <div className={s.edEtat}>
             <span className={b.edStade}><span className={b.point} style={{ background: et.c }} />{et.lib}</span>
             {row.reference && <span className={`${s.statut} ${s.t_gris}`}>{row.reference}</span>}

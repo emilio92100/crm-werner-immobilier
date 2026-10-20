@@ -369,7 +369,7 @@ const FAMILLES: Record<GenrePiece, { l: string; c: string; f: string; ic: string
   /* Werner : les familles d'un local professionnel ; les clés sont restées. */
   vie: { l: 'Bureaux et salles', c: '#393836', f: '#f5f4f4', ic: 'bureau' },
   nuit: { l: 'Vente et salle', c: '#7c3aed', f: '#f4f0ff', ic: 'vitrine' },
-  cuisine: { l: 'Cuisine et repas', c: '#e58b45', f: '#fff4ea', ic: 'cuisine' },
+  cuisine: { l: 'Cuisine professionnelle, repas', c: '#e58b45', f: '#fff4ea', ic: 'cuisine' },
   eau: { l: 'Sanitaires', c: '#0e98b4', f: '#e9f8f9', ic: 'wc' },
   passage: { l: 'Accueil, circulations', c: '#94a3b8', f: '#f6f5f5', ic: 'porte' },
   autre: { l: 'Stockage, technique, le reste', c: '#94a3b8', f: '#f6f5f5', ic: 'cube' },
@@ -804,17 +804,17 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
   const [saisie, setSaisie] = useState<{ k: 'contre' | 'propose'; v: string } | null>(null);
   const PUCE: Record<string, { l: string; fond: string; c: string }> = {
     attente: { l: negocie ? 'Au mandant de répondre' : 'En attente de la réponse du mandant', fond: '#fbf0e9', c: '#8b3e0b' },
-    contre: { l: 'À le demandeur de répondre', fond: '#eff6ff', c: '#1d4ed8' },
+    contre: { l: 'Au demandeur de répondre', fond: '#eff6ff', c: '#1d4ed8' },
     acceptee: { l: 'Acceptée', fond: '#dcfce7', c: '#15803d' },
-    compromis: { l: 'Compromis signé', fond: '#dcfce7', c: '#15803d' },
-    vendu: { l: 'Vendu', fond: '#dcfce7', c: '#15803d' },
+    compromis: { l: 'Accord signé', fond: '#dcfce7', c: '#15803d' },
+    vendu: { l: 'Conclue', fond: '#dcfce7', c: '#15803d' },
     /* V3.47 : l'offre d'un compromis tombé (compromisTombe). */
-    fermee: { l: st === 'retiree' ? (d.compromisTombe ? 'Compromis tombé' : 'Retirée par le demandeur') : 'Refusée', fond: '#f1f5f9', c: '#475569' },
+    fermee: { l: st === 'retiree' ? (d.compromisTombe ? 'Accord tombé' : 'Retirée par le demandeur') : 'Refusée', fond: '#f1f5f9', c: '#475569' },
   };
   const p = PUCE[sorte];
   /* Les quatre étapes : reçue, réponse (ou négociation), acceptée, compromis. */
   const rang = { attente: 1, contre: 1, acceptee: 3, compromis: 4, vendu: 4, fermee: 0 }[sorte];
-  const pas = ['Reçue', negocie || sorte === 'contre' ? 'Négociation' : 'Réponse du mandant', 'Acceptée', 'Compromis signé'];
+  const pas = ['Reçue', negocie || sorte === 'contre' ? 'Négociation' : 'Réponse du mandant', 'Acceptée', 'Accord signé'];
   function valider() {
     if (!saisie) return;
     const n = lireMontant(saisie.v);
@@ -889,7 +889,7 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
             ) : null;
             return (
               <div className={o.accordH}>
-                <div><small>{`Honoraires${ch ? ` · charge ${ch === 'vendeur' ? 'vendeur' : 'demandeur'}` : ''}`}</small><b>{`${euros(h)} HT`}</b></div>
+                <div><small>{`Honoraires${ch ? ` · charge ${ch === 'vendeur' ? 'mandant' : 'demandeur'}` : ''}`}</small><b>{`${euros(h)} HT`}</b></div>
                 <div className={o.accordNet}><small>Net mandant</small><b>{actuel ? euros(actuel - h) : '—'}</b></div>
                 {modifier && !fige && <button type="button" className={o.offreModif} onClick={modifier} aria-label="Modifier les honoraires" title="Modifier les honoraires"><Ic n="crayon" t={14} /></button>}
               </div>
@@ -898,7 +898,7 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
           {(sorte === 'attente' || sorte === 'contre' || sorte === 'acceptee') && (
             a.notaires?.length ? <NotairesListe notaires={a.notaires} commun={a.notaireCommun} onModifier={fige ? undefined : a.onNotaires} />
               : a.onNotaires && !fige ? (
-                <button type="button" className={o.honoManque} data-ton="notaires" onClick={a.onNotaires}><Ic n="balance" t={14} />Les notaires du dossier<Ic n="plus" t={13} e={2.6} /></button>
+                <button type="button" className={o.honoManque} data-ton="notaires" onClick={a.onNotaires}><Ic n="balance" t={14} />Notaires ou avocats du dossier<Ic n="plus" t={13} e={2.6} /></button>
               ) : null
           )}
           {(sorte === 'compromis' || sorte === 'vendu') && c && <NotairesCompromis c={c} />}
@@ -922,7 +922,7 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
 
           {fige && (sorte === 'attente' || sorte === 'contre' || sorte === 'acceptee') && (
             <div className={o.suite} data-sorte="fermee">
-              <span className={o.suiteTx}>Le bien n’est plus en vente : cette offre n’appelle plus de réponse.</span>
+              <span className={o.suiteTx}>L’affaire n’est plus sur le marché : cette offre n’appelle plus de réponse.</span>
             </div>
           )}
           {sorte !== 'fermee' && !(fige && (sorte === 'attente' || sorte === 'contre' || sorte === 'acceptee')) && (
@@ -963,9 +963,9 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
               )}
               {sorte === 'acceptee' && (
                 <>
-                  <b className={o.suiteQ}>Prochaine étape : le compromis, chez le notaire</b>
-                  <span className={o.suiteTx}>Une fois signé, le bien passe « En signature » et le CRM calcule les dates : rétractation, prêt, acte.</span>
-                  {a.onCompromis && <button type="button" className={`${o.act} ${o.actOr} ${o.suiteBtn}`} onClick={a.onCompromis}>Le compromis est signé<Ic n="fleche" t={14} e={2.4} /></button>}
+                  <b className={o.suiteQ}>Prochaine étape : la signature du bail ou de l’acte</b>
+                  <span className={o.suiteTx}>Une fois l’accord signé, l’affaire passe « En signature » et le CRM calcule les dates : rétractation, prêt, acte.</span>
+                  {a.onCompromis && <button type="button" className={`${o.act} ${o.actOr} ${o.suiteBtn}`} onClick={a.onCompromis}>L’accord est signé<Ic n="fleche" t={14} e={2.4} /></button>}
                   <div className={o.petits}>
                     <button type="button" className={o.petit} onClick={() => rep({ k: 'rouvrir' })}>Annuler l’acceptation</button>
                   </div>
@@ -974,15 +974,15 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
               {(sorte === 'compromis' || sorte === 'vendu') && c && (
                 <>
                   <div className={o.suiteTete}>
-                    <b className={o.suiteQ}>{sorte === 'vendu' ? `Vendu le ${dateAn(c.venduLe)}` : 'Le compromis est signé'}</b>
+                    <b className={o.suiteQ}>{sorte === 'vendu' ? `Conclue le ${dateAn(c.venduLe)}` : 'L’accord est signé'}</b>
                     {c.onCompleter && <button type="button" className={o.suiteModif} onClick={c.onCompleter}><Ic n="crayon" t={13} />{manque(c) ? 'Compléter' : 'Modifier'}</button>}
                   </div>
                   <div className={o.dates}>
                     {[
-                      { ic: 'doc', col: '#393836', l: 'Compromis signé le', v: c.signe },
+                      { ic: 'doc', col: '#393836', l: 'Accord signé le', v: c.signe },
                       { ic: 'bouclier', col: '#c05d12', l: 'Rétractation jusqu’au', v: c.sru },
                       { ic: 'banque', col: '#1d4ed8', l: c.comptant ? 'Condition de prêt' : 'Condition de prêt jusqu’au', v: c.pretLimite, sans: c.comptant ? 'Aucune · comptant' : '' },
-                      { ic: 'plume', col: '#6d28d9', l: sorte === 'vendu' ? 'Acte signé le' : 'Acte prévu le', v: sorte === 'vendu' ? c.venduLe || c.acte : c.acte },
+                      { ic: 'plume', col: '#6d28d9', l: sorte === 'vendu' ? 'Bail ou acte signé le' : 'Bail ou acte prévu le', v: sorte === 'vendu' ? c.venduLe || c.acte : c.acte },
                     ].map((y: { ic: string; col: string; l: string; v: string | null | undefined; sans?: string }) => {
                       const passe = !!y.v && (joursDepuis(String(y.v)) ?? -1) > 0;
                       return (
@@ -996,7 +996,7 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
                   {!!c.rappels?.length && sorte === 'compromis' && (
                     <span className={o.rappelsC}><Ic n="horloge" t={13} />{`Rappels dans tes Relances : ${c.rappels.map(r => `${RAPPEL_MOT[r.cle] || r.cle} le ${dateAnCourt(r.le)}`).join(' · ')}`}</span>
                   )}
-                  {sorte === 'compromis' && a.onVendu && <button type="button" className={`${o.act} ${o.actOr} ${o.suiteBtn}`} onClick={a.onVendu}>La vente est signée<Ic n="fleche" t={14} e={2.4} /></button>}
+                  {sorte === 'compromis' && a.onVendu && <button type="button" className={`${o.act} ${o.actOr} ${o.suiteBtn}`} onClick={a.onVendu}>L’affaire est signée<Ic n="fleche" t={14} e={2.4} /></button>}
                 </>
               )}
             </div>
@@ -1015,7 +1015,7 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
   );
 }
 
-const RAPPEL_MOT: Record<string, string> = { sru: 'rétractation', pret: 'prêt', acte: 'acte' };
+const RAPPEL_MOT: Record<string, string> = { sru: 'rétractation', pret: 'prêt', acte: 'signature' };
 const manque = (c: InfosCompromis) => !c.sru || (!c.pretLimite && !c.comptant) || !c.acte || (c.notaires || []).length < (c.notaireCommun ? 1 : 2);
 const sansEsp = (t: string) => t.replace(/[\s.]+/g, '');
 
@@ -1030,13 +1030,13 @@ function NotairesListe({ notaires, commun, onModifier, onRenseigner, toujours, c
   toujours?: boolean; children?: ReactNode;
 }) {
   const ROLES: { role: NotaireCarte['role']; l: string; col: string }[] = commun
-    ? [{ role: 'vendeur', l: 'Notaire commun · mandant et demandeur', col: '#2e3034' }]
-    : [{ role: 'vendeur', l: 'Notaire du mandant', col: '#c2621c' }, { role: 'acquereur', l: 'Notaire du demandeur', col: '#1d4ed8' }];
+    ? [{ role: 'vendeur', l: 'Notaire ou avocat commun · mandant et demandeur', col: '#2e3034' }]
+    : [{ role: 'vendeur', l: 'Notaire ou avocat du mandant', col: '#c2621c' }, { role: 'acquereur', l: 'Notaire ou avocat du demandeur', col: '#1d4ed8' }];
   const lignes = ROLES.map(r => ({ r, n: notaires.find(x => x.role === r.role) || (commun ? notaires[0] : undefined) })).filter(x => toujours || x.n);
   return (
     <div className={o.notairesC}>
       <div className={o.notairesTete}>
-        <b className={o.notairesT}><Ic n="balance" t={14} />{commun ? 'Le notaire' : 'Les notaires'}</b>
+        <b className={o.notairesT}><Ic n="balance" t={14} />{commun ? 'Notaire ou avocat' : 'Notaires et avocats'}</b>
         {onModifier && <button type="button" className={o.petit} onClick={onModifier}><Ic n="crayon" t={12} />Modifier</button>}
       </div>
       {lignes.map(({ r, n }) => (
@@ -1081,12 +1081,12 @@ function NotairesCompromis({ c }: { c: InfosCompromis }) {
         <Ic n="doc" t={14} />
         {c.piece ? (
           <>
-            <span><b>Le compromis signé</b>{` · ${c.piece}`}</span>
+            <span><b>L’accord signé</b>{` · ${c.piece}`}</span>
             {c.onPiece && <button type="button" className={o.act} onClick={c.onPiece}><Ic n="oeil" t={13} />Voir</button>}
           </>
         ) : (
           <>
-            <span><b>Le compromis signé</b>{' · pas encore joint'}</span>
+            <span><b>L’accord signé</b>{' · pas encore joint'}</span>
             {c.onJoindre && <JoindreOffre onJoindre={c.onJoindre} t="Joindre le PDF" />}
           </>
         )}
@@ -1307,8 +1307,8 @@ export type PasParcours = { l: string; quand: string; etat: 'fait' | 'ici' | 'ap
 /* Le parcours du bien : les étapes franchies, datées d'après l'historique. */
 export function parcoursDe(bien: BienVente, suivi: SuiviVente[]): PasParcours[] {
   const ORDRE: { k: string; l: string }[] = [
-    { k: 'a_suivre', l: 'À suivre' }, { k: 'estimation', l: 'Estimation' }, { k: 'mandat', l: 'Mandat signé, en vente' },
-    { k: 'offre', l: 'Sous offre' }, { k: 'compromis', l: 'Compromis' }, { k: 'vendu', l: 'Vendu' },
+    { k: 'a_suivre', l: 'À suivre' }, { k: 'estimation', l: 'Estimation' }, { k: 'mandat', l: 'Mandat signé, disponible' },
+    { k: 'offre', l: 'Sous offre' }, { k: 'compromis', l: 'En signature' }, { k: 'vendu', l: 'Conclue' },
   ];
   const e = bien.etape;
   const arret = e === 'suspendu' || e === 'retire';
@@ -1374,7 +1374,7 @@ export function HistoriqueBien({ evts, aVenir, parcours, chiffres, erreur, onNot
     <div className={o.histo}>
       <div className={f.frise}>
         <div className={f.tete}>
-          <div className={f.teteTitre}><b>Historique du bien</b><span>{`${evts.length} élément${evts.length > 1 ? 's' : ''}`}</span></div>
+          <div className={f.teteTitre}><b>Historique de l’affaire</b><span>{`${evts.length} élément${evts.length > 1 ? 's' : ''}`}</span></div>
           <div className={f.teteBoutons}><button type="button" className={f.btnAjout} style={{ gridColumn: '1 / -1' }} onClick={onNote}>+ Ajouter une note</button></div>
         </div>
         <div className={f.filtres} role="group" aria-label="Filtrer l’historique">
@@ -1455,7 +1455,7 @@ export function HistoriqueBien({ evts, aVenir, parcours, chiffres, erreur, onNot
 
       <aside className={o.aside}>
         <div className={o.carteA}>
-          <b>Le parcours du bien</b>
+          <b>Le parcours de l’affaire</b>
           <div className={o.parcours}>
             {parcours.map((p, i) => (
               <div key={p.l} className={o.pas} data-etat={p.etat}>

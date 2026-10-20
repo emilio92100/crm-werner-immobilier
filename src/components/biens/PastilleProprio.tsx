@@ -91,24 +91,24 @@ export function PastilleProprio({ nom, pluriel, personne, societe, pour, sous, p
         <Ic n="bas" t={13} e={2.4} />
       </button>
       {onRetirer && (
-        <button type="button" className={b.pProprioX} aria-label={`Retirer ${nom} de ce bien`} title="Retirer du bien" aria-expanded={vue === 'retirer'} onClick={() => setVue(x => (x === 'retirer' ? null : 'retirer'))}>
+        <button type="button" className={b.pProprioX} aria-label={`Retirer ${nom} de cette affaire`} title="Retirer de l’affaire" aria-expanded={vue === 'retirer'} onClick={() => setVue(x => (x === 'retirer' ? null : 'retirer'))}>
           <Ic n="croix" t={12} e={2.6} />
         </button>
       )}
       {vue && <div className={b.voileMenu} onClick={() => setVue(null)} />}
       {vue === 'retirer' && onRetirer && (
-        <div className={b.pProprioPan} role="alertdialog" aria-label={`Retirer ${nom} de ce bien`}>
+        <div className={b.pProprioPan} role="alertdialog" aria-label={`Retirer ${nom} de cette affaire`}>
           <div className={b.pProprioQ}>
             <span className={b.pProprioQIc}><Ic n="croix" t={14} e={2.6} /></span>
             <div>
-              <b>{`Retirer ${nom} de ce bien\u00a0?`}</b>
+              <b>{`Retirer ${nom} de cette affaire\u00a0?`}</b>
               <small>{personne
-                ? `${pluriel ? 'Leur fiche reste' : 'Sa fiche reste'} dans tes contacts. Le bien n’aura plus de propriétaire : tu pourras en indiquer un autre ici.`
-                : `${pluriel ? 'Leurs noms et coordonnées' : 'Son nom et ses coordonnées'}, notés sur ce bien seulement, seront effacés. Tu pourras en indiquer un autre ici.`}</small>
+                ? `${pluriel ? 'Leur fiche reste' : 'Sa fiche reste'} dans tes contacts. L’affaire n’aura plus de propriétaire : tu pourras en indiquer un autre ici.`
+                : `${pluriel ? 'Leurs noms et coordonnées' : 'Son nom et ses coordonnées'}, notés sur cette affaire seulement, seront effacés. Tu pourras en indiquer un autre ici.`}</small>
             </div>
           </div>
           <div className={b.pProprioBtns}>
-            <button type="button" className={`${b.pProprioAct} ${b.pProprioDanger}`} onClick={() => { setVue(null); onRetirer(); }}><Ic n="croix" t={12} e={2.6} />Retirer du bien</button>
+            <button type="button" className={`${b.pProprioAct} ${b.pProprioDanger}`} onClick={() => { setVue(null); onRetirer(); }}><Ic n="croix" t={12} e={2.6} />Retirer de l’affaire</button>
             <button type="button" className={b.pProprioAct} onClick={() => setVue(null)}>Annuler</button>
           </div>
         </div>
@@ -131,7 +131,7 @@ export function PastilleProprio({ nom, pluriel, personne, societe, pour, sous, p
           )}
           {!tel && !mail && <p className={b.pProprioRien}>{'Ni téléphone ni e-mail pour l’instant.'}</p>}
           {/* V3.54 : « Relier une fiche » ne disait pas pourquoi. */}
-          {!personne && <p className={b.pProprioSans}>{`${pluriel ? 'Pas encore de fiche dans tes contacts : leurs coordonnées sont' : 'Pas encore de fiche dans tes contacts : ses coordonnées sont'} notées sur ce bien seulement. Avec une fiche, tu retrouves ${pluriel ? 'leurs' : 'ses'} mails et ${pluriel ? 'leur' : 'son'} historique dans Contacts.`}</p>}
+          {!personne && <p className={b.pProprioSans}>{`${pluriel ? 'Pas encore de fiche dans tes contacts : leurs coordonnées sont' : 'Pas encore de fiche dans tes contacts : ses coordonnées sont'} notées sur cette affaire seulement. Avec une fiche, tu retrouves ${pluriel ? 'leurs' : 'ses'} mails et ${pluriel ? 'leur' : 'son'} historique dans Contacts.`}</p>}
           <div className={b.pProprioBtns}>
             {tel && <a className={b.pProprioAct} href={`tel:${brut}`}><Ic n="telephone" t={14} />Appeler</a>}
             {mail && (parCrm

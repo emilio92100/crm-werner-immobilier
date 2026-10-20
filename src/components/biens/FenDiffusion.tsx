@@ -42,15 +42,15 @@ export default function FenDiffusion({ bien, premiere, onFermer, onEnregistrer }
   const titre = hors ? (actif ? 'Diffusé quand même' : 'Non diffusé') : !etapeOk ? (actif ? 'Diffusion en pause' : 'Non diffusé') : actif ? 'Diffusion en cours' : 'Non diffusé';
   const phrase = hors
     ? (actif
-      ? (coches.length ? `Le bien est « ${et.lib} », mais l’annonce part sur ${nomsSupports(coches)} comme s’il était en vente. Si son étape change, la diffusion s’arrête.` : 'Coche au moins un support.')
-      : `À l’étape « ${et.lib} », rien ne part. Active pour le diffuser quand même, comme s’il était en vente.`)
+      ? (coches.length ? `L’affaire est à l’étape « ${et.lib} », mais l’annonce part sur ${nomsSupports(coches)} comme si elle était disponible. Si son étape change, la diffusion s’arrête.` : 'Coche au moins un support.')
+      : `À l’étape « ${et.lib} », rien ne part. Active pour la diffuser quand même, comme si elle était disponible.`)
     : !etapeOk
-    ? (!actif ? 'Coupé à la main : rien ne repartira à la reprise.' : enPause ? `La vente est en pause : rien ne part.${coches.length ? ` À la reprise, l’annonce repartira sur ${nomsSupports(coches)}.` : ''}` : 'À cette étape, rien ne part.')
+    ? (!actif ? 'Coupé à la main : rien ne repartira à la reprise.' : enPause ? `L’affaire est en pause : rien ne part.${coches.length ? ` À la reprise, l’annonce repartira sur ${nomsSupports(coches)}.` : ''}` : 'À cette étape, rien ne part.')
     : !actif ? 'L’annonce ne part nulle part, quels que soient les supports cochés.'
     : coches.length ? `L’annonce part sur ${nomsSupports(coches)}.` : 'Coche au moins un support.';
 
   return (
-    <Fenetre sur={`${et.lib}${bien.reference ? ` · ${bien.reference}` : ''}`} couleur={et.c} titre={premiere ? 'Le mandat est signé : où part l’annonce ?' : 'La diffusion du bien'}
+    <Fenetre sur={`${et.lib}${bien.reference ? ` · ${bien.reference}` : ''}`} couleur={et.c} titre={premiere ? 'Le mandat est signé : où part l’annonce ?' : 'La diffusion de l’affaire'}
       sous="Tu peux la changer à tout moment, d’un clic sur le bouton du bandeau." onFermer={onFermer}
       pied={<>
         <button type="button" className={s.btn} onClick={onFermer}>{premiere ? 'Plus tard' : 'Annuler'}</button>

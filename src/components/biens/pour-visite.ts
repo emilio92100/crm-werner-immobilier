@@ -24,7 +24,7 @@ export function visitePourCarte(d: Donnees): PourVisite {
     { ic: 'clavier', l: 'Digicode', v: txt(d, 'digicode') },
     { ic: 'interphone', l: 'Interphone', v: txt(d, 'interphone') },
     { ic: 'porte', l: 'Porte', v: txt(d, 'porte') },
-    { ic: 'cave', l: 'Cave · box', v: txt(d, 'annexesNum') },
+    { ic: 'cave', l: 'Cave · parkings', v: txt(d, 'annexesNum') },
   ].filter(x => x.v);
   const nom = txt(d, 'contactNom'), tel = txt(d, 'contactTel');
   const infos: LigneVisite[] = [

@@ -578,7 +578,7 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
           <Pastilles<SousDiff> label="Classer les affaires en ligne" v={sousDiff} onChange={setSousDiff}
             aide={sousDiff !== 'annonces' ? { ic: 'megaphone', t: AIDE_DIFF[sousDiff] } : null}
             choix={[
-              { k: 'tous', l: 'Tous', n: enL.length },
+              { k: 'tous', l: 'Toutes', n: enL.length },
               { k: 'mandats', l: 'Mandats', n: enL.filter(x => dansSousDiff(x, 'mandats')).length, c: etapeDe('mandat').c },
               { k: 'annonces', l: 'Annonces type', n: enL.filter(x => dansSousDiff(x, 'annonces')).length, c: etapeDe('annonce_type').c },
             ]} />

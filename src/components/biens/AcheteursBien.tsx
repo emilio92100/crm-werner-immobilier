@@ -120,7 +120,7 @@ export function CarteAcheteurs({ acheteurs, mode, onVoir }: { acheteurs: Acheteu
   return (
     <div className={`${a.kpi} ${a.kpiOr}`}>
       <div className={a.kpiT}><span className={a.kpiIc}><Ic n="groupe" t={17} /></span>{avant ? 'Demandeurs potentiels' : 'Les demandeurs'}</div>
-      <div className={a.kpiN}><b>{n}</b><span>{avant ? (n > 1 ? 'pourraient l’acheter' : 'pourrait l’acheter') : n > 1 ? 'correspondent' : 'correspond'}</span></div>
+      <div className={a.kpiN}><b>{n}</b><span>{avant ? (n > 1 ? 'pourraient être intéressés' : 'pourrait être intéressé') : n > 1 ? 'correspondent' : 'correspond'}</span></div>
       {n > 0 ? (
         <div className={a.pile}>
           {tete.map((x, i) => <span key={x.recherche.id} className={a[`f${(i % 3) + 1}`]}><Avatar acheteur={x} petit /></span>)}
@@ -208,7 +208,7 @@ export function FenEnvoiAcheteurs({ bien, choisis, onFermer, onFait, onFiche }: 
             {photo ? <img src={photo} alt="" /> : <Ic n="photo" t={24} />}
           </span>
           <div className={a.bienTx}>
-            <span className={a.bienSur}>{'Envoyer ce bien'}</span>
+            <span className={a.bienSur}>{'Envoyer cette affaire'}</span>
             <h2>{titre}</h2>
             {specs && <p>{specs}</p>}
             <b className={prix.vide ? a.bienPrixVide : a.bienPrix}>{prix.t}</b>

@@ -137,7 +137,7 @@ export function OngletVisitesOffres({ visites, offres, prix, compromis, onVisite
         <div className={x.teteHaut}>
           <div className={x.teteTx}>
             <h2>Visites et offres</h2>
-            <p>Chaque visite, son compte rendu, puis les offres et la réponse du mandant : tout ce qui mène au compromis.</p>
+            <p>Chaque visite, son compte rendu, puis les offres et la réponse du mandant : tout ce qui mène à l’accord.</p>
           </div>
           {(onVisite || onOffre) && (
             <div className={x.gestes}>
@@ -166,8 +166,8 @@ export function OngletVisitesOffres({ visites, offres, prix, compromis, onVisite
           <div className={x.chemin}>
             {[
               { ic: 'calendrier', t: 'Organiser une visite', p: 'Avec un demandeur suivi : elle va dans son dossier et dans l’agenda. Ou avec quelqu’un hors du CRM.' },
-              { ic: 'bulle', t: 'Le compte rendu', p: 'Après la visite : ce qu’il en a pensé, ses étoiles, et la suite — il veut faire une offre, revoir le bien, il réfléchit.' },
-              { ic: 'euro', t: 'L’offre, puis la réponse', p: 'Le montant, le financement, le délai. Le mandant accepte, refuse ou fait une contre-offre ; acceptée, on va vers le compromis.' },
+              { ic: 'bulle', t: 'Le compte rendu', p: 'Après la visite : ce qu’il en a pensé, ses étoiles, et la suite — il veut faire une offre, revoir le local, il réfléchit.' },
+              { ic: 'euro', t: 'L’offre, puis la réponse', p: 'Le montant, les conditions, le délai. Le mandant accepte, refuse ou fait une contre-offre ; acceptée, on va vers la signature.' },
             ].map((e, i) => (
               <div key={e.t} className={x.etape}>
                 <span className={x.etapeN}>{i + 1}</span>
@@ -223,9 +223,9 @@ export function OngletVisitesOffres({ visites, offres, prix, compromis, onVisite
           Chacune se replie sur une ligne. ── */}
       {(vente.length > 0 || aFaireO.length > 0) && (
         <section className={x.bloc}>
-          <Rubrique titre={vente.length && !aFaireO.length ? 'La vente' : vente.length ? 'La vente et les offres' : aFaireO.length > 1 ? 'Les offres en cours' : 'L’offre en cours'}
+          <Rubrique titre={vente.length && !aFaireO.length ? 'L’accord' : vente.length ? 'L’accord et les offres' : aFaireO.length > 1 ? 'Les offres en cours' : 'L’offre en cours'}
             n={vente.length + aFaireO.length} ouvert={ouvert('offres')} onClick={() => basculer('offres')}
-            resume={[enCours.length ? `${enCours.length} en attente de réponse` : '', meilleure ? `la meilleure : ${euros(meilleure)}` : '', accepteeSansCompromis.length ? 'une offre acceptée' : '', vente.length ? (vente.some(o => actions.get(o.id)?.compromis?.venduLe) ? 'vendu' : 'en signature') : ''].filter(Boolean).join(' · ')} />
+            resume={[enCours.length ? `${enCours.length} en attente de réponse` : '', meilleure ? `la meilleure : ${euros(meilleure)}` : '', accepteeSansCompromis.length ? 'une offre acceptée' : '', vente.length ? (vente.some(o => actions.get(o.id)?.compromis?.venduLe) ? 'affaire conclue' : 'en signature') : ''].filter(Boolean).join(' · ')} />
           <Depliant ouvert={ouvert('offres')} ecart={10}>
             <div className={x.offres}>
               {[...vente, ...aFaireO].map(o => (
@@ -301,7 +301,7 @@ function LigneOffre({ o, prix, a }: { o: SuiviVente; prix: number | null; a: Act
   const d = (o.donnees || {}) as Record<string, unknown>;
   const st = o.statut || 'en_attente';
   /* V3.47 : l'offre d'un compromis tombé (compromisTombe). */
-  const p = st === 'retiree' && d.compromisTombe ? { ...PUCE_OFFRE.retiree, l: 'Compromis tombé' } : PUCE_OFFRE[st] || PUCE_OFFRE.en_attente;
+  const p = st === 'retiree' && d.compromisTombe ? { ...PUCE_OFFRE.retiree, l: 'Accord tombé' } : PUCE_OFFRE[st] || PUCE_OFFRE.en_attente;
   const actuel = montantActuel(o);
   const ecart = actuel && prix ? ((actuel - prix) / prix) * 100 : null;
   const fin = d.financement === 'comptant' ? 'comptant' : d.financement === 'relais' ? 'prêt relais' : d.financement === 'pret' ? 'avec un prêt' : '';

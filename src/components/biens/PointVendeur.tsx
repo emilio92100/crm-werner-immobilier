@@ -38,7 +38,7 @@ const minus = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
 const etListe = (l: string[]) => (l.length > 1 ? `${l.slice(0, -1).join(', ')} et ${l[l.length - 1]}` : l[0] || '');
 const RETOUR: Record<Issue, string> = {
   offre: 'souhaite faire une offre',
-  revoir: 'aimerait revoir le bien',
+  revoir: 'aimerait revoir le local',
   reflexion: 'réfléchit',
   non: 'n’a pas donné suite',
 };
@@ -65,9 +65,9 @@ export function textePointVendeur(o: {
   const p = o.proprio;
   const bonjour = p?.civilite === 'Madame' || p?.civilite === 'Monsieur' ? `Bonjour ${p.civilite} ${p.nom || ''}`.trim() : `Bonjour${p?.prenom ? ` ${p.prenom}` : ''}`;
   const adresse = txt(d, 'adresse');
-  const leBien = adresse ? `votre bien du ${adresse}` : `votre bien${txt(d, 'ville') ? ` à ${txt(d, 'ville')}` : ''}`;
-  const depuis = o.depuis ? ` depuis ${o.bien.donnees?.dernierPointVendeur ? 'notre dernier point' : 'sa mise en vente'}, le ${dateLongue(o.depuis)}` : '';
-  const lignes: string[] = [`${bonjour},`, '', `Voici où en est la vente de ${leBien}${depuis}.`, ''];
+  const leBien = adresse ? `votre local du ${adresse}` : `votre local${txt(d, 'ville') ? ` à ${txt(d, 'ville')}` : ''}`;
+  const depuis = o.depuis ? ` depuis ${o.bien.donnees?.dernierPointVendeur ? 'notre dernier point' : 'sa mise sur le marché'}, le ${dateLongue(o.depuis)}` : '';
+  const lignes: string[] = [`${bonjour},`, '', `Voici le point sur ${leBien}${depuis}.`, ''];
 
   const faites = o.visites.filter(v => v.statut !== 'annulee' && v.passee && (!o.depuis || v.ymd >= o.depuis)).sort((x, y) => x.ymd.localeCompare(y.ymd));
   const aVenir = o.visites.filter(v => v.statut === 'a_venir' && !v.passee).sort((x, y) => `${x.ymd}${x.heure}`.localeCompare(`${y.ymd}${y.heure}`));
@@ -76,7 +76,7 @@ export function textePointVendeur(o: {
     for (const v of faites) lignes.push(`- le ${dateLongue(v.ymd)}, ${discret(v.qui)} : ${retourDe(v)}.`);
   } else lignes.push('Il n’y a pas eu de visite sur cette période.');
   if (aVenir.length) lignes.push(aVenir.length > 1 ? `${aVenir.length}${faites.length ? ' autres' : ''} visites sont prévues, la prochaine le ${dateLongue(aVenir[0].ymd)}.` : `Une visite est prévue le ${dateLongue(aVenir[0].ymd)}.`);
-  if (o.presentes) lignes.push(`Le bien a aussi été présenté à ${o.presentes > 1 ? `${o.presentes} demandeurs` : 'un demandeur'} que nous accompagnons.`);
+  if (o.presentes) lignes.push(`Votre local a aussi été présenté à ${o.presentes > 1 ? `${o.presentes} demandeurs` : 'un demandeur'} que nous accompagnons.`);
   lignes.push('');
 
   const offres = o.offres.filter(x => !o.depuis || x.le.slice(0, 10) >= o.depuis || x.statut === 'en_attente' || x.statut === 'contre' || x.statut === 'acceptee');
@@ -87,7 +87,7 @@ export function textePointVendeur(o: {
   lignes.push('');
 
   const prix = argentBien(d).prix;
-  if (prix) lignes.push(o.prixAvant && o.prixAvant !== prix ? `Le prix affiché est passé de ${euros(o.prixAvant)} à ${euros(prix)}.` : `Le prix affiché reste de ${euros(prix)}.`);
+  if (prix) lignes.push(o.prixAvant && o.prixAvant !== prix ? `Le montant demandé est passé de ${euros(o.prixAvant)} à ${euros(prix)}.` : `Le montant demandé reste de ${euros(prix)}.`);
   lignes.push('', 'Je reste à votre disposition pour en parler.', '', 'Bien cordialement,');
   return lignes.join('\n');
 }
@@ -120,24 +120,24 @@ export function FenPointVendeur({ bien, proprio, visites, offres, suivi, present
         if (!ok) throw new Error('Le point n’a pas pu être noté dans son suivi.');
       }
       const nbV = visites.filter(v => v.statut !== 'annulee' && v.passee && (!depuis || v.ymd >= depuis)).length;
-      await ajouterSuivi({ bien_id: bien.id, type: 'note', commentaire: `Envoyé à ${proprio ? nomClient(proprio) : 'le propriétaire'}${depuis ? ` · depuis le ${dateLongue(depuis)}` : ''} · ${nbV} visite${nbV > 1 ? 's' : ''}`, donnees: { pointVendeur: true, depuis, texte } });
+      await ajouterSuivi({ bien_id: bien.id, type: 'note', commentaire: `Envoyé à ${proprio ? nomClient(proprio) : 'le mandant'}${depuis ? ` · depuis le ${dateLongue(depuis)}` : ''} · ${nbV} visite${nbV > 1 ? 's' : ''}`, donnees: { pointVendeur: true, depuis, texte } });
       onFait(await poserDansBien(bien.id, { dernierPointVendeur: jour }));
     } catch (e) { signalerEchec('Le point mandant', (e as Error).message); setErreur((e as Error).message); setOccupe(false); }
   }
   return (
-    <Fenetre sur={proprio ? `Pour ${nomClient(proprio)}` : 'Pour le propriétaire'} couleur="#f08c42" titre="Le point mandant" large
-      sous={dernier ? `Depuis le dernier point, le ${dateLongue(dernier)}` : depuis ? `Depuis la mise en vente, le ${dateLongue(depuis)}` : 'Depuis la mise en vente'}
+    <Fenetre sur={proprio ? `Pour ${nomClient(proprio)}` : 'Pour le mandant'} couleur="#f08c42" titre="Le point mandant" large
+      sous={dernier ? `Depuis le dernier point, le ${dateLongue(dernier)}` : depuis ? `Depuis la mise sur le marché, le ${dateLongue(depuis)}` : 'Depuis la mise sur le marché'}
       occupe={occupe} onFermer={onFermer}
       pied={<>
         <button type="button" className={s.btn} disabled={occupe} onClick={onFermer}>Fermer</button>
         <button type="button" className={s.btn} disabled={occupe} onClick={copier}><Ic n={copie ? 'check' : 'copier'} t={15} />{copie ? 'Copié' : 'Copier le texte'}</button>
         <button type="button" className={`${s.btn} ${s.btnNavy}`} disabled={occupe} onClick={() => { void noter(); }}><Ic n="check" t={15} e={2.4} />{occupe ? 'Enregistrement…' : 'Noter comme envoyé'}</button>
       </>}>
-      <div className={b.calc}>Les visites et ce qu’en ont dit les demandeurs, les offres, le prix. Relis, retouche, puis copie-le dans ton mail ou ton message.</div>
+      <div className={b.calc}>Les visites et ce qu’en ont dit les demandeurs, les offres, le montant. Relis, retouche, puis copie-le dans ton mail ou ton message.</div>
       <textarea className={s.input} rows={16} value={texte} onChange={e => setTexte(e.target.value)} aria-label="Le texte du point mandant" />
       <div className={b.calc}>{bien.client_id
-        ? '« Noter comme envoyé » le garde dans son suivi et dans l’historique du bien ; le prochain point partira de là.'
-        : 'Le propriétaire n’a pas de fiche reliée : le point se garde dans l’historique du bien seulement.'}</div>
+        ? '« Noter comme envoyé » le garde dans son suivi et dans l’historique de l’affaire ; le prochain point partira de là.'
+        : 'Le mandant n’a pas de fiche reliée : le point se garde dans l’historique de l’affaire seulement.'}</div>
       {erreur && <div className={s.erreur}>{erreur}</div>}
     </Fenetre>
   );
