@@ -665,7 +665,7 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
   return (
     <div className={s.ed} role="dialog" aria-modal="true" aria-label={titreBien(d)}>
       <div className={`${s.edBarre} ${b.edBarre}`}>
-        <button type="button" className={s.edRetour} onClick={fermer}><Ic n="retour" t={16} /><span>{nouveau ? 'Biens' : 'La fiche'}</span></button>
+        <button type="button" className={s.edRetour} onClick={fermer}><Ic n="retour" t={16} /><span>{nouveau ? 'Affaires' : 'La fiche'}</span></button>
         <div className={s.edTitre}>
           <b>{nouveau && !d.typeBien ? 'Nouveau bien' : titreBien(d)}</b>
           <div className={s.edEtat}>

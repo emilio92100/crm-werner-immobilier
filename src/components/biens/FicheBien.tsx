@@ -225,7 +225,7 @@ export function Bandeau({ bien, detail, surCarte, cote }: { bien: BienVente; det
               <span key={k} style={{ display: 'contents' }}>
                 {j > 0 && <span className={b.stepTrait} />}
                 <span className={`${b.step} ${j < i ? b.stepOk : j === i ? b.stepOn : ''}`}>
-                  <span className={b.stepRond}>{j < i && <Ic n="check" t={10} e={3.4} />}</span>{k === 'mandat' && j === i && !txt(d, 'mandatDate') ? 'En vente' : etapeDe(k).lib}
+                  <span className={b.stepRond}>{j < i && <Ic n="check" t={10} e={3.4} />}</span>{k === 'mandat' && j === i && !txt(d, 'mandatDate') ? 'Disponible' : etapeDe(k).lib}
                 </span>
               </span>
             ))}
@@ -554,7 +554,7 @@ function BlocParcours({ bien, onDefinir, onEstimation, onMandat, onDocuments }: 
     { cle: 'visite', l: 'Visite sur place', ic: 'tablette', v: visite ? `faite le ${dateCourte(visite)}` : ok[1] ? 'pas notée' : rdv ? 'le jour du rendez-vous' : 'chez le propriétaire', etat: etat(1) },
     { cle: 'montant', l: 'Le montant', ic: 'etiquette', v: fait ? (e.prix ? `${euros(e.prix)} conseillé` : fourchette) : 'la fourchette, le prix conseillé', etat: etat(2) },
     { cle: 'avis', l: 'L’avis de valeur', ic: 'envoyer', v: avis ? `envoyé le ${dateCourte(avis)}` : 'à envoyer au propriétaire', etat: etat(3) },
-    { cle: 'mandat', l: 'Le mandat', ic: 'plume', v: 'signé : le bien passe « En vente »', etat: etat(4) },
+    { cle: 'mandat', l: 'Le mandat', ic: 'plume', v: 'signé : l’affaire passe « Disponible »', etat: etat(4) },
   ];
   let ensuite = '';
   let action: { l: string; onClick: () => void } | undefined;
@@ -969,7 +969,7 @@ export function evenements(bien: BienVente, det: DetailBien, clients: Record<str
         /* V3.48 : `reprise` (FenMandat) dit si c'est une remise en vente ; un
            bien créé directement « En vente » n'a pas encore de mandat noté. */
         const signe = d.reprise === false || (d.reprise !== true && (d.source === 'documents' || d.de === 'estimation' || d.de === 'a_suivre' || (d.de === 'mandat' && !!str('date'))));
-        titre = d.depuis === 'creation' && !str('date') ? 'Créé directement « En vente »' : signe ? `Mandat signé${str('numero') ? ` · n° ${str('numero')}` : ''}` : 'Remis en vente';
+        titre = d.depuis === 'creation' && !str('date') ? 'Créée directement « Disponible »' : signe ? `Mandat signé${str('numero') ? ` · n° ${str('numero')}` : ''}` : 'Remise sur le marché';
         if (signe && str('type')) puce = str('type') === 'exclusif'
           ? { l: 'Exclusif', c: '#f7b07a', fond: '#25272b', bord: '#25272b' }
           : { l: NOM_MANDAT[str('type')] || str('type'), c: '#2e3034', fond: '#f4f3f2', bord: '#e6e5e4' };
@@ -1159,7 +1159,7 @@ export function evenements(bien: BienVente, det: DetailBien, clients: Record<str
 }
 
 /* ══ LA FICHE ═════════════════════════════════════════════════════════════ */
-export default function FicheBien({ bien: depart, liste, onRetour, retourLib = 'Biens', onMaj, onSupprime, onModifier, onNavigate, onRecharger, onVendu, onOuvrir }: {
+export default function FicheBien({ bien: depart, liste, onRetour, retourLib = 'Affaires', onMaj, onSupprime, onModifier, onNavigate, onRecharger, onVendu, onOuvrir }: {
   bien: BienVente; liste: ListeBiens;
   /* V3.138 : « Agenda » quand le bien a été ouvert depuis l'agenda. */
   onRetour: () => void; retourLib?: string; onMaj: (b: BienVente) => void; onSupprime: (id: string) => void;
@@ -1518,11 +1518,11 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
   const p = permisBien(bien);
   if (e === 'a_suivre') {
     suite.push({ t: 'On passe à l’estimation…', s: 'Le bien passe « Estimation »', c: etapeDe('estimation').c, go: () => setFen({ k: 'estimation' }) });
-    suite.push({ t: 'Le mandat est signé…', s: 'Le bien passe « En vente »', c: etapeDe('mandat').c, go: () => setFen({ k: 'mandat' }) });
+    suite.push({ t: 'Le mandat est signé…', s: 'L’affaire passe « Disponible »', c: etapeDe('mandat').c, go: () => setFen({ k: 'mandat' }) });
     suite.push({ t: 'Le propriétaire renonce…', s: 'Retiré, gardé dans l’historique', c: etapeDe('retire').c, go: raison('retire', 'Le propriétaire renonce', 'Le bien passe « Retiré »') });
   }
   if (e === 'estimation') {
-    suite.push({ t: 'Le mandat est signé…', s: 'Le bien passe « En vente »', c: etapeDe('mandat').c, go: () => setFen({ k: 'mandat' }) });
+    suite.push({ t: 'Le mandat est signé…', s: 'L’affaire passe « Disponible »', c: etapeDe('mandat').c, go: () => setFen({ k: 'mandat' }) });
     /* V3.32 : le propriétaire veut attendre, sans renoncer. Le bien repasse
        « À suivre » ; l'estimation reste gardée, et l'on reprend d'un clic. */
     suite.push({ t: 'Le propriétaire veut attendre…', s: 'En attente : le bien repasse « À suivre »', c: etapeDe('a_suivre').c, go: raison('a_suivre', 'Mettre le projet en attente', 'Le bien repasse « À suivre »') });
@@ -1555,7 +1555,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
   }
   if (e === 'annonce_type') {
     suite.push({ t: 'Changer le prix…', s: 'Garde l’historique', c: '#8b5cf6', go: () => setFen({ k: 'prix' }) });
-    suite.push({ t: 'C’est un vrai mandat…', s: 'Le mandat est signé : le bien passe « En vente »', c: etapeDe('mandat').c, go: () => setFen({ k: 'mandat' }) });
+    suite.push({ t: 'C’est un vrai mandat…', s: 'Le mandat est signé : l’affaire passe « Disponible »', c: etapeDe('mandat').c, go: () => setFen({ k: 'mandat' }) });
   }
   if (e === 'mandat' || e === 'suspendu') {
     suite.push(txt(d, 'mandatDate')
@@ -1565,7 +1565,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
   if (e === 'offre') {
     suite.push({ t: 'Le compromis est signé…', s: 'Le bien passe « En signature »', c: etapeDe('compromis').c, go: () => setFen({ k: 'compromis' }) });
     suite.push({ t: 'Une autre offre…', s: 'Elles s’affichent côte à côte', c: etapeDe('offre').c, go: () => setFen({ k: 'offre' }) });
-    suite.push({ t: 'L’offre est tombée…', s: 'Le bien repasse « En vente »', c: etapeDe('mandat').c, go: () => setFen({ k: 'mandat' }) });
+    suite.push({ t: 'L’offre est tombée…', s: 'L’affaire repasse « Disponible »', c: etapeDe('mandat').c, go: () => setFen({ k: 'mandat' }) });
     /* V3.48 : directement depuis « Sous offre » (avant : deux étapes). */
     suite.push({ t: 'Le mandant retire le bien…', s: 'Retiré, gardé dans l’historique', c: etapeDe('retire').c, go: raison('retire', 'Le mandant retire le bien', 'Le bien passe « Retiré »') });
     suite.push({ t: 'Changer le prix ou les honoraires…', s: 'Garde l’historique', c: '#8b5cf6', go: () => setFen({ k: 'prix' }) });
@@ -1574,7 +1574,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
     suite.push({ t: 'La vente est signée…', s: 'Le bien passe « Vendu »', c: etapeDe('vendu').c, go: () => setFen({ k: 'vendu' }) });
     /* V3.47 : sa propre fenêtre — le bien repasse en vente ou il est retiré,
        la recherche de l'acquéreur reprend, reste en pause ou s'arrête. */
-    suite.push({ t: 'Le compromis est tombé…', s: 'En vente ou retiré ; et le demandeur ?', c: '#dc2626', go: () => setFen({ k: 'tombe' }) });
+    suite.push({ t: 'L’accord est tombé…', s: 'Disponible ou retirée ; et le demandeur ?', c: '#dc2626', go: () => setFen({ k: 'tombe' }) });
   }
   /* Retiré avant tout mandat (le vendeur avait renoncé à l'estimation) : on
      reprend l'estimation, ou le mandat est signé ; « Remettre en vente » ne
@@ -1587,9 +1587,9 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
     ? { rdv: txt(d, 'rdvEstimation'), visite: txt(d, 'visiteLe'), avis: txt(d, 'avisEnvoye') } : null;
   if (jamaisEnVente) {
     suite.push({ t: 'Reprendre l’estimation…', s: 'Le bien repasse « Estimation »', c: etapeDe('estimation').c, go: () => setFen({ k: 'estimation' }) });
-    suite.push({ t: 'Le mandat est signé…', s: 'Le bien passe « En vente »', c: etapeDe('mandat').c, go: () => setFen({ k: 'mandat' }) });
+    suite.push({ t: 'Le mandat est signé…', s: 'L’affaire passe « Disponible »', c: etapeDe('mandat').c, go: () => setFen({ k: 'mandat' }) });
   } else if (e === 'suspendu' || e === 'retire') {
-    suite.push({ t: 'Remettre en vente…', s: 'Le bien repasse « En vente »', c: etapeDe('mandat').c, go: () => setFen({ k: 'mandat' }) });
+    suite.push({ t: 'Remettre sur le marché…', s: 'L’affaire repasse « Disponible »', c: etapeDe('mandat').c, go: () => setFen({ k: 'mandat' }) });
     if (e === 'suspendu') suite.push({ t: 'Mandat terminé sans vente…', s: 'Expiré, retiré, vendu par un autre', c: etapeDe('retire').c, go: raison('retire', 'Mandat terminé sans vente', 'Le bien passe « Retiré »') });
   }
   /* V3.47 : le bien revient à la vente, des années plus tard. */
@@ -1610,13 +1610,13 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
   const garde = (quoi: Geste, go: () => void) => () => {
     const puis = (f: () => void) => () => { setGuide(null); f(); };
     const ch = {
-      mandat: { l: 'Le mandat est signé…', s: 'Le bien passe « En vente »', ic: 'plume', c: '#059669', f: '#ecfdf5', go: puis(() => setFen({ k: 'mandat' })) },
+      mandat: { l: 'Le mandat est signé…', s: 'L’affaire passe « Disponible »', ic: 'plume', c: '#059669', f: '#ecfdf5', go: puis(() => setFen({ k: 'mandat' })) },
       preparer: { l: 'Préparer le mandat', s: 'Dans Documents, prérempli avec le bien et le propriétaire', ic: 'doc', c: '#393836', f: '#f6f5f4', go: puis(() => { void faireDocument({ modele: 'mandat_vente' }); }) },
       estim: { l: 'Définir l’estimation…', s: 'La fourchette et le prix conseillé', ic: 'euro', c: '#7c3aed', f: '#f5f3ff', go: puis(() => setFen({ k: 'estim' })) },
-      remettre: { l: jamaisEnVente ? 'Le mandat est signé…' : 'Remettre en vente…', s: 'Le bien repasse « En vente »', ic: 'etiquette', c: '#059669', f: '#ecfdf5', go: puis(() => setFen({ k: 'mandat' })) },
+      remettre: { l: jamaisEnVente ? 'Le mandat est signé…' : 'Remettre sur le marché…', s: 'L’affaire repasse « Disponible »', ic: 'etiquette', c: '#059669', f: '#ecfdf5', go: puis(() => setFen({ k: 'mandat' })) },
       revente: { l: 'Une nouvelle vente de ce bien…', s: 'Nouvelle fiche, même description, nouveau propriétaire', ic: 'cle', c: '#7c3aed', f: '#f5f3ff', go: puis(() => setFen({ k: 'revente' })) },
-      tombe: { l: 'Le compromis est tombé…', s: 'Le bien repasse en vente, ou il est retiré', ic: 'retour', c: '#dc2626', f: '#fef2f2', go: puis(() => setFen({ k: 'tombe' })) },
-      offreTombee: { l: 'L’offre est tombée…', s: 'Le bien repasse « En vente »', ic: 'retour', c: '#dc2626', f: '#fef2f2', go: puis(() => setFen({ k: 'mandat' })) },
+      tombe: { l: 'L’accord est tombé…', s: 'Le bien repasse en vente, ou il est retiré', ic: 'retour', c: '#dc2626', f: '#fef2f2', go: puis(() => setFen({ k: 'tombe' })) },
+      offreTombee: { l: 'L’offre est tombée…', s: 'L’affaire repasse « Disponible »', ic: 'retour', c: '#dc2626', f: '#fef2f2', go: puis(() => setFen({ k: 'mandat' })) },
       termine: { l: 'Mandat terminé sans vente…', s: 'Expiré, retiré, vendu par un autre', ic: 'archive', c: '#b4532a', f: '#fdf2ec', go: puis(raison('retire', 'Mandat terminé sans vente', 'Le bien passe « Retiré »')) },
       renonce: { l: 'Le propriétaire renonce…', s: 'Retiré, gardé dans l’historique', ic: 'archive', c: '#b4532a', f: '#fdf2ec', go: puis(raison('retire', 'Le propriétaire renonce', 'Le bien passe « Retiré »')) },
       desarchiver: { l: 'Sortir des archives', s: 'Il revient dans la liste', ic: 'archive', c: '#475569', f: '#f8fafc', go: puis(() => { void archiverBien(); }) },
@@ -1754,7 +1754,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
      d'onglets ») : sept au lieu de huit — « Vue d'ensemble » devient
      « Résumé », Surfaces passe dans le tiroir de « Le bien ». */
   const ONGLETS: { k: Onglet; l: string; n?: number; ic: string }[] = [
-    { k: 'apercu', l: 'Résumé', ic: 'oeil' }, { k: 'photos', l: 'Photos', n: nbPhotos, ic: 'photo' }, { k: 'bien', l: 'Le bien', ic: 'maison' },
+    { k: 'apercu', l: 'Résumé', ic: 'oeil' }, { k: 'photos', l: 'Photos', n: nbPhotos, ic: 'photo' }, { k: 'bien', l: 'Le local', ic: 'agence' },
     /* V3.146 : avant le mandat, l'onglet vient dès qu'une visite a été planifiée. */
     ...((avant && !visites.length) || e === 'annonce_type' ? [] : [{ k: 'visites' as Onglet, l: 'Visites et offres', n: nbVisites + offres.length, ic: 'cle' }]),
     /* V3.126 : sans chiffre — le compte en chiffres (avant toute relecture)
@@ -2223,7 +2223,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
         <div className={b.statutBien} data-statut="" style={{ ['--etC' as string]: et.c } as React.CSSProperties}>
           <button type="button" className={b.statutEtape} aria-haspopup="menu" aria-expanded={menu === 'etape'} onClick={() => setMenu(menu === 'etape' ? null : 'etape')}
             title={`Étape : ${et.lib}`} aria-label={`Étape : ${et.lib}, changer`}>
-            <span className={`${b.point} ${b.pointVivant}`} style={{ background: et.c, ['--halo' as string]: et.c } as React.CSSProperties} /><span className={b.etLong}>{e === 'mandat' && !txt(d, 'mandatDate') ? 'En vente' : et.lib}</span><span className={b.etCourt}>{et.court}</span>{bien.archive ? <span className={b.etArchive}>archivé</span> : null}<Ic n="bas" t={14} e={2.6} />
+            <span className={`${b.point} ${b.pointVivant}`} style={{ background: et.c, ['--halo' as string]: et.c } as React.CSSProperties} /><span className={b.etLong}>{e === 'mandat' && !txt(d, 'mandatDate') ? 'Disponible' : et.lib}</span><span className={b.etCourt}>{et.court}</span>{bien.archive ? <span className={b.etArchive}>archivé</span> : null}<Ic n="bas" t={14} e={2.6} />
           </button>
           {/* V3.91 : vert, il part ; ambre, il est à régler ; gris, il ne part pas (lib/diffusion.ts). */}
           {diff.concerne && (
