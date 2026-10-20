@@ -422,7 +422,7 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
         label="D’où viennent les demandes" actif={prov} onChoisir={k => choisirProv(k as Prov)} aCheval
         tuiles={[
           { cle: 'site', lib: 'Mon site', n: trouvees.filter(d => !d.archive && provenanceDe(d).k === 'site').length, couleur: '#2e3034' },
-          { cle: 'pub', lib: 'Pub estimation', n: trouvees.filter(d => !d.archive && provenanceDe(d).k === 'pub').length, couleur: '#f08c42' },
+          /* Werner : pas d'onglet « Pub estimation » (la page de publicité était propre au CRM d'origine). */
           { cle: 'portails', lib: 'Portails', n: trouvees.filter(d => !d.archive && provenanceDe(d).portail).length, couleur: '#b4233c' },
           { cle: 'tout', lib: 'Tout', n: trouvees.filter(d => !d.archive).length, tete: true, fin: true, ic: <PictoBoite taille={14} epaisseur={2.1} /> },
         ]} />
@@ -432,7 +432,7 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
           <div className={`${s.tiroirProv} ${s.tiroirSeul}`}>
             <div className={s.tiroirTete}>
               <span>{prov === 'portails' ? 'Portails · un par un' : 'Mon site · par formulaire'}</span>
-              <small>{prov === 'portails' ? 'Logic-Immo arrive avec SeLoger' : 'wernerimmobilier.com'}</small>
+              <small>{prov === 'portails' ? 'SeLoger Bureaux & Commerces' : 'wernerimmobilier.com'}</small>
             </div>
             {/* Une pastille par formulaire (ou portail) : son icône, son nom, son
                 nombre ; un point rouge s'il y a du neuf. « Toutes » à droite. */}
@@ -551,7 +551,7 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
               <div className={s.videDoux}>
                 <div className={s.videTitre}>{sansPortails ? 'Pas encore de demande des portails' : cherche ? 'Aucune demande trouvée' : f === 'nouveau' ? 'Aucune nouvelle demande' : 'Rien dans cette liste'}</div>
                 <div className={s.videSous}>
-                  {sansPortails ? 'Les messages, les demandes de la page agence et les appels de SeLoger, Logic-Immo et Belles Demeures arriveront ici dès que la passerelle SeLoger sera branchée.'
+                  {sansPortails ? 'Les messages et les appels reçus par SeLoger Bureaux & Commerces arriveront ici dès que la passerelle SeLoger sera branchée.'
                     : cherche ? `Rien ne correspond à « ${cherche} » ici.` : f === 'nouveau' ? 'Toutes les demandes reçues ont été prises en main.' : 'Changez de statut ou de provenance pour en voir d’autres.'}
                 </div>
               </div>

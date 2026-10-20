@@ -29,8 +29,8 @@ export default function EnvoiPortails() {
       enCours = true;
       try {
         const r = await fetch('/api/diffusion/portails', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-        const j = await r.json().catch(() => null) as { ok?: boolean; jinka?: { erreur?: string } } | null;
-        if (j && !j.ok) console.warn('[portails]', j.jinka?.erreur || 'échec');
+        const j = await r.json().catch(() => null) as { ok?: boolean; seloger?: { erreur?: string } } | null;
+        if (j && !j.ok) console.warn('[portails]', j.seloger?.erreur || 'échec');
       } catch (e) { console.warn('[portails]', (e as Error).message); }
       enCours = false;
     };

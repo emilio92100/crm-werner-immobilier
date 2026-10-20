@@ -68,7 +68,7 @@ export const ALERTES_MAIL: Alerte[] = [
   {
     cle: 'mandat_numero', groupe: 'mandats', titre: 'Un numéro de mandat attribué',
     objet: 'N° 4322 attribué à Paul Martin (signature en cours)',
-    quand: 'Il commence à signer et un numéro est pris dans ta réserve. C’est le rappel de le reporter dans le registre ImmoFacile.',
+    quand: 'Il commence à signer et un numéro est pris dans ta réserve. C’est le rappel de le reporter dans ton registre des mandats.',
     crm: 'Le numéro sur sa fiche (bloc Mandat), et une ligne dans son suivi.',
     sauf: 'il ne te reste presque plus de numéros d’avance, ou la fiche n’a pas pu garder le numéro.',
   },

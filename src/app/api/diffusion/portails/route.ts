@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { COOKIE_BADGE, badgeValide } from '@/lib/badge';
-import { deposerJinka, lireEtatJinka, preparerJinka } from '@/lib/jinka-serveur';
 import { codesSeLoger, deposerSeLoger, environnementSeLoger, lireEtatSeLoger, preparerSeLoger, statutsSeLoger } from '@/lib/seloger-serveur';
 
-/* ═══ Envoyer les annonces aux portails (V3.97 : Jinka ; V3.98 : SeLoger) ══
+/* ═══ Envoyer les annonces aux portails (V3.98 : SeLoger ; Jinka retiré pour Werner) ══
    POST (le CRM, derrière le badge) → { jinka, seloger }
      Le CRM l'appelle quand quelque chose change (components/layout/
      EnvoiPortails.tsx) : Jinka ne reçoit un nouveau fichier que s'il a
@@ -30,53 +29,39 @@ const parCron = (req: NextRequest) => {
 };
 const parBadge = (req: NextRequest) => badgeValide(req.cookies.get(COOKIE_BADGE)?.value);
 
-/* Les deux envois, côte à côte : l'un qui échoue n'empêche pas l'autre. */
-async function envoyer(forcerJinka: boolean, forcerSeLoger: boolean) {
-  const [jinka, seloger] = await Promise.all([
-    deposerJinka({ forcer: forcerJinka }).catch(e => ({ ok: false, erreur: (e as Error).message, annonces: 0, avertissements: [], etat: null })),
-    deposerSeLoger({ forcer: forcerSeLoger }).catch(e => ({ ok: false, erreur: (e as Error).message, env: environnementSeLoger(), annonces: 0, crees: 0, modifies: 0, retires: 0, erreurs: [], avertissements: [] })),
-  ]);
-  if (!jinka.ok) console.error('[portails] Jinka :', jinka.erreur);
-  if (!seloger.ok) console.error('[portails] SeLoger :', seloger.erreur);
-  return { ok: jinka.ok && seloger.ok, jinka, seloger };
+/* Werner : SeLoger seulement (Jinka était propre au CRM d'origine). Sans les
+   codes SeLoger sur Vercel, rien ne part : le CRM ne doit surtout pas
+   republier les annonces que Werner a déjà en ligne (voir context.md §7). */
+async function envoyer(forcerSeLoger: boolean) {
+  if (!codesSeLoger()) return { ok: true, seloger: { ok: true, envoi: 'non branché' } };
+  const seloger = await deposerSeLoger({ forcer: forcerSeLoger }).catch(e => ({ ok: false, erreur: (e as Error).message, env: environnementSeLoger(), annonces: 0, crees: 0, modifies: 0, retires: 0, erreurs: [], avertissements: [] }));
+  if (!seloger.ok) console.error('[portails] SeLoger :', 'erreur' in seloger ? seloger.erreur : 'échec');
+  return { ok: seloger.ok, seloger };
 }
 
 export async function POST(req: NextRequest) {
   if (!(await parBadge(req))) return NextResponse.json({ ok: false, erreur: 'non_autorise' }, { status: 401 });
   let forcer = false;
   try { forcer = !!((await req.json()) as { forcer?: unknown }).forcer; } catch { /* corps vide */ }
-  return NextResponse.json(await envoyer(forcer, forcer));
+  return NextResponse.json(await envoyer(forcer));
 }
 
 export async function GET(req: NextRequest) {
-  /* La nuit : Jinka reçoit tout (il retire ce qui manque) ; SeLoger, seulement
-     ce qui a changé — le renvoyer en entier chaque nuit ne servirait à rien. */
-  if (parCron(req)) return NextResponse.json(await envoyer(true, false));
+  /* La nuit : SeLoger, seulement ce qui a changé — le renvoyer en entier
+     chaque nuit ne servirait à rien. */
+  if (parCron(req)) return NextResponse.json(await envoyer(false));
   if (!(await parBadge(req))) return NextResponse.json({ ok: false, erreur: 'non_autorise' }, { status: 401 });
 
   const q = req.nextUrl.searchParams;
-  if (q.get('fichier') === 'csv') {
-    const f = await preparerJinka();
-    return new Response(new Uint8Array(f.octets), { headers: {
-      'Content-Type': 'text/csv; charset=iso-8859-1',
-      'Content-Disposition': 'attachment; filename="Annonces.csv"',
-      'Cache-Control': 'no-store',
-    } });
-  }
   if (q.get('seloger') === 'annonces') {
     const lot = await preparerSeLoger();
     return NextResponse.json({ ok: true, env: environnementSeLoger(), annonces: lot.annonces, avertissements: lot.avertissements });
   }
   if (q.get('seloger') === 'statuts') return NextResponse.json(await statutsSeLoger());
 
-  const [f, etat, lot, etatSL] = await Promise.all([preparerJinka(), lireEtatJinka(), preparerSeLoger(), lireEtatSeLoger()]);
+  const [lot, etatSL] = await Promise.all([preparerSeLoger(), lireEtatSeLoger()]);
   return NextResponse.json({
     ok: true,
-    jinka: {
-      codes: !!(process.env.JINKA_SFTP_HOTE && process.env.JINKA_SFTP_UTILISATEUR && process.env.JINKA_SFTP_MOT_DE_PASSE),
-      annonces: f.ids.length, aJour: etat?.empreinte === f.empreinte, avertissements: f.avertissements,
-      biens: f.biens, dernier: etat ? { le: etat.le, annonces: etat.annonces, zip: etat.zip } : null,
-    },
     seloger: {
       codes: codesSeLoger(), env: environnementSeLoger(),
       annonces: lot.annonces.length,

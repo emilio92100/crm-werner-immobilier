@@ -2161,7 +2161,7 @@ export default function Clients({ onNavigate, fenetre }: {
             <Cascade cle={importes ? 'importes' : cats.join('+')} arrivee className={`${cc.liste} cascade`}>
               {importes && (
                 <div className={cc.cumul}>
-                  <span>Importés d’ImmoFacile</span>
+                  <span>Contacts importés</span>
                   <b>{`${autres.length} contact${autres.length > 1 ? 's' : ''}`}</b>
                   <button type="button" onClick={() => setImportes(null)}>Tout revoir</button>
                 </div>
