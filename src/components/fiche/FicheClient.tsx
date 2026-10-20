@@ -3156,7 +3156,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     setEnvoiMode('unique');
     setEnvoiForm({
       destinataires: emails.join(', '),
-      objet: `Proposition immobilière — ${titre}`,
+      objet: `Un local pour vous — ${titre}`,
       corps: `Bonjour ${client.prenom},
 
 Suite à votre projet de recherche, je suis heureux de vous présenter un bien susceptible de répondre à vos critères.
@@ -3203,7 +3203,7 @@ ${signatureMail()}`,
     const avecSignature = (t: string) => (dejaSigne(t, sig, conseillerDe(rg)) ? t : `${t.trimEnd()}\n\n${sig}`);
     setEnvoiForm({
       destinataires: emails.join(', '),
-      objet: (rg.template_email_objet || '').trim() ? pourLui(rg.template_email_objet) : `Sélection de biens — Vos recherches immobilières`,
+      objet: (rg.template_email_objet || '').trim() ? pourLui(rg.template_email_objet) : `Sélection de locaux — Votre recherche`,
       corps: modele ? avecSignature(pourLui(modele)) : `Bonjour ${client.prenom},
 
 Suite à votre projet de recherche, je suis heureux de vous présenter une sélection de biens susceptibles de répondre à vos critères.

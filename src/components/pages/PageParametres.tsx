@@ -133,9 +133,9 @@ export default function PageParametres() {
                     part tout seul, le modèle n'était lu par personne. Une
                     relance est une tâche pour toi (rubrique Relances). */}
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--emilio)', marginBottom: 4, paddingBottom: 8, borderBottom: '1px solid #f1f5f9' }}>📄 Sélection de biens</div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--emilio)', marginBottom: 4, paddingBottom: 8, borderBottom: '1px solid #f1f5f9' }}>📄 Sélection de locaux</div>
                   <div style={{ fontSize: 12, color: '#64748b', margin: '8px 0 12px', lineHeight: 1.5 }}>{'Pré-remplit « Envoyer la sélection » sur la fiche d’un client. Laissé vide, le texte habituel.'}</div>
-                  <div><label className={styles.label}>Objet</label><input className={styles.input} value={params.template_email_objet||''} onChange={e=>set('template_email_objet',e.target.value)} placeholder="Vide : « Sélection de biens — Vos recherches immobilières »" /></div>
+                  <div><label className={styles.label}>Objet</label><input className={styles.input} value={params.template_email_objet||''} onChange={e=>set('template_email_objet',e.target.value)} placeholder="Vide : « Sélection de locaux — Votre recherche »" /></div>
                   <div style={{marginTop:10}}><label className={styles.label}>Corps</label><textarea className={styles.input} rows={6} value={params.template_email_corps||''} onChange={e=>set('template_email_corps',e.target.value)} placeholder={'Vide : le texte habituel, qui commence par « Bonjour {{prénom}}, suite à votre projet de recherche… »'} /></div>
                 </div>
               </div>

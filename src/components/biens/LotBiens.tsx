@@ -111,7 +111,7 @@ function mailParDefaut(p: Record<string, string>): { objet: string; corps: strin
   /* V3.151 : ses « \n » écrits en toutes lettres redeviennent des retours à
      la ligne, et la signature n'est pas ajoutée une seconde fois. */
   const modele = texteModele(p.template_email_corps || '').trim();
-  const objet = texteModele(p.template_email_objet || '').trim() || 'Sélection de biens — Vos recherches immobilières';
+  const objet = texteModele(p.template_email_objet || '').trim() || 'Sélection de locaux — Votre recherche';
   if (modele) return { objet, corps: dejaSigne(modele, sig, conseillerDe(p)) ? modele : `${modele.trimEnd()}\n\n${sig}` };
   return {
     objet,
@@ -170,7 +170,7 @@ type Libre = { email: string; prenom?: string; nom?: string; clientId?: string; 
    de l'espace. */
 function mailLibre(p: Record<string, string>, plusieurs: boolean): { objet: string; corps: string } {
   return {
-    objet: plusieurs ? 'Des biens qui pourraient vous intéresser' : 'Un bien qui pourrait vous intéresser',
+    objet: plusieurs ? 'Des locaux qui pourraient vous intéresser' : 'Un local qui pourrait vous intéresser',
     corps: `Bonjour {{prénom}},
 
 Suite à notre échange, je vous transmets ${plusieurs ? 'ces biens qui pourraient' : 'ce bien qui pourrait'} vous intéresser. Vous trouverez ci-dessous ${plusieurs ? 'leurs photos et leurs' : 'sa photo et ses'} principales informations.

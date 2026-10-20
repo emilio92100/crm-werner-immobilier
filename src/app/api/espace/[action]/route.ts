@@ -490,7 +490,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
     async function bienDeLaRecherche(id: unknown) {
       if (typeof id !== 'string' || !id) return null;
       const { data } = await supabase.from('biens')
-        .select('id, titre, surface, nb_pieces, nb_chambres, ville, quartier, photos, prix_acquereur, prix_vendeur, nb_vues, vu_le, recherche_id, bien_vente_id')
+        .select('id, titre, surface, nb_pieces, nb_chambres, ville, quartier, photos, prix_acquereur, prix_vendeur, nb_vues, vu_le, recherche_id, bien_vente_id, pro')
         .eq('id', id).eq('recherche_id', recherche!.id).maybeSingle();
       return data || null;
     }
@@ -1274,7 +1274,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
       <div style="font-weight:700;font-size:16px;color:#232528">${echappe(bien.titre || 'Le local')}</div>
       ${lieuBien ? `<div style="color:#5B6B80;margin-top:5px;font-size:13px"><span style="color:#f08c42">&#9679;</span> ${echappe(lieuBien)}</div>` : ''}
       ${carac ? `<div style="color:#5B6B80;margin-top:6px;font-size:13px">${carac}</div>` : ''}
-      ${prix ? `<div style="font-weight:800;font-size:20px;color:#232528;margin-top:10px">${Number(prix).toLocaleString('fr-FR')} €</div>` : ''}
+      ${prix ? `<div style="font-weight:800;font-size:20px;color:#232528;margin-top:10px;white-space:nowrap">${Number(prix).toLocaleString('fr-FR')} €${(bien.pro as { nature?: string } | null)?.nature === 'location' ? ' HT HC / an' : ''}</div>` : ''}
       <a href="${lien}" style="display:inline-block;margin-top:14px;background:#f08c42;color:#232528;
         text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:700">Voir la fiche</a>
       </div>
