@@ -421,7 +421,7 @@ export default function SignatureCosignataire({ d }: { d: DonneesSigner }) {
 export const CSS_SIGNER = `
 html, body{ height:auto !important; min-height:100% !important; overflow-x:hidden !important; overflow-y:auto !important }
 :root{
-  --encre:#18181b; --encre2:#272625; --or:#ee7623; --or-fonce:#c85a10;
+  --encre:#25272b; --encre2:#3c3e43; --or:#f08c42; --or-fonce:#d36a1a;
   --fond:#f7f7f7; --carte:#fff; --trait:#eaeae9; --trait-fort:#dad9d8;
   --plume:#64748b; --plume-clair:#98a4b6;
   --vert:#15803d; --vert-fond:#f0fdf4; --vert-trait:#bbf7d0;

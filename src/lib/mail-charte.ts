@@ -9,9 +9,9 @@
    au logo, un filet orange, le titre, puis le texte. */
 
 export const MAIL = {
-  marque: '#1d1d1f', marqueFonce: '#2a2927', encre: '#141416',
+  marque: '#2e3034', marqueFonce: '#2a2927', encre: '#232528',
   texte: '#363533', plume: '#5B6B80', plumeClair: '#aba7a3',
-  or: '#ee7623', orTexte: '#b4560f', orClair: '#f6a15e', orFond: '#FFF6EC', orTrait: '#F7D5B0',
+  or: '#f08c42', orTexte: '#c2621c', orClair: '#f7b07a', orFond: '#FFF6EC', orTrait: '#F7D5B0',
   fond: '#f6f6f7', fondPage: '#efeeed', trait: '#eeeeed', traitFort: '#e5e4e3',
 };
 

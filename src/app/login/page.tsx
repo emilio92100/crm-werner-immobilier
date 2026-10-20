@@ -108,7 +108,7 @@ function FormulaireAcces() {
     borderRadius: 11,
     padding: '13px 15px',
     fontSize: 16,
-    color: '#18181b',
+    color: '#25272b',
     fontFamily: 'inherit',
     outline: 'none',
     background: '#f8fafc',
@@ -128,7 +128,7 @@ function FormulaireAcces() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#18181b',
+        background: '#25272b',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -142,7 +142,7 @@ function FormulaireAcces() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logos/logo-emilio-blanc-800.png"
-            alt="Emilio conseil immobilier"
+            alt="Werner Immobilier"
             width={800}
             height={336}
             style={{ display: 'block', width: 230, height: 'auto', margin: '0 auto 14px' }}
@@ -151,12 +151,12 @@ function FormulaireAcces() {
             style={{
               fontSize: 12,
               fontWeight: 700,
-              color: '#ee7623',
+              color: '#f08c42',
               textTransform: 'uppercase',
               letterSpacing: 2,
             }}
           >
-            Chasse Immo
+            Immobilier d&apos;entreprise
           </div>
         </div>
 
@@ -179,7 +179,7 @@ function FormulaireAcces() {
             onChange={(e) => setMail(e.target.value)}
             autoFocus
             autoComplete="username"
-            placeholder="arogelet@emilio-immo.com"
+            placeholder="Votre adresse mail"
             style={champ}
           />
 
@@ -192,7 +192,7 @@ function FormulaireAcces() {
             value={motDePasse}
             onChange={(e) => setMotDePasse(e.target.value)}
             autoComplete="current-password"
-            placeholder="••••••••••••"
+            placeholder="Votre mot de passe"
             style={{ ...champ, letterSpacing: 3 }}
           />
 
@@ -236,7 +236,7 @@ function FormulaireAcces() {
             style={{
               width: '100%',
               marginTop: 18,
-              background: envoi || !pret ? '#f7b17b' : '#ee7623',
+              background: envoi || !pret ? '#f4bd92' : '#f08c42',
               color: '#ffffff',
               border: 'none',
               borderRadius: 11,
@@ -259,7 +259,7 @@ function FormulaireAcces() {
             color: 'rgba(255,255,255,0.35)',
           }}
         >
-          Accès réservé — RT Conseils · CPI 9201 2020 000 045 344
+          Accès réservé — Werner Immobilier · RT Conseils · CPI 9201 2020 000 045 344
         </div>
       </div>
     </div>
@@ -268,7 +268,7 @@ function FormulaireAcces() {
 
 export default function PageLogin() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#18181b' }} />}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#25272b' }} />}>
       <FormulaireAcces />
     </Suspense>
   );

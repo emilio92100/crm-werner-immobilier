@@ -200,65 +200,65 @@ export default function ChoixDispos({ choisies, onBasculer }: {
 }
 
 export const CSS_DISPOS = `
-.cdp{container-type:inline-size; display:flex; flex-direction:column; gap:16px; color:#141416; text-align:left}
+.cdp{container-type:inline-size; display:flex; flex-direction:column; gap:16px; color:#232528; text-align:left}
 .cdp-cols{display:flex; flex-direction:column; gap:16px}
 .cdp-gauche{display:flex; flex-direction:column; gap:18px; min-width:0}
 .cdp-sec{display:flex; flex-direction:column; gap:10px}
-.cdp-l{font-size:11.5px; font-weight:800; letter-spacing:1.2px; color:#b4560f; text-transform:uppercase}
+.cdp-l{font-size:11.5px; font-weight:800; letter-spacing:1.2px; color:#c2621c; text-transform:uppercase}
 .cdp-g{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px}
 .cdp-c{display:flex; align-items:flex-start; gap:10px; min-height:68px; padding:12px 10px; border-radius:16px;
-  border:1px solid #e5e4e3; background:#fff; color:#141416; text-align:left; font:inherit; cursor:pointer; box-sizing:border-box}
-.cdp-c[aria-pressed="true"]{border-color:#1d1d1f; box-shadow:inset 0 0 0 .5px #1d1d1f; background:#f5f4f3}
+  border:1px solid #e5e4e3; background:#fff; color:#232528; text-align:left; font:inherit; cursor:pointer; box-sizing:border-box}
+.cdp-c[aria-pressed="true"]{border-color:#2e3034; box-shadow:inset 0 0 0 .5px #2e3034; background:#f5f4f3}
 .cdp-c > span{display:flex; flex-direction:column; gap:2px; min-width:0}
 .cdp-c b{font-size:14px; line-height:1.25; font-weight:700}
 .cdp-c small{font-size:12.5px; line-height:1.35; color:#5B6B80}
 .cdp-ic{width:32px; height:32px; border-radius:10px; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center;
-  background:#f6f6f7; color:#1d1d1f; font-style:normal}
-.cdp-c[aria-pressed="true"] .cdp-ic, .cdp-ic.on{background:#1d1d1f; color:#fff}
-.cdp-d{display:flex; align-items:center; gap:10px; padding:6px 4px 6px 10px; border-radius:14px; background:#f5f4f3; border:1.5px solid #1d1d1f}
+  background:#f6f6f7; color:#2e3034; font-style:normal}
+.cdp-c[aria-pressed="true"] .cdp-ic, .cdp-ic.on{background:#2e3034; color:#fff}
+.cdp-d{display:flex; align-items:center; gap:10px; padding:6px 4px 6px 10px; border-radius:14px; background:#f5f4f3; border:1.5px solid #2e3034}
 .cdp-d .cdp-ic{width:30px; height:30px; border-radius:9px}
 .cdp-d b{flex:1 1 auto; min-width:0; font-size:14px; font-weight:700}
 .cdp-x{width:40px; height:40px; flex-shrink:0; border:none; background:transparent; color:#5B6B80; border-radius:10px;
   display:inline-flex; align-items:center; justify-content:center; cursor:pointer}
 .cdp-ouvrir{display:flex; align-items:center; justify-content:center; gap:8px; min-height:48px; border-radius:14px;
-  border:1.5px dashed #b8b6b3; background:#fff; color:#1d1d1f; font:inherit; font-size:14.5px; font-weight:700; cursor:pointer}
+  border:1.5px dashed #b8b6b3; background:#fff; color:#2e3034; font:inherit; font-size:14.5px; font-weight:700; cursor:pointer}
 .cdp[data-cal="oui"] .cdp-ouvrir{display:none}
 .cdp-aide{display:none; font-size:13px; color:#5B6B80; line-height:1.45}
 .cdp-cal{display:flex; flex-direction:column; gap:12px; padding:14px; border-radius:18px; border:1px solid #e5e4e3; background:#fff; min-width:0}
 .cdp[data-cal="non"] .cdp-cal{display:none}
 .cdp-mois{display:flex; align-items:center; gap:6px}
 .cdp-mois b{flex:1 1 auto; text-align:center; font-size:15.5px; font-weight:800}
-.cdp-fl{width:40px; height:40px; flex-shrink:0; border-radius:12px; border:1px solid #e5e4e3; background:#fff; color:#141416;
+.cdp-fl{width:40px; height:40px; flex-shrink:0; border-radius:12px; border:1px solid #e5e4e3; background:#fff; color:#232528;
   display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0}
 .cdp-fl:disabled{color:#cfcecc; cursor:default}
 .cdp-sem, .cdp-jours{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px}
 .cdp-sem span{text-align:center; font-size:11.5px; font-weight:800; color:#5B6B80}
-.cdp-j{position:relative; height:42px; border-radius:12px; border:none; background:#f6f6f7; color:#141416; font:inherit;
+.cdp-j{position:relative; height:42px; border-radius:12px; border:none; background:#f6f6f7; color:#232528; font:inherit;
   font-size:14.5px; font-weight:700; cursor:pointer; padding:0}
 .cdp-j:disabled{background:transparent; color:#c3c0be; cursor:default}
-.cdp-j[data-auj]{background:#fff; box-shadow:inset 0 0 0 1.5px #ee7623}
-.cdp-j[aria-pressed="true"]{background:#141416; color:#fff; box-shadow:none}
-.cdp-j[data-pris]::after{content:''; position:absolute; left:50%; bottom:5px; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:#ee7623}
-.cdp-j[aria-pressed="true"][data-pris]::after{background:#f6a15e}
+.cdp-j[data-auj]{background:#fff; box-shadow:inset 0 0 0 1.5px #f08c42}
+.cdp-j[aria-pressed="true"]{background:#232528; color:#fff; box-shadow:none}
+.cdp-j[data-pris]::after{content:''; position:absolute; left:50%; bottom:5px; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:#f08c42}
+.cdp-j[aria-pressed="true"][data-pris]::after{background:#f7b07a}
 .cdp-quand{display:flex; flex-direction:column; gap:12px; padding-top:12px; border-top:1px solid #eeeeed}
 .cdp-quand > b{font-size:15px; font-weight:800}
 .cdp-modes{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; padding:4px; border-radius:13px; background:#f6f6f7}
 .cdp-modes button{min-height:40px; padding:0 4px; border-radius:10px; border:none; background:transparent; color:#5B6B80;
   font:inherit; font-size:13px; font-weight:700; cursor:pointer}
-.cdp-modes button[aria-pressed="true"]{background:#fff; color:#141416; box-shadow:0 1px 3px rgba(20, 20, 22,.18)}
+.cdp-modes button[aria-pressed="true"]{background:#fff; color:#232528; box-shadow:0 1px 3px rgba(35, 37, 40,.18)}
 .cdp-aideh{font-size:13px; color:#5B6B80}
 .cdp-h{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px}
-.cdp-h button{min-height:42px; border-radius:11px; border:1px solid #e5e4e3; background:#fff; color:#141416; font:inherit;
+.cdp-h button{min-height:42px; border-radius:11px; border:1px solid #e5e4e3; background:#fff; color:#232528; font:inherit;
   font-size:13.5px; font-weight:700; cursor:pointer; padding:0}
 .cdp-h button[data-dans]{background:#e6e4e2; border-color:#e6e4e2}
-.cdp-h button[aria-pressed="true"]{background:#141416; border-color:#141416; color:#fff}
-.cdp-ajout{min-height:48px; border-radius:14px; border:none; background:#1d1d1f; color:#fff; font:inherit; font-size:14.5px;
+.cdp-h button[aria-pressed="true"]{background:#232528; border-color:#232528; color:#fff}
+.cdp-ajout{min-height:48px; border-radius:14px; border:none; background:#2e3034; color:#fff; font:inherit; font-size:14.5px;
   font-weight:800; cursor:pointer; padding:6px 12px; line-height:1.3}
 .cdp-ajout:disabled{background:#eeeeed; color:#8A97AA; cursor:default}
 .cdp-fermer{min-height:40px; border:none; background:transparent; color:#5B6B80; font:inherit; font-size:13.5px; font-weight:700; cursor:pointer}
 .cdp-res{display:flex; flex-direction:column; gap:4px; padding:12px 14px; border-radius:14px; background:#f6f6f7}
 .cdp-res span{font-size:12px; font-weight:800; letter-spacing:.4px; color:#5B6B80; text-transform:uppercase}
-.cdp-res p{margin:0; font-size:14px; line-height:1.5; color:#141416}
+.cdp-res p{margin:0; font-size:14px; line-height:1.5; color:#232528}
 /* Une colonne étroite (la fiche d'un bien, au téléphone) : les moments l'un sous l'autre. */
 @container (max-width: 340px){
   .cdp-g{grid-template-columns:minmax(0,1fr)}

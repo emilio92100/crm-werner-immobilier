@@ -693,12 +693,12 @@ export function DossierBien({ bienId, d, maj, destinataires, lieu, onMessage, et
   return (
     <section className={x.dossier} onDragOver={e => { e.preventDefault(); setSurvol(true); }} onDragLeave={e => { if (e.currentTarget === e.target) setSurvol(false); }} onDrop={surDepot}>
       <div className={x.tete}>
-        <Anneau part={concernes.length ? recus / concernes.length : 0} taille={64} ep={7} c="#16a34a" fond="#f2f2f2" texteC="#18181b" texte={`${recus}/${concernes.length}`} label={`${recus} pièces reçues sur ${concernes.length}`} />
+        <Anneau part={concernes.length ? recus / concernes.length : 0} taille={64} ep={7} c="#16a34a" fond="#f2f2f2" texteC="#25272b" texte={`${recus}/${concernes.length}`} label={`${recus} pièces reçues sur ${concernes.length}`} />
         <div className={x.teteTx}>
           <h3>Diagnostics et pièces</h3>
           <div className={x.etats2}>
             <span><i style={{ background: '#16a34a' }} />{`${recus} reçu${recus > 1 ? 's' : ''}`}</span>
-            {demandes > 0 && <span><i style={{ background: '#ea7a2b' }} />{`${demandes} demandé${demandes > 1 ? 's' : ''}${aRelancer ? ` · ${aRelancer} à relancer` : ''}`}</span>}
+            {demandes > 0 && <span><i style={{ background: '#e58a45' }} />{`${demandes} demandé${demandes > 1 ? 's' : ''}${aRelancer ? ` · ${aRelancer} à relancer` : ''}`}</span>}
             {expires > 0 && <span><i style={{ background: '#dc2626' }} />{`${expires} expiré${expires > 1 ? 's' : ''}`}</span>}
             {aFaire > 0 && <span><i style={{ background: '#cbd5e1' }} />{`${aFaire} à demander`}</span>}
           </div>

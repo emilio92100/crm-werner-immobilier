@@ -110,7 +110,7 @@ export default function PageActivite() {
                 {'Le chiffre d’affaires n’a pas pu être lu. Recharge la page.'}
               </div>
             ) : (
-              <div className={styles.statVal} style={{ color: '#ee7623' }}>{`${eurosRonds(total)} HT`}</div>
+              <div className={styles.statVal} style={{ color: '#f08c42' }}>{`${eurosRonds(total)} HT`}</div>
             )}
             <div className={styles.statLabel} style={{ color: 'rgba(255,255,255,0.6)' }}>CA total HT</div>
             {!erreurCA && total > 0 && (

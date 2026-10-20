@@ -125,7 +125,7 @@ export function FenPointVendeur({ bien, proprio, visites, offres, suivi, present
     } catch (e) { signalerEchec('Le point vendeur', (e as Error).message); setErreur((e as Error).message); setOccupe(false); }
   }
   return (
-    <Fenetre sur={proprio ? `Pour ${nomClient(proprio)}` : 'Pour le propriétaire'} couleur="#ee7623" titre="Le point vendeur" large
+    <Fenetre sur={proprio ? `Pour ${nomClient(proprio)}` : 'Pour le propriétaire'} couleur="#f08c42" titre="Le point vendeur" large
       sous={dernier ? `Depuis le dernier point, le ${dateLongue(dernier)}` : depuis ? `Depuis la mise en vente, le ${dateLongue(depuis)}` : 'Depuis la mise en vente'}
       occupe={occupe} onFermer={onFermer}
       pied={<>

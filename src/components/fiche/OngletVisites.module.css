@@ -1,7 +1,7 @@
 /* V3.169 — L'onglet Visites de la fiche acheteur, « le fil des visites »
    (maquette A, choisie par Alexandre le 10 octobre 2026). Voir OngletVisites.tsx. */
 
-.onglet { display: flex; flex-direction: column; gap: 20px; font-family: 'DM Sans', system-ui, sans-serif; color: #141416; }
+.onglet { display: flex; flex-direction: column; gap: 20px; font-family: 'DM Sans', system-ui, sans-serif; color: #232528; }
 
 /* ── La barre : les filtres dans un rail (la pastille glisse, Curseur), puis
    « Organiser une visite ». « Toutes » est au bout du rail. ── */
@@ -9,27 +9,27 @@
 .rail { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; background: #f0f0ef; border-radius: 16px; padding: 4px; max-width: 100%; box-sizing: border-box; }
 .filtre {
   display: inline-flex; align-items: center; gap: 8px; border: none; border-radius: 12px; padding: 9px 14px; background: transparent;
-  color: #1d1d1f; font: 700 13px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  color: #2e3034; font: 700 13px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; flex-shrink: 0;
 }
 .filtre:hover:not([aria-pressed='true']) { background: rgba(255, 255, 255, .7); }
-.filtre[aria-pressed='true'] { background: #1d1d1f; color: #fff; box-shadow: 0 10px 22px -12px rgba(29, 29, 31, .85); }
+.filtre[aria-pressed='true'] { background: #2e3034; color: #fff; box-shadow: 0 10px 22px -12px rgba(46, 48, 52, .85); }
 .filtre i { font-style: normal; font-size: 11px; font-weight: 800; border-radius: 20px; padding: 1px 7px; background: #fff; color: #64748b; font-variant-numeric: tabular-nums; transition: background .3s ease, color .3s ease; }
-.filtre[aria-pressed='true'] i { background: #ee7623; color: #18181b; }
+.filtre[aria-pressed='true'] i { background: #f08c42; color: #25272b; }
 .filtreVide { color: #8a97ab; }
 .filtreVide i { color: #b5b2ae; }
 /* Une visite qui attend son compte rendu : le chiffre en orange. */
-.filtreAlerte i { background: #ffeadb; color: #b45309; }
+.filtreAlerte i { background: #ffeadb; color: #c05d12; }
 .sep { width: 1px; align-self: stretch; margin: 6px 4px; background: #e0dfde; flex-shrink: 0; }
 .ressort { flex: 1 1 auto; }
 .organiser {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; padding: 0 18px; border: none; border-radius: 12px;
-  background: var(--emilio-fond, #1d1d1f); color: #fff; font: 800 13.5px 'DM Sans', sans-serif; cursor: pointer;
-  box-shadow: 0 8px 18px -10px rgba(24, 24, 27, .6); white-space: nowrap;
+  background: var(--emilio-fond, #2e3034); color: #fff; font: 800 13.5px 'DM Sans', sans-serif; cursor: pointer;
+  box-shadow: 0 8px 18px -10px rgba(37, 39, 43, .6); white-space: nowrap;
 }
 
 /* ── « Ce que la veille retient » ── */
 .retient { display: flex; gap: 16px; align-items: flex-start; background: #fff; border: 1px solid #eaeae9; border-radius: 16px; padding: 16px 18px; }
-.retientIc { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; background: #fbece1; color: #9c460d; display: flex; align-items: center; justify-content: center; }
+.retientIc { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; background: #fbece1; color: #a85515; display: flex; align-items: center; justify-content: center; }
 .retientCorps { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .retientT { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15.5px; font-weight: 800; }
 .retientP { font-size: 13px; color: #64748b; margin-top: 3px; line-height: 1.5; }
@@ -55,20 +55,20 @@
 .fil { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 16px; align-items: start; }
 .date { text-align: center; padding-top: 6px; }
 .dateJ { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: #94a3b8; }
-.dateN { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 34px; font-weight: 800; color: #1d1d1f; line-height: 1.05; }
+.dateN { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 34px; font-weight: 800; color: #2e3034; line-height: 1.05; }
 .dateM { font-size: 12px; font-weight: 700; color: #94a3b8; }
-.dateH { display: inline-block; margin-top: 6px; background: #edeceb; color: #1d1d1f; border-radius: 8px; padding: 3px 8px; font-size: 12px; font-weight: 800; }
-.dateVenir .dateJ { color: #1d1d1f; }
-.dateVenir .dateN { color: #141416; }
+.dateH { display: inline-block; margin-top: 6px; background: #edeceb; color: #2e3034; border-radius: 8px; padding: 3px 8px; font-size: 12px; font-weight: 800; }
+.dateVenir .dateJ { color: #2e3034; }
+.dateVenir .dateN { color: #232528; }
 .dateVenir .dateM { color: #64748b; }
-.dateVenir .dateH { background: #1d1d1f; color: #fff; }
-.dateAlerte .dateJ { color: #b45309; }
+.dateVenir .dateH { background: #2e3034; color: #fff; }
+.dateAlerte .dateJ { color: #c05d12; }
 .dateAlerte .dateH { background: #d97706; color: #fff; }
 
 /* ── La carte d'une visite : la photo, fondue dans le texte ── */
 .carte { display: flex; background: #fff; border: 1px solid #eaeae9; border-radius: 18px; overflow: hidden; min-width: 0; }
-.carteVenir { border-color: #e7e5e4; box-shadow: 0 14px 30px -24px rgba(29, 29, 31, .6); }
-.carteAlerte { border-color: #f8c298; box-shadow: 0 14px 30px -24px rgba(180, 83, 9, .5); }
+.carteVenir { border-color: #e7e5e4; box-shadow: 0 14px 30px -24px rgba(46, 48, 52, .6); }
+.carteAlerte { border-color: #f8c298; box-shadow: 0 14px 30px -24px rgba(192, 93, 18, .5); }
 .photo { position: relative; flex: 0 0 auto; width: 230px; min-height: 170px; background: #f3f2f2; overflow: hidden;
   border: none; padding: 0; margin: 0; display: block; font: inherit; text-align: left; cursor: pointer; }
 .photo:disabled { cursor: default; }
@@ -77,12 +77,12 @@
 /* V3.170 : la photo et le nom ouvrent le bien en grand. */
 .voirPhoto {
   position: absolute; z-index: 1; left: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; padding: 5px 11px;
-  background: rgba(20, 20, 22, .82); color: #fff; font-size: 12px; font-weight: 800; opacity: 0; transform: translateY(4px); transition: opacity .2s ease, transform .2s ease;
+  background: rgba(35, 37, 40, .82); color: #fff; font-size: 12px; font-weight: 800; opacity: 0; transform: translateY(4px); transition: opacity .2s ease, transform .2s ease;
 }
 .photo:hover .voirPhoto, .photo:focus-visible .voirPhoto { opacity: 1; transform: none; }
 @media (hover: none) { .voirPhoto { opacity: 1; transform: none; } }
 .lienTitre { background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
-.lienTitre:hover { color: #1d1d1f; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; text-decoration-color: rgba(29, 29, 31, .35); }
+.lienTitre:hover { color: #2e3034; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; text-decoration-color: rgba(46, 48, 52, .35); }
 .photoFanee img { filter: saturate(.75); }
 /* Alexandre : « pas que la photo s'arrête net, un petit effet transparent
    entre les deux ». La photo se fond dans le blanc de la carte. */
@@ -100,24 +100,24 @@
 .corps { flex: 1 1 auto; min-width: 0; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
 .tete { display: flex; align-items: flex-start; gap: 12px; }
 .titre { flex: 1 1 auto; min-width: 0; }
-.titre h3 { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; font-weight: 800; color: #141416; line-height: 1.3; }
+.titre h3 { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; font-weight: 800; color: #232528; line-height: 1.3; }
 .titre p { margin: 4px 0 0; font-size: 13px; color: #64748b; line-height: 1.4; }
 .titre p b { font-weight: 800; }
 .badge { flex: 0 0 auto; border-radius: 99px; padding: 4px 11px; font-size: 12px; font-weight: 800; white-space: nowrap; border: 1px solid; }
 .badgeBleu { background: #f7f6f6; border-color: #e4e2e0; color: #1d4ed8; }
-.badgeGris { background: #f2f2f2; border-color: #e9e8e7; color: #1d1d1f; }
-.badgeOrange { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+.badgeGris { background: #f2f2f2; border-color: #e9e8e7; color: #2e3034; }
+.badgeOrange { background: #fffbeb; border-color: #fde68a; color: #c05d12; }
 
 /* Ton compte rendu : l'encadré doré, le texte en grand. */
 .cr { position: relative; background: #fbf2ec; border: 1px solid #fad1b2; border-radius: 14px; padding: 13px 16px 13px 46px; }
-.cr::before { content: '“'; position: absolute; left: 14px; top: 5px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 40px; font-weight: 800; color: #ee7623; line-height: 1; }
-.crLib { font-size: 10.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #b4560f; margin-bottom: 4px; }
-.crTexte { font-size: 16px; font-weight: 600; color: #141416; line-height: 1.45; white-space: pre-line; overflow-wrap: anywhere; }
+.cr::before { content: '“'; position: absolute; left: 14px; top: 5px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 40px; font-weight: 800; color: #f08c42; line-height: 1; }
+.crLib { font-size: 10.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #c2621c; margin-bottom: 4px; }
+.crTexte { font-size: 16px; font-weight: 600; color: #232528; line-height: 1.45; white-space: pre-line; overflow-wrap: anywhere; }
 /* Ce que le client a dit dans son espace : la bulle bleue. */
 .mot { display: flex; gap: 10px; align-items: flex-start; background: #f7f6f6; border: 1px solid #e4e2e0; border-radius: 14px; padding: 12px 14px; }
 .motIc { width: 30px; height: 30px; border-radius: 50%; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex: 0 0 auto; }
 .motLib { font-size: 10.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #1d4ed8; margin-bottom: 3px; }
-.motTexte { font-size: 15px; font-weight: 600; color: #141416; line-height: 1.45; overflow-wrap: anywhere; }
+.motTexte { font-size: 15px; font-weight: 600; color: #232528; line-height: 1.45; overflow-wrap: anywhere; }
 .motTexte small { display: block; font-size: 12.5px; font-weight: 600; color: #1e3a8a; margin-top: 3px; }
 
 .raisons { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -129,9 +129,9 @@
 
 /* L'agence du rendez-vous, et l'appel. */
 .agent { display: flex; align-items: center; gap: 12px; background: #f6f6f7; border-radius: 12px; padding: 10px 12px; }
-.agentIc { width: 34px; height: 34px; border-radius: 50%; background: #edeceb; color: #1d1d1f; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.agentIc { width: 34px; height: 34px; border-radius: 50%; background: #edeceb; color: #2e3034; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
 .agentTx { flex: 1 1 auto; min-width: 0; font-size: 13px; line-height: 1.4; }
-.agentTx b { color: #141416; }
+.agentTx b { color: #232528; }
 .agentTx span { color: #64748b; }
 
 /* Le pied : le bon de visite, puis les gestes. */
@@ -142,24 +142,24 @@
 @media (max-width: 760px) { .offre { margin: 2px -14px -14px; } }
 .bon { display: inline-flex; align-items: center; gap: 6px; border: none; background: none; padding: 0; font: 700 12.5px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; }
 .bonSigne { color: #15803d; }
-.bonASigner { color: #9c460d; background: #fbece1; border: 1px solid #f9c8a3; border-radius: 99px; padding: 6px 12px; }
-.bonPreparer { color: #1d1d1f; border: 1px dashed #d6d4d2; border-radius: 99px; padding: 6px 12px; }
+.bonASigner { color: #a85515; background: #fbece1; border: 1px solid #f9c8a3; border-radius: 99px; padding: 6px 12px; }
+.bonPreparer { color: #2e3034; border: 1px dashed #d6d4d2; border-radius: 99px; padding: 6px 12px; }
 .bon:disabled { opacity: .6; cursor: default; }
-.etoiles { color: #ee7623; letter-spacing: 1px; font-size: 13px; }
+.etoiles { color: #f08c42; letter-spacing: 1px; font-size: 13px; }
 .etoiles span { color: #e3e2e2; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 13px; border-radius: 10px;
-  border: 1px solid #dcdbda; background: #fff; color: #1d1d1f; font: 700 12.5px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap;
+  border: 1px solid #dcdbda; background: #fff; color: #2e3034; font: 700 12.5px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap;
 }
 .btnTexte { border-color: transparent; background: transparent; color: #64748b; }
 .btnRouge { border-color: transparent; background: transparent; color: #b91c1c; }
-.btnPlein { border: none; background: var(--emilio-fond, #1d1d1f); color: #fff; font-weight: 800; }
+.btnPlein { border: none; background: var(--emilio-fond, #2e3034); color: #fff; font-weight: 800; }
 .btnBleu { border: none; background: #2563eb; color: #fff; font-weight: 800; }
 
 /* « Déplacer » : la date, l'heure, le contact, à la main. */
 .deplacer { display: flex; gap: 8px; flex-wrap: wrap; background: #fafaf9; border: 1px solid #eaeae9; border-radius: 12px; padding: 10px; }
-.deplacer input { height: 38px; border: 1px solid #e3e2e0; border-radius: 10px; padding: 0 10px; font: 500 13.5px 'DM Sans', sans-serif; color: #141416; background: #fff; box-sizing: border-box; min-width: 0; }
-.deplacer input:focus { outline: none; border-color: #1d1d1f; box-shadow: 0 0 0 3px rgba(29, 29, 31, .12); }
+.deplacer input { height: 38px; border: 1px solid #e3e2e0; border-radius: 10px; padding: 0 10px; font: 500 13.5px 'DM Sans', sans-serif; color: #232528; background: #fff; box-sizing: border-box; min-width: 0; }
+.deplacer input:focus { outline: none; border-color: #2e3034; box-shadow: 0 0 0 3px rgba(46, 48, 52, .12); }
 .deplacerJour { flex: 1 1 100%; min-width: 0; }
 .deplacer label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .6px; flex: 1 1 130px; }
 
@@ -178,7 +178,7 @@
   .carte { flex-direction: column; }
   .photo { width: auto; min-height: 0; height: 168px; }
   .photo::after { top: auto; left: 0; right: 0; bottom: -1px; width: auto; height: 56px; background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, .55) 55%, #fff 100%); }
-  .datePhoto { display: block; position: absolute; z-index: 1; right: 10px; top: 10px; background: rgba(20, 20, 22, .82); color: #fff; border-radius: 10px; padding: 5px 9px; font-size: 12px; font-weight: 700; }
+  .datePhoto { display: block; position: absolute; z-index: 1; right: 10px; top: 10px; background: rgba(35, 37, 40, .82); color: #fff; border-radius: 10px; padding: 5px 9px; font-size: 12px; font-weight: 700; }
   .corps { padding: 6px 14px 14px; gap: 11px; }
   .tete { flex-direction: column; gap: 6px; }
   .titre h3 { font-size: 16px; }

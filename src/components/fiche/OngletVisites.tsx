@@ -48,7 +48,7 @@ import s from './OngletVisites.module.css';
 
 type Filtre = 'afaire' | 'avenir' | 'pense' | 'non' | 'sans' | 'toutes';
 
-const COULEUR_ISSUE: Record<Issue, string> = { offre: '#c85a10', revoir: '#2563eb', reflexion: '#475569', non: '#b4532a' };
+const COULEUR_ISSUE: Record<Issue, string> = { offre: '#d36a1a', revoir: '#2563eb', reflexion: '#475569', non: '#b4532a' };
 
 const enDate = (d?: string | null) => {
   if (!d) return null;
@@ -88,7 +88,7 @@ const IC = {
 };
 const IC_ISSUE: Record<Issue, ReactNode> = { offre: IC.euro, revoir: IC.oeil, reflexion: IC.pause, non: IC.croix };
 
-const TON_OFFRE: Record<string, string> = { or: '#c2410c', bleu: '#1d1d1f', vert: '#15803d', rouge: '#b91c1c', violet: '#5B21B6', gris: '#64748b' };
+const TON_OFFRE: Record<string, string> = { or: '#c2410c', bleu: '#2e3034', vert: '#15803d', rouge: '#b91c1c', violet: '#5B21B6', gris: '#64748b' };
 
 export default function OngletVisites({ visites, biens, prenom, civilite, couple, masques, rechercheId, onCompteRendu, onAnnuler, onRecharger, onMasques, onOrganiser, onBon, bonEnCours, bonEtat, onDeuxieme, onFiche, recherche, clientId, offres, onDocument, onTransaction, onBienVente, onPlanifier }: {
   visites: any[]; biens: any[]; prenom: string; masques: string[]; rechercheId: string;
@@ -177,7 +177,7 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
 
   const boutonOrganiser = onOrganiser ? (
     <button type="button" className={`${s.organiser} fc-organiser`} onClick={onOrganiser}>
-      <span style={{ color: '#f5a160', display: 'flex' }}><Ic d={IC.agenda} t={16} e={2.2} /></span>Organiser une visite
+      <span style={{ color: '#f1ad78', display: 'flex' }}><Ic d={IC.agenda} t={16} e={2.2} /></span>Organiser une visite
     </button>
   ) : null;
 
@@ -185,7 +185,7 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
     return (
       <div className={s.onglet}>
         <div className={s.vide}>
-          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 16, color: '#141416', marginBottom: 4 }}>Aucune visite</div>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 16, color: '#232528', marginBottom: 4 }}>Aucune visite</div>
           <div style={{ marginBottom: onOrganiser ? 14 : 0 }}>{visites.length > 0 ? 'Les visites annulées ne s’affichent plus ici.' : 'Ses biens ou tes biens en vente : tu les cherches par le prix, l’adresse ou le propriétaire.'}</div>
           {boutonOrganiser}
         </div>
@@ -438,7 +438,7 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
           const quand = d ? `${maj(d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }))}${h ? ` à ${h}` : ''}` : '';
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, fontWeight: 700, color: '#1d1d1f' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, fontWeight: 700, color: '#2e3034' }}>
                 <Ic d={IC.agenda} t={16} e={2.1} />
                 {`${faite ? 'Visité' : 'Visite prévue'}${quand ? ` le ${quand.charAt(0).toLowerCase()}${quand.slice(1)}` : ''}${v.contact_agence ? ` · ${v.contact_agence}` : ''}`}
               </div>
@@ -487,13 +487,13 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
   let contenu: ReactNode;
   if (filtre === 'afaire') {
     contenu = aFaire.length
-      ? section('Compte rendu à faire', '#b45309', aFaire, 'afaire', 'La date est passée : dis comment ça s’est passé. Visite repoussée : change la date. Pas eu lieu : dis-le.')
+      ? section('Compte rendu à faire', '#c05d12', aFaire, 'afaire', 'La date est passée : dis comment ça s’est passé. Visite repoussée : change la date. Pas eu lieu : dis-le.')
       : rien('Tous les comptes rendus sont faits.');
   } else if (filtre === 'avenir') {
-    contenu = prochaines.length ? section('À venir', '#1d1d1f', prochaines, 'venir') : rien('Aucune visite à venir.');
+    contenu = prochaines.length ? section('À venir', '#2e3034', prochaines, 'venir') : rien('Aucune visite à venir.');
   } else if (filtre === 'pense') {
     contenu = retenues.length
-      ? section(m.pense, '#c85a10', retenues, 'faite', `${qui} veut faire une offre, revoir le bien ou réfléchit encore.`)
+      ? section(m.pense, '#d36a1a', retenues, 'faite', `${qui} veut faire une offre, revoir le bien ou réfléchit encore.`)
       : rien(`Aucune visite où ${qui} reste intéressé${civilite === 'Madame' ? 'e' : couple ? 's' : ''} pour l’instant.`);
   } else if (filtre === 'non') {
     contenu = nonAbouties.length
@@ -504,8 +504,8 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
   } else {
     contenu = (
       <>
-        {aFaire.length > 0 && section('Compte rendu à faire', '#b45309', aFaire, 'afaire')}
-        {prochaines.length > 0 && section('À venir', '#1d1d1f', prochaines, 'venir')}
+        {aFaire.length > 0 && section('Compte rendu à faire', '#c05d12', aFaire, 'afaire')}
+        {prochaines.length > 0 && section('À venir', '#2e3034', prochaines, 'venir')}
         {faites.length > 0 && section('Déjà visités', '#64748b', faites, 'faite')}
       </>
     );

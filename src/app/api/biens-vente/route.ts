@@ -209,8 +209,8 @@ async function traiterPost(req: NextRequest) {
          « Bonjour » et la signature), puis les liens s'il y en a. */
       const paras = message.split(/\n{2,}/).map(t => `<p style="margin:0 0 14px">${echappe(t).replace(/\n/g, '<br>')}</p>`).join('');
       const blocLiens = liens.length ? `<div style="margin:18px 0 6px;padding:14px 16px;border:1px solid #eeeeed;border-radius:12px;background:#f6f6f7">
-        <div style="font-size:12px;font-weight:700;letter-spacing:.6px;color:#b4560f;margin-bottom:8px">DOCUMENTS À TÉLÉCHARGER · LIENS VALABLES ${LIENS_JOURS} JOURS</div>
-        ${liens.map(l => `<div style="margin:6px 0"><a href="${echappe(l.url)}" style="color:#141416;font-weight:700">${echappe(l.nom)}</a> <span style="color:#aba7a3;font-size:12px">· ${tailleFr(l.taille)}</span></div>`).join('')}
+        <div style="font-size:12px;font-weight:700;letter-spacing:.6px;color:#c2621c;margin-bottom:8px">DOCUMENTS À TÉLÉCHARGER · LIENS VALABLES ${LIENS_JOURS} JOURS</div>
+        ${liens.map(l => `<div style="margin:6px 0"><a href="${echappe(l.url)}" style="color:#232528;font-weight:700">${echappe(l.nom)}</a> <span style="color:#aba7a3;font-size:12px">· ${tailleFr(l.taille)}</span></div>`).join('')}
       </div>` : '';
       /* V3.118 : dans l'enveloppe de la charte, le logo Emilio en tête. */
       const html = enveloppeMail({ corps: `${paras}${blocLiens}` });

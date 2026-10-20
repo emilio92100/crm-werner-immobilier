@@ -15,8 +15,8 @@
  */
 
 const FOND = '#f6f6f7';
-const ENCRE = '#262524';
-const OR = '#ee7623';
+const ENCRE = '#3b3d42';
+const OR = '#f08c42';
 
 export default function Ouverture() {
   return (
@@ -56,7 +56,7 @@ export default function Ouverture() {
           Chargement en cours…
         </div>
         {/* Une fine barre qui file : ça avance, sans promettre de durée. */}
-        <div style={{ position: 'relative', width: 150, height: 4, borderRadius: 99, background: 'rgba(38, 37, 36,.12)', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', width: 150, height: 4, borderRadius: 99, background: 'rgba(59, 61, 66,.12)', overflow: 'hidden' }}>
           <span className="emilio-anim" style={{
             position: 'absolute', top: 0, bottom: 0, left: 0, width: '40%', borderRadius: 99,
             background: `linear-gradient(90deg, ${ENCRE}, ${OR})`,

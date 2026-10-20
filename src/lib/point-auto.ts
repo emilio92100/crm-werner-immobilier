@@ -249,11 +249,11 @@ export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { cl
 /* ══ Le mail ════════════════════════════════════════════════════════════ */
 
 /* V3.118 : les couleurs du site emilio-immo.com (src/lib/mail-charte.ts). */
-const BLEU = '#1d1d1f';
-const DORE = '#ee7623';
-const ENCRE = '#141416';
-const DORE_TEXTE = '#b4560f';
-const DORE_CLAIR = '#f6a15e';
+const BLEU = '#2e3034';
+const DORE = '#f08c42';
+const ENCRE = '#232528';
+const DORE_TEXTE = '#c2621c';
+const DORE_CLAIR = '#f7b07a';
 
 const echappe = (t: unknown) => String(t ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -360,7 +360,7 @@ export function mailPoint(o: { prenom: string; recherche: any; tokenClient: stri
                 <td style="padding:11px 16px 11px 0;border-top:1px solid #f6f5f5;vertical-align:top;font-size:14.5px;font-weight:700;color:${BLEU};line-height:1.45;">${echappe(l.valeur)}${l.sous ? `<div style="font-size:12.5px;font-weight:500;color:#5B6B80;margin-top:3px;">${echappe(l.sous)}</div>` : ''}</td></tr>`).join('');
   const pointsHtml = res.points.length ? `
             <tr><td style="padding:11px 16px;border-top:1px solid #f6f5f5;vertical-align:top;width:104px;font-size:12px;font-weight:700;color:#aba7a3;">Ce qui compte</td>
-                <td style="padding:9px 16px 7px 0;border-top:1px solid #f6f5f5;vertical-align:top;">${res.points.map((p) => `<span style="display:inline-block;margin:0 5px 5px 0;padding:3px 10px;border-radius:99px;font-size:12.5px;font-weight:700;${p.fort ? `background:#FFF6EC;border:1px solid #f6a15e;color:#b4560f;` : `background:#ffffff;border:1px solid #eeeeed;color:#141416;`}">${echappe(p.texte)}</span>`).join('')}</td></tr>` : '';
+                <td style="padding:9px 16px 7px 0;border-top:1px solid #f6f5f5;vertical-align:top;">${res.points.map((p) => `<span style="display:inline-block;margin:0 5px 5px 0;padding:3px 10px;border-radius:99px;font-size:12.5px;font-weight:700;${p.fort ? `background:#FFF6EC;border:1px solid #f7b07a;color:#c2621c;` : `background:#ffffff;border:1px solid #eeeeed;color:#232528;`}">${echappe(p.texte)}</span>`).join('')}</td></tr>` : '';
 
   const bouton = (x: Reponse, texte: string, style: string) => `
           <tr><td style="padding:0 0 9px;"><a href="${echappe(lien(x))}" style="display:block;text-align:center;text-decoration:none;border-radius:12px;padding:14px 12px;font-size:15px;font-weight:700;${style}">${texte}</a></td></tr>`;
@@ -402,7 +402,7 @@ ${LIEN_POLICE_MAIL}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #eeeeed;border-radius:14px;border-collapse:separate;overflow:hidden;">
             <tr><td colspan="2" style="background:#f6f6f7;padding:11px 16px;">
               <table role="presentation" width="100%"><tr>
-                <td style="font-size:11px;font-weight:800;letter-spacing:1px;color:#1d1d1f;">VOTRE RECHERCHE AUJOURD'HUI</td>
+                <td style="font-size:11px;font-weight:800;letter-spacing:1px;color:#2e3034;">VOTRE RECHERCHE AUJOURD'HUI</td>
                 ${res.depuis ? `<td align="right" style="font-size:11.5px;color:#aba7a3;font-weight:600;">depuis le ${echappe(res.depuis)}</td>` : ''}
               </tr></table>
             </td></tr>${lignesHtml}${pointsHtml}

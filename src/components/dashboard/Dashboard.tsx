@@ -56,7 +56,7 @@ function ilYa(iso: string): string {
 
 /* La couleur du point, selon ce qui s'est passé. */
 function teinteJournal(type: string): string {
-  if (/mail|envoi/.test(type)) return '#ee7623';
+  if (/mail|envoi/.test(type)) return '#f08c42';
   if (/visite|rdv/.test(type)) return '#3b82f6';
   if (/offre|transaction|finalise|mandat/.test(type)) return '#10b981';
   if (/message|rappel/.test(type)) return '#8b5cf6';
@@ -242,7 +242,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
           <button className={styles.mailBtn} onClick={demanderNouveauRdv}>📅 <span className={styles.motLong}>Nouveau RDV</span><span className={styles.motCourt}>RDV</span></button>
           <button className={styles.mailBtn} onClick={() => { demanderNouveauBien(); onNavigate('biens'); }}>🏡 <span className={styles.motLong}>Nouveau bien</span><span className={styles.motCourt}>Bien</span></button>
           {/* Comme celui de la barre du haut : il ouvre directement le formulaire. */}
-          <button className={styles.nouveauBtn} onClick={demanderNouveauClient} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: 'none', background: '#ee7623', color: 'var(--emilio)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>+ <span className={styles.motLong}>Nouveau contact</span><span className={styles.motCourt}>Contact</span></button>
+          <button className={styles.nouveauBtn} onClick={demanderNouveauClient} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: 'none', background: '#f08c42', color: 'var(--emilio)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>+ <span className={styles.motLong}>Nouveau contact</span><span className={styles.motCourt}>Contact</span></button>
         </div>
       </div>
 
@@ -331,7 +331,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
               )}
               {relanceAvenir.length > 0 && (
                 <>
-                  <div className={styles.groupeLabel} style={{ color: '#b45309', borderTop: relanceAfaire.length > 0 ? '1px solid #f1f5f9' : undefined }}>
+                  <div className={styles.groupeLabel} style={{ color: '#c05d12', borderTop: relanceAfaire.length > 0 ? '1px solid #f1f5f9' : undefined }}>
                     <span className={styles.groupePoint} style={{ background: '#f59e0b' }} />
                     Dans les 3 prochains jours — rien à faire pour l&apos;instant
                   </div>
@@ -445,12 +445,12 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
 
           {clients.length === 0 && (
             <div style={{ background: 'var(--emilio-fond)', borderRadius: 16, padding: 16 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#ee7623', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>🚀 Pour commencer</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#f08c42', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>🚀 Pour commencer</div>
               <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 13, color: 'white', marginBottom: 4 }}>Créez votre premier contact</div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Ajoutez vos acheteurs et commencez la chasse !</div>
               <button
                 onClick={() => onNavigate('clients')}
-                style={{ width: '100%', background: '#ee7623', color: 'var(--emilio)', border: 'none', borderRadius: 8, padding: '8px 0', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                style={{ width: '100%', background: '#f08c42', color: 'var(--emilio)', border: 'none', borderRadius: 8, padding: '8px 0', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
               >
                 + Nouveau contact
               </button>

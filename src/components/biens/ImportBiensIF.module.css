@@ -3,7 +3,7 @@
    .btn) ; ici, ce qui est propre à cet import. */
 
 .large { width: min(1180px, 100%) !important; display: flex; flex-direction: column; max-height: calc(100vh - 40px); overflow: hidden !important; }
-.icTete { width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: #fdf2ea; color: #b4560f; border: 1px solid #fad0af; }
+.icTete { width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: #fdf2ea; color: #c2621c; border: 1px solid #fad0af; }
 .x { width: 34px; height: 34px; border-radius: 10px; border: 1px solid #eaeae9; background: white; color: #64748b; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; padding: 0; }
 .x:hover { background: #fafaf9; }
 
@@ -13,14 +13,14 @@
 .regles li { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; line-height: 1.45; color: #334155; }
 .regles li > svg { color: #16a34a; flex-shrink: 0; margin-top: 2px; }
 .depot { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 26px 16px; border-radius: 16px; border: 1.5px dashed #e1e0df; background: #fdfcfc; cursor: pointer; text-align: center; transition: border-color .2s, background .2s; }
-.depot:hover { border-color: #ee7623; background: #fffaf6; }
+.depot:hover { border-color: #f08c42; background: #fffaf6; }
 .depot > b { font-size: 15px; color: var(--emilio); }
 .depot > small { font-size: 12.5px; color: #8290a6; }
 .depot input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.depotIc { width: 48px; height: 48px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; background: #fdf2ea; color: #b4560f; margin-bottom: 4px; }
+.depotIc { width: 48px; height: 48px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; background: #fdf2ea; color: #c2621c; margin-bottom: 4px; }
 .depotOccupe { cursor: progress; }
 .erreur { padding: 10px 12px; border-radius: 12px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 13px; line-height: 1.45; }
-.roue { width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid rgba(180, 86, 15, .25); border-top-color: #b4560f; animation: roue .8s linear infinite; }
+.roue { width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid rgba(194, 98, 28, .25); border-top-color: #c2621c; animation: roue .8s linear infinite; }
 @keyframes roue { to { transform: rotate(360deg); } }
 
 /* ── 2. L'aperçu ── */
@@ -31,12 +31,12 @@
 .t_vert { background: #f0fdf4; border-color: #dcfce7; }
 .t_vert b { color: #15803d; }
 .t_or { background: #fffbeb; border-color: #fde68a; }
-.t_or b { color: #b3510f; }
+.t_or b { color: #bf6018; }
 .t_gris b { color: #94a3b8; }
 .cases { margin: 10px 22px 0; border-radius: 12px; background: #f8fafc; border: 1px solid #f2f2f2; font-family: 'DM Sans', sans-serif; }
 .cases > button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 9px 12px; border: none; background: none; text-align: left; font: 600 12.5px 'DM Sans', sans-serif; color: #475569; cursor: pointer; }
 .cases > button > span { flex: 1; min-width: 0; }
-.cases > button > svg:first-child { color: #b4560f; flex-shrink: 0; }
+.cases > button > svg:first-child { color: #c2621c; flex-shrink: 0; }
 .casesL { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 11px; }
 .casesL span { padding: 3px 9px; border-radius: 99px; background: white; border: 1px solid #eaeae9; font-size: 12px; color: #334155; }
 .barreOutils { display: flex; align-items: center; gap: 10px; padding: 12px 22px 6px; font-family: 'DM Sans', sans-serif; }
@@ -58,21 +58,21 @@
 .ligneOff { background: #f8fafc; }
 .ligneOff .bien, .ligneOff .raison, .ligneOff > span, .ligneOff > label:not(.coche) { opacity: .5; }
 .coche { grid-area: coche; display: inline-flex; cursor: pointer; }
-.coche input { width: 17px; height: 17px; accent-color: #18181b; cursor: pointer; }
+.coche input { width: 17px; height: 17px; accent-color: #25272b; cursor: pointer; }
 .bien { grid-area: bien; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.bien b { font-size: 13.5px; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bien b { font-size: 13.5px; color: #25272b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bien small { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: #8290a6; }
-.ref { font-weight: 700; color: #b4560f; }
+.ref { font-weight: 700; color: #c2621c; }
 .ph { display: inline-flex; align-items: center; gap: 4px; }
-.deja { padding: 1px 8px; border-radius: 99px; background: #f4f3f2; color: #1d1d1f; font-weight: 700; }
+.deja { padding: 1px 8px; border-radius: 99px; background: #f4f3f2; color: #2e3034; font-weight: 700; }
 .vOk, .vNeuf, .vMuet { grid-area: vendeur; display: flex; align-items: flex-start; gap: 7px; min-width: 0; font-size: 13px; }
 .vOk > span, .vNeuf > span { display: flex; flex-direction: column; min-width: 0; }
-.vOk b, .vNeuf b { color: #18181b; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vOk b, .vNeuf b { color: #25272b; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vOk small, .vNeuf small { font-size: 11.5px; color: #8290a6; }
 .vOk > svg { color: #16a34a; margin-top: 2px; flex-shrink: 0; }
 .vNeuf { cursor: pointer; }
-.vNeuf input { margin-top: 2px; accent-color: #b4560f; flex-shrink: 0; }
-.vNeuf small { color: #b3510f; font-weight: 600; }
+.vNeuf input { margin-top: 2px; accent-color: #c2621c; flex-shrink: 0; }
+.vNeuf small { color: #bf6018; font-weight: 600; }
 .vMuet { color: #94a3b8; align-items: center; }
 .etape { grid-area: etape; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .etape select { flex: 1 1 120px; min-width: 0; height: 32px; padding: 0 8px; border-radius: 9px; border: 1px solid #eaeae9; background: white; font: 600 12.5px 'DM Sans', sans-serif; color: var(--emilio); cursor: pointer; }
@@ -86,17 +86,17 @@
 /* ── 3 et 4. L'import, le compte rendu ── */
 .fait { padding: 30px 26px 26px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; font-family: 'DM Sans', sans-serif; }
 .faitIc { width: 64px; height: 64px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #e8f6f1; color: #16a34a; }
-.faitIcOr { background: #fdf2ea; color: #b4560f; }
+.faitIcOr { background: #fdf2ea; color: #c2621c; }
 .faitIcRouge { background: #fef2f2; color: #b91c1c; }
 .fait h3 { margin: 0; font: 800 22px 'Plus Jakarta Sans', sans-serif; color: var(--emilio); }
 .fait > p { margin: 0; font-size: 13.5px; color: #64748b; line-height: 1.5; }
 .encours { font-size: 12px !important; color: #94a3b8 !important; }
 .ecriture { width: 100%; max-width: 380px; }
 .barre { display: block; height: 8px; border-radius: 99px; background: #f2f2f2; overflow: hidden; }
-.barre > i { display: block; height: 100%; border-radius: 99px; background: #ee7623; transition: width .4s ease; }
+.barre > i { display: block; height: 100%; border-radius: 99px; background: #f08c42; transition: width .4s ease; }
 .faitL { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
 .faitL > div { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; background: #f8fafc; border: 1px solid #f2f2f2; font-size: 13.5px; color: #334155; text-align: left; }
-.faitL > div > svg { color: #b4560f; flex-shrink: 0; }
+.faitL > div > svg { color: #c2621c; flex-shrink: 0; }
 .soucis { width: 100%; max-width: 520px; max-height: 220px; overflow-y: auto; text-align: left; padding: 10px 12px; border-radius: 12px; background: #fff7ed; border: 1px solid #fed7aa; font-size: 12.5px; color: #7c2d12; line-height: 1.5; }
 .soucis.rouge { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
 .soucis b { display: block; margin-bottom: 4px; }

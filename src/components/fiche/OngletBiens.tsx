@@ -38,7 +38,7 @@ const RETOURS: Record<string, { l: string; c: string; bg: string; bd: string; i:
   interesse: { l: 'Ça lui plaît', c: '#059669', bg: '#ecfdf5', bd: '#a7f3d0', i: '👍' },
   souhaite_visiter: { l: 'Veut visiter', c: '#7c3aed', bg: '#f5f3ff', bd: '#ddd6fe', i: '👀' },
   visite: { l: 'Visité', c: '#7c3aed', bg: '#f5f3ff', bd: '#ddd6fe', i: '🔑' },
-  offre_faite: { l: 'Offre faite', c: '#b45309', bg: '#fffbeb', bd: '#fde68a', i: '✍️' },
+  offre_faite: { l: 'Offre faite', c: '#c05d12', bg: '#fffbeb', bd: '#fde68a', i: '✍️' },
   refuse: { l: 'Pas pour lui', c: '#dc2626', bg: '#fef2f2', bd: '#fecaca', i: '👎' },
   /* V3.164 : un bien trouvé ailleurs, vendu ou retiré, d'après l'agence ou le vendeur. */
   indispo: { l: 'Plus disponible', c: '#475569', bg: '#f1f5f9', bd: '#cbd5e1', i: '🔒' },
@@ -548,7 +548,7 @@ export default function OngletBiens({ clientId, rechercheId, client, mode, onCha
     return (
       <>
         {ligneAgence}
-        <BasLigne couleur="#be550f" fond="#fdf6f1" bord="#f9caa7" icone="lien"
+        <BasLigne couleur="#c96518" fond="#fdf6f1" bord="#f9caa7" icone="lien"
           etat={`Proposé par ${prenomC} le ${leJour(an.created_at)}`}
           mot={an.mot ? <>{`« ${an.mot} »`}{' '}<small>{'· envoyé, il ira dans « Ça lui plaît »'}</small></> : <small>{'Envoyé, il ira directement dans « Ça lui plaît ».'}</small>}
           vide={!an.mot} />
@@ -583,10 +583,10 @@ export default function OngletBiens({ clientId, rechercheId, client, mode, onCha
         {an && (
           <div style={{ background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 14, padding: '12px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
-              <span style={{ display: 'flex', color: '#be550f' }}><Icone nom="lien" taille={16} epaisseur={2.1} /></span>
+              <span style={{ display: 'flex', color: '#c96518' }}><Icone nom="lien" taille={16} epaisseur={2.1} /></span>
               <span style={{ fontSize: 15, fontWeight: 800, color: '#8b3e0b' }}>{`Proposé par ${prenomC}`}</span>
               <span style={{ fontSize: 12.5, color: '#94a3b8', fontWeight: 600 }}>{`· ${depuisQuand(an.created_at)}, depuis son espace`}</span>
-              <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: '#ee7320' }}>Son annonce</span>
+              <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: '#e8863a' }}>Son annonce</span>
             </div>
             <div style={{ marginTop: 6, fontSize: 14.5, lineHeight: 1.55, color: an.mot ? NAVY : '#94a3b8', fontWeight: an.mot ? 600 : 500 }}>
               {an.mot ? `« ${an.mot} »` : 'Pas de mot laissé.'}

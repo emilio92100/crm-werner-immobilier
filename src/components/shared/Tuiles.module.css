@@ -6,14 +6,14 @@
   background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .13); color: #fff; text-align: left; font-family: inherit;
 }
 .clic { cursor: pointer; transition: background .15s, border-color .15s; }
-.clic:hover { background: rgba(255, 255, 255, .12); border-color: rgba(246, 161, 94, .5); }
-.ic { width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: rgba(246, 161, 94, .16); color: #f6a15e; }
+.clic:hover { background: rgba(255, 255, 255, .12); border-color: rgba(247, 176, 122, .5); }
+.ic { width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: rgba(247, 176, 122, .16); color: #f7b07a; }
 .tx { flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .tx b { font: 800 15px/1.2 'Plus Jakarta Sans', sans-serif; color: #fff; text-wrap: balance; }
 .tx small { font-size: 12px; line-height: 1.3; color: rgba(255, 255, 255, .64); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 /* La flèche dans le coin : elle dit « ça s'ouvre » sans prendre de largeur au texte. */
 .va { position: absolute; top: 8px; right: 8px; display: inline-flex; color: rgba(255, 255, 255, .34); transition: color .15s; }
-.clic:hover .va { color: #f6a15e; }
+.clic:hover .va { color: #f7b07a; }
 /* À zéro : rien à ouvrir, la tuile s'efface sans disparaître. */
 /* Quatre tuiles (la fiche d'un acheteur) : quatre de front, ou deux et deux
    quand la place manque — jamais trois et une toute seule. Et un rien plus
@@ -29,7 +29,7 @@
 
 .ligne { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: rgba(255, 255, 255, .78); }
 .depuis { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
-.depuis > svg { color: #f6a15e; flex-shrink: 0; }
+.depuis > svg { color: #f7b07a; flex-shrink: 0; }
 .depuis i { font-style: normal; font-weight: 500; color: rgba(255, 255, 255, .5); }
 
 @media (max-width: 640px) {

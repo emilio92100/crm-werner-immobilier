@@ -118,7 +118,7 @@ const btn: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 10, border: '1px solid #e2e8f0',
   background: '#fff', color: 'var(--emilio)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
 };
-const btnOr: React.CSSProperties = { ...btn, background: '#ee7623', borderColor: '#ee7623', color: 'var(--emilio)' };
+const btnOr: React.CSSProperties = { ...btn, background: '#f08c42', borderColor: '#f08c42', color: 'var(--emilio)' };
 const champ: React.CSSProperties = {
   width: '100%', border: '1px solid #e2e8f0', borderRadius: 10, padding: '9px 12px', fontSize: 14, fontFamily: 'inherit', color: 'var(--emilio)',
 };
@@ -802,7 +802,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
               <div style={{ color: 'var(--emilio)', wordBreak: 'break-word' }}>{'Sur le mandat : '}<b>{e.mandat}</b></div>
               <div style={{ color: '#9a3412', wordBreak: 'break-word' }}>{`Sur ta fiche : ${e.fiche}`}</div>
               <button type="button" disabled={travail === 'reprendre'} onClick={() => reprendre([e.cle])}
-                style={{ background: 'none', border: 'none', padding: '3px 0 0', color: '#b4560f', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, fontFamily: 'inherit' }}>
+                style={{ background: 'none', border: 'none', padding: '3px 0 0', color: '#c2621c', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, fontFamily: 'inherit' }}>
                 {e.action}
               </button>
             </div>
@@ -826,7 +826,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
             </div>
           )}
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            <span style={{ ...btn, borderColor: '#ee7623', background: '#fdf6f1', cursor: 'default' }}>✓ Simple</span>
+            <span style={{ ...btn, borderColor: '#f08c42', background: '#fdf6f1', cursor: 'default' }}>✓ Simple</span>
             <span style={{ ...btn, color: '#94a3b8', cursor: 'not-allowed' }} title="Bientôt : il faut d’abord reprendre ton modèle exclusif">Exclusif · bientôt</span>
           </div>
           <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>Honoraires (TTC, à la charge de l’acquéreur)</label>
@@ -849,7 +849,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
                 </div>
                 {[5, 2.5, 2, 1.5].map(t => (
                   <button key={t} type="button" onClick={() => setTaux(ecrireTaux(t))}
-                    style={{ ...btn, padding: '7px 11px', border: `1px solid ${tauxN === t ? '#ee7623' : '#e2e8f0'}`, background: tauxN === t ? '#fdf6f1' : '#fff' }}>
+                    style={{ ...btn, padding: '7px 11px', border: `1px solid ${tauxN === t ? '#f08c42' : '#e2e8f0'}`, background: tauxN === t ? '#fdf6f1' : '#fff' }}>
                     {`${ecrireTaux(t)} %${t === BAREME ? ' · barème' : ''}`}
                   </button>
                 ))}
@@ -886,7 +886,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
             <div style={{ ...boite('#fffbeb', '#fde68a', '#92400e'), marginTop: 8 }}>{`Le client voit encore : ${honorairesCourt(honoEnregistre)}. Clique « Mettre à jour », puis renvoie-lui le mail.`}</div>
           )}
           {registre ? (
-            <div style={{ ...boite('#f8f8f7', '#e6e4e3', '#161618'), marginTop: 12 }}>
+            <div style={{ ...boite('#f8f8f7', '#e6e4e3', '#26282c'), marginTop: 12 }}>
               {recherche?.mandat_numero && registre.numero
                 ? (registre.numero === 'ouvert'
                   ? `N° ${recherche.mandat_numero} au registre des mandats, réservé pour sa signature en cours.`
@@ -895,7 +895,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
                   : <>
                       {`N° ${recherche.mandat_numero}, noté sur cette recherche avant le démarrage du registre : c’est lui qui figurera sur le mandat.`}
                       <button type="button" onClick={prendreDuRegistre} disabled={travail === 'registre'}
-                        style={{ display: 'block', background: 'none', border: 'none', padding: '6px 0 0', color: '#b4560f', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, fontFamily: 'inherit' }}>
+                        style={{ display: 'block', background: 'none', border: 'none', padding: '6px 0 0', color: '#c2621c', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, fontFamily: 'inherit' }}>
                         {`Prendre plutôt le prochain numéro du registre (${registre.prochain})`}
                       </button>
                     </>)
@@ -912,7 +912,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
           </div>
           {!registre && premierDeLaReserve && premierDeLaReserve !== numero.trim() && !recherche?.mandat_propose_le && (
             <button type="button" onClick={() => setNumero(premierDeLaReserve)}
-              style={{ background: 'none', border: 'none', padding: '6px 0 0', color: '#b4560f', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, fontFamily: 'inherit' }}>
+              style={{ background: 'none', border: 'none', padding: '6px 0 0', color: '#c2621c', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, fontFamily: 'inherit' }}>
               {`Prendre le n° ${premierDeLaReserve} de ma réserve`}
             </button>
           )}
@@ -942,7 +942,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
         <button type="button" onClick={() => setVoirReserve(v => !v)}
           style={{ ...titreBloc, background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
           <span>Pour les clients qui signent seuls</span>
-          <span style={{ color: (registre || reste > 2) && approuveLe ? '#15803d' : '#b45309' }}>
+          <span style={{ color: (registre || reste > 2) && approuveLe ? '#15803d' : '#c05d12' }}>
             {!approuveLe ? 'non activé' : registre ? 'numéros du registre' : `${reste} numéro${reste > 1 ? 's' : ''} d’avance`} {voirReserve ? '▴' : '▾'}
           </span>
         </button>

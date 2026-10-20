@@ -51,7 +51,7 @@
 }
 .vignette:hover { opacity: .85; }
 .vignette img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.vignetteOn { opacity: 1; border-color: #ee7623; }
+.vignetteOn { opacity: 1; border-color: #f08c42; }
 
 @keyframes vApparait { from { opacity: 0; } to { opacity: 1; } }
 @keyframes vPhoto { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }

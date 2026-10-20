@@ -7,28 +7,28 @@
 .vide { flex: 1 1 auto; }
 .outil {
   display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 10px;
-  border: 1px solid #eaeae9; background: #fff; color: #1d1d1f; font: 700 12.5px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap;
+  border: 1px solid #eaeae9; background: #fff; color: #2e3034; font: 700 12.5px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap;
   transition: background .15s, border-color .15s, transform .15s;
 }
 .outil:hover:not(:disabled) { background: #f8f8f7; border-color: #dad9d8; }
 .outil:disabled { opacity: .55; cursor: default; }
 .outilIa { border-color: #f9c8a3; background: #fdf3ec; color: #8b3e0b; }
-.outilIa:hover:not(:disabled) { background: #fbe5d6; border-color: #f5a568; }
-.roue { width: 13px; height: 13px; border-radius: 50%; border: 2px solid rgba(200, 90, 16, .3); border-top-color: #c85a10; animation: roue .8s linear infinite; }
+.outilIa:hover:not(:disabled) { background: #fbe5d6; border-color: #f1b180; }
+.roue { width: 13px; height: 13px; border-radius: 50%; border: 2px solid rgba(211, 106, 26, .3); border-top-color: #d36a1a; animation: roue .8s linear infinite; }
 @keyframes roue { to { transform: rotate(360deg); } }
 
 .info { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; padding: 8px 12px; border-radius: 12px; font-size: 12.5px; font-weight: 600; background: #f0fdf4; color: #15803d; animation: arrive .3s cubic-bezier(.16, 1, .3, 1) both; }
-.info button { display: inline-flex; align-items: center; gap: 5px; border: none; background: none; padding: 0; color: #18181b; font: 700 12.5px 'DM Sans', sans-serif; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.info button { display: inline-flex; align-items: center; gap: 5px; border: none; background: none; padding: 0; color: #25272b; font: 700 12.5px 'DM Sans', sans-serif; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 @keyframes arrive { from { opacity: 0; transform: translateY(-4px); } }
 
 /* Le texte : assez haut pour lire l'annonce entière, les paragraphes visibles. */
-.texte { min-height: 220px; height: 34vh; max-height: 480px; resize: vertical; font-size: 14px !important; line-height: 1.65 !important; padding: 14px 16px !important; border-left: 3px solid #ee7623 !important; background: #fffdfb !important; }
+.texte { min-height: 220px; height: 34vh; max-height: 480px; resize: vertical; font-size: 14px !important; line-height: 1.65 !important; padding: 14px 16px !important; border-left: 3px solid #f08c42 !important; background: #fffdfb !important; }
 .texteEcrit { opacity: .55; }
 
-.longueur { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: #b45309; }
+.longueur { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: #c05d12; }
 .longueur[data-ok='oui'] { color: #15803d; }
 .barre { flex: 0 0 140px; height: 6px; border-radius: 99px; background: #f2f2f2; overflow: hidden; }
-.barre i { display: block; height: 100%; border-radius: 99px; background: #ee7320; transition: width .4s cubic-bezier(.16, 1, .3, 1); }
+.barre i { display: block; height: 100%; border-radius: 99px; background: #e8863a; transition: width .4s cubic-bezier(.16, 1, .3, 1); }
 .longueur[data-ok='oui'] .barre i { background: #16a34a; }
 
 .mentions { display: flex; flex-direction: column; gap: 9px; padding: 12px 14px 13px; border-radius: 14px; border: 1px solid #f2f2f2; background: #fdfdfd; }
@@ -36,7 +36,7 @@
 .mentionsT b { font-size: 11px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: #64748b; }
 .mentionsT span { font-size: 11.5px; font-weight: 800; padding: 2px 9px; border-radius: 99px; background: #dcfce7; color: #15803d; }
 .mentionsT span[data-ok='non'] { background: #ffedd5; color: #9a3412; }
-.lien { margin-left: auto; border: none; background: none; padding: 0; color: #b4560f; font: 700 12.5px 'DM Sans', sans-serif; cursor: pointer; }
+.lien { margin-left: auto; border: none; background: none; padding: 0; color: #c2621c; font: 700 12.5px 'DM Sans', sans-serif; cursor: pointer; }
 .lien:hover { text-decoration: underline; text-underline-offset: 3px; }
 .mentions ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 7px 20px; }
 .mentions li { display: flex; align-items: flex-start; gap: 7px; font-size: 12.5px; line-height: 1.35; color: #475569; min-width: 0; }

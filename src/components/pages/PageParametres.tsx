@@ -89,7 +89,7 @@ export default function PageParametres() {
           <Curseur cle={activeSection} />
           {sections.map(s => (
             <button key={s.id} onClick={() => setActiveSection(s.id)} aria-pressed={activeSection === s.id}
-              style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '10px 14px', borderRadius: 11, border: 'none', background: activeSection === s.id ? 'var(--emilio)' : 'transparent', color: activeSection === s.id ? 'white' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', boxShadow: activeSection === s.id ? '0 8px 18px -10px rgba(22, 22, 24,.85)' : 'none' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '10px 14px', borderRadius: 11, border: 'none', background: activeSection === s.id ? 'var(--emilio)' : 'transparent', color: activeSection === s.id ? 'white' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', boxShadow: activeSection === s.id ? '0 8px 18px -10px rgba(38, 40, 44,.85)' : 'none' }}>
               {s.icon} {s.label.split(' ').slice(1).join(' ')}
             </button>
           ))}

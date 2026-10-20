@@ -21,7 +21,7 @@ export type ValeursCR = {
   etoiles: number; commentaire: string; retenir: boolean;
 };
 
-const NAVY = '#1d1d1f', OR = '#ee7623', GRIS = '#64748b', CLAIR = '#94a3b8', BORD = '#eaeae9';
+const NAVY = '#2e3034', OR = '#f08c42', GRIS = '#64748b', CLAIR = '#94a3b8', BORD = '#eaeae9';
 const JAK = "'Plus Jakarta Sans', system-ui, sans-serif";
 
 const QUESTION: Record<Issue, string> = {
@@ -194,7 +194,7 @@ export default function CompteRenduVisite({ visite, titre, sous, prenom, onFerme
           <button type="button" onClick={onFermer} aria-label="Fermer" disabled={enCours}
             style={{ position: 'absolute', top: 14, right: 16, background: '#f1f5f9', border: 'none', borderRadius: 10, width: 34, height: 34, color: GRIS, fontSize: 16, cursor: 'pointer' }}>✕</button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingRight: 44 }}>
-            <span aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 11, background: '#fffbeb', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>📝</span>
+            <span aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 11, background: '#fffbeb', color: '#c05d12', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>📝</span>
             <div style={{ minWidth: 0 }}>
               <div className="crv-titre" style={{ fontFamily: JAK, fontSize: 19, fontWeight: 800, color: NAVY }}>Compte rendu de visite</div>
               {/* V3.138 : qui et quand d'abord, en entier ; le bien dessous. */}
@@ -234,7 +234,7 @@ export default function CompteRenduVisite({ visite, titre, sous, prenom, onFerme
               })}
             </div>
             {issue === 'offre' && visite?.prix_envisage ? (
-              <div style={{ marginTop: 9, fontSize: 13, color: '#9c460d', background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 10, padding: '8px 11px' }}>{`Son prix en tête : ${euros(visite.prix_envisage)}. L’offre elle-même se saisit dans l’onglet Transaction.`}</div>
+              <div style={{ marginTop: 9, fontSize: 13, color: '#a85515', background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 10, padding: '8px 11px' }}>{`Son prix en tête : ${euros(visite.prix_envisage)}. L’offre elle-même se saisit dans l’onglet Transaction.`}</div>
             ) : null}
           </div>
 

@@ -30,7 +30,7 @@ export const ISSUES: Record<Issue, {
   crm: string; client: string; choix: string; e: string;
   couleur: string; fond: string; trait: string;
 }> = {
-  offre: { crm: 'Veut faire une offre', client: 'Offre en préparation', choix: 'Je veux faire une offre', e: '💶', couleur: '#c85a10', fond: '#fbefe6', trait: '#f9caa7' },
+  offre: { crm: 'Veut faire une offre', client: 'Offre en préparation', choix: 'Je veux faire une offre', e: '💶', couleur: '#d36a1a', fond: '#fbefe6', trait: '#f9caa7' },
   revoir: { crm: 'À revoir', client: 'À revoir', choix: 'J’aimerais le revoir', e: '👀', couleur: '#2563eb', fond: '#f7f6f6', trait: '#bfdbfe' },
   reflexion: { crm: 'En réflexion', client: 'En réflexion', choix: 'J’hésite encore', e: '🤔', couleur: '#475569', fond: '#f1f5f9', trait: '#cbd5e1' },
   non: { crm: 'Non aboutie', client: 'Pas pour moi', choix: 'Pas pour moi', e: '👎', couleur: '#b4532a', fond: '#fdf1ec', trait: '#f5cdb9' },

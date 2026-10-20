@@ -29,13 +29,13 @@ export const PastilleExigence = ({ ico, libelle, niveau, onChange }: {
       title="Un clic : souhaité — deux clics : indispensable — trois clics : indifférent"
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 20,
-        border: `1px solid ${indisp ? '#ee7623' : souh ? '#10b981' : '#e2e8f0'}`,
+        border: `1px solid ${indisp ? '#f08c42' : souh ? '#10b981' : '#e2e8f0'}`,
         background: indisp ? 'var(--emilio)' : souh ? '#ecfdf5' : 'white',
         color: indisp ? '#f9c69f' : souh ? '#10b981' : '#64748b',
         fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.14s',
       }}>
       <span>{ico}</span><span>{libelle}</span>
-      {indisp ? <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.6, background: '#ee7623', color: 'var(--emilio)', borderRadius: 6, padding: '2px 5px' }}>INDISPENSABLE</span>
+      {indisp ? <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.6, background: '#f08c42', color: 'var(--emilio)', borderRadius: 6, padding: '2px 5px' }}>INDISPENSABLE</span>
         : souh ? <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.6, color: '#10b981' }}>SOUHAITÉ</span> : null}
     </button>
   );
@@ -45,7 +45,7 @@ export const PastilleExigence = ({ ico, libelle, niveau, onChange }: {
 export const LegendeNiveaux = () => (
   <div style={{ fontSize: 12, color: '#94a3b8', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
     <span>Cliquez une fois = <b style={{ color: '#10b981' }}>souhaité</b></span>
-    <span>deux fois = <b style={{ color: '#b9530f' }}>indispensable</b></span>
+    <span>deux fois = <b style={{ color: '#c46318' }}>indispensable</b></span>
     <span>trois fois = indifférent</span>
   </div>
 );
@@ -374,7 +374,7 @@ export function etapesCriteres(crit: CritForm, setCrit: SetCrit): EtapeCrit[] {
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     {[{v:'souhaite' as Niveau,l:'Simple préférence'},{v:'indispensable' as Niveau,l:'Indispensable'}].map(o => {
                       const actif = niv('cuisine') === o.v;
-                      return <button type="button" key={o.v} onClick={() => setNiv('cuisine', actif ? '' : o.v)} style={{ padding: '6px 12px', borderRadius: 20, border: `1px solid ${actif ? (o.v === 'indispensable' ? '#ee7623' : '#10b981') : '#e2e8f0'}`, background: actif ? (o.v === 'indispensable' ? '#fdf5ef' : '#ecfdf5') : 'white', color: actif ? (o.v === 'indispensable' ? '#b9530f' : '#10b981') : '#94a3b8', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{actif ? '✓ ' : ''}{o.l}</button>;
+                      return <button type="button" key={o.v} onClick={() => setNiv('cuisine', actif ? '' : o.v)} style={{ padding: '6px 12px', borderRadius: 20, border: `1px solid ${actif ? (o.v === 'indispensable' ? '#f08c42' : '#10b981') : '#e2e8f0'}`, background: actif ? (o.v === 'indispensable' ? '#fdf5ef' : '#ecfdf5') : 'white', color: actif ? (o.v === 'indispensable' ? '#c46318' : '#10b981') : '#94a3b8', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{actif ? '✓ ' : ''}{o.l}</button>;
                     })}
                   </div>
                 )}
@@ -451,7 +451,7 @@ export function etapesCriteres(crit: CritForm, setCrit: SetCrit): EtapeCrit[] {
             contenu: (<>
               <div>
                 <label className={styles.lbl}>Urgence du projet</label>
-                <ChoixIco table={URGENCES} valeur={crit.urgence} onChange={v => setCrit(f => ({ ...f, urgence: v }))} couleur="#b45309" />
+                <ChoixIco table={URGENCES} valeur={crit.urgence} onChange={v => setCrit(f => ({ ...f, urgence: v }))} couleur="#c05d12" />
               </div>
               <div><label className={styles.lbl}>Notes libres <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>— visibles par le client dans son espace</span></label><textarea className={styles.inp} rows={3} value={crit.notes} onChange={e => setCrit(f=>({...f,notes:e.target.value}))} placeholder="Particularités, préférences, exclusions, quartiers à éviter..." /></div>
             </>),

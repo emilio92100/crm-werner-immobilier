@@ -93,11 +93,11 @@ export default function PointAuto({ clientId, integre = false }: { clientId: str
       : { background: 'white', border: '1px solid #eaeae9', borderRadius: 14, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <span style={{ width: 32, height: 32, borderRadius: 10, background: ton === 'or' ? '#fdf2ea' : '#f8f8f7', border: `1px solid ${ton === 'or' ? '#f9c7a1' : '#edeceb'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={ton === 'or' ? '#b9530f' : '#716d69'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6.5 8.5 6 8.5-6" /></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={ton === 'or' ? '#c46318' : '#716d69'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6.5 8.5 6 8.5-6" /></svg>
         </span>
         <span style={{ flex: '1 1 220px', minWidth: 0 }}>
           <span style={{ display: 'block', fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: '#94a3b8' }}>{'Mail « Où en est votre recherche ? »'}</span>
-          <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: ton === 'gris' ? '#64748b' : ton === 'or' ? '#9c460d' : 'var(--emilio)', marginTop: 2 }}>{phrase}</span>
+          <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: ton === 'gris' ? '#64748b' : ton === 'or' ? '#a85515' : 'var(--emilio)', marginTop: 2 }}>{phrase}</span>
           <span style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{sous || dernier}</span>
         </span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>

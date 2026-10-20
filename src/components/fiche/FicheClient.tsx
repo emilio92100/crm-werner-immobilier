@@ -196,7 +196,7 @@ function DiffCriteres({ changements }: { changements: ChangementCrit[] }) {
           ) : (
             <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '2px 7px' }}>
               <s style={{ color: '#94a3b8', textDecorationColor: 'rgba(148,163,184,.8)' }}>{c.a}</s>
-              <span style={{ color: '#ee7623', fontWeight: 800 }}>→</span>
+              <span style={{ color: '#f08c42', fontWeight: 800 }}>→</span>
               <b style={{ color: 'var(--emilio)' }}>{c.p}</b>
             </span>
           )}
@@ -229,7 +229,7 @@ const ETATS_CLIENT: { cle: string; nom: string; quand: string; point: string }[]
 
 /* « minimum » en toutes lettres : « min » se confondait avec le chiffre. */
 function Mini({ fort }: { fort?: boolean }) {
-  return <span style={{ fontSize: 11.5, color: fort ? '#c85a10' : '#94a3b8', fontWeight: 600 }}> minimum</span>;
+  return <span style={{ fontSize: 11.5, color: fort ? '#d36a1a' : '#94a3b8', fontWeight: 600 }}> minimum</span>;
 }
 
 type LigneC = { lib: string; val: React.ReactNode; fort?: boolean };
@@ -252,8 +252,8 @@ function FamilleCrit({ titre, couleur, fond, trait, ico, lignes }:
             background: l.fort ? '#fdf6f1' : undefined,
             borderBottom: i === lignes.length - 1 ? 'none' : '1px solid #f1f5f9',
           }}>
-            <span style={{ fontSize: 13, color: l.fort ? '#c85a10' : '#64748b', fontWeight: l.fort ? 700 : 600 }}>{l.lib}</span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: l.fort ? '#c85a10' : 'var(--emilio)' }}>{l.val}</span>
+            <span style={{ fontSize: 13, color: l.fort ? '#d36a1a' : '#64748b', fontWeight: l.fort ? 700 : 600 }}>{l.lib}</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: l.fort ? '#d36a1a' : 'var(--emilio)' }}>{l.val}</span>
           </div>
         ))}
       </div>
@@ -496,11 +496,11 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
   const set = (key: string, value: any) => setBienForm((f: any) => ({ ...f, [key]: value }));
   const toggle = (key: string) => setBienForm((f: any) => ({ ...f, [key]: !f[key] }));
 
-  const sectionTitle: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#ee7623', letterSpacing: 1.5, textTransform: 'uppercase', margin: '8px 0 10px', paddingBottom: 6, borderBottom: '1px solid #f1f5f9' };
+  const sectionTitle: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#f08c42', letterSpacing: 1.5, textTransform: 'uppercase', margin: '8px 0 10px', paddingBottom: 6, borderBottom: '1px solid #f1f5f9' };
   const chip = (active: boolean): React.CSSProperties => ({
     padding: '7px 12px',
     borderRadius: 20,
-    border: `1.5px solid ${active ? '#ee7623' : '#eaeae9'}`,
+    border: `1.5px solid ${active ? '#f08c42' : '#eaeae9'}`,
     background: active ? '#fdeee3' : 'white',
     fontSize: 12,
     fontWeight: 600,
@@ -3776,7 +3776,7 @@ ${signatureMail()}`,
     const d = new Date(r.date_echeance); d.setHours(12, 0, 0, 0);
     const j = Math.round((d.getTime() - auj.getTime()) / 86400000);
     if (j < 0) return { label: `Relance en retard de ${-j}j`, note: r.note || '', couleur: '#b91c1c', fond: '#fef2f2', trait: '#fecaca' };
-    if (j === 0) return { label: "Relance aujourd'hui", note: r.note || '', couleur: '#b45309', fond: '#fffbeb', trait: '#fde68a' };
+    if (j === 0) return { label: "Relance aujourd'hui", note: r.note || '', couleur: '#c05d12', fond: '#fffbeb', trait: '#fde68a' };
     return { label: `Relance dans ${j}j`, note: r.note || '', couleur: '#64748b', fond: '#f8fafc', trait: '#eaeae9' };
   })();
 
@@ -3812,13 +3812,13 @@ ${signatureMail()}`,
   const illuRappro = (
     <svg className={styles.rapproIllu} width="150" height="76" viewBox="0 0 150 76" aria-hidden="true">
       <rect width="150" height="76" rx="14" fill="#fbf0e9" />
-      <path className={styles.rapproTrait} d="M40 38 C 62 28, 78 20, 96 20" fill="none" stroke="#ee7623" strokeWidth="1.6" />
-      <path className={styles.rapproTrait} d="M40 38 C 62 48, 78 56, 96 56" fill="none" stroke="#ee7623" strokeWidth="1.6" />
-      <circle className={styles.rapproOnde} cx="36" cy="38" r="19" fill="none" stroke="#ee7623" strokeWidth="2" />
-      <circle cx="36" cy="38" r="19" fill="#161618" />
-      <foreignObject x="19" y="21" width="34" height="34"><AvatarContact c={client as never} teinte={{ bg: '#161618', fg: '#f6a15e' }} taille={34} /></foreignObject>
-      <g className={styles.rapproFlotte1}><rect x="94" y="8" width="44" height="24" rx="8" fill="#fff" stroke="#eaeae9" /><path d="M108 22l6-5 6 5M110 21v5h8v-5" fill="none" stroke="#1d1d1f" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></g>
-      <g className={styles.rapproFlotte2}><rect x="94" y="44" width="44" height="24" rx="8" fill="#fff" stroke="#eaeae9" /><circle cx="114" cy="55" r="4.2" fill="none" stroke="#b4560f" strokeWidth="1.6" /><path d="M117.2 58.2l2.8 2.8" stroke="#b4560f" strokeWidth="1.6" strokeLinecap="round" /></g>
+      <path className={styles.rapproTrait} d="M40 38 C 62 28, 78 20, 96 20" fill="none" stroke="#f08c42" strokeWidth="1.6" />
+      <path className={styles.rapproTrait} d="M40 38 C 62 48, 78 56, 96 56" fill="none" stroke="#f08c42" strokeWidth="1.6" />
+      <circle className={styles.rapproOnde} cx="36" cy="38" r="19" fill="none" stroke="#f08c42" strokeWidth="2" />
+      <circle cx="36" cy="38" r="19" fill="#26282c" />
+      <foreignObject x="19" y="21" width="34" height="34"><AvatarContact c={client as never} teinte={{ bg: '#26282c', fg: '#f7b07a' }} taille={34} /></foreignObject>
+      <g className={styles.rapproFlotte1}><rect x="94" y="8" width="44" height="24" rx="8" fill="#fff" stroke="#eaeae9" /><path d="M108 22l6-5 6 5M110 21v5h8v-5" fill="none" stroke="#2e3034" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></g>
+      <g className={styles.rapproFlotte2}><rect x="94" y="44" width="44" height="24" rx="8" fill="#fff" stroke="#eaeae9" /><circle cx="114" cy="55" r="4.2" fill="none" stroke="#c2621c" strokeWidth="1.6" /><path d="M117.2 58.2l2.8 2.8" stroke="#c2621c" strokeWidth="1.6" strokeLinecap="round" /></g>
     </svg>
   );
 
@@ -4058,7 +4058,7 @@ ${signatureMail()}`,
                           setMenuStatut(null); setTab('transaction');
                           if (!transaction && biensPourTx().length > 0) setShowChoixTx('creer');
                         }}
-                          style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', textAlign: 'left', padding: '11px 15px', border: 'none', borderBottom: '1px solid #f8f8f7', background: 'white', cursor: 'pointer', fontFamily: 'inherit', color: '#c85a10', fontWeight: 700, fontSize: 13 }}>
+                          style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', textAlign: 'left', padding: '11px 15px', border: 'none', borderBottom: '1px solid #f8f8f7', background: 'white', cursor: 'pointer', fontFamily: 'inherit', color: '#d36a1a', fontWeight: 700, fontSize: 13 }}>
                           💼 {transaction ? 'Voir la transaction' : 'Ouvrir une transaction'}
                         </button>
                         <button onClick={() => { setMenuStatut(null); setShowCloture(true); }}
@@ -4096,7 +4096,7 @@ ${signatureMail()}`,
               <div className={styles.teteG}>
                 <div className={styles.teteQui}>
                   <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <AvatarContact c={client as never} teinte={{ bg: '', fg: '#f49d5a' }} className={styles.teteAvatar} libre />
+                    <AvatarContact c={client as never} teinte={{ bg: '', fg: '#f0a973' }} className={styles.teteAvatar} libre />
                     <span className={styles.teteEtat} style={{ background: teinte }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -4125,7 +4125,7 @@ ${signatureMail()}`,
                       </span>
                       {libelleSource((client as unknown as { source?: string }).source, (client as unknown as { source_detail?: string }).source_detail) && (
                         <span style={{ fontSize: 12, color: 'rgba(255,255,255,.55)', fontWeight: 500 }}>
-                          {'Source : '}<b style={{ color: '#f5a466', fontWeight: 700 }}>{libelleSource((client as unknown as { source?: string }).source, (client as unknown as { source_detail?: string }).source_detail)}</b>
+                          {'Source : '}<b style={{ color: '#f1b07e', fontWeight: 700 }}>{libelleSource((client as unknown as { source?: string }).source, (client as unknown as { source_detail?: string }).source_detail)}</b>
                         </span>
                       )}
                     </div>
@@ -4216,7 +4216,7 @@ ${signatureMail()}`,
         .suivi-actions { opacity: 0; transition: opacity .16s ease; }
         /* L'action d'où vient la relance, quand on arrive depuis la page Relances. */
         @keyframes suiviLueur {
-          0% { background: rgba(238, 118, 35,0); box-shadow: 0 0 0 0 rgba(238, 118, 35,0); }
+          0% { background: rgba(240, 140, 66,0); box-shadow: 0 0 0 0 rgba(240, 140, 66,0); }
           15% { background: #ffebdd; box-shadow: 0 0 0 6px #ffebdd; }
           75% { background: #ffebdd; box-shadow: 0 0 0 6px #ffebdd; }
           100% { background: rgba(255, 235, 221,0); box-shadow: 0 0 0 6px rgba(255, 235, 221,0); }
@@ -4231,7 +4231,7 @@ ${signatureMail()}`,
         .fiche-suivi-tete { display: flex; align-items: baseline; gap: 10px;
           flex-wrap: wrap; padding: 0 4px 11px; }
         .fiche-suivi-tete b { font-family: 'Plus Jakarta Sans', sans-serif;
-          font-size: 12px; font-weight: 800; color: #f5a364;
+          font-size: 12px; font-weight: 800; color: #f1af7c;
           text-transform: uppercase; letter-spacing: 1.1px; }
         .fiche-suivi-tete i { font-style: normal; font-size: 11.5px; color: rgba(255,255,255,.55); }
         /* Remettre le suivi à zéro se décide en regardant le suivi : le bouton
@@ -4243,10 +4243,10 @@ ${signatureMail()}`,
           color: rgba(255,255,255,.72); transition: background .14s, color .14s, border-color .14s; }
         .fiche-suivi-reinit:hover { background: #dc2626; border-color: #dc2626; color: #fff; }
         .fiche-suivi-rappro { margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
-          background: #ee7623; border: 1px solid #ee7623; border-radius: 99px; padding: 5px 13px; cursor: pointer;
-          font-family: 'DM Sans', sans-serif; font-size: 11.5px; font-weight: 800; color: #18181b;
+          background: #f08c42; border: 1px solid #f08c42; border-radius: 99px; padding: 5px 13px; cursor: pointer;
+          font-family: 'DM Sans', sans-serif; font-size: 11.5px; font-weight: 800; color: #25272b;
           transition: background .14s, transform .14s; }
-        .fiche-suivi-rappro:hover { background: #ee7320; transform: translateY(-1px); }
+        .fiche-suivi-rappro:hover { background: #e8863a; transform: translateY(-1px); }
         .fiche-suivi-rappro + .fiche-suivi-reinit { margin-left: 0; }
 
         /* ═══════════ La transaction ═══════════
@@ -4273,15 +4273,15 @@ ${signatureMail()}`,
         .tx-pas:disabled { cursor: default; }
         .tx-fil { display: flex; align-items: center; width: 100%; }
         .tx-fil i { flex: 1; height: 2px; background: #eaeae9; transition: background .35s ease; }
-        .tx-fil i.on { background: #ee7623; }
+        .tx-fil i.on { background: #f08c42; }
         .tx-fil i.vide { background: transparent; }
         .tx-rond { width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%;
           display: inline-flex; align-items: center; justify-content: center;
           font-size: 15px; font-weight: 800; background: #fff; border: 2px solid #eaeae9; color: #b0bec5;
           transition: transform .22s cubic-bezier(.3,1.5,.5,1), box-shadow .22s, background .3s, border-color .3s, color .3s; }
-        .tx-pas[data-etat="fait"] .tx-rond { background: #ee7623; border-color: #ee7623; color: var(--emilio); }
+        .tx-pas[data-etat="fait"] .tx-rond { background: #f08c42; border-color: #f08c42; color: var(--emilio); }
         .tx-pas[data-etat="encours"] .tx-rond { background: var(--emilio); border-color: var(--emilio); color: #fff; }
-        .tx-pas[data-vue="true"] .tx-rond { transform: scale(1.14); box-shadow: 0 0 0 5px rgba(238, 118, 35,.2); }
+        .tx-pas[data-vue="true"] .tx-rond { transform: scale(1.14); box-shadow: 0 0 0 5px rgba(240, 140, 66,.2); }
         .tx-pas:not(:disabled):hover .tx-rond { transform: scale(1.09); }
         .tx-nom { font-size: 11.5px; font-weight: 700; color: #b9b6b3; text-align: center;
           line-height: 1.25; padding: 0 3px; transition: color .25s; }
@@ -4307,7 +4307,7 @@ ${signatureMail()}`,
         .tx-tete-nom { display: block; font-family: 'Plus Jakarta Sans', sans-serif;
           font-weight: 800; font-size: 16px; color: var(--emilio); letter-spacing: -.2px; }
         .tx-tete-quoi { display: block; font-size: 12px; color: #8593a8; margin-top: 1px; }
-        .tx-franchie { flex-shrink: 0; font-size: 11px; font-weight: 800; color: #c85a10;
+        .tx-franchie { flex-shrink: 0; font-size: 11px; font-weight: 800; color: #d36a1a;
           background: #fff; border: 1px solid #f9caa7; border-radius: 99px; padding: 3px 10px; }
 
         .tx-corps { padding: 16px; display: flex; flex-direction: column; gap: 13px; }
@@ -4411,7 +4411,7 @@ ${signatureMail()}`,
                   const champs: [string, React.ReactNode][] = [];
                   if (occ.statut_occupation) champs.push(['Statut', labelStatut]);
                   if (aVendre && occ.bien_actuel_type) champs.push(['Bien à revendre', `${occ.bien_actuel_type}${occ.bien_actuel_surface ? ` · ${occ.bien_actuel_surface} m²` : ''}`]);
-                  if (aVendre && occ.bien_actuel_valeur) champs.push(['Valeur estimée', <b key="v" style={{ color: '#c85a10' }}>{`${occ.bien_actuel_valeur.toLocaleString('fr-FR')} €`}</b>]);
+                  if (aVendre && occ.bien_actuel_valeur) champs.push(['Valeur estimée', <b key="v" style={{ color: '#d36a1a' }}>{`${occ.bien_actuel_valeur.toLocaleString('fr-FR')} €`}</b>]);
                   if (aVendre) champs.push(['Adresse du bien', occ.bien_actuel_adresse || 'Même adresse que le contact']);
                   return (
                     <div className={styles.carteEns}>
@@ -4586,7 +4586,7 @@ ${signatureMail()}`,
                     </span>
                     {joursMandat !== null && (
                       <i style={joursMandat > 15 ? undefined : joursMandat >= 0
-                        ? { background: '#fffbeb', borderColor: '#fde68a', color: '#b45309' }
+                        ? { background: '#fffbeb', borderColor: '#fde68a', color: '#c05d12' }
                         : { background: '#fef2f2', borderColor: '#fecaca', color: '#b91c1c' }}>
                         {joursMandat > 1 ? `${joursMandat} j restants` : joursMandat === 1 ? 'Dernier jour demain' : joursMandat === 0 ? 'Dernier jour' : '⚠️ Expiré'}
                       </i>
@@ -4598,12 +4598,12 @@ ${signatureMail()}`,
                       <span>{docMandat.statut === 'pret'
                         ? (docMandat.signature ? 'envoyé, en attente de signature' : 'prêt, à faire signer')
                         : 'en préparation dans Documents'}</span>
-                      <i style={{ background: '#fffbeb', borderColor: '#fde68a', color: '#b45309' }}>{docMandat.statut === 'pret' ? 'À signer' : 'En préparation'}</i>
+                      <i style={{ background: '#fffbeb', borderColor: '#fde68a', color: '#c05d12' }}>{docMandat.statut === 'pret' ? 'À signer' : 'En préparation'}</i>
                     </>
                   ) : cr.mandat_propose_le ? (
                     <>
                       <span>proposé, en attente de signature</span>
-                      <i style={{ background: '#fffbeb', borderColor: '#fde68a', color: '#b45309' }}>À signer</i>
+                      <i style={{ background: '#fffbeb', borderColor: '#fde68a', color: '#c05d12' }}>À signer</i>
                     </>
                   ) : (
                     <>
@@ -4695,7 +4695,7 @@ ${signatureMail()}`,
                     <span style={{ flexGrow: 1 }} />
                     <span className="fc-budget" style={{ textAlign: 'right' }}>
                       <span style={{ display: 'block', fontSize: 10.5, fontWeight: 800, color: '#b09a63', textTransform: 'uppercase', letterSpacing: 1.1 }}>Budget</span>
-                      <span style={{ display: 'block', fontSize: 25, fontWeight: 800, color: '#c85a10', letterSpacing: -0.6, marginTop: 2 }}>
+                      <span style={{ display: 'block', fontSize: 25, fontWeight: 800, color: '#d36a1a', letterSpacing: -0.6, marginTop: 2 }}>
                         {cr.budget_min && cr.budget_max ? fourchetteBudget(cr.budget_min, cr.budget_max)
                           : cr.budget_max ? `Jusqu'à ${budgetLisible(cr.budget_max)}`
                             : cr.budget_min ? `À partir de ${budgetLisible(cr.budget_min)}`
@@ -4758,7 +4758,7 @@ ${signatureMail()}`,
                     const ENTETE: React.CSSProperties = { padding: '9px 14px', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 };
                     const TITRE = (couleur: string): React.CSSProperties => ({ fontSize: 11, fontWeight: 800, color: couleur, textTransform: 'uppercase', letterSpacing: 0.9, whiteSpace: 'nowrap' });
                     const NOTE = (couleur: string): React.CSSProperties => ({ marginLeft: 'auto', minWidth: 0, fontSize: 11, fontWeight: 600, color: couleur, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' });
-                    const PUCE_FORTE: React.CSSProperties = { background: 'var(--emilio-fond)', color: '#f9c69f', border: '1px solid #ee7623', padding: '4px 12px', borderRadius: 20, fontSize: 13.5, fontWeight: 700 };
+                    const PUCE_FORTE: React.CSSProperties = { background: 'var(--emilio-fond)', color: '#f9c69f', border: '1px solid #f08c42', padding: '4px 12px', borderRadius: 20, fontSize: 13.5, fontWeight: 700 };
                     const PUCE: React.CSSProperties = { background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', padding: '4px 12px', borderRadius: 20, fontSize: 13.5, fontWeight: 600 };
 
                     const familles: React.ReactNode[] = [];
@@ -4810,8 +4810,8 @@ ${signatureMail()}`,
                     const carteSecteurs = cr.secteurs?.length > 0 ? (
                       <div key="secteurs" style={{ border: '1px solid #fad2b4', borderRadius: 14, overflow: 'hidden' }}>
                         <div style={{ ...ENTETE, background: '#fbf0e9' }}>
-                          {ICO(<><path d="M12 21.5S19 15 19 10a7 7 0 1 0-14 0c0 5 7 11.5 7 11.5z" /><circle cx="12" cy="10" r="2.6" /></>, '#b4560f')}
-                          <span style={TITRE('#b4560f')}>Secteurs recherchés</span>
+                          {ICO(<><path d="M12 21.5S19 15 19 10a7 7 0 1 0-14 0c0 5 7 11.5 7 11.5z" /><circle cx="12" cy="10" r="2.6" /></>, '#c2621c')}
+                          <span style={TITRE('#c2621c')}>Secteurs recherchés</span>
                         </div>
                         <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 9 }}>
                           <SecteursListe secteurs={cr.secteurs} />
@@ -4819,9 +4819,9 @@ ${signatureMail()}`,
                       </div>
                     ) : null;
                     const carteIndispensables = indispensables.length ? (
-                      <div key="indispensables" style={{ border: '1px solid #ee7623', borderRadius: 14, overflow: 'hidden' }}>
+                      <div key="indispensables" style={{ border: '1px solid #f08c42', borderRadius: 14, overflow: 'hidden' }}>
                         <div style={{ ...ENTETE, background: 'var(--emilio-fond)' }}>
-                          {ICO(<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />, '#f6a15e')}
+                          {ICO(<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />, '#f7b07a')}
                           <span style={TITRE('#f9c69f')}>Indispensables</span>
                           <span style={NOTE('rgba(249, 198, 159,.62)')} title="Un bien qui ne les a pas n’est pas envoyé">sinon, pas d’envoi</span>
                         </div>
@@ -4874,7 +4874,7 @@ ${signatureMail()}`,
 
                   {/* Notes */}
                   {cr.notes && (
-                    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '10px 14px', borderLeft: '4px solid #ee7623' }}>
+                    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '10px 14px', borderLeft: '4px solid #f08c42' }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>💬 Précisions sur la recherche</div>
                       <div style={{ fontSize: 14, color: 'var(--emilio)', lineHeight: 1.6 }}>{cr.notes}</div>
                     </div>
@@ -4945,7 +4945,7 @@ ${signatureMail()}`,
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 5 }}>
                       <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: 15, color: 'var(--emilio)' }}>{b.titre || `${b.type_bien||'Bien'} — ${b.ville||'—'}`}</div>
                       <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                        <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 17, color: '#ee7623' }}>{b.prix_acquereur ? `${b.prix_acquereur.toLocaleString('fr-FR')}€` : '—'}</div>
+                        <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 17, color: '#f08c42' }}>{b.prix_acquereur ? `${b.prix_acquereur.toLocaleString('fr-FR')}€` : '—'}</div>
                         {b.prix_vendeur && b.commission_val && (
                           <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
                             {b.prix_vendeur.toLocaleString('fr-FR')}€ + {b.commission_type === 'pourcentage' ? `${b.commission_val}%` : `${b.commission_val.toLocaleString('fr-FR')}€`}{' '}commission
@@ -4969,7 +4969,7 @@ ${signatureMail()}`,
                         {b.pdf_statut === 'pret' && b.pdf_url ? (
                           <a href={b.pdf_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, background: 'var(--emilio-fond)', color: 'white', border: '1px solid var(--emilio)', padding: '4px 12px', borderRadius: 20, fontWeight: 600, textDecoration: 'none' }}>📄 Fiche client</a>
                         ) : b.pdf_statut === 'demande' ? (
-                          <span style={{ fontSize: 12, background: '#fdf6f1', color: '#be550f', border: '1px solid #f9caa7', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>⏳ Fiche en attente</span>
+                          <span style={{ fontSize: 12, background: '#fdf6f1', color: '#c96518', border: '1px solid #f9caa7', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>⏳ Fiche en attente</span>
                         ) : (
                           <button onClick={() => demanderPdf(b.id)} style={{ fontSize: 12, background: '#f8fafc', color: 'var(--emilio)', border: '1px solid #e2e8f0', padding: '4px 12px', borderRadius: 20, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>📄 Demander une fiche soignée</button>
                         )}
@@ -5103,7 +5103,7 @@ ${signatureMail()}`,
                    fallait déplier chaque étape pour retrouver le montant de
                    l'offre ou le prix retenu. */
                 const chiffres: any[] = [];
-                if (offre !== null) chiffres.push({ k: 'Offre initiale', v: eur(offre), d: tx.offre_date ? jourFr(tx.offre_date) : null, c: '#c85a10' });
+                if (offre !== null) chiffres.push({ k: 'Offre initiale', v: eur(offre), d: tx.offre_date ? jourFr(tx.offre_date) : null, c: '#d36a1a' });
                 if (derniere) {
                   const m = lireMontant(derniere.montant);
                   chiffres.push({ k: 'Dernière contre-offre', v: m !== null ? eur(m) : '—', d: derniere.partie === 'acheteur' ? 'de votre client' : 'du vendeur', c: '#393836' });
@@ -5134,7 +5134,7 @@ ${signatureMail()}`,
                         {bienTx.prix_acquereur ? (
                           <span style={{ textAlign: 'right', flexShrink: 0 }}>
                             <span className="tx-sur">Prix affiché</span>
-                            <span style={{ display: 'block', fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 17, color: '#c85a10' }}>
+                            <span style={{ display: 'block', fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 17, color: '#d36a1a' }}>
                               {eur(bienTx.prix_acquereur)}
                             </span>
                           </span>
@@ -5509,7 +5509,7 @@ ${signatureMail()}`,
               enPlus={nbAutresRecherches > 0 ? (
                 <button type="button" onClick={() => setSuiviToutesPour(suiviToutes ? null : rechercheId)}
                   title={suiviToutes ? 'Ne montrer que cette recherche' : 'Montrer aussi ce qui a été noté sur ses autres recherches'}
-                  style={{ height: 34, padding: '0 13px', borderRadius: 99, border: '1px dashed #ee7623', background: suiviToutes ? '#fbf0e9' : 'white', color: '#9f470d', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  style={{ height: 34, padding: '0 13px', borderRadius: 99, border: '1px dashed #f08c42', background: suiviToutes ? '#fbf0e9' : 'white', color: '#ab5615', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>
                   {suiviToutes ? 'Cette recherche seulement' : `+ ${nbAutresRecherches} d’une autre recherche`}
                 </button>
               ) : null}
@@ -5553,7 +5553,7 @@ ${signatureMail()}`,
                   son téléphone. La personne 1 reçoit les mails et a l'espace. */}
               {cf.couple ? (
                 <div style={{ border: '1px solid #eaeae9', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8, margin: '6px 0 0' }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: '#c85a10' }}>Personne 1 · contact principal</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: '#d36a1a' }}>Personne 1 · contact principal</div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     {(['Monsieur', 'Madame'] as const).map(c => (
                       <button type="button" key={c} onClick={() => setCf(f => ({ ...f, civilite: c }))}
@@ -5571,7 +5571,7 @@ ${signatureMail()}`,
               )}
               {cf.couple && (
                 <div style={{ border: '1px solid #eaeae9', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8, margin: '6px 0' }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: '#c85a10' }}>Personne 2</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: '#d36a1a' }}>Personne 2</div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     {(['Monsieur', 'Madame'] as const).map(c => (
                       <button type="button" key={c} onClick={() => setCf(f => ({ ...f, c2_civilite: c }))}
@@ -5779,7 +5779,7 @@ ${signatureMail()}`,
                   return (
                     <button type="button" key={b.id} onClick={() => choisirBienTx(b.id)} disabled={actif || saving}
                       style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 12,
-                        border: `1.5px solid ${actif ? '#ee7623' : '#eaeae9'}`, background: actif ? '#faf3ee' : 'white',
+                        border: `1.5px solid ${actif ? '#f08c42' : '#eaeae9'}`, background: actif ? '#faf3ee' : 'white',
                         cursor: actif ? 'default' : 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all .14s' }}>
                       <span style={{ width: 52, height: 52, borderRadius: 10, background: '#e2e8f0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, overflow: 'hidden', flexShrink: 0 }}>
                         {b.photos?.[0] ? <img src={b.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏠'}
@@ -5800,11 +5800,11 @@ ${signatureMail()}`,
                         </span>
                       </span>
                       {b.prix_acquereur ? (
-                        <span style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 15, color: '#c85a10', flexShrink: 0 }}>
+                        <span style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 15, color: '#d36a1a', flexShrink: 0 }}>
                           {b.prix_acquereur.toLocaleString('fr-FR')} €
                         </span>
                       ) : null}
-                      {actif && <span style={{ fontSize: 11, fontWeight: 800, color: '#c85a10', flexShrink: 0 }}>en cours</span>}
+                      {actif && <span style={{ fontSize: 11, fontWeight: 800, color: '#d36a1a', flexShrink: 0 }}>en cours</span>}
                     </button>
                   );
                 })}
@@ -5840,9 +5840,9 @@ ${signatureMail()}`,
                     const actif = cloture.motif === m.cle;
                     return (
                       <button type="button" key={m.cle} onClick={() => setCloture(f => ({ ...f, motif: m.cle }))}
-                        style={{ display: 'flex', alignItems: 'flex-start', gap: 11, padding: '11px 13px', borderRadius: 11, border: `1.5px solid ${actif ? '#ee7623' : '#eaeae9'}`, background: actif ? '#faf3ee' : 'white', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
-                        <span style={{ flexShrink: 0, width: 16, height: 16, borderRadius: '50%', border: `2px solid ${actif ? '#ee7623' : '#cbd5e1'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
-                          {actif && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ee7623' }} />}
+                        style={{ display: 'flex', alignItems: 'flex-start', gap: 11, padding: '11px 13px', borderRadius: 11, border: `1.5px solid ${actif ? '#f08c42' : '#eaeae9'}`, background: actif ? '#faf3ee' : 'white', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                        <span style={{ flexShrink: 0, width: 16, height: 16, borderRadius: '50%', border: `2px solid ${actif ? '#f08c42' : '#cbd5e1'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+                          {actif && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f08c42' }} />}
                         </span>
                         <span style={{ flexGrow: 1, minWidth: 0 }}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -5949,7 +5949,7 @@ ${signatureMail()}`,
                     const actif = suspendre.choix === o.k;
                     return (
                       <button type="button" key={o.k} onClick={() => setSuspendre(v => v && ({ ...v, choix: o.k }))}
-                        style={{ padding: '8px 13px', borderRadius: 99, border: `1.5px solid ${actif ? '#ee7623' : '#eaeae9'}`, background: actif ? '#faf3ee' : 'white', color: actif ? '#9c460d' : '#55647a', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        style={{ padding: '8px 13px', borderRadius: 99, border: `1.5px solid ${actif ? '#f08c42' : '#eaeae9'}`, background: actif ? '#faf3ee' : 'white', color: actif ? '#a85515' : '#55647a', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                         {o.l}
                       </button>
                     );
@@ -6029,8 +6029,8 @@ ${signatureMail()}`,
               {/* V3.184 : la fiche vient d'une annonce envoyée par le client. */}
               {depuisAnnonce && (
                 <div style={{ background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 12, padding: '11px 14px', display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#be550f', letterSpacing: .3 }}>{`📩 Proposée par ${client.prenom || 'le client'}, le ${new Date(depuisAnnonce.created_at).toLocaleDateString('fr-FR')}`}</div>
-                  {depuisAnnonce.mot && <div style={{ fontSize: 14, fontWeight: 600, color: '#18181b', lineHeight: 1.5 }}>{`« ${depuisAnnonce.mot} »`}</div>}
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#c96518', letterSpacing: .3 }}>{`📩 Proposée par ${client.prenom || 'le client'}, le ${new Date(depuisAnnonce.created_at).toLocaleDateString('fr-FR')}`}</div>
+                  {depuisAnnonce.mot && <div style={{ fontSize: 14, fontWeight: 600, color: '#25272b', lineHeight: 1.5 }}>{`« ${depuisAnnonce.mot} »`}</div>}
                   {(depuisAnnonce.aime || []).length > 0 && <div style={{ fontSize: 12.5, color: '#64748b' }}>{`Ce qui lui plaît : ${(depuisAnnonce.aime || []).join(', ').toLowerCase()}`}</div>}
                   {(depuisAnnonce.photos || []).length > 0 && (
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -6402,14 +6402,14 @@ ${signatureMail()}`,
                   <button key={x.k} type="button" disabled={!x.ok} className="fc-envoi-choix"
                     onClick={() => { setShowEnvoi(false); x.go(); }}
                     style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '14px 16px', borderRadius: 14, border: `1.5px solid ${x.ok ? '#eaeae9' : '#f2f2f2'}`, background: x.ok ? 'white' : '#fbfbfb', cursor: x.ok ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left', opacity: x.ok ? 1 : 0.62, transition: 'border-color .15s, background .15s, box-shadow .15s' }}>
-                    <span style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: x.ok ? 'var(--emilio-fond)' : '#f3f2f2', color: x.ok ? '#f6a15e' : '#94a3b8' }}>
+                    <span style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: x.ok ? 'var(--emilio-fond)' : '#f3f2f2', color: x.ok ? '#f7b07a' : '#94a3b8' }}>
                       <Icone nom={x.ic} taille={20} epaisseur={1.9} />
                     </span>
                     <span style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 0 }}>
                       <b style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15, fontWeight: 800, color: 'var(--emilio)' }}>{x.lib}</b>
                       <span style={{ fontSize: 12.5, lineHeight: 1.45, color: '#64748b' }}>{x.sous}</span>
                     </span>
-                    {x.ok && <span style={{ color: '#b4560f', display: 'flex', flexShrink: 0, transform: 'rotate(-90deg)' }}><Icone nom="chevron" taille={18} epaisseur={2.2} /></span>}
+                    {x.ok && <span style={{ color: '#c2621c', display: 'flex', flexShrink: 0, transform: 'rotate(-90deg)' }}><Icone nom="chevron" taille={18} epaisseur={2.2} /></span>}
                   </button>
                 ))}
               </div>
@@ -6452,7 +6452,7 @@ ${signatureMail()}`,
                       <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--emilio)' }}>{b.titre || `${b.type_bien||'Bien'} — ${b.ville||'—'}`}</div>
                       <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{[b.surface && `${b.surface}m²`, b.nb_pieces && `${b.nb_pieces}P`, b.ville].filter(Boolean).join(' · ')}</div>
                     </div>
-                    {b.prix_acquereur && <div style={{ fontWeight: 800, fontSize: 16, color: '#ee7623' }}>{b.prix_acquereur.toLocaleString('fr-FR')}€</div>}
+                    {b.prix_acquereur && <div style={{ fontWeight: 800, fontSize: 16, color: '#f08c42' }}>{b.prix_acquereur.toLocaleString('fr-FR')}€</div>}
                   </div>
                 ) : null;
               })()}
@@ -6469,8 +6469,8 @@ ${signatureMail()}`,
                     {biensDuMail.map(b => {
                       const checked = envoiBienIds.includes(b.id);
                       return (
-                        <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: `1.5px solid ${checked ? '#ee7623' : '#eaeae9'}`, background: checked ? '#faf3ee' : 'white', cursor: 'pointer', transition: 'all 0.12s' }}>
-                          <input type="checkbox" checked={checked} onChange={e => { if (e.target.checked) setEnvoiBienIds(prev => [...prev, b.id]); else setEnvoiBienIds(prev => prev.filter(id => id !== b.id)); }} style={{ accentColor: '#1d1d1f', width: 16, height: 16, flexShrink: 0 }} />
+                        <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: `1.5px solid ${checked ? '#f08c42' : '#eaeae9'}`, background: checked ? '#faf3ee' : 'white', cursor: 'pointer', transition: 'all 0.12s' }}>
+                          <input type="checkbox" checked={checked} onChange={e => { if (e.target.checked) setEnvoiBienIds(prev => [...prev, b.id]); else setEnvoiBienIds(prev => prev.filter(id => id !== b.id)); }} style={{ accentColor: '#2e3034', width: 16, height: 16, flexShrink: 0 }} />
                           <div style={{ width: 38, height: 38, borderRadius: 6, background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, overflow: 'hidden', flexShrink: 0 }}>
                             {b.photos?.[0] ? <img src={b.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏠'}
                           </div>
@@ -6478,7 +6478,7 @@ ${signatureMail()}`,
                             <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--emilio)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.titre || `${b.type_bien||'Bien'} — ${b.ville||'—'}`}</div>
                             <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{[b.surface && `${b.surface}m²`, b.nb_pieces && `${b.nb_pieces}P`, b.ville].filter(Boolean).join(' · ')}</div>
                           </div>
-                          {b.prix_acquereur && <div style={{ fontWeight: 700, fontSize: 13, color: '#ee7623', flexShrink: 0 }}>{b.prix_acquereur.toLocaleString('fr-FR')}€</div>}
+                          {b.prix_acquereur && <div style={{ fontWeight: 700, fontSize: 13, color: '#f08c42', flexShrink: 0 }}>{b.prix_acquereur.toLocaleString('fr-FR')}€</div>}
                         </label>
                       );
                     })}
@@ -6655,14 +6655,14 @@ ${signatureMail()}`,
                 <button type="button" className="fc-rdv-agenda"
                   onClick={() => { demanderRendezVous(rechercheActive.id); fermerAction(); onNavigate('agenda'); }}
                   style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid #f9c7a1', background: 'linear-gradient(135deg, #fff6f0 0%, #fbe7d8 100%)', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'var(--emilio)' }}>
-                  <span style={{ width: 46, height: 46, borderRadius: 13, background: 'var(--emilio-fond)', color: '#ee7623', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ width: 46, height: 46, borderRadius: 13, background: 'var(--emilio-fond)', color: '#f08c42', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Icone nom="calendrier" taille={21} epaisseur={2} />
                   </span>
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
                     <b style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15.5, fontWeight: 800 }}>Créer un rendez-vous</b>
                     <span style={{ fontSize: 12.5, color: '#5b6678', lineHeight: 1.45 }}>{`Visite, rendez-vous, appel ou signature, dans l’agenda. ${client.prenom || 'Le client'} est déjà choisi.`}</span>
                   </span>
-                  <span style={{ color: '#9c460d', display: 'flex', flexShrink: 0 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></span>
+                  <span style={{ color: '#a85515', display: 'flex', flexShrink: 0 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></span>
                 </button>
               )}
               {!actionEdit && !appelDirect && rechercheActive && (
@@ -6693,7 +6693,7 @@ ${signatureMail()}`,
                         const on = actionF.titre.trim() === x.titre;
                         return (
                           <button type="button" key={x.k} onClick={() => choisir(x)} aria-pressed={on}
-                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 8px', borderRadius: 11, border: `1.5px solid ${on ? x.c : '#eaeae9'}`, background: on ? x.bg : 'white', color: on ? x.c : '#3e3c3a', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all .12s' }}>
+                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 8px', borderRadius: 11, border: `1.5px solid ${on ? x.c : '#eaeae9'}`, background: on ? x.bg : 'white', color: on ? x.c : '#51545a', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all .12s' }}>
                             <span style={{ width: 8, height: 8, borderRadius: '50%', background: x.c, flexShrink: 0 }} />{x.lib}
                           </button>
                         );
@@ -6734,7 +6734,7 @@ ${signatureMail()}`,
                         const actif = actionF.relance === d;
                         return (
                           <button type="button" key={lib} onClick={() => setActionF(f => ({ ...f, relance: actif ? '' : d }))}
-                            style={{ padding: '5px 12px', borderRadius: 99, border: `1px solid ${actif ? '#ee7623' : '#eaeae9'}`, background: actif ? 'var(--emilio)' : 'white', color: actif ? '#f9c69f' : '#64748b', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                            style={{ padding: '5px 12px', borderRadius: 99, border: `1px solid ${actif ? '#f08c42' : '#eaeae9'}`, background: actif ? 'var(--emilio)' : 'white', color: actif ? '#f9c69f' : '#64748b', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                             {lib}
                           </button>
                         );
@@ -6745,7 +6745,7 @@ ${signatureMail()}`,
                         placeholder="Choisir une autre date"
                         onChange={(v) => setActionF(f => ({ ...f, relance: v }))} />
                     </div>
-                    <div style={{ fontSize: 11.5, color: pose ? '#c85a10' : '#94a3b8', marginTop: 8, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 11.5, color: pose ? '#d36a1a' : '#94a3b8', marginTop: 8, lineHeight: 1.5 }}>
                       {pose
                         ? (actionRelanceId
                           ? `Relance déplacée au ${new Date(`${actionF.relance}T12:00:00`).toLocaleDateString('fr-FR')} — videz le champ pour la supprimer.`
@@ -6771,9 +6771,9 @@ ${signatureMail()}`,
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 252, overflowY: 'auto', border: '1px solid #eaeae9', borderRadius: 10, padding: 8, background: '#fbfbfb' }}>
 
                       <button type="button" onClick={() => setActionF(f => ({ ...f, bien_id: '' }))}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 8, border: `1.5px solid ${aucun ? '#ee7623' : '#eaeae9'}`, background: aucun ? '#faf3ee' : 'white', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all 0.12s' }}>
-                        <span style={{ flexShrink: 0, width: 16, height: 16, borderRadius: '50%', border: `2px solid ${aucun ? '#ee7623' : '#cbd5e1'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {aucun && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ee7623' }} />}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 8, border: `1.5px solid ${aucun ? '#f08c42' : '#eaeae9'}`, background: aucun ? '#faf3ee' : 'white', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all 0.12s' }}>
+                        <span style={{ flexShrink: 0, width: 16, height: 16, borderRadius: '50%', border: `2px solid ${aucun ? '#f08c42' : '#cbd5e1'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {aucun && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f08c42' }} />}
                         </span>
                         <span style={{ width: 38, height: 38, borderRadius: 6, background: '#f3f2f2', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>💬</span>
                         <span style={{ flex: 1, minWidth: 0 }}>
@@ -6787,9 +6787,9 @@ ${signatureMail()}`,
                         const badge = BADGES[b.badge_retour] || BADGES.propose;
                         return (
                           <button type="button" key={b.id} onClick={() => setActionF(f => ({ ...f, bien_id: b.id }))}
-                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: `1.5px solid ${actif ? '#ee7623' : '#eaeae9'}`, background: actif ? '#faf3ee' : 'white', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all 0.12s' }}>
-                            <span style={{ flexShrink: 0, width: 16, height: 16, borderRadius: '50%', border: `2px solid ${actif ? '#ee7623' : '#cbd5e1'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {actif && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ee7623' }} />}
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: `1.5px solid ${actif ? '#f08c42' : '#eaeae9'}`, background: actif ? '#faf3ee' : 'white', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all 0.12s' }}>
+                            <span style={{ flexShrink: 0, width: 16, height: 16, borderRadius: '50%', border: `2px solid ${actif ? '#f08c42' : '#cbd5e1'}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {actif && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f08c42' }} />}
                             </span>
                             <span style={{ width: 38, height: 38, borderRadius: 6, background: '#e2e8f0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, overflow: 'hidden', flexShrink: 0 }}>
                               {b.photos?.[0] ? <img src={b.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏠'}
@@ -6801,7 +6801,7 @@ ${signatureMail()}`,
                                 <span style={{ fontSize: 10.5, fontWeight: 700, color: badge.color, background: badge.bg, border: `1px solid ${badge.color}2e`, borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>{badge.label}</span>
                               </span>
                             </span>
-                            {b.prix_acquereur ? <span style={{ fontWeight: 700, fontSize: 13, color: '#ee7623', flexShrink: 0 }}>{b.prix_acquereur.toLocaleString('fr-FR')} €</span> : null}
+                            {b.prix_acquereur ? <span style={{ fontWeight: 700, fontSize: 13, color: '#f08c42', flexShrink: 0 }}>{b.prix_acquereur.toLocaleString('fr-FR')} €</span> : null}
                           </button>
                         );
                       })}

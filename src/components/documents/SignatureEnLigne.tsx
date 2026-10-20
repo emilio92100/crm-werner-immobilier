@@ -173,7 +173,7 @@ export function FenetreLancer({ doc, onFermer, onLance, onPerime }: {
               <input id={`sg-${c.cle}`} type="email" inputMode="email" autoComplete="off" className={`${s.input} ${champs[c.cle] ? s.inputManque : ''}`}
                 value={mails[c.cle] || ''} placeholder={sansCode ? 'Facultative : adresse@exemple.fr' : 'adresse@exemple.fr'}
                 onChange={e => { const v = e.target.value; setMails(x => ({ ...x, [c.cle]: v })); setChamps(x => ({ ...x, [c.cle]: '' })); touche.current[c.cle] = true; setRepris(x => ({ ...x, [c.cle]: false })); }} />
-              {champs[c.cle] && <i className={s.chAide} style={{ color: '#b45309' }}>{champs[c.cle]}</i>}
+              {champs[c.cle] && <i className={s.chAide} style={{ color: '#c05d12' }}>{champs[c.cle]}</i>}
               {!champs[c.cle] && repris[c.cle] && <i className={s.chAide}>{`Reprise de ta correction lors du dernier envoi${c.personne?.email ? ` (le document dit ${c.personne.email})` : ''}.`}</i>}
             </div>
           ))}

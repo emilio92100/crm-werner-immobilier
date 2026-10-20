@@ -159,7 +159,7 @@ export function nomFichierPdf(m: Modele, d: Donnees): string {
 /* ── Les mails ─────────────────────────────────────────────────────────── */
 
 const bouton = (href: string, texte: string) =>
-  `<a href="${href}" style="display:inline-block;margin:6px 0 4px;background:#ee7623;color:#141416;text-decoration:none;padding:13px 22px;border-radius:12px;font-weight:800;font-size:15px">${echappe(texte)}</a>`;
+  `<a href="${href}" style="display:inline-block;margin:6px 0 4px;background:#f08c42;color:#232528;text-decoration:none;padding:13px 22px;border-radius:12px;font-weight:800;font-size:15px">${echappe(texte)}</a>`;
 const sansCourbes = (t: string) => t.replace(/’/g, "'");
 
 /* L'invitation, et ses deux rappels (2 et 7 jours). Le dernier dit combien
@@ -308,7 +308,7 @@ export function mailCode(o: { s: SigDoc; m: Modele; d: Donnees; code: string; mi
     texte: `Bonjour ${prenom},\n\nVoici votre code pour signer ${sansCourbes(doc.le)} : ${joli}\n\nIl est valable ${o.minutes} minutes. Saisissez-le vous-même, et ne le communiquez à personne.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.\n\nAlexandre Rogelet — Emilio Immobilier`,
     html: gabarit('Votre code de signature', `<p>Bonjour ${echappe(prenom)},</p>
       <p>Voici votre code pour signer ${echappe(doc.le)} :</p>
-      <div style="margin:16px 0;font-size:32px;font-weight:800;letter-spacing:8px;color:#141416">${joli}</div>
+      <div style="margin:16px 0;font-size:32px;font-weight:800;letter-spacing:8px;color:#232528">${joli}</div>
       <p>Il est valable ${o.minutes} minutes. Saisissez-le vous-même, et ne le communiquez à personne.</p>`,
       'Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message.'),
   };

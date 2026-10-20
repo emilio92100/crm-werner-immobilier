@@ -28,13 +28,13 @@ export const modeAcheteurs = (etape: string): ModeAcheteurs =>
 /* ── Petits morceaux ── */
 const C = 113.1; // périmètre du cercle de la note (r = 18)
 export function Note({ n, t = 48, gris }: { n: number; t?: number; gris?: boolean }) {
-  const coul = gris ? '#cbd5e1' : n >= 85 ? '#16a34a' : n >= SEUIL_CORRESPOND ? '#ee7623' : '#94a3b8';
+  const coul = gris ? '#cbd5e1' : n >= 85 ? '#16a34a' : n >= SEUIL_CORRESPOND ? '#f08c42' : '#94a3b8';
   return (
     <svg className={a.note} width={t} height={t} viewBox="0 0 48 48" role="img" aria-label={`${n} pour cent`}>
       <circle cx="24" cy="24" r="18" fill="none" stroke="#f2f2f2" strokeWidth="4.5" />
       <circle cx="24" cy="24" r="18" fill="none" stroke={coul} strokeWidth="4.5" strokeLinecap="round"
         strokeDasharray={`${(C * n / 100).toFixed(1)} ${C}`} transform="rotate(-90 24 24)" />
-      <text x="24" y="28.5" textAnchor="middle" fill={gris ? '#94a3b8' : '#18181b'} style={{ font: "800 12.5px 'Plus Jakarta Sans', sans-serif" }}>{n}</text>
+      <text x="24" y="28.5" textAnchor="middle" fill={gris ? '#94a3b8' : '#25272b'} style={{ font: "800 12.5px 'Plus Jakarta Sans', sans-serif" }}>{n}</text>
     </svg>
   );
 }
@@ -103,7 +103,7 @@ export function Illu() {
     <svg className={a.illu} width="116" height="72" viewBox="0 0 116 72" aria-hidden="true">
       <g className={a.f1}><circle cx="26" cy="38" r="20" fill="#dcfce7" stroke="#fff" strokeWidth="3" /><circle cx="26" cy="32" r="6" fill="#16a34a" /><path d="M15 50c2-7 20-7 22 0" fill="#16a34a" /></g>
       <g className={a.f2}><circle cx="58" cy="30" r="22" fill="#e0e7ff" stroke="#fff" strokeWidth="3" /><circle cx="58" cy="24" r="7" fill="#4f46e5" /><path d="M46 43c2-8 22-8 24 0" fill="#4f46e5" /></g>
-      <g className={a.f3}><circle cx="90" cy="40" r="19" fill="#fef3c7" stroke="#fff" strokeWidth="3" /><circle cx="90" cy="34" r="6" fill="#b45309" /><path d="M80 51c2-7 18-7 20 0" fill="#b45309" /></g>
+      <g className={a.f3}><circle cx="90" cy="40" r="19" fill="#fef3c7" stroke="#fff" strokeWidth="3" /><circle cx="90" cy="34" r="6" fill="#c05d12" /><path d="M80 51c2-7 18-7 20 0" fill="#c05d12" /></g>
     </svg>
   );
 }

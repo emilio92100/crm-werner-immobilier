@@ -28,11 +28,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://emilio-immo-chasse
 const ESPACE_URL = `https://${HOTE_ESPACE}`;
 
 /* V3.118 : les couleurs du site emilio-immo.com (src/lib/mail-charte.ts). */
-const BLEU = '#1d1d1f';
-const DORE = '#ee7623';
-const ENCRE = '#141416';
-const DORE_TEXTE = '#b4560f';
-const DORE_CLAIR = '#f6a15e';
+const BLEU = '#2e3034';
+const DORE = '#f08c42';
+const ENCRE = '#232528';
+const DORE_TEXTE = '#c2621c';
+const DORE_CLAIR = '#f7b07a';
 const FOND = '#FFF6EC';
 
 interface BienLite {
@@ -897,7 +897,7 @@ function buildMandatPret(o: { prenom: string; hono: Honoraires; token?: string |
   const corpsHtml = `Bonjour ${escapeHtml(o.prenom)},<br/><br/>Comme convenu, votre <b>mandat de recherche</b> est prêt dans votre espace. Il se lit et se signe en deux minutes, avec un code reçu par e-mail.`;
   const ligne = (t: string, v: string, d: string) => `
     <tr><td style="padding:10px 0;border-top:1px solid #eeeeed;">
-      <div style="font-size:10px;letter-spacing:1.6px;text-transform:uppercase;font-weight:700;color:#b4560f;">${t}</div>
+      <div style="font-size:10px;letter-spacing:1.6px;text-transform:uppercase;font-weight:700;color:#c2621c;">${t}</div>
       <div style="font-size:15px;font-weight:700;color:${BLEU};margin-top:3px;">${v}</div>
       <div style="font-size:12.5px;color:#5B6B80;margin-top:2px;">${d}</div>
     </td></tr>`;

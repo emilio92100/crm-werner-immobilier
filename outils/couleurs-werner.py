@@ -3,7 +3,7 @@
 
 Ce que fait le script, sur tous les .ts, .tsx et .css de src/ :
   · les bleus de la marque Emilio (marine, « bleu Emilio » #34496e, bleu du
-    site #22497D et leurs teintes pâles) deviennent des noirs et des gris
+    site #22497D et leurs teintes pâles) deviennent des anthracites et des gris
     neutres, à luminosité équivalente ;
   · les dorés (#c9a84c et sa famille) et l'orange du site Emilio (#E68B23)
     deviennent l'orange de Werner (#EE7623) et ses nuances ;
@@ -20,23 +20,23 @@ import pathlib
 import re
 import sys
 
-ORANGE = '#ee7623'
+ORANGE = '#f08c42'   # orange Werner, doux (choix d'Alexandre, 20/10/2026)
 
 # Correspondances fixes : les couleurs pivots de la marque
 FIXES = {
     '#e68b23': ORANGE,      # orange du site Emilio → orange Werner
-    '#a95808': '#b4560f',   # orange foncé (texte orange sur fond clair)
-    '#f2b266': '#f6a15e',   # orange clair (sur fond sombre)
+    '#a95808': '#c2621c',   # orange foncé (texte orange sur fond clair)
+    '#f2b266': '#f7b07a',   # orange clair (sur fond sombre)
     '#c9a84c': ORANGE,      # doré → orange
-    '#e8c96a': '#f6a15e',
-    '#a07c28': '#b4560f',
-    '#34496e': '#1d1d1f',   # « bleu Emilio » du CRM → noir Werner
-    '#3a5178': '#2c2c2e',
-    '#2e4166': '#161618',
-    '#22497d': '#1d1d1f',   # bleu du site → noir
-    '#22497c': '#1d1d1f',
-    '#13243d': '#141416',   # encre
-    '#1a2332': '#18181b',   # ancien marine
+    '#e8c96a': '#f7b07a',
+    '#a07c28': '#c2621c',
+    '#34496e': '#2e3034',   # « bleu Emilio » du CRM → anthracite Werner (noir grisé)
+    '#3a5178': '#3b3e43',
+    '#2e4166': '#26282c',
+    '#22497d': '#2e3034',   # bleu du site → anthracite
+    '#22497c': '#2e3034',
+    '#13243d': '#232528',   # encre
+    '#1a2332': '#25272b',   # ancien marine
     '#f5f8fc': '#f6f6f7',   # fond de l'espace client
 }
 
@@ -74,7 +74,7 @@ def convertir(h):
     # Bleus de la marque → noirs et gris neutres (une pointe de chaleur)
     if 198 <= deg <= 236 and s >= 0.18:
         if l < 0.42:
-            return hexa(30 / 360, 0.07 + (l - 0.10) * 0.55, 0.03)
+            return hexa(220 / 360, 0.17 + (l - 0.10) * 0.55, 0.05)
         if l < 0.80:
             return hexa(30 / 360, l, 0.04)
         return hexa(30 / 360, l, min(s, 0.6) * 0.12)

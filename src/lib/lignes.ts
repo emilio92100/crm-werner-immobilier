@@ -12,14 +12,14 @@ export type Ligne = {
 };
 
 // Le jaune, le vert clair et le bleu ciel demandent un texte sombre.
-const SOMBRE = '#18181b';
+const SOMBRE = '#25272b';
 const l = (id: string, court: string, couleur: string, mode: Ligne['mode'], sombre = false): Ligne =>
   ({ id, court, couleur, texte: sombre ? SOMBRE : '#fff', mode });
 
 export const LIGNES: Ligne[] = [
   // ── Métro ───────────────────────────────────────────────
-  l('M1', '1', '#ee7320', 'metro', true),
-  l('M2', '2', '#3d3b39', 'metro'),
+  l('M1', '1', '#e8863a', 'metro', true),
+  l('M2', '2', '#505359', 'metro'),
   l('M3', '3', '#6e6e00', 'metro'),
   l('M3bis', '3b', '#82c8e6', 'metro', true),
   l('M4', '4', '#a0006e', 'metro'),
@@ -29,7 +29,7 @@ export const LIGNES: Ligne[] = [
   l('M7bis', '7b', '#82dc73', 'metro', true),
   l('M8', '8', '#d282be', 'metro', true),
   l('M9', '9', '#d2d200', 'metro', true),
-  l('M10', '10', '#cc5b10', 'metro', true),
+  l('M10', '10', '#d76c1a', 'metro', true),
   l('M11', '11', '#6e491e', 'metro'),
   l('M12', '12', '#00643c', 'metro'),
   l('M13', '13', '#82c8e6', 'metro', true),
@@ -40,16 +40,16 @@ export const LIGNES: Ligne[] = [
   // ── RER ─────────────────────────────────────────────────
   l('RER A', 'A', '#eb2132', 'rer'),
   l('RER B', 'B', '#928e89', 'rer'),
-  l('RER C', 'C', '#ee7320', 'rer', true),
+  l('RER C', 'C', '#e8863a', 'rer', true),
   l('RER D', 'D', '#008b5b', 'rer'),
   l('RER E', 'E', '#b94e9a', 'rer'),
 
   // ── Tramway ─────────────────────────────────────────────
-  l('T1', 'T1', '#3d3b39', 'tram'),
+  l('T1', 'T1', '#505359', 'tram'),
   l('T2', 'T2', '#a0006e', 'tram'),
   l('T3a', 'T3a', '#ff5a00', 'tram'),
   l('T3b', 'T3b', '#00643c', 'tram'),
-  l('T4', 'T4', '#cc5b10', 'tram'),
+  l('T4', 'T4', '#d76c1a', 'tram'),
   l('T5', 'T5', '#640082', 'tram'),
   l('T6', 'T6', '#ff0000', 'tram'),
   l('T7', 'T7', '#6e491e', 'tram'),

@@ -56,7 +56,7 @@ type Categorie = 'tous' | 'acheteur' | 'non_filtre' | Exclude<TypeContact, 'ache
 /* Les pastilles des tuiles, sur le bandeau bleu : les couleurs des types,
    éclaircies pour qu'on les voie (le bleu d'un notaire disparaissait). */
 const TEINTE_BANDEAU: Record<TypeContact, string> = {
-  acheteur: '#34d399', vendeur: '#f5a365', vendeur_signe: '#86efac', proprietaire: '#fb923c', notaire: '#c7c4c2',
+  acheteur: '#34d399', vendeur: '#f1af7d', vendeur_signe: '#86efac', proprietaire: '#fb923c', notaire: '#c7c4c2',
   confrere: '#b79cff', gardien: '#5fd4e8', partenaire: '#cbd5e1',
 };
 /* L'ordre des tuiles (V3.24) : « Tous », puis les trois du menu de gauche
@@ -228,8 +228,8 @@ function Civilite({ v, onV }: { v: string; onV: (c: 'Monsieur' | 'Madame') => vo
    type de contact, un titre, une précision. Les émoji des titres rendaient
    différemment d'un téléphone à l'autre. */
 type Teinte = { c: string; fond: string };
-const MARINE: Teinte = { c: '#1d1d1f', fond: '#f4f3f2' };
-const OR: Teinte = { c: '#b4560f', fond: '#fbf0e9' };
+const MARINE: Teinte = { c: '#2e3034', fond: '#f4f3f2' };
+const OR: Teinte = { c: '#c2621c', fond: '#fbf0e9' };
 function Bloc({ ic, titre, petit, teinte = MARINE, children }: { ic: string; titre: string; petit?: string; teinte?: Teinte; children: React.ReactNode }) {
   return (
     <section className="nc-bloc">
@@ -405,7 +405,7 @@ function signalDe(client: any, st: StatDossier | undefined): Signal {
     const aide = `Relance prévue le ${new Date(st.relance.date).toLocaleDateString('fr-FR')}${st.relance.note ? ` — ${st.relance.note}` : ''}`;
     if (j < 0) return { texte: `🔔 Relance en retard`, color: '#be123c', bg: '#fff1f2', rang: 0, aide };
     if (j === 0) return { texte: `🔔 Relance aujourd'hui`, color: '#be123c', bg: '#fff1f2', rang: 1, aide };
-    if (j <= 7) return { texte: `Relance dans ${j} j`, color: '#b45309', bg: '#fffbeb', rang: 2, aide };
+    if (j <= 7) return { texte: `Relance dans ${j} j`, color: '#c05d12', bg: '#fffbeb', rang: 2, aide };
     return { texte: `Relance le ${new Date(st.relance.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`, color: '#64748b', bg: '#f6f6f7', rang: 4, aide };
   }
   /* Pas de mandat du tout : rien à signaler. Un dossier sans mandat n'est pas
@@ -414,7 +414,7 @@ function signalDe(client: any, st: StatDossier | undefined): Signal {
     const j = joursJusqua(client.mandat_date_expiration);
     const aide = `Mandat jusqu'au ${new Date(client.mandat_date_expiration).toLocaleDateString('fr-FR')}`;
     if (j < 0) return { texte: '⚠️ Mandat expiré', color: '#b91c1c', bg: '#fef2f2', rang: 3, aide };
-    if (j < 15) return { texte: `Mandat · ${j} j`, color: '#b45309', bg: '#fffbeb', rang: 3, aide };
+    if (j < 15) return { texte: `Mandat · ${j} j`, color: '#c05d12', bg: '#fffbeb', rang: 3, aide };
   }
   if ((client.statut as string) === 'bien_trouve') {
     return { texte: 'Dossier clos', color: '#1d4ed8', bg: '#eff6ff', rang: 8, aide: 'Bien trouvé — dossier terminé' };
@@ -434,7 +434,7 @@ function signalDe(client: any, st: StatDossier | undefined): Signal {
     /* Un dossier actif sans le moindre geste depuis six semaines refroidit :
        ce n'est pas une alerte, mais ça doit se voir. */
     if (j > 45 && (client.statut as string) === 'actif') {
-      return { texte: `Rien depuis ${duree(j)}`, color: '#b45309', bg: '#fffbeb', rang: 5, aide };
+      return { texte: `Rien depuis ${duree(j)}`, color: '#c05d12', bg: '#fffbeb', rang: 5, aide };
     }
     return { texte: `Mis à jour ${quand}`, color: '#7b8798', bg: '#f6f6f7', rang: 6, aide };
   }
@@ -461,7 +461,7 @@ const PA_BASE: React.CSSProperties = {
   padding: 'var(--pa-p, 4px 10px 4px 8px)', fontSize: 'var(--pa-t, 12.5px)', fontWeight: 700, whiteSpace: 'nowrap',
 };
 const PA_TYPE: React.CSSProperties = { ...PA_BASE, background: '#f5f4f4', border: '1px solid #eae8e7', color: '#393836' };
-const PA_NOMBRE: React.CSSProperties = { ...PA_BASE, background: '#f8fafc', border: '1px solid #f3f2f2', color: '#373533' };
+const PA_NOMBRE: React.CSSProperties = { ...PA_BASE, background: '#f8fafc', border: '1px solid #f3f2f2', color: '#4b4d52' };
 const PA_FORT: React.CSSProperties = { fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'var(--pa-f, 13.5px)', fontWeight: 800, color: 'var(--emilio)' };
 const PA_FAIBLE: React.CSSProperties = { fontSize: 'var(--pa-n, 11px)', color: '#b6b2af', fontWeight: 600 };
 
@@ -491,7 +491,7 @@ function indispensables(c: any): string[] {
 }
 const PA_INDISP: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: 7, padding: '2px 8px 2px 6px',
-  fontSize: 11.5, fontWeight: 700, whiteSpace: 'nowrap', background: '#fdf1e9', border: '1px solid #fad2b3', color: '#92420c',
+  fontSize: 11.5, fontWeight: 700, whiteSpace: 'nowrap', background: '#fdf1e9', border: '1px solid #fad2b3', color: '#9f5014',
 };
 const D_INDISP = <><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6z" /><path d="m8.8 12 2.2 2.2 4.4-4.4" /></>;
 
@@ -544,7 +544,7 @@ const ETIQUETTE: Record<string, string> = {
 const TEINTE: Record<string, { bg: string; fg: string; trait: string }> = {
   prospect:    { bg: '#f5f3ff', fg: '#6d28d9', trait: '#ddd6fe' },
   actif:       { bg: '#ecfdf5', fg: '#0f7a4f', trait: '#a7e8c6' },
-  suspendu:    { bg: '#fffbeb', fg: '#b45309', trait: '#fde68a' },
+  suspendu:    { bg: '#fffbeb', fg: '#c05d12', trait: '#fde68a' },
   bien_trouve: { bg: '#eff6ff', fg: '#1d4ed8', trait: '#dedcd9' },
   perdu:       { bg: '#fef2f2', fg: '#b91c1c', trait: '#fecaca' },
 };
@@ -1470,18 +1470,18 @@ export default function Clients({ onNavigate, fenetre }: {
               @keyframes ncEntre { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
               .crm-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-color: #fff !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23c9a84c' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding: 11px 38px 11px 14px !important; border-radius: 12px !important; border: 1.5px solid #eaeae9 !important; font-size: 13.5px !important; font-weight: 600; color: var(--emilio); cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
               .crm-select:hover { border-color: #cbd5e1 !important; }
-              .crm-select:focus { border-color: #ee7623 !important; background-color: #fff !important; box-shadow: 0 0 0 3px rgba(238, 118, 35,0.12); outline: none; }
+              .crm-select:focus { border-color: #f08c42 !important; background-color: #fff !important; box-shadow: 0 0 0 3px rgba(240, 140, 66,0.12); outline: none; }
 
               /* Le rail des trois temps */
               .nc-rail { display: flex; gap: 0; margin-top: 18px; }
               .nc-pas { flex: 1 1 0; min-width: 0; background: none; border: none; padding: 0 0 2px; font-family: inherit; text-align: left; cursor: pointer; }
               .nc-pas:disabled { cursor: default; }
               .nc-barre { height: 4px; border-radius: 4px; background: #eaeae9; margin-right: 6px; transition: background .3s ease; }
-              .nc-pas[data-etat="fait"] .nc-barre { background: #ee7623; }
+              .nc-pas[data-etat="fait"] .nc-barre { background: #f08c42; }
               .nc-pas[data-etat="ici"] .nc-barre { background: var(--emilio); }
               .nc-lig { display: flex; align-items: baseline; gap: 6px; margin-top: 7px; }
               .nc-lig b { font-size: 11.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: .6px; }
-              .nc-pas[data-etat="fait"] .nc-lig b { color: #c85a10; }
+              .nc-pas[data-etat="fait"] .nc-lig b { color: #d36a1a; }
               .nc-pas[data-etat="ici"] .nc-lig b { color: var(--emilio); }
               .nc-lig i { font-style: normal; font-size: 11.5px; color: #c3c0be; }
               @media (max-width: 720px) { .nc-lig i { display: none; } }
@@ -1510,8 +1510,8 @@ export default function Clients({ onNavigate, fenetre }: {
               .nc-couple { display: flex; flex-direction: column; gap: 10px; }
               .nc-pers { border: 1px solid #eaeae9; border-radius: 14px; padding: 13px 16px 16px; background: #fff; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
               .nc-pers-h { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
-              .nc-pers-t { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #c85a10; }
-              .nc-pers-n { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #fbf0e9; border: 1px solid #facca9; color: #9c460d; font: 800 11.5px 'Plus Jakarta Sans', sans-serif; letter-spacing: 0; }
+              .nc-pers-t { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #d36a1a; }
+              .nc-pers-n { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #fbf0e9; border: 1px solid #facca9; color: #a85515; font: 800 11.5px 'Plus Jakarta Sans', sans-serif; letter-spacing: 0; }
               .nc-id { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
               .nc-co { display: grid; grid-template-columns: minmax(150px, 190px) minmax(0, 1fr); gap: 12px; }
               /* Un libellé sur deux lignes ne décale plus sa case : elles restent alignées en bas. */
@@ -1530,17 +1530,17 @@ export default function Clients({ onNavigate, fenetre }: {
               .nc-bloc-t small { font-size: 12.5px; font-weight: 600; color: #94a3b8; }
               .nc-bloc-corps { display: flex; flex-direction: column; gap: 12px; }
               .nc-fenetre .${styles.input}, .nc-fenetre .${styles.textarea} { background: #fff; border: 1.5px solid #e7e6e6; border-radius: 11px; padding: 11px 13px; font-size: 14px; }
-              .nc-fenetre .${styles.input}:focus, .nc-fenetre .${styles.textarea}:focus { border-color: #ee7623; box-shadow: 0 0 0 3px rgba(238, 118, 35,.16); }
+              .nc-fenetre .${styles.input}:focus, .nc-fenetre .${styles.textarea}:focus { border-color: #f08c42; box-shadow: 0 0 0 3px rgba(240, 140, 66,.16); }
               .nc-fenetre .${styles.label} { font-size: 12.5px; font-weight: 700; color: #302e2d; }
               .nc-fenetre .${styles.formRow} { gap: 12px; }
               .nc-fenetre .${styles.formGroup} { gap: 6px; }
               .nc-aide { font-size: 12px; color: #94a3b8; line-height: 1.5; }
-              .nc-lien { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; border: none; background: none; padding: 2px 0; font: 700 13px 'DM Sans', sans-serif; color: #b4560f; cursor: pointer; }
+              .nc-lien { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; border: none; background: none; padding: 2px 0; font: 700 13px 'DM Sans', sans-serif; color: #c2621c; cursor: pointer; }
               .nc-lien:hover { text-decoration: underline; text-underline-offset: 3px; }
               .nc-deux { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 18px; align-items: start; }
               .nc-champs { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-              .nc-apercu { position: sticky; top: 0; border-radius: 18px; overflow: hidden; border: 1px solid #eaeae9; background: #fff; box-shadow: 0 14px 30px -24px rgba(24, 24, 27,.6); }
-              .nc-ap-h { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 9px; padding: 18px 14px 16px; color: #fff; background: linear-gradient(152deg, #2c2c2e 0%, #282726 60%, #161618 100%); }
+              .nc-apercu { position: sticky; top: 0; border-radius: 18px; overflow: hidden; border: 1px solid #eaeae9; background: #fff; box-shadow: 0 14px 30px -24px rgba(37, 39, 43,.6); }
+              .nc-ap-h { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 9px; padding: 18px 14px 16px; color: #fff; background: linear-gradient(152deg, #3b3e43 0%, #3d3f44 60%, #26282c 100%); }
               .nc-ap-txt { display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; max-width: 100%; }
               .nc-ap-nom { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16.5px; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
               .nc-ap-nom.vide { color: rgba(255,255,255,.45); font-weight: 700; }
@@ -1743,7 +1743,7 @@ export default function Clients({ onNavigate, fenetre }: {
 
                       {!acheteur && (form.types.includes('vendeur') || form.types.includes('proprietaire')) && (
                         <Bloc ic="maison" titre="Son bien" teinte={teinte}>
-                          <button type="button" onClick={() => setForm({ ...form, creerBien: !form.creerBien })} style={{ ...pill(form.creerBien, '#ee7623', '#fbf0e9', '#9c460d'), alignSelf: 'flex-start' }}>
+                          <button type="button" onClick={() => setForm({ ...form, creerBien: !form.creerBien })} style={{ ...pill(form.creerBien, '#f08c42', '#fbf0e9', '#a85515'), alignSelf: 'flex-start' }}>
                             {form.creerBien ? '✓ ' : ''}Créer son bien juste après (rubrique Biens)
                           </button>
                           <div className="nc-aide">« Nouveau bien » s’ouvre, lui déjà propriétaire : à suivre, estimation ou mandat signé.</div>
@@ -1819,7 +1819,7 @@ export default function Clients({ onNavigate, fenetre }: {
                   {/* ═══ 2 · SA RECHERCHE ═══ */}
                   {pas === 'recherche' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      <button type="button" onClick={() => setForm({ ...form, critPlusTard: !form.critPlusTard })} style={{ ...pill(form.critPlusTard, '#64748b', '#f1f5f9', '#1d1d1f'), alignSelf: 'flex-start' }}>
+                      <button type="button" onClick={() => setForm({ ...form, critPlusTard: !form.critPlusTard })} style={{ ...pill(form.critPlusTard, '#64748b', '#f1f5f9', '#2e3034'), alignSelf: 'flex-start' }}>
                         {form.critPlusTard ? '✓ ' : ''}Ses critères plus tard : acheteur non filtré
                       </button>
                       {form.critPlusTard ? (
@@ -2013,7 +2013,7 @@ export default function Clients({ onNavigate, fenetre }: {
                         return (
                           <button key={t.cle} className={styles.triItem} onClick={() => classer(t.cle, t.sensDefaut)}
                             style={actif ? { background: '#fdf6f1' } : undefined}>
-                            <span style={{ width: 12, flexShrink: 0, color: '#ee7623', fontSize: 12 }}>{actif ? '✓' : ''}</span>
+                            <span style={{ width: 12, flexShrink: 0, color: '#f08c42', fontSize: 12 }}>{actif ? '✓' : ''}</span>
                             <span style={{ flexGrow: 1, minWidth: 0 }}>
                               <b>{t.nom}</b>
                               <small>{actif && tri.sens !== t.sensDefaut ? 'ordre inversé' : t.note}</small>
@@ -2081,14 +2081,14 @@ export default function Clients({ onNavigate, fenetre }: {
                               /* Il vend aussi un bien (rubrique Biens) : on le dit. */
                               if (typesDe(client).includes('vendeur')) return (
                                 <span className={styles.proprio} title="Il vend aussi un bien : voir sa fiche ou la rubrique Biens">
-                                  <Ico t={10} d={D_CLE} c="#b9530f" />Vendeur aussi
+                                  <Ico t={10} d={D_CLE} c="#c46318" />Vendeur aussi
                                 </span>
                               );
                               const sit = situationDe(client);
                               if (sit === 'vendeur' || sit === 'proprietaire') return (
                                 <span className={`${styles.proprio} ${sit === 'vendeur' ? styles.proprioVend : ''}`}
                                   title={sit === 'vendeur' ? 'Propriétaire, il revendra sans doute son bien après l\u2019achat : mandat vendeur possible' : 'Propriétaire de son logement actuel'}>
-                                  <Ico t={10} d={D_CLE} c={sit === 'vendeur' ? '#18181b' : '#b9530f'} />
+                                  <Ico t={10} d={D_CLE} c={sit === 'vendeur' ? '#25272b' : '#c46318'} />
                                   {sit === 'vendeur' ? 'Revente possible' : 'Propriétaire'}
                                 </span>
                               );
@@ -2141,7 +2141,7 @@ export default function Clients({ onNavigate, fenetre }: {
                           <span className={styles.indisp} style={clos ? { opacity: 0.68 } : undefined}>
                             {/* V3.181 : sur un écran moyen (901 à 1 359 px), la colonne
                                 est étroite : deux pastilles et « +N », sur une seule ligne. */}
-                            {indisp.slice(0, 3).map((x, i) => <span key={x} className={i === 2 ? styles.indisp3 : undefined} style={PA_INDISP}><Ico d={D_INDISP} c="#d25e11" t={12} />{x}</span>)}
+                            {indisp.slice(0, 3).map((x, i) => <span key={x} className={i === 2 ? styles.indisp3 : undefined} style={PA_INDISP}><Ico d={D_INDISP} c="#dc6f1b" t={12} />{x}</span>)}
                             {indisp.length > 2 && <span className={styles.plusEtroit} style={{ ...PA_INDISP, padding: '2px 7px' }}>{`+${indisp.length - 2}`}</span>}
                             {indisp.length > 3 && <span className={styles.plusLarge} style={{ ...PA_INDISP, padding: '2px 7px' }}>{`+${indisp.length - 3}`}</span>}
                           </span>
@@ -2226,7 +2226,7 @@ export default function Clients({ onNavigate, fenetre }: {
                           return (
                             <button key={t.cle} type="button" className={styles.triItem} onClick={() => classerListe(t.cle, t.sensDefaut)}
                               style={actif ? { background: '#fdf6f1' } : undefined}>
-                              <span style={{ width: 12, flexShrink: 0, color: '#ee7623', fontSize: 12 }}>{actif ? '✓' : ''}</span>
+                              <span style={{ width: 12, flexShrink: 0, color: '#f08c42', fontSize: 12 }}>{actif ? '✓' : ''}</span>
                               <span style={{ flexGrow: 1, minWidth: 0 }}>
                                 <b>{t.nom}</b>
                                 <small>{actif && triL.sens !== t.sensDefaut ? 'ordre inversé' : t.note}</small>

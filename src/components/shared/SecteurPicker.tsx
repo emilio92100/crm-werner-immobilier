@@ -237,5 +237,5 @@ const piluleVide: React.CSSProperties = { fontSize: 12.5, padding: '6px 12px', b
 const pilulePleine: React.CSSProperties = { ...piluleVide, border: '1px solid var(--emilio)', background: 'var(--emilio-fond)', color: 'white' };
 const piluleAjout: React.CSSProperties = { ...piluleVide, borderStyle: 'dashed', color: '#3b82f6', borderColor: '#bfdbfe' };
 const puceQuartier: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fef9c3', color: '#854d0e', border: '1px solid #fde68a', padding: '5px 8px 5px 12px', borderRadius: 20, fontSize: 12.5, fontWeight: 700 };
-const croixPuce: React.CSSProperties = { background: 'none', border: 'none', color: '#c75910', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit', padding: 0, lineHeight: 1 };
+const croixPuce: React.CSSProperties = { background: 'none', border: 'none', color: '#d2691a', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit', padding: 0, lineHeight: 1 };
 const boutonAjout: React.CSSProperties = { fontSize: 13, padding: '0 16px', borderRadius: 10, border: 'none', background: 'var(--emilio-fond)', color: 'white', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, whiteSpace: 'nowrap' };

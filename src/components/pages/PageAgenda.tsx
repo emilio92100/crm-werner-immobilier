@@ -39,14 +39,14 @@ import { copieDe } from '@/components/biens/outils';
  * même. « Prévenir le client » part par /api/send-mail, en mail simple.
  */
 
-const NAVY = '#1d1d1f', OR = '#ee7623', OR_FONCE = '#9c460d', BORD = '#eaeae9', LIGNE = '#f2f2f2';
+const NAVY = '#2e3034', OR = '#f08c42', OR_FONCE = '#a85515', BORD = '#eaeae9', LIGNE = '#f2f2f2';
 const DOUX = '#5b6678', PALE = '#8d99ab', FOND = '#f7f7f7', AUJ_FOND = '#fcf7f3', CHOISI = '#f3f2f2';
 const JAK = "'Plus Jakarta Sans', system-ui, sans-serif";
 
 type TypeRdv = 'visite' | 'client' | 'libre' | 'appel' | 'signature' | 'estimation' | 'perso';
 const TYPES: Record<TypeRdv, { nom: string; fond: string; trait: string; encre: string; point: string; ico: string }> = {
-  visite: { nom: 'Visite', fond: '#fbece1', trait: '#f9c7a1', encre: '#632c08', point: '#ee7623', ico: 'maison' },
-  client: { nom: 'Rendez-vous client', fond: '#f0efee', trait: '#dad9d7', encre: '#1d1d1f', point: '#1d1d1f', ico: 'personne' },
+  visite: { nom: 'Visite', fond: '#fbece1', trait: '#f9c7a1', encre: '#632c08', point: '#f08c42', ico: 'maison' },
+  client: { nom: 'Rendez-vous client', fond: '#f0efee', trait: '#dad9d7', encre: '#2e3034', point: '#2e3034', ico: 'personne' },
   /* Un rendez-vous sans client : notaire, banque, partenaire, agence… */
   libre: { nom: 'Rendez-vous libre', fond: '#e6f5f3', trait: '#bfe5df', encre: '#115e59', point: '#0d9488', ico: 'groupe' },
   appel: { nom: 'Appel · visio', fond: '#f5f4f3', trait: '#e4e2df', encre: '#1e3a8a', point: '#2563eb', ico: 'visio' },
@@ -58,13 +58,13 @@ const ORDRE: TypeRdv[] = ['visite', 'client', 'libre', 'appel', 'signature', 'es
 const FAIT = { fond: '#f7f7f7', trait: '#ebebea', encre: '#7d899b' };
 /* Une visite passée dont le compte rendu n'est pas fait reste visible, en
    ambre : c'est une chose à faire, pas une chose finie. */
-const A_FAIRE = { fond: '#ffe9d9', trait: '#f6ab71', encre: '#8a4b0f' };
+const A_FAIRE = { fond: '#ffe9d9', trait: '#f3b789', encre: '#8a4b0f' };
 function teinte(e: Ev) { return e.crAFaire ? A_FAIRE : e.fait ? FAIT : TYPES[e.type]; }
 
 type Genre = 'signature' | 'mandat' | 'visite';
 const TACHES: Record<Genre, { fond: string; encre: string; trait: string }> = {
   signature: { fond: '#e5f4ec', encre: '#0b5e41', trait: '#bfe3cf' },
-  mandat: { fond: '#f0efee', encre: '#1d1d1f', trait: '#dad9d7' },
+  mandat: { fond: '#f0efee', encre: '#2e3034', trait: '#dad9d7' },
   visite: { fond: '#fbece1', encre: '#632c08', trait: '#f9c7a1' },
 };
 
@@ -750,12 +750,12 @@ function StylesAgenda() {
       @keyframes agPouls{0%{box-shadow:0 0 0 0 rgba(214,84,60,.55)}70%{box-shadow:0 0 0 10px rgba(214,84,60,0)}100%{box-shadow:0 0 0 0 rgba(214,84,60,0)}}
       .ag-vue{animation:agVue .38s cubic-bezier(.2,.9,.3,1) both}
       .ag-ev{animation:agEv .45s cubic-bezier(.2,.9,.3,1) both;transition:transform .18s cubic-bezier(.2,.9,.3,1),box-shadow .18s ease}
-      .ag-ev:hover{transform:translateY(-2px);box-shadow:0 12px 26px -14px rgba(22, 21, 20,.55);z-index:4}
+      .ag-ev:hover{transform:translateY(-2px);box-shadow:0 12px 26px -14px rgba(44, 46, 49,.55);z-index:4}
       .ag-appui{transition:transform .15s ease,background-color .15s ease,box-shadow .15s ease}
       .ag-appui:hover{transform:translateY(-1px)}
       .ag-appui:active{transform:scale(.98)}
       .ag-lien:hover{background-color:#f9f8f8 !important;transform:none}
-      .ag-lienBien:hover{border-color:#f7b27e !important;background-color:#fff6f0 !important}
+      .ag-lienBien:hover{border-color:#f4be95 !important;background-color:#fff6f0 !important}
       .ag-case{transition:background-color .15s ease}
       .ag-case:hover{background-color:#fafafa !important}
       .ag-seg{transition:transform .45s cubic-bezier(.2,.8,.2,1)}
@@ -781,7 +781,7 @@ function StylesAgenda() {
       .ag-carte-jour{animation:agSection .5s cubic-bezier(.2,.9,.3,1) both}
       .ag-champ{transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
       .ag-champ:hover:not(:focus):not(:disabled){border-color:#dad9d8 !important}
-      .ag-champ:focus{border-color:${OR} !important;box-shadow:0 0 0 4px rgba(238, 118, 35,.16);background:#fff !important}
+      .ag-champ:focus{border-color:${OR} !important;box-shadow:0 0 0 4px rgba(240, 140, 66,.16);background:#fff !important}
       .ag-champ-bouton{transition:border-color .15s ease,box-shadow .2s ease,background-color .2s ease,transform .15s ease}
       .ag-champ-bouton:hover:not([data-ouvert]){border-color:#dad9d8 !important;transform:translateY(-1px)}
       .ag-jour{transition:background-color .12s ease,transform .12s ease}
@@ -911,7 +911,7 @@ function CarteDuJour({ maintenant, evs, prochain, onNouveau, onVoirEv }: { maint
       )}
 
       <button type="button" className="ag-appui" onClick={onNouveau}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 40, borderRadius: 12, border: 'none', background: OR, color: NAVY, fontSize: 13.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 18px -12px rgba(238, 118, 35,.9)' }}>
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 40, borderRadius: 12, border: 'none', background: OR, color: NAVY, fontSize: 13.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 18px -12px rgba(240, 140, 66,.9)' }}>
         <Ic n="plus" t={16} ep={2.4} />Nouveau rendez-vous
       </button>
     </div>
@@ -1692,7 +1692,7 @@ function BoutonFlottant({ onClick }: { onClick: () => void }) {
   if (!monte) return null;
   return createPortal(
     <button type="button" className="ag-appui" aria-label="Nouveau rendez-vous" onClick={onClick}
-      style={{ position: 'fixed', right: 18, bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))', width: 56, height: 56, borderRadius: 18, border: 'none', background: OR, color: NAVY, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 14px 28px -12px rgba(238, 118, 35,.95)', zIndex: 50, cursor: 'pointer' }}>
+      style={{ position: 'fixed', right: 18, bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))', width: 56, height: 56, borderRadius: 18, border: 'none', background: OR, color: NAVY, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 14px 28px -12px rgba(240, 140, 66,.95)', zIndex: 50, cursor: 'pointer' }}>
       <Ic n="plus" t={24} ep={2.4} />
     </button>,
     document.body,
@@ -1896,7 +1896,7 @@ function ChampIcone({ ico, children }: { ico: string; children: React.ReactNode 
 function BoutonChamp({ ico, valeur, aide, ouvert, onClick, etiquette }: { ico: string; valeur: string; aide?: string; ouvert: boolean; onClick: () => void; etiquette: string }) {
   return (
     <button type="button" className="ag-champ-bouton" aria-expanded={ouvert} aria-label={etiquette} onClick={onClick} data-ouvert={ouvert || undefined}
-      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', minHeight: 58, padding: '8px 14px 8px 9px', boxSizing: 'border-box', borderRadius: 15, border: `1.5px solid ${ouvert ? OR : BORD}`, background: ouvert ? '#fff6f0' : '#fdfcfc', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: NAVY, boxShadow: ouvert ? '0 0 0 4px rgba(238, 118, 35,.14)' : 'none' }}>
+      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', minHeight: 58, padding: '8px 14px 8px 9px', boxSizing: 'border-box', borderRadius: 15, border: `1.5px solid ${ouvert ? OR : BORD}`, background: ouvert ? '#fff6f0' : '#fdfcfc', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: NAVY, boxShadow: ouvert ? '0 0 0 4px rgba(240, 140, 66,.14)' : 'none' }}>
       <span style={{ width: 40, height: 40, borderRadius: 12, background: ouvert ? OR : '#fbece1', color: ouvert ? NAVY : OR_FONCE, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .2s ease, color .2s ease' }}><Ic n={ico} t={18} ep={2} /></span>
       <span style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1, minWidth: 0 }}>
         <b style={{ fontFamily: JAK, fontSize: 15, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{valeur}</b>
@@ -2747,7 +2747,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
       <section ref={feuille} className="ag-modale ag-feuille" role="dialog" aria-modal="true" aria-label={ev ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
         style={{ width: '100%', maxWidth: 1180, height: 'min(800px, 90dvh)', background: 'white', borderRadius: 22, boxShadow: '0 40px 100px -30px rgba(14, 13, 13,.6)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 22px', background: NAVY, color: 'white', flexShrink: 0 }}>
-          <span style={{ width: 36, height: 36, borderRadius: 11, background: 'rgba(238, 118, 35,.16)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="calendrier" t={19} ep={1.9} /></span>
+          <span style={{ width: 36, height: 36, borderRadius: 11, background: 'rgba(240, 140, 66,.16)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="calendrier" t={19} ep={1.9} /></span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', color: OR }}>Agenda</div>
             <b style={{ fontFamily: JAK, fontSize: 17.5, fontWeight: 800 }}>{ev ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}</b>
@@ -2907,7 +2907,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
                     );
                   })}
                   <button type="button" className="ag-appui" aria-pressed={perso} onClick={() => { setPerso(true); setPanneau(null); }}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 40, padding: '0 15px', borderRadius: 12, border: `1.5px ${perso ? 'solid' : 'dashed'} ${perso ? OR : '#d5d3d2'}`, background: perso ? '#fff6f0' : 'white', color: perso ? '#9c460d' : NAVY, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 40, padding: '0 15px', borderRadius: 12, border: `1.5px ${perso ? 'solid' : 'dashed'} ${perso ? OR : '#d5d3d2'}`, background: perso ? '#fff6f0' : 'white', color: perso ? '#a85515' : NAVY, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                     <Ic n="crayon" t={14} />Personnalisé
                   </button>
                 </div>
@@ -3015,10 +3015,10 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
         </div>
 
         <footer className="ag-modale-pied" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '12px 22px', borderTop: `1px solid ${BORD}`, background: '#fdfcfc', flexShrink: 0 }}>
-          <span role="status" style={{ fontSize: 12.5, color: retenue ? '#b45309' : DOUX, fontWeight: retenue ? 700 : 400, flex: '1 1 200px' }}>{retenue ? 'Pour fermer sans enregistrer, appuie sur Annuler.' : lie || bienEstim ? 'Rendez-vous lié à un bien.' : avecDossier && dossier ? `Rangé dans le dossier de ${dossier.nom}.` : personneLibre ? `Avec ${personneLibre}, noté sur le rendez-vous (pas dans tes contacts).` : enAttente ? (libreOk ? `« ${enAttente} » n’est pas encore retenu : choisis un client de la liste, ou garde ce nom.` : `« ${enAttente} » n’est pas choisi : clique sur le bon dossier.`) : dossierObligatoire ? 'Choisis le dossier du client.' : 'Rendez-vous sans client.'}</span>
+          <span role="status" style={{ fontSize: 12.5, color: retenue ? '#c05d12' : DOUX, fontWeight: retenue ? 700 : 400, flex: '1 1 200px' }}>{retenue ? 'Pour fermer sans enregistrer, appuie sur Annuler.' : lie || bienEstim ? 'Rendez-vous lié à un bien.' : avecDossier && dossier ? `Rangé dans le dossier de ${dossier.nom}.` : personneLibre ? `Avec ${personneLibre}, noté sur le rendez-vous (pas dans tes contacts).` : enAttente ? (libreOk ? `« ${enAttente} » n’est pas encore retenu : choisis un client de la liste, ou garde ce nom.` : `« ${enAttente} » n’est pas choisi : clique sur le bon dossier.`) : dossierObligatoire ? 'Choisis le dossier du client.' : 'Rendez-vous sans client.'}</span>
           <button type="button" className="ag-appui" onClick={fermer} style={{ height: 44, padding: '0 18px', borderRadius: 12, border: `1px solid ${BORD}`, background: 'white', color: DOUX, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
           <button type="button" onClick={enregistrer} disabled={envoi}
-            style={{ height: 44, padding: '0 22px', borderRadius: 12, border: 'none', background: OR, color: NAVY, fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: envoi ? 'default' : 'pointer', fontFamily: 'inherit', opacity: envoi ? .7 : 1, boxShadow: '0 12px 24px -12px rgba(238, 118, 35,.95)' }}>
+            style={{ height: 44, padding: '0 22px', borderRadius: 12, border: 'none', background: OR, color: NAVY, fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: envoi ? 'default' : 'pointer', fontFamily: 'inherit', opacity: envoi ? .7 : 1, boxShadow: '0 12px 24px -12px rgba(240, 140, 66,.95)' }}>
             <Ic n="coche" t={16} ep={2.6} />{envoi ? 'Enregistrement…' : ev ? 'Enregistrer les changements' : 'Enregistrer dans l’agenda'}
           </button>
         </footer>

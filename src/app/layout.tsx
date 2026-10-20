@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import '../styles/globals.css';
 
 export const metadata: Metadata = {
-  title: 'Emilio Immobilier — Outil Chasseur',
-  description: 'Outil de chasse immobilière sur mesure',
+  title: 'Werner Immobilier — CRM',
+  description: 'Le CRM de Werner Immobilier, immobilier d’entreprise à Paris',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

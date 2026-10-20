@@ -125,7 +125,7 @@ export default function FenetrePenseBete({ onFermer, onCree }: {
             <span className={s.titre}><span className={s.titreIc}><Icone nom="clients" taille={15} epaisseur={2} /></span>Pour qui ?<small>facultatif</small></span>
             {contact ? (
               <div className={s.choisi}>
-                <AvatarContact c={contact} teinte={{ bg: '#1d1d1f', fg: '#ee7623' }} taille={34} />
+                <AvatarContact c={contact} teinte={{ bg: '#2e3034', fg: '#f08c42' }} taille={34} />
                 <span><b>{nomDe(contact)}</b><br /><span>{(contact.telephones || [])[0] || (contact.emails || [])[0] || ''}</span></span>
                 <button type="button" className={s.retirer} onClick={() => { setContact(null); setQ(''); }}>Changer</button>
               </div>
@@ -139,7 +139,7 @@ export default function FenetrePenseBete({ onFermer, onCree }: {
                   <div className={s.resultats}>
                     {trouves.length ? trouves.map(c => (
                       <button key={c.id} type="button" className={s.resultat} onClick={() => { setContact(c); setTrouves([]); setCherche(false); }}>
-                        <AvatarContact c={c} teinte={{ bg: '#1d1d1f', fg: '#ee7623' }} taille={32} />
+                        <AvatarContact c={c} teinte={{ bg: '#2e3034', fg: '#f08c42' }} taille={32} />
                         <span><b>{nomDe(c)}</b><span>{(c.telephones || [])[0] || (c.emails || [])[0] || ''}</span></span>
                       </button>
                     )) : <div className={s.rien}>Aucun contact à ce nom. Laisse vide pour un pense-bête sans contact.</div>}

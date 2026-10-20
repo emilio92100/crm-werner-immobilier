@@ -383,7 +383,7 @@ export const CSS_ANNONCES = `
 .ra-f-vigs{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:10px}
 .ra-f-vig{position:relative; aspect-ratio:1; border-radius:12px; overflow:hidden; background:#f1f0ef}
 .ra-f-vig img{width:100%; height:100%; object-fit:cover; display:block}
-.ra-f-vig button{position:absolute; top:5px; right:5px; width:24px; height:24px; border-radius:50%; background:rgba(20, 20, 22,.72);
+.ra-f-vig button{position:absolute; top:5px; right:5px; width:24px; height:24px; border-radius:50%; background:rgba(35, 37, 40,.72);
   color:#fff; display:flex; align-items:center; justify-content:center; padding:0}
 .ra-f-vig.attente{background:linear-gradient(100deg,#f1f0ef 30%,#f6f6f7 50%,#f1f0ef 70%); background-size:300% 100%;
   animation:raAttente 1.2s linear infinite}

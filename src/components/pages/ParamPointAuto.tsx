@@ -168,7 +168,7 @@ export default function ParamPointAuto() {
             : dus.map(c => (
               <div key={c.clientId} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '9px 12px', borderRadius: 10, background: '#fdf2ea', border: '1px solid #facdab', marginBottom: 6, fontSize: 13.5 }}>
                 <b style={{ color: 'var(--emilio)' }}>{nomDe(c)}</b>
-                <span style={{ color: '#9c460d', fontSize: 12.5 }}>{c.dernierMouvement ? `rien depuis le ${jour(c.dernierMouvement)}` : 'rien depuis la création'}</span>
+                <span style={{ color: '#a85515', fontSize: 12.5 }}>{c.dernierMouvement ? `rien depuis le ${jour(c.dernierMouvement)}` : 'rien depuis la création'}</span>
               </div>
             ))}
         </div>

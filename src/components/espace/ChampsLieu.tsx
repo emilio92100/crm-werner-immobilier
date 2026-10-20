@@ -385,7 +385,7 @@ export const CSS_LIEU = `
 .mdt-bloc{display:flex; flex-direction:column; gap:10px; min-width:0}
 .mdt-sug-ch{position:relative}
 .mdt-sug{position:absolute; z-index:30; top:100%; left:0; right:0; margin:6px 0 0; padding:5px; list-style:none;
-  background:#fff; border:1px solid var(--trait); border-radius:14px; box-shadow:0 18px 40px -18px rgba(20, 20, 22,.45);
+  background:#fff; border:1px solid var(--trait); border-radius:14px; box-shadow:0 18px 40px -18px rgba(35, 37, 40,.45);
   max-height:280px; overflow:auto; animation:mdtSug .16s ease both}
 @keyframes mdtSug{from{opacity:0; transform:translateY(-4px)}}
 .mdt-sug li{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; cursor:pointer; color:var(--plume)}

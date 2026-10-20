@@ -78,7 +78,7 @@ type Msg = string | { titre?: string; texte: string };
    n'était sur aucune carte du tout. */
 const CATS_CONTACTS: Cat[] = [
   ...(['acheteur', 'vendeur', 'vendeur_signe', 'proprietaire'] as const).map(k => ({ k, lib: typeDe(k).pluriel, c: typeDe(k).c, ic: typeDe(k).ic })),
-  { k: 'vente_possible', lib: 'Reventes possibles', c: '#b4560f', ic: 'maison' },
+  { k: 'vente_possible', lib: 'Reventes possibles', c: '#c2621c', ic: 'maison' },
   ...(['notaire', 'confrere', 'gardien', 'partenaire'] as const).map(k => ({ k, lib: typeDe(k).pluriel, c: typeDe(k).c, ic: typeDe(k).ic })),
 ];
 const CATS_BIENS: Cat[] = [
@@ -101,7 +101,7 @@ const actifsParDefaut = () => Object.fromEntries(TOUTES.map(c => [c.k, !c.eteint
 const TEINTE_STATUT: Record<string, Teinte> = {
   prospect: { bg: '#f5f3ff', fg: '#6d28d9', trait: '#ddd6fe' },
   actif: { bg: '#ecfdf5', fg: '#0f7a4f', trait: '#a7e8c6' },
-  suspendu: { bg: '#fffbeb', fg: '#b45309', trait: '#fde68a' },
+  suspendu: { bg: '#fffbeb', fg: '#c05d12', trait: '#fde68a' },
   bien_trouve: { bg: '#eff6ff', fg: '#1d4ed8', trait: '#dedcd9' },
   perdu: { bg: '#fef2f2', fg: '#b91c1c', trait: '#fecaca' },
 };
@@ -123,7 +123,7 @@ const adresseCp = (a: string) => {
   return r ? `${r}, ${m[2]}` : m[2];
 };
 /* Les vignettes d'un contact : ses catégories sur la carte, au singulier. */
-const pastilleCat = (k: string) => (k === 'vente_possible' ? { lib: 'Revente possible', c: '#b4560f' } : { lib: typeDe(k).lib, c: typeDe(k).c });
+const pastilleCat = (k: string) => (k === 'vente_possible' ? { lib: 'Revente possible', c: '#c2621c' } : { lib: typeDe(k).lib, c: typeDe(k).c });
 /* Où tombe le repère choisi : un peu plus bas que le milieu sur ordinateur
    (sa carte de visite s'ouvre au-dessus), un peu plus haut sur téléphone
    (les fiches du bas le cacheraient). */
@@ -172,7 +172,7 @@ function pointsDesContacts(clients: Record<string, unknown>[]): { points: Point[
       if (!duBien.length) duBien.push('proprietaire');
       points.push({
         id: `c:${c.id}:bien`, genre: 'contact', perso: true, ref: String(c.id), cats: duBien,
-        couleur: revente ? '#b4560f' : typeDe('proprietaire').c, fond: revente ? '#fbf0e9' : typeDe('proprietaire').fond,
+        couleur: revente ? '#c2621c' : typeDe('proprietaire').c, fond: revente ? '#fbf0e9' : typeDe('proprietaire').fond,
         titre: nom, sous: `${revente ? 'Son bien, à revendre' : 'Son bien'} · ${rue(bienAilleurs)}`,
         etiquette: revente ? 'Revente possible' : 'Son bien', adresse: bienAilleurs, cle: cleAdresse(bienAilleurs), tel, client: c,
         pastilles: [{ lib: 'Son bien', c: typeDe('proprietaire').c }, ...(revente ? [pastilleCat('vente_possible')] : [])],

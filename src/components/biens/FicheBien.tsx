@@ -645,10 +645,10 @@ export type SousVue = 'tout' | 'surfaces' | 'interieur' | 'immeuble' | 'exterieu
 export function vuesDuBien(d: Donnees, avant: boolean): { k: SousVue; l: string; ic: string; c: string }[] {
   const enImm = !['maison', 'terrain'].includes(String(d.typeBien || ''));
   return [
-    { k: 'tout', l: 'Tout', ic: 'maison', c: '#ee7623' },
+    { k: 'tout', l: 'Tout', ic: 'maison', c: '#f08c42' },
     /* V3.99 (Alexandre : « le prix est trop à droite, mettez-le tout à
        gauche, à côté de Surfaces ») : juste après « Tout ». */
-    { k: 'prix', l: avant ? 'Estimation et prix' : 'Prix', ic: 'etiquette', c: '#c85a10' },
+    { k: 'prix', l: avant ? 'Estimation et prix' : 'Prix', ic: 'etiquette', c: '#d36a1a' },
     /* V3.91 (Alexandre : « il y a beaucoup d'onglets ») : l'onglet Surfaces
        devient une sous-rubrique de « Le bien », la même page (OngletSurfaces). */
     { k: 'surfaces', l: 'Surfaces', ic: 'regle', c: '#475569' },
@@ -937,8 +937,8 @@ export function evenements(bien: BienVente, det: DetailBien, clients: Record<str
         const signe = d.reprise === false || (d.reprise !== true && (d.source === 'documents' || d.de === 'estimation' || d.de === 'a_suivre' || (d.de === 'mandat' && !!str('date'))));
         titre = d.depuis === 'creation' && !str('date') ? 'Créé directement « En vente »' : signe ? `Mandat signé${str('numero') ? ` · n° ${str('numero')}` : ''}` : 'Remis en vente';
         if (signe && str('type')) puce = str('type') === 'exclusif'
-          ? { l: 'Exclusif', c: '#f6a15e', fond: '#18181b', bord: '#18181b' }
-          : { l: NOM_MANDAT[str('type')] || str('type'), c: '#1d1d1f', fond: '#f4f3f2', bord: '#e6e5e4' };
+          ? { l: 'Exclusif', c: '#f7b07a', fond: '#25272b', bord: '#25272b' }
+          : { l: NOM_MANDAT[str('type')] || str('type'), c: '#2e3034', fond: '#f4f3f2', bord: '#e6e5e4' };
         detail = [str('fin') ? `jusqu’au ${dateCourte(str('fin'))}` : '', typeof d.prix === 'number' ? `prix ${euros(d.prix)}` : '', d.source === 'documents' ? 'noté depuis Documents' : ''].filter(Boolean).join(' · ');
       } else if (e === 'offre') { titre = 'Passé sous offre'; detail = typeof d.montant === 'number' ? `${str('qui')} · ${euros(d.montant)}` : ''; }
       else if (e === 'compromis') {
@@ -1819,7 +1819,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
     ...[...visitesAVenir].reverse().slice(0, 3).map(v => versProchaine(v, 'À venir', 'bleu')),
     ...faites.filter(v => !v.issue && v.statut !== 'faite').slice(0, 2).map(v => versProchaine(v, 'Compte rendu à faire', 'or')),
   ].slice(0, 4);
-  const TEINTE: Record<string, string> = { ic_or: '#ee7623', ic_vert: '#16a34a', ic_bleu: '#2563eb', ic_violet: '#7c3aed', ic_rouge: '#dc2626', ic_gris: '#94a3b8', ic_emilio: '#1d1d1f' };
+  const TEINTE: Record<string, string> = { ic_or: '#f08c42', ic_vert: '#16a34a', ic_bleu: '#2563eb', ic_violet: '#7c3aed', ic_rouge: '#dc2626', ic_gris: '#94a3b8', ic_emilio: '#2e3034' };
   const recents: Recent[] = evts.slice(0, 4).map(x => {
     const det = (x.detail || '').split('\n')[0];
     return { cle: x.cle, le: x.le, titre: x.titre, c: TEINTE[x.ton] || '#94a3b8', detail: det.length > 90 ? `${det.slice(0, 88)}…` : det || undefined };

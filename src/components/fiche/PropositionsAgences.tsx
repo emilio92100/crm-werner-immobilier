@@ -546,7 +546,7 @@ function initiales(nom: string) {
   const l = (utiles.length ? utiles : mots).slice(0, 2).map(m => m[0].toUpperCase());
   return l.join('') || '?';
 }
-const TEINTES: [string, string][] = [['#f1f0ef', '#1d1d1f'], ['#FDF2F8', '#9D174D'], ['#ECFDF5', '#047857'], ['#FFF7ED', '#9A3412'], ['#F5F3FF', '#5B21B6'], ['#F0F9FF', '#075985']];
+const TEINTES: [string, string][] = [['#f1f0ef', '#2e3034'], ['#FDF2F8', '#9D174D'], ['#ECFDF5', '#047857'], ['#FFF7ED', '#9A3412'], ['#F5F3FF', '#5B21B6'], ['#F0F9FF', '#075985']];
 function teinte(nom: string): [string, string] {
   let h = 0;
   for (const c of nom.toLowerCase()) h = (h * 31 + c.charCodeAt(0)) >>> 0;

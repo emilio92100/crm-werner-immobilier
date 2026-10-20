@@ -498,7 +498,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
       <div className={`${c.hero} ${c.heroAvecCo} ${c.heroOnglets}`}>
         <div className={c.heroG}>
         <div className={c.heroQui}>
-          <AvatarContact c={x} teinte={{ bg: '', fg: '#f49d5a' }} className={c.heroAv} libre />
+          <AvatarContact c={x} teinte={{ bg: '', fg: '#f0a973' }} className={c.heroAv} libre />
           <div className={c.heroTxt}>
             {/* « Il agit pour une société ? » à droite du nom (V3.32) : une ligne de moins. */}
             <div className={c.heroNomL}>

@@ -52,7 +52,7 @@ const TONS: Record<Ton, { c: string; bg: string }> = {
   or: { c: '#8F3F00', bg: '#FFF1E6' }, bleu: { c: '#343331', bg: '#f3f2f2' }, vert: { c: '#0E6B43', bg: '#E7F6EE' },
   rouge: { c: '#b91c1c', bg: '#fef2f2' }, violet: { c: '#5B21B6', bg: '#f3efff' }, gris: { c: '#475569', bg: '#EEF0F3' },
 };
-const PUCES: Record<Ton, string> = { or: '#ee7623', bleu: '#1d1d1f', vert: '#15803d', rouge: '#dc2626', violet: '#5B21B6', gris: '#c8c6c3' };
+const PUCES: Record<Ton, string> = { or: '#f08c42', bleu: '#2e3034', vert: '#15803d', rouge: '#dc2626', violet: '#5B21B6', gris: '#c8c6c3' };
 
 /* « Elle », « Il », « Ils » : la fiche du client. */
 export function pronoms(c: { civilite?: string | null; couple?: boolean | null }) {

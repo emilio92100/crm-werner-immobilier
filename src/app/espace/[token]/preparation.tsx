@@ -15,8 +15,8 @@
  * qui ne mènent vraiment nulle part (fiche supprimée, adresse tronquée).
  */
 
-const ENCRE = '#141416';
-const OR_CLAIR = '#f6a15e';
+const ENCRE = '#232528';
+const OR_CLAIR = '#f7b07a';
 const OR_FONCE = '#C8710F';
 
 const TEL = '06 58 95 76 32';

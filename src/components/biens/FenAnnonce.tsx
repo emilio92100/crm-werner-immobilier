@@ -64,7 +64,7 @@ export default function FenAnnonce({ titre: titre0, texte: texte0, mentions, men
   };
 
   return (
-    <Fenetre sur="Le texte de l’annonce" couleur="#ee7623" titre="Modifier l’annonce" large occupe={ecrit} onFermer={fermer}
+    <Fenetre sur="Le texte de l’annonce" couleur="#f08c42" titre="Modifier l’annonce" large occupe={ecrit} onFermer={fermer}
       pied={quitter ? (
         <div className={a.quitter}>
           <span>Les changements ne sont pas enregistrés.</span>

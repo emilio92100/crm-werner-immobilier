@@ -444,9 +444,9 @@ export async function alerteHorsMandat(sb: SupabaseClient, o: {
     sujet: `⚠️ ${nom} : sa recherche dépasse son mandat (n° ${sig.numero})`,
     texte: `${nom} vient de modifier ses critères depuis son espace. Son mandat n° ${sig.numero}, signé le ${signeLe}, ne couvre peut-être plus toute sa recherche :\n${quoi}\n\nAppelle-le : s'il vise vraiment plus haut ou ailleurs, prépare-lui un avenant depuis sa fiche (Mandat de recherche › Préparer l'avenant) : ce qui a changé y est déjà coché.\n\n${lienCrm}`,
     html: gabarit(`${nom} : sa recherche dépasse son mandat`, `<p><b>${echappe(nom)}</b> vient de modifier ses critères depuis son espace. Son mandat <b>n° ${echappe(String(sig.numero))}</b>, signé le ${signeLe}, ne couvre peut-être plus toute sa recherche :</p>
-      ${neufs.map(e => `<p style="color:#b45309">⚠️ ${echappe(e)}</p>`).join('')}
+      ${neufs.map(e => `<p style="color:#c05d12">⚠️ ${echappe(e)}</p>`).join('')}
       <p>Appelle-le : s’il vise vraiment plus haut ou ailleurs, prépare-lui un avenant depuis sa fiche (Mandat de recherche › Préparer l’avenant) : ce qui a changé y est déjà coché.</p>
-      <a href="${lienCrm}" style="display:inline-block;margin-top:8px;background:#ee7623;color:#141416;text-decoration:none;padding:11px 16px;border-radius:10px;font-weight:800">Ouvrir sa fiche</a>`),
+      <a href="${lienCrm}" style="display:inline-block;margin-top:8px;background:#f08c42;color:#232528;text-decoration:none;padding:11px 16px;border-radius:10px;font-weight:800">Ouvrir sa fiche</a>`),
   });
   if (eM) console.error('[mandat] alerte hors mandat, mail', eM);
 }

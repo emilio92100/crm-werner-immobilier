@@ -39,7 +39,7 @@ const aujourdhui = () => jourParis();
 export const COULEURS: Record<'dpe' | 'ges', Record<string, { f: string; t: string }>> = {
   dpe: {
     A: { f: '#009c6d', t: '#fff' }, B: { f: '#52b153', t: '#fff' }, C: { f: '#a3cf5a', t: '#1f3a12' }, D: { f: '#f4e70f', t: '#4a4200' },
-    E: { f: '#ee7320', t: '#441f06' }, F: { f: '#eb8235', t: '#fff' }, G: { f: '#d7221f', t: '#fff' },
+    E: { f: '#e8863a', t: '#441f06' }, F: { f: '#e6904e', t: '#fff' }, G: { f: '#d7221f', t: '#fff' },
   },
   ges: {
     A: { f: '#f6edfd', t: '#5b2a86' }, B: { f: '#e4c7fa', t: '#5b2a86' }, C: { f: '#d6aaf4', t: '#4c1d95' }, D: { f: '#cb95f3', t: '#fff' },
@@ -637,7 +637,7 @@ function ChampProprio({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
     return (
       <div className={b.lieBloc}>
         <div className={b.lie}>
-          {lie ? <AvatarContact c={lie} teinte={{ bg: '', fg: '#f7b07a' }} className={b.avatar} libre /> : <span className={b.avatar}>…</span>}
+          {lie ? <AvatarContact c={lie} teinte={{ bg: '', fg: '#f4bc92' }} className={b.avatar} libre /> : <span className={b.avatar}>…</span>}
           <div>
             <b>{lie ? nomClient(lie) : clients ? 'Fiche introuvable' : 'Chargement…'}</b>
             <small>{lie ? [lie.telephones?.[0], lie.emails?.[0]].filter(Boolean).join(' · ') || 'Pas encore de coordonnées sur sa fiche' : ''}</small>

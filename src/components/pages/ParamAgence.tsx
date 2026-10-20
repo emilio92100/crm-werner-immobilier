@@ -16,7 +16,7 @@ import { BAREME, BAREME_VENTE, HONORAIRES_TAUX, tauxTexte } from '@/lib/mandat';
    datée, avec l'ancienne et la nouvelle valeur. */
 
 const SIGNATURE = 'agence/signature.png';
-const NAVY = '#1d1d1f', OR = '#ee7623', OR_FONCE = '#b4560f', GRIS = '#64748b', GRIS_CLAIR = '#94a3b8', TRAIT = '#eaeae9';
+const NAVY = '#2e3034', OR = '#f08c42', OR_FONCE = '#c2621c', GRIS = '#64748b', GRIS_CLAIR = '#94a3b8', TRAIT = '#eaeae9';
 
 const jourLong = (ymd: string) => new Date(ymd.slice(0, 10) + 'T12:00:00Z')
   .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' });
@@ -345,7 +345,7 @@ export default function ParamAgence() {
       {/* La barre d'enregistrement : seulement quand quelque chose a changé */}
       {modifs.length > 0 && (
         <div style={{ position: 'sticky', bottom: 12, zIndex: 5, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-          background: NAVY, color: 'white', borderRadius: 14, padding: '12px 14px', boxShadow: '0 10px 30px rgba(24, 24, 27,.28)' }}>
+          background: NAVY, color: 'white', borderRadius: 14, padding: '12px 14px', boxShadow: '0 10px 30px rgba(37, 39, 43,.28)' }}>
           <div style={{ flex: '1 1 260px', minWidth: 0, fontSize: 13.5, lineHeight: 1.4 }}>
             <b>{`${modifs.length} modification${modifs.length > 1 ? 's' : ''}`}</b>
             <span style={{ color: '#cbd5e1' }}>

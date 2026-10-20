@@ -77,7 +77,7 @@ const SEP_PASTILLES = ' · ';
 const SEP_LIBRE = ' — ';
 const ANNUL_MS = 5000;
 
-const BLEU = '#262524', VERT = '#15803d', ROUGE = '#b42318', OR = '#ee7623';
+const BLEU = '#3b3d42', VERT = '#15803d', ROUGE = '#b42318', OR = '#f08c42';
 
 const FEUILLES: Record<AvisDecouverte, { tag: string; t: string; p: string; ph: string; btn: string; passer: string }> = {
   refuse: {
@@ -984,7 +984,7 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
    contenu : sur un petit écran, c'est la scène qui défile, rien n'est coupé. */
 .dec-carte{flex:1 0 auto; min-height:0; display:flex; flex-direction:column; background:#fff;
   border-radius:28px; overflow:hidden; will-change:transform;
-  box-shadow:0 2px 4px rgba(20, 20, 22,.05), 0 26px 50px -28px rgba(20, 20, 22,.45)}
+  box-shadow:0 2px 4px rgba(35, 37, 40,.05), 0 26px 50px -28px rgba(35, 37, 40,.45)}
 .dec-ph{position:relative; flex:1 1 auto; min-height:180px}
 /* Posée en absolu : une hauteur en % dans deux flex imbriqués peut valoir
    zéro sur iPhone (voir PleinEcran dans EspaceClient). */
@@ -1001,7 +1001,7 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
 .dec-note-b{flex:0 0 72px; height:6px; border-radius:3px; background:#f6f5f5; overflow:hidden}
 .dec-note-b i{display:block; height:100%; border-radius:3px; background:${OR}}
 .dec-neuf{position:absolute; z-index:3; top:26px; left:14px; padding:6px 11px; border-radius:999px;
-  background:${OR}; color:#141416; font-size:12px; font-weight:700; pointer-events:none}
+  background:${OR}; color:#232528; font-size:12px; font-weight:700; pointer-events:none}
 
 .dec-visiter{flex:0 0 auto; height:52px; display:flex; align-items:center; justify-content:center; gap:10px;
   border:1.5px solid ${BLEU} !important; border-radius:16px; background:#fff; color:${BLEU};
@@ -1023,10 +1023,10 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
 .dg-segs span{flex:1 1 0; height:3px; border-radius:2px; background:#fff; opacity:.45; transition:opacity .3s}
 .dg-segs span.on{opacity:1}
 .dg-n{position:absolute; z-index:3; top:26px; right:14px; padding:6px 11px; border-radius:999px;
-  background:rgba(20, 20, 22,.74); color:#fff; font-size:12px; font-weight:600; pointer-events:none}
+  background:rgba(35, 37, 40,.74); color:#fff; font-size:12px; font-weight:600; pointer-events:none}
 .dg-f{position:absolute; z-index:3; top:0; bottom:0; margin:auto 0; width:44px; height:44px; padding:0;
   display:flex; align-items:center; justify-content:center; border-radius:50%;
-  background:rgba(255,255,255,.92); color:#141416; box-shadow:0 4px 12px -6px rgba(20, 20, 22,.5);
+  background:rgba(255,255,255,.92); color:#232528; box-shadow:0 4px 12px -6px rgba(35, 37, 40,.5);
   transition:opacity .25s}
 .dg-f.g{left:10px} .dg-f.d{right:10px}
 .dg-f.cache{opacity:0; pointer-events:none}
@@ -1042,7 +1042,7 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
 
 /* — le curseur — */
 .dec-cur{position:relative; flex:0 0 auto; height:80px; border-radius:40px; background:#fff;
-  border:1px solid #eeeeed; box-shadow:0 10px 24px -18px rgba(20, 20, 22,.4)}
+  border:1px solid #eeeeed; box-shadow:0 10px 24px -18px rgba(35, 37, 40,.4)}
 .dec-cur-t{position:absolute; inset:0; border-radius:40px; pointer-events:none; opacity:0}
 .dec-cur-t.g{background:#fdecea} .dec-cur-t.d{background:#e7f6ed}
 .dec-cur-m{position:absolute; top:8px; bottom:8px; width:calc(50% - 42px); max-width:140px;
@@ -1058,7 +1058,7 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
   touch-action:none; cursor:grab; user-select:none; -webkit-user-select:none; will-change:transform}
 .dec-rond:active{cursor:grabbing}
 .dec-rond-in{position:absolute; inset:0; border-radius:50%; display:flex; align-items:center; justify-content:center;
-  color:#fff; border:3px solid ${OR}; background:${BLEU}; box-shadow:0 10px 22px -8px rgba(20, 20, 22,.65)}
+  color:#fff; border:3px solid ${OR}; background:${BLEU}; box-shadow:0 10px 22px -8px rgba(35, 37, 40,.65)}
 .dec-cur.repos .dec-rond-in{animation:dec-balance 1.1s cubic-bezier(.45,0,.55,1) -.55s infinite alternate}
 .dec-ch{position:absolute; top:0; bottom:0; display:flex; align-items:center; opacity:.8}
 .dec-ch.g{left:3px} .dec-ch.d{right:3px}
@@ -1077,7 +1077,7 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
 .dec-annul.a-sort{transform:scale(.2); opacity:0; transition:transform .42s cubic-bezier(.55,0,.8,.2), opacity .42s ease-in}
 .dec-annul button{display:flex; align-items:center; gap:10px; height:50px; padding:0 20px 0 8px;
   border:1px solid #eeeeed !important; border-radius:999px; background:#fff; color:${BLEU};
-  font-size:14.5px; font-weight:700; white-space:nowrap; box-shadow:0 16px 34px -18px rgba(20, 20, 22,.6)}
+  font-size:14.5px; font-weight:700; white-space:nowrap; box-shadow:0 16px 34px -18px rgba(35, 37, 40,.6)}
 .dec-annul-r{position:relative; width:36px; height:36px; display:flex; align-items:center; justify-content:center;
   border-radius:50%; background:#f8f8f7}
 .dec-annul-r svg:first-child{position:absolute; left:0; top:0; transform:rotate(-90deg)}
@@ -1093,8 +1093,8 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
 .dec-fiche-in .corps-f{flex:1 0 auto}
 .dec-f-retour{position:absolute; z-index:6; top:calc(12px + env(safe-area-inset-top,0px)); left:12px;
   height:44px; display:flex; align-items:center; gap:4px; padding:0 14px 0 8px; border-radius:999px;
-  background:rgba(255,255,255,.94); font-size:14px; font-weight:700; color:#141416;
-  box-shadow:0 4px 12px -6px rgba(20, 20, 22,.5)}
+  background:rgba(255,255,255,.94); font-size:14px; font-weight:700; color:#232528;
+  box-shadow:0 4px 12px -6px rgba(35, 37, 40,.5)}
 .dec-f-haut{padding:18px 20px 0}
 .dec-f-retour.col{position:static; background:#fff; border:1px solid #e5e4e3 !important; box-shadow:none; height:40px}
 .dec-f-bas{position:sticky; bottom:0; z-index:7; margin-top:auto; background:#fff; border-top:1px solid #eeeeed;
@@ -1113,7 +1113,7 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
 .dec-q-boite{position:absolute; left:0; right:0; bottom:0; max-height:calc(100% - 24px); overflow-y:auto;
   overscroll-behavior:contain; background:#fff; border-radius:28px 28px 0 0;
   padding:10px 20px calc(18px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; gap:16px;
-  box-shadow:0 -20px 40px -24px rgba(20, 20, 22,.4); transform:translateY(104%);
+  box-shadow:0 -20px 40px -24px rgba(35, 37, 40,.4); transform:translateY(104%);
   transition:transform .5s cubic-bezier(.22,.8,.3,1)}
 .dec-q.on .dec-q-boite{transform:none}
 .dec-q.sort .dec-q-boite{transform:translateY(104%); transition:transform .36s cubic-bezier(.5,0,.75,0)}
@@ -1134,17 +1134,17 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
 .dec-q-txt p{margin:6px 0 0; font-size:14px; line-height:1.5; color:#5B6B80}
 .dec-chips{display:flex; flex-wrap:wrap; gap:8px}
 .dec-chip{display:flex; align-items:center; gap:6px; min-height:44px; padding:0 15px; border-radius:999px;
-  border:1px solid #e5e4e3 !important; background:#fff; color:#141416; font-size:14px; font-weight:600;
+  border:1px solid #e5e4e3 !important; background:#fff; color:#232528; font-size:14px; font-weight:600;
   transition:background .2s, color .2s, border-color .2s}
 .dec-chip.on{background:${BLEU}; color:#fff; border-color:${BLEU} !important}
-.dec-mot{display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:600; color:#1d1d1f}
+.dec-mot{display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:600; color:#2e3034}
 .dec-mot textarea{font-family:inherit; font-size:16px; padding:10px 12px; border:1px solid #e5e4e3; border-radius:14px;
-  resize:none; color:#141416; outline:none}
+  resize:none; color:#232528; outline:none}
 .dec-mot textarea:focus{border-color:${BLEU}}
 .dec-ajout{align-self:flex-start; display:flex; align-items:center; gap:6px; min-height:44px; padding:0 2px;
   font-size:14px; font-weight:700; color:${BLEU}}
 .dec-vv{display:flex; align-items:center; gap:12px; min-height:62px; padding:10px 14px; border:1px solid #d9d8d6 !important;
-  border-radius:16px; background:#f1f0ef; text-align:left; color:#141416}
+  border-radius:16px; background:#f1f0ef; text-align:left; color:#232528}
 .dec-vv-i{flex:0 0 auto; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;
   background:${BLEU}; color:#fff}
 .dec-vv-t{flex:1 1 auto; display:flex; flex-direction:column}
@@ -1162,11 +1162,11 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
 .dec-fin-h{background:${BLEU}; border-radius:28px; padding:26px 22px; display:flex; flex-direction:column;
   align-items:center; gap:10px; text-align:center; color:#fff}
 .dec-fin-ok{width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-  background:${OR}; color:#141416}
+  background:${OR}; color:#232528}
 .dec-fin-h h2{margin:4px 0 0; font-family:'Plus Jakarta Sans',sans-serif; font-size:23px; font-weight:800; letter-spacing:-.4px; color:#fff}
 .dec-fin-h p{margin:0; font-size:14.5px; line-height:1.5; color:#e3e2e0}
 .dec-fin-t{background:#fff; border-radius:22px; padding:6px 18px;
-  box-shadow:0 1px 2px rgba(20, 20, 22,.04), 0 12px 28px -22px rgba(20, 20, 22,.35)}
+  box-shadow:0 1px 2px rgba(35, 37, 40,.04), 0 12px 28px -22px rgba(35, 37, 40,.35)}
 .dec-fin-t > div{display:flex; align-items:center; gap:12px; min-height:52px; border-bottom:1px solid #f6f5f5}
 .dec-fin-t > div:last-child{border-bottom:0}
 .dec-fin-t i{width:10px; height:10px; border-radius:50%; flex:0 0 auto}
@@ -1210,12 +1210,12 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
 .dec-pts i{width:26px; height:5px; border-radius:3px; background:#e5e4e3; transition:background .3s}
 .dec-pts i.pt-fait{background:${BLEU}} .dec-pts i.pt-ici{background:${OR}}
 .dec-quitter{justify-self:end; display:flex; align-items:center; gap:8px; min-height:44px; padding:0 16px;
-  border:1px solid #e5e4e3 !important; border-radius:999px; background:#fff; font-size:14px; font-weight:700; color:#141416}
+  border:1px solid #e5e4e3 !important; border-radius:999px; background:#fff; font-size:14px; font-weight:700; color:#232528}
 .dec-quitter:hover{background:#f9f8f8}
 .dec.pc .dec-scene{max-width:1168px; padding:0 24px 24px; overflow:visible}
 .dec.pc .dec-carte{flex:1 1 auto; min-height:min(520px, calc(100vh - 104px)); max-height:740px; display:grid;
   grid-template-columns:minmax(0,1fr) 440px; border-radius:28px;
-  box-shadow:0 2px 4px rgba(20, 20, 22,.05), 0 30px 60px -36px rgba(20, 20, 22,.45)}
+  box-shadow:0 2px 4px rgba(35, 37, 40,.05), 0 30px 60px -36px rgba(35, 37, 40,.45)}
 .dec-gauche{display:flex; flex-direction:column; min-height:0; min-width:0}
 .dec.pc .dec-ph{flex:1 1 auto; min-height:0}
 .dec-minis{flex:0 0 auto; display:flex; gap:10px; padding:10px 18px; overflow-x:auto; scrollbar-width:thin}
@@ -1232,8 +1232,8 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
 .dec.pc .dec-note{font-size:13.5px}
 .dec.pc .dec-note-b{flex-basis:96px}
 .dec-atouts{display:flex; flex-wrap:wrap; gap:6px}
-.dec-atouts span{padding:5px 11px; border-radius:999px; background:#f6f5f5; border:1px solid #eeeeed; font-size:13px; font-weight:500; color:#1d1d1f}
-.dec-extrait{margin:2px 0 0; font-size:14px; line-height:1.55; color:#1d1d1f; display:-webkit-box; -webkit-line-clamp:4;
+.dec-atouts span{padding:5px 11px; border-radius:999px; background:#f6f5f5; border:1px solid #eeeeed; font-size:13px; font-weight:500; color:#2e3034}
+.dec-extrait{margin:2px 0 0; font-size:14px; line-height:1.55; color:#2e3034; display:-webkit-box; -webkit-line-clamp:4;
   -webkit-box-orient:vertical; overflow:hidden; white-space:pre-line}
 .dec-vide{flex:1 1 auto; min-height:4px}
 .dec.pc .dec-pied{height:58px}
@@ -1248,7 +1248,7 @@ html.dec-ouvert .feuille:not(.on){box-shadow:none}
 .dec.pc .dec-fin-h h2{font-size:26px}
 .dec.pc .dec-fin-b{flex-direction:row-reverse; gap:10px}
 .dec.pc .dec-fin-b button{flex:1 1 0; min-height:52px}
-.dec.pc .dec-fin-2{border:1px solid #e5e4e3 !important; border-radius:16px; background:#fff; color:#141416; font-size:15px; font-weight:700}
+.dec.pc .dec-fin-2{border:1px solid #e5e4e3 !important; border-radius:16px; background:#fff; color:#232528; font-size:15px; font-weight:700}
 @media (max-height:760px){ .dec.pc .dec-extrait{display:none} }
 
 /* — un téléphone court (iPhone SE, barres du navigateur affichées) : tout

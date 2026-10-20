@@ -13,7 +13,7 @@
   padding: 0 10px 0 12px; border-radius: 10px; border: 1px solid #eaeae9; background: #f9f8f8; color: #94a3b8; cursor: text;
   transition: border-color .15s, background .15s;
 }
-.cherche:focus-within { background: #fff; border-color: #ee7623; }
+.cherche:focus-within { background: #fff; border-color: #f08c42; }
 .cherche input { flex: 1; min-width: 0; height: 100%; border: none; outline: none; background: transparent; font: inherit; font-size: 13.5px; color: var(--emilio); }
 .cherche input::placeholder { color: #94a3b8; }
 .chercheVider {

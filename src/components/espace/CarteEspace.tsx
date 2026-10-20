@@ -27,9 +27,9 @@ export type BienCarte = {
 /* Les mêmes mots que « Consultés » ; les couleurs de ses cadres. */
 export const CATS_ESPACE: { id: CatEspace; lib: string; c: string }[] = [
   { id: 'interesse', lib: 'Ça me plaît', c: '#16a34a' },
-  { id: 'visite', lib: 'Visités', c: '#1d1d1f' },
+  { id: 'visite', lib: 'Visités', c: '#2e3034' },
   { id: 'a_visiter', lib: 'À visiter', c: '#7c3aed' },
-  { id: 'attente', lib: 'En attente', c: '#ee7623' },
+  { id: 'attente', lib: 'En attente', c: '#f08c42' },
   { id: 'refuse', lib: 'Pas pour moi', c: '#b3837e' },
 ];
 const COULEUR = Object.fromEntries(CATS_ESPACE.map(c => [c.id, c.c])) as Record<CatEspace, string>;

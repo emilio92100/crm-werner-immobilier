@@ -77,10 +77,10 @@ const D = {
 /* ── 0 · Bienvenue : la maison au centre, les quatre atouts en orbite ── */
 function Scene0() {
   const orbite = [
-    { x: '50%', y: '0%', c: '#ee7623', d: D.cloche },
+    { x: '50%', y: '0%', c: '#f08c42', d: D.cloche },
     { x: '100%', y: '50%', c: '#15803d', d: D.coeur },
     { x: '50%', y: '100%', c: '#6d28d9', d: D.agenda },
-    { x: '0%', y: '50%', c: '#1d1d1f', d: D.repere },
+    { x: '0%', y: '50%', c: '#2e3034', d: D.repere },
   ];
   return (
     <div className={s.s0}>
@@ -94,7 +94,7 @@ function Scene0() {
       <span className={s.maisonPulse} />
       <span className={s.maison}>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d={D.maison} /><path d="M9 21v-6h6v6" stroke="#ee7623" strokeWidth="2.2" />
+          <path d={D.maison} /><path d="M9 21v-6h6v6" stroke="#f08c42" strokeWidth="2.2" />
         </svg>
       </span>
     </div>
@@ -104,9 +104,9 @@ function Scene0() {
 /* ── 1 · Tout le marché, chaque jour : le balayage tourne, les biens s'allument ── */
 function Scene1() {
   const reperes = [
-    { x: '30%', y: '34%', c: '#ee7623', r: '0s' }, { x: '72%', y: '28%', c: '#1d1d1f', r: '.9s' },
-    { x: '80%', y: '70%', c: '#ee7623', r: '1.8s' }, { x: '24%', y: '74%', c: '#1d1d1f', r: '2.7s' },
-    { x: '58%', y: '82%', c: '#ee7623', r: '3.6s' }, { x: '44%', y: '24%', c: '#1d1d1f', r: '4.5s' },
+    { x: '30%', y: '34%', c: '#f08c42', r: '0s' }, { x: '72%', y: '28%', c: '#2e3034', r: '.9s' },
+    { x: '80%', y: '70%', c: '#f08c42', r: '1.8s' }, { x: '24%', y: '74%', c: '#2e3034', r: '2.7s' },
+    { x: '58%', y: '82%', c: '#f08c42', r: '3.6s' }, { x: '44%', y: '24%', c: '#2e3034', r: '4.5s' },
   ];
   const sources = [{ l: 'Nouvelles annonces', r: '.2s' }, { l: 'Biens en avant-première', r: '.45s' }, { l: 'Nos partenaires', r: '.7s' }];
   return (
@@ -141,8 +141,8 @@ function Scene2() {
       <div className={s.carteBien}>
         <div className={s.photo}>
           <img src={PHOTO_1} alt="" className={`${s.photoImg} ${s.zoom}`} />
-          <span className={s.pastille} style={{ left: 8, top: 8, height: 20, padding: '0 8px', background: '#ee7623', color: '#fff' }}>Nouveau</span>
-          <span className={s.pastille} style={{ right: 8, bottom: 8, height: 22, padding: '0 8px', background: 'rgba(255,255,255,.95)', color: '#141416' }}>96 % pour vous</span>
+          <span className={s.pastille} style={{ left: 8, top: 8, height: 20, padding: '0 8px', background: '#f08c42', color: '#fff' }}>Nouveau</span>
+          <span className={s.pastille} style={{ right: 8, bottom: 8, height: 22, padding: '0 8px', background: 'rgba(255,255,255,.95)', color: '#232528' }}>96 % pour vous</span>
         </div>
         <div style={{ padding: '9px 11px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           <b className={s.prixL}>895 000 €</b>
@@ -167,7 +167,7 @@ function Scene3() {
       <div className={`${s.ligneBien} ${s.monte}`} style={{ animationDelay: '.05s' }}>
         <span className={s.vignette}><img src={PHOTO_1} alt="" className={`${s.photoImg} ${s.zoom}`} /></span>
         <span style={{ display: 'flex', flexDirection: 'column' }}><b style={{ fontSize: 13.5, fontWeight: 800 }}>895 000 €</b><span className={s.petit}>5 pièces · Clamart</span></span>
-        <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 800, color: '#b4560f' }}>{'Qu’en pensez-vous\u00a0?'}</span>
+        <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 800, color: '#c2621c' }}>{'Qu’en pensez-vous\u00a0?'}</span>
       </div>
       <div className={`${s.avis3} ${s.monte}`} style={{ animationDelay: '.2s' }}>
         <span className={`${s.avisB} ${s.appui}`} style={{ background: '#dcfce7', color: '#15803d' }}>
@@ -193,7 +193,7 @@ function Scene4() {
     <div className={s.s4}>
       <div className={`${s.criteres} ${s.monte}`} style={{ animationDelay: '.05s' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 26, height: 26, borderRadius: 8, background: '#f1f0ef', color: '#1d1d1f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Svg d={D.reglages} t={15} /></span>
+          <span style={{ width: 26, height: 26, borderRadius: 8, background: '#f1f0ef', color: '#2e3034', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Svg d={D.reglages} t={15} /></span>
           <b style={{ fontSize: 13, fontWeight: 800 }}>Mes critères</b>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -221,9 +221,9 @@ function Scene4() {
 /* ── 5 · Visites et carte : le rendez-vous s'ajoute, les biens sautillent ── */
 function Scene5() {
   const pins = [
-    { x: '18%', y: '22%', l: '895 k€', f: '#ee7623', t: '#141416', r: '0s' },
-    { x: '56%', y: '48%', l: '920 k€', f: '#1d1d1f', t: '#fff', r: '.5s' },
-    { x: '30%', y: '62%', l: '870 k€', f: '#1d1d1f', t: '#fff', r: '1s' },
+    { x: '18%', y: '22%', l: '895 k€', f: '#f08c42', t: '#232528', r: '0s' },
+    { x: '56%', y: '48%', l: '920 k€', f: '#2e3034', t: '#fff', r: '.5s' },
+    { x: '30%', y: '62%', l: '870 k€', f: '#2e3034', t: '#fff', r: '1s' },
   ];
   return (
     <div className={s.s5}>

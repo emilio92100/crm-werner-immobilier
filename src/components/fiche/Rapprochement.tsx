@@ -61,13 +61,13 @@ const ancien = (t: Trouve) => !!t.le && Date.now() - new Date(t.le).getTime() > 
 const jourCourt = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '');
 
 function Note({ n }: { n: number }) {
-  const coul = n >= 85 ? '#16a34a' : n >= SEUIL_CORRESPOND ? '#ee7623' : '#94a3b8';
+  const coul = n >= 85 ? '#16a34a' : n >= SEUIL_CORRESPOND ? '#f08c42' : '#94a3b8';
   return (
     <svg className={s.note} width="48" height="48" viewBox="0 0 48 48" role="img" aria-label={`${n} pour cent`}>
       <circle cx="24" cy="24" r="18" fill="none" stroke="#f2f2f2" strokeWidth="4.5" />
       <circle cx="24" cy="24" r="18" fill="none" stroke={coul} strokeWidth="4.5" strokeLinecap="round"
         strokeDasharray={`${(C * n / 100).toFixed(1)} ${C}`} transform="rotate(-90 24 24)" />
-      <text x="24" y="28.5" textAnchor="middle" fill="#18181b" style={{ font: "800 12.5px 'Plus Jakarta Sans', sans-serif" }}>{n}</text>
+      <text x="24" y="28.5" textAnchor="middle" fill="#25272b" style={{ font: "800 12.5px 'Plus Jakarta Sans', sans-serif" }}>{n}</text>
     </svg>
   );
 }

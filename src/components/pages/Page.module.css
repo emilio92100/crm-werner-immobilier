@@ -76,7 +76,7 @@
   font-size: 14px; color: var(--emilio); font-family: 'DM Sans', sans-serif;
   outline: none; transition: border-color 0.15s;
 }
-.input:focus, .textarea:focus, .select:focus { border-color: #ee7623; background: white; }
+.input:focus, .textarea:focus, .select:focus { border-color: #f08c42; background: white; }
 .textarea { resize: vertical; line-height: 1.6; }
 .tagsInput { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: #f8fafc; border: 1.5px solid #eaeae9; border-radius: 10px; padding: 8px 12px; }
 .tag { background: var(--emilio-fond); color: white; padding: 3px 10px; border-radius: 20px; font-size: 13px; font-weight: 500; }

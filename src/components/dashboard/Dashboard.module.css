@@ -25,7 +25,7 @@
   top: -30px; right: -30px;
   width: 180px; height: 180px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(238, 118, 35,0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(240, 140, 66,0.1) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -34,7 +34,7 @@
 .welcomeDate {
   font-size: 10px;
   font-weight: 700;
-  color: #ee7623;
+  color: #f08c42;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin-bottom: 5px;
@@ -102,13 +102,13 @@
 .badgePurple { background: #f5f3ff; color: #8b5cf6; border: 1px solid #ddd6fe; }
 .badgeGreen  { background: #ecfdf5; color: #10b981; border: 1px solid #a7f3d0; }
 .badgeBlue   { background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
-.badgeGoldDark { background: rgba(238, 118, 35,0.15); color: #f6a15e; border: 1px solid rgba(238, 118, 35,0.2); }
+.badgeGoldDark { background: rgba(240, 140, 66,0.15); color: #f7b07a; border: 1px solid rgba(240, 140, 66,0.2); }
 
 .statVal { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; color: var(--emilio); line-height: 1; margin-bottom: 4px; }
 .statValWhite { color: white; }
 .statLabel    { font-size: 11px; color: #4a5568; font-weight: 500; }
 .statLabelDark { color: rgba(255,255,255,0.45); }
-.statSub      { font-size: 10px; color: #ee7623; margin-top: 4px; font-weight: 600; }
+.statSub      { font-size: 10px; color: #f08c42; margin-top: 4px; font-weight: 600; }
 
 /* ── MAIN ROW ── */
 .mainRow {
@@ -127,7 +127,7 @@
 }
 
 .cardTitle { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 13px; color: var(--emilio); display: flex; align-items: center; gap: 6px; }
-.cardLink  { font-size: 11px; color: #ee7623; font-weight: 600; border: none; background: none; cursor: pointer; }
+.cardLink  { font-size: 11px; color: #f08c42; font-weight: 600; border: none; background: none; cursor: pointer; }
 .cardLink:hover { opacity: 0.7; }
 
 .badge      { display: inline-flex; align-items: center; gap: 2px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
@@ -145,7 +145,7 @@
   font-variant-numeric: tabular-nums;
 }
 .pastilleRouge { background: #ef4444; color: white; }
-.pastilleAmbre { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.pastilleAmbre { background: #fffbeb; color: #c05d12; border: 1px solid #fde68a; }
 
 /* Le titre d'un groupe à l'intérieur d'une carte : « à faire », « à venir ». */
 .groupeLabel {
@@ -168,13 +168,13 @@
 .txItem:hover { background: #f2f2f2; }
 .txTop  { display: flex; justify-content: space-between; margin-bottom: 2px; }
 .txName { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 13px; color: var(--emilio); }
-.txPrice { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 13px; color: #ee7623; }
+.txPrice { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 13px; color: #f08c42; }
 .txSub  { font-size: 11px; color: #4a5568; margin-bottom: 7px; }
 .txHint { font-size: 10px; color: #4a5568; margin-top: 4px; }
 
 .progBar  { display: flex; gap: 3px; }
 .progStep { flex: 1; height: 3px; border-radius: 2px; background: #eaeae9; }
-.progStep.done   { background: #ee7623; }
+.progStep.done   { background: #f08c42; }
 .progStep.active { background: var(--emilio-fond); }
 
 .rightCol { display: flex; flex-direction: column; gap: 10px; }
@@ -193,7 +193,7 @@
 .vdateLight .vmon { color: #94a3b8; }
 .vname  { font-size: 12px; font-weight: 600; color: var(--emilio); }
 .vlieu  { font-size: 10px; color: #4a5568; }
-.vheure { font-size: 10px; color: #ee7623; font-weight: 600; }
+.vheure { font-size: 10px; color: #f08c42; font-weight: 600; }
 
 .actList { padding: 10px 12px; display: flex; flex-direction: column; gap: 9px; }
 .actRow  { display: flex; align-items: flex-start; gap: 8px; }

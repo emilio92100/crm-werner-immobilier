@@ -53,7 +53,7 @@ const venteSansHono = (suivi: SuiviVente[]) => {
 
 export function Anneau({ note, t = 46 }: { note: number; t?: number }) {
   const r = t / 2 - 4, c = 2 * Math.PI * r;
-  const couleur = note >= 80 ? '#ee7623' : note >= 65 ? '#f49c59' : '#cbd5e1';
+  const couleur = note >= 80 ? '#f08c42' : note >= 65 ? '#f0a872' : '#cbd5e1';
   return (
     <span className={b.anneau} style={{ width: t, height: t }}>
       <svg width={t} height={t} aria-hidden="true">

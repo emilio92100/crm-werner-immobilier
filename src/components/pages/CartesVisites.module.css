@@ -7,7 +7,7 @@
 .carte {
   display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 12px 16px; align-items: start;
   padding: 14px; border-radius: 20px; background: white; border: 1px solid #eaeae9;
-  box-shadow: 0 12px 28px -24px rgba(24, 24, 27, .55);
+  box-shadow: 0 12px 28px -24px rgba(37, 39, 43, .55);
   animation: entre .4s cubic-bezier(.2, .8, .2, 1) backwards;
 }
 @keyframes entre { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -30,12 +30,12 @@
   border: none; border-radius: 12px; background: none; cursor: pointer; font-family: inherit; text-align: left; transition: background-color .15s;
 }
 .nom:hover { background: #f6f5f5; }
-.nom b { font: 800 16px 'Plus Jakarta Sans', sans-serif; color: #18181b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nom b { font: 800 16px 'Plus Jakarta Sans', sans-serif; color: #25272b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nom:hover b { color: var(--emilio); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
 
 .past { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 99px; font-size: 11.5px; font-weight: 800; white-space: nowrap; border: 1px solid; }
 .past i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.pastAfaire { color: #b45309; background: #fff3ea; border-color: #f9c9a5; }
+.pastAfaire { color: #c05d12; background: #fff3ea; border-color: #f9c9a5; }
 .pastAvenir { color: #1d4ed8; background: #f8f7f6; border-color: #e4e2df; }
 .pastFaite { color: #047857; background: #ecfdf5; border-color: #b7ead3; }
 
@@ -45,11 +45,11 @@
   background: #f8fafc; border: 1px solid #f2f2f2; cursor: pointer; font-family: inherit; text-align: left; color: inherit;
   transition: border-color .15s, background-color .15s, box-shadow .15s;
 }
-.bien:hover { background: white; border-color: #e2e0df; box-shadow: 0 10px 22px -18px rgba(24, 24, 27, .6); }
+.bien:hover { background: white; border-color: #e2e0df; box-shadow: 0 10px 22px -18px rgba(37, 39, 43, .6); }
 .photo { width: 58px; height: 58px; border-radius: 12px; flex: 0 0 auto; object-fit: cover; display: block; background: #e2e8f0; }
 .photoVide { display: inline-flex; align-items: center; justify-content: center; color: #94a3b8; }
 .bienTx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.bienTx b { font-size: 14px; color: #18181b; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.bienTx b { font-size: 14px; color: #25272b; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .bienTx small { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; color: #64748b; font-weight: 600; }
 .bienTx small svg { color: #94a3b8; }
 .fleche { flex: 0 0 auto; color: #b6b2af; margin-right: 4px; transition: color .15s, translate .15s; }
@@ -66,7 +66,7 @@
 .avis { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .issue { display: inline-flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 99px; font-size: 12px; font-weight: 800; border: 1px solid; }
 .etoiles { display: inline-flex; align-items: center; gap: 1px; color: #e2e8f0; }
-.etoiles .on { color: #ee7320; }
+.etoiles .on { color: #e8863a; }
 .etoiles small { margin-left: 5px; font-size: 11.5px; font-weight: 700; color: #94a3b8; }
 .puce { font-size: 11.5px; font-weight: 700; border-radius: 99px; padding: 3px 9px; border: 1px solid; color: #334155; background: #f1f5f9; border-color: #e2e8f0; }
 .puceNon { color: #9a3412; background: #fff4ef; border-color: #fbd5c5; }
@@ -85,11 +85,11 @@
   border: 1px solid #eaeae9; background: white; color: #334155; font: 800 13px 'Plus Jakarta Sans', sans-serif; cursor: pointer; transition: background-color .15s, box-shadow .15s, filter .15s;
 }
 .btn:hover { background: #f8fafc; }
-.btnOr { background: #ee7623; border-color: #ee7623; color: #1e1d1c; box-shadow: 0 10px 18px -12px rgba(180, 86, 15, .9); }
-.btnOr:hover { background: #ee7623; filter: brightness(1.05); }
-.btnBleu { background: var(--emilio); border-color: var(--emilio); color: white; box-shadow: 0 10px 18px -12px rgba(29, 29, 31, .9); }
+.btnOr { background: #f08c42; border-color: #f08c42; color: #343639; box-shadow: 0 10px 18px -12px rgba(194, 98, 28, .9); }
+.btnOr:hover { background: #f08c42; filter: brightness(1.05); }
+.btnBleu { background: var(--emilio); border-color: var(--emilio); color: white; box-shadow: 0 10px 18px -12px rgba(46, 48, 52, .9); }
 .btnBleu:hover { background: var(--emilio); filter: brightness(1.12); }
-.btnRappel { background: #fff6f0; border-color: #f9c7a1; color: #9c460d; }
+.btnRappel { background: #fff6f0; border-color: #f9c7a1; color: #a85515; }
 .btnRappel:hover { background: #ffede0; }
 .btnDiscret { height: 32px; border-color: transparent; background: transparent; color: #94a3b8; font-weight: 700; }
 .btnDiscret:hover { background: #f8fafc; color: #64748b; }
@@ -97,7 +97,7 @@
 /* Plusieurs visites le même jour : une ligne par bien, avec son heure et ses boutons */
 .lignes { display: flex; flex-direction: column; gap: 8px; }
 .ligne { display: grid; grid-template-columns: 50px minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; }
-.heureL { font: 800 15px 'Plus Jakarta Sans', sans-serif; color: #18181b; text-align: right; }
+.heureL { font: 800 15px 'Plus Jakarta Sans', sans-serif; color: #25272b; text-align: right; }
 .actL { display: flex; align-items: center; gap: 4px; }
 .ligneBulle { grid-column: 2 / -1; }
 .btnPetit { height: 34px; padding: 0 12px; font-size: 12.5px; }
@@ -136,7 +136,7 @@
   display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 99px; white-space: nowrap;
   font-size: 11px; font-weight: 800; letter-spacing: .2px; color: #6d28d9; background: #f5f3ff; border: 1px solid #ddd6fe;
 }
-.lienTel { text-decoration: none; color: #1d1d1f; }
+.lienTel { text-decoration: none; color: #2e3034; }
 .lienTel:hover { color: var(--emilio); text-decoration: underline; text-underline-offset: 3px; }
 a.btn { text-decoration: none; }
 

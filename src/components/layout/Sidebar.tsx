@@ -40,9 +40,9 @@ const cleMenu = (k: string, telephone: boolean) => (telephone ? `menu.tel.${k}` 
    comme les sous-menus (Mes acheteurs, Mes estimations…). Téléphone seulement
    (Sidebar.module.css) ; la rubrique ouverte garde sa pastille bleu Emilio. */
 const COULEUR_RUBRIQUE: Record<string, string> = {
-  dashboard: '#1d1d1f', clients: '#2563eb', biens: '#b4560f',
-  demandes: '#7c3aed', agenda: '#0ea5a4', visites: '#0f7a4f', relances: '#ee7623',
-  carte: '#0891b2', documents: '#1d1d1f', activite: '#c026d3', parametres: '#64748b',
+  dashboard: '#2e3034', clients: '#2563eb', biens: '#c2621c',
+  demandes: '#7c3aed', agenda: '#0ea5a4', visites: '#0f7a4f', relances: '#f08c42',
+  carte: '#0891b2', documents: '#2e3034', activite: '#c026d3', parametres: '#64748b',
 };
 
 export default function Sidebar({ activePage, onNavigate, ouvert = false, onFermer, reduit = false }: {
@@ -242,9 +242,9 @@ export default function Sidebar({ activePage, onNavigate, ouvert = false, onFerm
         go: () => allerVue('biens', k), actif: activePage === 'biens' && vues.biens === k };
     }),
     documents: [
-      { cle: 'creer', label: 'Créer un document', ic: 'plus', c: '#1d1d1f', fond: '#f4f3f2', go: () => onNavigate('documents', { ancre: 'creer' }), actif: false },
-      { cle: 'liste', label: 'Liste des documents', ic: 'lignes', c: '#1d1d1f', fond: '#f4f3f2', go: () => onNavigate('documents', { ancre: 'liste' }), actif: false },
-      { cle: 'registre', label: 'Registre des mandats', ic: 'cadenas', c: '#1d1d1f', fond: '#f4f3f2', go: () => onNavigate('registre'), actif: activePage === 'registre' },
+      { cle: 'creer', label: 'Créer un document', ic: 'plus', c: '#2e3034', fond: '#f4f3f2', go: () => onNavigate('documents', { ancre: 'creer' }), actif: false },
+      { cle: 'liste', label: 'Liste des documents', ic: 'lignes', c: '#2e3034', fond: '#f4f3f2', go: () => onNavigate('documents', { ancre: 'liste' }), actif: false },
+      { cle: 'registre', label: 'Registre des mandats', ic: 'cadenas', c: '#2e3034', fond: '#f4f3f2', go: () => onNavigate('registre'), actif: activePage === 'registre' },
     ],
   };
   /* Ce que la rubrique elle-même ouvre : « Tous » des contacts, les mandats

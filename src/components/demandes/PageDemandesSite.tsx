@@ -58,7 +58,7 @@ type Categorie = 'toutes' | CategorieDemande;
 type Teinte = { c: string; fond: string; trait: string };
 
 const teinte = (x: Teinte) => ({ '--c': x.c, '--fond': x.fond, '--trait': x.trait } as CSSProperties);
-const MARINE: Teinte = { c: '#1d1d1f', fond: '#f4f3f2', trait: '#e0dedd' };
+const MARINE: Teinte = { c: '#2e3034', fond: '#f4f3f2', trait: '#e0dedd' };
 
 /* V3.127 : « À rappeler » — une date de rappel, pas encore traitée. */
 const aRappeler = (d: DemandeSite) => !d.archive && statutDe(d.statut).k !== 'traite' && !!d.a_rappeler_le;
@@ -84,7 +84,7 @@ const PERIODES: { k: Periode; lib: string; court: string; phrase: string; jours:
   { k: 'an', lib: '12 mois', court: '12 mois', phrase: 'sur 12 mois', jours: 365 },
   { k: 'tout', lib: 'Depuis le début', court: 'Tout', phrase: 'depuis le début', jours: null },
 ];
-const BLEU = '#1d1d1f';
+const BLEU = '#2e3034';
 /* La ponctuation française ne passe jamais seule à la ligne (V3.127). */
 /* « Reçue hier · mer. 7 oct. à 12:00 » : court, pour tenir sur la ligne du
    nom à côté des boutons (la date complète est dans l'infobulle). */
@@ -274,7 +274,7 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
   const nbCat = (c: Categorie) => dansLaProv.filter(d => dansFiltre(d, f) && dansCategorie(d, c)).length;
   const ETAPES: { k: Filtre; lib: string; c: string; aide: string }[] = [
     { k: 'nouveau', lib: 'Nouvelles', c: BLEU, aide: 'Pas encore prises en main : comptées en rouge dans le menu.' },
-    { k: 'en_cours', lib: 'En cours', c: '#b45309', aide: 'Vous vous en occupez : appelé, message laissé…' },
+    { k: 'en_cours', lib: 'En cours', c: '#c05d12', aide: 'Vous vous en occupez : appelé, message laissé…' },
     { k: 'rappels', lib: 'À rappeler', c: '#c2410c', aide: 'Avec une date de rappel, la plus proche d’abord.' },
     { k: 'traite', lib: 'Traitées', c: '#0f7a4f', aide: 'C’est réglé : réponse donnée, contact créé, ou pas sérieux.' },
   ];
@@ -421,8 +421,8 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
         recherche={demandes.length > 0 ? { valeur: cherche, onChange: setCherche, placeholder: 'Nom, téléphone, ville, bien…', label: 'Chercher une demande' } : undefined}
         label="D’où viennent les demandes" actif={prov} onChoisir={k => choisirProv(k as Prov)} aCheval
         tuiles={[
-          { cle: 'site', lib: 'Mon site', n: trouvees.filter(d => !d.archive && provenanceDe(d).k === 'site').length, couleur: '#1d1d1f' },
-          { cle: 'pub', lib: 'Pub estimation', n: trouvees.filter(d => !d.archive && provenanceDe(d).k === 'pub').length, couleur: '#ee7623' },
+          { cle: 'site', lib: 'Mon site', n: trouvees.filter(d => !d.archive && provenanceDe(d).k === 'site').length, couleur: '#2e3034' },
+          { cle: 'pub', lib: 'Pub estimation', n: trouvees.filter(d => !d.archive && provenanceDe(d).k === 'pub').length, couleur: '#f08c42' },
           { cle: 'portails', lib: 'Portails', n: trouvees.filter(d => !d.archive && provenanceDe(d).portail).length, couleur: '#b4233c' },
           { cle: 'tout', lib: 'Tout', n: trouvees.filter(d => !d.archive).length, tete: true, fin: true, ic: <PictoBoite taille={14} epaisseur={2.1} /> },
         ]} />

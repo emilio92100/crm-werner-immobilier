@@ -1,6 +1,6 @@
 /* « Mon suivi avec l'agence » et la fenêtre « Noter un appel » (V3.182, SuiviAgence.tsx). */
 
-.bloc { border-top: 1px solid #eaeae9; background: #fcfcfb; font-family: 'DM Sans', system-ui, sans-serif; color: #141416; }
+.bloc { border-top: 1px solid #eaeae9; background: #fcfcfb; font-family: 'DM Sans', system-ui, sans-serif; color: #232528; }
 .bloc[data-seul="oui"] { border: 1px solid #eaeae9; border-radius: 14px; overflow: hidden; }
 
 /* ── La ligne : repliée, c'est tout le bloc ── */
@@ -10,7 +10,7 @@
   background: none; border: none; padding: 3px 0; font: inherit; color: inherit; text-align: left; cursor: pointer;
 }
 .titre { display: inline-flex; align-items: center; gap: 7px; color: #5B6B82; white-space: nowrap; }
-.titre b { font: 800 13.5px 'Plus Jakarta Sans', sans-serif; color: #141416; }
+.titre b { font: 800 13.5px 'Plus Jakarta Sans', sans-serif; color: #232528; }
 .etat { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 99px; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .extrait { flex: 1 1 200px; min-width: 0; font-size: 13px; font-weight: 600; color: #31302e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .extrait[data-vide="oui"] { color: #8593a8; font-weight: 500; }
@@ -20,17 +20,17 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; padding: 0 13px; border-radius: 10px;
   font: 700 13px 'DM Sans', sans-serif; white-space: nowrap; cursor: pointer; text-decoration: none; box-sizing: border-box;
 }
-.btn { background: white; color: #1d1d1f; border: 1px solid #dad8d7; }
-.btn:hover { border-color: #1d1d1f; }
-.btnFort { background: #1d1d1f; color: white; border: 1px solid #1d1d1f; }
-.btnFort:hover { background: #292827; }
+.btn { background: white; color: #2e3034; border: 1px solid #dad8d7; }
+.btn:hover { border-color: #2e3034; }
+.btnFort { background: #2e3034; color: white; border: 1px solid #2e3034; }
+.btnFort:hover { background: #3e4045; }
 .btnFort:disabled, .btn:disabled { opacity: .55; cursor: default; }
 .plier { background: #f4f3f2; color: #31302e; border: none; padding: 0 11px; }
 .plier:hover { background: #ebeaea; }
-.lienFort { background: #1d1d1f; color: white; border: 1px solid #1d1d1f; }
-.lienFort:hover { background: #292827; color: white; }
-.lien { background: white; color: #1d1d1f; border: 1px solid #dad8d7; }
-.lien:hover { border-color: #1d1d1f; color: #1d1d1f; }
+.lienFort { background: #2e3034; color: white; border: 1px solid #2e3034; }
+.lienFort:hover { background: #3e4045; color: white; }
+.lien { background: white; color: #2e3034; border: 1px solid #dad8d7; }
+.lien:hover { border-color: #2e3034; color: #2e3034; }
 
 /* ── Déplié ── */
 .corps { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px; animation: suiviOuvre .22s ease both; }
@@ -38,18 +38,18 @@
 @media (prefers-reduced-motion: reduce) { .corps { animation: none; } }
 
 .contact { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 11px 13px; background: white; border: 1px solid #eaeae9; border-radius: 12px; }
-.contactIc { width: 38px; height: 38px; border-radius: 10px; background: #f3f2f2; color: #1d1d1f; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.contactIc { width: 38px; height: 38px; border-radius: 10px; background: #f3f2f2; color: #2e3034; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .contactTx { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.contactTx b { font: 800 14px 'Plus Jakarta Sans', sans-serif; color: #141416; overflow-wrap: anywhere; }
+.contactTx b { font: 800 14px 'Plus Jakarta Sans', sans-serif; color: #232528; overflow-wrap: anywhere; }
 .contactTx small { font-size: 12.5px; font-weight: 600; color: #5B6B82; }
 
 /* V3.198 — « Le lien pour Didier » : l'envoyer à l'agence de ce bien. */
 .lienAg { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; padding: 0 13px; border-radius: 10px; box-sizing: border-box;
-  font: 800 13px 'DM Sans', sans-serif; white-space: nowrap; cursor: pointer; background: #FFF6EC; color: #b4560f; border: 1.5px solid #f6a15e; }
-.lienAg:hover, .lienAg[aria-expanded="true"] { border-color: #ee7623; background: #FDEBD5; }
+  font: 800 13px 'DM Sans', sans-serif; white-space: nowrap; cursor: pointer; background: #FFF6EC; color: #c2621c; border: 1.5px solid #f7b07a; }
+.lienAg:hover, .lienAg[aria-expanded="true"] { border-color: #f08c42; background: #FDEBD5; }
 .panneauLien { display: flex; flex-direction: column; gap: 10px; padding: 12px 13px; border-radius: 12px; background: #FFFAF3; border: 1px solid #F7D5B0; }
 .panneauTete { position: relative; display: flex; flex-direction: column; gap: 2px; padding-right: 36px; }
-.panneauTete b { font: 800 14px 'Plus Jakarta Sans', sans-serif; color: #141416; }
+.panneauTete b { font: 800 14px 'Plus Jakarta Sans', sans-serif; color: #232528; }
 .panneauTete span { font-size: 12.5px; font-weight: 600; color: #6B5A45; }
 .panneauFermer { position: absolute; top: 0; right: 0; width: 30px; height: 30px; border-radius: 8px; border: 1px solid #F2D2AC; background: white; color: #8F5A1C;
   display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
@@ -75,9 +75,9 @@
 .rapideChamp { flex: 1 1 auto; display: flex; min-width: 0; }
 .rapideChamp input {
   flex: 1 1 auto; min-width: 0; height: 40px; box-sizing: border-box; padding: 0 13px; border-radius: 10px; border: 1px solid #e1e0de; background: white;
-  font: 600 14px 'DM Sans', sans-serif; color: #141416; outline: none;
+  font: 600 14px 'DM Sans', sans-serif; color: #232528; outline: none;
 }
-.rapideChamp input:focus { border-color: #1d1d1f; box-shadow: 0 0 0 3px rgba(29, 29, 31,.12); }
+.rapideChamp input:focus { border-color: #2e3034; box-shadow: 0 0 0 3px rgba(46, 48, 52,.12); }
 .rapideChamp input::placeholder { color: #94a3b8; font-weight: 500; }
 .rapide .btnFort { height: 40px; padding: 0 16px; }
 .cache { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -105,33 +105,33 @@
 .gestes { position: absolute; top: -5px; right: 0; display: flex; gap: 2px; }
 .retirer, .modifier { width: 28px; height: 28px; border-radius: 8px; border: none; background: none; color: #c8c5c3; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .retirer:hover { color: #dc2626; background: #fef2f2; }
-.modifier:hover { color: #1d1d1f; background: #f3f2f2; }
-.marque[data-k="client"] { background: #FFF4E6; color: #b4560f; }
+.modifier:hover { color: #2e3034; background: #f3f2f2; }
+.marque[data-k="client"] { background: #FFF4E6; color: #c2621c; }
 .edition { display: flex; flex-direction: column; gap: 8px; }
 .edition .zone { min-height: 76px; background: white; }
 .editionPied { display: flex; justify-content: flex-end; gap: 8px; }
 .motClient { display: flex; align-items: flex-start; gap: 7px; padding: 8px 11px; border-radius: 10px; background: #f7f6f6; border: 1px solid #eaeae9; color: #5B6B82; font-size: 13px; font-weight: 600; line-height: 1.5; }
 .motClient svg { margin-top: 2px; flex-shrink: 0; }
-.motClient > span { min-width: 0; overflow-wrap: anywhere; color: #141416; }
+.motClient > span { min-width: 0; overflow-wrap: anywhere; color: #232528; }
 .motClient i { font-style: normal; font-weight: 800; color: #5B6B82; }
 .motClient[data-vu="oui"] { background: #FFF8EF; border-color: #F7DDBC; }
-.motClient[data-vu="oui"] svg, .motClient[data-vu="oui"] i { color: #b4560f; }
+.motClient[data-vu="oui"] svg, .motClient[data-vu="oui"] i { color: #c2621c; }
 .qui { font-size: 12.5px; font-weight: 700; color: #5B6B82; }
-.texte { font-size: 14px; font-weight: 600; line-height: 1.55; color: #141416; white-space: pre-line; overflow-wrap: anywhere; }
+.texte { font-size: 14px; font-weight: 600; line-height: 1.55; color: #232528; white-space: pre-line; overflow-wrap: anywhere; }
 .creneaux { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .creneauxLib { font-size: 12.5px; font-weight: 800; color: #4C1D95; }
 .creneau {
   display: inline-flex; align-items: center; gap: 9px; min-height: 30px; padding: 3px 10px; border-radius: 10px;
   background: white; border: 1px solid #eaeae9; font-size: 13px; font-weight: 700; color: #6B7A90;
 }
-.creneau[data-actif="oui"] { border-color: #dcd3ee; color: #141416; padding: 3px 3px 3px 11px; }
+.creneau[data-actif="oui"] { border-color: #dcd3ee; color: #232528; padding: 3px 3px 3px 11px; }
 .valider { height: 30px; padding: 0 11px; border-radius: 8px; border: none; background: #5B21B6; color: white; font: 800 12.5px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; }
 .valider:hover { background: #4c1d95; }
 /* V3.192 : le créneau devenu la visite. */
 .creneau[data-retenu="oui"] { border-color: #a7f3d0; background: #ecfdf5; color: #065f46; padding: 3px 4px 3px 11px; }
 .retenu { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 7px; background: #059669; color: white; font: 800 12px 'DM Sans', sans-serif; white-space: nowrap; }
 /* V3.192 : l'adresse exacte, dans « Noter un appel ». */
-.adresse { width: 100%; box-sizing: border-box; height: 42px; border: 1px solid #dbdad8; border-radius: 11px; padding: 0 13px; font: inherit; font-size: 14px; color: #141416; background: white; }
+.adresse { width: 100%; box-sizing: border-box; height: 42px; border: 1px solid #dbdad8; border-radius: 11px; padding: 0 13px; font: inherit; font-size: 14px; color: #232528; background: white; }
 .adresse:focus { outline: none; border-color: #5B21B6; box-shadow: 0 0 0 3px rgba(91, 33, 182, .12); }
 .reprendre { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; max-width: 100%; border: 1px solid #a7f3d0; background: #ecfdf5; color: #065f46; border-radius: 9px; padding: 6px 11px; font: 700 12.5px 'DM Sans', sans-serif; cursor: pointer; text-align: left; }
 .reprendre:hover { background: #d1fae5; }
@@ -155,12 +155,12 @@
 .voile { position: fixed; inset: 0; z-index: 1300; background: rgba(15,23,42,.45); display: flex; align-items: center; justify-content: center; padding: 18px; }
 .fenetre {
   width: min(1060px, 100%); max-height: calc(100dvh - 36px); display: flex; flex-direction: column; background: white; border-radius: 22px;
-  box-shadow: 0 30px 80px -20px rgba(27, 26, 25,.5); font-family: 'DM Sans', system-ui, sans-serif; color: #141416; overflow: hidden;
+  box-shadow: 0 30px 80px -20px rgba(49, 51, 54,.5); font-family: 'DM Sans', system-ui, sans-serif; color: #232528; overflow: hidden;
 }
 .fTete { display: flex; align-items: flex-start; gap: 12px; padding: 18px 18px 12px; border-bottom: 1px solid #f3f2f2; }
 .fTete h2 { margin: 0; font: 800 18px 'Plus Jakarta Sans', sans-serif; }
 .fTete p { margin: 3px 0 0; font-size: 13px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fIc { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: #f3f2f2; color: #1d1d1f; }
+.fIc { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: #f3f2f2; color: #2e3034; }
 .fFermer { margin-left: auto; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 10px; border: 1px solid #eaeae9; background: white; color: #64748b; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .fCorps { flex: 1 1 auto; overflow-y: auto; display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); align-items: stretch; }
 /* V3.203 (maquette 17) — à gauche l'agence, sur un fond doux ; à droite l'appel. */
@@ -169,28 +169,28 @@
 .carteContact { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; background: white; border: 1px solid #eaeae9; }
 .saisie { position: relative; display: block; }
 .saisie > svg { position: absolute; left: 12px; top: 13.5px; color: #94a3b8; pointer-events: none; transition: color .15s ease; }
-.saisie:focus-within > svg { color: #1d1d1f; }
+.saisie:focus-within > svg { color: #2e3034; }
 .saisie > input { width: 100%; padding-left: 36px !important; }
 .champLarge { grid-column: 1 / -1; }
 /* V3.203 — « Le lien pour Constance », dans « Noter un appel ». */
 .lienAppel { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; background: #FFF8EF; border: 1.5px solid #F2C894; }
 .lienAppelTete { display: flex; align-items: center; gap: 10px; }
-.lienAppelIc { width: 34px; height: 34px; border-radius: 10px; background: white; border: 1px solid #F2C894; color: #b4560f; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.lienAppelIc { width: 34px; height: 34px; border-radius: 10px; background: white; border: 1px solid #F2C894; color: #c2621c; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .lienAppelTx { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.lienAppelTx b { font: 800 14.5px 'Plus Jakarta Sans', sans-serif; color: #141416; }
+.lienAppelTx b { font: 800 14.5px 'Plus Jakarta Sans', sans-serif; color: #232528; }
 .lienAppelTx small { font-size: 12.5px; font-weight: 600; color: #6B5A45; }
 .lienAppelBtns { display: flex; flex-wrap: wrap; gap: 8px; }
 .lienAppelFort, .lienAppelBtn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 38px; padding: 0 13px; border-radius: 11px; box-sizing: border-box;
   font: 800 13.5px 'DM Sans', sans-serif; text-decoration: none; cursor: pointer; transition: background .15s ease, transform .12s ease;
 }
-.lienAppelFort { border: none; background: #ee7623; color: #141416; }
+.lienAppelFort { border: none; background: #f08c42; color: #232528; }
 .lienAppelFort:hover { background: #F09A35; }
-.lienAppelBtn { border: 1.5px solid #F2C894; background: white; color: #b4560f; }
+.lienAppelBtn { border: 1.5px solid #F2C894; background: white; color: #c2621c; }
 .lienAppelBtn:hover { background: #FDEBD5; }
 .lienAppelFort:disabled, .lienAppelBtn:disabled { opacity: .6; cursor: default; }
 .lienAppelAide { font-size: 12.5px; font-weight: 600; line-height: 1.5; color: #6B5A45; }
-.lienAppelDit { font-size: 12.5px; font-weight: 700; color: #b4560f; }
+.lienAppelDit { font-size: 12.5px; font-weight: 700; color: #c2621c; }
 .lienAppelDeja { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; max-width: 100%; box-sizing: border-box; padding: 6px 10px; border-radius: 9px;
   background: #ECFDF5; border: 1px solid #A7F3D0; font-size: 12.5px; font-weight: 700; line-height: 1.4; color: #065F46; }
 .lienAppelDeja svg { flex-shrink: 0; }
@@ -206,29 +206,29 @@
 }
 .pastille svg { color: #8593a8; transition: color .15s ease; }
 .pastille:hover { border-color: #d2d0cf; }
-.pastille[aria-pressed="true"] { background: #1d1d1f; border-color: #1d1d1f; color: white; }
+.pastille[aria-pressed="true"] { background: #2e3034; border-color: #2e3034; color: white; }
 .pastille[aria-pressed="true"] svg { color: white; }
 .pastille[data-ton="disponible"][aria-pressed="true"] { background: #0E6B43; border-color: #0E6B43; }
-.pastille[data-ton="sous_offre"][aria-pressed="true"] { background: #b4560f; border-color: #b4560f; }
+.pastille[data-ton="sous_offre"][aria-pressed="true"] { background: #c2621c; border-color: #c2621c; }
 .pastille[data-ton="vendu"][aria-pressed="true"] { background: #475569; border-color: #475569; }
 .grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .champ { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 /* V3.205 — « Noter un appel » : le contact, un champ par ligne (les noms et l'e-mail en entier). */
 .grilleUne { grid-template-columns: minmax(0, 1fr); gap: 11px; }
 .ajoutNumero { justify-self: start; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 10px; border: 1.5px dashed #d2d0cf;
-  background: white; color: #1d1d1f; font: 700 13px 'DM Sans', sans-serif; cursor: pointer; max-width: 100%; }
-.ajoutNumero:hover { background: #f8f8f7; border-color: #1d1d1f; }
+  background: white; color: #2e3034; font: 700 13px 'DM Sans', sans-serif; cursor: pointer; max-width: 100%; }
+.ajoutNumero:hover { background: #f8f8f7; border-color: #2e3034; }
 .champ span { font-size: 12.5px; font-weight: 700; color: #5B6B82; }
 .champ input {
   height: 42px; box-sizing: border-box; padding: 0 12px; border-radius: 11px; border: 1.5px solid #eaeae9; background: #f8fafc;
-  font: 600 14px 'DM Sans', sans-serif; color: #141416; outline: none; min-width: 0;
+  font: 600 14px 'DM Sans', sans-serif; color: #232528; outline: none; min-width: 0;
 }
-.champ input:focus, .zone:focus { border-color: #1d1d1f; background: white; }
+.champ input:focus, .zone:focus { border-color: #2e3034; background: white; }
 .coche { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #31302e; cursor: pointer; }
-.coche input { width: 17px; height: 17px; accent-color: #1d1d1f; }
+.coche input { width: 17px; height: 17px; accent-color: #2e3034; }
 .zone {
   width: 100%; box-sizing: border-box; padding: 11px 13px; border-radius: 12px; border: 1.5px solid #eaeae9; background: #f8fafc;
-  font: 500 14px/1.55 'DM Sans', sans-serif; color: #141416; resize: vertical; outline: none; min-height: 96px;
+  font: 500 14px/1.55 'DM Sans', sans-serif; color: #232528; resize: vertical; outline: none; min-height: 96px;
 }
 .creneauF {
   display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 5px 0 11px; border-radius: 10px;
@@ -256,25 +256,25 @@
 /* V3.193 : ce que le client voit de l'appel (maquette « Noter un appel »). */
 .client { display: flex; flex-direction: column; gap: 11px; padding: 14px; border-radius: 16px; background: #FFF8EF; border: 1.5px solid #F2C894; }
 .client[data-ton="vendu"] { background: #f7f6f6; border-color: #CBD5E1; }
-.clientTete { display: flex; align-items: center; gap: 8px; color: #b4560f; font: 800 12px 'Plus Jakarta Sans', sans-serif; letter-spacing: .5px; text-transform: uppercase; }
+.clientTete { display: flex; align-items: center; gap: 8px; color: #c2621c; font: 800 12px 'Plus Jakarta Sans', sans-serif; letter-spacing: .5px; text-transform: uppercase; }
 .clientCoche { display: flex; align-items: flex-start; gap: 11px; cursor: pointer; }
-.clientCoche input { width: 20px; height: 20px; margin: 0; flex-shrink: 0; accent-color: #ee7623; }
-.client[data-ton="vendu"] .clientCoche input { accent-color: #1d1d1f; }
+.clientCoche input { width: 20px; height: 20px; margin: 0; flex-shrink: 0; accent-color: #f08c42; }
+.client[data-ton="vendu"] .clientCoche input { accent-color: #2e3034; }
 .clientCocheTx { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-top: 1px; }
-.clientCocheTx b { font: 700 14px 'DM Sans', sans-serif; color: #141416; }
+.clientCocheTx b { font: 700 14px 'DM Sans', sans-serif; color: #232528; }
 .clientCocheTx small { font-size: 13px; font-weight: 600; color: #5B6B80; line-height: 1.45; }
 .apercu { display: flex; align-items: flex-start; gap: 9px; padding: 9px 12px; border-radius: 12px; background: white; border: 1px solid #F2C894; }
-.apercuPoint { width: 8px; height: 8px; border-radius: 50%; background: #ee7623; flex-shrink: 0; margin-top: 6px; }
+.apercuPoint { width: 8px; height: 8px; border-radius: 50%; background: #f08c42; flex-shrink: 0; margin-top: 6px; }
 .apercuTx { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.apercuTx b { font: 700 13.5px 'Plus Jakarta Sans', sans-serif; color: #b4560f; }
+.apercuTx b { font: 700 13.5px 'Plus Jakarta Sans', sans-serif; color: #c2621c; }
 .apercuTx small { font-size: 12.5px; font-weight: 600; color: #6B5A45; }
 .clientMot { display: flex; flex-direction: column; gap: 6px; }
 .clientMot label { font-size: 13px; font-weight: 700; color: #31302e; }
 .clientMot label i { font-style: normal; font-weight: 600; color: #8592A6; }
-.zoneClient { width: 100%; box-sizing: border-box; padding: 10px 13px; border-radius: 12px; border: 1px solid #F2C894; background: white; font: 600 14px/1.5 'DM Sans', sans-serif; color: #141416; resize: vertical; outline: none; min-height: 64px; }
+.zoneClient { width: 100%; box-sizing: border-box; padding: 10px 13px; border-radius: 12px; border: 1px solid #F2C894; background: white; font: 600 14px/1.5 'DM Sans', sans-serif; color: #232528; resize: vertical; outline: none; min-height: 64px; }
 .client[data-ton="vendu"] .zoneClient { border-color: #CBD5E1; }
-.zoneClient:focus { border-color: #ee7623; box-shadow: 0 0 0 3px rgba(238, 118, 35,.14); }
-.client[data-ton="vendu"] .zoneClient:focus { border-color: #1d1d1f; box-shadow: 0 0 0 3px rgba(29, 29, 31,.12); }
+.zoneClient:focus { border-color: #f08c42; box-shadow: 0 0 0 3px rgba(240, 140, 66,.14); }
+.client[data-ton="vendu"] .zoneClient:focus { border-color: #2e3034; box-shadow: 0 0 0 3px rgba(46, 48, 52,.12); }
 .jamais { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: #6B5A45; }
 .jamais svg { flex-shrink: 0; }
 .clientHors { display: flex; align-items: flex-start; gap: 8px; padding: 10px 13px; border-radius: 12px; background: #f7f6f6; color: #5B6B82; font-size: 13px; font-weight: 600; line-height: 1.5; }

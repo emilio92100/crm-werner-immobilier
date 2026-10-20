@@ -9,11 +9,11 @@
 }
 .case svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset .24s cubic-bezier(.16, 1, .3, 1) .03s; }
 :global(.sel-ligne):hover .case, .case:focus-visible, .case[data-mode='oui'] { opacity: 1; transform: none; }
-.case:hover { border-color: #ee7623; color: #ee7623; }
+.case:hover { border-color: #f08c42; color: #f08c42; }
 .case:hover svg path { stroke-dashoffset: 0; opacity: .45; }
-.case[data-on='oui'] { opacity: 1; transform: none; background: #18181b; border-color: #18181b; color: #f8bf94; }
+.case[data-on='oui'] { opacity: 1; transform: none; background: #25272b; border-color: #25272b; color: #f8bf94; }
 .case[data-on='oui'] svg path { stroke-dashoffset: 0; opacity: 1; }
-.case:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(238, 118, 35, .35); }
+.case:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(240, 140, 66, .35); }
 
 /* Sur la photo d'un bien : une case de 30 px, en haut à gauche. */
 .caseCoin { inset: auto; top: 10px; left: 10px; width: 30px; height: 30px; border-radius: 9px; box-shadow: 0 2px 8px rgba(15, 23, 42, .18); }
@@ -33,29 +33,29 @@
   width: 20px; height: 20px; box-sizing: border-box; border-radius: 6px; border: 1.8px solid #d9d8d6; background: #fff; color: transparent;
   display: inline-flex; align-items: center; justify-content: center; transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
 }
-.carre:hover > i { border-color: #ee7623; color: rgba(238, 118, 35, .55); }
-.carre[data-on='oui'] > i, .carre[data-on='partiel'] > i { background: #18181b; border-color: #18181b; color: #f8bf94; }
+.carre:hover > i { border-color: #f08c42; color: rgba(240, 140, 66, .55); }
+.carre[data-on='oui'] > i, .carre[data-on='partiel'] > i { background: #25272b; border-color: #25272b; color: #f8bf94; }
 .carre:focus-visible { outline: none; }
-.carre:focus-visible > i { box-shadow: 0 0 0 3px rgba(238, 118, 35, .35); }
+.carre:focus-visible > i { box-shadow: 0 0 0 3px rgba(240, 140, 66, .35); }
 .carre:disabled { cursor: default; opacity: .4; }
 
 /* ── La barre, en bas à droite ── */
 .barre {
   position: fixed; right: 22px; bottom: 22px; z-index: 850; width: min(460px, calc(100vw - 32px));
   display: flex; flex-direction: column; gap: 10px; padding: 12px 12px 12px 16px; border-radius: 18px;
-  background: linear-gradient(152deg, #2c2c2e 0%, #282726 60%, #161618 100%); color: #fff;
+  background: linear-gradient(152deg, #3b3e43 0%, #3d3f44 60%, #26282c 100%); color: #fff;
   box-shadow: 0 24px 48px -18px rgba(15, 23, 42, .55), 0 2px 8px rgba(15, 23, 42, .18);
-  border: 1px solid rgba(246, 161, 94, .22);
+  border: 1px solid rgba(247, 176, 122, .22);
   font-family: 'DM Sans', sans-serif; animation: barreMonte .3s cubic-bezier(.16, 1, .3, 1) both;
 }
 @keyframes barreMonte { from { opacity: 0; transform: translateY(16px) scale(.98); } }
 .barreTete { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .barreN {
   min-width: 30px; height: 30px; padding: 0 8px; box-sizing: border-box; border-radius: 99px; display: inline-flex; align-items: center; justify-content: center;
-  background: #f6a15e; color: #18181b; font: 800 14px 'Plus Jakarta Sans', sans-serif;
+  background: #f7b07a; color: #25272b; font: 800 14px 'Plus Jakarta Sans', sans-serif;
 }
 .barreLib { flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.barreTout { border: none; background: none; padding: 4px 2px; color: #f6a15e; font: 700 12.5px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; }
+.barreTout { border: none; background: none; padding: 4px 2px; color: #f7b07a; font: 700 12.5px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; }
 .barreTout:hover { text-decoration: underline; text-underline-offset: 3px; }
 .barreX {
   width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
@@ -69,8 +69,8 @@
   transition: background .15s, border-color .15s;
 }
 .geste:hover { background: rgba(255, 255, 255, .16); border-color: rgba(255, 255, 255, .28); }
-.geste[data-principal='oui'] { background: #f6a15e; border-color: #f6a15e; color: #18181b; }
-.geste[data-principal='oui']:hover { background: #f6af78; }
+.geste[data-principal='oui'] { background: #f7b07a; border-color: #f7b07a; color: #25272b; }
+.geste[data-principal='oui']:hover { background: #f3bb8f; }
 .geste[data-danger='oui'] { color: #fecaca; border-color: rgba(254, 202, 202, .3); }
 .geste[data-danger='oui']:hover { background: rgba(220, 38, 38, .22); border-color: rgba(254, 202, 202, .55); color: #fff; }
 
@@ -83,14 +83,14 @@
 /* ── Le menu d'un geste, posé au-dessus de la barre ── */
 .menu {
   position: absolute; right: 0; bottom: calc(100% + 10px); width: min(300px, 100%); box-sizing: border-box;
-  display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 15px; background: #fff; color: #18181b;
+  display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 15px; background: #fff; color: #25272b;
   box-shadow: 0 24px 48px -16px rgba(15, 23, 42, .45), 0 2px 8px rgba(15, 23, 42, .12); border: 1px solid #efeeed;
   animation: menuMonte .2s cubic-bezier(.16, 1, .3, 1) both; transform-origin: bottom right;
 }
 @keyframes menuMonte { from { opacity: 0; transform: translateY(8px) scale(.97); } }
 .menuChoix {
   display: flex; align-items: center; gap: 11px; width: 100%; padding: 9px 10px; border: none; border-radius: 10px; background: none;
-  text-align: left; cursor: pointer; color: #18181b; font-family: 'DM Sans', sans-serif;
+  text-align: left; cursor: pointer; color: #25272b; font-family: 'DM Sans', sans-serif;
 }
 .menuChoix:hover:not(:disabled) { background: #f7f7f7; }
 .menuChoix:disabled { cursor: default; opacity: .5; }
@@ -117,7 +117,7 @@
 }
 
 /* ── La fenêtre avant un geste en lot ── */
-.voile { position: fixed; inset: 0; z-index: 950; display: flex; align-items: center; justify-content: center; padding: 22px; background: rgba(24, 24, 27, .55); animation: voile .2s ease both; font-family: 'DM Sans', sans-serif; color: #161618; }
+.voile { position: fixed; inset: 0; z-index: 950; display: flex; align-items: center; justify-content: center; padding: 22px; background: rgba(37, 39, 43, .55); animation: voile .2s ease both; font-family: 'DM Sans', sans-serif; color: #26282c; }
 @keyframes voile { from { opacity: 0; } }
 .fen { width: min(560px, 100%); max-height: min(88vh, 760px); display: flex; flex-direction: column; background: #fff; border-radius: 20px; box-shadow: 0 40px 80px -30px rgba(15, 23, 42, .6); overflow: hidden; animation: monte .26s cubic-bezier(.16, 1, .3, 1) both; }
 @keyframes monte { from { opacity: 0; transform: translateY(12px) scale(.985); } }
@@ -125,28 +125,28 @@
 .fenIc { width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: #f1f5f9; color: #475569; }
 .fenIc[data-danger='oui'] { background: #fef2f2; color: #b91c1c; }
 .fenTx { flex: 1; min-width: 0; }
-.fenTx h2 { margin: 0; font: 800 18px/1.3 'Plus Jakarta Sans', sans-serif; color: #18181b; }
+.fenTx h2 { margin: 0; font: 800 18px/1.3 'Plus Jakarta Sans', sans-serif; color: #25272b; }
 .fenTx p { margin: 4px 0 0; font-size: 13px; line-height: 1.5; color: #64748b; }
 .fermer { width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; border: none; background: #f1f5f9; color: #64748b; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
-.fermer:hover:not(:disabled) { background: #e2e8f0; color: #18181b; }
+.fermer:hover:not(:disabled) { background: #e2e8f0; color: #25272b; }
 .fenCorps { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 2px 20px 16px; }
 .liste { list-style: none; margin: 0; padding: 8px 10px; border-radius: 12px; border: 1px solid #f2f2f2; background: #fdfcfc; display: flex; flex-direction: column; gap: 5px; max-height: 260px; overflow-y: auto; }
-.liste li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #18181b; min-width: 0; }
+.liste li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #25272b; min-width: 0; }
 .liste li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .liste li svg { color: #94a3b8; }
 .ignores { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: #fffbeb; border: 1px solid #fde68a; }
 .ignores b { font-size: 12px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: #92400e; }
 .ignores ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
-.ignores li { display: flex; flex-direction: column; gap: 1px; font-size: 13px; color: #18181b; }
+.ignores li { display: flex; flex-direction: column; gap: 1px; font-size: 13px; color: #25272b; }
 .ignores li small { font-size: 12px; color: #92400e; }
 .avance { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: #334155; }
 .avanceBarre { display: block; height: 6px; border-radius: 99px; background: #f2f2f2; overflow: hidden; }
-.avanceBarre i { display: block; height: 100%; background: #ee7623; border-radius: 99px; transition: width .3s ease; }
+.avanceBarre i { display: block; height: 100%; background: #f08c42; border-radius: 99px; transition: width .3s ease; }
 .erreurs { margin: 0; padding-left: 18px; font-size: 12.5px; font-weight: 600; color: #b91c1c; }
 .fenPied { display: flex; justify-content: flex-end; gap: 8px; padding: 13px 20px; border-top: 1px solid #f2f2f2; background: #fdfcfc; }
-.btn { height: 40px; padding: 0 16px; border-radius: 11px; border: 1px solid #eaeae9; background: #fff; color: #18181b; font: 700 13.5px 'DM Sans', sans-serif; cursor: pointer; }
+.btn { height: 40px; padding: 0 16px; border-radius: 11px; border: 1px solid #eaeae9; background: #fff; color: #25272b; font: 700 13.5px 'DM Sans', sans-serif; cursor: pointer; }
 .btn:disabled { opacity: .55; cursor: default; }
-.btnPrim { background: #18181b; border-color: #18181b; color: #fff; }
+.btnPrim { background: #25272b; border-color: #25272b; color: #fff; }
 .btnDanger { background: #b91c1c; border-color: #b91c1c; color: #fff; }
 .btnDanger:hover:not(:disabled) { background: #991b1b; }
 @media (max-width: 760px) {

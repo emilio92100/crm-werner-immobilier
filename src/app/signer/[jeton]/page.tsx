@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   title: 'Votre signature — Emilio Immobilier',
   robots: { index: false, follow: false },
 };
-export const viewport: Viewport = { themeColor: '#18181b' };
+export const viewport: Viewport = { themeColor: '#25272b' };
 
 const TEL_AGENT = '06 58 95 76 32';
 /* Un code parti il y a moins d'un quart d'heure. */

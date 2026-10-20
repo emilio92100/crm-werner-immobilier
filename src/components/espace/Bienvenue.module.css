@@ -1,12 +1,12 @@
 /* La présentation de l'espace (V3.115) : une feuille qui monte du bas, six
    écrans, une animation par écran. Aux couleurs et à la police du site
-   emilio-immo.com (bleu #1d1d1f, orange #ee7623, encre #141416, Plus Jakarta
+   emilio-immo.com (bleu #2e3034, orange #f08c42, encre #232528, Plus Jakarta
    Sans), à la demande d'Alexandre. Maquette : canevas « Bienvenue dans
    l'espace acheteur », variante 1. */
 
 .couche{position:fixed; inset:0; z-index:75; font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
-  color:#141416; -webkit-font-smoothing:antialiased}
-.voile{position:absolute; inset:0; background:rgba(20, 20, 22,.55); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+  color:#232528; -webkit-font-smoothing:antialiased}
+.voile{position:absolute; inset:0; background:rgba(35, 37, 40,.55); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
   animation:voileIn .4s ease both; touch-action:none}
 .part .voile{animation:voileOut .38s ease both}
 
@@ -16,7 +16,7 @@
   /* Un fond uni, gris-bleu très clair (le « pale » du site), comme la variante
      des cartes que préférait Alexandre ; pas de blanc, pas de dégradé. */
   background:#f6f6f7;
-  border-radius:28px 28px 0 0; box-shadow:0 -24px 48px -24px rgba(20, 20, 22,.45);
+  border-radius:28px 28px 0 0; box-shadow:0 -24px 48px -24px rgba(35, 37, 40,.45);
   animation:monte .55s cubic-bezier(.22,.8,.24,1) both; overscroll-behavior:contain; overflow:hidden; outline:none}
 .part .feuille{animation:descend .38s cubic-bezier(.4,0,1,1) both}
 
@@ -24,10 +24,10 @@
 .tete{flex:0 0 auto; display:flex; align-items:center; gap:14px; margin-bottom:14px}
 .barres{flex:1; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:5px}
 .barre{display:block; height:5px; border-radius:99px; background:#e5e4e3; overflow:hidden}
-.barre > i{display:block; height:100%; width:0; border-radius:99px; background:#ee7623; transform-origin:left}
+.barre > i{display:block; height:100%; width:0; border-radius:99px; background:#f08c42; transform-origin:left}
 .faite > i{width:100%}
 .courante > i{width:100%; animation:barreIn .6s cubic-bezier(.22,.8,.24,1) both}
-.croix{flex:0 0 auto; width:38px; height:38px; border-radius:50%; border:none; background:#eeeeed; color:#141416;
+.croix{flex:0 0 auto; width:38px; height:38px; border-radius:50%; border:none; background:#eeeeed; color:#232528;
   display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0}
 .croix:hover{background:#e5e4e3}
 
@@ -41,30 +41,30 @@
 .illuCol{flex:0 0 auto; display:flex; justify-content:center}
 .illuAnim{width:100%; display:flex; justify-content:center}
 .illu{position:relative; width:100%; aspect-ratio:342/230; border-radius:22px; overflow:hidden; background:#f1f0ef;
-  box-shadow:0 24px 44px -26px rgba(20, 20, 22,.55), 0 0 0 1px rgba(255,255,255,.6)}
-.scene{position:absolute; left:0; top:0; width:342px; height:230px; transform-origin:0 0; overflow:hidden; color:#141416}
+  box-shadow:0 24px 44px -26px rgba(35, 37, 40,.55), 0 0 0 1px rgba(255,255,255,.6)}
+.scene{position:absolute; left:0; top:0; width:342px; height:230px; transform-origin:0 0; overflow:hidden; color:#232528}
 .conseiller{display:none}
 
 .textes{display:flex; flex-direction:column; gap:8px; margin-top:20px}
-.sur{font-size:11px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; color:#b4560f;
+.sur{font-size:11px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; color:#c2621c;
   animation:texteIn .5s .08s cubic-bezier(.22,.8,.24,1) both}
 .titre{margin:0; font-family:inherit; font-size:24px; line-height:1.2; font-weight:800; letter-spacing:-.4px;
-  text-wrap:balance; color:#141416; animation:texteIn .5s .14s cubic-bezier(.22,.8,.24,1) both}
+  text-wrap:balance; color:#232528; animation:texteIn .5s .14s cubic-bezier(.22,.8,.24,1) both}
 .texte{margin:0; font-size:15px; line-height:1.6; font-weight:500; color:#363533;
   animation:texteIn .5s .2s cubic-bezier(.22,.8,.24,1) both}
 .fort, .astuce{display:flex; align-items:center; gap:9px; margin-top:4px; padding:10px 12px; border-radius:12px;
   animation:texteIn .5s .3s cubic-bezier(.22,.8,.24,1) both}
 .fort > svg, .astuce > svg{flex:0 0 auto}
-.fort{background:#FDEBD3; color:#b4560f; font-size:13.5px; font-weight:800}
-.astuce{background:#fff; border:1px solid #eeeeed; color:#1d1d1f; font-size:13px; font-weight:700}
+.fort{background:#FDEBD3; color:#c2621c; font-size:13.5px; font-weight:800}
+.astuce{background:#fff; border:1px solid #eeeeed; color:#2e3034; font-size:13px; font-weight:700}
 
 .pied{flex:0 0 auto; display:flex; flex-direction:column; gap:8px; padding-top:12px}
 .boutons{display:flex; gap:10px}
-.retour{height:52px; padding:0 16px; border-radius:10px; border:1.5px solid #e5e4e3; background:#fff; color:#141416;
+.retour{height:52px; padding:0 16px; border-radius:10px; border:1.5px solid #e5e4e3; background:#fff; color:#232528;
   font:700 15px 'Plus Jakarta Sans',system-ui,sans-serif; display:inline-flex; align-items:center; gap:6px; cursor:pointer}
 .retour:hover{border-color:#d9d8d6}
-.suivant{flex:1; position:relative; overflow:hidden; height:52px; border-radius:10px; border:none; background:#ee7623;
-  color:#141416; font:800 15.5px 'Plus Jakarta Sans',system-ui,sans-serif; display:flex; align-items:center;
+.suivant{flex:1; position:relative; overflow:hidden; height:52px; border-radius:10px; border:none; background:#f08c42;
+  color:#232528; font:800 15.5px 'Plus Jakarta Sans',system-ui,sans-serif; display:flex; align-items:center;
   justify-content:center; gap:9px; cursor:pointer}
 .suivant::before{content:""; position:absolute; top:0; bottom:0; left:0; width:40%;
   background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.5),rgba(255,255,255,0));
@@ -77,15 +77,15 @@
 /* Fermée à la première visite : où la retrouver. */
 .note{position:fixed; z-index:75; left:16px; right:16px; bottom:calc(84px + env(safe-area-inset-bottom,0px));
   max-width:440px; margin:0 auto; box-sizing:border-box; display:flex; gap:12px; padding:14px; border-radius:18px;
-  background:#fff; border:1px solid #e5e4e3; box-shadow:0 20px 40px -22px rgba(20, 20, 22,.5);
-  font-family:'Plus Jakarta Sans',system-ui,sans-serif; color:#141416; animation:texteIn .45s cubic-bezier(.22,.8,.24,1) both}
-.noteIco{width:36px; height:36px; flex:0 0 auto; border-radius:50%; background:#f1f0ef; color:#1d1d1f;
+  background:#fff; border:1px solid #e5e4e3; box-shadow:0 20px 40px -22px rgba(35, 37, 40,.5);
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif; color:#232528; animation:texteIn .45s cubic-bezier(.22,.8,.24,1) both}
+.noteIco{width:36px; height:36px; flex:0 0 auto; border-radius:50%; background:#f1f0ef; color:#2e3034;
   display:flex; align-items:center; justify-content:center}
 .noteTx{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px}
 .noteTx b{font-size:14.5px; font-weight:800}
 .noteTx span{font-size:13px; line-height:1.5; font-weight:500; color:#363533}
 .noteBtns{display:flex; gap:8px; margin-top:6px}
-.noteBtn{height:38px; padding:0 14px; border-radius:10px; border:1.5px solid #e5e4e3; background:#fff; color:#141416;
+.noteBtn{height:38px; padding:0 14px; border-radius:10px; border:1.5px solid #e5e4e3; background:#fff; color:#232528;
   font:700 13.5px 'Plus Jakarta Sans',system-ui,sans-serif; cursor:pointer}
 
 /* Un petit téléphone (iPhone SE…) : tout tient sans défiler. */
@@ -101,7 +101,7 @@
   .feuille{top:0; right:0; bottom:0; left:0; margin:auto; width:min(920px, calc(100vw - 48px)); max-width:none;
     height:min(540px, calc(100vh - 48px)); max-height:none; padding:0; border-radius:24px;
     display:grid; grid-template-columns:440px minmax(0,1fr); grid-template-rows:auto minmax(0,1fr) auto;
-    box-shadow:0 40px 90px -30px rgba(20, 20, 22,.65); animation:monteOrdi .55s cubic-bezier(.22,.8,.24,1) both;
+    box-shadow:0 40px 90px -30px rgba(35, 37, 40,.65); animation:monteOrdi .55s cubic-bezier(.22,.8,.24,1) both;
     background:#f6f6f7}
   .part .feuille{animation:descendOrdi .38s cubic-bezier(.4,0,1,1) both}
   .poignee{display:none}
@@ -112,10 +112,10 @@
   .illuCol{grid-column:1; grid-row:1 / span 3; position:relative; align-items:center;
     background:transparent}
   .illuAnim{width:auto}
-  .illu{width:400px; max-width:none; box-shadow:0 30px 60px -32px rgba(20, 20, 22,.6)}
+  .illu{width:400px; max-width:none; box-shadow:0 30px 60px -32px rgba(35, 37, 40,.6)}
   .conseiller{display:inline-flex; position:absolute; left:24px; bottom:20px; align-items:center; gap:8px;
-    font-size:12px; font-weight:700; color:#1d1d1f}
-  .conseiller > span{width:26px; height:26px; border-radius:50%; background:#ee7623; color:#141416; display:inline-flex;
+    font-size:12px; font-weight:700; color:#2e3034}
+  .conseiller > span{width:26px; height:26px; border-radius:50%; background:#f08c42; color:#232528; display:inline-flex;
     align-items:center; justify-content:center; font-size:10.5px; font-weight:800}
   .textes{grid-column:2; grid-row:2; align-self:center; margin:0; padding:0 32px 0 38px; gap:12px}
   .sur{font-size:12px; letter-spacing:1.5px}
@@ -135,39 +135,39 @@
 .tourne60{animation:tourne 60s linear infinite}
 .orbite{position:absolute; left:50%; top:50%; width:200px; height:200px; margin:-100px 0 0 -100px; animation:tourne 18s linear infinite}
 .satellite{position:absolute; width:40px; height:40px; margin:-20px 0 0 -20px; border-radius:50%; background:#fff;
-  box-shadow:0 10px 20px -10px rgba(20, 20, 22,.45); display:flex; align-items:center; justify-content:center;
+  box-shadow:0 10px 20px -10px rgba(35, 37, 40,.45); display:flex; align-items:center; justify-content:center;
   animation:contre 18s linear infinite}
 .maisonPulse{position:absolute; left:50%; top:50%; width:86px; height:86px; margin:-43px 0 0 -43px; border-radius:50%;
-  background:#1d1d1f; animation:pulse 2.4s ease-out infinite}
+  background:#2e3034; animation:pulse 2.4s ease-out infinite}
 .maison{position:absolute; left:50%; top:50%; width:86px; height:86px; margin:-43px 0 0 -43px; border-radius:50%;
-  background:#1d1d1f; box-shadow:0 18px 30px -14px rgba(20, 20, 22,.7); display:flex; align-items:center; justify-content:center;
+  background:#2e3034; box-shadow:0 18px 30px -14px rgba(35, 37, 40,.7); display:flex; align-items:center; justify-content:center;
   animation:pop .6s .1s cubic-bezier(.22,.8,.24,1) both}
 
 .s1{position:absolute; inset:0; background:#f1f0ef}
 .radar{position:absolute; left:50%; top:50%; width:380px; height:380px; margin:-190px 0 0 -190px; border-radius:50%;
-  background:conic-gradient(from 0deg, rgba(238, 118, 35,.40), rgba(238, 118, 35,0) 24%, rgba(238, 118, 35,0));
+  background:conic-gradient(from 0deg, rgba(240, 140, 66,.40), rgba(240, 140, 66,0) 24%, rgba(240, 140, 66,0));
   animation:tourne 3s linear infinite}
-.cercle{position:absolute; left:50%; top:50%; border-radius:50%; border:1.5px solid rgba(29, 29, 31,.16)}
+.cercle{position:absolute; left:50%; top:50%; border-radius:50%; border:1.5px solid rgba(46, 48, 52,.16)}
 .repere{position:absolute; width:26px; height:26px; margin:-26px 0 0 -13px; animation:pin 6s ease-in-out infinite both}
 .centre{position:absolute; left:50%; top:50%; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%;
-  background:#1d1d1f; box-shadow:0 0 0 5px rgba(29, 29, 31,.18)}
+  background:#2e3034; box-shadow:0 0 0 5px rgba(46, 48, 52,.18)}
 .sources{position:absolute; left:12px; top:12px; display:flex; flex-direction:column; gap:5px}
 .source{align-self:flex-start; display:inline-flex; align-items:center; gap:6px; height:24px; padding:0 10px;
-  border-radius:99px; background:rgba(255,255,255,.92); font-size:10.5px; font-weight:700; color:#1d1d1f;
-  box-shadow:0 6px 14px -10px rgba(20, 20, 22,.5); animation:pop .5s cubic-bezier(.22,.8,.24,1) both}
-.source > i{width:6px; height:6px; border-radius:50%; background:#ee7623}
+  border-radius:99px; background:rgba(255,255,255,.92); font-size:10.5px; font-weight:700; color:#2e3034;
+  box-shadow:0 6px 14px -10px rgba(35, 37, 40,.5); animation:pop .5s cubic-bezier(.22,.8,.24,1) both}
+.source > i{width:6px; height:6px; border-radius:50%; background:#f08c42}
 .enCours{position:absolute; left:50%; bottom:12px; transform:translateX(-50%); display:inline-flex; align-items:center;
-  gap:8px; height:30px; padding:0 13px; border-radius:99px; background:#141416; color:#fff; font-size:11.5px;
+  gap:8px; height:30px; padding:0 13px; border-radius:99px; background:#232528; color:#fff; font-size:11.5px;
   font-weight:700; white-space:nowrap}
 .enCours > i{width:7px; height:7px; border-radius:50%; background:#4ade80; animation:cligne 1.4s ease-in-out infinite}
 
 .s2{position:absolute; inset:0; background:#f1f0ef}
 .carteFond{position:absolute; left:50%; top:66px; width:196px; height:150px; margin-left:-88px; border-radius:16px;
-  background:#e5e4e3; transform:rotate(5deg); overflow:hidden; box-shadow:0 14px 28px -18px rgba(20, 20, 22,.5);
+  background:#e5e4e3; transform:rotate(5deg); overflow:hidden; box-shadow:0 14px 28px -18px rgba(35, 37, 40,.5);
   animation:carteIn .7s .1s cubic-bezier(.22,.8,.24,1) both}
 .carteFond > img{opacity:.85}
 .carteBien{position:absolute; left:50%; top:58px; width:206px; height:160px; margin-left:-114px; border-radius:16px;
-  background:#fff; box-shadow:0 20px 34px -18px rgba(20, 20, 22,.55); overflow:hidden; display:flex; flex-direction:column;
+  background:#fff; box-shadow:0 20px 34px -18px rgba(35, 37, 40,.55); overflow:hidden; display:flex; flex-direction:column;
   animation:carteIn .7s .35s cubic-bezier(.22,.8,.24,1) both}
 .photo{position:relative; height:96px; background:#d9d8d6; overflow:hidden}
 .photoImg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block}
@@ -178,14 +178,14 @@
 .prixL{font-size:15px; font-weight:800}
 .petit{font-size:11px; color:#5B6B80}
 .notif{position:absolute; left:14px; right:14px; top:10px; display:flex; align-items:center; gap:10px; padding:9px 11px;
-  border-radius:15px; background:#fff; box-shadow:0 14px 28px -16px rgba(20, 20, 22,.55); animation:notif 6s .9s ease-in-out infinite both}
-.cloche{width:32px; height:32px; flex:0 0 auto; border-radius:10px; background:#FDEBD3; color:#b4560f; display:flex;
+  border-radius:15px; background:#fff; box-shadow:0 14px 28px -16px rgba(35, 37, 40,.55); animation:notif 6s .9s ease-in-out infinite both}
+.cloche{width:32px; height:32px; flex:0 0 auto; border-radius:10px; background:#FDEBD3; color:#c2621c; display:flex;
   align-items:center; justify-content:center}
 
 .s3{position:absolute; inset:0; background:#f1f0ef; display:flex; flex-direction:column; gap:10px; padding:14px 16px; box-sizing:border-box}
 .monte{animation:monteIl .55s cubic-bezier(.22,.8,.24,1) both}
 .ligneBien{display:flex; align-items:center; gap:10px; padding:8px; border-radius:14px; background:#fff;
-  box-shadow:0 10px 22px -16px rgba(20, 20, 22,.5)}
+  box-shadow:0 10px 22px -16px rgba(35, 37, 40,.5)}
 .avis3{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px}
 .avisB{position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:center; gap:4px;
   padding:9px 2px; border-radius:12px; font-size:10.5px; font-weight:800; white-space:nowrap}
@@ -196,46 +196,46 @@
 .chiffres{position:relative; width:40px; height:16px}
 .chiffres > b{position:absolute; right:0; font-size:13px; font-weight:800}
 .avant46{color:#5B6B80; opacity:0; animation:remplitN 3.6s 1s ease-in-out infinite both}
-.apres93{color:#b4560f; animation:remplitM 3.6s 1s ease-in-out infinite both}
+.apres93{color:#c2621c; animation:remplitM 3.6s 1s ease-in-out infinite both}
 .jauge{display:block; height:8px; border-radius:99px; background:#f1f0ef; overflow:hidden}
-.jauge > i{display:block; height:100%; width:93%; border-radius:99px; background:linear-gradient(90deg,#f6a15e,#ee7623);
+.jauge > i{display:block; height:100%; width:93%; border-radius:99px; background:linear-gradient(90deg,#f7b07a,#f08c42);
   animation:remplit 3.6s 1s ease-in-out infinite both}
 
 .s4{position:absolute; inset:0; background:#f1f0ef; padding:14px 16px; box-sizing:border-box}
 .criteres{display:flex; flex-direction:column; gap:10px; padding:12px 14px; border-radius:16px; background:#fff;
-  box-shadow:0 12px 24px -18px rgba(20, 20, 22,.5)}
+  box-shadow:0 12px 24px -18px rgba(35, 37, 40,.5)}
 .budget{position:relative; width:90px; height:18px}
 .budget > b{position:absolute; right:0; font-size:14px; font-weight:800}
 .avantB{opacity:0; animation:avant 6s .6s ease-in-out infinite both}
-.apresB{color:#b4560f; animation:apres 6s .6s ease-in-out infinite both}
+.apresB{color:#c2621c; animation:apres 6s .6s ease-in-out infinite both}
 .glissiere{position:relative; display:block; height:8px; border-radius:99px; background:#f1f0ef}
-.glissiere > i{position:absolute; left:0; top:0; bottom:0; width:76%; border-radius:99px; background:#ee7623;
+.glissiere > i{position:absolute; left:0; top:0; bottom:0; width:76%; border-radius:99px; background:#f08c42;
   animation:glisseur 6s .6s ease-in-out infinite both}
 .curseur{position:absolute; top:50%; left:76%; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%;
-  background:#fff; border:2.5px solid #ee7623; box-sizing:border-box; box-shadow:0 6px 14px -4px rgba(20, 20, 22,.45);
+  background:#fff; border:2.5px solid #f08c42; box-sizing:border-box; box-shadow:0 6px 14px -4px rgba(35, 37, 40,.45);
   animation:curseur 6s .6s ease-in-out infinite both}
 .puces{display:flex; gap:6px; flex-wrap:wrap}
-.puce{height:26px; padding:0 10px; border-radius:99px; border:1.5px solid #f6a15e; background:#FDEBD3; color:#b4560f;
+.puce{height:26px; padding:0 10px; border-radius:99px; border:1.5px solid #f7b07a; background:#FDEBD3; color:#c2621c;
   font-size:11px; font-weight:700; display:inline-flex; align-items:center; box-sizing:border-box}
 .puceVive{animation:puce 6s .6s ease-in-out infinite both}
 .prevenu{position:absolute; left:30px; right:30px; bottom:12px; display:flex; align-items:center; gap:9px; padding:8px 11px;
-  border-radius:14px; background:#141416; color:#fff; box-shadow:0 14px 26px -14px rgba(20, 20, 22,.7);
+  border-radius:14px; background:#232528; color:#fff; box-shadow:0 14px 26px -14px rgba(35, 37, 40,.7);
   animation:toastIl 6s .6s ease-in-out infinite both}
 .ok{width:24px; height:24px; flex:0 0 auto; border-radius:50%; background:#16a34a; display:flex; align-items:center; justify-content:center}
 
 .s5{position:absolute; inset:0; background:#f1f0ef; display:flex; gap:10px; padding:14px; box-sizing:border-box}
 .agenda{width:146px; flex:0 0 auto; display:flex; flex-direction:column; border-radius:16px; background:#fff; overflow:hidden;
-  box-shadow:0 12px 24px -18px rgba(20, 20, 22,.5)}
-.agendaH{height:30px; background:#ee7623; color:#141416; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 12px 24px -18px rgba(35, 37, 40,.5)}
+.agendaH{height:30px; background:#f08c42; color:#232528; display:flex; align-items:center; justify-content:center;
   font-size:11px; font-weight:800; letter-spacing:1.4px}
 .coche{stroke-dasharray:26; animation:trace .6s 1s cubic-bezier(.65,0,.35,1) both}
 .miniCarte{flex:1; position:relative; border-radius:16px; background:#f1f0ef; overflow:hidden}
 .prixPin{position:absolute; display:flex; flex-direction:column; align-items:center; animation:rebond 2.4s ease-in-out infinite}
 .prixPin > span{height:20px; padding:0 7px; border-radius:99px; font-size:10px; font-weight:800; display:inline-flex;
-  align-items:center; white-space:nowrap; box-shadow:0 6px 12px -8px rgba(20, 20, 22,.6)}
+  align-items:center; white-space:nowrap; box-shadow:0 6px 12px -8px rgba(35, 37, 40,.6)}
 .prixPin > i{width:2px; height:8px}
 .etiquette{position:absolute; left:8px; bottom:8px; height:22px; padding:0 9px; border-radius:99px; background:#fff;
-  font-size:10px; font-weight:800; color:#1d1d1f; display:inline-flex; align-items:center}
+  font-size:10px; font-weight:800; color:#2e3034; display:inline-flex; align-items:center}
 
 /* Moins de mouvement demandé par le téléphone : tout reste, rien ne bouge. */
 @media (prefers-reduced-motion:reduce){
@@ -254,7 +254,7 @@
 @keyframes texteIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes barreIn{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes scintille{0%,55%{transform:translateX(-130%) skewX(-18deg)}85%,100%{transform:translateX(230%) skewX(-18deg)}}
-@keyframes halo{0%,100%{box-shadow:0 8px 18px -10px rgba(238, 118, 35,.9),0 0 0 0 rgba(238, 118, 35,.45)}50%{box-shadow:0 8px 18px -10px rgba(238, 118, 35,.9),0 0 0 7px rgba(238, 118, 35,0)}}
+@keyframes halo{0%,100%{box-shadow:0 8px 18px -10px rgba(240, 140, 66,.9),0 0 0 0 rgba(240, 140, 66,.45)}50%{box-shadow:0 8px 18px -10px rgba(240, 140, 66,.9),0 0 0 7px rgba(240, 140, 66,0)}}
 @keyframes tourne{to{transform:rotate(360deg)}}
 @keyframes contre{to{transform:rotate(-360deg)}}
 @keyframes pulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.75);opacity:0}}
@@ -273,7 +273,7 @@
 @keyframes curseur{0%,14%{left:56%}42%,84%{left:76%}98%,100%{left:56%}}
 @keyframes avant{0%,22%{opacity:1;transform:none}32%,86%{opacity:0;transform:translateY(-8px)}96%,100%{opacity:1;transform:none}}
 @keyframes apres{0%,22%{opacity:0;transform:translateY(8px)}32%,86%{opacity:1;transform:none}96%,100%{opacity:0;transform:translateY(8px)}}
-@keyframes puce{0%,40%{background:#fff;color:#5B6B80;border-color:#e5e4e3}48%,86%{background:#FDEBD3;color:#b4560f;border-color:#f6a15e}96%,100%{background:#fff;color:#5B6B80;border-color:#e5e4e3}}
+@keyframes puce{0%,40%{background:#fff;color:#5B6B80;border-color:#e5e4e3}48%,86%{background:#FDEBD3;color:#c2621c;border-color:#f7b07a}96%,100%{background:#fff;color:#5B6B80;border-color:#e5e4e3}}
 @keyframes toastIl{0%,50%{opacity:0;transform:translateY(14px)}58%,88%{opacity:1;transform:none}96%,100%{opacity:0;transform:translateY(8px)}}
 @keyframes trace{from{stroke-dashoffset:26}to{stroke-dashoffset:0}}
 @keyframes zoom{from{transform:scale(1)}to{transform:scale(1.14)}}

@@ -53,7 +53,7 @@
 .teteIc {
   width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  background: var(--emilio-fond); color: #f6a15e;
+  background: var(--emilio-fond); color: #f7b07a;
 }
 .teteTxt { flex: 1; min-width: 0; }
 .teteTxt h1 { margin: 0; font: 800 19px/1.2 'Plus Jakarta Sans', sans-serif; color: var(--emilio); letter-spacing: -.3px; }
@@ -77,7 +77,7 @@
 .section { margin-top: 14px; }
 .sectionTete { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
 .sectionTete span { font-size: 10.5px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase; color: #94a3b8; }
-.sectionTete button { border: none; background: none; color: #b4560f; font: 700 12px 'DM Sans', sans-serif; cursor: pointer; padding: 2px 4px; }
+.sectionTete button { border: none; background: none; color: #c2621c; font: 700 12px 'DM Sans', sans-serif; cursor: pointer; padding: 2px 4px; }
 .puces { display: flex; flex-wrap: wrap; gap: 6px; }
 .puce {
   display: inline-flex; align-items: center; gap: 7px;
@@ -104,7 +104,7 @@
 .rappel { display: flex; align-items: flex-start; gap: 9px; flex-wrap: wrap; font-size: 12.5px; line-height: 1.45; color: #475569; }
 .rappelIc {
   flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; background: #fde7d8; color: #b4560f;
+  display: flex; align-items: center; justify-content: center; background: #fde7d8; color: #c2621c;
 }
 .rappelTxt { flex: 1; min-width: 0; margin: 3px 0 0; }
 .rappelFermer {
@@ -112,7 +112,7 @@
   background: transparent; color: #94a3b8; font-size: 18px; line-height: 1;
 }
 .rappelFermer:hover { background: #f1f5f9; color: var(--navy); }
-.sql { display: block; flex-basis: 100%; margin: 2px 0 0 33px; color: #b45309; font-size: 11.5px; }
+.sql { display: block; flex-basis: 100%; margin: 2px 0 0 33px; color: #c05d12; font-size: 11.5px; }
 .vide { margin: 14px 0 0; font-size: 13px; color: #64748b; }
 .erreur { margin-top: 14px; padding: 10px 12px; border-radius: 12px; background: #fef2f2; color: #991b1b; font-size: 13px; }
 .squelettes { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; }
@@ -148,7 +148,7 @@
   border: 1.5px solid #eaeae9; border-radius: 12px; background: white; color: #94a3b8;
   transition: border-color .15s;
 }
-.cherche:focus-within { border-color: #ee7623; }
+.cherche:focus-within { border-color: #f08c42; }
 .cherche input { flex: 1; min-width: 0; border: none; outline: none; background: none; font: 500 13.5px 'DM Sans', sans-serif; color: var(--navy); }
 .cherche button { border: none; background: #f1f5f9; color: #64748b; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 15px; line-height: 1; }
 .liste { list-style: none; margin: 0; padding: 2px 8px 8px; flex: 1; overflow-y: auto; }
@@ -201,13 +201,13 @@
 }
 .rep > span { display: flex; }
 .rep:hover, .repSurvol { transform: scale(1.14); z-index: 4; }
-.repSel { transform: scale(1.22); box-shadow: 0 0 0 4px rgba(238, 118, 35, .55), 0 8px 18px -6px rgba(15, 23, 42, .6); }
-.repContact.repSel { box-shadow: 0 0 0 2px var(--c), 0 0 0 5px rgba(238, 118, 35, .6), 0 8px 18px -6px rgba(15, 23, 42, .6); }
+.repSel { transform: scale(1.22); box-shadow: 0 0 0 4px rgba(240, 140, 66, .55), 0 8px 18px -6px rgba(15, 23, 42, .6); }
+.repContact.repSel { box-shadow: 0 0 0 2px var(--c), 0 0 0 5px rgba(240, 140, 66, .6), 0 8px 18px -6px rgba(15, 23, 42, .6); }
 .amas {
   display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;
   border-radius: 50%; border: 3px solid rgba(255, 255, 255, .92);
   background: var(--emilio-fond); color: white;
-  box-shadow: 0 0 0 5px rgba(29, 29, 31, .22), 0 8px 18px -8px rgba(15, 23, 42, .6);
+  box-shadow: 0 0 0 5px rgba(46, 48, 52, .22), 0 8px 18px -8px rgba(15, 23, 42, .6);
   transition: transform .18s cubic-bezier(.34,1.56,.64,1);
   animation: repEntre .35s cubic-bezier(.34,1.56,.64,1) backwards;
 }
@@ -230,7 +230,7 @@
 .ficheDessous { transform: translate(-50%, 26px); }
 /* V3.218 : un clic n'importe où sur la fiche l'ouvre. */
 .fiche { cursor: pointer; transition: box-shadow .2s; }
-.fiche:hover { box-shadow: 0 30px 56px -22px rgba(15, 23, 42, .66), 0 0 0 1.5px color-mix(in srgb, var(--emilio, #161618) 35%, transparent); }
+.fiche:hover { box-shadow: 0 30px 56px -22px rgba(15, 23, 42, .66), 0 0 0 1.5px color-mix(in srgb, var(--emilio, #26282c) 35%, transparent); }
 @keyframes ficheEntre { from { opacity: 0; margin-top: 10px; } to { opacity: 1; margin-top: 0; } }
 .ficheFermer {
   position: absolute; top: 8px; right: 8px; z-index: 2;
@@ -255,7 +255,7 @@
 .ficheQui b { font: 800 15px/1.2 'Plus Jakarta Sans', sans-serif; color: var(--navy); }
 .ficheTypes { align-self: flex-start; font-size: 11.5px; font-weight: 800; padding: 2px 8px; border-radius: 99px; color: var(--c); background: color-mix(in srgb, var(--c) 11%, white); }
 .ficheTitre { font: 800 15px/1.25 'Plus Jakarta Sans', sans-serif; color: var(--navy); padding-right: 16px; }
-.fichePrix { font: 800 17px 'Plus Jakarta Sans', sans-serif; color: #b4560f; }
+.fichePrix { font: 800 17px 'Plus Jakarta Sans', sans-serif; color: #c2621c; }
 .ficheLigne { display: flex; align-items: flex-start; gap: 6px; font-size: 12.5px; color: #64748b; line-height: 1.4; }
 .ficheLigne svg { margin-top: 2px; flex-shrink: 0; }
 .ficheSaut {
@@ -294,7 +294,7 @@
   background: var(--emilio); color: white; font: 700 12.5px 'DM Sans', sans-serif;
   box-shadow: 0 12px 26px -14px rgba(15, 23, 42, .6);
 }
-.progresRond { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .3); border-top-color: #f6a15e; animation: tourne .8s linear infinite; }
+.progresRond { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .3); border-top-color: #f7b07a; animation: tourne .8s linear infinite; }
 @keyframes tourne { to { transform: rotate(360deg); } }
 /* Le petit message du bas (V3.28). Centré sans `transform` : son
    animation d'entrée en joue, et le message apparaissait à droite avant de
@@ -308,7 +308,7 @@
 }
 .messageIc {
   flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; background: rgba(246, 161, 94, .16); color: #f6a15e;
+  display: flex; align-items: center; justify-content: center; background: rgba(247, 176, 122, .16); color: #f7b07a;
 }
 .messageTxt { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding-top: 3px; }
 .messageTxt b { font: 700 13.5px/1.3 'Plus Jakarta Sans', sans-serif; color: white; }
@@ -329,7 +329,7 @@
 .menuTel {
   flex: 0 0 auto; width: 42px; height: 42px; border-radius: 13px; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  background: var(--emilio-fond, #161618); color: #f8bf94;
+  background: var(--emilio-fond, #26282c); color: #f8bf94;
   box-shadow: 0 10px 24px -14px rgba(15, 23, 42, .6);
 }
 .chercheTel { flex: 1; min-width: 0; margin: 0; height: 42px; box-shadow: 0 10px 24px -14px rgba(15, 23, 42, .55); border-color: white; }
@@ -354,14 +354,14 @@
 .groupesTel { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 12px; }
 .groupesTel:has(> :only-child) { grid-template-columns: 1fr; }
 .groupeTel {
-  --g: #1d1d1f;
+  --g: #2e3034;
   min-width: 0; display: flex; align-items: center; gap: 9px; height: 48px; padding: 0 10px 0 7px;
   border-radius: 14px; border: 1.5px solid white; background: white; color: var(--navy); cursor: pointer; text-align: left;
   box-shadow: 0 10px 24px -14px rgba(15, 23, 42, .55);
   transition: border-color .2s, background .2s, transform .15s;
 }
 .groupeTel:active { transform: scale(.97); }
-.groupeBiens { --g: #b4560f; }
+.groupeBiens { --g: #c2621c; }
 .groupeIc {
   flex: 0 0 auto; width: 34px; height: 34px; border-radius: 11px;
   display: flex; align-items: center; justify-content: center;
@@ -421,9 +421,9 @@
 }
 .carteTel > :first-child { grid-row: 1 / span 3; align-self: center; }
 .carteTel { cursor: pointer; }
-.carteTel:focus-visible { outline: 2px solid var(--emilio, #161618); outline-offset: 2px; }
+.carteTel:focus-visible { outline: 2px solid var(--emilio, #26282c); outline-offset: 2px; }
 .carteTel:active { transform: scale(.985); }
-.carteTelSel { border-color: #ee7623; }
+.carteTelSel { border-color: #f08c42; }
 .telVign {
   flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px; overflow: hidden;
   display: flex; align-items: center; justify-content: center; color: white;

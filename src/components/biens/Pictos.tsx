@@ -16,7 +16,7 @@ export type Dessin = {
   f?: string; cf?: string; a?: string; ca?: string; b?: string; cb?: string; c?: string; cc?: string; d?: string; cd?: string;
   t?: string; s?: string; cs?: string; eo?: boolean;
 };
-const MARINE = '#242322';
+const MARINE = '#393b40';
 
 function fabriquer(): Record<string, Dessin> {
   const R = (x: number, y: number, w: number, h: number, r = 0): string => {
@@ -45,7 +45,7 @@ function fabriquer(): Record<string, Dessin> {
   const lames = R(7, 14, 28, 19, 0);
 
   const c = {
-    peche: '#FFDDBD', orange: '#F4A261', corail: '#FFD3C4', rouge: '#EF6F5E', jaune: '#f49750', or: '#f49954', orPale: '#fad0af',
+    peche: '#FFDDBD', orange: '#f0ad79', corail: '#FFD3C4', rouge: '#EF6F5E', jaune: '#efa369', or: '#f0a56d', orPale: '#fad0af',
     eau: '#ebe9e7', bleu: '#b0aca9', ciel: '#EDECEB', vert: '#CDEED9', vertFonce: '#2F9E62', sauge: '#A9D6B9',
     bois: '#E6B585', boisFonce: '#B47A44', acier: '#e6e5e4', alu: '#cfcecd', metal: '#8995A6', gris: '#b7b4b2', blanc: '#FFFFFF', lavande: '#e9e7e5', bleuMoyen: '#bbb8b5',
   };
@@ -150,7 +150,7 @@ function fabriquer(): Record<string, Dessin> {
     maison: P({ f: 'M10 22h28v20H10z', cf: c.orPale, a: 'M5 24 24 7l19 17z', ca: '#EE9A7E', b: R(20, 30, 8, 12, 1), cb: c.bois, c: R(29.5, 27, 6, 6, 1), cc: c.ciel, t: 'M10 22v20h28V22M5 24 24 7l19 17zM33 15V9h4v9.5' + R(20, 30, 8, 12, 1) + R(29.5, 27, 6, 6, 1) }),
     arbre: P({ a: 'M14 31a7 7 0 0 1-3.5-13A12 12 0 0 1 33.5 14a7.5 7.5 0 0 1 4.5 13.5A6.5 6.5 0 0 1 33 31z', ca: '#9AD3A6', b: R(21.5, 30, 5, 12, 2), cb: c.bois, t: 'M14 31a7 7 0 0 1-3.5-13A12 12 0 0 1 33.5 14a7.5 7.5 0 0 1 4.5 13.5A6.5 6.5 0 0 1 33 31zM21.5 31v11M26.5 31v11M8 42h32', s: 'M17 15a7 7 0 0 1 5-4', cs: '#E8F6EA' }),
     plan: P({ f: R(6, 6, 36, 36, 3), cf: '#f6ede6', a: R(6, 6, 18, 16, 0), ca: c.ciel, b: R(26, 24, 16, 18, 0), cb: c.vert, t: R(6, 6, 36, 36, 3) + 'M6 22h12M24 22h18M24 6v10M24 24v18', s: 'M18 22a6 6 0 0 1 6-6M24 30a6 6 0 0 1-6-6', cs: c.boisFonce }),
-    dpe: P({ f: R(7, 8, 18, 8, 2.5), cf: '#4FB06B', a: R(7, 20, 26, 8, 2.5), ca: '#f3934a', b: R(7, 32, 34, 8, 2.5), cb: '#EE7A55', t: R(7, 8, 18, 8, 2.5) + R(7, 20, 26, 8, 2.5) + R(7, 32, 34, 8, 2.5) }),
+    dpe: P({ f: R(7, 8, 18, 8, 2.5), cf: '#4FB06B', a: R(7, 20, 26, 8, 2.5), ca: '#ee9f63', b: R(7, 32, 34, 8, 2.5), cb: '#EE7A55', t: R(7, 8, 18, 8, 2.5) + R(7, 20, 26, 8, 2.5) + R(7, 32, 34, 8, 2.5) }),
     immeuble: P({ f: R(9, 5, 30, 38, 2), cf: c.acier, a: 'M13 10h5v5h-5zM21.5 10h5v5h-5zM30 10h5v5h-5zM13 18h5v5h-5zM21.5 18h5v5h-5zM30 18h5v5h-5zM13 26h5v5h-5zM30 26h5v5h-5z', ca: c.ciel, b: R(20, 33, 8, 10, 1), cb: c.bois, t: R(9, 5, 30, 38, 2) + 'M13 10h5v5h-5zM21.5 10h5v5h-5zM30 10h5v5h-5zM13 18h5v5h-5zM21.5 18h5v5h-5zM30 18h5v5h-5zM13 26h5v5h-5zM30 26h5v5h-5z' + R(20, 33, 8, 10, 1) }),
     appart: P({ f: R(9, 5, 30, 38, 2), cf: c.acier, a: 'M13 10h5v5h-5zM21.5 10h5v5h-5zM30 10h5v5h-5zM13 18h5v5h-5zM30 18h5v5h-5zM13 26h5v5h-5zM21.5 26h5v5h-5zM30 26h5v5h-5z', ca: c.ciel, b: 'M21.5 18h5v5h-5z', cb: c.jaune, c: R(20, 33, 8, 10, 1), cc: c.bois, t: R(9, 5, 30, 38, 2) + 'M13 10h5v5h-5zM21.5 10h5v5h-5zM30 10h5v5h-5zM13 18h5v5h-5zM21.5 18h5v5h-5zM30 18h5v5h-5zM13 26h5v5h-5zM21.5 26h5v5h-5zM30 26h5v5h-5z' + R(20, 33, 8, 10, 1) }),
     loupe: P({ a: C(20, 20, 12), ca: c.ciel, b: 'M28 31.5l3.5-3.5 10 10a2.5 2.5 0 0 1-3.5 3.5z', cb: c.bois, t: C(20, 20, 12) + 'M28 31.5l3.5-3.5 10 10a2.5 2.5 0 0 1-3.5 3.5zM29 29l-1.5-1.5', s: 'M13 17a8 8 0 0 1 5-5', cs: c.blanc }),
@@ -166,7 +166,7 @@ function fabriquer(): Record<string, Dessin> {
     pieces: P({ f: R(6, 32, 20, 6, 3) + R(6, 25, 20, 6, 3) + R(6, 18, 20, 6, 3), cf: c.or, a: C(32, 27, 11), ca: c.jaune, t: R(6, 32, 20, 6, 3) + R(6, 25, 20, 6, 3) + R(6, 18, 20, 6, 3) + C(32, 27, 11), s: 'M36.5 22.5a5.5 5.5 0 1 0 0 9M27 25.6h6.5M27 28.4h6.5', cs: '#833b0b' }),
     facture: P({ f: papier, cf: c.blanc, a: pli, ca: c.acier, b: 'M27 22l-5 8h4l-1 6 5-8h-4z', cb: c.jaune, t: papier + pli + 'M16 14h8M16 19h6M27 22l-5 8h4l-1 6 5-8h-4z' }),
     doc: P({ f: papier, cf: c.blanc, a: pli, ca: c.acier, t: papier + pli + 'M16 18h16M16 23h16M16 28h16M16 33h10' }),
-    cadenas: P({ a: R(11, 21, 26, 21, 4), ca: c.or, b: C(24, 30, 2.6) + 'M23 31.5h2l.8 5h-3.6z', cb: '#242322', t: R(11, 21, 26, 21, 4) + 'M16 21v-6a8 8 0 0 1 16 0v6' }),
+    cadenas: P({ a: R(11, 21, 26, 21, 4), ca: c.or, b: C(24, 30, 2.6) + 'M23 31.5h2l.8 5h-3.6z', cb: '#393b40', t: R(11, 21, 26, 21, 4) + 'M16 21v-6a8 8 0 0 1 16 0v6' }),
     jauge: P({ f: 'M6 34a18 18 0 0 1 36 0z', cf: c.orPale, a: 'M6 34a18 18 0 0 1 5.3-12.7L24 34z', ca: '#9FDBB8', b: 'M36.7 21.3A18 18 0 0 1 42 34H24z', cb: '#F5B7A6', t: 'M6 34a18 18 0 0 1 36 0zM24 34l8-11' + C(24, 34, 3) }),
     contrat: P({ f: 'M8 5h20l6 6v31H8z', cf: c.blanc, a: 'M30 36l11-11 3.5 3.5-11 11-5 1.5z', ca: c.or, t: 'M8 5h20l6 6v31H8zM28 5v6h6M13 15h14M13 20h14M13 25h10M30 36l11-11 3.5 3.5-11 11-5 1.5z', s: 'M13 34c2-2 3 1 5-1', cs: c.bleu }),
     telephone: P({ f: R(13, 4, 22, 40, 5), cf: c.lavande, a: R(16, 9, 16, 27, 2), ca: c.ciel, t: R(13, 4, 22, 40, 5) + R(16, 9, 16, 27, 2) + 'M22 40h4' }),
@@ -174,7 +174,7 @@ function fabriquer(): Record<string, Dessin> {
     oui: P({ f: C(24, 24, 17), cf: c.vert, t: C(24, 24, 17), s: 'M16 24.5l5.5 5.5L32 19', cs: c.vertFonce }),
     non: P({ f: C(24, 24, 17), cf: '#f2f2f1', t: C(24, 24, 17), s: 'M18 18l12 12M30 18 18 30', cs: '#8D99AB' }),
     moitie: P({ f: C(24, 24, 17), cf: '#f2f2f1', a: 'M24 7a17 17 0 0 0 0 34z', ca: c.vert, t: C(24, 24, 17) + 'M24 7v34' }),
-    points: P({ f: C(24, 24, 17), cf: '#f2f2f1', b: C(16, 24, 2.6) + C(24, 24, 2.6) + C(32, 24, 2.6), cb: '#242322', t: C(24, 24, 17) }),
+    points: P({ f: C(24, 24, 17), cf: '#f2f2f1', b: C(16, 24, 2.6) + C(24, 24, 2.6) + C(32, 24, 2.6), cb: '#393b40', t: C(24, 24, 17) }),
     /* ---- Le propriétaire ---- */
     couple: P({ f: C(14.5, 19, 5.5) + C(33.5, 17, 6), cf: c.peche, a: 'M4.5 41c0-6.5 4.3-10.5 10-10.5S24.5 34.5 24.5 41z', ca: c.bleuMoyen, b: 'M23.5 41c0-7 4.5-11.5 10-11.5S43.5 34 43.5 41z', cb: '#F2A38E', t: C(14.5, 19, 5.5) + C(33.5, 17, 6) + 'M4.5 41c0-6.5 4.3-10.5 10-10.5S24.5 34.5 24.5 41zM23.5 41c0-7 4.5-11.5 10-11.5S43.5 34 43.5 41z' }),
     groupe: P({ f: C(10, 23, 4.5) + C(24, 18, 5) + C(38, 23, 4.5), cf: c.peche, a: 'M3 41c0-5.5 3-9 7-9s7 3.5 7 9z', ca: c.bleuMoyen, b: 'M16 41c0-6.5 3.6-11 8-11s8 4.5 8 11z', cb: '#F2A38E', c: 'M31 41c0-5.5 3-9 7-9s7 3.5 7 9z', cc: c.sauge, t: C(10, 23, 4.5) + C(24, 18, 5) + C(38, 23, 4.5) + 'M3 41c0-5.5 3-9 7-9s7 3.5 7 9zM16 41c0-6.5 3.6-11 8-11s8 4.5 8 11zM31 41c0-5.5 3-9 7-9s7 3.5 7 9z' }),
@@ -188,7 +188,7 @@ function fabriquer(): Record<string, Dessin> {
     cal3: P({ f: R(7, 9, 34, 32, 4), cf: c.blanc, a: 'M11 9h26a4 4 0 0 1 4 4v5H7v-5a4 4 0 0 1 4-4z', ca: '#EE8268', b: R(12, 23, 6, 5, 1.2) + R(21, 23, 6, 5, 1.2) + R(30, 23, 6, 5, 1.2), cb: c.or, t: R(7, 9, 34, 32, 4) + 'M7 18h34M16 5v8M32 5v8' + R(12, 23, 6, 5, 1.2) + R(21, 23, 6, 5, 1.2) + R(30, 23, 6, 5, 1.2) + R(12, 31, 6, 5, 1.2) + R(21, 31, 6, 5, 1.2) + R(30, 31, 6, 5, 1.2) }),
     cal6: P({ f: R(7, 9, 34, 32, 4), cf: c.blanc, a: 'M11 9h26a4 4 0 0 1 4 4v5H7v-5a4 4 0 0 1 4-4z', ca: '#EE8268', b: R(12, 23, 6, 5, 1.2) + R(21, 23, 6, 5, 1.2) + R(30, 23, 6, 5, 1.2) + R(12, 31, 6, 5, 1.2) + R(21, 31, 6, 5, 1.2) + R(30, 31, 6, 5, 1.2), cb: c.or, t: R(7, 9, 34, 32, 4) + 'M7 18h34M16 5v8M32 5v8' + R(12, 23, 6, 5, 1.2) + R(21, 23, 6, 5, 1.2) + R(30, 23, 6, 5, 1.2) + R(12, 31, 6, 5, 1.2) + R(21, 31, 6, 5, 1.2) + R(30, 31, 6, 5, 1.2) }),
     sablier: P({ f: 'M15 6h18c0 8-6 12-9 18 3 6 9 10 9 18H15c0-8 6-12 9-18-3-6-9-10-9-18z', cf: c.ciel, a: 'M18 39h12c-1-4.5-4-6.5-6-8.5-2 2-5 4-6 8.5zM19 12h10c-1 3-3 4.5-5 6.5-2-2-4-3.5-5-6.5z', ca: c.jaune, t: 'M15 6h18c0 8-6 12-9 18 3 6 9 10 9 18H15c0-8 6-12 9-18-3-6-9-10-9-18zM11 6h26M11 42h26' }),
-    bulles: P({ f: 'M19 7h19a5 5 0 0 1 5 5v9a5 5 0 0 1-5 5h-2v6l-6-6H19a5 5 0 0 1-5-5v-9a5 5 0 0 1 5-5z', cf: c.ciel, a: 'M10 18h16a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H17l-6 6v-6h-1a5 5 0 0 1-5-5v-8a5 5 0 0 1 5-5z', ca: c.orPale, t: 'M19 7h19a5 5 0 0 1 5 5v9a5 5 0 0 1-5 5h-2v6l-6-6M10 18h16a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H17l-6 6v-6h-1a5 5 0 0 1-5-5v-8a5 5 0 0 1 5-5z', s: 'M12 27h.1M18 27h.1M24 27h.1', cs: '#242322' }),
+    bulles: P({ f: 'M19 7h19a5 5 0 0 1 5 5v9a5 5 0 0 1-5 5h-2v6l-6-6H19a5 5 0 0 1-5-5v-9a5 5 0 0 1 5-5z', cf: c.ciel, a: 'M10 18h16a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H17l-6 6v-6h-1a5 5 0 0 1-5-5v-8a5 5 0 0 1 5-5z', ca: c.orPale, t: 'M19 7h19a5 5 0 0 1 5 5v9a5 5 0 0 1-5 5h-2v6l-6-6M10 18h16a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H17l-6 6v-6h-1a5 5 0 0 1-5-5v-8a5 5 0 0 1 5-5z', s: 'M12 27h.1M18 27h.1M24 27h.1', cs: '#393b40' }),
     ecran: P({ f: R(9, 8, 30, 22, 3), cf: '#edeceb', a: R(12, 11, 24, 16, 1.5), ca: c.ciel, b: 'M19 25v-5.5l5-4 5 4V25z', cb: c.orPale, c: 'M5 34h38l-3 5H8z', cc: c.acier, t: R(9, 8, 30, 22, 3) + R(12, 11, 24, 16, 1.5) + 'M19 25v-5.5l5-4 5 4V25zM5 34h38l-3 5H8zM9 30v4M39 30v4' }),
     enveloppe: P({ f: R(6, 11, 36, 26, 3), cf: c.orPale, b: R(33, 14, 6, 7, 1), cb: '#EE8268', t: R(6, 11, 36, 26, 3) + 'M7 13l17 13 17-13' + R(33, 14, 6, 7, 1) }),
     globe: P({ f: C(24, 24, 17), cf: c.ciel, a: 'M14 13c4-1 7 1 6 5s-4 4-3 7 4 4 2 8-6 1-8-4-1-14 3-16zM30 9c-1 3 0 6 3 7s5 4 4 8-3 6-1 9', ca: '#9FDBB8', t: C(24, 24, 17) + 'M7 24h34M24 7c-6 5-6 29 0 34M24 7c6 5 6 29 0 34' }),
@@ -210,31 +210,31 @@ function fabriquer(): Record<string, Dessin> {
     fosse: P({ f: R(4, 14, 40, 30, 0), cf: '#FBD6BA', a: 'M10 28a6 6 0 0 1 6-6h16a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6z', ca: c.acier, t: 'M10 28a6 6 0 0 1 6-6h16a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6zM17 13v9M31 13v9M14 12h6M28 12h6', s: 'M4 13h40', cs: c.vertFonce }),
     microStation: P({ f: R(4, 14, 40, 30, 0), cf: '#FBD6BA', a: 'M10 28a6 6 0 0 1 6-6h16a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6z', ca: c.ciel, b: C(18, 32, 2.2) + C(25, 34, 2.6) + C(31, 29, 2), cb: c.blanc, t: 'M10 28a6 6 0 0 1 6-6h16a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6zM17 13v9M31 13v9M14 12h6M28 12h6' + C(18, 32, 2.2) + C(25, 34, 2.6) + C(31, 29, 2), s: 'M4 13h40', cs: c.vertFonce }),
     ascenseur: P({ f: R(10, 5, 28, 38, 3), cf: c.acier, a: R(14, 15, 9.5, 28, 0) + R(24.5, 15, 9.5, 28, 0), ca: c.ciel, t: R(10, 5, 28, 38, 3) + 'M10 12h28' + R(14, 15, 9.5, 28, 0) + R(24.5, 15, 9.5, 28, 0), s: 'M18.5 10l2.5-2.5 2.5 2.5M26.5 7.5l2.5 2.5 2.5-2.5', cs: c.orange }),
-    gardien: P({ f: C(24, 19, 7), cf: c.peche, a: 'M15.5 14.5a8.5 8.5 0 0 1 17 0zM13 14.5h22v3H13z', ca: '#1d1d1f', b: 'M9 42c0-8 6.7-13 15-13s15 5 15 13z', cb: c.bleuMoyen, t: C(24, 19, 7) + 'M15.5 14.5a8.5 8.5 0 0 1 17 0M13 14.5h22v3H13zM9 42c0-8 6.7-13 15-13s15 5 15 13z', s: 'M29 35h4', cs: c.or }),
+    gardien: P({ f: C(24, 19, 7), cf: c.peche, a: 'M15.5 14.5a8.5 8.5 0 0 1 17 0zM13 14.5h22v3H13z', ca: '#2e3034', b: 'M9 42c0-8 6.7-13 15-13s15 5 15 13z', cb: c.bleuMoyen, t: C(24, 19, 7) + 'M15.5 14.5a8.5 8.5 0 0 1 17 0M13 14.5h22v3H13zM9 42c0-8 6.7-13 15-13s15 5 15 13z', s: 'M29 35h4', cs: c.or }),
     digicode: P({ f: R(11, 4, 26, 40, 4), cf: c.acier, a: R(15, 9, 18, 6, 1.5), ca: '#9FDBB8', b: R(15, 19, 4.5, 4, 1) + R(21.75, 19, 4.5, 4, 1) + R(28.5, 19, 4.5, 4, 1) + R(15, 26, 4.5, 4, 1) + R(21.75, 26, 4.5, 4, 1) + R(28.5, 26, 4.5, 4, 1) + R(15, 33, 4.5, 4, 1) + R(21.75, 33, 4.5, 4, 1) + R(28.5, 33, 4.5, 4, 1), cb: c.blanc, t: R(11, 4, 26, 40, 4) + R(15, 9, 18, 6, 1.5) + R(15, 19, 4.5, 4, 1) + R(21.75, 19, 4.5, 4, 1) + R(28.5, 19, 4.5, 4, 1) + R(15, 26, 4.5, 4, 1) + R(21.75, 26, 4.5, 4, 1) + R(28.5, 26, 4.5, 4, 1) + R(15, 33, 4.5, 4, 1) + R(21.75, 33, 4.5, 4, 1) + R(28.5, 33, 4.5, 4, 1) }),
     interphone: P({ f: R(12, 4, 24, 40, 5), cf: c.acier, a: R(16, 9, 16, 12, 2), ca: '#cfcecd', b: R(16, 26, 16, 5, 1.5) + R(16, 34, 16, 5, 1.5), cb: c.blanc, t: R(12, 4, 24, 40, 5) + R(16, 9, 16, 12, 2) + 'M19 13h10M19 17h10' + R(16, 26, 16, 5, 1.5) + R(16, 34, 16, 5, 1.5), s: 'M29 28.5h.1M29 36.5h.1', cs: c.vertFonce }),
     velo: P({ f: C(12, 31, 8) + C(36, 31, 8), cf: '#f2f2f1', t: C(12, 31, 8) + C(36, 31, 8), s: 'M12 31l7-12h11l6 12M19 19l7 12h-14M26 31l5-12M17 14h5M30 19l-1-6h4', cs: '#E2665A' }),
-    wifi: P({ f: C(24, 26, 19), cf: '#f5f4f4', b: C(24, 36, 3), cb: '#242322', t: 'M9 22a21 21 0 0 1 30 0M14 27.5a14 14 0 0 1 20 0M19 32.5a7 7 0 0 1 10 0' }),
+    wifi: P({ f: C(24, 26, 19), cf: '#f5f4f4', b: C(24, 36, 3), cb: '#393b40', t: 'M9 22a21 21 0 0 1 30 0M14 27.5a14 14 0 0 1 20 0M19 32.5a7 7 0 0 1 10 0' }),
     /* ---- L'extérieur ---- */
     balcon: P({ f: R(14, 5, 20, 26, 1), cf: c.ciel, a: R(4, 40, 40, 4, 1), ca: c.acier, b: C(9, 26, 4.5), cb: '#9AD3A6', t: R(14, 5, 20, 26, 1) + 'M24 5v26M6 30h36M9 30v10M15 30v10M21 30v10M27 30v10M33 30v10M39 30v10' + R(4, 40, 40, 4, 1) + C(9, 26, 4.5) }),
     parasol: P({ a: 'M6 22a18 13 0 0 1 36 0c-3 3-6 3-9 0-3 3-6 3-9 0-3 3-6 3-9 0-3 3-6 3-9 0z', ca: '#EE8268', b: R(13, 32, 22, 4, 2), cb: c.bois, t: 'M6 22a18 13 0 0 1 36 0c-3 3-6 3-9 0-3 3-6 3-9 0-3 3-6 3-9 0-3 3-6 3-9 0zM24 9v24' + R(13, 32, 22, 4, 2) + 'M16 36v6M32 36v6', s: 'M15 11c2 3 2 7 0 11M33 11c-2 3-2 7 0 11', cs: c.blanc }),
     loggia: P({ f: R(5, 5, 38, 38, 2), cf: c.acier, a: 'M14 43V22a10 10 0 0 1 20 0v21z', ca: '#dad8d7', t: R(5, 5, 38, 38, 2) + 'M14 43V22a10 10 0 0 1 20 0v21M14 34h20M19 34v9M24 34v9M29 34v9' }),
     cave: P({ a: 'M28 43V27c0-4 3-5 3-9v-9h4v9c0 4 3 5 3 9v16z', ca: '#6E9157', b: 'M11 43V26c0-4 3-5 3-9v-10h4v10c0 4 3 5 3 9v17z', cb: '#9B4456', c: R(12.5, 30, 7, 7, 1) + R(29.5, 31, 7, 6, 1), cc: c.orPale, t: 'M28 43V27c0-4 3-5 3-9v-9h4v9c0 4 3 5 3 9v16zM11 43V26c0-4 3-5 3-9v-10h4v10c0 4 3 5 3 9v17z' + R(12.5, 30, 7, 7, 1) + R(29.5, 31, 7, 6, 1) }),
     box: P({ f: R(6, 9, 36, 33, 3), cf: c.acier, a: R(11, 16, 26, 26, 0), ca: '#cfcecd', t: R(6, 9, 36, 33, 3) + 'M11 42V16h26v26M11 21h26M11 26h26M11 31h26M11 36h26' }),
-    voiture: P({ a: 'M6 32v-5l4-9a4 4 0 0 1 3.7-2.5h20.6a4 4 0 0 1 3.7 2.5l4 9v5a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z', ca: c.bleu, f: 'M12.5 25l3-7h17l3 7z', cf: c.ciel, b: C(14, 35, 4) + C(34, 35, 4), cb: '#242322', c: R(7.5, 27.5, 4, 2.5, 1) + R(36.5, 27.5, 4, 2.5, 1), cc: c.jaune, t: 'M6 32v-5l4-9a4 4 0 0 1 3.7-2.5h20.6a4 4 0 0 1 3.7 2.5l4 9v5a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3zM12.5 25l3-7h17l3 7z' }),
+    voiture: P({ a: 'M6 32v-5l4-9a4 4 0 0 1 3.7-2.5h20.6a4 4 0 0 1 3.7 2.5l4 9v5a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z', ca: c.bleu, f: 'M12.5 25l3-7h17l3 7z', cf: c.ciel, b: C(14, 35, 4) + C(34, 35, 4), cb: '#393b40', c: R(7.5, 27.5, 4, 2.5, 1) + R(36.5, 27.5, 4, 2.5, 1), cc: c.jaune, t: 'M6 32v-5l4-9a4 4 0 0 1 3.7-2.5h20.6a4 4 0 0 1 3.7 2.5l4 9v5a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3zM12.5 25l3-7h17l3 7z' }),
     piscine: P({ f: R(5, 19, 38, 22, 5), cf: '#bebcb9', t: R(5, 19, 38, 22, 5) + 'M32 6v17M39 6v17M32 11h7M32 16h7', s: 'M10 27c2.5-2 5-2 7.5 0s5 2 7.5 0 5-2 7.5 0M10 33c2.5-2 5-2 7.5 0s5 2 7.5 0 5-2 7.5 0', cs: c.blanc }),
     veranda: P({ f: R(4, 10, 12, 32, 0), cf: c.orPale, a: 'M16 19l27-7v30H16z', ca: c.ciel, t: 'M4 42V10h12v32M16 19l27-7v30H16M25 17v25M34 14.5V42M16 31h27M2 42h44' }),
     grenier: P({ f: R(9, 30, 30, 12, 0), cf: c.orPale, a: 'M4 31 24 8l20 23z', ca: '#EE9A7E', b: C(24, 22, 4.5), cb: c.ciel, t: 'M9 31v11h30V31M4 31 24 8l20 23z' + C(24, 22, 4.5) + 'M24 17.5v9M19.5 22h9' }),
     escalierBas: P({ f: R(5, 5, 38, 38, 6), cf: '#f2f2f1', a: 'M9 15h8v7h7v7h7v7h8v5H9z', ca: c.acier, t: R(5, 5, 38, 38, 6) + 'M9 15h8v7h7v7h7v7h8', s: 'M34 9v14M29 18l5 5 5-5', cs: '#393836' }),
-    abri: P({ a: 'M3 14h42v5H3z', ca: '#cfcecd', b: 'M11 37v-4l3-6.5a3 3 0 0 1 2.7-1.8h14.6a3 3 0 0 1 2.7 1.8l3 6.5v4a2 2 0 0 1-2 2H13a2 2 0 0 1-2-2z', cb: c.bleu, c: C(17, 39.5, 3) + C(31, 39.5, 3), cc: '#242322', t: 'M3 14h42v5H3zM7 19v24M41 19v24M11 37v-4l3-6.5a3 3 0 0 1 2.7-1.8h14.6a3 3 0 0 1 2.7 1.8l3 6.5v4a2 2 0 0 1-2 2H13a2 2 0 0 1-2-2zM15.5 31l2-4.3h12.9l2 4.3z' }),
-    dirN: P({ ...boussole, a: aiguille(0), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#242322', t: boussole.t + aiguille(0) }),
-    dirNE: P({ ...boussole, a: aiguille(45), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#242322', t: boussole.t + aiguille(45) }),
-    dirE: P({ ...boussole, a: aiguille(90), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#242322', t: boussole.t + aiguille(90) }),
-    dirSE: P({ ...boussole, a: aiguille(135), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#242322', t: boussole.t + aiguille(135) }),
-    dirS: P({ ...boussole, a: aiguille(180), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#242322', t: boussole.t + aiguille(180) }),
-    dirSO: P({ ...boussole, a: aiguille(225), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#242322', t: boussole.t + aiguille(225) }),
-    dirO: P({ ...boussole, a: aiguille(270), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#242322', t: boussole.t + aiguille(270) }),
-    dirNO: P({ ...boussole, a: aiguille(315), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#242322', t: boussole.t + aiguille(315) }),
+    abri: P({ a: 'M3 14h42v5H3z', ca: '#cfcecd', b: 'M11 37v-4l3-6.5a3 3 0 0 1 2.7-1.8h14.6a3 3 0 0 1 2.7 1.8l3 6.5v4a2 2 0 0 1-2 2H13a2 2 0 0 1-2-2z', cb: c.bleu, c: C(17, 39.5, 3) + C(31, 39.5, 3), cc: '#393b40', t: 'M3 14h42v5H3zM7 19v24M41 19v24M11 37v-4l3-6.5a3 3 0 0 1 2.7-1.8h14.6a3 3 0 0 1 2.7 1.8l3 6.5v4a2 2 0 0 1-2 2H13a2 2 0 0 1-2-2zM15.5 31l2-4.3h12.9l2 4.3z' }),
+    dirN: P({ ...boussole, a: aiguille(0), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#393b40', t: boussole.t + aiguille(0) }),
+    dirNE: P({ ...boussole, a: aiguille(45), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#393b40', t: boussole.t + aiguille(45) }),
+    dirE: P({ ...boussole, a: aiguille(90), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#393b40', t: boussole.t + aiguille(90) }),
+    dirSE: P({ ...boussole, a: aiguille(135), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#393b40', t: boussole.t + aiguille(135) }),
+    dirS: P({ ...boussole, a: aiguille(180), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#393b40', t: boussole.t + aiguille(180) }),
+    dirSO: P({ ...boussole, a: aiguille(225), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#393b40', t: boussole.t + aiguille(225) }),
+    dirO: P({ ...boussole, a: aiguille(270), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#393b40', t: boussole.t + aiguille(270) }),
+    dirNO: P({ ...boussole, a: aiguille(315), ca: '#EE8268', b: C(24, 24, 2.2), cb: '#393b40', t: boussole.t + aiguille(315) }),
     traversant: P({ f: R(10, 12, 28, 26, 2), cf: c.orPale, a: R(10, 19, 4, 12, 0) + R(34, 19, 4, 12, 0), ca: c.ciel, t: R(10, 12, 28, 26, 2), s: 'M5 25h38M37 20l5 5-5 5M11 20l-5 5 5 5', cs: '#393836' }),
     horizon: P({ f: 'M4 34c6-6 12-8 18-5s12 3 22-5v18H4z', cf: '#9FDBB8', a: C(31, 18, 6.5), ca: c.jaune, t: 'M4 34c6-6 12-8 18-5s12 3 22-5M4 42h40' + C(31, 18, 6.5), s: 'M31 6v2.5M41 10l-2 2M43 19h-2.5M21 10l2 2', cs: c.orange }),
     cour: P({ f: 'M4 8h11v34H4zM33 8h11v34H33z', cf: c.acier, a: R(15, 17, 18, 25, 0), ca: '#dad8d7', b: C(24, 36, 4), cb: '#9AD3A6', t: 'M4 8h11v34H4zM33 8h11v34H33zM15 42V17h18v25M8 13h3M8 19h3M8 25h3M37 13h3M37 19h3M37 25h3M20 22h3M25 22h3' + C(24, 36, 4) }),
@@ -252,7 +252,7 @@ function fabriquer(): Record<string, Dessin> {
     occupe: P({ f: maison, cf: c.orPale, a: 'M16 41c0-4.5 3.6-8 8-8s8 3.5 8 8z', ca: c.bleuMoyen, b: C(24, 27, 4.2), cb: c.peche, t: maison + 'M16 41c0-4.5 3.6-8 8-8s8 3.5 8 8z' + C(24, 27, 4.2) }),
     bail: P({ f: papier, cf: c.blanc, a: pli, ca: c.acier, b: C(30, 32, 5), cb: c.or, t: papier + pli + 'M16 16h12M16 21h12M16 26h7' + C(30, 32, 5) + 'M33.5 35.5l6 6M37 39l2-2', s: '', cs: 'none' }),
     bouclier: P({ a: 'M24 5l15 6v11c0 10-6.5 17-15 21C15.5 39 9 32 9 22V11z', ca: c.bleuMoyen, t: 'M24 5l15 6v11c0 10-6.5 17-15 21C15.5 39 9 32 9 22V11z', s: 'M17 23.5l5 5 9-10', cs: c.blanc }),
-    badge: P({ f: R(7, 11, 34, 26, 4), cf: c.lavande, a: R(11, 16, 10, 12, 1.5), ca: c.blanc, b: R(11, 31, 7, 3, 1), cb: c.or, t: R(7, 11, 34, 26, 4) + R(11, 16, 10, 12, 1.5) + 'M25 19h11M25 24h8', s: 'M14 21.5h.1', cs: '#242322' }),
+    badge: P({ f: R(7, 11, 34, 26, 4), cf: c.lavande, a: R(11, 16, 10, 12, 1.5), ca: c.blanc, b: R(11, 31, 7, 3, 1), cb: c.or, t: R(7, 11, 34, 26, 4) + R(11, 16, 10, 12, 1.5) + 'M25 19h11M25 24h8', s: 'M14 21.5h.1', cs: '#393b40' }),
     gauche: P({ f: R(6, 6, 36, 36, 9), cf: '#f2f2f1', a: 'M10 24l12-10v6h16v8H22v6z', ca: c.bleu, t: R(6, 6, 36, 36, 9) + 'M10 24l12-10v6h16v8H22v6z' }),
     droite: P({ f: R(6, 6, 36, 36, 9), cf: '#f2f2f1', a: 'M38 24 26 14v6H10v8h16v6z', ca: c.bleu, t: R(6, 6, 36, 36, 9) + 'M38 24 26 14v6H10v8h16v6z' }),
     face: P({ f: R(6, 6, 36, 36, 9), cf: '#f2f2f1', a: 'M24 10l10 12h-6v16h-8V22h-6z', ca: c.bleu, t: R(6, 6, 36, 36, 9) + 'M24 10l10 12h-6v16h-8V22h-6z' }),

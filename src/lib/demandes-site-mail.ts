@@ -72,9 +72,9 @@ export function mailDemande(d: DemandeSite): { sujet: string; html: string; text
   ].join('\n');
   const corps = `<!doctype html><html lang="fr"><body style="margin:0;padding:24px 12px;background:#f6f6f7;font-family:'Plus Jakarta Sans',Arial,Helvetica,sans-serif;color:#2a2927">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #eeeeed">
-<tr><td style="background:#1d1d1f;padding:20px 24px;color:#ffffff;border-bottom:3px solid #ee7623">
+<tr><td style="background:#2e3034;padding:20px 24px;color:#ffffff;border-bottom:3px solid #f08c42">
 ${logoMail('CRM')}
-<div style="margin-top:12px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#f6a15e;font-weight:bold">${pub ? 'Pub estimation' : 'Nouvelle demande du site'} · ${echapper(cat.lib)}</div>
+<div style="margin-top:12px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#f7b07a;font-weight:bold">${pub ? 'Pub estimation' : 'Nouvelle demande du site'} · ${echapper(cat.lib)}</div>
 <div style="font-size:22px;font-weight:bold;margin-top:6px">${echapper(d.name || 'Sans nom')}</div>
 <div style="font-size:13px;color:#d9d8d6;margin-top:4px">Reçue le ${echapper(dateParis(d.created_at))}</div>
 </td></tr>
@@ -82,11 +82,11 @@ ${logoMail('CRM')}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;border-collapse:collapse">
 ${lignes.map(([l, v]) => `<tr><td style="padding:7px 0;color:#aba7a3;width:40%;vertical-align:top;border-bottom:1px solid #f6f6f7">${echapper(l)}</td><td style="padding:7px 0;font-weight:bold;vertical-align:top;border-bottom:1px solid #f6f6f7">${html(v)}</td></tr>`).join('\n')}
 </table>
-${p.message ? `<div style="margin-top:14px;padding:12px 14px;background:#f6f6f7;border-left:3px solid #ee7623;border-radius:8px;font-size:14px;line-height:1.55">${html(p.message)}</div>` : ''}
+${p.message ? `<div style="margin-top:14px;padding:12px 14px;background:#f6f6f7;border-left:3px solid #f08c42;border-radius:8px;font-size:14px;line-height:1.55">${html(p.message)}</div>` : ''}
 </td></tr>
 <tr><td style="padding:14px 24px 24px">
-<a href="${echapper(lien)}" style="display:inline-block;background:#1d1d1f;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 18px;border-radius:10px">Ouvrir dans le CRM</a>
-${tel ? `<a href="tel:${echapper(tel.replace(/\s/g, ''))}" style="display:inline-block;margin-left:8px;background:#ee7623;color:#141416;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 18px;border-radius:10px">Appeler</a>` : ''}
+<a href="${echapper(lien)}" style="display:inline-block;background:#2e3034;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 18px;border-radius:10px">Ouvrir dans le CRM</a>
+${tel ? `<a href="tel:${echapper(tel.replace(/\s/g, ''))}" style="display:inline-block;margin-left:8px;background:#f08c42;color:#232528;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 18px;border-radius:10px">Appeler</a>` : ''}
 </td></tr>
 </table></body></html>`;
   return { sujet, html: corps, texte };

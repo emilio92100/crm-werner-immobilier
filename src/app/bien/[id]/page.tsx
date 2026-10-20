@@ -45,12 +45,12 @@ const supabase = createClient(
 );
 
 /* Les jetons de l'espace acheteur, repris à l'identique. */
-const ENCRE = '#141416';
+const ENCRE = '#232528';
 const ENCRE_NUIT = '#2a2927';
 /* V3.116 : les aplats sombres en bleu de la marque, comme le site emilio-immo.com. */
-const MARQUE = '#1d1d1f';
-const OR = '#ee7623';
-const OR_FONCE = '#b4560f';
+const MARQUE = '#2e3034';
+const OR = '#f08c42';
+const OR_FONCE = '#c2621c';
 const OR_FOND = '#FFF6EC';
 const OR_TRAIT = '#F7D5B0';
 const FOND = '#f6f6f7';
@@ -58,11 +58,11 @@ const CARTE = '#ffffff';
 const TRAIT = '#eeeeed';
 const PLUME = '#5B6B80';
 const PLUME_CLAIR = '#aba7a3';
-const OMBRE = '0 1px 2px rgba(20, 20, 22,.04), 0 10px 26px -20px rgba(20, 20, 22,.3)';
+const OMBRE = '0 1px 2px rgba(35, 37, 40,.04), 0 10px 26px -20px rgba(35, 37, 40,.3)';
 
 const DPEC: Record<string, string> = {
   A: '#319834', B: '#4ab84a', C: '#a8d84a', D: '#f7e017',
-  E: '#ee7320', F: '#ee8235', G: '#e2231a',
+  E: '#e8863a', F: '#e9914f', G: '#e2231a',
 };
 
 const JAKARTA = "'Plus Jakarta Sans', system-ui, sans-serif";
@@ -506,7 +506,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
             on lui donne de quoi appeler, et c'est tout ce qu'on lui demande. */}
         <section style={{ background: MARQUE, borderRadius: 22, padding: '32px 24px', color: '#fff', textAlign: 'center', marginTop: 30 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 18 }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(238, 118, 35,.15)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: JAKARTA, fontWeight: 800, fontSize: 15, border: `1px solid rgba(238, 118, 35,.4)` }}>AR</div>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(240, 140, 66,.15)', color: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: JAKARTA, fontWeight: 800, fontSize: 15, border: `1px solid rgba(240, 140, 66,.4)` }}>AR</div>
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontFamily: JAKARTA, fontSize: 15, fontWeight: 800 }}>Alexandre Rogelet</div>
               <div style={{ fontSize: 12, color: OR }}>Emilio Immobilier</div>
@@ -536,7 +536,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      <footer style={{ background: ENCRE_NUIT, padding: '24px 20px', borderTop: '1px solid rgba(238, 118, 35,.2)' }}>
+      <footer style={{ background: ENCRE_NUIT, padding: '24px 20px', borderTop: '1px solid rgba(240, 140, 66,.2)' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <Image src="/logo_high_resolution_white.png" alt="Emilio Immobilier" width={220} height={50} style={{ height: 38, width: 'auto' }} />
           <div style={{ color: 'rgba(255,255,255,.55)', fontSize: 11.5, lineHeight: 1.7 }}>

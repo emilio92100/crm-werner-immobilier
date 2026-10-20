@@ -350,7 +350,7 @@ export function PadSignature({ nom, envoi, onAnnuler, onValider }: {
     c.width = Math.max(1, Math.round(r.width * dpr)); c.height = Math.max(1, Math.round(r.height * dpr));
     const x = c.getContext('2d'); if (!x) return;
     x.setTransform(dpr, 0, 0, dpr, 0, 0);
-    x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = '#141416'; x.fillStyle = '#141416'; x.lineWidth = 2.6;
+    x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = '#232528'; x.fillStyle = '#232528'; x.lineWidth = 2.6;
     boite.current = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
     longueur.current = 0; dernier.current = null; setAssez(false); setVide(true);
   }, []);
@@ -1919,7 +1919,7 @@ export const CSS_MANDAT = `${CSS_LIEU}
 .mdt-ok{width:78px; height:78px; border-radius:50%; display:flex; align-items:center; justify-content:center;
   background:var(--vert); color:#fff; box-shadow:0 16px 34px -16px var(--vert); animation:mdtOk .5s cubic-bezier(.16,1,.3,1) both}
 @keyframes mdtOk{from{transform:scale(.5); opacity:0} to{transform:none; opacity:1}}
-.mdt-pad{position:fixed; inset:0; z-index:1000; background:rgba(20, 20, 22,.55); display:flex; align-items:flex-end; justify-content:center}
+.mdt-pad{position:fixed; inset:0; z-index:1000; background:rgba(35, 37, 40,.55); display:flex; align-items:flex-end; justify-content:center}
 .mdt-pad-in{position:relative; background:#fff; width:100%; max-width:640px; border-radius:22px 22px 0 0;
   padding:16px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display:flex; flex-direction:column; gap:10px}
 @media(min-width:700px){ .mdt-pad{align-items:center} .mdt-pad-in{border-radius:22px; padding:22px 24px} }
@@ -1971,7 +1971,7 @@ export const CSS_MANDAT = `${CSS_LIEU}
 .mdt-etapes > li{display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-top:1px solid var(--trait); margin:0}
 .mdt-etapes > li:first-child{border-top:none; padding-top:2px}
 .mdt-etapes .n{flex:0 0 auto; width:30px; height:26px; border-radius:8px; background:var(--or-fond); border:1px solid var(--or-trait);
-  color:var(--or-fonce, #b4560f); font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; margin-top:1px}
+  color:var(--or-fonce, #c2621c); font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; margin-top:1px}
 .mdt-etapes b{display:block; font-size:14px; color:var(--encre)}
 .mdt-etapes .x{display:block; font-size:13.5px; line-height:1.55; color:var(--encre2); margin-top:2px}
 .mdt-fiches{display:grid; grid-template-columns:1fr; gap:10px; margin-top:12px}
@@ -2126,7 +2126,7 @@ export const CSS_MANDAT = `${CSS_LIEU}
 .mdt-soc-q{position:relative; display:flex; flex-direction:column; gap:6px}
 .mdt-soc-e{font-size:12.5px; color:var(--plume); line-height:1.5}
 .mdt-soc-l{display:flex; flex-direction:column; border:1.5px solid var(--or-trait); border-radius:14px; overflow:hidden; background:#fff;
-  box-shadow:0 14px 30px -18px rgba(20, 20, 22,.45)}
+  box-shadow:0 14px 30px -18px rgba(35, 37, 40,.45)}
 .mdt-soc-l button{display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:11px 13px; text-align:left; border-top:1px solid var(--trait)}
 .mdt-soc-l button:first-child{border-top:none}
 .mdt-soc-l button:hover, .mdt-soc-l button:focus-visible{background:var(--or-fond)}

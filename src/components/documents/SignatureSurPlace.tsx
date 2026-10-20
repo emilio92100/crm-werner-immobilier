@@ -496,7 +496,7 @@ function CadreStylet({ nom, bloque, onTrace }: { nom: string; bloque: boolean; o
     largeur.current = r.width;
     const x = c.getContext('2d'); if (!x) return;
     x.setTransform(dpr, 0, 0, dpr, 0, 0);
-    x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = '#141416'; x.fillStyle = '#141416'; x.lineWidth = 2.6;
+    x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = '#232528'; x.fillStyle = '#232528'; x.lineWidth = 2.6;
     boite.current = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
     longueur.current = 0; dernier.current = null;
   }, []);
@@ -574,7 +574,7 @@ function CadreStylet({ nom, bloque, onTrace }: { nom: string; bloque: boolean; o
    déborde sur le CRM. */
 const CSS_SP = `
 .sp{position:fixed; inset:0; z-index:960; display:flex; flex-direction:column; background:#f2f2f2;
-  --encre:#161618; --or:#ee7623; --or-fonce:#c85a10; --fond:#f7f7f7; --carte:#fff; --trait:#eaeae9; --trait-fort:#dad9d8;
+  --encre:#26282c; --or:#f08c42; --or-fonce:#d36a1a; --fond:#f7f7f7; --carte:#fff; --trait:#eaeae9; --trait-fort:#dad9d8;
   --plume:#64748b; --plume-clair:#98a4b6; --vert:#15803d; --vert-fond:#f0fdf4; --vert-trait:#bbf7d0;
   --brique:#dc2626; --brique-fond:#fef2f2; --brique-trait:#fecaca; --or-fond:#fdf6f1; --or-trait:#f9caa7;
   --ombre:0 1px 2px rgba(20, 19, 19,.04), 0 10px 26px -20px rgba(20, 19, 19,.3);
@@ -595,7 +595,7 @@ const CSS_SP = `
 .sp .mdt-invite .de{font-size:12.5px; color:var(--plume); font-weight:600}
 .sp .mdt-invite .att{margin-top:6px; display:inline-flex; padding:4px 11px; border-radius:99px; background:var(--or-fond); border:1px solid var(--or-trait);
   color:var(--or-fonce); font-size:10.5px; letter-spacing:1.1px; text-transform:uppercase; font-weight:800}
-.sp-band{display:flex; align-items:center; gap:12px; padding:12px 16px; background:linear-gradient(152deg,#2c2c2e 0%,#161618 100%); flex:0 0 auto}
+.sp-band{display:flex; align-items:center; gap:12px; padding:12px 16px; background:linear-gradient(152deg,#3b3e43 0%,#26282c 100%); flex:0 0 auto}
 .sp-band .m{font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:800; letter-spacing:2.2px; color:var(--or); white-space:nowrap}
 .sp-band .n{font-size:10px; letter-spacing:1.3px; color:rgba(255,255,255,.6); text-transform:uppercase; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .sp-quitter{margin-left:auto; display:inline-flex; align-items:center; gap:6px; padding:7px 11px; border-radius:10px; border:1px solid rgba(255,255,255,.22) !important; color:#fff !important; font-size:12.5px; font-weight:700}
@@ -603,10 +603,10 @@ const CSS_SP = `
 .sp-carte{background:var(--carte); min-height:100%}
 @media(min-width:640px){ .sp-carte{width:min(640px,94vw); margin:28px auto 40px; border-radius:24px; min-height:0; box-shadow:0 2px 4px rgba(20, 19, 19,.05), 0 20px 44px -24px rgba(20, 19, 19,.5)} .sp-carte.large{width:min(820px,94vw)} }
 .sp-titre{display:flex; gap:14px; align-items:center}
-.sp-titre h2{margin:0; font-size:23px; color:#161618}
+.sp-titre h2{margin:0; font-size:23px; color:#26282c}
 .sp-titre p{margin:2px 0 0; font-size:13.5px; color:var(--plume)}
 .sp-sceau{flex:0 0 auto; width:54px; height:54px; border-radius:16px; display:flex; align-items:center; justify-content:center;
-  background:linear-gradient(152deg,#2c2c2e 0%,#161618 100%); color:var(--or); box-shadow:0 12px 24px -14px #161618}
+  background:linear-gradient(152deg,#3b3e43 0%,#26282c 100%); color:var(--or); box-shadow:0 12px 24px -14px #26282c}
 .sp-sceau.tourne svg{animation:sp-pulse 1.6s ease-in-out infinite}
 @keyframes sp-pulse{0%,100%{transform:scale(1)} 50%{transform:scale(.88)}}
 .sp-qui{display:flex; flex-direction:column; gap:8px}
@@ -614,10 +614,10 @@ const CSS_SP = `
 .sp-sig .pt{flex:0 0 auto; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--or-fond); color:var(--or-fonce); border:1px solid var(--or-trait)}
 .sp-sig[data-etat="signe"] .pt{background:var(--vert-fond); color:var(--vert); border-color:var(--vert-trait)}
 .sp-sig .tx{flex:1 1 auto; min-width:0; display:flex; flex-direction:column}
-.sp-sig .tx b{font-size:15px; color:#161618}
+.sp-sig .tx b{font-size:15px; color:#26282c}
 .sp-sig .tx i{font-style:normal; font-size:12.5px; color:var(--plume)}
 .sp-barre{height:8px; border-radius:99px; background:var(--fond); border:1px solid var(--trait); overflow:hidden}
-.sp-barre i{display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#ee7623,#f6a15e); transition:width .8s ease}
+.sp-barre i{display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#f08c42,#f7b07a); transition:width .8s ease}
 .sp-etapes{list-style:none; margin:4px 0 0; padding:0; display:flex; flex-direction:column; gap:4px}
 .sp-etapes li{display:flex; gap:13px; align-items:flex-start; padding:11px 4px; border-bottom:1px dashed var(--trait)}
 .sp-etapes li:last-child{border-bottom:none}
@@ -629,7 +629,7 @@ const CSS_SP = `
 @keyframes sp-tour{to{transform:rotate(360deg)}}
 .sp-etapes .tx{display:flex; flex-direction:column; gap:1px; min-width:0; padding-top:4px}
 .sp-etapes .tx b{font-size:14.5px; color:var(--plume-clair); font-weight:700}
-.sp-etapes li[data-etat="fait"] .tx b, .sp-etapes li[data-etat="encours"] .tx b{color:#161618}
+.sp-etapes li[data-etat="fait"] .tx b, .sp-etapes li[data-etat="encours"] .tx b{color:#26282c}
 .sp-etapes .tx i{font-style:normal; font-size:12.5px; color:var(--plume); overflow-wrap:anywhere}
 .sp-etapes li[data-etat="erreur"] .tx i{color:var(--brique)}
 .sp .mdt-pad-in{max-width:880px}

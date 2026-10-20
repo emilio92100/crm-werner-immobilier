@@ -74,7 +74,7 @@ export function CaseTout({ n, total, onTout, onRien }: { n: number; total: numbe
 }
 
 /* Le style d'une ligne cochée (contacts) : un liseré doré, un fond clair. */
-export const STYLE_CHOISI = { borderColor: '#f5a161', background: '#fff8f3', boxShadow: '0 0 0 3px rgba(238, 118, 35, .12)' } as const;
+export const STYLE_CHOISI = { borderColor: '#f1ad79', background: '#fff8f3', boxShadow: '0 0 0 3px rgba(240, 140, 66, .12)' } as const;
 
 /* Un choix du petit menu d'un geste (V3.89). `off` : grisé, avec sa raison en sous-titre. */
 export type ChoixMenu = { k: string; lib: string; sous?: string; ic?: string; couleur?: string; danger?: boolean; off?: boolean; onClick: () => void };

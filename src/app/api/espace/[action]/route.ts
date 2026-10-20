@@ -183,7 +183,7 @@ async function prevenirVisite(
   const prix = prixDuBien(bien).demande;
   const photo = Array.isArray(bien.photos) ? bien.photos.filter(Boolean)[0] : null;
   const html = `<div style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#363533">
-  <div style="background:#1d1d1f;padding:18px 22px 16px;border-radius:14px 14px 0 0;border-bottom:3px solid #ee7623">
+  <div style="background:#2e3034;padding:18px 22px 16px;border-radius:14px 14px 0 0;border-bottom:3px solid #f08c42">
     ${logoMail('CRM')}
     <div style="color:#ffffff;font-weight:800;font-size:18px;line-height:1.3;margin-top:12px">${echappe(nom)} veut visiter</div>
   </div>
@@ -191,15 +191,15 @@ async function prevenirVisite(
     <div style="border:1px solid #eeeeed;border-radius:12px;overflow:hidden;background:#f6f6f7">
       ${photo ? `<img src="${echappe(photo)}" alt="" width="514" style="width:100%;max-width:514px;height:auto;display:block;border:0" />` : ''}
       <div style="padding:14px 16px">
-        <div style="font-weight:700;font-size:15px;color:#141416">${echappe(titre)}</div>
+        <div style="font-weight:700;font-size:15px;color:#232528">${echappe(titre)}</div>
         ${lieu ? `<div style="color:#5B6B80;margin-top:4px;font-size:13px">${echappe(lieu)}</div>` : ''}
-        ${prix ? `<div style="font-weight:800;font-size:17px;color:#141416;margin-top:8px">${Number(prix).toLocaleString('fr-FR')} €</div>` : ''}
+        ${prix ? `<div style="font-weight:800;font-size:17px;color:#232528;margin-top:8px">${Number(prix).toLocaleString('fr-FR')} €</div>` : ''}
       </div>
     </div>
     <div style="margin-top:16px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#aba7a3;font-weight:700">Ses disponibilités</div>
-    <div style="margin-top:6px;font-size:14px;line-height:1.6;color:#141416">${dispos ? echappe(dispos) : 'Pas précisées : à lui demander.'}</div>
+    <div style="margin-top:6px;font-size:14px;line-height:1.6;color:#232528">${dispos ? echappe(dispos) : 'Pas précisées : à lui demander.'}</div>
     ${mandatTexte ? `<div style="margin-top:16px;padding:12px 14px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:13px;line-height:1.55"><b>${mandatTete}</b> ${echappe(mandatTexte)}</div>` : ''}
-    <a href="${lien}" style="display:inline-block;margin-top:18px;background:#ee7623;color:#141416;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:800">Ouvrir sa fiche</a>
+    <a href="${lien}" style="display:inline-block;margin-top:18px;background:#f08c42;color:#232528;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:800">Ouvrir sa fiche</a>
     <div style="margin-top:14px;font-size:12px;color:#aba7a3">La demande est aussi dans tes Relances, pour aujourd’hui.</div>
   </div>
 </div>`;
@@ -256,12 +256,12 @@ async function prevenirApresVisite(
     non: 'Ses raisons rejoignent « Ce que ses visites ont appris », dans l’onglet Visites de sa fiche.',
   }[issue];
   const lignes = [
-    prix ? `<div style="margin-top:6px;font-size:15px;color:#141416"><b>Son prix en tête :</b> ${euros(prix)}</div>` : '',
+    prix ? `<div style="margin-top:6px;font-size:15px;color:#232528"><b>Son prix en tête :</b> ${euros(prix)}</div>` : '',
     motifs.length ? `<div style="margin-top:8px">${motifs.map(m => `<span style="display:inline-block;margin:0 6px 6px 0;padding:4px 10px;border-radius:99px;background:${ISSUES[issue].fond};color:${ISSUES[issue].couleur};font-size:13px;font-weight:700">${echappe(m)}</span>`).join('')}</div>` : '',
-    mot ? `<div style="margin-top:8px;font-size:14px;line-height:1.6;color:#141416;background:#f6f6f7;border-radius:10px;padding:10px 12px">« ${echappe(mot)} »</div>` : '',
+    mot ? `<div style="margin-top:8px;font-size:14px;line-height:1.6;color:#232528;background:#f6f6f7;border-radius:10px;padding:10px 12px">« ${echappe(mot)} »</div>` : '',
   ].join('');
   const html = `<div style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#363533">
-  <div style="background:#1d1d1f;padding:18px 22px 16px;border-radius:14px 14px 0 0;border-bottom:3px solid #ee7623">
+  <div style="background:#2e3034;padding:18px 22px 16px;border-radius:14px 14px 0 0;border-bottom:3px solid #f08c42">
     ${logoMail('CRM')}
     <div style="color:#ffffff;font-weight:800;font-size:18px;line-height:1.3;margin-top:12px">${ISSUES[issue].e} ${echappe(phrase)}</div>
   </div>
@@ -270,13 +270,13 @@ async function prevenirApresVisite(
     <div style="border:1px solid #eeeeed;border-radius:12px;overflow:hidden;background:#f6f6f7;margin-top:10px">
       ${photo ? `<img src="${echappe(photo)}" alt="" width="514" style="width:100%;max-width:514px;height:auto;display:block;border:0" />` : ''}
       <div style="padding:14px 16px">
-        <div style="font-weight:700;font-size:15px;color:#141416">${echappe(titre)}</div>
+        <div style="font-weight:700;font-size:15px;color:#232528">${echappe(titre)}</div>
         ${lieu ? `<div style="color:#5B6B80;margin-top:4px;font-size:13px">${echappe(lieu)}</div>` : ''}
-        ${prixBien ? `<div style="font-weight:800;font-size:17px;color:#141416;margin-top:8px">${euros(prixBien)}</div>` : ''}
+        ${prixBien ? `<div style="font-weight:800;font-size:17px;color:#232528;margin-top:8px">${euros(prixBien)}</div>` : ''}
       </div>
     </div>
     ${lignes}
-    <a href="${lien}" style="display:inline-block;margin-top:18px;background:#ee7623;color:#141416;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:800">Ouvrir sa fiche</a>
+    <a href="${lien}" style="display:inline-block;margin-top:18px;background:#f08c42;color:#232528;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:800">Ouvrir sa fiche</a>
     <div style="margin-top:14px;font-size:12px;color:#aba7a3">${echappe(ensuite)}</div>
   </div>
 </div>`;
@@ -1261,7 +1261,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
         const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
 
         const html = `<div style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#363533">
-  <div style="background:#1d1d1f;padding:18px 22px 16px;border-radius:14px 14px 0 0;border-bottom:3px solid #ee7623">
+  <div style="background:#2e3034;padding:18px 22px 16px;border-radius:14px 14px 0 0;border-bottom:3px solid #f08c42">
     ${logoMail()}
   </div>
   <div style="border:1px solid #eeeeed;border-top:none;border-radius:0 0 14px 14px;padding:24px">
@@ -1271,11 +1271,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
     <div style="border:1px solid #eeeeed;border-radius:12px;background:#f6f6f7;overflow:hidden">
       ${photo ? `<img src="${echappe(photo)}" alt="" width="510" style="width:100%;max-width:510px;height:auto;display:block;border:0" />` : ''}
       <div style="padding:16px">
-      <div style="font-weight:700;font-size:16px;color:#141416">${echappe(bien.titre || 'Le bien')}</div>
-      ${lieuBien ? `<div style="color:#5B6B80;margin-top:5px;font-size:13px"><span style="color:#ee7623">&#9679;</span> ${echappe(lieuBien)}</div>` : ''}
+      <div style="font-weight:700;font-size:16px;color:#232528">${echappe(bien.titre || 'Le bien')}</div>
+      ${lieuBien ? `<div style="color:#5B6B80;margin-top:5px;font-size:13px"><span style="color:#f08c42">&#9679;</span> ${echappe(lieuBien)}</div>` : ''}
       ${carac ? `<div style="color:#5B6B80;margin-top:6px;font-size:13px">${carac}</div>` : ''}
-      ${prix ? `<div style="font-weight:800;font-size:20px;color:#141416;margin-top:10px">${Number(prix).toLocaleString('fr-FR')} €</div>` : ''}
-      <a href="${lien}" style="display:inline-block;margin-top:14px;background:#ee7623;color:#141416;
+      ${prix ? `<div style="font-weight:800;font-size:20px;color:#232528;margin-top:10px">${Number(prix).toLocaleString('fr-FR')} €</div>` : ''}
+      <a href="${lien}" style="display:inline-block;margin-top:14px;background:#f08c42;color:#232528;
         text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:700">Voir la fiche</a>
       </div>
     </div>

@@ -90,9 +90,9 @@ export async function GET(req: NextRequest) {
        quand un mail n'a pas pu partir : ça, Alexandre doit le savoir. */
     if (rates.length || (partis.length && await alerteMailActive(sb, 'point_auto_recap'))) {
       const lignes = partis.map((p) =>
-        `<li style="margin:0 0 6px;"><a href="${CRM}/?page=fiche&client=${encodeURIComponent(p.id)}" style="color:#141416;font-weight:700;">${echappe(p.nom)}</a>${p.revente ? ' <span style="color:#b4560f;font-weight:700;">· revente possible</span>' : ''}</li>`).join('');
+        `<li style="margin:0 0 6px;"><a href="${CRM}/?page=fiche&client=${encodeURIComponent(p.id)}" style="color:#232528;font-weight:700;">${echappe(p.nom)}</a>${p.revente ? ' <span style="color:#c2621c;font-weight:700;">· revente possible</span>' : ''}</li>`).join('');
       const html = `<div style="font-family:'Plus Jakarta Sans',-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#363533">
-  <div style="background:#1d1d1f;padding:18px 22px 16px;border-radius:14px 14px 0 0;border-bottom:3px solid #ee7623">
+  <div style="background:#2e3034;padding:18px 22px 16px;border-radius:14px 14px 0 0;border-bottom:3px solid #f08c42">
     ${logoMail('CRM')}
     <div style="color:#ffffff;font-weight:800;font-size:18px;line-height:1.3;margin-top:12px">Point automatique du jour</div>
   </div>

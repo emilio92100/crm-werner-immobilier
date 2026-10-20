@@ -337,7 +337,7 @@ function CarteVisite({ v, groupe, auj, rang, onClient, onBien, onCR, onAnnuler, 
       <div className={cv.milieu}>
         <div className={cv.qui}>
           <button type="button" className={cv.nom} onClick={onClient} title={sansFiche ? 'Ouvrir la fiche du bien' : `Ouvrir la fiche de ${nom}`}>
-            {v.clients && <AvatarContact c={v.clients} teinte={{ bg: '#f4f3f2', fg: '#1d1d1f' }} taille={34} />}
+            {v.clients && <AvatarContact c={v.clients} teinte={{ bg: '#f4f3f2', fg: '#2e3034' }} taille={34} />}
             <b>{nom}</b>
           </button>
           {v.libre && <span className={cv.hors} title="Noté sur la fiche du bien, sans fiche acheteur">Hors CRM</span>}
@@ -449,7 +449,7 @@ function CarteJournee({ visites, groupe, auj, rang, onClient, onBien, onCR, onAn
       <div className={cv.milieu}>
         <div className={cv.qui}>
           <button type="button" className={cv.nom} onClick={onClient} title={sansFiche ? 'Ouvrir la fiche du bien' : `Ouvrir la fiche de ${nom}`}>
-            {v0.clients && <AvatarContact c={v0.clients} teinte={{ bg: '#f4f3f2', fg: '#1d1d1f' }} taille={34} />}
+            {v0.clients && <AvatarContact c={v0.clients} teinte={{ bg: '#f4f3f2', fg: '#2e3034' }} taille={34} />}
             <b>{nom}</b>
           </button>
           {horsCrm && <span className={cv.hors} title="Noté sur la fiche du bien, sans fiche acheteur">Hors CRM</span>}
@@ -830,7 +830,7 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
                     <div key={d.id} className={dv.carte} role="button" tabIndex={0} style={{ animationDelay: `${Math.min(i, 6) * 50}ms` }}
                       onClick={() => ouvrirDemande(d)} onKeyDown={e => { if (e.key === 'Enter') ouvrirDemande(d); }}>
                       <div className={dv.qui}>
-                        {d.client && <AvatarContact c={d.client} teinte={{ bg: '#f4f3f2', fg: '#1d1d1f' }} taille={42} />}
+                        {d.client && <AvatarContact c={d.client} teinte={{ bg: '#f4f3f2', fg: '#2e3034' }} taille={42} />}
                         <span className={dv.quiTx}><b>{nom}</b><span>veut visiter ce bien</span></span>
                         <span className={`${dv.attente} ${att.vieux ? dv.attenteVieille : ''}`}><i />{att.texte}</span>
                       </div>
@@ -855,7 +855,7 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
               maquette A), dans l'ordre des tuiles (V3.146) */}
           {([
             { id: 'a_venir' as const, groupe: 'a_venir' as Groupe, liste: aVenir, titre: 'À venir', c: '#2563eb', point: '#3b82f6' },
-            { id: 'a_faire' as const, groupe: 'a_faire' as Groupe, liste: aFaire, titre: 'Compte rendu à faire', c: '#b45309', point: '#f59e0b' },
+            { id: 'a_faire' as const, groupe: 'a_faire' as Groupe, liste: aFaire, titre: 'Compte rendu à faire', c: '#c05d12', point: '#f59e0b' },
             { id: 'effectuees' as const, groupe: 'effectuee' as Groupe, liste: effectuees, titre: 'Effectuées', c: '#0f9f6e', point: '#10b981' },
           ]).filter(g => g.liste.length > 0 && montrer(g.id)).map(g => (
             <div key={g.id}>

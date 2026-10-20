@@ -23,7 +23,7 @@
 .logoGrand { display: block; width: 176px; height: auto; margin: 2px auto 0; }
 .logoMark {
   display: none; width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(24, 24, 27,0.2);
+  box-shadow: 0 4px 12px rgba(37, 39, 43,0.2);
 }
 
 /* NAV */
@@ -56,7 +56,7 @@
 .navItem.active::before {
   content: ''; position: absolute; left: 0; top: 50%;
   transform: translateY(-50%);
-  width: 3px; height: 20px; background: #ee7623; border-radius: 0 3px 3px 0;
+  width: 3px; height: 20px; background: #f08c42; border-radius: 0 3px 3px 0;
 }
 .navLabel { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Le pictogramme dessiné de la rubrique (V3.24 : aussi sur ordinateur, à la
@@ -72,7 +72,7 @@
   .navItem { padding: 7px 12px 7px 9px; color: #302e2d; font-weight: 600; }
   .navPicto { width: 30px; height: 30px; border-radius: 9px; background: var(--nf, #f1f5f9); color: var(--nc, #64748b); transition: background .2s, color .2s; }
   .navItem:hover .navPicto, .navParent .navPicto { background: var(--nf, #efeeee); color: var(--nc, var(--emilio)); }
-  .navItem.active .navPicto { background: var(--emilio-fond); color: #ee7623; }
+  .navItem.active .navPicto { background: var(--emilio-fond); color: #f08c42; }
   .reduit .navItem { padding: 8px 0; }
 }
 
@@ -174,7 +174,7 @@
   width: 34px; height: 34px; border-radius: 10px;
   background: var(--emilio-fond);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 12px; color: #ee7623; flex-shrink: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 12px; color: #f08c42; flex-shrink: 0;
 }
 .userName { font-size: 13px; font-weight: 600; color: var(--emilio); }
 .userRole { font-size: 11px; color: #94a3b8; margin-top: 1px; }
@@ -265,7 +265,7 @@
     background: var(--nf, #f1f5f9); color: var(--nc, #64748b);
   }
   .navItem:hover .navPicto { color: var(--nc, var(--emilio)); }
-  .navItem.active .navPicto { background: var(--emilio-fond); color: #ee7623; }
+  .navItem.active .navPicto { background: var(--emilio-fond); color: #f08c42; }
   .navParent .navPicto { background: var(--nf, #efeeee); color: var(--nc, var(--emilio)); }
   .navItemBascule { padding-right: 50px; }
   .navBascule { right: 8px; width: 36px; height: 36px; border-radius: 10px; }
@@ -297,7 +297,7 @@
     position: relative; display: inline-flex; align-items: center; justify-content: center;
     width: 46px; height: 30px; border-radius: 15px; transition: background .2s ease;
   }
-  .ongletActif .ongletPicto { background: #fdeee3; color: #c85a10; }
+  .ongletActif .ongletPicto { background: #fdeee3; color: #d36a1a; }
   .ongletMot { font-size: 10.5px; font-weight: 700; letter-spacing: .1px; line-height: 1; }
   .ongletActif .ongletMot { color: var(--emilio); font-weight: 800; }
 
@@ -315,8 +315,8 @@
   .plusRond {
     width: 48px; height: 48px; margin-top: -20px; border-radius: 16px;
     display: inline-flex; align-items: center; justify-content: center;
-    background: var(--emilio-fond); color: #f6a15e;
-    box-shadow: 0 8px 20px -6px rgba(24, 24, 27,.55), 0 0 0 4px #fff;
+    background: var(--emilio-fond); color: #f7b07a;
+    box-shadow: 0 8px 20px -6px rgba(37, 39, 43,.55), 0 0 0 4px #fff;
   }
   .ongletPlus:active .plusRond { transform: scale(.94); }
   .plusRond svg { transition: transform .25s cubic-bezier(.3,1.4,.5,1); }
@@ -339,7 +339,7 @@
   .plusChoix + .plusChoix { border-top: 1px solid #f5f4f4; border-radius: 0 0 14px 14px; }
   .plusIco { width: 40px; height: 40px; border-radius: 12px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
     background: #f7f7f7; color: var(--emilio); }
-  .plusChoix:nth-child(2) .plusIco { background: #fdeee3; color: #c85a10; }
+  .plusChoix:nth-child(2) .plusIco { background: #fdeee3; color: #d36a1a; }
   .plusTexte { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
   .plusTexte b { font-size: 15px; font-weight: 700; }
   .plusTexte i { font-style: normal; font-size: 12.5px; color: #8896a8; }

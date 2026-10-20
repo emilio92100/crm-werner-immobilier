@@ -29,8 +29,8 @@ import { champsChauffage } from '@/lib/chauffage';
  * Aucune clé ne circule : c'est la page, déjà authentifiée, qui écrit.
  */
 
-const NAVY = '#18181b';
-const OR = '#ee7623';
+const NAVY = '#25272b';
+const OR = '#f08c42';
 
 type Ligne = { t: string; msg: string; ok: boolean };
 

@@ -2,20 +2,20 @@
 
 :root {
   /* Brand */
-  --navy:        #18181b;
-  --navy-mid:    #21201f;
-  --navy-light:  #292827;
-  --gold:        #ee7623;
-  --gold-light:  #f6a15e;
+  --navy:        #25272b;
+  --navy-mid:    #37393c;
+  --navy-light:  #3e4045;
+  --gold:        #f08c42;
+  --gold-light:  #f7b07a;
   --gold-pale:   #fdeee3;
-  --gold-border: rgba(238, 118, 35,0.2);
+  --gold-border: rgba(240, 140, 66,0.2);
 
   /* Le bleu Emilio, celui des en-têtes de rubrique : titres, noms, icônes,
-     pastilles et boutons pleins. Le marine #18181b, presque noir, ne reste
+     pastilles et boutons pleins. Le marine #25272b, presque noir, ne reste
      que sur les filtres (un noir discret) et dans l'espace client. */
-  --emilio:       #1d1d1f;
-  --emilio-clair: #2c2c2e;
-  --emilio-fond:  linear-gradient(152deg, #2c2c2e 0%, #161618 100%);
+  --emilio:       #2e3034;
+  --emilio-clair: #3b3e43;
+  --emilio-fond:  linear-gradient(152deg, #3b3e43 0%, #26282c 100%);
 
   /* Neutrals */
   --white:       #ffffff;
@@ -23,7 +23,7 @@
   --bg-2:        #f2f2f2;
   --border:      #eaeae9;
   --border-2:    #dbdad8;
-  --text:        #18181b;
+  --text:        #25272b;
   --text-2:      #4a5568;
   --text-3:      #8896a8;
   --text-4:      #b0bec5;
@@ -47,11 +47,11 @@
 
   /* Sidebar */
   --sidebar-w:   240px;
-  --sidebar-bg:  #18181b;
+  --sidebar-bg:  #25272b;
   --sidebar-text: rgba(255,255,255,0.6);
   --sidebar-text-hover: rgba(255,255,255,0.9);
-  --sidebar-active-bg: rgba(238, 118, 35,0.12);
-  --sidebar-active-text: #f6a15e;
+  --sidebar-active-bg: rgba(240, 140, 66,0.12);
+  --sidebar-active-text: #f7b07a;
   --sidebar-section: rgba(255,255,255,0.25);
   --sidebar-sep: rgba(255,255,255,0.07);
 
@@ -190,7 +190,7 @@ html:not(.emi-mvt) .cascade > :nth-child(n+10) { animation-delay: 270ms; }
 /* La silhouette d'une fiche (V3.80, SqueletteFiche.tsx) : le bandeau marine,
    la barre des rubriques, deux cartes. */
 .sq-fiche { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 24px; animation: ligneEntre .3s cubic-bezier(.16,1,.3,1) backwards; }
-.sq-fiche-bandeau { display: flex; align-items: center; gap: 18px; padding: 26px 26px 30px; border-radius: 22px; background: var(--emilio-fond, #18181b); }
+.sq-fiche-bandeau { display: flex; align-items: center; gap: 18px; padding: 26px 26px 30px; border-radius: 22px; background: var(--emilio-fond, #25272b); }
 .sq-fiche-av { width: 64px; height: 64px; border-radius: 18px; }
 .sq-fiche-bandeau .sq-rond, .sq-fiche-clair {
   background: linear-gradient(90deg, rgba(255,255,255,.1) 0%, rgba(255,255,255,.2) 45%, rgba(255,255,255,.1) 90%);
@@ -248,13 +248,13 @@ button:active:not(:disabled) { transform: scale(.985); }
 /* « Voir sur la carte », à côté d'une adresse (BoutonCarte). */
 .bouton-carte {
   display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px 0 9px;
-  border-radius: 99px; border: 1px solid #eaeae9; background: white; color: #1d1d1f; cursor: pointer;
+  border-radius: 99px; border: 1px solid #eaeae9; background: white; color: #2e3034; cursor: pointer;
   font: 700 12.5px 'DM Sans', sans-serif; white-space: nowrap; vertical-align: middle;
   transition: background .15s, border-color .15s, color .15s;
 }
-.bouton-carte:hover { background: #f8f8f8; border-color: #ee7623; }
-.bouton-carte-sombre { background: rgba(255,255,255,.08); border-color: rgba(238, 118, 35,.45); color: #f5a160; }
-.bouton-carte-sombre:hover { background: rgba(238, 118, 35,.16); border-color: #ee7623; color: #f7b684; }
+.bouton-carte:hover { background: #f8f8f8; border-color: #f08c42; }
+.bouton-carte-sombre { background: rgba(255,255,255,.08); border-color: rgba(240, 140, 66,.45); color: #f1ad78; }
+.bouton-carte-sombre:hover { background: rgba(240, 140, 66,.16); border-color: #f08c42; color: #f4c29b; }
 /* Sur le téléphone de la rubrique Carte : sous la recherche et les filtres. */
 /* V3.28 : sous « Mes contacts » et « Mes biens ». */
 .carte-mention-sous-filtres { right: 12px; top: calc(114px + env(safe-area-inset-top, 0px)); }

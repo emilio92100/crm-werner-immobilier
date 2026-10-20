@@ -55,22 +55,22 @@
 @media (min-width: 761px) {
   .bloc {
     border-radius: 18px;
-    background: linear-gradient(152deg, #2c2c2e 0%, #282726 52%, #161618 100%);
-    border: 1px solid rgba(238, 118, 35, 0.2);
-    box-shadow: 0 24px 50px -30px rgba(34, 33, 32, 0.75);
+    background: linear-gradient(152deg, #3b3e43 0%, #3d3f44 52%, #26282c 100%);
+    border: 1px solid rgba(240, 140, 66, 0.2);
+    box-shadow: 0 24px 50px -30px rgba(56, 58, 61, 0.75);
   }
   /* Les deux lueurs de la fiche : or en haut à droite, bleu en bas à gauche. */
   .bloc::before, .bloc::after {
     content: ''; position: absolute; z-index: 0; border-radius: 50%; pointer-events: none;
   }
-  .bloc::before { width: 360px; height: 360px; right: -90px; top: -210px; background: radial-gradient(circle, rgba(238, 118, 35, 0.22), transparent 64%); }
+  .bloc::before { width: 360px; height: 360px; right: -90px; top: -210px; background: radial-gradient(circle, rgba(240, 140, 66, 0.22), transparent 64%); }
   .bloc::after { width: 320px; height: 320px; left: -60px; bottom: -230px; background: radial-gradient(circle, rgba(193, 190, 187, 0.12), transparent 66%); }
   .haut { gap: 12px; padding: 14px 18px 12px; }
   .titreZone { gap: 11px; }
   .icone {
-    width: 34px; height: 34px; border-radius: 10px; color: #ee7623;
+    width: 34px; height: 34px; border-radius: 10px; color: #f08c42;
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-    box-shadow: inset 0 0 0 1px rgba(238, 118, 35, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(240, 140, 66, 0.45);
   }
   .icone svg { width: 18px; height: 18px; }
   .titre { font-size: 20px; letter-spacing: -0.3px; color: #fff; }
@@ -80,12 +80,12 @@
     height: 36px; width: 240px; border-radius: 10px;
     background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.16); color: rgba(255, 255, 255, 0.55);
   }
-  .recherche:focus-within { background: rgba(255, 255, 255, 0.12); border-color: rgba(238, 118, 35, 0.6); }
+  .recherche:focus-within { background: rgba(255, 255, 255, 0.12); border-color: rgba(240, 140, 66, 0.6); }
   .recherche input { font-size: 13.5px; color: #fff; }
   .recherche input::placeholder { color: rgba(255, 255, 255, 0.45); }
-  .bouton { height: 36px; padding: 0 14px; border-radius: 10px; font-size: 13px; background: #ee7623; color: var(--emilio); }
-  .bouton2 { height: 36px; padding: 0 13px; border-radius: 10px; font-size: 13px; background: rgba(238, 118, 35, 0.1); border: 1px solid rgba(238, 118, 35, 0.55); color: #f9c69f; }
-  .bouton2:hover { background: rgba(238, 118, 35, 0.2); border-color: rgba(238, 118, 35, 0.8); }
+  .bouton { height: 36px; padding: 0 14px; border-radius: 10px; font-size: 13px; background: #f08c42; color: var(--emilio); }
+  .bouton2 { height: 36px; padding: 0 13px; border-radius: 10px; font-size: 13px; background: rgba(240, 140, 66, 0.1); border: 1px solid rgba(240, 140, 66, 0.55); color: #f9c69f; }
+  .bouton2:hover { background: rgba(240, 140, 66, 0.2); border-color: rgba(240, 140, 66, 0.8); }
 
   /* Les chiffres : des pastilles sur une ligne, le chiffre à côté du mot. */
   .rangee { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 14px; }
@@ -98,8 +98,8 @@
   .lib { font-size: 12.5px; color: rgba(255, 255, 255, 0.7); }
   /* Le filtre en cours : la pastille passe en blanc, le chiffre en or. */
   .on, .on:hover { background: #fff; border-color: #fff; box-shadow: 0 8px 18px -12px rgba(20, 19, 19, 0.7); }
-  .on .n { color: #c85a10; }
-  .on .lib { color: #18181b; }
+  .on .n { color: #d36a1a; }
+  .on .lib { color: #25272b; }
   /* À zéro : on la garde (elle dit « rien ici »), mais sans lui donner de poids. */
   .vide { opacity: 0.45; }
   /* Une pastille qui demande une action (ex. « Compte rendu à faire »). */
@@ -108,13 +108,13 @@
   .alerte .lib { color: #facdaa; }
   /* « Tous » : en tête, sa pastille dorée, un léger fond d'or, et un trait
      qui la sépare des catégories. */
-  .tete { padding-left: 6px; gap: 9px; margin-right: 9px; background: rgba(238, 118, 35, 0.12); border-color: rgba(238, 118, 35, 0.42); }
-  .tete:hover { background: rgba(238, 118, 35, 0.2); border-color: rgba(238, 118, 35, 0.6); }
+  .tete { padding-left: 6px; gap: 9px; margin-right: 9px; background: rgba(240, 140, 66, 0.12); border-color: rgba(240, 140, 66, 0.42); }
+  .tete:hover { background: rgba(240, 140, 66, 0.2); border-color: rgba(240, 140, 66, 0.6); }
   .tete::after { content: ''; position: absolute; right: -10px; top: 8px; bottom: 8px; width: 1px; background: rgba(255, 255, 255, 0.2); }
   .tete .lib { color: #fff; font-weight: 700; }
-  .teteIc { width: 24px; height: 24px; border-radius: 7px; background: #ee7623; color: #18181b; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .teteIc { width: 24px; height: 24px; border-radius: 7px; background: #f08c42; color: #25272b; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .tete.on, .tete.on:hover { background: #fff; border-color: #fff; }
-  .tete.on .lib { color: #18181b; }
+  .tete.on .lib { color: #25272b; }
   /* V3.77 : le groupe de fin, tout à droite (« Tri à faire », « Tous »,
      « Archivés ») ; « Archivés » se distingue des catégories. */
   .fin { margin-left: auto; }
@@ -125,20 +125,20 @@
   .archIc { width: 24px; height: 24px; border-radius: 7px; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.85); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .arch.on, .arch.on:hover { background: #fff; border-color: #fff; border-style: solid; }
   .arch.on .archIc { background: #f2f2f2; color: #475569; }
-  .arch.on .lib { color: #18181b; }
+  .arch.on .lib { color: #25272b; }
 }
 
 /* ── Téléphone : la carte blanche, compacte ────────────────────────── */
 @media (max-width: 760px) {
   .bloc {
     border-radius: 18px; background: #fff; border: 1px solid #eaeae9;
-    box-shadow: 0 1px 2px rgba(20, 19, 19, 0.04), 0 12px 26px -22px rgba(24, 24, 27, 0.35);
+    box-shadow: 0 1px 2px rgba(20, 19, 19, 0.04), 0 12px 26px -22px rgba(37, 39, 43, 0.35);
     /* De l'air sous le bloc : les filtres qui suivent ne viennent pas s'y coller. */
     margin-bottom: 8px;
   }
   .haut { flex-wrap: wrap; padding: 14px 14px 12px; gap: 10px; }
   .titreZone { flex: 1 1 auto; gap: 10px; }
-  .icone { width: 34px; height: 34px; border-radius: 10px; background: var(--emilio-fond); color: #f6a15e; }
+  .icone { width: 34px; height: 34px; border-radius: 10px; background: var(--emilio-fond); color: #f7b07a; }
   .icone svg { width: 18px; height: 18px; }
   .titre { font-size: 20px; letter-spacing: -0.3px; color: var(--emilio); }
   .phrase { font-size: 12px; margin-top: 2px; color: #7a889b; }
@@ -146,14 +146,14 @@
      prend toute la largeur en dessous. */
   .outils { display: contents; }
   .bouton { order: 2; height: 34px; padding: 0 12px; font-size: 12.5px; border-radius: 10px; background: var(--emilio-fond); color: #fff; }
-  .bouton2 { order: 2; height: 34px; padding: 0 11px; font-size: 12.5px; border-radius: 10px; background: #fdf2ea; border: 1px solid #f5a160; color: #9c460d; }
+  .bouton2 { order: 2; height: 34px; padding: 0 11px; font-size: 12.5px; border-radius: 10px; background: #fdf2ea; border: 1px solid #f1ad78; color: #a85515; }
   .bouton2 .long { display: none; }
   .bouton2 .court { display: inline; }
   .recherche {
     order: 3; flex: 1 1 100%; height: 38px; border-radius: 10px;
     background: #f9f8f8; border-color: #eaeae9; color: #94a3b8;
   }
-  .recherche:focus-within { background: #fff; border-color: #ee7623; }
+  .recherche:focus-within { background: #fff; border-color: #f08c42; }
   .recherche input { font-size: 16px; color: var(--emilio); } /* 16 px : iOS ne zoome pas au toucher */
 
   /* Les chiffres en bandeau, séparés d'un trait ; la rangée défile au doigt. */
@@ -167,17 +167,17 @@
     padding: 10px 13px 9px; border: none; border-right: 1px solid #f2f2f2; border-radius: 0; background: transparent;
   }
   .tuile:last-child { border-right: none; }
-  .n { font-size: 20px; letter-spacing: -0.5px; color: #18181b; }
+  .n { font-size: 20px; letter-spacing: -0.5px; color: #25272b; }
   .lib { font-size: 11px; color: #64748b; }
   /* Le filtre en cours : fond blanc et un trait d'or au-dessus. */
   .on { background: #fff; }
-  .on::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 3px; background: #ee7623; border-radius: 0 0 3px 3px; }
-  .on .n { color: #c85a10; }
-  .on .lib { color: #18181b; }
+  .on::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 3px; background: #f08c42; border-radius: 0 0 3px 3px; }
+  .on .n { color: #d36a1a; }
+  .on .lib { color: #25272b; }
   .vide .n { color: #cecdcc; }
   .vide .lib { color: #a0aabb; }
   .alerte { background: #fff7f2; }
-  .alerte .n { color: #b45309; }
+  .alerte .n { color: #c05d12; }
   /* « Tous » : un fond d'or pâle, le mot en gras. */
   .teteIc { display: none; }
   .tete { background: #fdf3ec; }
@@ -188,7 +188,7 @@
   .arch { background: #f7f6f6; border-left: 1px dashed #dad9d8; }
   .arch .lib { color: #64748b; }
   .arch.on { background: #fff; }
-  .arch.on .lib { color: #18181b; }
+  .arch.on .lib { color: #25272b; }
 }
 
 /* ── V3.78 : « Autres types ▾ » ─────────────────────────────────────────
@@ -206,7 +206,7 @@
 @keyframes menuEntre { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 .menuL {
   display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: none; border-radius: 9px;
-  background: transparent; cursor: pointer; font-family: inherit; text-align: left; color: #18181b;
+  background: transparent; cursor: pointer; font-family: inherit; text-align: left; color: #25272b;
 }
 .menuL:hover { background: #f7f6f6; }
 .menuOn, .menuOn:hover { background: #fdf3ec; }
@@ -214,8 +214,8 @@
 .menuLib { flex: 1 1 auto; min-width: 0; font-size: 13.5px; font-weight: 600; }
 .menuOn .menuLib { font-weight: 800; }
 .menuN { font: 800 13px 'Plus Jakarta Sans', sans-serif; font-variant-numeric: tabular-nums; color: #64748b; }
-.menuOn .menuN { color: #c85a10; }
-.menuCoche { width: 14px; height: 14px; flex: 0 0 auto; display: inline-flex; color: #c85a10; }
+.menuOn .menuN { color: #d36a1a; }
+.menuCoche { width: 14px; height: 14px; flex: 0 0 auto; display: inline-flex; color: #d36a1a; }
 @media (max-width: 760px) {
   /* Sans chiffre au-dessus, le mot se pose au milieu de la tuile. */
   .autres { justify-content: center; }
@@ -235,28 +235,28 @@
   .cheval::before, .cheval::after { display: none; }
   .lueurs { display: block; position: absolute; inset: 0; z-index: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
   .lueurs::before, .lueurs::after { content: ''; position: absolute; border-radius: 50%; }
-  .lueurs::before { width: 360px; height: 360px; right: -90px; top: -210px; background: radial-gradient(circle, rgba(238, 118, 35, 0.22), transparent 64%); }
+  .lueurs::before { width: 360px; height: 360px; right: -90px; top: -210px; background: radial-gradient(circle, rgba(240, 140, 66, 0.22), transparent 64%); }
   .lueurs::after { width: 320px; height: 320px; left: -60px; bottom: -230px; background: radial-gradient(circle, rgba(193, 190, 187, 0.12), transparent 66%); }
   .cheval .haut { padding-bottom: 18px; }
   .cheval .rangee {
     align-items: center; gap: 4px; margin: 0 16px -25px; padding: 5px; border-radius: 16px;
-    background: #fff; border: 1px solid #edeceb; box-shadow: 0 16px 32px -20px rgba(24, 24, 27, 0.5), 0 2px 6px rgba(24, 24, 27, 0.05);
+    background: #fff; border: 1px solid #edeceb; box-shadow: 0 16px 32px -20px rgba(37, 39, 43, 0.5), 0 2px 6px rgba(37, 39, 43, 0.05);
   }
   .cheval .tuile { padding: 8px 13px; border-radius: 11px; background: transparent; border-color: transparent; }
   .cheval .tuile:hover { background: #f7f6f6; border-color: transparent; }
-  .cheval .n { color: #18181b; }
+  .cheval .n { color: #25272b; }
   .cheval .lib { color: #475569; }
-  .cheval .on, .cheval .on:hover { background: var(--emilio-fond); border-color: transparent; box-shadow: 0 8px 18px -10px rgba(22, 22, 24, 0.85); }
-  .cheval .on .n { color: #f7b07a; }
+  .cheval .on, .cheval .on:hover { background: var(--emilio-fond); border-color: transparent; box-shadow: 0 8px 18px -10px rgba(38, 40, 44, 0.85); }
+  .cheval .on .n { color: #f4bc92; }
   .cheval .on .lib { color: #fff; }
   .cheval .vide { opacity: 0.5; }
   .cheval .alerte { background: #fff6f0; }
-  .cheval .alerte .n { color: #b45309; }
+  .cheval .alerte .n { color: #c05d12; }
   .cheval .alerte .lib { color: #92400e; }
   .cheval .tete { background: #fdf3ec; border-color: #fad2b4; }
   .cheval .tete:hover { background: #fae7da; border-color: #f8bb8c; }
   .cheval .tete::after { background: #eaeae9; }
-  .cheval .tete .lib { color: #18181b; }
+  .cheval .tete .lib { color: #25272b; }
   .cheval .tete.on, .cheval .tete.on:hover { background: var(--emilio-fond); border-color: transparent; }
   .cheval .tete.on .lib { color: #fff; }
   .cheval .arch { border-color: #dfdedc; border-style: dashed; }
@@ -281,7 +281,7 @@
 .avecGlisse .n, .avecGlisse .lib, .avecGlisse .teteIc, .avecGlisse .archIc { transition: color .3s ease, background .3s ease; }
 @media (min-width: 761px) {
   .glisse { border-radius: 10px; background: #fff; box-shadow: 0 8px 18px -12px rgba(20, 19, 19, 0.7); }
-  .cheval .glisse { border-radius: 11px; background: var(--emilio-fond); box-shadow: 0 8px 18px -10px rgba(22, 22, 24, 0.85); }
+  .cheval .glisse { border-radius: 11px; background: var(--emilio-fond); box-shadow: 0 8px 18px -10px rgba(38, 40, 44, 0.85); }
   .cheval .tuile { transition: background .2s, border-color .2s, transform .15s; }
   /* La pastille fait le fond : la tuile choisie s'efface derrière elle. */
   .avecGlisse .on, .avecGlisse .on:hover, .avecGlisse .tete.on, .avecGlisse .tete.on:hover, .avecGlisse .arch.on, .avecGlisse .arch.on:hover {
@@ -291,12 +291,12 @@
      chacune reprend son fond bleu, et son nom reste lisible. */
   .cheval .plusieurs .on, .cheval .plusieurs .on:hover, .cheval .plusieurs .tete.on, .cheval .plusieurs .tete.on:hover,
   .cheval .plusieurs .arch.on, .cheval .plusieurs .arch.on:hover {
-    background: var(--emilio-fond); border-color: transparent; box-shadow: 0 8px 18px -10px rgba(22, 22, 24, 0.85);
+    background: var(--emilio-fond); border-color: transparent; box-shadow: 0 8px 18px -10px rgba(38, 40, 44, 0.85);
   }
 }
 @media (max-width: 760px) {
   .glisse { background: #fff; }
-  .glisse::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 3px; background: #ee7623; border-radius: 0 0 3px 3px; }
+  .glisse::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 3px; background: #f08c42; border-radius: 0 0 3px 3px; }
   .avecGlisse .on, .avecGlisse .tete.on, .avecGlisse .arch.on { background: transparent; }
   .avecGlisse .on::before { display: none; }
 }
@@ -347,22 +347,22 @@
 
 @media (min-width: 761px) {
   .vedette {
-    height: 40px; padding: 0 17px 0 8px; gap: 9px; border-radius: 13px; font-size: 13.5px; color: #1e1d1c;
-    background: linear-gradient(135deg, #f6aa70 0%, #ee7623 55%, #ee7320 100%);
-    box-shadow: 0 12px 24px -10px rgba(238, 118, 35, 0.75), 0 2px 0 rgba(255, 255, 255, 0.35) inset;
+    height: 40px; padding: 0 17px 0 8px; gap: 9px; border-radius: 13px; font-size: 13.5px; color: #343639;
+    background: linear-gradient(135deg, #f3b688 0%, #f08c42 55%, #e8863a 100%);
+    box-shadow: 0 12px 24px -10px rgba(240, 140, 66, 0.75), 0 2px 0 rgba(255, 255, 255, 0.35) inset;
   }
-  .vedette:hover { box-shadow: 0 18px 30px -12px rgba(238, 118, 35, 0.95), 0 2px 0 rgba(255, 255, 255, 0.35) inset; }
-  .vedette .boutonIc { width: 26px; height: 26px; border-radius: 9px; background: rgba(30, 29, 28, 0.12); }
+  .vedette:hover { box-shadow: 0 18px 30px -12px rgba(240, 140, 66, 0.95), 0 2px 0 rgba(255, 255, 255, 0.35) inset; }
+  .vedette .boutonIc { width: 26px; height: 26px; border-radius: 9px; background: rgba(52, 54, 57, 0.12); }
 }
 @media (max-width: 760px) {
   .vedette {
     /* Au téléphone, toute la largeur sous le titre : le geste de la page. */
     flex: 1 1 100%; justify-content: center;
     height: 42px; padding: 0 14px 0 8px; gap: 8px; border-radius: 12px; font-size: 13.5px; color: #fff;
-    background: linear-gradient(135deg, #2c2c2e 0%, #282726 100%);
-    box-shadow: 0 10px 20px -10px rgba(40, 39, 38, 0.85);
+    background: linear-gradient(135deg, #3b3e43 0%, #3d3f44 100%);
+    box-shadow: 0 10px 20px -10px rgba(61, 63, 68, 0.85);
   }
-  .vedette .boutonIc { width: 23px; height: 23px; border-radius: 8px; background: rgba(246, 161, 94, 0.18); color: #f6a15e; }
+  .vedette .boutonIc { width: 23px; height: 23px; border-radius: 8px; background: rgba(247, 176, 122, 0.18); color: #f7b07a; }
 }
 @media (prefers-reduced-motion: reduce) {
   .vedette { animation: none; }

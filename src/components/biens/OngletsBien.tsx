@@ -59,7 +59,7 @@ const capitale = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 const pctFr = (x: number) => `${String(Math.round(x * 10) / 10).replace('.', ',')}${NBSP}%`;
 
 /* ── L'anneau : une part remplie, un mot au centre ── */
-export function Anneau({ part, taille = 64, ep = 7, c = '#ee7623', fond = '#fde7d8', texte, texteC = '#8b3e0b', label }: {
+export function Anneau({ part, taille = 64, ep = 7, c = '#f08c42', fond = '#fde7d8', texte, texteC = '#8b3e0b', label }: {
   part: number; taille?: number; ep?: number; c?: string; fond?: string; texte: string; texteC?: string; label: string;
 }) {
   const r = (taille - ep) / 2 - 1;
@@ -85,9 +85,9 @@ const TONS: Record<Ton, { fond: string; c: string; ic: string; icC: string }> = 
   violet: { fond: '#f5f3ff', c: '#6d28d9', ic: '#6d28d9', icC: '#fff' },
   sarcelle: { fond: '#f0fdfa', c: '#0f766e', ic: '#0d9488', icC: '#fff' },
   vert: { fond: '#f0fdf4', c: '#15803d', ic: '#16a34a', icC: '#fff' },
-  ambre: { fond: '#fffbeb', c: '#b45309', ic: '#d97706', icC: '#fff' },
+  ambre: { fond: '#fffbeb', c: '#c05d12', ic: '#d97706', icC: '#fff' },
   ardoise: { fond: '#f1f5f9', c: '#334155', ic: '#475569', icC: '#fff' },
-  or: { fond: '#fbf0e9', c: '#8b3e0b', ic: '#ee7623', icC: '#18181b' },
+  or: { fond: '#fbf0e9', c: '#8b3e0b', ic: '#f08c42', icC: '#25272b' },
   ciel: { fond: '#ecfeff', c: '#0e7490', ic: '#0891b2', icC: '#fff' },
 };
 
@@ -239,7 +239,7 @@ export function CarteAnnonce({ titre = '', texte, mentions, mentionsTexte, onEcr
     <div className={o.annonce}>
       <div className={o.annonceL}>
         <Anneau part={part} texte={`${pct}${NBSP}%`} label={`Annonce complète à ${pct} pour cent`}
-          c={pct === 100 ? '#16a34a' : '#ee7623'} fond={pct === 100 ? '#dcfce7' : '#fde7d8'} texteC={pct === 100 ? '#15803d' : '#8b3e0b'} />
+          c={pct === 100 ? '#16a34a' : '#f08c42'} fond={pct === 100 ? '#dcfce7' : '#fde7d8'} texteC={pct === 100 ? '#15803d' : '#8b3e0b'} />
         <div className={o.annonceTx}><b><i className={o.annonceTxIc}><Ic n="megaphone" t={15} e={2.1} /></i>Le texte de l’annonce</b><span>{phrase}</span></div>
         <div className={o.annonceBtns}>
           {ia && (
@@ -368,7 +368,7 @@ type GenrePiece = 'vie' | 'nuit' | 'cuisine' | 'eau' | 'passage' | 'autre';
 const FAMILLES: Record<GenrePiece, { l: string; c: string; f: string; ic: string }> = {
   vie: { l: 'Pièces de vie', c: '#393836', f: '#f5f4f4', ic: 'canape' },
   nuit: { l: 'Chambres', c: '#7c3aed', f: '#f4f0ff', ic: 'lit' },
-  cuisine: { l: 'Cuisine', c: '#ea7a2c', f: '#fff4ea', ic: 'cuisine' },
+  cuisine: { l: 'Cuisine', c: '#e58b45', f: '#fff4ea', ic: 'cuisine' },
   eau: { l: 'Eau et WC', c: '#0e98b4', f: '#e9f8f9', ic: 'bain' },
   passage: { l: 'Entrée, dégagements', c: '#94a3b8', f: '#f6f5f5', ic: 'couloir' },
   autre: { l: 'Le reste', c: '#94a3b8', f: '#f6f5f5', ic: 'plan' },
@@ -973,7 +973,7 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
                   <div className={o.dates}>
                     {[
                       { ic: 'doc', col: '#393836', l: 'Compromis signé le', v: c.signe },
-                      { ic: 'bouclier', col: '#b45309', l: 'Rétractation jusqu’au', v: c.sru },
+                      { ic: 'bouclier', col: '#c05d12', l: 'Rétractation jusqu’au', v: c.sru },
                       { ic: 'banque', col: '#1d4ed8', l: c.comptant ? 'Condition de prêt' : 'Condition de prêt jusqu’au', v: c.pretLimite, sans: c.comptant ? 'Aucune · comptant' : '' },
                       { ic: 'plume', col: '#6d28d9', l: sorte === 'vendu' ? 'Acte signé le' : 'Acte prévu le', v: sorte === 'vendu' ? c.venduLe || c.acte : c.acte },
                     ].map((y: { ic: string; col: string; l: string; v: string | null | undefined; sans?: string }) => {
@@ -1023,8 +1023,8 @@ function NotairesListe({ notaires, commun, onModifier, onRenseigner, toujours, c
   toujours?: boolean; children?: ReactNode;
 }) {
   const ROLES: { role: NotaireCarte['role']; l: string; col: string }[] = commun
-    ? [{ role: 'vendeur', l: 'Notaire commun · vendeur et acquéreur', col: '#1d1d1f' }]
-    : [{ role: 'vendeur', l: 'Notaire du vendeur', col: '#b4560f' }, { role: 'acquereur', l: 'Notaire de l’acquéreur', col: '#1d4ed8' }];
+    ? [{ role: 'vendeur', l: 'Notaire commun · vendeur et acquéreur', col: '#2e3034' }]
+    : [{ role: 'vendeur', l: 'Notaire du vendeur', col: '#c2621c' }, { role: 'acquereur', l: 'Notaire de l’acquéreur', col: '#1d4ed8' }];
   const lignes = ROLES.map(r => ({ r, n: notaires.find(x => x.role === r.role) || (commun ? notaires[0] : undefined) })).filter(x => toujours || x.n);
   return (
     <div className={o.notairesC}>
@@ -1264,7 +1264,7 @@ export function CarteDossier({ recus, demandes, nc, total, children }: { recus: 
   return (
     <div className={o.dossier}>
       <div className={o.dossierT}>
-        <Anneau part={total ? faits / total : 0} taille={72} ep={8} c="#16a34a" fond="#f2f2f2" texteC="#18181b" texte={`${faits}/${total}`} label={`${faits} pièces du dossier réglées sur ${total}`} />
+        <Anneau part={total ? faits / total : 0} taille={72} ep={8} c="#16a34a" fond="#f2f2f2" texteC="#25272b" texte={`${faits}/${total}`} label={`${faits} pièces du dossier réglées sur ${total}`} />
         <div><b>Le dossier : diagnostics et pièces</b><span>{detail}</span></div>
       </div>
       {children}
@@ -1287,10 +1287,10 @@ export type AVenirBien = { cle: string; titre: string; detail?: string; quand: s
 const GENRES: { k: GenreEvt | 'tout'; l: string; c?: string; fond?: string }[] = [
   { k: 'tout', l: 'Tout' },
   { k: 'visites', l: 'Visites', c: '#7c3aed', fond: '#f5f3ff' },
-  { k: 'offres', l: 'Offres', c: '#b4560f', fond: '#fbf0e9' },
+  { k: 'offres', l: 'Offres', c: '#c2621c', fond: '#fbf0e9' },
   { k: 'acheteurs', l: 'Envois', c: '#0d9488', fond: '#f0fdfa' },
   { k: 'contacts', l: 'Contacts', c: '#2563eb', fond: '#eff6ff' },
-  { k: 'etapes', l: 'Étapes et prix', c: '#1d1d1f', fond: '#f4f3f2' },
+  { k: 'etapes', l: 'Étapes et prix', c: '#2e3034', fond: '#f4f3f2' },
   { k: 'documents', l: 'Documents', c: '#64748b', fond: '#f1f5f9' },
   { k: 'notes', l: 'Notes', c: '#475569', fond: '#f3f2f2' },
 ];

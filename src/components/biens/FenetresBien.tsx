@@ -212,7 +212,7 @@ function ChoixAcheteur({ options, recherches, choix, onChoix, libre, suggestions
               const on = choix?.mode === 'crm' && choix.o.cle === o.cle;
               return (
                 <button key={o.cle} type="button" className={`${b.quiL} ${on ? b.quiOn : ''}`} onClick={() => onChoix({ mode: 'crm', o })}>
-                  <AvatarContact c={personneDe(o.nom)} teinte={{ bg: '', fg: '#f7b07a' }} className={`${b.avatar} ${b.avatarPetit}`} libre />
+                  <AvatarContact c={personneDe(o.nom)} teinte={{ bg: '', fg: '#f4bc92' }} className={`${b.avatar} ${b.avatarPetit}`} libre />
                   <div><b>{o.nom}</b><small>{o.sous}</small></div>
                   {on && <Ic n="check" t={16} e={2.6} />}
                 </button>
@@ -595,7 +595,7 @@ function ChoixProprio({ choisi, onChoisir }: { choisi: ClientMini | null; onChoi
     return (
       <div className={b.qui}>
         <div className={`${b.quiL} ${b.quiOn}`}>
-          <AvatarContact c={personneDe(nomClient(choisi))} teinte={{ bg: '', fg: '#f7b07a' }} className={`${b.avatar} ${b.avatarPetit}`} libre />
+          <AvatarContact c={personneDe(nomClient(choisi))} teinte={{ bg: '', fg: '#f4bc92' }} className={`${b.avatar} ${b.avatarPetit}`} libre />
           <div><b>{nomClient(choisi)}</b><small>{[choisi.telephones?.[0], choisi.emails?.[0]].filter(Boolean).join(' · ') || 'Fiche du CRM'}</small></div>
           <button type="button" className={b.notaireChanger} onClick={() => onChoisir(null)}>Changer</button>
         </div>
@@ -640,7 +640,7 @@ function ChoixProprio({ choisi, onChoisir }: { choisi: ClientMini | null; onChoi
         <div className={b.qui}>
           {liste.map(c => (
             <button key={c.id} type="button" className={b.quiL} onClick={() => onChoisir(c)}>
-              <AvatarContact c={personneDe(nomClient(c))} teinte={{ bg: '', fg: '#f7b07a' }} className={`${b.avatar} ${b.avatarPetit}`} libre />
+              <AvatarContact c={personneDe(nomClient(c))} teinte={{ bg: '', fg: '#f4bc92' }} className={`${b.avatar} ${b.avatarPetit}`} libre />
               <div><b>{nomClient(c)}</b><small>{[c.telephones?.[0], c.emails?.[0]].filter(Boolean).join(' · ')}</small></div>
             </button>
           ))}
@@ -915,7 +915,7 @@ export function FenOffre({ bien, pour, existante, options, recherches, proprio, 
       </div>
       {/* V3.172 : les notaires, dès l'offre — le compromis les reprendra. */}
       {voirNot ? (
-        <Section ic="balance" c="#1d1d1f" f="#f4f3f2" titre="Les notaires du dossier">
+        <Section ic="balance" c="#2e3034" f="#f4f3f2" titre="Les notaires du dossier">
           <BlocNotaires v={notaires} onChange={setNotaires} />
         </Section>
       ) : (
@@ -932,7 +932,7 @@ export function FenOffre({ bien, pour, existante, options, recherches, proprio, 
         </label>
       )}
       {!existante && dejaAcceptee && (
-        <Section ic="euro" c="#b4560f" f="#fbf0e9" titre="Tes honoraires sur ce dossier">
+        <Section ic="euro" c="#c2621c" f="#fbf0e9" titre="Tes honoraires sur ce dossier">
           <BlocHonoraires prix={montant} hono={honoAccord} charge={charge} mandat={honoSi}
             onHono={x => { setHono(x); setHonoTape(true); }} onCharge={setCharge} onMandat={() => setHonoTape(false)} />
         </Section>
@@ -1013,11 +1013,11 @@ export function FenAcceptation({ bien, offre, edition, autres = [], onFermer, on
           <ChampJour lib="Acceptée le" v={le} onChange={setLe} raccourcis={rDuJour()} />
         </div>
       </Section>
-      <Section ic="euro" c="#b4560f" f="#fbf0e9" titre="Tes honoraires sur ce dossier">
+      <Section ic="euro" c="#c2621c" f="#fbf0e9" titre="Tes honoraires sur ce dossier">
         <BlocHonoraires prix={prix} hono={hono} charge={charge} mandat={mandat} onHono={setHono} onCharge={setCharge} onMandat={() => setHono(mandat)} />
       </Section>
       {voirNot ? (
-        <Section ic="balance" c="#1d1d1f" f="#f4f3f2" titre="Les notaires du dossier">
+        <Section ic="balance" c="#2e3034" f="#f4f3f2" titre="Les notaires du dossier">
           <BlocNotaires v={notaires} onChange={setNotaires} />
         </Section>
       ) : (
@@ -1058,7 +1058,7 @@ export function FenNotaires({ bien, offre, aJour, onFermer, onFait }: {
     catch (e) { setErreur((e as Error).message); setOccupe(false); }
   }
   return (
-    <Fenetre sur={`L’offre de ${offre.qui || 'l’acquéreur'}`} couleur="#1d1d1f" titre="Les notaires du dossier" sous={resume(bien)} occupe={occupe} onFermer={onFermer} large
+    <Fenetre sur={`L’offre de ${offre.qui || 'l’acquéreur'}`} couleur="#2e3034" titre="Les notaires du dossier" sous={resume(bien)} occupe={occupe} onFermer={onFermer} large
       pied={<><button type="button" className={s.btn} disabled={occupe} onClick={onFermer}>Annuler</button>
         <button type="button" className={`${s.btn} ${s.btnNavy}`} disabled={occupe} onClick={valider}><Ic n="check" t={15} e={2.4} />{occupe ? 'Enregistrement…' : 'Enregistrer'}</button></>}>
       <div className={b.calc}>Le notaire du vendeur, celui de l’acquéreur, ou un seul pour les deux. Le compromis les reprendra.</div>
@@ -1126,10 +1126,10 @@ function BlocNotaires({ v, onChange }: { v: NotairesDossier; onChange: (n: Notai
           ? { vendeur: v.vendeur || v.acquereur, acquereur: v.vendeur || v.acquereur, commun: true }
           : { vendeur: v.vendeur, acquereur: v.commun ? null : v.acquereur, commun: false })} />
       {v.commun ? (
-        <ChoixNotaire lib="Le notaire des deux parties" couleur="#1d1d1f" v={v.vendeur} onChange={n => onChange({ vendeur: n, acquereur: n, commun: true })} notaires={notaires} onCree={ajoute} />
+        <ChoixNotaire lib="Le notaire des deux parties" couleur="#2e3034" v={v.vendeur} onChange={n => onChange({ vendeur: n, acquereur: n, commun: true })} notaires={notaires} onCree={ajoute} />
       ) : (
         <div className={b.g2}>
-          <ChoixNotaire lib="Notaire du vendeur" couleur="#b4560f" v={v.vendeur} onChange={n => onChange({ ...v, vendeur: n })} notaires={notaires} onCree={ajoute} />
+          <ChoixNotaire lib="Notaire du vendeur" couleur="#c2621c" v={v.vendeur} onChange={n => onChange({ ...v, vendeur: n })} notaires={notaires} onCree={ajoute} />
           <ChoixNotaire lib="Notaire de l’acquéreur" couleur="#1d4ed8" v={v.acquereur} onChange={n => onChange({ ...v, acquereur: n })} notaires={notaires} onCree={ajoute} />
         </div>
       )}
@@ -1376,7 +1376,7 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
   const rappelsLe = (ex.rappelsLe && typeof ex.rappelsLe === 'object' ? ex.rappelsLe : {}) as Record<string, string>;
   type Def = { cle: CleRappel; ic: string; c: string; f: string; t: string; base: string; ecart: number; client: string | null; note: (le: string) => string };
   const defs: Def[] = [
-    { cle: 'sru', ic: 'bouclier', c: '#b45309', f: '#fff7ed', t: 'Vérifier la fin de la rétractation', base: sru, ecart: 1, client: pourProprio || pourAcq,
+    { cle: 'sru', ic: 'bouclier', c: '#c05d12', f: '#fff7ed', t: 'Vérifier la fin de la rétractation', base: sru, ecart: 1, client: pourProprio || pourAcq,
       note: () => `Compromis ${titre} : le délai de rétractation de ${acquereur} est terminé (${dateLongue(sru)}). Vérifier qu’il ne s’est pas rétracté.` },
     { cle: 'pret', ic: 'banque', c: '#1d4ed8', f: '#eff6ff', t: 'Demander l’accord de prêt', base: pretL, ecart: -7, client: pourAcq || pourProprio,
       note: () => `Compromis ${titre} : la condition de prêt de ${acquereur} expire le ${dateLongue(pretL)}. Demander l’accord de prêt.` },
@@ -1484,7 +1484,7 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
   }
   const nomDe = (id: string | null) => (id && clientsNoms?.[id]) || '';
   const DATES = [
-    { cle: 'sru', ic: 'bouclier', c: '#b45309', f: '#fff7ed', lib: 'Fin de la rétractation', aide: '10 jours après la remise du compromis', v: sru, set: setSru,
+    { cle: 'sru', ic: 'bouclier', c: '#c05d12', f: '#fff7ed', lib: 'Fin de la rétractation', aide: '10 jours après la remise du compromis', v: sru, set: setSru,
       raccourcis: rApres(signe, [['10 jours après', 10], ['11 jours après', 11], ['15 jours après', 15]]) },
     { cle: 'pret', ic: 'banque', c: '#1d4ed8', f: '#eff6ff', lib: 'Condition de prêt jusqu’au', aide: 'En général 45 à 60 jours', v: pretL, set: setPretL,
       raccourcis: rApres(signe, [['30 jours après', 30], ['45 jours après', 45], ['60 jours après', 60]]) },
@@ -1498,7 +1498,7 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
       pied={<><button type="button" className={s.btn} disabled={occupe} onClick={onFermer}>Annuler</button>
         <button type="button" className={`${s.btn} ${s.btnNavy}`} disabled={occupe} onClick={valider}><Ic n="check" t={15} e={2.4} />{occupe ? 'Enregistrement…' : existant ? 'Enregistrer' : 'Enregistrer le compromis'}</button></>}>
       {candidates.length > 0 && (
-        <Section ic="personne" c="#b4560f" f="#fbf0e9" titre="L’offre retenue">
+        <Section ic="personne" c="#c2621c" f="#fbf0e9" titre="L’offre retenue">
           <div className={b.qui}>
             {candidates.map(o => (
               <button key={o.id} type="button" className={`${b.quiL} ${offreId === o.id ? b.quiOn : ''}`} onClick={() => changerOffre(o.id)}>
@@ -1515,7 +1515,7 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
           <Ch lib="Prix de vente"><SaisieNombre v={prix} euros unite="€" off={false} onChange={majPrix} /></Ch>
         </div>
       </Section>
-      <Section ic="euro" c="#b4560f" f="#fbf0e9" titre="Les honoraires et le net vendeur">
+      <Section ic="euro" c="#c2621c" f="#fbf0e9" titre="Les honoraires et le net vendeur">
         <BlocHonoraires prix={prix} hono={hono} charge={charge} mandat={hDefaut(prix)}
           origine={honoSrc === 'offre' ? `Notés à l’acceptation de l’offre${dateOffre(offre)}` : undefined}
           onHono={x => { setHono(x); setHonoFixe(true); }} onCharge={setCharge} onMandat={() => { setHono(hDefaut(prix)); setHonoFixe(false); setHonoSrc('mandat'); }} />
@@ -1553,7 +1553,7 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
             </button>
           ) : null}
       </Section>
-      <Section ic="balance" c="#1d1d1f" f="#f4f3f2" titre="Les notaires">
+      <Section ic="balance" c="#2e3034" f="#f4f3f2" titre="Les notaires">
         {notairesDeLOffre && <div className={b.calc}>Repris de l’offre : modifie-les si besoin.</div>}
         <BlocNotaires v={notaires} onChange={setNotaires} />
       </Section>
@@ -1579,7 +1579,7 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
         <Section ic="fleche" c="#0f766e" f="#f0fdfa" titre="Et ensuite">
           <div className={b.rappels}>
             {offre?.client_id && (
-              <Suite on={pauseAcq} onChange={setPauseAcq} ic="pause" c="#b45309" f="#fff7ed"
+              <Suite on={pauseAcq} onChange={setPauseAcq} ic="pause" c="#c05d12" f="#fff7ed"
                 t={`Mettre la recherche de ${acquereur} en pause`}
                 s="Il passe « Suspendu » : la veille s’arrête, il n’est plus proposé sur tes autres biens. Si le compromis tombe, sa recherche reprend." />
             )}
@@ -1668,7 +1668,7 @@ export function FenCompromisTombe({ bien, compromis, offres, clientsNoms, prevue
         <Pills options={RAISONS_TOMBE.map(x => ({ v: x, l: x }))} v={RAISONS_TOMBE.includes(raison) ? raison : ''} onChange={choisirRaison} />
         <Ch lib="En quelques mots"><input className={s.input} value={raison} onChange={e => setRaison(e.target.value)} placeholder="Ex : refus de prêt de la deuxième banque" /></Ch>
       </Section>
-      <Section ic="maison" c="#b4560f" f="#fbf0e9" titre="Le bien">
+      <Section ic="maison" c="#c2621c" f="#fbf0e9" titre="Le bien">
         <div className={b.rappels}>
           <Option nom="bien" on={suiteBien === 'mandat'} onChange={() => setSuiteBien('mandat')} ic="etiquette" c="#15803d" f="#f0fdf4"
             t="Il repasse « En vente »" s={`Le mandat continue${prix ? `, au prix affiché de ${euros(prix)}` : ''}. Tu pourras le changer avec « Changer le prix ».`} />
@@ -1682,7 +1682,7 @@ export function FenCompromisTombe({ bien, compromis, offres, clientsNoms, prevue
           <div className={b.rappels}>
             <Option nom="acq" on={suiteAcq === 'reprend'} onChange={() => setSuiteAcq('reprend')} ic="loupe" c="#15803d" f="#f0fdf4"
               t="Sa recherche reprend" s={enPause ? 'Il redevient comme avant le compromis : la veille repart et il est de nouveau proposé sur tes biens.' : 'Sa recherche n’avait pas été mise en pause : elle continue.'} />
-            <Option nom="acq" on={suiteAcq === 'pause'} onChange={() => setSuiteAcq('pause')} ic="pause" c="#b45309" f="#fff7ed"
+            <Option nom="acq" on={suiteAcq === 'pause'} onChange={() => setSuiteAcq('pause')} ic="pause" c="#c05d12" f="#fff7ed"
               t="Laisser sa recherche en pause" s="Il reste « Suspendu » : tu décideras plus tard, depuis sa fiche." />
             <Option nom="acq" on={suiteAcq === 'arrete'} onChange={() => setSuiteAcq('arrete')} ic="croix" c="#b91c1c" f="#fef2f2"
               t="Il arrête sa recherche" s="Dossier clos, « A renoncé » : la veille s’arrête, ses relances en attente sont soldées. Il se rouvre depuis sa fiche." />
@@ -1725,7 +1725,7 @@ export function FenNouvelleVente({ bien, references, acquereur, onFermer, onFait
           <Trace seul ic="boucle" c="#64748b" f="#f8fafc" t="Ce qui repart de zéro" s={`Le prix, le mandat, les infos de visite, l’annonce et les photos. Cette vente-ci reste telle quelle, avec son historique et ses honoraires${bien.reference ? ` (réf. ${bien.reference})` : ''}.`} />
         </div>
       </Section>
-      <Section ic="personne" c="#b4560f" f="#fbf0e9" titre="Le propriétaire">
+      <Section ic="personne" c="#c2621c" f="#fbf0e9" titre="Le propriétaire">
         <div className={b.rappels}>
           {acquereur && (
             <Option nom="qui" on={qui === 'acq'} onChange={() => setQui('acq')} ic="cle" c="#15803d" f="#f0fdf4"

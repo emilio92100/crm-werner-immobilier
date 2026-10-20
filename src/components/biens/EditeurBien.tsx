@@ -70,9 +70,9 @@ const NOMS_PARTIES: Record<string, string> = {
 /* Avant le mandat, « Prix et mandat » s'appelle « Estimation » (etapesDuBien). */
 const nomPartie = (e: EtapeBien) => (e.id === 'prix' && e.court === 'Estimation' ? 'L’estimation' : NOMS_PARTIES[e.id] || e.court);
 const COULEURS_PARTIES: Record<string, [string, string]> = {
-  proprio: ['#1d1d1f', '#f4f3f2'], bien: ['#b4560f', '#fbf0e9'], interieur: ['#393836', '#f3f2f1'], exterieur: ['#15803d', '#ecf8f0'],
-  pieces: ['#475569', '#f1f5f9'], energie: ['#b45309', '#fff4e5'], copro: ['#0f766e', '#e8f7f5'], observations: ['#6d28d9', '#f3effd'],
-  prix: ['#9c460d', '#fbece1'], pratique: ['#0e7490', '#e7f6fa'], annonce: ['#9d174d', '#fcebf3'], photos: ['#4338ca', '#f6f6f5'],
+  proprio: ['#2e3034', '#f4f3f2'], bien: ['#c2621c', '#fbf0e9'], interieur: ['#393836', '#f3f2f1'], exterieur: ['#15803d', '#ecf8f0'],
+  pieces: ['#475569', '#f1f5f9'], energie: ['#c05d12', '#fff4e5'], copro: ['#0f766e', '#e8f7f5'], observations: ['#6d28d9', '#f3effd'],
+  prix: ['#a85515', '#fbece1'], pratique: ['#0e7490', '#e7f6fa'], annonce: ['#9d174d', '#fcebf3'], photos: ['#4338ca', '#f6f6f5'],
 };
 
 /* Ce qui compte pour « rempli à x % » : une réponse qu'on attend. Les textes
@@ -119,7 +119,7 @@ function ListeParties({ etapes, cur, etats, onAller }: { etapes: EtapeBien[]; cu
           {g.l.map(i => {
             const e = etapes[i];
             const x = etats[i];
-            const [coul, fond] = COULEURS_PARTIES[e.id] || ['#1d1d1f', '#f4f3f2'];
+            const [coul, fond] = COULEURS_PARTIES[e.id] || ['#2e3034', '#f4f3f2'];
             return (
               <button key={e.id} type="button" className={b.sommL} aria-current={i === cur ? 'step' : undefined} onClick={() => onAller(i)}>
                 <span className={b.sommIc} style={{ background: fond, color: coul }}><Ic n={e.ic} t={16} /></span>

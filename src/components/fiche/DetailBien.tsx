@@ -40,11 +40,11 @@ const TYPES = ['Appartement', 'Maison', 'Duplex', 'Loft', 'Studio', 'Villa', 'Te
 const EXPOSITIONS = ['Nord', 'Sud', 'Est', 'Ouest', 'Sud-Est', 'Sud-Ouest', 'Nord-Est', 'Nord-Ouest', 'Est-Ouest'];
 const ETATS = ['Neuf', 'Rénové', 'Bon état', 'Entretenu', 'À rafraîchir', 'À rénover'];
 const DPE_C: Record<string, [string, string]> = {
-  A: ['#319834', '#fff'], B: ['#4ab84a', '#fff'], C: ['#a8d84a', '#18181b'], D: ['#f7e017', '#18181b'],
-  E: ['#ee7320', '#18181b'], F: ['#ee8235', '#fff'], G: ['#e2231a', '#fff'],
+  A: ['#319834', '#fff'], B: ['#4ab84a', '#fff'], C: ['#a8d84a', '#25272b'], D: ['#f7e017', '#25272b'],
+  E: ['#e8863a', '#25272b'], F: ['#e9914f', '#fff'], G: ['#e2231a', '#fff'],
 };
 const GES_C: Record<string, [string, string]> = {
-  A: ['#f6edfd', '#18181b'], B: ['#e4c7fa', '#18181b'], C: ['#d5aaf6', '#18181b'], D: ['#c58ef1', '#18181b'],
+  A: ['#f6edfd', '#25272b'], B: ['#e4c7fa', '#25272b'], C: ['#d5aaf6', '#25272b'], D: ['#c58ef1', '#25272b'],
   E: ['#a95ee6', '#fff'], F: ['#8a36d4', '#fff'], G: ['#6a1fb0', '#fff'],
 };
 const EQUIPEMENTS: { k: string; l: string; i: string }[] = [

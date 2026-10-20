@@ -89,7 +89,7 @@ export function ajouterFiche(l: FicheOuverte[], f: FicheOuverte): FicheOuverte[]
 
 const TEINTES: Record<string, Teinte> = {
   actif: { bg: '#ecfdf5', fg: '#0f7a4f' }, prospect: { bg: '#f5f3ff', fg: '#6d28d9' },
-  suspendu: { bg: '#fffbeb', fg: '#b45309' }, bien_trouve: { bg: '#eff6ff', fg: '#1d4ed8' },
+  suspendu: { bg: '#fffbeb', fg: '#c05d12' }, bien_trouve: { bg: '#eff6ff', fg: '#1d4ed8' },
   perdu: { bg: '#fef2f2', fg: '#b91c1c' },
 };
 
