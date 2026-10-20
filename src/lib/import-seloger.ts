@@ -270,7 +270,7 @@ export function affaireDepuisSeLoger(c: Brut, resume: Brut = {}): AffaireImporte
   /* Ce que l'annonce disait de ses montants, à vérifier une fois (notes
      internes, jamais dans l'annonce) : un loyer publié « T.T.C. », un prix
      publié hors honoraires ou honoraires inclus. */
-  const complements = (Array.isArray(c.financial?.montantList) ? c.financial.montantList : []).filter((m: Brut) => m.isMontantPrincipal).map((m: Brut) => String(m.libelleComplement || ''));
+  const complements: string[] = (Array.isArray(c.financial?.montantList) ? c.financial.montantList : []).filter((m: Brut) => m.isMontantPrincipal).map((m: Brut) => String(m.libelleComplement || ''));
   const aVerifier: string[] = [];
   if (complements.some(x => /T\.T\.C/.test(x))) aVerifier.push('le loyer est publié « toutes taxes comprises » sur SeLoger : vérifier s’il est hors taxes');
   if (complements.some(x => /H\.H\./.test(x))) aVerifier.push('le prix est publié hors honoraires');
