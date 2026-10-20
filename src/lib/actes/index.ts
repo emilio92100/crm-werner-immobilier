@@ -22,9 +22,9 @@ export const modele = (id: string): Modele | null => MODELES.find(m => m.id === 
    vit dans la fiche client (il se signe depuis l'espace) : la rubrique
    liste ceux qui ont été signés, à côté des mandats de recherche papier. */
 export const CATEGORIES: { id: Categorie; titre: string; sous: string; ic: string; couleur: string }[] = [
-  { id: 'mandats_vente', titre: 'Mandats de vente', sous: 'Simple, semi-exclusif ou exclusif', ic: 'maison', couleur: 'or' },
-  { id: 'mandats_recherche', titre: 'Mandats de recherche', sous: 'En ligne depuis l’espace, ou sur papier', ic: 'loupe', couleur: 'bleu' },
-  { id: 'offres', titre: 'Offres d’achat', sous: 'Faites par tes acheteurs, et la réponse du vendeur', ic: 'euro', couleur: 'brique' },
+  { id: 'mandats_vente', titre: 'Mandats de commercialisation', sous: 'Location, cession ou vente : simple, semi-exclusif ou exclusif', ic: 'immeuble', couleur: 'or' },
+  { id: 'mandats_recherche', titre: 'Mandats de recherche', sous: 'Pour un demandeur : en ligne depuis l’espace, ou sur papier', ic: 'loupe', couleur: 'bleu' },
+  { id: 'offres', titre: 'Offres et lettres d’intention', sous: 'Faites par tes demandeurs, et la réponse du mandant', ic: 'euro', couleur: 'brique' },
   { id: 'bons_visite', titre: 'Bons de visite', sous: 'La preuve de chaque visite', ic: 'calendrier', couleur: 'vert' },
   { id: 'courriers', titre: 'Courriers', sous: 'L’information avant chaque reconduction', ic: 'boucle', couleur: 'gris' },
   { id: 'delegations', titre: 'Délégations', sous: 'Un mandat confié à un confrère', ic: 'accord', couleur: 'bleu' },

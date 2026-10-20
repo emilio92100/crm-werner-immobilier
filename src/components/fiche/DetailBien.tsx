@@ -36,7 +36,7 @@ const val = (v: any) => (v === null || v === undefined ? '' : v);
 const nombre = (v: any) => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0; };
 const euros = (n: number) => `${Math.round(n).toLocaleString('fr-FR')} €`;
 
-const TYPES = ['Appartement', 'Maison', 'Duplex', 'Loft', 'Studio', 'Villa', 'Terrain', 'Autre'];
+const TYPES = ['Bureaux', 'Local commercial', 'Restaurant', 'Local d’activité', 'Entrepôt', 'Immeuble', 'Terrain', 'Parking', 'Autre'];
 const EXPOSITIONS = ['Nord', 'Sud', 'Est', 'Ouest', 'Sud-Est', 'Sud-Ouest', 'Nord-Est', 'Nord-Ouest', 'Est-Ouest'];
 const ETATS = ['Neuf', 'Rénové', 'Bon état', 'Entretenu', 'À rafraîchir', 'À rénover'];
 const DPE_C: Record<string, [string, string]> = {
@@ -48,10 +48,10 @@ const GES_C: Record<string, [string, string]> = {
   E: ['#a95ee6', '#fff'], F: ['#8a36d4', '#fff'], G: ['#6a1fb0', '#fff'],
 };
 const EQUIPEMENTS: { k: string; l: string; i: string }[] = [
-  { k: 'balcon', l: 'Balcon', i: 'soleil' }, { k: 'terrasse', l: 'Terrasse', i: 'soleil' }, { k: 'jardin', l: 'Jardin', i: 'arbre' },
+  { k: 'balcon', l: 'Extérieur', i: 'soleil' }, { k: 'terrasse', l: 'Terrasse', i: 'soleil' }, { k: 'jardin', l: 'Cour', i: 'arbre' },
   { k: 'parking', l: 'Parking', i: 'parking' }, { k: 'ascenseur', l: 'Ascenseur', i: 'ascenseur' }, { k: 'cave', l: 'Cave', i: 'cave' },
   { k: 'gardien', l: 'Gardien', i: 'cle' }, { k: 'traversant', l: 'Traversant', i: 'traversant' },
-  { k: 'cuisine_equipee', l: 'Cuisine équipée', i: 'coche' }, { k: 'climatisation', l: 'Climatisation', i: 'coche' },
+  { k: 'cuisine_equipee', l: 'Cuisine professionnelle', i: 'coche' }, { k: 'climatisation', l: 'Climatisation', i: 'coche' },
 ];
 
 const PARTIES: { id: string; l: string; i: string; vides: (f: Form) => string[] }[] = [
@@ -314,10 +314,10 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
                   <Saisie valeur={f.ville} onChange={v => set('ville', v)} vide={vide(f.ville)} />
                 </Champ>
                 <Champ etiquette="Quartier" className={s.g2}>
-                  <Saisie valeur={f.quartier} onChange={v => set('quartier', v)} placeholder="Parchamp, Rhin-et-Danube…" />
+                  <Saisie valeur={f.quartier} onChange={v => set('quartier', v)} placeholder="Sentier, Haut Marais…" />
                 </Champ>
                 <Champ etiquette="Situation" className={s.g2}>
-                  <Saisie valeur={f.situation} onChange={v => set('situation', v)} placeholder="à 4 min du métro, au calme sur cour…" />
+                  <Saisie valeur={f.situation} onChange={v => set('situation', v)} placeholder="à 4 min du métro, rue passante…" />
                 </Champ>
                 <Champ etiquette="Lien de l’annonce" icone="lien" manque={manque('url')} className={s.g3}>
                   <span className={s.boite} data-vide={vide(f.url) ? 'oui' : undefined}>
@@ -330,7 +330,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
                   </span>
                 </Champ>
                 <Champ etiquette="Portail">
-                  <Saisie valeur={f.source_portail} onChange={v => set('source_portail', v)} placeholder="SeLoger…" />
+                  <Saisie valeur={f.source_portail} onChange={v => set('source_portail', v)} placeholder="Geolocaux, BureauxLocaux…" />
                 </Champ>
               </div>
             </Partie>
@@ -340,13 +340,13 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
                 <Champ etiquette="Surface" icone="surface" manque={manque('surface')}>
                   <Saisie valeur={f.surface} onChange={v => set('surface', v)} vide={vide(f.surface)} unite="m²" mode="decimal" />
                 </Champ>
-                <Champ etiquette="Séjour" icone="sofa">
+                <Champ etiquette="Surface de vente" icone="surface">
                   <Saisie valeur={f.surface_sejour} onChange={v => set('surface_sejour', v)} unite="m²" mode="decimal" />
                 </Champ>
-                <Champ etiquette="Pièces" icone="pieces" manque={manque('nb_pieces')}>
+                <Champ etiquette="Espaces" icone="pieces" manque={manque('nb_pieces')}>
                   <Saisie valeur={f.nb_pieces} onChange={v => set('nb_pieces', v)} vide={vide(f.nb_pieces)} mode="numeric" />
                 </Champ>
-                <Champ etiquette="Chambres" icone="lit" manque={manque('nb_chambres')}>
+                <Champ etiquette="Bureaux fermés" icone="mallette" manque={manque('nb_chambres')}>
                   <Saisie valeur={f.nb_chambres} onChange={v => set('nb_chambres', v)} vide={vide(f.nb_chambres)} mode="numeric" />
                 </Champ>
                 <Champ etiquette="Étage" icone="immeuble" manque={manque('etage')}>
@@ -362,9 +362,9 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
                 <Champ etiquette="Lots" icone="lots">
                   <Saisie valeur={f.nb_lots} onChange={v => set('nb_lots', v)} mode="numeric" />
                 </Champ>
-                <Champ etiquette="Salles d’eau · WC">
+                <Champ etiquette="Points d’eau · WC">
                   <span className={s.boite}>
-                    <input inputMode="numeric" value={val(f.nb_salles_bain)} onChange={e => set('nb_salles_bain', e.target.value)} aria-label="Salles d’eau" />
+                    <input inputMode="numeric" value={val(f.nb_salles_bain)} onChange={e => set('nb_salles_bain', e.target.value)} aria-label="Points d’eau" />
                     <span className={s.unite}>·</span>
                     <input inputMode="numeric" value={val(f.nb_wc)} onChange={e => set('nb_wc', e.target.value)} aria-label="WC" />
                   </span>
@@ -403,7 +403,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
                 {f.bien_vente_id ? (
                   <div className={`${s.mandat} ${s.g4}`}>
                     <b>{prixAcq ? euros(prixAcq) : '—'}</b>
-                    {'Ce bien est un mandat de l’agence : son prix et les honoraires de l’agence se changent sur la fiche du bien.'}
+                    {'Ce bien est une affaire de l’agence : son montant et les honoraires se changent sur la fiche de l’affaire.'}
                   </div>
                 ) : (
                   <>
@@ -433,7 +433,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
                   <Saisie valeur={f.charges_trimestrielles} onChange={v => set('charges_trimestrielles', v)} vide={vide(f.charges_trimestrielles)} unite="€ / trim." mode="numeric" />
                 </Champ>
                 <Champ etiquette="Ce qu’elles comprennent" className={s.g2}>
-                  <Saisie valeur={f.charges_comprises} onChange={v => set('charges_comprises', v)} placeholder="chauffage et eau chaude collectifs, gardien" />
+                  <Saisie valeur={f.charges_comprises} onChange={v => set('charges_comprises', v)} placeholder="chauffage collectif, gardien, ménage" />
                 </Champ>
                 <Champ etiquette="Taxe foncière" manque={manque('taxe_fonciere')}>
                   <Saisie valeur={f.taxe_fonciere} onChange={v => set('taxe_fonciere', v)} vide={vide(f.taxe_fonciere)} unite="€ / an" mode="numeric" />
@@ -486,7 +486,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
 
             <Partie id="agence" titre="Agence" icone="immeuble">
               <div className={s.grille}>
-                <Champ etiquette="Qui vend" className={s.g4} groupe>
+                <Champ etiquette="Qui le propose" className={s.g4} groupe>
                   <span className={s.pastilles}>
                     <button type="button" className={s.pastille} data-actif={!f.est_particulier} aria-pressed={!f.est_particulier} onClick={() => set('est_particulier', false)}>Une agence</button>
                     <button type="button" className={s.pastille} data-actif={!!f.est_particulier} aria-pressed={!!f.est_particulier} onClick={() => set('est_particulier', true)}>Un particulier</button>
@@ -496,7 +496,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
                     La personne qui gère le dossier et son mail, à côté du nom et du téléphone :
                     repris par « Mon suivi avec l'agence », « Noter un appel » et le lien pour les agences. */}
                 <Champ etiquette={f.est_particulier ? 'Nom (facultatif)' : 'Nom de l’agence'} icone="immeuble" manque={f.est_particulier ? null : manque('agence_nom')} className={f.est_particulier ? s.g4 : s.g2}>
-                  <Saisie valeur={f.agence_nom} onChange={v => set('agence_nom', v)} vide={!f.est_particulier && vide(f.agence_nom)} placeholder={f.est_particulier ? 'M. et Mme Martin' : 'Century 21 Montparnasse'} />
+                  <Saisie valeur={f.agence_nom} onChange={v => set('agence_nom', v)} vide={!f.est_particulier && vide(f.agence_nom)} placeholder={f.est_particulier ? 'M. Martin' : 'Century 21 Montparnasse'} />
                 </Champ>
                 {/* V3.205 — sur une ligne l'agence et son numéro, sur la suivante la personne et le sien :
                     « je prends son numéro, mais j'aimerais laisser celui de l'agence ». */}

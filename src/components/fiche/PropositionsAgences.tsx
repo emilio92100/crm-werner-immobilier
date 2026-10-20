@@ -393,8 +393,8 @@ export default function PropositionsAgences({ clientId, rechercheId, recherche, 
         const lec = lectures[p.id];
         const prixF = Number(f.prix_acquereur || f.prix_vendeur || p.prix) || null;
         const puces = [
-          f.surface || p.surface ? `${f.surface || p.surface} m²` : null, f.nb_pieces ? `${f.nb_pieces} p.` : null,
-          f.nb_chambres ? `${f.nb_chambres} ch.` : null,
+          f.surface || p.surface ? `${f.surface || p.surface} m²` : null, f.nb_pieces ? `${f.nb_pieces} espaces` : null,
+          f.nb_chambres ? `${f.nb_chambres} bureaux` : null,
           f.etage != null && f.etage !== '' ? (Number(f.etage) === 0 ? 'RDC' : Number(f.etage) === 1 ? '1er étage' : `${f.etage}e étage`) : null,
           f.dpe ? `DPE ${f.dpe}` : null,
         ].filter((x): x is string => !!x);
@@ -596,7 +596,7 @@ function FormContact({ nomFixe, initial, actions, onFini, onAnnuler }: {
       <div className={a.flFormGrille} data-fixe={nomFixe ? 'oui' : undefined}>
         {!nomFixe && (
           <label className={a.flChamp}><span>Agence</span>
-            <input ref={premier} value={nom} onChange={e => { setNom(e.target.value); setErreur(null); }} placeholder="Orpi Paris" maxLength={120} autoComplete="off" /></label>
+            <input ref={premier} value={nom} onChange={e => { setNom(e.target.value); setErreur(null); }} placeholder="Cabinet Dupont Commerces" maxLength={120} autoComplete="off" /></label>
         )}
         <label className={a.flChamp}><span>{'Personne qui gère le dossier '}<i>(facultatif)</i></span>
           <input ref={nomFixe ? premier : undefined} value={personne} onChange={e => setPersonne(e.target.value)} placeholder="Marc Lenoir" maxLength={120} autoComplete="off" /></label>
@@ -753,7 +753,7 @@ function ApercuEnvoi({ type, html, message, onMessage, onCopier, onFermer }: {
           <span className={a.apIc} aria-hidden="true"><Icone nom={type === 'mail' ? 'mail' : 'mobile'} taille={18} epaisseur={2.1} /></span>
           <div className={a.flTitre}>
             <h2>{type === 'mail' ? 'Le mail que reçoit l’agence' : 'Le SMS que reçoit l’agence'}</h2>
-            <p>{type === 'mail' ? 'Mis en page aux couleurs d’Werner, envoyé de ta part (contact@wernerimmobilier.com).' : 'Il s’ouvre sur ton téléphone, prêt à envoyer : tu peux le modifier ici.'}</p>
+            <p>{type === 'mail' ? 'Mis en page aux couleurs de Werner, envoyé de ta part (contact@wernerimmobilier.com).' : 'Il s’ouvre sur ton téléphone, prêt à envoyer : tu peux le modifier ici.'}</p>
           </div>
           {type === 'mail' && (
             <div className={a.apVues} role="group" aria-label="Voir sur">

@@ -72,11 +72,11 @@ export async function controlerTypes(clientId: string, avant: TypeContact[], apr
   Promise<{ erreur: string | null; arreter: boolean }> {
   if (avant.includes('vendeur') && !apres.includes('vendeur')) {
     const { data, error } = await supabase.from('biens_vente').select('id, titre, etape, archive').eq('client_id', clientId);
-    if (error) return { erreur: `Ses biens n’ont pas pu être vérifiés : ${error.message}`, arreter: false };
+    if (error) return { erreur: `Ses affaires n’ont pas pu être vérifiées : ${error.message}`, arreter: false };
     const b = ((data || []) as { titre: string | null; etape: string; archive?: boolean | null }[]).find(x => !x.archive && EN_VENTE.includes(x.etape));
     if (b) {
       return {
-        erreur: `${prenom || 'Ce contact'} reste « Mandant » : son bien ${b.titre ? `« ${b.titre} » ` : ''}est encore en vente (${etapeDe(b.etape).lib.toLowerCase()}). Quand la vente sera signée ou le bien retiré, tu pourras changer son type.`,
+        erreur: `${prenom || 'Ce contact'} reste « Mandant » : son affaire ${b.titre ? `« ${b.titre} » ` : ''}est toujours active (${etapeDe(b.etape).lib.toLowerCase()}). Quand elle sera conclue ou retirée, tu pourras changer son type.`,
         arreter: false,
       };
     }
@@ -257,8 +257,8 @@ export function ChampsPro({ types, pro, onChange, cls }: { types: TypeContact[];
           {pro.structure && (
             <>
               <div className={cls.row}>
-                <Champ cls={cls} lib="Nom de la société" ph="SAS Maison Léa" v={pro.structure.denomination} onV={x => onChange({ ...pro, structure: { ...pro.structure!, denomination: x } })} />
-                <Champ cls={cls} lib="Enseigne · facultatif" ph="Maison Léa" v={pro.structure.enseigne || ''} onV={x => onChange({ ...pro, structure: { ...pro.structure!, enseigne: x } })} />
+                <Champ cls={cls} lib="Nom de la société" ph="SAS Boulangerie Léa" v={pro.structure.denomination} onV={x => onChange({ ...pro, structure: { ...pro.structure!, denomination: x } })} />
+                <Champ cls={cls} lib="Enseigne · facultatif" ph="Boulangerie Léa" v={pro.structure.enseigne || ''} onV={x => onChange({ ...pro, structure: { ...pro.structure!, enseigne: x } })} />
               </div>
               <div className={cls.row}>
                 <Champ cls={cls} lib="Activité" ph="Boulangerie, cabinet d’avocats…" v={pro.structure.activite || ''} onV={x => onChange({ ...pro, structure: { ...pro.structure!, activite: x } })} />
@@ -311,13 +311,13 @@ export function LigneBien({ b, onClick }: { b: BienDuContact; onClick: () => voi
   const specs = surf && titre.includes(String(surf)) ? '' : specsBien(d);
   const infos = [specs, b.ville, b.prix ? euros(b.prix) : ''].filter(Boolean).join(' · ');
   return (
-    <button type="button" className={c.bienCarte} onClick={ev => { ev.stopPropagation(); onClick(); }} title="Ouvrir la fiche du bien">
+    <button type="button" className={c.bienCarte} onClick={ev => { ev.stopPropagation(); onClick(); }} title="Ouvrir la fiche de l’affaire">
       <span className={c.bienPhoto}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {photo ? <img src={photo} alt="" /> : <Ic n="maison" t={18} />}
       </span>
       <span className={c.bienTxt}>
-        <b>{titre || 'Bien'}</b>
+        <b>{titre || 'Affaire'}</b>
         {infos && <small>{infos}</small>}
         <em style={{ color: e.c }}><i style={{ background: e.c }} />{e.court}</em>
       </span>
@@ -347,19 +347,19 @@ export function BiensDuContact({ clientId, prenom, onNavigate, toujours = false,
   const actifs = biens.filter(b => !b.archive);
   const archives = biens.filter(b => b.archive);
   return (
-    <BlocRepliable ic="maison" titre="Ses biens" n={actifs.length} ouvertAuDebut={ouvertAuDebut}
+    <BlocRepliable ic="maison" titre="Ses affaires" n={actifs.length} ouvertAuDebut={ouvertAuDebut}
       resume={actifs.length ? actifs.slice(0, 2).map(x => { const e = etapeDe(x.etape); return <span key={x.id} style={{ background: '#f8f8f7', color: e.c }}><span className={c.point} style={{ background: e.c }} />{e.court}</span>; }) : undefined}
-      action={<button type="button" className={c.lien} onClick={() => { demanderNouveauBien(clientId); onNavigate('biens'); }}>+ Créer<span className={sd.rpLong}> un bien</span></button>}>
+      action={<button type="button" className={c.lien} onClick={() => { demanderNouveauBien(clientId); onNavigate('biens'); }}>+ Créer<span className={sd.rpLong}> une affaire</span></button>}>
       {actifs.length ? (
         <div className={c.biensMini} style={{ borderTop: 'none', paddingTop: 0 }}>
           {actifs.map(b => <LigneBien key={b.id} b={b} onClick={() => onNavigate('biens', { bien: b.id })} />)}
         </div>
       ) : <div className={c.pied}>{archives.length
-        ? `Aucun bien en cours. « Créer un bien » ouvre la rubrique Biens, ${prenom || 'ce contact'} déjà propriétaire.`
-        : `Aucun bien pour l’instant. « Créer un bien » ouvre la rubrique Biens, ${prenom || 'ce contact'} déjà propriétaire : estimation, mandat, tout y est.`}</div>}
+        ? `Aucune affaire en cours. « Créer une affaire » ouvre la rubrique Affaires, ${prenom || 'ce contact'} déjà mandant.`
+        : `Aucune affaire pour l’instant. « Créer une affaire » ouvre la rubrique Affaires, ${prenom || 'ce contact'} déjà mandant : estimation, mandat, tout y est.`}</div>}
       {archives.length > 0 && (
         <>
-          <div className={c.pied} style={{ marginTop: 10 }}>{`Archivés (${archives.length})`}</div>
+          <div className={c.pied} style={{ marginTop: 10 }}>{`Archivées (${archives.length})`}</div>
           <div className={c.biensMini} style={{ borderTop: 'none', paddingTop: 0, opacity: 0.6 }}>
             {archives.map(b => <LigneBien key={b.id} b={b} onClick={() => onNavigate('biens', { bien: b.id })} />)}
           </div>
@@ -399,7 +399,7 @@ function resumeRecherche(x: ContactListe): string {
   const sect = (x.secteurs || []).filter(Boolean);
   return [
     x.type_bien ? String(x.type_bien).split(',').map(t => t.trim()).filter(Boolean).join(' ou ') : '',
-    x.nb_pieces_min ? `${x.nb_pieces_min} p.` : '',
+    x.nb_pieces_min ? `${x.nb_pieces_min} espaces` : '',
     x.surface_min ? `${x.surface_min} m²` : '',
     x.budget_max ? court(x.budget_max) : '',
     sect.length ? `${sect[0]}${sect.length > 1 ? ` +${sect.length - 1}` : ''}` : '',
@@ -459,15 +459,15 @@ export function LigneContact({ x, biens: tousBiens, derniere, onOuvrir, onBien, 
         {vend && biens.slice(0, 2).map(b => {
           const e = etapeDe(b.etape);
           return (
-            <button key={b.id} type="button" className={c.lInfo} onClick={ev => { ev.stopPropagation(); onBien(b.id); }} title="Ouvrir le bien">
+            <button key={b.id} type="button" className={c.lInfo} onClick={ev => { ev.stopPropagation(); onBien(b.id); }} title="Ouvrir l’affaire">
               <span className={c.lInfoIc} style={{ color: typeDe('vendeur').c }}><Ic n="maison" t={14} /></span>
-              <span className={c.lTxt}>{[b.titre || 'Bien', b.ville].filter(Boolean).join(' · ')}</span>
+              <span className={c.lTxt}>{[b.titre || 'Affaire', b.ville].filter(Boolean).join(' · ')}</span>
               <span className={c.lEtape} style={{ color: e.c, background: `${e.c}14` }}><i style={{ background: e.c }} />{e.court}</span>
             </button>
           );
         })}
-        {vend && biens.length > 2 && <span className={c.lPlus}>{`+ ${biens.length - 2} autre${biens.length > 3 ? 's' : ''} bien${biens.length > 3 ? 's' : ''}`}</span>}
-        {vend && !biens.length && !types.includes('acheteur') && <span className={c.lInfo}><span className={c.lInfoIc} style={{ color: '#c7c4c2' }}><Ic n="maison" t={14} /></span><span className={c.lAFaire}>{nbArchives ? `Biens archivés (${nbArchives})` : 'Pas encore de bien'}</span></span>}
+        {vend && biens.length > 2 && <span className={c.lPlus}>{`+ ${biens.length - 2} autre${biens.length > 3 ? 's' : ''} affaire${biens.length > 3 ? 's' : ''}`}</span>}
+        {vend && !biens.length && !types.includes('acheteur') && <span className={c.lInfo}><span className={c.lInfoIc} style={{ color: '#c7c4c2' }}><Ic n="maison" t={14} /></span><span className={c.lAFaire}>{nbArchives ? `Affaires archivées (${nbArchives})` : 'Pas encore d’affaire'}</span></span>}
         {pro && (
           <span className={c.lInfo}>
             <span className={c.lInfoIc} style={{ color: t.c }}><Ic n={t.ic} t={14} /></span>

@@ -186,7 +186,7 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
       <div className={s.onglet}>
         <div className={s.vide}>
           <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 16, color: '#232528', marginBottom: 4 }}>Aucune visite</div>
-          <div style={{ marginBottom: onOrganiser ? 14 : 0 }}>{visites.length > 0 ? 'Les visites annulées ne s’affichent plus ici.' : 'Ses biens ou tes biens en vente : tu les cherches par le prix, l’adresse ou le propriétaire.'}</div>
+          <div style={{ marginBottom: onOrganiser ? 14 : 0 }}>{visites.length > 0 ? 'Les visites annulées ne s’affichent plus ici.' : 'Ses biens ou tes affaires en cours : tu les cherches par le montant, l’adresse ou le mandant.'}</div>
           {boutonOrganiser}
         </div>
       </div>
@@ -252,7 +252,7 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
     const dans = jours === null ? '' : jours <= 0 ? 'Aujourd’hui' : jours === 1 ? 'Demain' : `Dans ${jours} jours`;
     const suite = i === 'revoir' ? suivante(v) : null;
     const suiteD = suite ? enDate(suite.date_visite) : null;
-    const details = [b?.surface ? `${String(b.surface).replace('.', ',')} m²` : '', b?.nb_pieces ? `${b.nb_pieces} p.` : '', b?.prix_acquereur ? euros(b.prix_acquereur) : ''].filter(Boolean).join(' · ');
+    const details = [b?.surface ? `${String(b.surface).replace('.', ',')} m²` : '', b?.nb_pieces ? `${b.nb_pieces} espaces` : '', b?.prix_acquereur ? euros(b.prix_acquereur) : ''].filter(Boolean).join(' · ');
 
     /* L'étiquette posée sur la photo. V3.189 : une offre dit où elle en est. */
     const fil = genre === 'venir' ? [] : filDe(v);

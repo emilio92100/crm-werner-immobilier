@@ -303,7 +303,7 @@ const TRIS_LISTE: { cle: TriListeCle; nom: string; court: string; note: string; 
   { cle: 'echange', nom: 'Dernier échange', court: 'Dernier échange', note: 'le plus récent en haut', sensDefaut: 'desc' },
   { cle: 'nom', nom: 'Nom', court: 'Nom', note: 'de A à Z', sensDefaut: 'asc' },
   { cle: 'ajout', nom: 'Date d’ajout', court: 'Ajout', note: 'le dernier arrivé en haut', sensDefaut: 'desc' },
-  { cle: 'etape', nom: 'Étape de son bien', court: 'Étape du bien', note: 'le plus avancé en haut', sensDefaut: 'desc' },
+  { cle: 'etape', nom: 'Étape de son affaire', court: 'Étape de l’affaire', note: 'la plus avancée en haut', sensDefaut: 'desc' },
 ];
 /* Le bien le plus avancé d'un contact : sous compromis d'abord, puis sous
    offre, en vente, estimation, à suivre, en pause, retiré, vendu ; sans bien,
@@ -418,7 +418,7 @@ function signalDe(client: any, st: StatDossier | undefined): Signal {
     if (j < 15) return { texte: `Mandat · ${j} j`, color: '#c05d12', bg: '#fffbeb', rang: 3, aide };
   }
   if ((client.statut as string) === 'bien_trouve') {
-    return { texte: 'Dossier clos', color: '#1d4ed8', bg: '#eff6ff', rang: 8, aide: 'Bien trouvé — dossier terminé' };
+    return { texte: 'Dossier clos', color: '#1d4ed8', bg: '#eff6ff', rang: 8, aide: 'Local trouvé — dossier terminé' };
   }
   if (st?.dernierContact) {
     const j = joursDepuis(st.dernierContact);
@@ -481,8 +481,8 @@ function texteType(v: unknown) {
    suivant »). Seuls ceux marqués « indispensable » dans ses critères, dans
    l'ordre où ils comptent le plus. */
 const INDISP: [string, string][] = [
-  ['parking', 'Parking'], ['ascenseur', 'Ascenseur'], ['exterieur', 'Extérieur'], ['balcon', 'Balcon'], ['terrasse', 'Terrasse'],
-  ['jardin', 'Jardin'], ['cave', 'Cave'], ['cuisine', 'Cuisine'], ['gardien', 'Gardien'], ['interphone', 'Interphone'], ['digicode', 'Digicode'],
+  ['parking', 'Parking'], ['ascenseur', 'Ascenseur'], ['exterieur', 'Extérieur'], ['balcon', 'Extérieur'], ['terrasse', 'Terrasse'],
+  ['jardin', 'Cour'], ['cave', 'Cave'], ['cuisine', 'Cuisine'], ['gardien', 'Gardien'], ['interphone', 'Interphone'], ['digicode', 'Digicode'],
 ];
 function indispensables(c: any): string[] {
   const ex = c.exigences && typeof c.exigences === 'object' ? c.exigences as Record<string, unknown> : {};
@@ -508,9 +508,9 @@ function borne(min: unknown, max: unknown) {
 function phraseRecherche(c: any) {
   const bouts: string[] = [];
   if (c.type_bien) bouts.push(String(c.type_bien));
-  const p = c.nb_pieces_min && c.nb_pieces_max ? `${c.nb_pieces_min} – ${c.nb_pieces_max} pièces`
-    : c.nb_pieces_min ? `${c.nb_pieces_min} pièces minimum`
-      : c.nb_pieces_max ? `${c.nb_pieces_max} pièces maximum` : '';
+  const p = c.nb_pieces_min && c.nb_pieces_max ? `${c.nb_pieces_min} – ${c.nb_pieces_max} espaces`
+    : c.nb_pieces_min ? `${c.nb_pieces_min} espaces minimum`
+      : c.nb_pieces_max ? `${c.nb_pieces_max} espaces maximum` : '';
   const su = c.surface_min && c.surface_max ? `${c.surface_min} – ${c.surface_max} m²`
     : c.surface_min ? `${c.surface_min} m² minimum`
       : c.surface_max ? `${c.surface_max} m² maximum` : '';
@@ -1350,7 +1350,7 @@ export default function Clients({ onNavigate, fenetre }: {
     if (!estAcheteur(c)) return 'Pas demandeur : le statut suit la recherche d’un demandeur.';
     if (estArchive(c)) return 'Archivé : sors-le des archives d’abord.';
     if (st === statut) return `Déjà « ${STATUTS_LOT.find(x => x.k === statut)?.lib} ».`;
-    if (st === 'bien_trouve' || st === 'perdu') return `Dossier clos (« ${st === 'perdu' ? 'Perdu' : 'Bien trouvé'} ») : rouvre-le depuis sa fiche.`;
+    if (st === 'bien_trouve' || st === 'perdu') return `Dossier clos (« ${st === 'perdu' ? 'Perdu' : 'Local trouvé'} ») : rouvre-le depuis sa fiche.`;
     return null;
   };
   function preparerStatut(statut: StatutLot) {
@@ -1612,9 +1612,9 @@ export default function Clients({ onNavigate, fenetre }: {
                       <Bloc ic="personne" titre="Ce contact est…" petit="un ou plusieurs types">
                         <ChoixTypes v={form.types} onChange={x => { setError(''); setForm({ ...form, types: x }); }} />
                         <div className="nc-note">
-                          {form.types.length === 0 ? 'Coche un ou plusieurs types : un propriétaire qui vend et rachète est « mandant » et « demandeur ».'
+                          {form.types.length === 0 ? 'Coche un ou plusieurs types : un commerçant qui cède son local et en cherche un autre est « mandant » et « demandeur ».'
                             : form.types.includes('acheteur') ? 'Demandeur : sa recherche et son mandat viennent ensuite. S’il n’a pas encore donné ses critères, il sera « demandeur non filtré ».'
-                              : form.types.includes('vendeur') || form.types.includes('proprietaire') ? (form.creerBien ? 'Mandant ou propriétaire : après ses coordonnées, « Nouveau bien » s’ouvre, lui déjà propriétaire.' : 'Mandant ou propriétaire : ses coordonnées d’abord. Son bien pourra se créer juste après si vous cochez « Créer son bien ».')
+                              : form.types.includes('vendeur') || form.types.includes('proprietaire') ? (form.creerBien ? 'Mandant ou propriétaire : après ses coordonnées, « Nouvelle affaire » s’ouvre, lui déjà mandant.' : 'Mandant ou propriétaire : ses coordonnées d’abord. Son affaire pourra se créer juste après si vous cochez « Créer son affaire ».')
                                 : 'Un professionnel : ses coordonnées et son métier, rien de plus. Il se retrouve dans sa catégorie, en haut de la page.'}
                         </div>
                       </Bloc>
@@ -1912,7 +1912,7 @@ export default function Clients({ onNavigate, fenetre }: {
             v: filtreSit, tout: 'toutes', onChange: setFiltreSit,
             options: SITUATIONS.map(x => ({
               k: x.key, l: x.key === 'toutes' ? 'Tous les locaux' : x.label, n: nbParSituation(x.key), dans: x.key === 'vendeur',
-              aide: x.key === 'vendeur' ? 'Des propriétaires qui revendront après leur achat : un mandat mandant possible. Ils sont aussi comptés dans « Propriétaires ».'
+              aide: x.key === 'vendeur' ? 'Des propriétaires qui libéreront leur local actuel : un mandat possible. Ils sont aussi comptés dans « Propriétaires ».'
                 : x.key === 'proprietaire' ? 'Propriétaires de leur local, revente possible comprise.'
                   : x.key === 'inconnue' ? 'Leur situation n’est pas renseignée : à compléter sur leur fiche.' : undefined,
             })),
@@ -2051,14 +2051,14 @@ export default function Clients({ onNavigate, fenetre }: {
                             {(() => {
                               /* Il vend aussi un bien (rubrique Biens) : on le dit. */
                               if (typesDe(client).includes('vendeur')) return (
-                                <span className={styles.proprio} title="Il vend aussi un bien : voir sa fiche ou la rubrique Biens">
+                                <span className={styles.proprio} title="Il confie aussi une affaire : voir sa fiche ou la rubrique Affaires">
                                   <Ico t={10} d={D_CLE} c="#c46318" />Mandant aussi
                                 </span>
                               );
                               const sit = situationDe(client);
                               if (sit === 'vendeur' || sit === 'proprietaire') return (
                                 <span className={`${styles.proprio} ${sit === 'vendeur' ? styles.proprioVend : ''}`}
-                                  title={sit === 'vendeur' ? 'Propriétaire, il revendra sans doute son bien après l\u2019achat : mandat mandant possible' : 'Propriétaire de son local actuel'}>
+                                  title={sit === 'vendeur' ? 'Propriétaire, il libérera sans doute son local actuel : un mandat possible' : 'Propriétaire de son local actuel'}>
                                   <Ico t={10} d={D_CLE} c={sit === 'vendeur' ? '#25272b' : '#c46318'} />
                                   {sit === 'vendeur' ? 'Revente possible' : 'Propriétaire'}
                                 </span>
@@ -2084,16 +2084,16 @@ export default function Clients({ onNavigate, fenetre }: {
                             if (!p) return (
                               <span style={PA_NOMBRE}>
                                 <Ico d={D_CHAMBRE} />
-                                <span style={PA_FORT}>{ch}</span> {ch > 1 ? 'chambres' : 'chambre'}
+                                <span style={PA_FORT}>{ch}</span> {ch > 1 ? 'bureaux fermés' : 'bureau fermé'}
                                 <span style={PA_FAIBLE}>min</span>
                               </span>
                             );
                             return (
                               <span style={PA_NOMBRE}>
                                 <Ico d={D_PIECES} />
-                                <span style={PA_FORT}>{p.valeur}</span> pièces
+                                <span style={PA_FORT}>{p.valeur}</span> espaces
                                 {p.note && (!ch || p.note !== 'min') && <span style={PA_FAIBLE}>{p.note}</span>}
-                                {ch > 0 && <>{' · '}<span style={PA_FORT}>{ch}</span>{' ch.'}</>}
+                                {ch > 0 && <>{' · '}<span style={PA_FORT}>{ch}</span>{' bur.'}</>}
                               </span>
                             );
                           })()}
@@ -2362,7 +2362,7 @@ export default function Clients({ onNavigate, fenetre }: {
             : lot.quoi === 'supprimer' ? `Supprimer ${lot.cibles.length > 1 ? `${lot.cibles.length} contacts` : lot.cibles.length ? '1 contact' : 'ces contacts'} ?`
               : lot.quoi === 'archiver' ? `Archiver ${lot.cibles.length > 1 ? `${lot.cibles.length} contacts` : '1 contact'} ?`
                 : `Sortir ${lot.cibles.length > 1 ? `${lot.cibles.length} contacts` : '1 contact'} des archives ?`}
-          phrase={!lot.verifie ? 'Je regarde ce qui est relié à chacun (biens, documents, ventes).'
+          phrase={!lot.verifie ? 'Je regarde ce qui est relié à chacun (affaires, documents, transactions).'
             : lot.quoi === 'supprimer' ? 'C’est définitif : leur fiche, leur historique, leurs relances, leurs recherches et leurs biens proposés partent avec eux. Pour les garder sans les voir, archive-les plutôt.'
               : lot.quoi === 'archiver' ? 'Ils quittent la liste et se rangent dans « Archivés », où tu les retrouves quand tu veux. Leurs relances en attente se ferment.'
                 : 'Ils reviennent dans la liste des contacts.'}

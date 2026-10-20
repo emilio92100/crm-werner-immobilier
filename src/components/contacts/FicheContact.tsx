@@ -163,10 +163,10 @@ function ActiviteHero({ proprio, biens, archives = 0, vente, journal, relances, 
   };
   /* V3.50 : les biens archivés ne comptent pas (comme « Ses biens » et la
      liste des contacts) ; on dit seulement qu'il y en a. */
-  const sousBiens = !liste.length ? (archives ? `${archives} archivé${archives > 1 ? 's' : ''}` : 'pas encore de bien')
+  const sousBiens = !liste.length ? (archives ? `${archives} archivée${archives > 1 ? 's' : ''}` : 'pas encore d’affaire')
     : liste.length === 1 ? etapeDe(liste[0].etape).lib
-    : enVente === liste.length ? 'tous en vente'
-    : enVente ? `dont ${enVente} en vente` : 'aucun en vente pour l’instant';
+    : enVente === liste.length ? 'toutes en cours'
+    : enVente ? `dont ${enVente} en cours` : 'aucune en cours pour l’instant';
   const nbVisites = vente.faites + vente.prevues;
   const titreVisites = vente.faites ? pl(vente.faites, 'visite faite', 'visites faites') : vente.prevues ? pl(vente.prevues, 'visite prévue', 'visites prévues') : 'Aucune visite';
   const jourProchaine = vente.prochaineVisite ? jourCourt(vente.prochaineVisite) : '';
@@ -182,7 +182,7 @@ function ActiviteHero({ proprio, biens, archives = 0, vente, journal, relances, 
     <div className={c.activite}>
       {proprio ? (
         <Tuiles label="Son activité" grandit>
-          <Tuile ic="maison" titre={liste.length ? pl(liste.length, 'bien', 'biens') : 'Aucun bien'} sous={sousBiens} vide={!liste.length}
+          <Tuile ic="maison" titre={liste.length ? pl(liste.length, 'affaire', 'affaires') : 'Aucune affaire'} sous={sousBiens} vide={!liste.length}
             onClic={liste.length === 1 ? () => onBien(liste[0].id) : versListe} />
           <Tuile ic="cle" titre={titreVisites} sous={sousVisites} vide={!nbVisites} onClic={() => ouvrirSur('v')} />
           <Tuile ic="euro" titre={vente.offres ? pl(vente.offres, 'offre', 'offres') : 'Aucune offre'} sous={sousOffres} vide={!vente.offres} onClic={() => ouvrirSur('o')} />
@@ -371,7 +371,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
     const { error } = await supabase.from('recherches').insert({ client_id: x.id, nom: 'Recherche principale', token_espace: jetonEspace(x.prenom, x.nom), active: true, secteurs: [] });
     if (error) { setErreur('La recherche n’a pas pu être créée : ' + error.message); setOccupe(false); return; }
     const r = await ecrire({ types: ['acheteur', ...types.filter(t => t !== 'acheteur')], statut: 'prospect' }, 'Le type n’a pas pu être changé');
-    await addJournal(x.id, 'creation', 'Recherche ouverte', 'Il cherche aussi à acheter');
+    await addJournal(x.id, 'creation', 'Recherche ouverte', 'Il cherche aussi un local');
     setOccupe(false);
     if (r) onNavigate('fiche', r);
   }
@@ -404,15 +404,15 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
     }
     if (nb.biens || nb.docs) {
       setOccupe(false);
-      const relie = [nb.biens ? `${nb.biens} bien${nb.biens > 1 ? 's' : ''}` : '', nb.docs ? `${nb.docs} document${nb.docs > 1 ? 's' : ''}` : ''].filter(Boolean).join(' et ');
-      const pourquoi = `${x.prenom || 'Ce contact'} est relié à ${relie} : le supprimer les laisserait sans propriétaire. Archive-le plutôt.`;
+      const relie = [nb.biens ? `${nb.biens} affaire${nb.biens > 1 ? 's' : ''}` : '', nb.docs ? `${nb.docs} document${nb.docs > 1 ? 's' : ''}` : ''].filter(Boolean).join(' et ');
+      const pourquoi = `${x.prenom || 'Ce contact'} est relié à ${relie} : le supprimer les laisserait sans mandant. Archive-le plutôt.`;
       if (archive) { alert(`${pourquoi}\n\nIl est déjà archivé : il n’apparaît plus dans la liste.`); return; }
       if (confirm(`${pourquoi}\n\nL’archiver maintenant ?`)) await archiverOuNon(true);
       return;
     }
     if (nb.recherches) {
       setOccupe(false);
-      alert(`${x.prenom || 'Ce contact'} a encore ${nb.recherches > 1 ? `${nb.recherches} recherches` : 'une recherche'} d’achat. Pour tout effacer proprement, redonne-lui le type « Demandeur » et supprime-le depuis sa fiche d’demandeur. Ou archive-le.`);
+      alert(`${x.prenom || 'Ce contact'} a encore ${nb.recherches > 1 ? `${nb.recherches} recherches` : 'une recherche'}. Pour tout effacer proprement, redonne-lui le type « Demandeur » et supprime-le depuis sa fiche de demandeur. Ou archive-le.`);
       return;
     }
     if (!confirm(`Supprimer ${nomFoyer(x)} de tes contacts ?\n\nC’est définitif : son historique et ses relances partent avec lui. Pour le garder sans le voir, archive-le plutôt.`)) { setOccupe(false); return; }
@@ -622,7 +622,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
                     {!estPro(types) || aUnBien(types) ? (
                       <div className={c.aussi}>
                         <span className={c.blocIc} style={{ width: 36, height: 36 }}><Ic n="cible" t={17} /></span>
-                        <div><b>Il cherche aussi à acheter ?</b>Ouvre-lui une recherche : il passe sur la fiche d’demandeur, avec son espace et la veille.</div>
+                        <div><b>Il cherche aussi un local ?</b>Ouvre-lui une recherche : il passe sur la fiche de demandeur, avec son espace et la veille.</div>
                         <button type="button" className={`${c.btn} ${c.btnOr}`} disabled={occupe} onClick={ouvrirRecherche}>Ouvrir une recherche</button>
                       </div>
                     ) : null}
@@ -679,7 +679,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
               <div className={c.groupe}>
                 <div className={c.groupeT}>Ce contact est…</div>
                 <ChoixTypes v={edit.types} onChange={t => setEdit({ ...edit, types: t })} />
-                {edit.types.includes('acheteur') && <div className={c.typesNote}>Demandeur : en enregistrant, sa fiche d’demandeur s’ouvre. Pense à lui ouvrir une recherche (« Il cherche aussi à acheter »).</div>}
+                {edit.types.includes('acheteur') && <div className={c.typesNote}>Demandeur : en enregistrant, sa fiche de demandeur s’ouvre. Pense à lui ouvrir une recherche (« Il cherche aussi un local »).</div>}
               </div>
               {/* V3.174 (Alexandre) : un notaire se présente par son étude — « Son
                   étude » d'abord, puis qui le joindre ; et pas de « D'où vient ce
@@ -690,7 +690,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
                 <div className={c.pills}>
                   {['Monsieur', 'Madame'].map(v => <button key={v} type="button" className={`${c.pill} ${edit.civilite === v ? c.pillOn : ''}`} onClick={() => setEdit({ ...edit, civilite: edit.civilite === v ? '' : v })}>{v}</button>)}
                   {/* Un vendeur ou un propriétaire peut être un couple. */}
-                  {!estPro(edit.types) && <button type="button" className={`${c.pill} ${edit.couple ? c.pillOn : ''}`} onClick={() => setEdit({ ...edit, couple: !edit.couple })}>{edit.couple ? '✓ Un couple' : '+ Un couple'}</button>}
+                  {!estPro(edit.types) && <button type="button" className={`${c.pill} ${edit.couple ? c.pillOn : ''}`} onClick={() => setEdit({ ...edit, couple: !edit.couple })}>{edit.couple ? '✓ Une 2e personne' : '+ Une 2e personne'}</button>}
                 </div>
                 <div className={c.g2}>
                   <label className={c.ch}><span>Prénom</span><input className={c.in} value={edit.prenom} onChange={e => setEdit({ ...edit, prenom: e.target.value })} /></label>

@@ -55,7 +55,7 @@ const GROUPES_P: { id: string; titre: string; note?: string }[] = [
   { id: 'offre_faite', titre: 'Offre faite' },
   { id: 'visite', titre: 'Visite effectuée' },
   { id: 'refuse', titre: 'Pas pour lui', note: 'Lis la raison : c’est elle qui affine la recherche suivante.' },
-  { id: 'indispo', titre: 'Plus disponible', note: 'Vendus, en signature ou retirés : il le voit aussi dans son espace, avec ton mot.' },
+  { id: 'indispo', titre: 'Plus disponible', note: 'Déjà pris, en signature ou retirés : il le voit aussi dans son espace, avec ton mot.' },
 ];
 /* V3.164 : « Plus disponible » l'emporte sur son retour (il ne demande plus rien). */
 const groupeP = (b: { badge_retour?: string | null; indispo?: unknown }) =>
@@ -698,7 +698,7 @@ export default function OngletBiens({ clientId, rechercheId, client, mode, onCha
       <>
         {/* V3.164 : un bien trouvé ailleurs (un bien de l'agence suit sa fiche). */}
         {!b.bien_vente_id && !indispo && (
-          <LienPied onClick={() => setIndispoDe(b)} titre="Vendu, en signature ou retiré, d’après l’agence ou le mandant">Plus disponible</LienPied>
+          <LienPied onClick={() => setIndispoDe(b)} titre="Déjà pris, en signature ou retiré, d’après l’agence ou le mandant">Plus disponible</LienPied>
         )}
         <LienPied onClick={() => renvoyerEnSelection(b.id)}>Remettre en sélection</LienPied>
         <LienRetirer onClick={() => retirer(b)} />

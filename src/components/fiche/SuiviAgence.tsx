@@ -218,7 +218,7 @@ export default function SuiviAgence({ b, lignes, absent, visite, clientId, reche
           {vendu && onIndispo && (
             <div className={s.alerte}>
               <Icone nom="cadenas" taille={15} epaisseur={2.1} />
-              <span>{'D’après ton dernier appel, il est vendu.'}</span>
+              <span>{'D’après ton dernier appel, il est déjà pris.'}</span>
               <button type="button" className={s.btn} onClick={onIndispo}>Le classer « Plus disponible »</button>
             </div>
           )}
@@ -856,7 +856,7 @@ function FenetreAppel({ b, lignes, ligne, clientId, rechercheId, prenom, clientP
           {horsSuivi ? (
             <div className={s.clientHors}>
               <Icone nom="oeil" taille={14} epaisseur={2.1} />
-              <span>{b.bien_vente_id ? `Un bien de l’agence : l’espace de ${prenom} suit déjà sa fiche. Cet appel reste interne.` : `${prenom} voit déjà ce bien « Plus disponible » : cet appel reste interne.`}</span>
+              <span>{b.bien_vente_id ? `Une affaire de l’agence : l’espace de ${prenom} suit déjà sa fiche. Cet appel reste interne.` : `${prenom} voit déjà ce bien « Plus disponible » : cet appel reste interne.`}</span>
             </div>
           ) : vendu ? (
             <section className={s.client} data-ton="vendu">
@@ -864,14 +864,14 @@ function FenetreAppel({ b, lignes, ligne, clientId, rechercheId, prenom, clientP
                 <input type="checkbox" checked={direVendu} onChange={e => setDireVendu(e.target.checked)} />
                 <span className={s.clientCocheTx}>
                   <b>{`Le dire à ${prenom} : « Plus disponible »`}</b>
-                  <small>{`Le bien passe dans « Plus disponibles » de son espace, avec « Ce bien a été vendu. »`}</small>
+                  <small>{`Le bien passe dans « Plus disponibles » de son espace, avec « Ce local a trouvé preneur. »`}</small>
                 </span>
               </label>
               {direVendu && (
                 <div className={s.clientMot}>
                   <label htmlFor="appel-mot-vendu">{'Ton mot pour '}{prenom}<i>{' (facultatif)'}</i></label>
                   <textarea id="appel-mot-vendu" className={s.zoneClient} rows={2} value={motVendu} onChange={e => setMotVendu(e.target.value)} maxLength={600}
-                    placeholder="Vendu à un autre demandeur. Je continue de chercher dans le même secteur." />
+                    placeholder="Pris par un autre demandeur. Je continue de chercher dans le même secteur." />
                 </div>
               )}
               {!direVendu && <div className={s.aide}>{`Rien ne change chez ${prenom}. Tu pourras le classer plus tard depuis ton suivi (« Le classer Plus disponible »).`}</div>}

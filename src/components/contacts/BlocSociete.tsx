@@ -40,7 +40,7 @@ export function structureDepuisNotes(notes: string, soi: { prenom?: string | nul
   if (siege) s.siege = siege[1].trim().replace(/,$/, '');
   const qual = t.match(/dont (?:elle|il) est (?:l[ae] )?(associée?|gérante?|présidente?)/i);
   if (qual) s.qualite = capitale(qual[1].toLowerCase());
-  if (/interlocut/i.test(t)) s.qualite = [s.qualite, 'interlocut' + (/interlocutrice/i.test(t) ? 'rice' : 'eur') + ' pour la vente'].filter(Boolean).join(', ');
+  if (/interlocut/i.test(t)) s.qualite = [s.qualite, 'interlocut' + (/interlocutrice/i.test(t) ? 'rice' : 'eur') + ' pour l’affaire'].filter(Boolean).join(', ');
   s.qualite = capitale(s.qualite);
   /* Les associés : les lignes de liste qui portent un téléphone ou un e-mail. */
   for (const brut of t.split('\n')) {
@@ -126,7 +126,7 @@ export default function BlocSociete({ client, notes, onEnregistrer, onFiche, ouv
         </div>
         <label className={c.ch}>
           <span>{`Son rôle, à ${client.prenom || 'lui'}`}</span>
-          <input className={c.in} value={edit.qualite} list="roles-societe" placeholder="Associée, interlocutrice pour la vente" onChange={e => setEdit({ ...edit, qualite: e.target.value })} />
+          <input className={c.in} value={edit.qualite} list="roles-societe" placeholder="Associée, interlocutrice pour l’affaire" onChange={e => setEdit({ ...edit, qualite: e.target.value })} />
           <datalist id="roles-societe">{ROLES_SOCIETE.map(r => <option key={r} value={r} />)}</datalist>
         </label>
         <div className={c.socAssT}>{`Les associés${edit.associes.length ? ` · ${edit.associes.length}` : ''}`}</div>

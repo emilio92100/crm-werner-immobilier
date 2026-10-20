@@ -982,7 +982,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
                   {CATS_BIENS.some(c => nbCrm[c.k]) && <div className={s.section}>
                     <div className={s.sectionTete}><span>Affaires</span>
                       <button type="button" onClick={() => toutSection(CATS_BIENS, !CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]))}>
-                        {CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucun' : 'Tous'}
+                        {CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucune' : 'Toutes'}
                       </button>
                     </div>
                     <div className={s.puces}>{puces(CATS_BIENS)}</div>
@@ -1112,7 +1112,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
                 <div className={s.pliTel} key={pliTel}>
                   <div className={s.sectionTete}>
                     <span>{pliTel === 'contacts' ? 'Quels contacts voir' : 'Quelles affaires voir'}</span>
-                    <button type="button" onClick={() => toutSection(cats, !tous)}>{tous ? 'Aucun' : 'Tous'}</button>
+                    <button type="button" onClick={() => toutSection(cats, !tous)}>{pliTel === 'biens' ? (tous ? 'Aucune' : 'Toutes') : tous ? 'Aucun' : 'Tous'}</button>
                   </div>
                   <div className={s.puces}>{puces(cats)}</div>
                   {pliTel === 'biens' && CATS_NATURES.some(c => nbCrm[c.k]) && <>

@@ -86,7 +86,7 @@ function Photo({ t, grande }: { t: Trouve; grande?: boolean }) {
 
 function Source({ t }: { t: Trouve }) {
   return t.source === 'mandat'
-    ? <span className={`${s.src} ${s.srcMandat}`}><Icone nom="etiquette" taille={12} epaisseur={2.2} />Ton mandat</span>
+    ? <span className={`${s.src} ${s.srcMandat}`}><Icone nom="etiquette" taille={12} epaisseur={2.2} />Ton affaire</span>
     : <span className={`${s.src} ${s.srcVeille}`} title={t.pour ? `Trouvé par la veille de ${t.pour}` : undefined}>
       <Icone nom="loupe" taille={12} epaisseur={2.2} />{`Veille${t.pour ? ` · ${t.pour.split(' ')[0]}` : ''}${t.le ? ` · ${jourCourt(t.le)}` : ''}`}
     </span>;
@@ -329,7 +329,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                   : (res.trouves.length ? `${res.trouves.length} bien${res.trouves.length > 1 ? 's' : ''} pour ${prenom}` : `Rien pour ${prenom} cette fois`)}</h2>
                 <p>{[
                   nouveautes && dernierLe ? `depuis le ${jourLong(dernierLe)}` : '',
-                  source !== 'veilles' ? `${nbM} de tes mandats` : '',
+                  source !== 'veilles' ? `${nbM} de tes affaires` : '',
                   source !== 'mandats' ? `${nbV} bien${nbV > 1 ? 's' : ''} de tes veilles` : '',
                   anciens.length ? `${anciens.length} déjà ${pl(anciens.length, 'vu, replié', 'vus, repliés')}` : '',
                   res.dejaLa ? `${res.dejaLa} déjà dans son dossier, mis de côté` : '',
@@ -352,9 +352,9 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
               <span className={s.sur}>Où chercher ?</span>
               <div className={s.choix3}>
                 {([
-                  { k: 'mandats', ic: 'etiquette', t: 'Mes mandats en cours', d: 'Les biens que vous vendez.', n: comptes ? `${comptes.mandats} bien${comptes.mandats > 1 ? 's' : ''}` : '…' },
+                  { k: 'mandats', ic: 'etiquette', t: 'Mes affaires en cours', d: 'Les affaires que vous proposez.', n: comptes ? `${comptes.mandats} affaire${comptes.mandats > 1 ? 's' : ''}` : '…' },
                   { k: 'veilles', ic: 'loupe', t: 'Les biens de mes veilles', d: 'Ceux trouvés pour vos autres clients.', n: nbVeilles == null ? '…' : `${nbVeilles} bien${nbVeilles > 1 ? 's' : ''}` },
-                  { k: 'deux', ic: 'etoile', t: 'Les deux', d: 'Vos mandats d’abord, puis les veilles.', n: aComparer == null ? '…' : `${aComparer} bien${aComparer > 1 ? 's' : ''} à comparer` },
+                  { k: 'deux', ic: 'etoile', t: 'Les deux', d: 'Vos affaires d’abord, puis les veilles.', n: aComparer == null ? '…' : `${aComparer} bien${aComparer > 1 ? 's' : ''} à comparer` },
                 ] as const).map(c => (
                   <button key={c.k} type="button" className={`${s.choix} ${source === c.k ? s.choixOn : ''}`} aria-pressed={source === c.k} onClick={() => setSource(c.k)}>
                     {source === c.k && <span className={s.choixCoche}><Icone nom="coche" taille={13} epaisseur={3} /></span>}
@@ -369,7 +369,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                 <div className={s.periode}>
                   <div>
                     <b>Biens de veille trouvés depuis</b>
-                    <p>Plus c’est ancien, plus l’annonce risque d’être vendue : vérifiez son lien avant de l’envoyer.</p>
+                    <p>Plus c’est ancien, plus le local risque d’être déjà pris : vérifiez l’annonce avant de l’envoyer.</p>
                   </div>
                   <div className={s.seg} role="group" aria-label="Période" data-defile="">
                     <Curseur cle={periode} />
@@ -397,8 +397,8 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
               { t: 'Le premier tri', etat: phase === 'tri' ? 'en' : 'fait',
                 d: phase === 'tri'
                   ? (aComparer != null ? `Je compare ${aComparer} bien${aComparer > 1 ? 's' : ''} avec les critères de ${prenom}…` : `Je compare tes biens avec les critères de ${prenom}…`)
-                  : `${iaEtat.trouves} bien${iaEtat.trouves > 1 ? 's' : ''} à 50 % et plus, dont ${iaEtat.mandats} de tes biens en vente.` },
-              { t: 'La relecture de tes biens en vente', etat: phase === 'tri' ? 'attente' : phase === 'relit' && iaEtat.total ? 'en' : 'fait', fait: iaEtat.fait, total: iaEtat.total,
+                  : `${iaEtat.trouves} bien${iaEtat.trouves > 1 ? 's' : ''} à 50 % et plus, dont ${iaEtat.mandats} de tes affaires en cours.` },
+              { t: 'La relecture de tes affaires en cours', etat: phase === 'tri' ? 'attente' : phase === 'relit' && iaEtat.total ? 'en' : 'fait', fait: iaEtat.fait, total: iaEtat.total,
                 d: phase === 'tri' ? `Ses indispensables, son parcours, ses comptes rendus de visite, face à chaque fiche.`
                   : !iaEtat.total ? 'Rien à relire : les annonces des veilles ont déjà été lues par la veille.'
                     : phase === 'relit' ? `${Math.min(iaEtat.fait, iaEtat.total)} sur ${iaEtat.total} relu${iaEtat.total > 1 ? 's' : ''}…` : `${iaEtat.total} relu${iaEtat.total > 1 ? 's' : ''}.` },
@@ -412,7 +412,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
             {nouveaux.length > 0 && (
               <div className={s.filtres} data-defile="">
                 <button type="button" className={filtre === 'tout' ? s.puceOn : s.puce} onClick={() => setFiltre('tout')}>Tous <b>{nouveaux.length}</b></button>
-                {source !== 'veilles' && <button type="button" className={filtre === 'mandat' ? s.puceOn : s.puce} onClick={() => setFiltre('mandat')}><Icone nom="etiquette" taille={13} epaisseur={2.2} />Mes mandats <b>{nbM}</b></button>}
+                {source !== 'veilles' && <button type="button" className={filtre === 'mandat' ? s.puceOn : s.puce} onClick={() => setFiltre('mandat')}><Icone nom="etiquette" taille={13} epaisseur={2.2} />Mes affaires <b>{nbM}</b></button>}
                 {source !== 'mandats' && <button type="button" className={filtre === 'veille' ? s.puceOn : s.puce} onClick={() => setFiltre('veille')}><Icone nom="loupe" taille={13} epaisseur={2.2} />Veilles <b>{nbV}</b></button>}
                 {ouiPossibles.length > 0 && (
                   <button type="button" className={s.cocherOui} onClick={() => setChoisis(c => { const n = new Set(c); for (const k of ouiPossibles) { if (tousOui) n.delete(k); else n.add(k); } return n; })}>
@@ -424,10 +424,10 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
             )}
             <div className={s.liste}>
               {iaEtat.manquent > 0 && (
-                <p className={s.alerte}><Icone nom="info" taille={15} epaisseur={2} /><span>{`${iaEtat.manquent} de tes biens n’${iaEtat.manquent > 1 ? 'ont' : 'a'} pas pu être relu${iaEtat.manquent > 1 ? 's' : ''}${iaEtat.erreur ? ` (${iaEtat.erreur})` : ''} : « Refaire » le relira.`}</span></p>
+                <p className={s.alerte}><Icone nom="info" taille={15} epaisseur={2} /><span>{`${iaEtat.manquent} de tes affaires n’${iaEtat.manquent > 1 ? 'ont' : 'a'} pas pu être relue${iaEtat.manquent > 1 ? 's' : ''}${iaEtat.erreur ? ` (${iaEtat.erreur})` : ''} : « Refaire » le relira.`}</span></p>
               )}
               {iaEtat.info && <p className={s.alerte}><Icone nom="info" taille={15} epaisseur={2} /><span>{iaEtat.info}</span></p>}
-              {pasPour > 0 && <p className={s.info}><Icone nom="info" taille={16} epaisseur={2} /><span>{`${pasPour > 1 ? `${pasPour} de tes biens ne remontent pas` : '1 de tes biens ne remonte pas'} : tu as écarté ${prenom} depuis ${pasPour > 1 ? 'leur fiche' : 'sa fiche'} (« Pas pour lui »).`}</span></p>}
+              {pasPour > 0 && <p className={s.info}><Icone nom="info" taille={16} epaisseur={2} /><span>{`${pasPour > 1 ? `${pasPour} de tes affaires ne remontent pas` : '1 de tes affaires ne remonte pas'} : tu as écarté ${prenom} depuis ${pasPour > 1 ? 'leur fiche' : 'sa fiche'} (« Pas pour lui »).`}</span></p>}
               {nouveaux.length === 0 && anciens.length > 0 ? (
                 <div className={s.vide}>
                   <span className={s.videIc}><Icone nom="loupe" taille={26} epaisseur={2} /></span>
@@ -443,7 +443,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                 </div>
               ) : (
                 <>
-                  {relus.length > 0 && <span className={s.sur}>{`Tes biens en vente · relus pour ${prenom}`}</span>}
+                  {relus.length > 0 && <span className={s.sur}>{`Tes affaires en cours · relues pour ${prenom}`}</span>}
                   {(['oui', 'a_voir', 'non'] as const).map(v => {
                     const l = relus.filter(y => groupeDe(y.a) === v);
                     if (!l.length) return null;
@@ -453,7 +453,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                         <IconeAvis v={v} t={22} />
                         <b>{MOT_IA[v]}</b>
                         <strong>{l.length}</strong>
-                        <span>{v === 'oui' ? `Ils peuvent plaire à ${prenom}.` : v === 'a_voir' ? 'Un point à vérifier avec lui.' : 'Le rapprochement les écarte.'}</span>
+                        <span>{v === 'oui' ? `Elles peuvent plaire à ${prenom}.` : v === 'a_voir' ? 'Un point à vérifier avec lui.' : 'Le rapprochement les écarte.'}</span>
                       </>
                     );
                     return (
@@ -548,8 +548,8 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
               )}
               <div className={s.faits}>
                 {apercu.surface ? <span>{`${apercu.surface} m²`}</span> : null}
-                {apercu.pieces ? <span>{`${apercu.pieces} pièce${apercu.pieces > 1 ? 's' : ''}`}</span> : null}
-                {apercu.chambres ? <span>{`${apercu.chambres} chambre${apercu.chambres > 1 ? 's' : ''}`}</span> : null}
+                {apercu.pieces ? <span>{`${apercu.pieces} espace${apercu.pieces > 1 ? 's' : ''}`}</span> : null}
+                {apercu.chambres ? <span>{`${apercu.chambres} bureau${apercu.chambres > 1 ? 'x fermés' : ' fermé'}`}</span> : null}
               </div>
               <span className={s.sur}>{`Face à ses critères`}</span>
               <div className={s.crit}>
@@ -562,12 +562,12 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                   </div>
                 ))}
               </div>
-              {ancien(apercu) && <p className={s.vieuxA}>{`Trouvé le ${jourCourt(apercu.le)} : l’annonce est peut-être déjà vendue. Ouvrez-la avant de l’envoyer.`}</p>}
+              {ancien(apercu) && <p className={s.vieuxA}>{`Trouvé le ${jourCourt(apercu.le)} : le local est peut-être déjà pris. Ouvrez l’annonce avant de l’envoyer.`}</p>}
             </div>
             <div className={s.apercuPied}>
               {apercu.url && <a className={s.btn} href={apercu.url} target="_blank" rel="noopener noreferrer"><Icone nom="lien" taille={15} epaisseur={2.1} />Voir l’annonce</a>}
               {apercu.source === 'mandat' && apercu.vente && onFicheBien && (
-                <button type="button" className={s.btn} onClick={() => versFiche(apercu.vente!.id)}><Icone nom="maison" taille={15} epaisseur={2.1} />Fiche du bien</button>
+                <button type="button" className={s.btn} onClick={() => versFiche(apercu.vente!.id)}><Icone nom="maison" taille={15} epaisseur={2.1} />Fiche de l’affaire</button>
               )}
               <span style={{ flexGrow: 1 }} />
               <button type="button" className={`${s.btn} ${choisis.has(apercu.cle) ? '' : s.btnOr}`} onClick={() => basculer(apercu.cle)}>
@@ -616,12 +616,12 @@ export function GuideRapprochement({ client, recherche, illu, dernier, onLancer 
         {illu}
         <div className={s.guideTx}>
           <h2>{`Quels biens de ta base pourraient plaire à ${prenom} ?`}</h2>
-          <p>{'On compare sa recherche avec '}<b>{'les biens que tu vends'}</b>{' et avec '}<b>{'les annonces que tes veilles ont trouvées pour tes autres clients'}</b>{'. Puis le rapprochement relit en détail tes biens en vente face à tout son dossier : pour chacun, un avis, une note de potentiel sur 100, ses plus et ses moins.'}</p>
+          <p>{'On compare sa recherche avec '}<b>{'tes affaires en cours'}</b>{' et avec '}<b>{'les annonces que tes veilles ont trouvées pour tes autres clients'}</b>{'. Puis le rapprochement relit en détail tes affaires face à tout son dossier : pour chacun, un avis, une note de potentiel sur 100, ses plus et ses moins.'}</p>
         </div>
       </div>
       <ol className={s.temps}>
-        <li><i>1</i><span><b>{'Coche où chercher'}</b>{' : tes mandats, tes veilles, ou les deux'}</span></li>
-        <li><i>2</i><span><b>{'Lance le rapprochement'}</b>{' : il trie, puis relit tes biens en vente'}</span></li>
+        <li><i>1</i><span><b>{'Coche où chercher'}</b>{' : tes affaires, tes veilles, ou les deux'}</span></li>
+        <li><i>2</i><span><b>{'Lance le rapprochement'}</b>{' : il trie, puis relit tes affaires'}</span></li>
         <li><i>3</i><span><b>{'Coche ceux qui lui iraient'}</b>{' : dans sa sélection, ou par mail'}</span></li>
       </ol>
 
@@ -632,8 +632,8 @@ export function GuideRapprochement({ client, recherche, illu, dernier, onLancer 
             <input type="checkbox" checked={mandats} onChange={e => setMandats(e.target.checked)} />
             <span className={s.sourceIc}><Icone nom="maison" taille={18} epaisseur={2} /></span>
             <span className={s.sourceTx}>
-              <span className={s.sourceL1}><b>{'Mes biens en vente'}</b><strong>{comptes ? comptes.mandats : '…'}</strong></span>
-              <small>{'Tes mandats à l’étape « En vente ». Ni les estimations, ni les biens déjà sous offre ou en signature.'}</small>
+              <span className={s.sourceL1}><b>{'Mes affaires en cours'}</b><strong>{comptes ? comptes.mandats : '…'}</strong></span>
+              <small>{'Tes affaires à l’étape « Disponible ». Ni les estimations, ni les affaires déjà sous offre ou en signature.'}</small>
             </span>
           </label>
           <label className={`${s.source} ${veilles ? s.sourceOn : ''}`}>

@@ -307,8 +307,8 @@ export default function AnnoncesClient({ clientId, rechercheId, prenom, recherch
         const vues = photosF.length ? photosF : photos;
         const prixF = f ? Number(f.prix_acquereur || f.prix_vendeur) || null : null;
         const puces = f ? [
-          f.surface ? `${f.surface} m²` : null, f.nb_pieces ? `${f.nb_pieces} p.` : null,
-          f.nb_chambres ? `${f.nb_chambres} ch.` : null,
+          f.surface ? `${f.surface} m²` : null, f.nb_pieces ? `${f.nb_pieces} espaces` : null,
+          f.nb_chambres ? `${f.nb_chambres} bureaux` : null,
           f.etage != null && f.etage !== '' ? (Number(f.etage) === 0 ? 'RDC' : Number(f.etage) === 1 ? '1er étage' : `${f.etage}e étage`) : null,
           f.dpe ? `DPE ${f.dpe}` : null,
         ].filter((x): x is string => !!x) : [];
@@ -370,7 +370,7 @@ export default function AnnoncesClient({ clientId, rechercheId, prenom, recherch
                   <input className={s.champ} autoFocus value={mot} onChange={e => setMot(e.target.value)} maxLength={400}
                     onKeyDown={e => { if (e.key === 'Enter') void ecarter(a); if (e.key === 'Escape') { setEcart(null); setMot(''); } }}
                     aria-label="Ton mot pour lui"
-                    placeholder={`Ton mot pour ${nom}, qu’il lira dans son espace (facultatif) : déjà vendu, trop de travaux…`} />
+                    placeholder={`Ton mot pour ${nom}, qu’il lira dans son espace (facultatif) : déjà loué, trop de travaux…`} />
                   <button type="button" className={s.bouton} onClick={() => { setEcart(null); setMot(''); }}>Annuler</button>
                   <button type="button" className={s.bouton} data-ton="navy" onClick={() => { void ecarter(a); }} disabled={!!enCours}>Écarter</button>
                 </>

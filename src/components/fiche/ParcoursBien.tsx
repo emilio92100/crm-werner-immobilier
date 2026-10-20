@@ -599,12 +599,12 @@ export function Specs({ p, recherche }: { p: any; recherche?: any }) {
     <Tuile key={k('s')} icone="surface" val={`${p.surface} m²`} lib="Surface" ton="or"
       etat={e.surface} note={e.surface === 'sous' ? ecartPct(p.surface, recherche?.surface_min) : undefined} />
   );
-  if (p.nb_pieces) t.push(<Tuile key={k('p')} icone="pieces" val={p.nb_pieces} lib={p.nb_pieces > 1 ? 'Pièces' : 'Pièce'} />);
+  if (p.nb_pieces) t.push(<Tuile key={k('p')} icone="pieces" val={p.nb_pieces} lib={p.nb_pieces > 1 ? 'Espaces' : 'Espace'} />);
   if (p.nb_chambres) t.push(
-    <Tuile key={k('c')} icone="lit" val={p.nb_chambres} lib={p.nb_chambres > 1 ? 'Chambres' : 'Chambre'} etat={e.chambres} />
+    <Tuile key={k('c')} icone="mallette" val={p.nb_chambres} lib={p.nb_chambres > 1 ? 'Bureaux fermés' : 'Bureau fermé'} etat={e.chambres} />
   );
   if (p.surface_sejour) t.push(
-    <Tuile key={k('j')} icone="sofa" val={`${p.surface_sejour} m²`} lib="Séjour" etat={e.sejour} />
+    <Tuile key={k('j')} icone="surface" val={`${p.surface_sejour} m²`} lib="Surface de vente" etat={e.sejour} />
   );
   if (p.etage != null) t.push(
     <Tuile key={k('e')} icone="immeuble"
@@ -613,7 +613,7 @@ export function Specs({ p, recherche }: { p: any; recherche?: any }) {
   );
   if (p.surface_exterieur) t.push(
     <Tuile key={k('x')} icone="soleil" ton="or" val={`${p.surface_exterieur} m²`}
-      lib={p.terrasse ? 'Terrasse' : p.jardin ? 'Jardin' : 'Balcon'} etat={e.exterieur} />
+      lib={p.terrasse ? 'Terrasse' : p.jardin ? 'Cour' : 'Extérieur'} etat={e.exterieur} />
   );
   if (p.annee_construction) t.push(
     <Tuile key={k('a')} icone="calendrier" val={p.annee_construction} lib="Immeuble" etat={e.annee} />
@@ -691,8 +691,8 @@ export function LigneBien({ p, recherche }: { p: any; recherche?: any }) {
   if (p.cave) items.push({ texte: 'Cave', icone: 'cave', voulu: demande(recherche, 'cave') });
   if (p.parking) items.push({ texte: p.nb_parking > 1 ? `${p.nb_parking} parkings` : 'Parking', icone: 'parking', voulu: demande(recherche, 'parking') });
   if (p.terrasse && !p.surface_exterieur) items.push({ texte: 'Terrasse', icone: 'soleil', voulu: demande(recherche, 'terrasse') || demande(recherche, 'exterieur') });
-  if (p.balcon && !p.surface_exterieur) items.push({ texte: 'Balcon', icone: 'soleil', voulu: demande(recherche, 'balcon') || demande(recherche, 'exterieur') });
-  if (p.jardin && !p.surface_exterieur) items.push({ texte: 'Jardin', icone: 'arbre', voulu: demande(recherche, 'jardin') || demande(recherche, 'exterieur') });
+  if (p.balcon && !p.surface_exterieur) items.push({ texte: 'Extérieur', icone: 'soleil', voulu: demande(recherche, 'balcon') || demande(recherche, 'exterieur') });
+  if (p.jardin && !p.surface_exterieur) items.push({ texte: 'Cour', icone: 'arbre', voulu: demande(recherche, 'jardin') || demande(recherche, 'exterieur') });
   if (p.gardien) items.push({ texte: 'Gardien', icone: 'cle', voulu: demande(recherche, 'gardien') });
 
   if (!items.length) return null;
@@ -778,8 +778,8 @@ export function BasculeAffichage({ compact, onChange }: { compact: boolean; onCh
 export function resumeSpecs(b: any): string {
   const p: string[] = [];
   if (b?.surface) p.push(`${b.surface} m²`);
-  if (b?.nb_chambres) p.push(`${b.nb_chambres} ch.`);
-  else if (b?.nb_pieces) p.push(`${b.nb_pieces} p.`);
+  if (b?.nb_chambres) p.push(`${b.nb_chambres} bureaux`);
+  else if (b?.nb_pieces) p.push(`${b.nb_pieces} espaces`);
   if (b?.etage !== null && b?.etage !== undefined) p.push(Number(b.etage) === 0 ? 'RDC' : `${b.etage}ᵉ`);
   if (b?.surface_exterieur) p.push(`${b.surface_exterieur} m² ext.`);
   if (b?.annee_construction) p.push(String(b.annee_construction));
@@ -932,13 +932,13 @@ export function libelleHonoraires(b: any, presente = true): string | null {
   const p = prixDuBien(b);
   if (p.agence) {
     const h = Math.max(0, (Number(b?.prix_acquereur) || 0) - (Number(b?.prix_vendeur) || 0));
-    return h > 0 && Number(b?.prix_vendeur) ? `dont ${h.toLocaleString('fr-FR')} € d'honoraires de l’agence` : null;
+    return h > 0 && Number(b?.prix_vendeur) ? `dont ${h.toLocaleString('fr-FR')} € d'honoraires HT de l’agence` : null;
   }
   if (p.hono > 0) {
     const taux = b.commission_type === 'pourcentage' && Number(b.commission_val) > 0
       ? pctFr(Number(b.commission_val))
       : `forfait, ${pctFr(p.demande ? (p.hono / p.demande) * 100 : 0)}`;
-    return `+ ${p.hono.toLocaleString('fr-FR')} € d'honoraires · ${taux} · ${b.est_particulier ? 'particulier' : 'sans inter'}`;
+    return `+ ${p.hono.toLocaleString('fr-FR')} € d'honoraires HT · ${taux} · ${b.est_particulier ? 'particulier' : 'sans inter'}`;
   }
   if (!presente) return null;
   const g = gainInter(p.demande, partageDe(b));
@@ -1027,7 +1027,7 @@ export function phraseHono(bien: any, e: EtatHono, mandat: HonoMandat | null): s
     const g = gainInter(c.base, { agenceType: e.agenceType, agenceVal: nbSaisi(e.agenceVal) || null, part: nbSaisi(e.part) || null });
     return `Avec inter : rien ne s’ajoute au prix${g ? ` (ta part ≈ ${g.gain.toLocaleString('fr-FR')} €)` : ''}`;
   }
-  return `${e.cas === 'particulier' ? 'Particulier' : 'Sans inter'} : + ${c.hono.toLocaleString('fr-FR')} € d'honoraires, soit ${c.total.toLocaleString('fr-FR')} € frais d’agence compris`;
+  return `${e.cas === 'particulier' ? 'Particulier' : 'Sans inter'} : + ${c.hono.toLocaleString('fr-FR')} € d'honoraires HT, soit ${c.total.toLocaleString('fr-FR')} € honoraires compris`;
 }
 
 /* ── Le choix, tel qu'il s'affiche dans les fenêtres ── */
@@ -1109,7 +1109,7 @@ export function ChoixHonoraires({ bien, mandat, e, onChange, prenom }: {
           </div>
           <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 9, lineHeight: 1.5 }}>
             {g
-              ? `Tu toucheras environ ${g.gain.toLocaleString('fr-FR')} €, sur ${g.agence.toLocaleString('fr-FR')} € d’honoraires de l’agence. ${lui} ne le voit jamais.`
+              ? `Tu toucheras environ ${g.gain.toLocaleString('fr-FR')} € HT, sur ${g.agence.toLocaleString('fr-FR')} € d’honoraires HT de l’agence. ${lui} ne le voit jamais.`
               : `Tu peux laisser vide et le remplir quand tu le sauras. ${lui} ne le voit jamais.`}
           </div>
         </div>
@@ -1119,7 +1119,7 @@ export function ChoixHonoraires({ bien, mandat, e, onChange, prenom }: {
             onAppliquer={() => { if (mandat) onChange({ type: mandat.type, valeur: String(mandat.val) }); }} />
           <div style={{ display: 'flex', gap: 11, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', background: '#f3f2f2', borderRadius: 11, padding: 3, width: 180, flexShrink: 0 }}>
-              {bascule(e.type === 'pourcentage', () => onChange({ type: 'pourcentage', valeur: defautPour('pourcentage') }), '% du prix')}
+              {bascule(e.type === 'pourcentage', () => onChange({ type: 'pourcentage', valeur: defautPour('pourcentage') }), '% du montant')}
               {bascule(e.type === 'fixe', () => onChange({ type: 'fixe', valeur: defautPour('fixe') }), 'Montant fixe')}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 140px' }}>
@@ -1157,8 +1157,8 @@ export function ApercuPrixClient({ bien, e, mandat, prenom }: { bien: any; e: Et
       </div>
       <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4, textAlign: 'right' }}>
         {c.hono > 0 && c.base > 0
-          ? `+ ${c.hono.toLocaleString('fr-FR')} € de nos honoraires, soit ${c.total.toLocaleString('fr-FR')} € frais d’agence compris`
-          : 'le prix de l’annonce, rien ne s’ajoute'}
+          ? `+ ${c.hono.toLocaleString('fr-FR')} € HT de nos honoraires, soit ${c.total.toLocaleString('fr-FR')} € honoraires compris`
+          : 'le montant de l’annonce, rien ne s’ajoute'}
       </div>
     </div>
   );
@@ -1170,11 +1170,11 @@ export function messagePrevenir(bien: any, client: any, e: EtatHono, mandat: Hon
   const c = calculHono(bien, e, mandat);
   const nom = bien?.titre || [bien?.type_bien, bien?.ville].filter(Boolean).join(' à ') || 'ce bien';
   const pourquoi = e.cas === 'particulier'
-    ? 'il est vendu directement par son propriétaire'
-    : 'l’agence qui le vend ne partage pas ses honoraires avec nous';
+    ? 'il est proposé directement par son propriétaire'
+    : 'l’agence qui le propose ne partage pas ses honoraires avec nous';
   return {
     sujet: `Une précision sur « ${nom} »`,
-    texte: `Bonjour ${client?.prenom || ''},\n\nUne précision sur « ${nom} » : ${pourquoi}. Nos honoraires s’ajoutent donc au prix : ${c.hono.toLocaleString('fr-FR')} €, soit ${c.total.toLocaleString('fr-FR')} € frais d’agence compris (hors frais de notaire).\n\nC’est indiqué sur le bien, dans votre espace. N’hésitez pas si vous avez une question.`.replace('Bonjour ,', 'Bonjour,'),
+    texte: `Bonjour ${client?.prenom || ''},\n\nUne précision sur « ${nom} » : ${pourquoi}. Nos honoraires s’ajoutent donc : ${c.hono.toLocaleString('fr-FR')} € HT, soit ${c.total.toLocaleString('fr-FR')} € honoraires compris (hors frais d’acte).\n\nC’est indiqué sur le bien, dans votre espace. N’hésitez pas si vous avez une question.`.replace('Bonjour ,', 'Bonjour,'),
   };
 }
 
@@ -1184,7 +1184,7 @@ export function prixWhatsapp(prix: number, hono: number): string {
   if (!(prix > 0)) return '';
   const f = (n: number) => n.toLocaleString('fr-FR');
   return hono > 0
-    ? `Prix : ${f(prix)} € (+ ${f(hono)} € de nos honoraires, soit ${f(prix + hono)} € frais d’agence compris)`
+    ? `Prix : ${f(prix)} € (+ ${f(hono)} € HT de nos honoraires, soit ${f(prix + hono)} € honoraires compris)`
     : `Prix : ${f(prix)} €`;
 }
 
@@ -1262,8 +1262,8 @@ export function ModaleHonoraires({ bien, clientId, client, mandat = null, onFerm
         <>
           <div style={{ padding: '18px 24px', background: '#fdfcfc' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13.5, color: '#64748b', marginBottom: 14 }}>
-              <span>{'Prix de l’annonce'}</span>
-              <span style={{ fontWeight: 700, color: NAVY, fontSize: 15 }}>{c.base > 0 ? `${c.base.toLocaleString('fr-FR')} €` : 'pas de prix'}</span>
+              <span>{'Montant de l’annonce'}</span>
+              <span style={{ fontWeight: 700, color: NAVY, fontSize: 15 }}>{c.base > 0 ? `${c.base.toLocaleString('fr-FR')} €` : 'pas de montant'}</span>
             </div>
             <ChoixHonoraires bien={bien} mandat={mandat} e={e} onChange={change} prenom={prenom} />
             <ApercuPrixClient bien={bien} e={e} mandat={mandat} prenom={prenom} />
@@ -1774,7 +1774,7 @@ export function AvisLien({ p }: { p: any }) {
         <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, flex: '1 1 220px' }}>
           <span style={{ fontSize: 14, fontWeight: 800, color: '#92400e', letterSpacing: -.1 }}>{`Annonce retirée le ${jour(e.le)}`}</span>
           <span style={{ fontSize: 12.5, color: '#92400e', lineHeight: 1.5, opacity: .9 }}>
-            {`L’annonce de ${ou} n’est plus en ligne, et le bien n’a été retrouvé chez aucune autre agence : vendu, sous offre ou retiré par le mandant. À confirmer avec l’agence.`}
+            {`L’annonce de ${ou} n’est plus en ligne, et le bien n’a été retrouvé chez aucune autre agence : déjà pris, sous offre ou retiré par le mandant. À confirmer avec l’agence.`}
           </span>
         </span>
         {a.tel && (
@@ -1792,7 +1792,7 @@ export function AvisLien({ p }: { p: any }) {
   const memeAgence = derniere.agence.toLowerCase() === e.actuel.agence.toLowerCase();
   const phrase = memeAgence
     ? `${e.actuel.agence} a remis l’annonce en ligne sous un nouveau lien. L’ancien ne mène plus nulle part.`
-    : `L’annonce de ${derniere.agence} a été retirée. Le bien est toujours en vente chez ${e.actuel.agence}.`;
+    : `L’annonce de ${derniere.agence} a été retirée. Le bien est toujours sur le marché chez ${e.actuel.agence}.`;
   const etapes = e.anciennes.slice(-3);
 
   return (
@@ -2293,7 +2293,7 @@ const TRANCHES = [
 const trancheDe = (score: number) => TRANCHES.find(t => score >= t.min) || TRANCHES[TRANCHES.length - 1];
 
 const NOMS_EXIGENCES: Record<string, string> = {
-  ascenseur: 'Ascenseur', balcon: 'Balcon', terrasse: 'Terrasse', jardin: 'Jardin', parking: 'Parking',
+  ascenseur: 'Ascenseur', balcon: 'Extérieur', terrasse: 'Terrasse', jardin: 'Cour', parking: 'Parking',
   cave: 'Cave', gardien: 'Gardien', exterieur: 'Extérieur',
 };
 
@@ -2515,7 +2515,7 @@ const AVIS = [
 const SUGGESTIONS: Record<string, string[]> = {
   interesse: ['La terrasse lui plaît', 'Bon rapport surface/prix', 'Le quartier lui convient'],
   souhaite_visiter: ['Veut visiter rapidement', 'Disponible en fin de semaine'],
-  refuse: ['Trop sombre', 'Séjour trop petit', 'Trop de travaux', 'Rue trop passante', "Pas d'extérieur", 'Hors budget'],
+  refuse: ['Trop sombre', 'Trop petit', 'Trop de travaux', 'Emplacement moyen', "Pas d'extérieur", 'Hors budget'],
 };
 
 export function ModaleObservation({ bien, clientId, onFerme, onEnregistre }: { bien: any; clientId: string; onFerme: () => void; onEnregistre: () => void; }) {
@@ -2709,8 +2709,8 @@ export function ModaleEnvoi({ bien, clientId, client, onFerme, onEnvoye, onMail,
       client_id: clientId, bien_id: bien.id, recherche_id: bien.recherche_id, type: 'envoi_bien',
       titre: `Envoyé au client · ${canal === 'mail' ? 'mail' : canal === 'whatsapp' ? 'WhatsApp' : 'lien'}`,
       description: agence
-        ? `Prix présenté ${total.toLocaleString('fr-FR')} €${honoraires > 0 ? ` — dont ${honoraires.toLocaleString('fr-FR')} € d'honoraires de l’agence` : ''}`
-        : `Prix présenté ${base.toLocaleString('fr-FR')} € · ${phraseHono(bien, e, mandat)}`,
+        ? `Montant présenté ${total.toLocaleString('fr-FR')} €${honoraires > 0 ? ` — dont ${honoraires.toLocaleString('fr-FR')} € d'honoraires HT de l’agence` : ''}`
+        : `Montant présenté ${base.toLocaleString('fr-FR')} € · ${phraseHono(bien, e, mandat)}`,
       metadata: {},
     }));
     /* Présenté = en attente d'une réponse : la relance se programme ici. */
@@ -2749,7 +2749,7 @@ export function ModaleEnvoi({ bien, clientId, client, onFerme, onEnvoye, onMail,
   const lien = lienBienPublic(bien.id);
 
   async function viaWhatsapp() {
-    const txt = `Bonjour ${client?.prenom || ''}, voici un bien qui correspond à votre recherche :\n\n${bien.titre || ''}\n${bien.surface ? bien.surface + ' m²' : ''}${bien.nb_pieces ? ' · ' + bien.nb_pieces + ' pièces' : ''}\n${prixWhatsapp(prixVu, agence ? 0 : honoraires)}\n\n${lien}`;
+    const txt = `Bonjour ${client?.prenom || ''}, voici un bien qui correspond à votre recherche :\n\n${bien.titre || ''}\n${bien.surface ? bien.surface + ' m²' : ''}${bien.nb_pieces ? ' · ' + bien.nb_pieces + ' espaces' : ''}\n${prixWhatsapp(prixVu, agence ? 0 : honoraires)}\n\n${lien}`;
     if (bloque) return;
     /* WhatsApp s'ouvre dans le geste du clic : sur iPhone, une fenêtre
        ouverte après une attente est bloquée. */
@@ -2798,7 +2798,7 @@ export function ModaleEnvoi({ bien, clientId, client, onFerme, onEnvoye, onMail,
 
       <div style={{ padding: '18px 24px', borderBottom: `1px solid ${BORD}`, background: '#fdfcfc' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13.5, color: '#64748b', marginBottom: 14 }}>
-          <span>Prix de l&apos;annonce</span>
+          <span>Montant de l&apos;annonce</span>
           <span style={{ fontWeight: 700, color: NAVY, fontSize: 15 }}>{(agence ? total : base).toLocaleString('fr-FR')} €</span>
         </div>
 
@@ -2810,8 +2810,8 @@ export function ModaleEnvoi({ bien, clientId, client, onFerme, onEnvoye, onMail,
             </div>
             <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.55, marginBottom: 13, background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 10, padding: '9px 12px' }}>
               {honoraires > 0
-                ? `${honoraires.toLocaleString('fr-FR')} €, déjà compris dans le prix. Ce bien est un mandat de l’agence : rien à ajouter.`
-                : 'Déjà compris dans le prix. Ce bien est un mandat de l’agence : rien à ajouter.'}
+                ? `${honoraires.toLocaleString('fr-FR')} € HT, déjà compris dans le montant. Ce bien est une affaire de l’agence : rien à ajouter.`
+                : 'Déjà compris dans le montant. Ce bien est une affaire de l’agence : rien à ajouter.'}
             </div>
           </>
         ) : (
@@ -2821,7 +2821,7 @@ export function ModaleEnvoi({ bien, clientId, client, onFerme, onEnvoye, onMail,
         {agence ? (
           <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 14, borderTop: `2px solid ${BORD}` }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: NAVY, textTransform: 'uppercase', letterSpacing: .8 }}>Prix présenté</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: NAVY, textTransform: 'uppercase', letterSpacing: .8 }}>Montant présenté</span>
               <span style={{ fontSize: 26, fontWeight: 800, color: OR, letterSpacing: -.6 }}>{total.toLocaleString('fr-FR')} €</span>
             </div>
             <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4, textAlign: 'right' }}>{'tout compris, honoraires de l’agence inclus'}</div>
@@ -2935,8 +2935,8 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
         titre: `Envoyé au client · ${nomCanal} · avec ${n - 1} autre${n > 2 ? 's' : ''}`,
         description: base > 0
           ? agence
-            ? `Prix présenté ${total.toLocaleString('fr-FR')} €${h > 0 ? ` — dont ${h.toLocaleString('fr-FR')} € d'honoraires de l’agence` : ''}`
-            : `Prix présenté ${base.toLocaleString('fr-FR')} € · ${phraseHono(b, l, mandat)}`
+            ? `Montant présenté ${total.toLocaleString('fr-FR')} €${h > 0 ? ` — dont ${h.toLocaleString('fr-FR')} € d'honoraires HT de l’agence` : ''}`
+            : `Montant présenté ${base.toLocaleString('fr-FR')} € · ${phraseHono(b, l, mandat)}`
           : null,
         metadata: {},
       });
@@ -2970,7 +2970,7 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
     if (bloque) return;
     const corps = biens.map((b, i) => {
       const { vu, h, agence } = calc(b);
-      const specs = [b.surface && `${b.surface} m²`, b.nb_pieces && `${b.nb_pieces} pièces`].filter(Boolean).join(' · ');
+      const specs = [b.surface && `${b.surface} m²`, b.nb_pieces && `${b.nb_pieces} espaces`].filter(Boolean).join(' · ');
       const prix = prixWhatsapp(vu, agence ? 0 : h);
       return `${i + 1}. ${b.titre || b.ville || 'Bien'}${specs ? `\n${specs}` : ''}${prix ? `\n${prix}` : ''}\n${lienBienPublic(b.id)}`;
     }).join('\n\n');
@@ -3062,7 +3062,7 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
           onAppliquer={() => { if (mandat) toutAppliquer(mandat.type, String(mandat.val)); }} />
         <div className="emi-hono-tous" style={{ display: 'flex', gap: 11, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', background: '#f3f2f2', borderRadius: 11, padding: 3, width: 180, flexShrink: 0 }}>
-            {bascule(typeG === 'pourcentage', () => toutAppliquer('pourcentage', defautPour('pourcentage')), '% du prix')}
+            {bascule(typeG === 'pourcentage', () => toutAppliquer('pourcentage', defautPour('pourcentage')), '% du montant')}
             {bascule(typeG === 'fixe', () => toutAppliquer('fixe', defautPour('fixe')), 'Montant fixe')}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 150px' }}>
@@ -3095,10 +3095,10 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
                 </span>
                 <span style={{ display: 'block', fontSize: 11.5, color: auDessus ? '#b91c1c' : '#94a3b8', marginTop: 2 }}>
                   {agence
-                    ? 'Mandat de l’agence · honoraires de l’agence compris'
+                    ? 'Affaire de l’agence · honoraires de l’agence compris'
                     : auDessus
                       ? 'Au-dessus de son mandat : baisse le montant'
-                      : base > 0 ? `Annonce ${base.toLocaleString('fr-FR')} €${h > 0 ? ` · + ${h.toLocaleString('fr-FR')} €` : ' · rien ne s’ajoute'}` : 'Prix de l’annonce manquant'}
+                      : base > 0 ? `Annonce ${base.toLocaleString('fr-FR')} €${h > 0 ? ` · + ${h.toLocaleString('fr-FR')} €` : ' · rien ne s’ajoute'}` : 'Montant de l’annonce manquant'}
                   {aPart ? ' · à part' : ''}
                 </span>
               </span>

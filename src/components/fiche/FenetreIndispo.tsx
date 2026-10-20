@@ -17,7 +17,7 @@ export default function FenetreIndispo({ bien, clientId, rechercheId, prenom, on
   const [motif, setMotif] = useState<MotifIndispo>('vendu');
   const [note, setNote] = useState('');
   const [envoi, setEnvoi] = useState(false);
-  const qui = (prenom || '').trim() || 'l’demandeur';
+  const qui = (prenom || '').trim() || 'le demandeur';
   useEffect(() => {
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape' && !envoi) onFermer(); };
     window.addEventListener('keydown', esc);
@@ -54,9 +54,9 @@ export default function FenetreIndispo({ bien, clientId, rechercheId, prenom, on
           </div>
           <label className={f.lib} htmlFor="indispo-note">{`Un mot pour ${qui}`}<small>{' · il le lira dans son espace, sur le bien'}</small></label>
           <textarea id="indispo-note" className={f.note} rows={3} value={note} onChange={e => setNote(e.target.value)} maxLength={600}
-            placeholder="Ex : il a été vendu la semaine dernière. Je continue de chercher dans le même secteur." />
+            placeholder="Ex : il a été loué la semaine dernière. Je continue de chercher dans le même secteur." />
           <div className={f.aide}>
-            {`Il passe dans « Plus disponible », chez toi et dans l’espace de ${qui}. S’il revient à la vente, « Remettre disponible » le replace dans ses biens présentés.`}
+            {`Il passe dans « Plus disponible », chez toi et dans l’espace de ${qui}. S’il revient sur le marché, « Remettre disponible » le replace dans ses biens présentés.`}
           </div>
         </div>
         <div className={f.pied}>

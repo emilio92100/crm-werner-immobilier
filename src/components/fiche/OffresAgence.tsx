@@ -15,7 +15,7 @@ import s from './OffresAgence.module.css';
 /* Les offres de cet acheteur : sur sa recherche ouverte, ou sans recherche. */
 export async function lireOffresAgence(clientId: string, rechercheId: string | null): Promise<SuiviVente[]> {
   const { data, error } = await supabase.from('biens_vente_suivi').select('*').eq('type', 'offre').eq('client_id', clientId).order('le', { ascending: false });
-  if (error) throw new Error(`Ses offres sur les biens de l’agence n’ont pas pu être lues : ${error.message}`);
+  if (error) throw new Error(`Ses offres sur les affaires de l’agence n’ont pas pu être lues : ${error.message}`);
   return ((data || []) as SuiviVente[]).filter(o => !rechercheId || !o.recherche_id || o.recherche_id === rechercheId);
 }
 
@@ -38,8 +38,8 @@ export default function OffresAgence({ offres, biens, onBien }: { offres: SuiviV
   return (
     <div className={s.liste}>
       <div className={s.tete}>
-        <b>{offres.length > 1 ? 'Ses offres sur les biens de l’agence' : 'Son offre sur un bien de l’agence'}</b>
-        <span>Elle se suit sur la fiche du bien : la réponse du mandant, le compromis, l’acte.</span>
+        <b>{offres.length > 1 ? 'Ses offres sur les affaires de l’agence' : 'Son offre sur une affaire de l’agence'}</b>
+        <span>Elle se suit sur la fiche de l’affaire : la réponse du mandant, l’accord, la signature.</span>
       </div>
       {offres.map(o => {
         const copie = biens.find(b => b.bien_vente_id === o.bien_id);
@@ -56,15 +56,15 @@ export default function OffresAgence({ offres, biens, onBien }: { offres: SuiviV
             <div className={s.bien}>
               <span className={s.photo}>{copie?.photos?.[0] ? <img src={copie.photos[0]} alt="" /> : <Ic n="maison" t={20} />}</span>
               <span className={s.bienTx}>
-                <small>Bien de l’agence</small>
-                <b>{copie?.titre || copie?.ville || 'Un bien de l’agence'}</b>
+                <small>Affaire de l’agence</small>
+                <b>{copie?.titre || copie?.ville || 'Une affaire de l’agence'}</b>
                 {copie?.ville && copie?.titre ? <span>{copie.ville}</span> : null}
               </span>
               <span className={s.puce} style={{ color: p.c, background: p.f }}>{p.l}</span>
             </div>
             <div className={s.montant}>
               <b>{euros(actuel)}</b>
-              <span>{st === 'acceptee' ? 'prix convenu' : ech.length > 1 ? 'dernière proposition' : `offre faite le ${jour(o.le)}`}</span>
+              <span>{st === 'acceptee' ? 'montant convenu' : ech.length > 1 ? 'dernière proposition' : `offre faite le ${jour(o.le)}`}</span>
             </div>
             <ol className={s.fil} aria-label="L’historique de l’offre">
               {ech.map((e, i) => (
@@ -79,13 +79,13 @@ export default function OffresAgence({ offres, biens, onBien }: { offres: SuiviV
                 <li data-par={st === 'acceptee' ? 'accord' : 'fin'}>
                   <span className={s.point} aria-hidden="true" />
                   <span className={s.date}>{jour(reponse)}</span>
-                  <span className={s.quoi}>{st === 'acceptee' ? 'Accord du mandant' : st === 'refusee' ? 'Refusée par le mandant' : d.compromisTombe ? 'Compromis tombé' : renonce ? 'Il n’a pas donné suite' : 'Offre retirée'}</span>
+                  <span className={s.quoi}>{st === 'acceptee' ? 'Accord du mandant' : st === 'refusee' ? 'Refusée par le mandant' : d.compromisTombe ? 'Accord tombé' : renonce ? 'Il n’a pas donné suite' : 'Offre retirée'}</span>
                   <b>{st === 'acceptee' ? euros(actuel) : ''}</b>
                 </li>
               )}
             </ol>
             <button type="button" className={s.ouvrir} onClick={() => onBien(o.bien_id)}>
-              Ouvrir la fiche du bien<Ic n="droite" t={14} e={2.4} />
+              Ouvrir la fiche de l’affaire<Ic n="droite" t={14} e={2.4} />
             </button>
           </div>
         );

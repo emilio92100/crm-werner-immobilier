@@ -375,7 +375,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
     if (!n && !registre) { setMsg({ t: 'Colle d’abord le numéro réservé dans ImmoFacile, ou prends le suivant de ta réserve.', ok: false }); return; }
     if (!honoOk) {
       setMsg({ t: mode === 'forfait'
-        ? `Le forfait ne peut pas dépasser ton barème (${ecrireTaux(BAREME)} % du prix maximum).`
+        ? `Le forfait ne peut pas dépasser ton barème (${ecrireTaux(BAREME)} % du montant maximum).`
         : `Le taux doit être compris entre 0 et ${ecrireTaux(BAREME)} % : ton barème est un maximum.`, ok: false }); return;
     }
     /* Les colonnes du taux et du forfait viennent d'un SQL à lancer une
@@ -699,7 +699,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
                   </>
                 ) : (
                   <div>{c.statut === 'signe' ? `✓ A signé le ${c.signe_le ? quand(c.signe_le) : '—'}.`
-                    : c.statut === 'decline' ? '🙅 A indiqué ne pas être concerné par cet achat.'
+                    : c.statut === 'decline' ? '🙅 A indiqué ne pas être concerné par cette recherche.'
                     : c.statut === 'retracte' ? '↩️ A renoncé au mandat.' : '🔒 Invitation close.'}</div>
                 )}
               </div>
@@ -710,7 +710,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
       )}
       {cos.length > 0 && client?.couple && (
         <div style={boite('#eff6ff', '#bfdbfe', '#1e3a8a')}>
-          <b>👥 Fiche en couple</b>
+          <b>👥 Fiche à deux personnes</b>
           <div>{`${sig?.mandant?.prenom || 'Le client'} a indiqué ${cos.map(nomCo).join(' et ')} en signant son mandat${sig?.signe_le ? `, le ${quand(sig.signe_le)}` : ''}.`}</div>
         </div>
       )}
@@ -718,7 +718,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
         <div style={boite('#fff7ed', '#fed7aa', '#7c2d12')}>
           <b>⚠️ Sa recherche dépasse son mandat signé</b>
           {depasse.map(e => <div key={e} style={{ marginTop: 4 }}>{`· ${e}`}</div>)}
-          <div style={{ fontSize: 12.5, color: '#9a3412', marginTop: 6 }}>{'Un achat hors de ces limites sortirait du mandat. Appelle-le : s’il vise vraiment plus haut ou ailleurs, prépare-lui un avenant. Ce qui a changé y est déjà coché.'}</div>
+          <div style={{ fontSize: 12.5, color: '#9a3412', marginTop: 6 }}>{'Une affaire hors de ces limites sortirait du mandat. Appelle-le : s’il vise vraiment plus haut ou ailleurs, prépare-lui un avenant. Ce qui a changé y est déjà coché.'}</div>
           {onAvenant && <button type="button" style={{ ...btnOr, marginTop: 10 }} onClick={onAvenant}>{avenantEnCours ? '📝 Ouvrir l’avenant en cours' : '📝 Préparer l’avenant'}</button>}
         </div>
       )}
@@ -795,7 +795,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
       {ecarts.length > 0 && (
         <div style={{ ...boite('#fff7ed', '#fed7aa', '#7c2d12'), padding: '12px 14px 10px' }}>
           <b>{sig?.statut === 'signe' ? '⚠️ Le mandat signé diffère de ta fiche' : '⚠️ Saisi pour la signature, différent de ta fiche'}</b>
-          <div style={{ fontSize: 12.5, color: '#9a3412', marginTop: 2 }}>{'Le client a modifié ses informations avant de signer. À toi de voir : une faute sur la fiche, un conjoint qui signe, une autre adresse… Si c’est normal, laisse la fiche telle quelle.'}</div>
+          <div style={{ fontSize: 12.5, color: '#9a3412', marginTop: 2 }}>{'Le client a modifié ses informations avant de signer. À toi de voir : une faute sur la fiche, un associé qui signe, une autre adresse… Si c’est normal, laisse la fiche telle quelle.'}</div>
           {ecarts.map(e => (
             <div key={e.cle} style={{ borderTop: '1px solid #fed7aa', marginTop: 9, paddingTop: 8 }}>
               <div style={{ fontSize: 10.5, letterSpacing: 1, textTransform: 'uppercase', fontWeight: 800, color: '#c2410c' }}>{e.libelle}</div>
@@ -858,8 +858,8 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
                 {!tauxOk
                   ? `Entre 0 et ${ecrireTaux(BAREME)} % : ton barème est un maximum.`
                   : pmax && budget
-                    ? `Budget ${euros(budget)} → prix maximum ${euros(pmax)} hors honoraires, soit ${euros(honorairesPour(pmax, tauxN) || 0)} d’honoraires.`
-                    : `${tauxTexte(tauxN)} du prix d’achat.`}
+                    ? `Budget ${euros(budget)} → montant maximum ${euros(pmax)} hors honoraires, soit ${euros(honorairesPour(pmax, tauxN) || 0)} d’honoraires.`
+                    : `${tauxTexte(tauxN)} du montant de l’affaire.`}
               </div>
             </>
           ) : (
@@ -873,11 +873,11 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
               </div>
               <div style={{ fontSize: 12.5, color: forfaitOk || !forfait.trim() ? '#475569' : '#b91c1c', marginTop: 6, lineHeight: 1.5 }}>
                 {!forfaitN
-                  ? `Un montant fixe, en euros HT.${forfaitMax ? ` Au plus ${euros(forfaitMax)} pour ce budget (ton barème, ${ecrireTaux(BAREME)} % du prix maximum).` : ''}`
+                  ? `Un montant fixe, en euros HT.${forfaitMax ? ` Au plus ${euros(forfaitMax)} pour ce budget (ton barème, ${ecrireTaux(BAREME)} % du montant maximum).` : ''}`
                   : !forfaitOk
-                    ? `Au-dessus de ton barème : pour ce budget, le forfait ne peut pas dépasser ${forfaitMax ? euros(forfaitMax) : `${ecrireTaux(BAREME)} % du prix`}.`
+                    ? `Au-dessus de ton barème : pour ce budget, le forfait ne peut pas dépasser ${forfaitMax ? euros(forfaitMax) : `${ecrireTaux(BAREME)} % du montant`}.`
                     : pmaxF
-                      ? `Budget ${euros(budget || 0)} → prix maximum ${euros(pmaxF)} hors honoraires ; ${euros(forfaitN)} = ${pourcentDe(forfaitN, pmaxF)} de ce prix. Le mandat précise que, sous ${euros(seuilForfait(forfaitN))}, il est ramené à ${ecrireTaux(BAREME)} %.`
+                      ? `Budget ${euros(budget || 0)} → montant maximum ${euros(pmaxF)} hors honoraires ; ${euros(forfaitN)} = ${pourcentDe(forfaitN, pmaxF)} de ce montant. Le mandat précise que, sous ${euros(seuilForfait(forfaitN))}, il est ramené à ${ecrireTaux(BAREME)} %.`
                       : `Le mandat précise que, sous ${euros(seuilForfait(forfaitN))}, il est ramené à ${ecrireTaux(BAREME)} %.`}
               </div>
             </>
@@ -962,7 +962,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
             )}
             <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, color: 'var(--emilio)', lineHeight: 1.5, cursor: 'pointer' }}>
               <input type="checkbox" checked={approuve} onChange={e => setApprouve(e.target.checked)} style={{ marginTop: 3 }} />
-              <span>{`J’approuve le mandat de recherche simple type et je signe l’offre au nom d’Werner Immobilier pour ${registre ? 'les mandats signés seuls' : 'ces numéros'}.${approuveLe ? ` (approuvé le ${quand(approuveLe)})` : ''}`}</span>
+              <span>{`J’approuve le mandat de recherche simple type et je signe l’offre au nom de Werner Immobilier pour ${registre ? 'les mandats signés seuls' : 'ces numéros'}.${approuveLe ? ` (approuvé le ${quand(approuveLe)})` : ''}`}</span>
             </label>
             <div><button type="button" style={btnOr} disabled={travail === 'reserve'} onClick={enregistrerReserve}>{travail === 'reserve' ? '…' : registre ? 'Enregistrer' : 'Enregistrer la réserve'}</button></div>
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10, fontSize: 13, color: '#475569', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>

@@ -63,8 +63,8 @@ export function PucesBien({ b, avecNote = true }: { b: any; avecNote?: boolean }
   resumeSpecs(b).split(' · ').filter(Boolean).forEach((t, i) => p.push(<span key={'s' + i} className={s.puce}>{t}</span>));
   const eq: string[] = [];
   if (b?.terrasse && !b?.surface_exterieur) eq.push('Terrasse');
-  if (b?.balcon && !b?.surface_exterieur) eq.push('Balcon');
-  if (b?.jardin && !b?.surface_exterieur) eq.push('Jardin');
+  if (b?.balcon && !b?.surface_exterieur) eq.push('Extérieur');
+  if (b?.jardin && !b?.surface_exterieur) eq.push('Cour');
   if (b?.parking) eq.push(Number(b.nb_parking) > 1 ? `${b.nb_parking} parkings` : 'Parking');
   if (b?.ascenseur) eq.push('Ascenseur');
   if (b?.cave) eq.push('Cave');
@@ -384,7 +384,7 @@ export default function FenetreBien({ biens, index, onIndex, onFermer, recherche
 
             {(agence || tel || b.est_particulier || portail) && (
               <div>
-                <span className={s.rubrique}>Qui le vend</span>
+                <span className={s.rubrique}>Qui le propose</span>
                 <div className={s.vendeur}>
                   <span className={s.vendeurIc}><Icone nom={b.est_particulier ? 'clients' : 'immeuble'} taille={18} /></span>
                   <span className={s.vendeurTxt}>

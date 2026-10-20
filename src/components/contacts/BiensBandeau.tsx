@@ -87,7 +87,7 @@ export function BiensHero({ biens, vente, onBien, onCreerBien }: {
   if (!biens.length) {
     return (
       <div className={c.biensRang} id="biens-hero">
-        <button type="button" className={c.heroBienVide} onClick={onCreerBien}><Ic n="plus" t={14} e={2.4} /><span>Créer son bien : estimation, mandat, tout y est</span></button>
+        <button type="button" className={c.heroBienVide} onClick={onCreerBien}><Ic n="plus" t={14} e={2.4} /><span>Créer son affaire : estimation, mandat, tout y est</span></button>
       </div>
     );
   }
@@ -105,13 +105,13 @@ export function BiensHero({ biens, vente, onBien, onCreerBien }: {
            Côte à côte, elles suivent l'étape et le prix. */
         const seul = biens.length === 1;
         return (
-          <button key={b.id} type="button" className={c.heroBien} onClick={() => onBien(b.id)} title="Ouvrir la fiche du bien">
+          <button key={b.id} type="button" className={c.heroBien} onClick={() => onBien(b.id)} title="Ouvrir la fiche de l’affaire">
             <span className={c.heroBienPh}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {photo ? <img src={photo} alt="" /> : <Ic n="maison" t={16} />}
             </span>
             <span className={c.heroBienTx}>
-              <b>{b.titre || titreBien(d as Parameters<typeof titreBien>[0]) || 'Son bien'}</b>
+              <b>{b.titre || titreBien(d as Parameters<typeof titreBien>[0]) || 'Son affaire'}</b>
               <small><i style={{ background: e.c }} />{`${e.lib}${b.prix ? ` · ${euros(b.prix)}` : ''}${!seul && activite.length ? ` · ${activite.join(' · ')}` : ''}`}</small>
             </span>
             {seul && activite.length > 0 && <span className={c.heroBienAct}>{activite.map(a => <em key={a}>{a}</em>)}</span>}
@@ -121,12 +121,12 @@ export function BiensHero({ biens, vente, onBien, onCreerBien }: {
       })}
       {biens.length > 4 && !tous && (
         <button type="button" className={`${c.heroBien} ${c.heroBienPlus}`} onClick={() => setTous(true)}>
-          <span className={c.heroBienTx}><b>{`+ ${biens.length - 3} autres biens`}</b><small>les voir tous ici</small></span>
+          <span className={c.heroBienTx}><b>{`+ ${biens.length - 3} autres affaires`}</b><small>les voir toutes ici</small></span>
           <Ic n="bas" t={14} e={2.2} />
         </button>
       )}
     </div>
-    <button type="button" className={c.heroBienAjout} onClick={onCreerBien} title="Créer un autre bien pour ce contact"><Ic n="plus" t={14} e={2.4} /><span>Nouveau bien</span></button>
+    <button type="button" className={c.heroBienAjout} onClick={onCreerBien} title="Créer une autre affaire pour ce contact"><Ic n="plus" t={14} e={2.4} /><span>Nouvelle affaire</span></button>
     </div>
   );
 }

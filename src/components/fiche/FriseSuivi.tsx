@@ -284,7 +284,7 @@ function CarteBienEnvoye({ b, onFermer, onOuvrir }: { b: any; onFermer: () => vo
   }, [onFermer, photos.length]);
   const lieu = [b.quartier, [b.code_postal, b.ville].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
   const etage = b.etage === 0 ? 'RDC' : b.etage ? `${b.etage}e étage` : '';
-  const carac = [b.surface ? `${b.surface} m²` : '', b.nb_pieces ? `${b.nb_pieces} pièce${b.nb_pieces > 1 ? 's' : ''}` : '', b.nb_chambres ? `${b.nb_chambres} chambre${b.nb_chambres > 1 ? 's' : ''}` : '', etage].filter(Boolean);
+  const carac = [b.surface ? `${b.surface} m²` : '', b.nb_pieces ? `${b.nb_pieces} espace${b.nb_pieces > 1 ? 's' : ''}` : '', b.nb_chambres ? `${b.nb_chambres} bureau${b.nb_chambres > 1 ? 'x fermés' : ' fermé'}` : '', etage].filter(Boolean);
   const prix = Number(b.prix_acquereur || b.prix_vendeur || 0);
   const jour = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const canal = b.canal_envoi === 'mail' ? ' par mail' : b.canal_envoi === 'whatsapp' ? ' par WhatsApp' : b.canal_envoi === 'lien' ? ' dans son espace' : '';
@@ -306,7 +306,7 @@ function CarteBienEnvoye({ b, onFermer, onOuvrir }: { b: any; onFermer: () => vo
               <span className={s.bvCompte}><IcSuivi n="photo" t={13} e={2} />{`${i + 1} / ${photos.length}`}</span>
             </>
           )}
-          {et && <span className={s.bvEtape} style={{ background: et.c }}>{agence?.archive ? 'Archivé' : et.court}</span>}
+          {et && <span className={s.bvEtape} style={{ background: et.c }}>{agence?.archive ? 'Archivée' : et.court}</span>}
           <button type="button" className={s.bvFermer} aria-label="Fermer" onClick={onFermer}><IcSuivi n="croix" t={16} e={2.4} /></button>
         </div>
         <div className={s.bvCorps}>
@@ -316,14 +316,14 @@ function CarteBienEnvoye({ b, onFermer, onOuvrir }: { b: any; onFermer: () => vo
           </div>
           {carac.length > 0 && <div className={s.bvCarac}>{carac.map(x => <span key={x}>{x}</span>)}</div>}
           <div className={s.bvPrix}>
-            {prix ? <b>{euros(prix)}</b> : <b className={s.bvSansPrix}>Prix à venir</b>}
-            <small>{prix ? (b.bien_vente_id ? 'le prix qu’il a reçu, honoraires compris' : 'le prix de l’annonce') : 'envoyé avant le mandat, sans prix'}</small>
+            {prix ? <b>{euros(prix)}</b> : <b className={s.bvSansPrix}>Montant à venir</b>}
+            <small>{prix ? (b.bien_vente_id ? 'le montant qu’il a reçu, honoraires compris' : 'le montant de l’annonce') : 'envoyé avant le mandat, sans montant'}</small>
           </div>
           <div className={s.bvInfos}>
             {chezLui && <div><IcSuivi n="mail" t={14} /><span>{chezLui}</span></div>}
             {b.vu_le && <div><IcSuivi n="loupe" t={14} /><span>{`Fiche ouverte le ${jour(b.vu_le)}`}</span></div>}
             {b.bien_vente_id
-              ? <div><IcSuivi n="maison" t={14} /><span>{et ? `Bien de l’agence · aujourd’hui « ${agence?.archive ? 'Archivé' : et.court} »${fin ? ' : sa fiche reste consultable' : ''}` : 'Bien de l’agence'}</span></div>
+              ? <div><IcSuivi n="maison" t={14} /><span>{et ? `Affaire de l’agence · aujourd’hui « ${agence?.archive ? 'Archivée' : et.court} »${fin ? ' : sa fiche reste consultable' : ''}` : 'Affaire de l’agence'}</span></div>
               : (b.source_portail || b.agence_nom) && <div><IcSuivi n="maison" t={14} /><span>{['Annonce', b.source_portail, b.agence_nom && b.agence_nom !== b.source_portail ? b.agence_nom : ''].filter(Boolean).join(' · ')}</span></div>}
           </div>
           {b.retour_client && <p className={s.bvRetour}><span>Sa réponse</span>{b.retour_client}</p>}
@@ -331,7 +331,7 @@ function CarteBienEnvoye({ b, onFermer, onOuvrir }: { b: any; onFermer: () => vo
         <div className={s.bvPied}>
           {!b.bien_vente_id && b.url && <a className={s.bvLien} href={String(b.url)} target="_blank" rel="noopener noreferrer">Voir l’annonce</a>}
           <button type="button" className={s.bvBtn} onClick={onFermer}>Fermer</button>
-          {onOuvrir && <button type="button" className={`${s.bvBtn} ${s.bvBtnPrim}`} onClick={() => onOuvrir(b)}>{b.bien_vente_id ? 'Ouvrir la fiche du bien' : 'Voir le bien en détail'}<IcSuivi n="fleche" t={15} e={2.3} /></button>}
+          {onOuvrir && <button type="button" className={`${s.bvBtn} ${s.bvBtnPrim}`} onClick={() => onOuvrir(b)}>{b.bien_vente_id ? 'Ouvrir la fiche de l’affaire' : 'Voir le bien en détail'}<IcSuivi n="fleche" t={15} e={2.3} /></button>}
         </div>
       </div>
     </div>
@@ -510,7 +510,7 @@ function BienPresente({ j, bien, lus, vues, onOuvrir }: {
   const lien = lignes.find((x: string) => /^https?:\/\//.test(x)) || '';
   /* « Maison 7 pièces — Clamart · 1 090 000 € » : le prix à part. */
   const m = /^(.*?) · ([0-9][0-9\s\u00a0\u202f.,]*\s?€)$/.exec(tete);
-  const titre = (m ? m[1] : tete) || bien?.titre || 'Le bien';
+  const titre = (m ? m[1] : tete) || bien?.titre || 'L’affaire';
   const prix = m ? m[2] : '';
   const id = String(j.metadata.bien_vente_id);
   const code = typeof j.metadata?.lien_code === 'string' ? j.metadata.lien_code : '';
@@ -525,7 +525,7 @@ function BienPresente({ j, bien, lus, vues, onOuvrir }: {
         : <span className={s.bpIc}><IcSuivi n="maison" t={20} /></span>}
       <span className={s.bpTxt}>
         <b>{titre}</b>
-        {(prix || absent) && <span>{absent ? `${prix ? `${prix} · ` : ''}plus dans les biens` : prix}</span>}
+        {(prix || absent) && <span>{absent ? `${prix ? `${prix} · ` : ''}plus dans les affaires` : prix}</span>}
       </span>
       {onOuvrir && !absent && <IcSuivi n="droite" t={15} e={2.4} />}
     </>
@@ -533,7 +533,7 @@ function BienPresente({ j, bien, lus, vues, onOuvrir }: {
   return (
     <div className={s.bp}>
       {onOuvrir && !absent
-        ? <button type="button" className={s.bpBien} onClick={() => onOuvrir(id)} title="Ouvrir la fiche du bien">{contenu}</button>
+        ? <button type="button" className={s.bpBien} onClick={() => onOuvrir(id)} title="Ouvrir la fiche de l’affaire">{contenu}</button>
         : <div className={s.bpBien}>{contenu}</div>}
       <div className={s.bpPied}>
         {a && <span className={s.bpA}>{`À ${a}`}</span>}

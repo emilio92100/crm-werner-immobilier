@@ -103,10 +103,10 @@ const CHAMPS_SUIVIS: { cle: string; nom: string; fmt?: (v: unknown) => string }[
   { cle: 'budget_max', nom: 'Budget maxi', fmt: (v) => `${Number(v).toLocaleString('fr-FR')} €` },
   { cle: 'surface_min', nom: 'Surface mini', fmt: (v) => `${v} m²` },
   { cle: 'surface_max', nom: 'Surface maxi', fmt: (v) => `${v} m²` },
-  { cle: 'nb_pieces_min', nom: 'Pièces mini' },
-  { cle: 'nb_pieces_max', nom: 'Pièces maxi' },
-  { cle: 'chambres_min', nom: 'Chambres mini' },
-  { cle: 'surface_sejour_min', nom: 'Séjour mini', fmt: (v) => `${v} m²` },
+  { cle: 'nb_pieces_min', nom: 'Espaces mini' },
+  { cle: 'nb_pieces_max', nom: 'Espaces maxi' },
+  { cle: 'chambres_min', nom: 'Bureaux fermés mini' },
+  { cle: 'surface_sejour_min', nom: 'Surface de vente mini', fmt: (v) => `${v} m²` },
   { cle: 'etage_min', nom: 'Étage mini' },
   { cle: 'etage_max', nom: 'Étage maxi' },
   { cle: 'dpe_max', nom: 'DPE maxi' },
@@ -211,8 +211,8 @@ function DiffCriteres({ changements }: { changements: ChangementCrit[] }) {
    n'est pas la même histoire — et c'est cette histoire qu'on veut relire dans
    six mois. */
 const MOTIFS_CLOTURE: { cle: string; nom: string; quoi: string; statut: string; point: string }[] = [
-  { cle: 'trouve_avec_moi', nom: 'Trouvé avec moi', quoi: 'Le bien a été acquis grâce à la chasse', statut: 'bien_trouve', point: '#10b981' },
-  { cle: 'trouve_ailleurs', nom: 'Trouvé ailleurs', quoi: 'Le client a acheté sans passer par nous', statut: 'perdu', point: '#f59e0b' },
+  { cle: 'trouve_avec_moi', nom: 'Trouvé avec moi', quoi: 'Le local a été trouvé grâce à nous', statut: 'bien_trouve', point: '#10b981' },
+  { cle: 'trouve_ailleurs', nom: 'Trouvé ailleurs', quoi: 'Le client a trouvé sans passer par nous', statut: 'perdu', point: '#f59e0b' },
   { cle: 'renonce', nom: 'A renoncé', quoi: 'Projet abandonné, reporté, ou plus de nouvelles', statut: 'perdu', point: '#94a3b8' },
   { cle: 'autre', nom: 'Autre raison', quoi: 'À préciser dans la note ci-dessous', statut: 'perdu', point: '#64748b' },
 ];
@@ -223,7 +223,7 @@ const ETATS_CLIENT: { cle: string; nom: string; quand: string; point: string }[]
   { cle: 'prospect',    nom: 'Prospect',    quand: 'Premier contact, rien de signé', point: '#8b5cf6' },
   { cle: 'actif',       nom: 'Actif',       quand: 'Recherche en cours',             point: '#10b981' },
   { cle: 'suspendu',    nom: 'Suspendu',    quand: 'En pause, à reprendre plus tard', point: '#f59e0b' },
-  { cle: 'bien_trouve', nom: 'Bien trouvé', quand: 'Acquisition faite, dossier clos', point: '#3b82f6' },
+  { cle: 'bien_trouve', nom: 'Local trouvé', quand: 'Bail ou acte signé, dossier clos', point: '#3b82f6' },
   { cle: 'perdu',       nom: 'Perdu',       quand: 'Le client ne cherche plus avec nous', point: '#ef4444' },
 ];
 
@@ -355,9 +355,9 @@ const ORDRE_ETAPES = ['offre','negociation','offre_acceptee','compromis','acte']
 const ETAPES_TX: { cle: string; nom: string; quoi: string; icone: string }[] = [
   { cle: 'offre',          nom: 'Offre',          icone: '✍️', quoi: "L'offre est écrite et transmise au mandant" },
   { cle: 'negociation',    nom: 'Négociation',    icone: '⚖️', quoi: 'Les contre-offres vont et viennent' },
-  { cle: 'offre_acceptee', nom: 'Offre acceptée', icone: '🤝', quoi: 'Le prix est arrêté — place au notaire' },
-  { cle: 'compromis',      nom: 'Compromis',      icone: '📋', quoi: 'Signé, les délais courent' },
-  { cle: 'acte',           nom: 'Acte',           icone: '🔑', quoi: "Dernière ligne droite jusqu'aux clés" },
+  { cle: 'offre_acceptee', nom: 'Offre acceptée', icone: '🤝', quoi: 'Le montant est arrêté — place au notaire ou à l’avocat' },
+  { cle: 'compromis',      nom: 'Accord',         icone: '📋', quoi: 'Signé, les délais courent' },
+  { cle: 'acte',           nom: 'Signature',      icone: '🔑', quoi: "Dernière ligne droite jusqu'aux clés" },
 ];
 
 /* Un montant tapé au clavier : vide ou illisible → rien, jamais NaN.
@@ -457,9 +457,9 @@ function CarteMandatAgence({ titre, onOuvrir }: { titre?: string | null; onOuvri
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 12, padding: '12px 14px', marginBottom: 14, textAlign: 'left' }}>
       <span style={{ flex: '1 1 240px', minWidth: 0, fontSize: 13, color: '#55647a', lineHeight: 1.55 }}>
         {titre ? <b style={{ display: 'block', color: 'var(--emilio)', fontSize: 13.5, marginBottom: 2 }}>{titre}</b> : null}
-        {'Ce bien est un mandat de l’agence : l’offre, le compromis et l’acte se suivent sur la fiche du bien.'}
+        {'Ce bien est une affaire de l’agence : l’offre, l’accord et la signature se suivent sur la fiche de l’affaire.'}
       </span>
-      <button type="button" className={styles.btn} style={{ flexShrink: 0 }} onClick={onOuvrir}>Ouvrir la fiche du bien</button>
+      <button type="button" className={styles.btn} style={{ flexShrink: 0 }} onClick={onOuvrir}>Ouvrir la fiche de l’affaire</button>
     </div>
   );
 }
@@ -521,17 +521,17 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div style={{ gridColumn: '1/-1' }}>
           <label className={styles.lbl}>Titre du bien</label>
-          <input className={styles.inp} value={bienForm.titre||''} onChange={e => set('titre', e.target.value)} placeholder="Ex: Appartement 3 pièces traversant sur jardin" />
+          <input className={styles.inp} value={bienForm.titre||''} onChange={e => set('titre', e.target.value)} placeholder="Ex : Boutique 80 m² avec vitrine, rue passante" />
         </div>
         <div>
           <label className={styles.lbl}>Type</label>
-          <select className={styles.inp} value={bienForm.type_bien||'Appartement'} onChange={e => set('type_bien', e.target.value)}>
-            <option>Appartement</option><option>Maison</option><option>Loft</option><option>Studio</option><option>Duplex</option><option>Villa</option><option>Terrain</option><option>Autre</option>
+          <select className={styles.inp} value={bienForm.type_bien||'Bureaux'} onChange={e => set('type_bien', e.target.value)}>
+            <option>Bureaux</option><option>Local commercial</option><option>Restaurant</option><option>Local d’activité</option><option>Entrepôt</option><option>Immeuble</option><option>Terrain</option><option>Parking</option><option>Autre</option>
           </select>
         </div>
         <div>
           <label className={styles.lbl}>Source / Portail</label>
-          <input className={styles.inp} value={bienForm.source_portail||''} onChange={e => set('source_portail', e.target.value)} placeholder="SeLoger, LogicImmo..." />
+          <input className={styles.inp} value={bienForm.source_portail||''} onChange={e => set('source_portail', e.target.value)} placeholder="Geolocaux, BureauxLocaux…" />
         </div>
         <div>
           <label className={styles.lbl}>Ville</label>
@@ -543,13 +543,13 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
         </div>
         <div style={{ gridColumn: '1/-1' }}>
           <label className={styles.lbl}>Quartier <span style={{ fontWeight: 400, color: '#94a3b8' }}>(optionnel)</span></label>
-          <input className={styles.inp} value={bienForm.quartier||''} onChange={e => set('quartier', e.target.value)} placeholder="Parchamp–Albert Kahn..." />
+          <input className={styles.inp} value={bienForm.quartier||''} onChange={e => set('quartier', e.target.value)} placeholder="Sentier, Haut Marais…" />
         </div>
         {/* V3.186 : les transports et l'environnement que l'annonce cite (lus
             avec le lien), pour l'analyse et la fenêtre du bien. */}
         <div style={{ gridColumn: '1/-1' }}>
           <label className={styles.lbl}>Situation <span style={{ fontWeight: 400, color: '#94a3b8' }}>(transports, environnement)</span></label>
-          <input className={styles.inp} value={bienForm.situation||''} onChange={e => set('situation', e.target.value)} placeholder="Métro Marcel Sembat à 4 min à pied, rue calme…" />
+          <input className={styles.inp} value={bienForm.situation||''} onChange={e => set('situation', e.target.value)} placeholder="Métro Sentier à 4 min à pied, rue passante…" />
         </div>
       </div>
 
@@ -561,19 +561,19 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
           <input className={styles.inp} type="number" value={bienForm.surface||''} onChange={e => set('surface', e.target.value)} />
         </div>
         <div>
-          <label className={styles.lbl}>Séjour m²</label>
-          <input className={styles.inp} type="number" value={bienForm.surface_sejour||''} onChange={e => set('surface_sejour', e.target.value)} placeholder="pièce de vie" />
+          <label className={styles.lbl}>Surface de vente m²</label>
+          <input className={styles.inp} type="number" value={bienForm.surface_sejour||''} onChange={e => set('surface_sejour', e.target.value)} placeholder="espace principal" />
         </div>
         <div>
-          <label className={styles.lbl}>Pièces</label>
+          <label className={styles.lbl}>Espaces</label>
           <input className={styles.inp} type="number" value={bienForm.nb_pieces||''} onChange={e => set('nb_pieces', e.target.value)} />
         </div>
         <div>
-          <label className={styles.lbl}>Chambres</label>
+          <label className={styles.lbl}>Bureaux fermés</label>
           <input className={styles.inp} type="number" value={bienForm.nb_chambres||''} onChange={e => set('nb_chambres', e.target.value)} />
         </div>
         <div>
-          <label className={styles.lbl}>Sdb / Sdd</label>
+          <label className={styles.lbl}>Points d’eau</label>
           <input className={styles.inp} type="number" value={bienForm.nb_salles_bain||''} onChange={e => set('nb_salles_bain', e.target.value)} />
         </div>
         <div>
@@ -628,11 +628,11 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
           { key: 'parking', label: '🅿️ Parking' },
           { key: 'ascenseur', label: '🛗 Ascenseur' },
           { key: 'cave', label: '📦 Cave' },
-          { key: 'balcon', label: '🌿 Balcon' },
+          { key: 'balcon', label: '🌿 Extérieur' },
           { key: 'terrasse', label: '🌞 Terrasse' },
-          { key: 'jardin', label: '🌳 Jardin' },
+          { key: 'jardin', label: '🌳 Cour' },
           { key: 'gardien', label: '🛡️ Gardien' },
-          { key: 'cuisine_equipee', label: '🍳 Cuisine équipée' },
+          { key: 'cuisine_equipee', label: '🍳 Cuisine professionnelle' },
           { key: 'climatisation', label: '❄️ Climatisation' },
           { key: 'traversant', label: '↔️ Traversant' },
         ].map(opt => (
@@ -647,7 +647,7 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 6 }}>
           {bienForm.balcon && (
             <div>
-              <label className={styles.lbl}>Surface balcon m² <span style={{ fontWeight: 400, color: '#94a3b8' }}>(optionnel)</span></label>
+              <label className={styles.lbl}>Surface extérieure m² <span style={{ fontWeight: 400, color: '#94a3b8' }}>(optionnel)</span></label>
               <input className={styles.inp} type="number" step="0.1" value={bienForm.surface_balcon||''} onChange={e => set('surface_balcon', e.target.value)} />
             </div>
           )}
@@ -730,7 +730,7 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
           </div>
         </div>
         <div>
-          <label className={styles.lbl}>Prix demandeur (FAI)</label>
+          <label className={styles.lbl}>Prix demandeur (honoraires inclus)</label>
           <div className={styles.inp} style={{ background: '#fef9c3', color: '#854d0e', fontWeight: 700 }}>
             {prixAcq ? `${prixAcq.toLocaleString('fr-FR')}€` : '—'}
           </div>
@@ -747,7 +747,7 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
         </div>
         <div>
           <label className={styles.lbl}>Compris dans les charges</label>
-          <input className={styles.inp} value={bienForm.charges_comprises||''} onChange={e => set('charges_comprises', e.target.value)} placeholder="chauffage et eau chaude collectifs, gardien" />
+          <input className={styles.inp} value={bienForm.charges_comprises||''} onChange={e => set('charges_comprises', e.target.value)} placeholder="chauffage collectif, gardien, ménage" />
         </div>
         <div>
           <label className={styles.lbl}>Taxe foncière annuelle €</label>
@@ -1745,11 +1745,11 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
   async function suppressionPermise(o: { rechercheId?: string } = {}): Promise<boolean> {
     const ht = await honorairesSignes(o);
     if (ht === null) {
-      alert('La vente de ce dossier n’a pas pu être vérifiée : rien n’est supprimé. Recharge la page, puis recommence.');
+      alert('L’affaire signée de ce dossier n’a pas pu être vérifiée : rien n’est supprimé. Recharge la page, puis recommence.');
       return false;
     }
     if (ht > 0) {
-      alert(`Ce dossier a une vente signée (${eurosRonds(ht)} d’honoraires HT) : le supprimer l’effacerait de ton chiffre d’affaires. Archive-le plutôt.`);
+      alert(`Ce dossier a une affaire signée (${eurosRonds(ht)} d’honoraires HT) : le supprimer l’effacerait de ton chiffre d’affaires. Archive-le plutôt.`);
       return false;
     }
     /* V3.50 : supprimer la personne entière, alors qu'elle vend aussi un bien
@@ -1758,11 +1758,11 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     if (!o.rechercheId) {
       const { data, error } = await supabase.from('biens_vente').select('id').eq('client_id', client.id).limit(1);
       if (error) {
-        alert('Ses biens en vente n’ont pas pu être vérifiés : rien n’est supprimé. Recharge la page, puis recommence.');
+        alert('Ses affaires n’ont pas pu être vérifiées : rien n’est supprimé. Recharge la page, puis recommence.');
         return false;
       }
       if (data?.length) {
-        alert('Cette personne est aussi propriétaire d’un bien suivi dans « Biens » : la supprimer laisserait ce bien sans propriétaire. Archive-la plutôt.');
+        alert('Cette personne est aussi mandant d’une affaire suivie dans « Affaires » : la supprimer laisserait cette affaire sans mandant. Archive-la plutôt.');
         return false;
       }
     }
@@ -1898,7 +1898,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     const partants = biens.filter(b => !gardes.has(b.id));
     setReinitStats({
       txOuverte: txs ? txs.ouvertes > 0 : !!transaction,
-      venteGardee: signee ? (bienSigne?.titre || bienSigne?.ville || 'le bien acheté') : null,
+      venteGardee: signee ? (bienSigne?.titre || bienSigne?.ville || 'le local trouvé') : null,
       propositions: props.count || 0,
       passages: (passages.data || []).length,
       lues: (passages.data || []).reduce((t, p: any) => t + (p.nb_lues || 0), 0),
@@ -1972,7 +1972,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
       const titre = `♻️ Suivi réinitialisé — ${rechercheActive?.nom || 'recherche'}`;
       const detail = (reinitStats
         ? `${reinitStats.propositions} proposition(s) de veille, ${ids.length} bien(s), ${reinitStats.visites} visite(s) et ${reinitStats.passages} passage(s) effacés. Critères conservés.`
-        : 'Critères conservés.') + (txs.signees.length ? ' La vente signée est gardée.' : '');
+        : 'Critères conservés.') + (txs.signees.length ? ' L’affaire signée est gardée.' : '');
       const ligne = { client_id: client.id, recherche_id: rid, titre, description: detail, metadata: {} };
       const { error: eJournal } = await supabase.from('journal').insert({ ...ligne, type: 'recherche_reinitialisee' });
       if (eJournal) await verifie('L’historique du client', supabase.from('journal').insert({ ...ligne, type: 'statut_change' }));
@@ -2135,7 +2135,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     const occupation = cf.statut_occupation || (cf.bien_actuel_a_vendre ? 'proprietaire' : '');
     const typesRevente = cf.bien_actuel_a_vendre && 'types' in client && estAcheteur(client) ? typesAvecRevente(typesDe(client)) : null;
     if (((client as any).statut_occupation||'') !== occupation) changes.push(`Situation actuelle modifiée`);
-    if (typesRevente) changes.push('Classé aussi Propriétaire (revente possible après l’achat)');
+    if (typesRevente) changes.push('Classé aussi Propriétaire (revente possible de son local actuel)');
     /* Une personne ou un couple : écrit seulement si la colonne existe (SQL
        « signature-plusieurs » lancé) ou si Alexandre vient de choisir. */
     const jAvant = conjointDe(client.conjoint);
@@ -2146,7 +2146,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     const foyer = 'couple' in client || cf.couple || cf.civilite
       ? { civilite: cf.civilite || null, couple: cf.couple, conjoint }
       : {};
-    if (!!client.couple !== cf.couple) changes.push(cf.couple ? `Fiche passée en couple (avec ${`${cf.c2_prenom} ${cf.c2_nom}`.trim() || 'une 2e personne'})` : 'Fiche repassée à une seule personne');
+    if (!!client.couple !== cf.couple) changes.push(cf.couple ? `Fiche passée à deux personnes (avec ${`${cf.c2_prenom} ${cf.c2_nom}`.trim() || 'une 2e personne'})` : 'Fiche repassée à une seule personne');
     else if (cf.couple && JSON.stringify(jAvant || {}) !== JSON.stringify(conjointDe(conjoint) || {})) changes.push(`Personne 2 mise à jour`);
 
     const { data, error: eContact } = await supabase.from('clients').update({
@@ -2446,25 +2446,25 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
   async function confirmerActe() {
     if (!acte || saving) return;
     const { tx, date, portee, raison, note } = acte;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Indique la date de signature de l’acte.'); return; }
-    if (date > jourParis()) { alert('L’acte n’est pas encore signé à cette date : choisis le jour de la signature.'); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { alert('Indique la date de signature du bail ou de l’acte.'); return; }
+    if (date > jourParis()) { alert('Rien n’est encore signé à cette date : choisis le jour de la signature.'); return; }
     setSaving(true);
     if (txRef.current?.id === tx.id) await flushTx();
-    if (!(await verifie('L’acte signé', supabase.from('transactions')
+    if (!(await verifie('La signature', supabase.from('transactions')
       .update({ etape_actuelle: 'finalise', acte_date_prevue: date }).eq('id', tx.id).select('id'), { ligne: true }))) { setSaving(false); load(); return; }
     const rid = tx.recherche_id || rechercheId || null;
     const r = await clore({ statut: 'bien_trouve', raison, seule: portee === 'recherche' ? rid : null });
     if (!r.ok) { setSaving(false); load(); return; }
     const jour = new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR');
     if (r.clos) {
-      await addJournal(client.id, 'dossier_finalise', '🎉 Acte signé — bien trouvé !',
-        `Acte signé le ${jour}. ${note || 'Le dossier est clos : la veille s’arrête et les relances en attente sont soldées.'}`,
+      await addJournal(client.id, 'dossier_finalise', '🎉 Bail ou acte signé — local trouvé !',
+        `Signé le ${jour}. ${note || 'Le dossier est clos : la veille s’arrête et les relances en attente sont soldées.'}`,
         undefined, { rechercheId: rid });
     } else {
       /* Il cherche encore autre chose : la ligne dit quelle recherche s'arrête. */
       const nomR = recherches.find(x => x.id === rid)?.nom || 'cette recherche';
-      await addJournal(client.id, 'dossier_finalise', `🎉 Acte signé — recherche « ${nomR} » terminée`,
-        `Acte signé le ${jour}. La veille s’arrête sur cette recherche ; ses autres recherches continuent.`,
+      await addJournal(client.id, 'dossier_finalise', `🎉 Bail ou acte signé — recherche « ${nomR} » terminée`,
+        `Signé le ${jour}. La veille s’arrête sur cette recherche ; ses autres recherches continuent.`,
         undefined, { rechercheId: rid });
     }
     await refresh();
@@ -3267,7 +3267,7 @@ ${signatureMail()}`,
             client_id: client.id, bien_id: id, recherche_id: rechercheId || null, type: 'envoi_bien',
             titre: neuf ? 'Envoyé au client · mail' : 'Renvoyé au client · mail',
             description: prix
-              ? `Prix présenté ${prix.toLocaleString('fr-FR')} €${hono > 0 ? ` — dont ${hono.toLocaleString('fr-FR')} € d'honoraires ${deQui}` : ''}`
+              ? `Montant présenté ${prix.toLocaleString('fr-FR')} €${hono > 0 ? ` — dont ${hono.toLocaleString('fr-FR')} € d'honoraires HT ${deQui}` : ''}`
               : null,
             metadata: {},
           }));
@@ -3596,7 +3596,7 @@ ${signatureMail()}`,
     await addJournal(client.id, 'etape_transaction',
       `${e?.icone || '💼'} Transaction → ${e?.nom || prochaine}`, e?.quoi, undefined, { rechercheId });
     if (prochaine === 'compromis') {
-      await veilleTx(false, "Compromis signé : inutile de continuer à proposer des biens. La veille repart d'un clic si le compromis tombe.");
+      await veilleTx(false, 'Accord signé : inutile de continuer à proposer des biens. La veille repart d’un clic si l’accord tombe.');
     }
     setVueEtape(null); setTxData({});
     load();
@@ -3623,7 +3623,7 @@ ${signatureMail()}`,
       const { data } = await supabase.from('clients').select('*').eq('id', client.id).maybeSingle();
       if (data) setClient(data as Client);
     }
-    if (cur === 'compromis') await veilleTx(true, 'Retour avant le compromis — la recherche reprend.');
+    if (cur === 'compromis') await veilleTx(true, 'Retour avant l’accord — la recherche reprend.');
     await addJournal(client.id, 'retour_etape', `↩️ Retour → ${ETAPES_LABELS[prec] || prec}`, undefined, undefined, { rechercheId });
     setShowConfirmEtape(false); setVueEtape(null); setTxData({});
     load();
@@ -3791,7 +3791,7 @@ ${signatureMail()}`,
   /* « Appartement · 4 p. et + · Neuilly, Boulogne · jusqu'à 1 250 000 € » */
   const resumeRecherche = [
     cr.type_bien ? String(cr.type_bien).split(',').map(x => x.trim()).join(', ') : '',
-    cr.nb_pieces_min ? `${cr.nb_pieces_min} p. et +` : '',
+    cr.nb_pieces_min ? `${cr.nb_pieces_min} espaces et +` : '',
     cr.surface_min ? `${cr.surface_min} m² et +` : '',
     cr.secteurs?.length ? grouperVilles(cr.secteurs) : '',
     cr.budget_max ? `jusqu’à ${budgetLisible(cr.budget_max)}` : '',
@@ -3824,7 +3824,7 @@ ${signatureMail()}`,
 
   const ETAPES_LABELS: Record<string, string> = {
     offre: '1 — Offre', negociation: '2 — Négociation',
-    offre_acceptee: '3 — Offre acceptée', compromis: '4 — Compromis', acte: '5 — Acte',
+    offre_acceptee: '3 — Offre acceptée', compromis: '4 — Accord', acte: '5 — Signature',
     finalise: 'Dossier finalisé',
   };
   /* « finalise » n'est pas dans l'ordre des étapes : sans ce cas particulier,
@@ -3890,7 +3890,7 @@ ${signatureMail()}`,
               <>
                 <button type="button" role="menuitem" className={styles.menuPlusL} onClick={() => { setMenuPlus(null); organiserVisite(); }}>
                   <span className={styles.menuPlusIc}><Icone nom="calendrier" taille={16} epaisseur={2} /></span>
-                  <span><b>Organiser une visite</b><small>Ses biens ou tes biens en vente, la date et l’heure</small></span>
+                  <span><b>Organiser une visite</b><small>Ses biens ou tes affaires en cours, la date et l’heure</small></span>
                 </button>
                 <div className={styles.menuPlusSep} />
               </>
@@ -4112,7 +4112,7 @@ ${signatureMail()}`,
                         if (!st && societeOuverte) return null;
                         return st ? (
                           <button type="button" className={styles.teteSoc} onClick={() => setVue('ensemble')}>
-                            <Icone nom="immeuble" taille={13} epaisseur={2} /><span>{'Achète pour '}<b>{st.denomination || 'une société'}</b>{st.qualite ? ` · ${st.qualite}` : ''}</span>
+                            <Icone nom="immeuble" taille={13} epaisseur={2} /><span>{'Cherche pour '}<b>{st.denomination || 'une société'}</b>{st.qualite ? ` · ${st.qualite}` : ''}</span>
                           </button>
                         ) : (
                           <button type="button" className={`${styles.teteSoc} ${styles.teteSocVide}`} onClick={() => { setCleSoc(k => k + 1); setSocieteOuverte(true); setVue('ensemble'); }}>
@@ -4151,9 +4151,9 @@ ${signatureMail()}`,
               {sesBiens && (sesBiens.length > 0 || typesDe(client).some(t => t === 'vendeur' || t === 'proprietaire') || reventePossible(client)) && (
                 <div className={styles.teteBiens}>
                   <span className={styles.teteBiensT}>
-                    <b>{sesBiens.length > 1 ? 'Ses biens' : 'Son bien'}</b>
+                    <b>{sesBiens.length > 1 ? 'Ses affaires' : 'Son affaire'}</b>
                     {sesBiens.length > 1 && <em>{sesBiens.length}</em>}
-                    {sesArchives > 0 && <small>{`+ ${sesArchives} archivé${sesArchives > 1 ? 's' : ''}`}</small>}
+                    {sesArchives > 0 && <small>{`+ ${sesArchives} archivée${sesArchives > 1 ? 's' : ''}`}</small>}
                   </span>
                   <BiensHero biens={sesBiens} vente={venteBiens}
                     onBien={(id, onglet) => { if (onglet) demanderOngletBien(id, onglet); onNavigate('biens', { bien: id }); }}
@@ -4410,9 +4410,9 @@ ${signatureMail()}`,
                   const labelStatut = ({ proprietaire: 'Propriétaire', locataire: 'Locataire', heberge: 'Hébergé', autre: 'Autre' } as any)[occ.statut_occupation] || occ.statut_occupation;
                   const champs: [string, React.ReactNode][] = [];
                   if (occ.statut_occupation) champs.push(['Statut', labelStatut]);
-                  if (aVendre && occ.bien_actuel_type) champs.push(['Bien à revendre', `${occ.bien_actuel_type}${occ.bien_actuel_surface ? ` · ${occ.bien_actuel_surface} m²` : ''}`]);
+                  if (aVendre && occ.bien_actuel_type) champs.push(['Local à revendre', `${occ.bien_actuel_type}${occ.bien_actuel_surface ? ` · ${occ.bien_actuel_surface} m²` : ''}`]);
                   if (aVendre && occ.bien_actuel_valeur) champs.push(['Valeur estimée', <b key="v" style={{ color: '#d36a1a' }}>{`${occ.bien_actuel_valeur.toLocaleString('fr-FR')} €`}</b>]);
-                  if (aVendre) champs.push(['Adresse du bien', occ.bien_actuel_adresse || 'Même adresse que le contact']);
+                  if (aVendre) champs.push(['Adresse du local', occ.bien_actuel_adresse || 'Même adresse que le contact']);
                   return (
                     <div className={styles.carteEns}>
                       <div className={styles.carteEnsT}>
@@ -4420,14 +4420,14 @@ ${signatureMail()}`,
                         <b>Sa situation</b>
                         <button type="button" onClick={() => { setCf(cfDe(client)); setShowContact(true); }}>{vide ? 'Renseigner' : 'Modifier'}</button>
                       </div>
-                      {vide ? <p className={styles.situNotes}>{`Pas encore renseignée : propriétaire ou locataire, et revente possible après l’achat ou non.`}</p> : (
+                      {vide ? <p className={styles.situNotes}>{`Pas encore renseignée : propriétaire ou locataire de son local actuel, et revente possible ou non.`}</p> : (
                         <div className={styles.situGrille}>
                           {champs.map(([l, v]) => (
                             <div key={l} className={styles.situChamp}><small>{l}</small><span>{v}</span></div>
                           ))}
                         </div>
                       )}
-                      {aVendre && <span className={styles.situVente}><Icone nom="etiquette" taille={14} />{'Revente possible après l’achat'}</span>}
+                      {aVendre && <span className={styles.situVente}><Icone nom="etiquette" taille={14} />{'Revente possible de son local actuel'}</span>}
                       {aVendre && occ.bien_actuel_notes && <p className={styles.situNotes}>{occ.bien_actuel_notes}</p>}
                     </div>
                   );
@@ -4450,12 +4450,12 @@ ${signatureMail()}`,
                     <div className={styles.carteEns}>
                       <div className={styles.carteEnsT}>
                         <span className={styles.carteEnsIc}><Icone nom="maison" taille={15} epaisseur={2} /></span>
-                        <b>Vos mandats qui lui correspondent</b>
+                        <b>Vos affaires qui lui correspondent</b>
                         {!!mandatsOk?.liste.length && (
                           <button type="button" onClick={() => { setRapproDepart({ source: 'mandats', cocher: mandatsOk.liste.map(m => m.id) }); setRappro(true); }}>Les lui proposer</button>
                         )}
                       </div>
-                      {mandatsOk === null ? <p className={styles.situNotes}>Recherche dans vos mandats…</p> : mandatsOk.liste.length ? (
+                      {mandatsOk === null ? <p className={styles.situNotes}>Recherche dans vos affaires…</p> : mandatsOk.liste.length ? (
                         <div className={styles.rapproMandats}>
                           {mandatsOk.liste.map(m => (
                             <button key={m.id} type="button" className={styles.rapproMandat} onClick={() => onNavigate('biens', { bien: m.id })}>
@@ -4465,7 +4465,7 @@ ${signatureMail()}`,
                             </button>
                           ))}
                         </div>
-                      ) : <p className={styles.situNotes}>{`Aucun de vos mandats en cours ne lui correspond assez (70 % de ses critères) pour l’instant. Le rapprochement cherche aussi dans les biens de vos veilles.`}</p>}
+                      ) : <p className={styles.situNotes}>{`Aucune de vos affaires en cours ne lui correspond assez (70 % de ses critères) pour l’instant. Le rapprochement cherche aussi dans les biens de vos veilles.`}</p>}
                     </div>
                   </div>
                   <div className={styles.ensCol}>
@@ -4478,7 +4478,7 @@ ${signatureMail()}`,
                       {rapprochements.length ? (
                         /* V3.126 : chaque rapprochement se déplie sur ce qui a été proposé. */
                         <RapprochementsFaits liste={rapprochements.slice(0, 8)} prenom={client.prenom || 'ce client'} onBien={id => onNavigate('biens', { bien: id })} />
-                      ) : <p className={styles.situNotes}>{`Aucun pour l’instant. Le premier compare la recherche de ${client.prenom || 'ce client'} avec vos mandats en cours et les biens trouvés par vos veilles.`}</p>}
+                      ) : <p className={styles.situNotes}>{`Aucun pour l’instant. Le premier compare la recherche de ${client.prenom || 'ce client'} avec vos affaires en cours et les biens trouvés par vos veilles.`}</p>}
                     </div>
                   </div>
                 </div>
@@ -4718,9 +4718,9 @@ ${signatureMail()}`,
 
                     const logement: LigneC[] = [];
                     if (cr.surface_min || cr.surface_max) logement.push({ lib: 'Surface', val: cr.surface_min && cr.surface_max ? `${cr.surface_min}–${cr.surface_max} m²` : cr.surface_max ? `${cr.surface_max} m² maximum` : <>{cr.surface_min} m²<Mini /></> });
-                    if (cr.nb_pieces_min || cr.nb_pieces_max) logement.push({ lib: 'Pièces', val: cr.nb_pieces_min && cr.nb_pieces_max ? `${cr.nb_pieces_min}–${cr.nb_pieces_max}` : cr.nb_pieces_max ? `${cr.nb_pieces_max} maximum` : <>{cr.nb_pieces_min}<Mini /></> });
-                    if (cr.chambres_min) logement.push({ lib: 'Chambres', val: <>{cr.chambres_min}<Mini fort /></>, fort: true });
-                    if (cr.surface_sejour_min) logement.push({ lib: 'Séjour', val: <>{cr.surface_sejour_min} m²<Mini /></> });
+                    if (cr.nb_pieces_min || cr.nb_pieces_max) logement.push({ lib: 'Espaces', val: cr.nb_pieces_min && cr.nb_pieces_max ? `${cr.nb_pieces_min}–${cr.nb_pieces_max}` : cr.nb_pieces_max ? `${cr.nb_pieces_max} maximum` : <>{cr.nb_pieces_min}<Mini /></> });
+                    if (cr.chambres_min) logement.push({ lib: 'Bureaux fermés', val: <>{cr.chambres_min}<Mini fort /></>, fort: true });
+                    if (cr.surface_sejour_min) logement.push({ lib: 'Surface de vente', val: <>{cr.surface_sejour_min} m²<Mini /></> });
                     if (texteEtats(cr.etat_souhaite)) logement.push({ lib: 'État', val: <span style={{ fontSize: 13.5 }}>{texteEtats(cr.etat_souhaite)}</span> });
 
                     const immeuble: LigneC[] = [];
@@ -4748,7 +4748,7 @@ ${signatureMail()}`,
                        rangées se font plus bas ; au téléphone, une colonne (crm-mobile.css,
                        .fc-familles). Les précisions restent dessous, sur toute la largeur. */
                     const ex = (cr.exigences || {}) as Record<string, string>;
-                    const EQUIP: [string, string][] = [['parking','🅿️ Parking'],['balcon','🌿 Balcon'],['terrasse','☀️ Terrasse'],['jardin','🌳 Jardin'],['cave','📦 Cave'],['ascenseur','🛗 Ascenseur'],['gardien','👮 Gardien'],['interphone','🔔 Interphone'],['digicode','🔢 Digicode']];
+                    const EQUIP: [string, string][] = [['parking','🅿️ Parking'],['balcon','🌿 Extérieur'],['terrasse','☀️ Terrasse'],['jardin','🌳 Cour'],['cave','📦 Cave'],['ascenseur','🛗 Ascenseur'],['gardien','👮 Gardien'],['interphone','🔔 Interphone'],['digicode','🔢 Digicode']];
                     const equip: { cle: string; texte: string; fort: boolean }[] = [];
                     EQUIP.forEach(([k, l]) => { if ((cr as any)[k] || ex[k]) equip.push({ cle: k, texte: l, fort: ex[k] === 'indispensable' }); });
                     if (ex.exterieur) equip.push({ cle: 'exterieur', texte: `🌤️ Extérieur${cr.exterieur_surface_min ? ` de ${cr.exterieur_surface_min} m² mini` : ''}`, fort: ex.exterieur === 'indispensable' });
@@ -4906,7 +4906,7 @@ ${signatureMail()}`,
             <i>de la veille à la transaction</i>
             {rechercheActive && (
               <button type="button" className="fiche-suivi-rappro" onClick={() => setRappro(true)}
-                title="Chercher des biens pour ce client dans vos mandats et vos veilles">
+                title="Chercher des biens pour ce client dans vos affaires et vos veilles">
                 <Icone nom="etoile" taille={13} epaisseur={2.2} />{' '}Faire un rapprochement
               </button>
             )}
@@ -4930,7 +4930,7 @@ ${signatureMail()}`,
         {tab === 'biens' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {biens.length === 0 ? (
-              <div className={styles.emptyTab}><div style={{ fontSize: 40, marginBottom: 12 }}>🏠</div><div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: 17, color: 'var(--emilio)', marginBottom: 6 }}>Aucun bien proposé</div><div style={{ color: '#94a3b8', fontSize: 14, marginBottom: 18 }}>Collez une URL d'annonce SeLoger, LeBonCoin, PAP...</div><button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setShowBien(true)}>+ Ajouter un bien par URL</button></div>
+              <div className={styles.emptyTab}><div style={{ fontSize: 40, marginBottom: 12 }}>🏠</div><div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: 17, color: 'var(--emilio)', marginBottom: 6 }}>Aucun bien proposé</div><div style={{ color: '#94a3b8', fontSize: 14, marginBottom: 18 }}>Collez une URL d’annonce Geolocaux, BureauxLocaux, LeBonCoin…</div><button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setShowBien(true)}>+ Ajouter un bien par URL</button></div>
             ) : biens.map(b => {
               const badge = BADGES[b.badge_retour] || BADGES.propose;
               const visitesBien = visites
@@ -5052,10 +5052,10 @@ ${signatureMail()}`,
                     </div>
                     <div style={{ color: '#94a3b8', fontSize: 14, marginBottom: 20, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.55 }}>
                       {visites_.length > 0
-                        ? `Une transaction suit un bien de l'offre jusqu'à l'acte. ${visites_.length} bien${visites_.length > 1 ? 's ont' : ' a'} été visité${visites_.length > 1 ? 's' : ''} — c'est parmi ${visites_.length > 1 ? 'eux' : 'lui'} que ça se joue.`
+                        ? `Une transaction suit un bien de l’offre jusqu’à la signature. ${visites_.length} bien${visites_.length > 1 ? 's ont' : ' a'} été visité${visites_.length > 1 ? 's' : ''} — c'est parmi ${visites_.length > 1 ? 'eux' : 'lui'} que ça se joue.`
                         : agence.length > 0
-                          ? `Une transaction suit un bien de l'offre jusqu'à l'acte. ${agence.length > 1 ? 'Les biens qu’il a visités sont des mandats de l’agence' : 'Le bien qu’il a visité est un mandat de l’agence'} : tout se passe sur la fiche du bien.`
-                          : "Une transaction suit un bien de l'offre jusqu'à l'acte. Planifiez d'abord une visite : on n'écrit pas une offre sur un bien que le client n'a pas vu."}
+                          ? `Une transaction suit un bien de l’offre jusqu’à la signature. ${agence.length > 1 ? 'Les biens qu’il a visités sont des affaires de l’agence' : 'Le bien qu’il a visité est une affaire de l’agence'} : tout se passe sur la fiche de l’affaire.`
+                          : "Une transaction suit un bien de l'offre jusqu'à la signature. Planifiez d'abord une visite : on n'écrit pas une offre sur un bien que le client n'a pas vu."}
                     </div>
                     {agence.length > 0 && (
                       <div style={{ maxWidth: 560, margin: '0 auto 6px' }}>
@@ -5108,14 +5108,14 @@ ${signatureMail()}`,
                   const m = lireMontant(derniere.montant);
                   chiffres.push({ k: 'Dernière contre-offre', v: m !== null ? eur(m) : '—', d: derniere.partie === 'acheteur' ? 'de votre client' : 'du mandant', c: '#393836' });
                 }
-                if (prixFinal !== null) chiffres.push({ k: 'Prix retenu', v: eur(prixFinal), d: ecart !== null ? `${ecart > 0 ? '+' : ''}${eur(ecart)} vs offre` : null, c: '#15803d' });
-                if (hono !== null) chiffres.push({ k: 'Honoraires', v: `${eur(hono)} HT`, d: `${eur(Math.round(hono * 1.2 * 100) / 100)} HT`, c: 'var(--emilio)' });
+                if (prixFinal !== null) chiffres.push({ k: 'Montant retenu', v: eur(prixFinal), d: ecart !== null ? `${ecart > 0 ? '+' : ''}${eur(ecart)} vs offre` : null, c: '#15803d' });
+                if (hono !== null) chiffres.push({ k: 'Honoraires', v: `${eur(hono)} HT`, d: `${eur(Math.round(hono * 1.2 * 100) / 100)} TTC`, c: 'var(--emilio)' });
 
                 const SUIVANT: Record<string, { label: string; vers: string }> = {
                   offre:          { label: '→ Passer en négociation', vers: 'negociation' },
                   negociation:    { label: '✓ Offre acceptée',        vers: 'offre_acceptee' },
-                  offre_acceptee: { label: '→ Passer au compromis',   vers: 'compromis' },
-                  compromis:      { label: "→ Passer à l'acte",       vers: 'acte' },
+                  offre_acceptee: { label: '→ Passer à l’accord',     vers: 'compromis' },
+                  compromis:      { label: '→ Passer à la signature', vers: 'acte' },
                 };
 
                 return (
@@ -5129,11 +5129,11 @@ ${signatureMail()}`,
                         <span style={{ flexGrow: 1, minWidth: 0 }}>
                           <span className="tx-sur">Bien de la transaction</span>
                           <span className="tx-titre">{bienTx.titre || `${bienTx.type_bien || 'Bien'} — ${bienTx.ville || '—'}`}</span>
-                          <span className="tx-detail">{[bienTx.surface && `${bienTx.surface} m²`, bienTx.nb_pieces && `${bienTx.nb_pieces}P`, bienTx.ville].filter(Boolean).join(' · ') || '—'}</span>
+                          <span className="tx-detail">{[bienTx.surface && `${bienTx.surface} m²`, bienTx.nb_pieces && `${bienTx.nb_pieces} espaces`, bienTx.ville].filter(Boolean).join(' · ') || '—'}</span>
                         </span>
                         {bienTx.prix_acquereur ? (
                           <span style={{ textAlign: 'right', flexShrink: 0 }}>
-                            <span className="tx-sur">Prix affiché</span>
+                            <span className="tx-sur">Montant affiché</span>
                             <span style={{ display: 'block', fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 17, color: '#d36a1a' }}>
                               {eur(bienTx.prix_acquereur)}
                             </span>
@@ -5200,16 +5200,16 @@ ${signatureMail()}`,
                       <div className="tx-panneau" style={{ background: 'linear-gradient(140deg, #ecfdf5, #f0fdf4)', border: '1px solid #bbf7d0', borderRadius: 16, padding: '28px 22px', textAlign: 'center' }}>
                         <div style={{ fontSize: 42, marginBottom: 8 }}>🎉</div>
                         <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 19, color: '#15803d' }}>
-                          Acte signé — dossier clos
+                          Bail ou acte signé — dossier clos
                         </div>
                         <div style={{ fontSize: 13, color: '#4d7c5f', marginTop: 6, lineHeight: 1.55, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
                           La veille est arrêtée sur cette recherche et les relances en attente ont été soldées.
-                          {tx.acte_date_prevue ? ` Acte du ${jourFr(tx.acte_date_prevue)}.` : ''}
+                          {tx.acte_date_prevue ? ` Signé le ${jourFr(tx.acte_date_prevue)}.` : ''}
                         </div>
                         {/* V3.50 : une vente sans honoraires ne compte pas dans le CA — on le dit ici. */}
                         {!(hono !== null && hono > 0) && (
                           <div style={{ fontSize: 12.5, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '8px 12px', marginTop: 12, lineHeight: 1.5, maxWidth: 440, marginLeft: 'auto', marginRight: 'auto' }}>
-                            {'Les honoraires ne sont pas renseignés : cette vente ne compte pas dans ton chiffre d’affaires. Ajoute-les dans « Revoir le dossier ».'}
+                            {'Les honoraires ne sont pas renseignés : cette affaire ne compte pas dans ton chiffre d’affaires. Ajoute-les dans « Revoir le dossier ».'}
                           </div>
                         )}
                         <div style={{ display: 'flex', gap: 9, justifyContent: 'center', marginTop: 18, flexWrap: 'wrap' }}>
@@ -5251,8 +5251,8 @@ ${signatureMail()}`,
                               {bienTx?.prix_acquereur && offre !== null && (
                                 <div className="tx-note">
                                   {offre === bienTx.prix_acquereur
-                                    ? "L'offre est au prix affiché."
-                                    : `${eur(Math.abs(bienTx.prix_acquereur - offre))} ${offre < bienTx.prix_acquereur ? 'sous' : 'au-dessus du'} prix affiché — soit ${Math.abs(Math.round((offre - bienTx.prix_acquereur) / bienTx.prix_acquereur * 1000) / 10)} %.`}
+                                    ? "L'offre est au montant affiché."
+                                    : `${eur(Math.abs(bienTx.prix_acquereur - offre))} ${offre < bienTx.prix_acquereur ? 'sous' : 'au-dessus du'} montant affiché — soit ${Math.abs(Math.round((offre - bienTx.prix_acquereur) / bienTx.prix_acquereur * 1000) / 10)} %.`}
                                 </div>
                               )}
                             </>
@@ -5306,7 +5306,7 @@ ${signatureMail()}`,
                           {eVue.cle === 'offre_acceptee' && (
                             <>
                               <div>
-                                <label className={styles.lbl}>Prix final accepté €</label>
+                                <label className={styles.lbl}>Montant final accepté €</label>
                                 <input className={styles.inp} type="text" inputMode="decimal" placeholder="Ex : 345 000"
                                   key={`pf-${transaction.prix_final ?? ''}`}
                                   defaultValue={champMontant(transaction.prix_final)} onBlur={remettreEnForme}
@@ -5320,7 +5320,7 @@ ${signatureMail()}`,
                               )}
                               {ecart !== null && (
                                 <div className="tx-note">
-                                  {ecart === 0 ? "Le prix retenu est celui de l'offre initiale."
+                                  {ecart === 0 ? "Le montant retenu est celui de l'offre initiale."
                                     : `${eur(Math.abs(ecart))} ${ecart > 0 ? 'de plus' : 'de moins'} que l'offre initiale.`}
                                 </div>
                               )}
@@ -5331,7 +5331,7 @@ ${signatureMail()}`,
                             <>
                               <div className={styles.formRow}>
                                 <div>
-                                  <label className={styles.lbl}>Date du compromis</label>
+                                  <label className={styles.lbl}>Date de l’accord</label>
                                   <input className={styles.inp} type="date" defaultValue={transaction.compromis_date || ''}
                                     onChange={e => {
                                       const j = e.target.value;
@@ -5340,7 +5340,7 @@ ${signatureMail()}`,
                                     }} />
                                 </div>
                                 <div>
-                                  <label className={styles.lbl}>Notaire</label>
+                                  <label className={styles.lbl}>Notaire ou avocat</label>
                                   <input className={styles.inp} placeholder="Me Dupont…" defaultValue={transaction.compromis_notaire || ''}
                                     onChange={e => saveTxField('compromis_notaire', e.target.value || null)} />
                                 </div>
@@ -5365,7 +5365,7 @@ ${signatureMail()}`,
                               )}
                               {enCours && rechercheActive?.active === false && (
                                 <div className="tx-alerte" data-ton="veille">
-                                  ⏸️ La veille est en pause sur cette recherche depuis le compromis. Elle reprendra si vous revenez à l'étape précédente.
+                                  ⏸️ La veille est en pause sur cette recherche depuis l’accord. Elle reprendra si vous revenez à l'étape précédente.
                                 </div>
                               )}
                             </>
@@ -5375,7 +5375,7 @@ ${signatureMail()}`,
                             <>
                               <div className={styles.formRow}>
                                 <div>
-                                  <label className={styles.lbl}>Date de l'acte</label>
+                                  <label className={styles.lbl}>Date de signature</label>
                                   <input className={styles.inp} type="date" defaultValue={transaction.acte_date_prevue || ''}
                                     onChange={e => saveTxField('acte_date_prevue', e.target.value || null)} />
                                 </div>
@@ -5394,7 +5394,7 @@ ${signatureMail()}`,
                               </div>
                               {hono !== null && (
                                 <div className="tx-alerte" data-ton="vert">
-                                  💰 Honoraires HT : <b>{eur(Math.round(hono * 1.2 * 100) / 100)}</b>
+                                  💰 Honoraires TTC : <b>{eur(Math.round(hono * 1.2 * 100) / 100)}</b>
                                 </div>
                               )}
                               {enCours && (
@@ -5402,7 +5402,7 @@ ${signatureMail()}`,
                                   {/* V3.50 : un client à plusieurs recherches n'est clos que si plus rien ne tourne. */}
                                   {recherches.some(r => r.id !== rechercheId && r.active !== false)
                                     ? 'Clôturer ici, c’est fermer cette recherche : sa veille s’arrête et ses relances sont soldées. Ses autres recherches continuent.'
-                                    : 'Clôturer ici, c’est fermer le dossier : le client passe en « Bien trouvé », la veille s’arrête et les relances en attente sont soldées.'}
+                                    : 'Clôturer ici, c’est fermer le dossier : le client passe en « Local trouvé », la veille s’arrête et les relances en attente sont soldées.'}
                                 </div>
                               )}
                             </>
@@ -5419,7 +5419,7 @@ ${signatureMail()}`,
                               )}
                               {eVue.cle === 'acte' ? (
                                 <button className="tx-cloture" disabled={saving} onClick={finaliserTransaction}>
-                                  🎉 Acte signé — clôturer
+                                  🎉 Bail ou acte signé — clôturer
                                 </button>
                               ) : (
                                 <button className={`${styles.btn} ${styles.btnPrimary}`}
@@ -5539,7 +5539,7 @@ ${signatureMail()}`,
             <div className={styles.modalBody}>
               {/* Une personne ou un couple : la personne 2 signe le mandat avec son propre lien. */}
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-                {([['Monsieur', 'Monsieur'], ['Madame', 'Madame'], ['couple', 'Un couple']] as const).map(([k, lib]) => {
+                {([['Monsieur', 'Monsieur'], ['Madame', 'Madame'], ['couple', 'Deux personnes']] as const).map(([k, lib]) => {
                   const on = k === 'couple' ? cf.couple : !cf.couple && cf.civilite === k;
                   return (
                     <button type="button" key={k} onClick={() => setCf(f => (k === 'couple' ? { ...f, couple: true } : { ...f, couple: false, civilite: k }))}
@@ -5603,19 +5603,19 @@ ${signatureMail()}`,
                 </select>
               </div>
               {/* Revente possible après l'achat — interrupteur indépendant du statut */}
-              <button type="button" onClick={() => setCf(f => ({ ...f, bien_actuel_a_vendre: !f.bien_actuel_a_vendre, ...(!f.bien_actuel_a_vendre && !f.statut_occupation ? { statut_occupation: 'proprietaire' } : {}) }))} style={{ marginTop: 10, padding: '8px 14px', borderRadius: 20, border: `1px solid ${cf.bien_actuel_a_vendre ? '#ea580c' : '#e2e8f0'}`, background: cf.bien_actuel_a_vendre ? '#fff7ed' : 'white', color: cf.bien_actuel_a_vendre ? '#ea580c' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{cf.bien_actuel_a_vendre ? '✓ ' : ''}🏷️ Revente possible après l&apos;achat (mandat mandant potentiel)</button>
+              <button type="button" onClick={() => setCf(f => ({ ...f, bien_actuel_a_vendre: !f.bien_actuel_a_vendre, ...(!f.bien_actuel_a_vendre && !f.statut_occupation ? { statut_occupation: 'proprietaire' } : {}) }))} style={{ marginTop: 10, padding: '8px 14px', borderRadius: 20, border: `1px solid ${cf.bien_actuel_a_vendre ? '#ea580c' : '#e2e8f0'}`, background: cf.bien_actuel_a_vendre ? '#fff7ed' : 'white', color: cf.bien_actuel_a_vendre ? '#ea580c' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{cf.bien_actuel_a_vendre ? '✓ ' : ''}🏷️ Revente possible de son local actuel (un mandat possible)</button>
               {cf.bien_actuel_a_vendre && (
                 <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: 14, marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div className={styles.formRow}>
-                    <div><label className={styles.lbl}>Type de bien</label><input className={styles.inp} value={cf.bien_actuel_type} onChange={e => setCf(f => ({ ...f, bien_actuel_type: e.target.value }))} /></div>
+                    <div><label className={styles.lbl}>Type de local</label><input className={styles.inp} value={cf.bien_actuel_type} onChange={e => setCf(f => ({ ...f, bien_actuel_type: e.target.value }))} /></div>
                     <div><label className={styles.lbl}>Surface (m²)</label><input className={styles.inp} type="number" value={cf.bien_actuel_surface} onChange={e => setCf(f => ({ ...f, bien_actuel_surface: e.target.value }))} /></div>
                   </div>
                   <div><label className={styles.lbl}>Valeur estimée (€)</label><input className={styles.inp} type="number" value={cf.bien_actuel_valeur} onChange={e => setCf(f => ({ ...f, bien_actuel_valeur: e.target.value }))} /></div>
-                  <button type="button" onClick={() => setCf(f => ({ ...f, bien_actuel_meme_adresse: !f.bien_actuel_meme_adresse }))} style={{ alignSelf: 'flex-start', padding: '7px 13px', borderRadius: 20, border: `1px solid ${cf.bien_actuel_meme_adresse ? '#0ea5e9' : '#e2e8f0'}`, background: cf.bien_actuel_meme_adresse ? '#f0f9ff' : 'white', color: cf.bien_actuel_meme_adresse ? '#0ea5e9' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{cf.bien_actuel_meme_adresse ? '✓ ' : ''}📍 Bien à la même adresse que le contact</button>
+                  <button type="button" onClick={() => setCf(f => ({ ...f, bien_actuel_meme_adresse: !f.bien_actuel_meme_adresse }))} style={{ alignSelf: 'flex-start', padding: '7px 13px', borderRadius: 20, border: `1px solid ${cf.bien_actuel_meme_adresse ? '#0ea5e9' : '#e2e8f0'}`, background: cf.bien_actuel_meme_adresse ? '#f0f9ff' : 'white', color: cf.bien_actuel_meme_adresse ? '#0ea5e9' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{cf.bien_actuel_meme_adresse ? '✓ ' : ''}📍 Local à la même adresse que le contact</button>
                   {!cf.bien_actuel_meme_adresse && (
-                    <ChampAdresseAuto etiquette="Adresse du bien à revendre" valeur={cf.bien_actuel_adresse} onChange={v => setCf(f => ({ ...f, bien_actuel_adresse: v }))} />
+                    <ChampAdresseAuto etiquette="Adresse du local à revendre" valeur={cf.bien_actuel_adresse} onChange={v => setCf(f => ({ ...f, bien_actuel_adresse: v }))} />
                   )}
-                  <div><label className={styles.lbl}>Précisions sur le bien à revendre</label><textarea className={styles.inp} rows={2} value={cf.bien_actuel_notes} onChange={e => setCf(f => ({ ...f, bien_actuel_notes: e.target.value }))} /></div>
+                  <div><label className={styles.lbl}>Précisions sur le local à revendre</label><textarea className={styles.inp} rows={2} value={cf.bien_actuel_notes} onChange={e => setCf(f => ({ ...f, bien_actuel_notes: e.target.value }))} /></div>
                 </div>
               )}
               <div style={{ borderTop: '1px solid #f1f5f9', marginTop: 8, paddingTop: 12 }}>
@@ -5825,12 +5825,12 @@ ${signatureMail()}`,
             <div className={styles.modalHeader}><h2 className={styles.modalTitle}>🏁 Clôturer la recherche</h2><button className={styles.modalClose} onClick={() => setShowCloture(false)}>✕</button></div>
             <div className={styles.modalBody}>
               <div style={{ background: '#f8fafc', border: '1px solid #f3f2f2', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
-                {'La veille s’arrête sur ce dossier, ses relances d’demandeur sont soldées, ses visites à venir annulées, et le motif reste au journal. Tout est réversible : « Rouvrir le dossier » dans le menu d’état.'}
+                {'La veille s’arrête sur ce dossier, ses relances de demandeur sont soldées, ses visites à venir annulées, et le motif reste au journal. Tout est réversible : « Rouvrir le dossier » dans le menu d’état.'}
               </div>
               {/* V3.50 : trouvé avec nous et une transaction ouverte = un acte signé. */}
               {cloture.motif === 'trouve_avec_moi' && transaction && transaction.etape_actuelle !== 'finalise' && (
                 <div style={{ background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#8b3e0b', lineHeight: 1.55 }}>
-                  {'Une transaction est en cours : elle passera « Acte signé », pour que la vente compte dans ton chiffre d’affaires. Tu confirmeras la date de l’acte juste après.'}
+                  {'Une transaction est en cours : elle passera « Bail ou acte signé », pour que l’affaire compte dans ton chiffre d’affaires. Tu confirmeras la date de signature juste après.'}
                 </div>
               )}
               <div>
@@ -5849,7 +5849,7 @@ ${signatureMail()}`,
                             <span style={{ width: 8, height: 8, borderRadius: '50%', background: m.point, flexShrink: 0 }} />
                             <span style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--emilio)' }}>{m.nom}</span>
                             <span style={{ fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.7, borderRadius: 99, padding: '1px 8px', color: m.statut === 'bien_trouve' ? '#1d4ed8' : '#b91c1c', background: m.statut === 'bien_trouve' ? '#eff6ff' : '#fef2f2' }}>
-                              {m.statut === 'bien_trouve' ? 'Bien trouvé' : 'Perdu'}
+                              {m.statut === 'bien_trouve' ? 'Local trouvé' : 'Perdu'}
                             </span>
                           </span>
                           <span style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{m.quoi}</span>
@@ -5863,7 +5863,7 @@ ${signatureMail()}`,
                 <label className={styles.lbl}>Note <span style={{ fontWeight: 400, color: '#94a3b8' }}>(optionnelle)</span></label>
                 <textarea className={styles.inp} rows={3} value={cloture.note}
                   onChange={e => setCloture(f => ({ ...f, note: e.target.value }))}
-                  placeholder="Ce qu'il a acheté, avec qui, ce qui a manqué…" />
+                  placeholder="Ce qu’il a pris, avec qui, ce qui a manqué…" />
               </div>
             </div>
             <div className={styles.modalFooter}>
@@ -5888,26 +5888,26 @@ ${signatureMail()}`,
           <div className={styles.overlay} onClick={e => { if (e.target === e.currentTarget && !saving) setActe(null); }}>
             <div className={styles.modal} style={{ maxWidth: 480 }}>
               <div className={styles.modalHeader}>
-                <h2 className={styles.modalTitle}>🎉 Acte signé</h2>
+                <h2 className={styles.modalTitle}>🎉 Bail ou acte signé</h2>
                 {!saving && <button className={styles.modalClose} onClick={() => setActe(null)}>✕</button>}
               </div>
               <div className={styles.modalBody}>
                 {acte.portee === 'dossier' && (
                   <div style={{ background: '#f8fafc', border: '1px solid #f3f2f2', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
-                    {`La transaction${nomActe ? ` sur « ${nomActe} »` : ''} passe « Acte signé » : la vente compte dans ton chiffre d’affaires, puis le dossier se clôture.`}
+                    {`La transaction${nomActe ? ` sur « ${nomActe} »` : ''} passe « Bail ou acte signé » : l’affaire compte dans ton chiffre d’affaires, puis le dossier se clôture.`}
                   </div>
                 )}
                 <div>
-                  <label className={styles.lbl}>Date de signature de l&apos;acte</label>
+                  <label className={styles.lbl}>Date de signature du bail ou de l&apos;acte</label>
                   <input className={styles.inp} type="date" value={acte.date} max={jourParis()}
                     onChange={e => { const d = e.target.value; setActe(a => (a ? { ...a, date: d } : a)); }} />
                   <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 5, lineHeight: 1.5 }}>
-                    {'C’est cette date qui range la vente dans le chiffre d’affaires du mois.'}
+                    {'C’est cette date qui range l’affaire dans le chiffre d’affaires du mois.'}
                   </div>
                 </div>
                 {sansHono ? (
                   <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 11, padding: '11px 14px', fontSize: 13, color: '#92400e', lineHeight: 1.55 }}>
-                    {'Les honoraires ne sont pas renseignés : cette vente ne comptera pas dans ton chiffre d’affaires. Tu pourras les ajouter ensuite dans l’onglet Transaction.'}
+                    {'Les honoraires ne sont pas renseignés : cette affaire ne comptera pas dans ton chiffre d’affaires. Tu pourras les ajouter ensuite dans l’onglet Transaction.'}
                   </div>
                 ) : (
                   <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 11, padding: '11px 14px', fontSize: 13, color: '#15803d', lineHeight: 1.55 }}>
@@ -6043,7 +6043,7 @@ ${signatureMail()}`,
                   <div style={{ fontSize: 12.5, color: '#64748b', lineHeight: 1.5 }}>{'Enregistrée, la fiche reste dans Veille, avec son annonce, et elle y est analysée par rapport à sa recherche, comme la veille : la note, l’avis, les atouts, ce qu’il faut vérifier. Tu choisis ensuite « Retenir » (elle part en Sélection) ou « Écarter ».'}</div>
                   <label className={styles.lbl} style={{ marginTop: 2 }}>{'Ton avis pour lui '}<span style={{ fontWeight: 400, color: '#94a3b8' }}>{'(facultatif — il le lira avec le bien, dans « Ça me plaît »)'}</span></label>
                   <textarea className={styles.inp} rows={2} value={avisAnnonce} onChange={e => setAvisAnnonce(e.target.value)} maxLength={600}
-                    placeholder="Ex. : très bon choix. Toujours disponible, toiture refaite en 2021, le mandant a déjà baissé une fois." style={{ fontFamily: 'inherit', fontSize: 13 }} />
+                    placeholder="Ex. : très bon emplacement. Toujours disponible, extraction refaite en 2021, le mandant a déjà baissé une fois." style={{ fontFamily: 'inherit', fontSize: 13 }} />
                 </div>
               )}
 
@@ -6060,7 +6060,7 @@ ${signatureMail()}`,
               {/* MODE URL */}
               {bienMode === 'url' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div><label className={styles.lbl}>URL de l'annonce</label><div style={{ display: 'flex', gap: 8 }}><input className={styles.inp} value={url} onChange={e => setUrl(e.target.value)} placeholder="https://www.seloger.com/annonces/..." style={{ flex: 1 }} onKeyDown={e => e.key === 'Enter' && extract()} /><button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => { void extract(); }} disabled={extracting||!url}>{extracting ? '⏳...' : '🔍 Extraire'}</button></div><div style={{ fontSize: 12, color: '#94a3b8', marginTop: 5 }}>SeLoger, LeBonCoin, PAP, Bien'ici, Logic-Immo, Jinka, Orpi, Century 21...</div></div>
+                  <div><label className={styles.lbl}>URL de l'annonce</label><div style={{ display: 'flex', gap: 8 }}><input className={styles.inp} value={url} onChange={e => setUrl(e.target.value)} placeholder="https://…" style={{ flex: 1 }} onKeyDown={e => e.key === 'Enter' && extract()} /><button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => { void extract(); }} disabled={extracting||!url}>{extracting ? '⏳...' : '🔍 Extraire'}</button></div><div style={{ fontSize: 12, color: '#94a3b8', marginTop: 5 }}>Geolocaux, BureauxLocaux, LeBonCoin, SeLoger Bureaux & Commerces…</div></div>
                   {bienForm !== null && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div style={{ background: bienForm._reason === 'seloger_blocked' ? '#fffbeb' : bienForm.titre ? '#ecfdf5' : '#f8fafc', border: `1px solid ${bienForm._reason === 'seloger_blocked' ? '#fde68a' : bienForm.titre ? '#a7f3d0' : '#e2e8f0'}`, borderRadius: 10, padding: '9px 13px', fontSize: 13, color: bienForm._reason === 'seloger_blocked' ? '#92400e' : bienForm.titre ? '#065f46' : '#64748b' }}>
@@ -6179,12 +6179,12 @@ ${signatureMail()}`,
               </div>
               {transaction.etape_actuelle === 'compromis' && (
                 <div style={{ background: '#f5f4f4', border: '1px solid #e7e6e4', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#393836', lineHeight: 1.55 }}>
-                  🔍 La veille, mise en pause à la signature du compromis, <b>repartira</b>{' '}sur cette recherche.
+                  🔍 La veille, mise en pause à la signature de l’accord, <b>repartira</b>{' '}sur cette recherche.
                 </div>
               )}
               {transaction.etape_actuelle === 'finalise' && (
                 <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#92400e', lineHeight: 1.55 }}>
-                  ⚠️ Le dossier était clos : il repasse en <b>« Actif »</b>. La veille, elle, reste en pause — vous êtes toujours à l'acte.
+                  ⚠️ Le dossier était clos : il repasse en <b>« Actif »</b>. La veille, elle, reste en pause — vous êtes toujours à la signature.
                 </div>
               )}
             </div>
@@ -6233,7 +6233,7 @@ ${signatureMail()}`,
 
               <p style={{ fontSize: 13, color: '#64748b', margin: 0, lineHeight: 1.6 }}>
                 Si le dossier est simplement terminé, passe plutôt son statut à
-                « bien trouvé » ou « perdu » : tu gardes l&apos;historique, et il sort des
+                « local trouvé » ou « perdu » : tu gardes l&apos;historique, et il sort des
                 dossiers actifs.
               </p>
 
@@ -6306,7 +6306,7 @@ ${signatureMail()}`,
                 <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13.5, color: 'var(--emilio)', lineHeight: 1.85 }}>
                   {/* V3.50 : une vente signée ne s'efface pas (chiffre d'affaires). */}
                   {reinitStats?.venteGardee && (
-                    <li>{`La vente signée sur « ${reinitStats.venteGardee} », avec son bien : elle reste dans ton chiffre d’affaires`}</li>
+                    <li>{`L’affaire signée sur « ${reinitStats.venteGardee} », avec son bien : elle reste dans ton chiffre d’affaires`}</li>
                   )}
                   <li>Les critères, les précisions libres et le mandat</li>
                   <li>Le lien de l&apos;espace client — il continue de fonctionner, le client y trouvera une page vide</li>
