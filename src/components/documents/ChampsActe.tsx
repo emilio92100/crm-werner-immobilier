@@ -1,0 +1,561 @@
+'use client';
+import { lireMontant } from '@/lib/montant';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { enLettres } from '@/lib/mandat';
+import { PERSONNE_VIDE, type Champ, type ChampSimple, type Donnees, type Personne } from '@/lib/actes';
+import { Croix, Ic } from './ApercuActe';
+import AjoutBien from './ChoixBienCrm';
+import SaisieAdresse, { adresseProposee, type AdresseChoisie } from '@/components/shared/SaisieAdresse';
+import s from './Documents.module.css';
+
+/* ═══ Les champs de l'éditeur ═════════════════════════════════════════════
+   Tous déclarés au niveau du module : un composant défini dans le rendu
+   d'un autre se remonte à chaque frappe, et le champ perd le focus
+   (AGENTS.md §2.4). */
+
+type Maj = (cle: string, v: unknown) => void;
+
+export const estVide = (v: unknown) =>
+  v === null || v === undefined || (typeof v === 'string' && !v.trim()) || (Array.isArray(v) && v.length === 0);
+
+/* ── Les nombres : on tape librement, la mise en forme vient en sortant ── */
+const lireNombre = (t: string): number | null => {
+  const x = t.replace(/[\s\u00a0\u202f€%]/g, '').replace(',', '.');
+  if (!x) return null;
+  const n = Number(x);
+  return Number.isFinite(n) ? n : null;
+};
+const nombreDe = (v: unknown): number | null =>
+  typeof v === 'number' && Number.isFinite(v) ? v : typeof v === 'string' ? lireNombre(v) : null;
+const ecrireNombre = (n: number | null, euros: boolean) =>
+  n === null ? '' : euros
+    ? new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(n).replace(/[\u202f\u00a0]/g, ' ')
+    : String(n).replace('.', ',');
+
+/* V3.50 : un montant se lit avec lireMontant (« 850.000 », « 850k », « 8 333,33 ») ;
+   une surface ou un nombre de pièces garde la lecture simple. */
+function ChampNombre({ id, euros, unite, v, onChange, off, manque }: {
+  id: string; euros: boolean; unite?: string; v: unknown; onChange: (n: number | null) => void; off: boolean; manque: boolean;
+}) {
+  const n = nombreDe(v);
+  const [texte, setTexte] = useState(ecrireNombre(n, euros));
+  const [dedans, setDedans] = useState(false);
+  useEffect(() => { if (!dedans) setTexte(ecrireNombre(nombreDe(v), euros)); }, [v, dedans, euros]);
+  const u = unite || (euros ? '€' : '');
+  return (
+    <>
+      <div className={s.unite}>
+        <input id={id} className={`${s.input} ${manque ? s.inputManque : ''}`} inputMode="decimal" autoComplete="off" disabled={off}
+          value={texte} onFocus={() => setDedans(true)} onBlur={() => setDedans(false)}
+          onChange={e => { setTexte(e.target.value); onChange(euros ? lireMontant(e.target.value) : lireNombre(e.target.value)); }}
+          style={u ? { paddingRight: Math.min(150, 22 + u.length * 7.2) } : undefined} />
+        {u && <span>{u}</span>}
+      </div>
+      {euros && n !== null && n >= 1 && Number.isInteger(n) && <span className={s.lettres}>{`${enLettres(n)} euros`}</span>}
+    </>
+  );
+}
+
+/* V3.177 — Les questions en fil (maquette B2) : un Oui / Non devient deux
+   boutons côte à côte ; un autre choix, des pastilles avec leur dessin, et
+   l'explication de celle choisie dessous. */
+export const estOuiNon = (c: Extract<Champ, { t: 'choix' }>) =>
+  c.options.length === 2 && c.options[0].v === 'oui' && c.options[1].v === 'non';
+function ChoixFil({ c, v, onChange, off }: { c: Extract<Champ, { t: 'choix' }>; v: unknown; onChange: (x: string) => void; off: boolean }) {
+  if (estOuiNon(c)) {
+    return (
+      <div className={s.filOuiNon} role="radiogroup" aria-label={c.lib}>
+        {c.options.map(o => (
+          <button key={o.v} type="button" role="radio" aria-checked={v === o.v} disabled={off} onClick={() => onChange(o.v)}>
+            <Ic n={o.v === 'oui' ? 'check' : 'croix'} t={13} e={2.8} />{o.l}
+          </button>
+        ))}
+      </div>
+    );
+  }
+  const choisie = c.options.find(o => o.v === v);
+  return (
+    <>
+      <div className={s.filPills} role="radiogroup" aria-label={c.lib}>
+        {c.options.map(o => (
+          <button key={o.v} type="button" role="radio" aria-checked={v === o.v} disabled={off} title={o.aide}
+            className={s.filPill} onClick={() => onChange(o.v)}>{o.ic && <Ic n={o.ic} t={16} />}<span>{o.l}</span></button>
+        ))}
+      </div>
+      {choisie?.aide && <div className={s.filChoixAide}>{choisie.aide}</div>}
+    </>
+  );
+}
+
+function ChampChoix({ c, v, onChange, off, fil = false }: { c: Extract<Champ, { t: 'choix' }>; v: unknown; onChange: (x: string) => void; off: boolean; fil?: boolean }) {
+  if (fil) return <ChoixFil c={c} v={v} onChange={onChange} off={off} />;
+  if (c.tuiles) {
+    return (
+      <div className={s.tuiles} role="radiogroup" aria-label={c.lib}>
+        {c.options.map(o => (
+          <button key={o.v} type="button" role="radio" aria-checked={v === o.v} disabled={off}
+            className={`${s.tuile} ${o.ic ? s.tuileIc : ''} ${v === o.v ? s.tuileOn : ''}`} onClick={() => onChange(o.v)}>
+            {o.ic && <span className={s.tuilePicto}><Ic n={o.ic} t={20} /></span>}
+            <span className={s.tuileTxt}>
+              <b>{o.l}</b>
+              {o.aide && <small>{o.aide}</small>}
+            </span>
+            {v === o.v && <span className={s.tuileCoche}><Ic n="check" t={11} e={3.2} /></span>}
+          </button>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className={s.pills} role="radiogroup" aria-label={c.lib}>
+      {c.options.map(o => (
+        <button key={o.v} type="button" role="radio" aria-checked={v === o.v} disabled={off} title={o.aide}
+          className={`${s.pill} ${v === o.v ? s.pillOn : ''}`} onClick={() => onChange(o.v)}>{o.ic && <Ic n={o.ic} t={14} />}{o.l}</button>
+      ))}
+    </div>
+  );
+}
+
+function ChampCases({ c, v, onChange, off }: { c: Extract<Champ, { t: 'cases' }>; v: unknown; onChange: (x: string[]) => void; off: boolean }) {
+  const l = Array.isArray(v) ? (v as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+  return (
+    <div className={s.cases}>
+      {c.options.map(o => {
+        const on = l.includes(o.v);
+        return (
+          <button key={o.v} type="button" role="checkbox" aria-checked={on} disabled={off}
+            className={`${s.caseB} ${on ? s.caseOn : ''}`}
+            onClick={() => onChange(on ? l.filter(x => x !== o.v) : [...l, o.v])}>
+            {o.ic && <span className={s.casePicto}><Ic n={o.ic} t={17} /></span>}
+            <span className={s.caseTxt}>{o.l}</span>
+            <span className={s.bx}>{on && <Ic n="check" t={12} e={3} />}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Une zone de texte libre (une clause, une précision) ── V3.46
+   Elle grandit avec le texte, jusqu'à HAUT_ZONE : au-delà, elle défile.
+   Dessous, une poignée à tirer (double-clic : retour à la taille d'origine)
+   et « Agrandir », qui montre tout le texte d'un coup — ou donne de la
+   place pour écrire long. */
+const HAUT_ZONE = 260;
+type Taille = 'auto' | 'grand' | number;
+
+function ZoneTexte({ id, v, manque, off, exemple, onChange }: {
+  id: string; v: string; manque: boolean; off: boolean; exemple?: string; onChange: (x: string) => void;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const [taille, setTaille] = useState<Taille>('auto');
+  const ajuster = useCallback(() => {
+    const t = ref.current;
+    if (!t) return;
+    if (typeof taille === 'number') { t.style.height = `${taille}px`; return; }
+    const cs = getComputedStyle(t);
+    const bords = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+    /* Mesurer oblige à replier la zone un instant : la page qui la porte ne
+       doit pas sauter pour autant (rien n'est dessiné entre-temps). */
+    const gardes: [HTMLElement, number][] = [];
+    for (let el = t.parentElement; el; el = el.parentElement) if (el.scrollTop) gardes.push([el, el.scrollTop]);
+    const dedans = t.scrollTop;
+    t.style.height = 'auto';
+    const plein = t.scrollHeight + bords;
+    t.style.height = `${taille === 'grand' ? Math.max(plein, Math.min(window.innerHeight * 0.6, 560)) : Math.min(plein, HAUT_ZONE)}px`;
+    t.scrollTop = dedans;
+    for (const [el, y] of gardes) el.scrollTop = y;
+  }, [taille]);
+  useLayoutEffect(ajuster, [ajuster, v]);
+  /* La colonne s'élargit ou se resserre : le texte se replie autrement. */
+  useEffect(() => {
+    const t = ref.current;
+    if (!t || typeof ResizeObserver === 'undefined') return;
+    let large = t.clientWidth;
+    const ro = new ResizeObserver(() => { if (t.clientWidth !== large) { large = t.clientWidth; ajuster(); } });
+    ro.observe(t);
+    return () => ro.disconnect();
+  }, [ajuster]);
+
+  const tirer = (e: React.PointerEvent<HTMLSpanElement>) => {
+    const t = ref.current;
+    if (!t || e.button !== 0) return;
+    e.preventDefault();
+    const poignee = e.currentTarget;
+    poignee.setPointerCapture(e.pointerId);
+    const y0 = e.clientY;
+    const h0 = t.getBoundingClientRect().height;
+    let h = h0;
+    const bouger = (ev: PointerEvent) => {
+      h = Math.round(Math.max(88, Math.min(window.innerHeight * 0.85, h0 + ev.clientY - y0)));
+      t.style.height = `${h}px`;
+    };
+    const finir = () => {
+      poignee.removeEventListener('pointermove', bouger);
+      poignee.removeEventListener('pointerup', finir);
+      poignee.removeEventListener('pointercancel', finir);
+      if (h !== h0) setTaille(h);
+    };
+    poignee.addEventListener('pointermove', bouger);
+    poignee.addEventListener('pointerup', finir);
+    poignee.addEventListener('pointercancel', finir);
+  };
+
+  const grand = taille !== 'auto';
+  return (
+    <div className={s.ztCadre}>
+      <textarea id={id} ref={ref} className={`${s.input} ${s.ztTexte} ${manque ? s.inputManque : ''}`} disabled={off} rows={3}
+        value={v} placeholder={exemple ? `Ex : ${exemple}` : undefined} onChange={e => onChange(e.target.value)} />
+      <div className={s.ztBas}>
+        <span className={s.ztPoignee} onPointerDown={tirer} onDoubleClick={() => setTaille('auto')} title="Tirer pour agrandir ou réduire" aria-hidden="true" />
+        <button type="button" className={s.ztBtn} aria-controls={id} aria-expanded={grand}
+          onClick={() => setTaille(grand ? 'auto' : 'grand')}>
+          <Ic n={grand ? 'reduire' : 'agrandir'} t={13} /><span>{grand ? 'Réduire' : 'Agrandir'}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Une personne : une carte, ses champs ── */
+const lirePersonneBrute = (x: unknown): Personne => ({ ...PERSONNE_VIDE, ...((x && typeof x === 'object' ? x : {}) as Partial<Personne>) });
+
+function CartePersonne({ id, nom, p, complet, off, peutRetirer, onChange, onRetirer }: {
+  id: string; nom: string; p: Personne; complet: boolean; off: boolean; peutRetirer: boolean;
+  onChange: (k: keyof Personne, v: string) => void; onRetirer: () => void;
+}) {
+  /* V3.154 : une naissance déjà connue (le conjoint d'une fiche « couple »,
+     repris sur un bon de visite) s'imprime : elle doit donc se voir et se
+     corriger, même là où on ne la demande pas. Facultative alors. Lu à
+     l'ouverture de la carte : les cases ne disparaissent pas en les vidant. */
+  const [naissanceVue] = useState(() => !!(p.naissanceDate || p.naissanceLieu));
+  const naissance = complet || naissanceVue || !!(p.naissanceDate || p.naissanceLieu);
+  const champ = (k: keyof Personne, lib: string, o: { type?: string; large?: boolean; ph?: string; requis?: boolean; mode?: 'email' | 'tel' } = {}) => (
+    <div className={`${s.ch} ${o.large ? s.large : ''}`}>
+      <label className={s.chLib} htmlFor={`${id}-${k}`}>{lib}</label>
+      {/* V3.175 : l'adresse se propose pendant la frappe (la base adresse
+          nationale) ; on peut toujours l'écrire à la main. */}
+      {k === 'adresse' ? (
+        <SaisieAdresse id={`${id}-${k}`} v={p[k]} off={off} placeholder={o.ph} etiquette={lib}
+          classeChamp={`${s.input} ${o.requis && !p[k] ? s.inputManque : ''}`} onChange={x => onChange(k, x)} />
+      ) : (
+        <input id={`${id}-${k}`} className={`${s.input} ${o.requis && !p[k] ? s.inputManque : ''}`} type={o.type || 'text'} disabled={off}
+          inputMode={o.mode} autoComplete="off" value={p[k]} placeholder={o.ph} onChange={e => onChange(k, e.target.value)} />
+      )}
+    </div>
+  );
+  return (
+    <div className={s.perso}>
+      <div className={s.persoT}>
+        <span className={s.ligneIc}><Ic n="personne" t={15} /></span>
+        <b>{[nom, [p.prenom, p.nom].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}</b>
+        {peutRetirer && !off && (
+          <button type="button" className={s.retirer} onClick={onRetirer}><Croix t={13} />Retirer</button>
+        )}
+      </div>
+      <div className={s.persoCorps}>
+        <div className={`${s.ch} ${s.large}`}>
+          <div className={s.pills} role="radiogroup" aria-label="Civilité">
+            {(['Madame', 'Monsieur'] as const).map(c => (
+              <button key={c} type="button" role="radio" aria-checked={p.civilite === c} disabled={off}
+                className={`${s.pill} ${p.civilite === c ? s.pillOn : ''}`} onClick={() => onChange('civilite', c)}>{c}</button>
+            ))}
+          </div>
+        </div>
+        {champ('prenom', 'Prénom', { requis: true })}
+        {champ('nom', 'Nom', { requis: true })}
+        {complet && champ('nomNaissance', 'Nom de naissance', { ph: 'Si différent' })}
+        {naissance && champ('naissanceDate', 'Date de naissance', { type: 'date', requis: complet })}
+        {naissance && champ('naissanceLieu', 'Lieu de naissance', { ph: 'Ex : Lyon (69)', requis: complet })}
+        {champ('adresse', 'Adresse', { large: true, ph: 'Numéro, rue, code postal, ville', requis: complet })}
+        {champ('email', 'E-mail', { type: 'email', mode: 'email' })}
+        {champ('telephone', 'Téléphone', { type: 'tel', mode: 'tel' })}
+      </div>
+    </div>
+  );
+}
+
+function ChampPersonnes({ c, d, v, onChange, off }: {
+  c: Extract<Champ, { t: 'personnes' }>; d: Donnees; v: unknown; onChange: (x: Personne[]) => void; off: boolean;
+}) {
+  const b = c.bornes ? c.bornes(d) : { min: c.min, max: c.max };
+  const brut = Array.isArray(v) ? (v as unknown[]).map(lirePersonneBrute) : [];
+  const n = Math.max(b.min, Math.min(brut.length, b.max), 1);
+  const cartes = Array.from({ length: n }, (_, i) => brut[i] || { ...PERSONNE_VIDE });
+  return (
+    <div className={s.lignesT} style={{ gap: 10 }}>
+      {cartes.map((p, i) => (
+        <CartePersonne key={i} id={`${c.cle}-${i}`} p={p} complet={typeof c.complet === 'function' ? c.complet(d) : !!c.complet} off={off}
+          nom={c.nomCarte ? c.nomCarte(d, i) : n > 1 ? `${c.un} ${i + 1}` : c.un}
+          peutRetirer={n > b.min}
+          onChange={(k, x) => onChange(cartes.map((q, j) => (j === i ? { ...q, [k]: x } : q)))}
+          onRetirer={() => onChange(cartes.filter((_, j) => j !== i))} />
+      ))}
+      {!off && n < b.max && (
+        <button type="button" className={s.ajouter} onClick={() => onChange([...cartes, { ...PERSONNE_VIDE }])}>
+          <Ic n="plus" t={15} e={2.4} />{c.ajouter ? c.ajouter(d) : `Ajouter un ${c.un.toLowerCase()}`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ── Des lignes à colonnes (les lots) ── */
+function ChampLignes({ c, d, v, onChange, off }: { c: Extract<Champ, { t: 'lignes' }>; d: Donnees; v: unknown; onChange: (x: Record<string, string>[]) => void; off: boolean }) {
+  const l = Array.isArray(v) ? (v as unknown[]).map(x => ((x && typeof x === 'object' ? x : {}) as Record<string, string>)) : [];
+  const rangs = l.length ? l : [{}];
+  const maj = (i: number, k: string, x: string) => onChange(rangs.map((r, j) => (j === i ? { ...r, [k]: x } : r)));
+  return (
+    <div className={s.lignesT}>
+      {rangs.map((r, i) => (
+        <div key={i} className={s.lot}>
+          <span className={s.lotIc} aria-hidden="true"><Ic n={c.icone ? c.icone(r) : 'lots'} t={18} /></span>
+          {c.colonnes.map((col, k) => {
+            /* Une case déjà écrite en entier (« 12/500 ») ne reçoit pas le total commun. */
+            const suf = col.suffixe && !(r[col.cle] || '').includes('/') ? col.suffixe(d) : '';
+            return (
+              <label key={col.cle} className={`${s.lotCh} ${s['lotCh' + k] || ''}`}>
+                <span>{col.lib}</span>
+                <span className={suf ? s.unite : undefined}>
+                  <input className={s.input} disabled={off} inputMode={col.nombre ? 'numeric' : undefined} autoComplete="off"
+                    value={r[col.cle] || ''} placeholder={col.exemple} onChange={e => maj(i, col.cle, e.target.value)}
+                    style={suf ? { paddingRight: 22 + suf.length * 7.5 } : undefined} />
+                  {suf && <span>{suf}</span>}
+                </span>
+              </label>
+            );
+          })}
+          {!off && rangs.length > 1
+            ? <button type="button" className={`${s.retirer} ${s.lotRetirer}`} aria-label={`Retirer le ${c.un.toLowerCase()} ${i + 1}`} onClick={() => onChange(rangs.filter((_, j) => j !== i))}><Croix t={15} /></button>
+            : <span className={s.lotRetirer} />}
+        </div>
+      ))}
+      {!off && rangs.length < c.max && (
+        <button type="button" className={s.ajouter} onClick={() => onChange([...rangs, {}])}><Ic n="plus" t={15} e={2.4} />{`Ajouter un ${c.un.toLowerCase()}`}</button>
+      )}
+    </div>
+  );
+}
+
+/* Une adresse choisie, rangée dans les cases d'un document : la rue
+   (« adresse »), le code postal (« cp ») et la ville. Une ville seule (on a
+   tapé un code postal) ne touche pas à la rue. */
+function partiesAdresse(p: AdresseChoisie, cases: string[]): Record<string, string> {
+  const x: Record<string, string> = {};
+  if (p.type !== 'municipality') x.adresse = p.name || adresseProposee(p);
+  /* Seulement les cases que la question a : une offre n'a pas de code postal. */
+  if (p.postcode && cases.includes('cp')) x.cp = p.postcode;
+  if (p.city && cases.includes('ville')) x.ville = p.city;
+  return x;
+}
+
+/* ── La saisie d'une question simple (V3.154) ──
+   Partagée par les questions d'une étape et celles d'une carte « groupes ». */
+function SaisieSimple({ c, id, v, manque, off, onChange, onAdresse }: {
+  c: ChampSimple; id: string; v: unknown; manque: boolean; off: boolean; onChange: (x: unknown) => void;
+  /* V3.175 : l'adresse d'un bien (« adresse », avec « cp » et « ville » à
+     côté) se propose pendant la frappe ; le choix remplit les trois cases. */
+  onAdresse?: (p: AdresseChoisie) => void;
+}) {
+  if (c.t === 'texte' && c.cle === 'adresse' && onAdresse) {
+    return (
+      <SaisieAdresse id={id} v={typeof v === 'string' ? v : ''} off={off} etiquette={c.lib} onChange={onChange} onChoisir={onAdresse}
+        classeChamp={`${s.input} ${manque ? s.inputManque : ''}`} placeholder={c.exemple ? `Ex : ${c.exemple} — tape le début` : 'Tape le début : 12 rue de Silly…'} />
+    );
+  }
+  if (c.t === 'zone') return <ZoneTexte id={id} v={typeof v === 'string' ? v : ''} manque={manque} off={off} exemple={c.exemple} onChange={onChange} />;
+  if ((c.t === 'nombre' || c.t === 'euros') && c.rapides?.length) {
+    /* V3.177 : les valeurs courantes d'un clic (« 3 mois », « 6 mois »…), la saisie à côté. */
+    const n = nombreDe(v);
+    const u = (c.unite || '').split(' ')[0];
+    return (
+      <div className={s.rapidesL}>
+        <div className={s.rapides} role="group" aria-label={c.lib}>
+          {c.rapides.map(x => (
+            <button key={x} type="button" className={s.rapide} aria-pressed={n === x} disabled={off} onClick={() => onChange(x)}>{`${x}${u ? ` ${u}` : ''}`}</button>
+          ))}
+        </div>
+        <div className={s.rapideSaisie}><ChampNombre id={id} euros={c.t === 'euros'} unite={c.unite} v={v} off={off} manque={manque} onChange={onChange} /></div>
+      </div>
+    );
+  }
+  if (c.t === 'nombre' || c.t === 'euros') return <ChampNombre id={id} euros={c.t === 'euros'} unite={c.unite} v={v} off={off} manque={manque} onChange={onChange} />;
+  return (
+    <input id={id} className={`${s.input} ${manque ? s.inputManque : ''}`} disabled={off} autoComplete="off"
+      type={c.t === 'date' ? 'date' : c.t === 'heure' ? 'time' : 'text'}
+      value={typeof v === 'string' ? v : ''} placeholder={c.exemple ? `Ex : ${c.exemple}` : undefined}
+      onChange={e => onChange(e.target.value)} />
+  );
+}
+
+/* V3.157 — Ce que l'éditeur sait du document, pour les questions qui en
+   ont besoin (« Ajouter un bien » propose les biens de son client). */
+export const ContexteActe = createContext<{ clientId: string | null }>({ clientId: null });
+
+/* ── Des cartes qui se répètent (V3.154 : les autres biens d'un bon de visite) ──
+   Comme les personnes : une carte par réponse, son nom (« Bien 2 · 4 rue
+   des Lilas »), « Retirer », puis ses questions simples. Une carte toute
+   neuve reçoit `nouveau` (la date du premier bien). */
+const lireGroupe = (x: unknown): Record<string, unknown> => (x && typeof x === 'object' && !Array.isArray(x) ? x as Record<string, unknown> : {});
+const groupesDe = (v: unknown): Record<string, unknown>[] => (Array.isArray(v) ? v.map(lireGroupe) : []);
+
+function ChampGroupes({ c, d, v, onChange, off }: {
+  c: Extract<Champ, { t: 'groupes' }>; d: Donnees; v: unknown; onChange: (x: Record<string, unknown>[]) => void; off: boolean;
+}) {
+  const cartes = groupesDe(v).slice(0, c.max);
+  const ctx = useContext(ContexteActe);
+  const maj = (i: number, k: string, x: unknown) => onChange(cartes.map((g, j) => (j === i ? { ...g, [k]: x } : g)));
+  const vues = c.champs.filter(q => !q.si || q.si(d));
+  /* La première réponse écrite suit le nom de la carte (son adresse). */
+  const premiere = vues.find(q => q.t === 'texte');
+  return (
+    <div className={s.lignesT} style={{ gap: 10 }}>
+      {cartes.map((g, i) => {
+        const resume = premiere && typeof g[premiere.cle] === 'string' ? (g[premiere.cle] as string).trim() : '';
+        return (
+          <div key={i} className={s.perso}>
+            <div className={s.persoT}>
+              <span className={s.ligneIc}><Ic n={c.ic || 'lots'} t={15} /></span>
+              <b>{[c.nomCarte ? c.nomCarte(d, i) : `${c.un} ${i + 1}`, resume].filter(Boolean).join(' · ')}</b>
+              {c.crm === 'biens' && (g.bienId || g.bienVenteId
+                ? <span className={s.abLie} title="Relié à sa fiche du CRM : vignette dans l’historique, et le bon sur la fiche du bien">{g.bienVenteId ? 'Mon mandat' : 'Ses biens'}</span>
+                : <span className={s.abLie} data-main="oui" title="Écrit à la main : il n’est relié à aucune fiche, pas de suivi possible">À la main</span>)}
+              {!off && <button type="button" className={s.retirer} onClick={() => onChange(cartes.filter((_, j) => j !== i))}><Croix t={13} />Retirer</button>}
+            </div>
+            <div className={s.persoCorps}>
+              {vues.map(q => {
+                const id = `${c.cle}-${i}-${q.cle}`;
+                return (
+                  <div key={q.cle} className={`${s.ch} ${q.large || q.t === 'zone' ? s.large : ''}`}>
+                    <label className={s.chLib} htmlFor={id}>{q.lib}</label>
+                    <SaisieSimple c={q} id={id} v={g[q.cle]} manque={!!q.requis && estVide(g[q.cle])} off={off} onChange={x => maj(i, q.cle, x)}
+                      onAdresse={p => onChange(cartes.map((y, j) => (j === i ? { ...y, ...partiesAdresse(p, c.champs.map(z => z.cle)) } : y)))} />
+                    {q.aide && <div className={s.chAide}>{q.aide}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+      {/* Figé, sans carte : on le dit, plutôt qu'un bloc vide. */}
+      {off && !cartes.length && <div className={s.chAide}>{`Aucun autre ${c.un.toLowerCase()}.`}</div>}
+      {/* V3.157 : un bien vient de mes mandats, de son dossier, ou de ma main. */}
+      {!off && c.crm === 'biens' && (
+        <AjoutBien clientId={ctx.clientId} plein={cartes.length >= c.max}
+          onAjouter={x => onChange([...cartes, { ...(c.nouveau ? c.nouveau(d) : {}), ...x }])} />
+      )}
+      {!off && !c.crm && cartes.length < c.max && (
+        <button type="button" className={s.ajouter} onClick={() => onChange([...cartes, { ...(c.nouveau ? c.nouveau(d) : {}) }])}>
+          <Ic n="plus" t={15} e={2.4} />{c.ajouter ? c.ajouter(d) : `Ajouter un ${c.un.toLowerCase()}`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* Le dessin d'une question qui n'en a pas (V3.18, éditeur des documents). */
+export const IC_TYPE: Record<string, string> = {
+  texte: 'plume', zone: 'doc', date: 'calendrier', heure: 'horloge', nombre: 'regle', euros: 'euro',
+  choix: 'info', cases: 'check', personnes: 'personne', lignes: 'lots', groupes: 'lots',
+};
+
+/* ── Un champ, avec son libellé et son aide ──
+   `bloc` (V3.18, l'éditeur des documents) : chaque question devient une
+   carte — son dessin en pastille, son titre en gros, la saisie dans le même
+   cadre — et prend un dessin par défaut s'il n'en a pas. `sansLib` : le
+   libellé est déjà le titre du bloc (« Les vendeurs »). */
+export function ChampActe({ c, d, maj, off, bloc = false, sansLib = false, voisins, fil = false }: {
+  c: Champ; d: Donnees; maj: Maj; off: boolean; bloc?: boolean; sansLib?: boolean;
+  /* V3.175 : les autres questions de l'étape (une adresse choisie remplit
+     le code postal et la ville s'ils y sont). */
+  voisins?: string[];
+  /* V3.177 : dans le fil des questions (FilQuestions.tsx) — la saisie seule ;
+     le fil dessine la question, son numéro et son aide. */
+  fil?: boolean;
+}) {
+  if (c.si && !c.si(d)) return null;
+  if (c.t === 'titre') return <div className={s.secT}>{c.ic && <span className={s.secTic}><Ic n={c.ic} t={14} /></span>}{c.lib}</div>;
+  if (c.t === 'guide') {
+    const pts = c.points(d);
+    if (!pts.length) return null;
+    return (
+      <div className={`${s.guide} ${s.large}`}>
+        <div className={s.guideT}><span className={s.guideIc}><Ic n="info" t={15} /></span>{c.titre(d)}</div>
+        <ul>
+          {pts.map((p, i) => <li key={i}><span className={s.guidePicto}><Ic n={p.ic || 'check'} t={15} /></span><span>{p.x}</span></li>)}
+        </ul>
+      </div>
+    );
+  }
+  const v = d[c.cle];
+  const id = `ch-${c.cle}`;
+  const manque = !!c.requis && estVide(v);
+  /* Des cartes (personnes, groupes) : sur toute la largeur, sans cadre autour. */
+  const cartes = c.t === 'personnes' || c.t === 'groupes';
+  const large = c.large || cartes || c.t === 'lignes' || c.t === 'cases' || c.t === 'zone'
+    || (c.t === 'choix' && (c.tuiles || c.options.length > 3 || c.options.some(o => o.l.length > 24)));
+  const ic = c.ic || (bloc ? IC_TYPE[c.t] : '');
+  const libelle = (
+    <>
+      {ic && <span className={s.chIc}><Ic n={ic} t={14} /></span>}
+      <span>{c.lib}{c.requis && <em aria-hidden="true">*</em>}</span>
+    </>
+  );
+  const saisie = c.t === 'texte' || c.t === 'zone' || c.t === 'date' || c.t === 'heure' || c.t === 'nombre' || c.t === 'euros';
+
+  let controle: React.ReactNode = null;
+  if (c.t === 'texte' || c.t === 'date' || c.t === 'heure' || c.t === 'zone' || c.t === 'nombre' || c.t === 'euros') {
+    controle = <SaisieSimple c={c} id={id} v={v} manque={manque} off={off} onChange={x => maj(c.cle, x)}
+      onAdresse={voisins ? p => { for (const [k, x] of Object.entries(partiesAdresse(p, voisins))) maj(k, x); } : undefined} />;
+  } else if (c.t === 'groupes') {
+    controle = <ChampGroupes c={c} d={d} v={v} off={off} onChange={x => maj(c.cle, x)} />;
+  } else if (c.t === 'choix') {
+    controle = <ChampChoix c={c} v={v} off={off} fil={fil} onChange={x => maj(c.cle, x)} />;
+  } else if (c.t === 'cases') {
+    controle = <ChampCases c={c} v={v} off={off} onChange={x => maj(c.cle, x)} />;
+  } else if (c.t === 'personnes') {
+    controle = <ChampPersonnes c={c} d={d} v={v} off={off} onChange={x => maj(c.cle, x)} />;
+  } else if (c.t === 'lignes') {
+    controle = <ChampLignes c={c} d={d} v={v} off={off} onChange={x => maj(c.cle, x)} />;
+  }
+
+  if (fil) return <div className={s.filCh} data-cle={c.cle}>{controle}</div>;
+  const carte = c.t === 'choix' || c.t === 'cases' || (bloc && !cartes);
+  return (
+    <div className={`${s.ch} ${large ? s.large : ''} ${carte ? s.chQ : ''} ${bloc && cartes ? s.chPers : ''}`} data-cle={c.cle}>
+      {sansLib ? null : saisie ? <label className={s.chLib} htmlFor={id}>{libelle}</label> : <div className={s.chLib}>{libelle}</div>}
+      {controle}
+      {c.aide && <div className={s.chAide}>{c.aide}</div>}
+    </div>
+  );
+}
+
+/* Ce qui manque dans une étape : les champs obligatoires vides, et les
+   personnes sans nom. Pour la pastille du fil d'étapes. */
+export function manquesEtape(champs: Champ[], d: Donnees): number {
+  let n = 0;
+  for (const c of champs) {
+    if (c.t === 'titre' || c.t === 'guide' || (c.si && !c.si(d))) continue;
+    if (c.t === 'personnes') {
+      const b = c.bornes ? c.bornes(d) : { min: c.min, max: c.max };
+      const l = Array.isArray(d[c.cle]) ? (d[c.cle] as unknown[]).map(lirePersonneBrute) : [];
+      const nb = Math.max(b.min, Math.min(l.length, b.max), 1);
+      const complet = typeof c.complet === 'function' ? c.complet(d) : !!c.complet;
+      for (let i = 0; i < nb; i++) {
+        const p = l[i] || PERSONNE_VIDE;
+        if (!p.nom.trim() || !p.prenom.trim() || (complet && (!p.naissanceDate || !p.naissanceLieu.trim() || !p.adresse.trim()))) n++;
+      }
+      continue;
+    }
+    /* Une carte d'un groupe : chacune de ses questions obligatoires vides. */
+    if (c.t === 'groupes') {
+      for (const g of groupesDe(d[c.cle]).slice(0, c.max)) {
+        for (const q of c.champs) if (q.requis && (!q.si || q.si(d)) && estVide(g[q.cle])) n++;
+      }
+      continue;
+    }
+    if (c.requis && estVide(d[c.cle])) n++;
+  }
+  return n;
+}

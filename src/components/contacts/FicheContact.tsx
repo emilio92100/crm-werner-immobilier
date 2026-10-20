@@ -1,0 +1,737 @@
+'use client';
+import { useEffect, useState } from 'react';
+import AvatarContact from './AvatarContact';
+import Depliant from '@/components/shared/Depliant';
+import { supabase, addJournal, type Client } from '@/lib/supabase';
+import { conjointDe, nomFoyer } from '@/lib/foyer';
+import { jetonEspace } from '@/lib/jeton';
+import {
+  aUnBien, colonneContactAbsente, estAcheteur, estArchive, estPro, ligneContact, lirePro, lireStructure, structurePropre, typeDe, typesDe,
+  type InfosPro, type TypeContact,
+} from '@/lib/contacts';
+import { Ic } from '@/components/documents/ApercuActe';
+import FicheClient, { Coordonnees, type Coord } from '@/components/fiche/FicheClient';
+import { ChampsPro, ChoixTypes, TypesEnLigne, arreterRecherches, controlerTypes } from './ChampsContact';
+import { BarreOnglets, CorpsOnglet } from '@/components/shared/OngletsGlissants';
+import DocumentsDuClient from '@/components/documents/DocumentsDuClient';
+import FriseSuivi, { filtreDe, filtreSuiviNet } from '@/components/fiche/FriseSuivi';
+import { colonneSourceAbsente, libelleSource, MESSAGE_SQL_SOURCE } from '@/lib/sources';
+import FenetreAction, { supprimerActionContact } from './FenetreAction';
+import CarteASavoir from './CarteASavoir';
+import BlocSociete from './BlocSociete';
+import BoutonCarte from '@/components/carte/BoutonCarte';
+import ChoixSource from './ChoixSource';
+import { avantMandat, etapeDe } from '@/lib/biens-vente';
+import { BiensHero, useBiensBandeau, type ActiviteVente, type BienHero } from './BiensBandeau';
+import { demanderNouveauBien, demanderOngletBien, lireOuvertureFiche, oublierOuvertureFiche, signalerMaj } from '@/lib/intentions';
+import { retenirPlace, useHauteur, usePlace } from '@/lib/place-fiche';
+import { cloreRelancesArchive, reporterRelance } from '@/lib/relances';
+import { retirerFicheOuverte } from '@/components/layout/FichesOuvertes';
+import { Horloge, LigneTuiles, Tuile, Tuiles } from '@/components/shared/Tuiles';
+import { FenetreMail, type ContactMail } from '@/components/pages/PageMail';
+import SqueletteFiche from '@/components/shared/SqueletteFiche';
+import { ListeCoordonnees, lignesDe, nettoyer } from '@/components/shared/ListeCoordonnees';
+import c from './Contacts.module.css';
+
+/* ═══ La fiche d'un contact qui n'est pas acheteur ═════════════════════════
+   Un vendeur, un propriétaire, un notaire, un confrère, un gardien, un
+   partenaire n'ont ni recherche, ni veille, ni espace : leur fiche dit qui
+   ils sont, comment les joindre, ce qui est propre à leur métier, leurs biens
+   (rubrique Biens) et tes notes. « Il cherche aussi à acheter » lui ouvre une
+   recherche : il passe alors sur la fiche d'acheteur, complète.
+
+   FicheSelonType choisit : un acheteur a la fiche d'acheteur (FicheClient),
+   les autres celle-ci. */
+
+type Nav = (page: string, data?: unknown) => void;
+
+/* V3.102 — `retourVers` : la fiche a été ouverte depuis Relances ; son bouton
+   retour y ramène et le dit (« Relances » au lieu de « Contacts »). */
+export default function FicheSelonType({ client, onBack, onNavigate, retourVers }: { client: Client; onBack: () => void; onNavigate: Nav; retourVers?: 'relances' | 'agenda' | 'carte' }) {
+  /* La recherche de la barre du haut n'envoie qu'une partie de la fiche : on
+     relit la ligne entière avant de choisir. */
+  const partiel = !client.created_at;
+  const [plein, setPlein] = useState<Client | null>(null);
+  /* V3.50 : un contact supprimé pendant que la recherche du haut le gardait
+     en mémoire tournait sur « Chargement de la fiche… » pour toujours. On le
+     dit, la recherche du haut se recharge et la barre du bas l'oublie. */
+  const [manque, setManque] = useState<{ id: string; erreur: string | null } | null>(null);
+  useEffect(() => {
+    if (!partiel) return;
+    let vivant = true;
+    supabase.from('clients').select('*').eq('id', client.id).maybeSingle().then(({ data, error }) => {
+      if (!vivant) return;
+      if (data) { setPlein(data as Client); return; }
+      setManque({ id: client.id, erreur: error ? error.message : null });
+      if (!error) { signalerMaj(); retirerFicheOuverte('contact', client.id); }
+    });
+    return () => { vivant = false; };
+  }, [client.id, partiel]);
+  const x = partiel ? (plein?.id === client.id ? plein : null) : client;
+  if (!x && manque?.id === client.id) {
+    return (
+      <div style={{ padding: '40px 24px', color: '#64748b', fontSize: 14, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 14 }}>
+        <span>{manque.erreur ? `La fiche n’a pas pu être lue : ${manque.erreur}` : 'Ce contact n’existe plus : il a été supprimé.'}</span>
+        <button type="button" className={c.btn} onClick={onBack}><Ic n="retour" t={15} />{retourVers === 'relances' ? 'Revenir aux relances' : retourVers === 'agenda' ? 'Revenir à l’agenda' : retourVers === 'carte' ? 'Revenir à la carte' : 'Revenir aux contacts'}</button>
+      </div>
+    );
+  }
+  if (!x) return <SqueletteFiche />;
+  /* Lue après coup (depuis la recherche du haut) : elle remplace sa
+     silhouette en fondu (V3.80). */
+  const fiche = estAcheteur(x)
+    ? <FicheClient client={x} onBack={onBack} onNavigate={onNavigate} retourVers={retourVers} />
+    : <FicheContact key={x.id} client={x} onBack={onBack} onNavigate={onNavigate} retourVers={retourVers} />;
+  return partiel ? <div className="fiche-entre">{fiche}</div> : fiche;
+}
+
+/* Un vendeur, un propriétaire peuvent être un couple (src/lib/foyer.ts) :
+   la personne 2 a son nom, son e-mail, son téléphone. */
+type Form = {
+  types: TypeContact[]; civilite: string; prenom: string; nom: string;
+  tels: string[]; emails: string[]; adresse: string; pro: InfosPro;
+  couple: boolean; c2_civilite: string; c2_prenom: string; c2_nom: string; c2_email: string; c2_tel: string;
+  source: string; source_detail: string;
+};
+/* D'où vient le contact (V3.23, outils/sql/source-contact.sql). */
+type AvecSource = { source?: string | null; source_detail?: string | null };
+const formDe = (x: Client): Form => {
+  const j = conjointDe(x.conjoint);
+  return {
+    types: typesDe(x), civilite: x.civilite || '', prenom: x.prenom || '', nom: x.nom || '',
+    /* Tous les numéros et tous les e-mails (V3.89), pas seulement deux. */
+    tels: lignesDe(x.telephones), emails: lignesDe(x.emails),
+    adresse: x.adresse || '', pro: lirePro(x.pro),
+    couple: !!x.couple, c2_civilite: j?.civilite || '', c2_prenom: j?.prenom || '', c2_nom: j?.nom || '', c2_email: j?.email || '', c2_tel: j?.telephone || '',
+    source: (x as AvecSource).source || '', source_detail: (x as AvecSource).source_detail || '',
+  };
+};
+
+function Li({ ic, l, v }: { ic: string; l: string; v?: string | null }) {
+  if (!v) return null;
+  return <div className={c.li}><span><i className={c.liIc}><Ic n={ic} t={14} /></i>{l}</span><b>{v}</b></div>;
+}
+
+/* ═══ Le bandeau d'un contact qui n'est pas acheteur (V3.32) ═════════════
+   Alexandre : « pour l'acheteur tout est dans le bloc bleu ; pour un vendeur,
+   un propriétaire, c'est assez vide ». Comme pour l'acheteur, sous le nom :
+   ses chiffres et depuis quand on le suit. Un vendeur ou un propriétaire :
+   ses biens, ceux en vente, les visites et les offres sur eux, puis chacun
+   de ses biens en une ligne (étape, prix), un clic l'ouvre. Les autres
+   (notaire, confrère, gardien…) : les échanges, les relances, le dernier
+   échange et la prochaine relance. La société reste à droite du nom ; son
+   détail, juste sous le bandeau — comme pour l'acheteur. Au niveau du
+   module (AGENTS.md §2.4). */
+const ECHANGES = ['appel', 'rdv', 'rdv_planifie', 'note', 'email_libre', 'envoi_externe', 'mail_envoye'];
+const LIB_ECHANGE: Record<string, string> = { appel: 'Appel', rdv: 'Rendez-vous', rdv_planifie: 'Rendez-vous', note: 'Note', email_libre: 'E-mail', envoi_externe: 'Envoi', mail_envoye: 'E-mail' };
+function dureeSuivi(j: number): string {
+  if (j <= 0) return 'aujourd’hui';
+  if (j === 1) return '1 jour';
+  if (j < 45) return `${j} jours`;
+  const mois = Math.round(j / 30.44);
+  if (mois < 12) return `${mois} mois`;
+  const ans = Math.floor(mois / 12), reste = mois % 12;
+  return `${ans} an${ans > 1 ? 's' : ''}${reste ? ` et ${reste} mois` : ''}`;
+}
+const jourCourt = (iso: string) => new Date(iso.length <= 10 ? `${iso}T12:00:00` : iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+const pl = (n: number, un: string, plusieurs: string) => `${n} ${n > 1 ? plusieurs : un}`;
+
+/* Le bandeau (V3.33) : les tuiles (src/components/shared/Tuiles.tsx), puis
+   une ligne discrète. Les biens d'un vendeur ont leur propre rang, sur toute
+   la largeur du bandeau (BiensHero) : la colonne de gauche reste à la
+   hauteur des coordonnées, et rien ne reste vide à droite ni en bas. */
+function ActiviteHero({ proprio, biens, archives = 0, vente, journal, relances, creeLe, onBien, onSuivi }: {
+  proprio: boolean; biens: BienHero[] | null; archives?: number; vente: ActiviteVente;
+  journal: { type: string; created_at: string }[]; relances: { date_echeance: string; note: string | null }[];
+  creeLe: string | null | undefined; onBien: (id: string, onglet?: string) => void; onSuivi: () => void;
+}) {
+  /* L'heure de l'affichage, lue une fois (un rendu reste pur). */
+  const [maintenant] = useState(() => Date.now());
+  const jours = creeLe ? Math.max(0, Math.floor((maintenant - Date.parse(creeLe)) / 86_400_000)) : null;
+  const echanges = journal.filter(j => ECHANGES.includes(j.type));
+  const dernier = echanges[0];
+  const prochaine = relances[0];
+  const liste = biens || [];
+  const enVente = liste.filter(b => ['mandat', 'offre', 'compromis', 'suspendu'].includes(b.etape)).length;
+  const versListe = () => document.getElementById('biens-hero')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  /* Un seul bien concerné : on l'ouvre, sur « Visites et offres » s'il a
+     cet onglet (après le mandat) ; plusieurs : le rang de ses biens. */
+  const ouvrirSur = (cle: 'v' | 'o') => {
+    const concernes = liste.filter(b => (cle === 'v' ? (vente.parBien[b.id]?.f || 0) + (vente.parBien[b.id]?.p || 0) : vente.parBien[b.id]?.o || 0) > 0);
+    if (concernes.length === 1) onBien(concernes[0].id, avantMandat(concernes[0].etape) ? undefined : 'visites');
+    else versListe();
+  };
+  /* V3.50 : les biens archivés ne comptent pas (comme « Ses biens » et la
+     liste des contacts) ; on dit seulement qu'il y en a. */
+  const sousBiens = !liste.length ? (archives ? `${archives} archivé${archives > 1 ? 's' : ''}` : 'pas encore de bien')
+    : liste.length === 1 ? etapeDe(liste[0].etape).lib
+    : enVente === liste.length ? 'tous en vente'
+    : enVente ? `dont ${enVente} en vente` : 'aucun en vente pour l’instant';
+  const nbVisites = vente.faites + vente.prevues;
+  const titreVisites = vente.faites ? pl(vente.faites, 'visite faite', 'visites faites') : vente.prevues ? pl(vente.prevues, 'visite prévue', 'visites prévues') : 'Aucune visite';
+  const jourProchaine = vente.prochaineVisite ? jourCourt(vente.prochaineVisite) : '';
+  const sousVisites = !nbVisites ? 'pour l’instant'
+    : vente.faites && vente.prevues ? `+ ${pl(vente.prevues, 'prévue', 'prévues')}${jourProchaine ? `, ${vente.prevues > 1 ? 'la prochaine ' : ''}le ${jourProchaine}` : ''}`
+    : vente.prevues ? (jourProchaine ? `${vente.prevues > 1 ? 'la prochaine ' : ''}le ${jourProchaine}` : 'à venir')
+    : vente.derniereVisite ? `la dernière le ${jourCourt(vente.derniereVisite)}` : 'déjà faites';
+  const sousOffres = !vente.offres ? 'pour l’instant'
+    : vente.acceptee ? (vente.offres === 1 ? 'acceptée' : `dont ${vente.acceptee} acceptée${vente.acceptee > 1 ? 's' : ''}`)
+    : vente.enAttente ? (vente.offres === 1 ? 'en attente de réponse' : `dont ${vente.enAttente} en attente`)
+    : 'aucune en attente';
+  return (
+    <div className={c.activite}>
+      {proprio ? (
+        <Tuiles label="Son activité" grandit>
+          <Tuile ic="maison" titre={liste.length ? pl(liste.length, 'bien', 'biens') : 'Aucun bien'} sous={sousBiens} vide={!liste.length}
+            onClic={liste.length === 1 ? () => onBien(liste[0].id) : versListe} />
+          <Tuile ic="cle" titre={titreVisites} sous={sousVisites} vide={!nbVisites} onClic={() => ouvrirSur('v')} />
+          <Tuile ic="euro" titre={vente.offres ? pl(vente.offres, 'offre', 'offres') : 'Aucune offre'} sous={sousOffres} vide={!vente.offres} onClic={() => ouvrirSur('o')} />
+        </Tuiles>
+      ) : (
+        <Tuiles label="Son activité" grandit>
+          <Tuile ic="bulle" titre={echanges.length ? pl(echanges.length, 'échange', 'échanges') : 'Aucun échange'}
+            sous={dernier ? `le dernier : ${(LIB_ECHANGE[dernier.type] || 'échange').toLowerCase()}, le ${jourCourt(dernier.created_at)}` : 'noté pour l’instant'} vide={!echanges.length} onClic={onSuivi} />
+          <Tuile ic="calendrier" titre={relances.length ? pl(relances.length, 'relance à venir', 'relances à venir') : 'Aucune relance'}
+            sous={prochaine ? `la prochaine le ${jourCourt(prochaine.date_echeance)}${prochaine.note ? ` · ${prochaine.note}` : ''}` : 'prévue pour l’instant'} vide={!relances.length} onClic={onSuivi} />
+        </Tuiles>
+      )}
+      {/* Depuis quand on le suit : une ligne discrète, plus une tuile de plus. */}
+      {jours !== null && (
+        <LigneTuiles><Horloge fort={jours <= 0 ? 'Suivi depuis aujourd’hui' : `Suivi depuis ${dureeSuivi(jours)}`} doux={` · fiche créée le ${jourCourt(String(creeLe))}`} /></LigneTuiles>
+      )}
+    </div>
+  );
+}
+
+/* V3.59 — les rubriques d'un contact qui n'est pas acheteur, à cheval sur le
+   bas du bandeau, comme la fiche d'un acheteur ou d'un bien (Alexandre :
+   « il y a trop d'infos sur une seule page ; qu'on ne soit pas obligé de
+   descendre tout en bas pour voir le suivi »). */
+type OngletContact = 'savoir' | 'documents' | 'suivi';
+const ORDRE_ONGLETS: OngletContact[] = ['savoir', 'documents', 'suivi'];
+
+function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { client: Client; onBack: () => void; onNavigate: Nav; retourVers?: 'relances' | 'agenda' | 'carte' }) {
+  const [x, setX] = useState<Client>(depart);
+  /* V3.81 (Alexandre : « depuis une relance, Ouvrir la fiche ne mène pas au
+     Suivi pour certains ») : la fiche d'un vendeur, d'un propriétaire, d'un
+     notaire… ne lisait pas la demande laissée par la relance (seule la fiche
+     d'acheteur le faisait) et s'ouvrait sur « Ce qu'on sait ». Elle s'ouvre
+     maintenant sur le Suivi, avec le bon filtre, et vient en vue. */
+  const [ouverture] = useState(() => lireOuvertureFiche(depart.id));
+  useEffect(() => { if (ouverture) oublierOuvertureFiche(); }, [ouverture]);
+  const [edit, setEdit] = useState<Form | null>(null);
+  const [occupe, setOccupe] = useState(false);
+  const [erreur, setErreur] = useState('');
+  /* « Sa société » ouverte depuis le bandeau, avant qu'elle soit notée (V3.31). */
+  const [societeOuverte, setSocieteOuverte] = useState(false);
+  /* Chaque « Ajouter » repart d'un formulaire neuf (le bloc reste monté, V3.32). */
+  const [cleSoc, setCleSoc] = useState(0);
+  /* Le suivi (V3.23) : tout le journal du contact, et ses relances en attente.
+     Un contact qui n'est pas acheteur n'a pas de recherche : tout est sur
+     `client_id`, `recherche_id` vide. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [journal, setJournal] = useState<any[]>([]);
+  const [relances, setRelances] = useState<{ id: string; date_echeance: string; note: string | null; recherche_id?: string | null }[]>([]);
+  const [filtre, setFiltre] = useState<string>(() => filtreSuiviNet(ouverture?.filtre));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [action, setAction] = useState<{ edition: any | null; type: 'note' | 'appel' } | null>(null);
+  const [tour, setTour] = useState(0);
+  const [mail, setMail] = useState(false);
+  /* V3.121 : sans demande précise, la fiche reprend l'onglet et la hauteur
+     où on l'avait laissée (lib/place-fiche.ts). */
+  const placeLue = usePlace(`contact:${depart.id}`);
+  const place = ouverture ? null : placeLue;
+  const [onglet, setOnglet] = useState<OngletContact>(() => (ouverture ? 'suivi' : ORDRE_ONGLETS.includes(place?.onglet as OngletContact) ? (place!.onglet as OngletContact) : 'savoir'));
+  useEffect(() => { retenirPlace(`contact:${depart.id}`, { onglet }); }, [depart.id, onglet]);
+  const [journalLu, setJournalLu] = useState(false);
+  useHauteur(`contact:${depart.id}`, place, journalLu, !!place && place.onglet === onglet);
+  useEffect(() => {
+    if (!ouverture) return;
+    const t = window.setTimeout(() => document.getElementById('onglets-contact')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350);
+    return () => window.clearTimeout(t);
+  }, [ouverture]);
+  /* Un onglet choisi depuis le bandeau (une tuile, « Ajouter » la société) :
+     la barre vient en vue si elle est plus bas. */
+  const allerA = (k: OngletContact) => {
+    setOnglet(k);
+    const barre = document.getElementById('onglets-contact');
+    if (barre && barre.getBoundingClientRect().top > window.innerHeight - 80) barre.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  const types = typesDe(x);
+  const pro = lirePro(x.pro);
+  const jur = pro.juridique && typeof pro.juridique === 'object' ? pro.juridique : null;
+  const principal = typeDe(types[0]);
+  const archive = estArchive(x);
+  const proprio = aUnBien(typesDe(x));
+  const ouvrirBien = (id: string, onglet?: string) => { if (onglet) demanderOngletBien(id, onglet); onNavigate('biens', { bien: id }); };
+
+  /* Ses biens, et les visites et offres sur eux : le bandeau (V3.32 ; le
+     chargement et le rang vivent dans BiensBandeau.tsx depuis la V3.84). */
+  const { biens: biensH, archives: nbArchives, vente: vo } = useBiensBandeau(depart.id);
+  useEffect(() => {
+    let vivant = true;
+    supabase.from('journal').select('*').eq('client_id', depart.id).order('created_at', { ascending: false })
+      .then(({ data }) => { if (vivant) { setJournal(data || []); setJournalLu(true); } });
+    supabase.from('relances').select('id, date_echeance, note, recherche_id').eq('client_id', depart.id).eq('statut', 'en_attente')
+      .order('date_echeance', { ascending: true })
+      .then(({ data }) => { if (vivant) setRelances(data || []); });
+    return () => { vivant = false; };
+  }, [depart.id, tour]);
+  const recharger = () => setTour(t => t + 1);
+  /* V3.85 — « Reporter » sur une relance « À venir » de l'Historique. */
+  const reporterDepuisSuivi = async (id: string, jour: string) => {
+    const ok = await reporterRelance(id, jour);
+    if (ok) { recharger(); signalerMaj(); }
+    return ok;
+  };
+  /* Le nombre de ses documents (de ses délégations pour un confrère), pour
+     l'onglet « Documents ». */
+  const estConfrere = types.includes('confrere');
+  const [nbDocs, setNbDocs] = useState<number | null>(null);
+  useEffect(() => {
+    let vivant = true;
+    const q = supabase.from('documents').select('id', { count: 'exact', head: true });
+    (estConfrere ? q.eq('modele', 'delegation').eq('donnees->>confrereId', depart.id) : q.eq('client_id', depart.id))
+      .then(({ count, error }) => { if (vivant) setNbDocs(error ? null : count ?? 0); });
+    return () => { vivant = false; };
+  }, [depart.id, estConfrere]);
+
+  async function ecrire(patch: Record<string, unknown>, quoi: string): Promise<Client | null> {
+    setErreur('');
+    const { data, error } = await supabase.from('clients').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', x.id).select().single();
+    if (error) {
+      setErreur(colonneContactAbsente(error.message) ? 'Lance d’abord outils/sql/types-contact.sql dans Supabase : les types de contact n’y sont pas encore.' : `${quoi} : ${error.message}`);
+      return null;
+    }
+    setX(data as Client);
+    return data as Client;
+  }
+
+  /* V3.73 : archiver ferme aussi ses relances en attente (sauf un compromis
+     ou l'agenda) : un contact rangé dans « Archivés » ne remonte plus dans
+     Relances. Une ligne du Suivi le dit, dans un sens comme dans l'autre. */
+  async function archiverOuNon(v: boolean) {
+    const ok = await ecrire({ archive: v }, v ? 'Le contact n’a pas pu être archivé' : 'Le contact n’a pas pu sortir des archives');
+    if (!ok) return;
+    if (v) {
+      const { erreur } = await cloreRelancesArchive(ok.id);
+      if (erreur) setErreur(`Le contact est archivé, mais ses relances en attente n’ont pas été fermées : ${erreur}`);
+    }
+    await addJournal(ok.id, 'statut_change', v ? 'Contact archivé' : 'Contact sorti des archives', v ? 'Ses relances en attente sont fermées.' : undefined, { archive: v });
+    signalerMaj();
+  }
+
+  async function enregistrer() {
+    if (!edit) return;
+    if (!edit.prenom.trim() && !edit.nom.trim()) { setErreur('Écris au moins un prénom ou un nom.'); return; }
+    if (!edit.types.length) { setErreur('Choisis au moins un type.'); return; }
+    const couple = edit.couple && !estPro(edit.types);
+    if (couple && !edit.c2_prenom.trim() && !edit.c2_nom.trim()) { setErreur('Écris au moins le prénom ou le nom de la personne 2.'); return; }
+    setOccupe(true);
+    /* V3.50 : « Vendeur » ne s'enlève pas à qui a un bien en vente ;
+       « Acheteur » enlevé arrête ses recherches (voir controlerTypes). */
+    setErreur('');
+    const ctl = await controlerTypes(x.id, typesDe(x), edit.types, x.prenom);
+    if (ctl.erreur !== null) { setOccupe(false); if (ctl.erreur) setErreur(ctl.erreur); return; }
+    /* Les colonnes du couple ne s'écrivent que si elles servent : avant le SQL
+       « signature-plusieurs », elles n'existent pas. */
+    const foyer = 'couple' in x || couple
+      ? {
+        couple, conjoint: couple ? {
+          ...(conjointDe(x.conjoint) || {}), civilite: edit.c2_civilite, prenom: edit.c2_prenom.trim(), nom: edit.c2_nom.trim(),
+          email: edit.c2_email.trim().toLowerCase(), telephone: edit.c2_tel.trim(),
+        } : null,
+      }
+      : {};
+    const r = await ecrire({
+      types: edit.types, civilite: edit.civilite || null, prenom: edit.prenom.trim(), nom: edit.nom.trim(),
+      telephones: nettoyer(edit.tels, 'tel'), emails: nettoyer(edit.emails, 'mail'),
+      adresse: edit.adresse.trim() || null, pro: structurePropre(edit.pro), ...foyer,
+    }, 'La fiche n’a pas pu être enregistrée');
+    if (!r) { setOccupe(false); return; }
+    if (ctl.arreter) await arreterRecherches(x.id);
+    /* La source s'écrit à part, et seulement si elle a changé : avant le SQL
+       « source-contact », la colonne n'existe pas et le reste doit passer. */
+    const avant = x as AvecSource;
+    if ((avant.source || '') !== edit.source || (avant.source_detail || '') !== edit.source_detail.trim()) {
+      const src = { source: edit.source || null, source_detail: edit.source ? (edit.source_detail.trim() || null) : null };
+      const { error: eSrc } = await supabase.from('clients').update(src).eq('id', x.id);
+      if (eSrc) { setOccupe(false); setErreur(colonneSourceAbsente(eSrc.message) ? MESSAGE_SQL_SOURCE : `La source : ${eSrc.message}`); return; }
+      setX({ ...r, ...src } as Client);
+    }
+    setOccupe(false);
+    setEdit(null);
+    /* Devenu acheteur : il passe sur la fiche d'acheteur. */
+    if (estAcheteur(r)) onNavigate('fiche', r);
+  }
+
+  /* Il cherche aussi à acheter : une recherche vide, et la fiche d'acheteur. */
+  async function ouvrirRecherche() {
+    setOccupe(true); setErreur('');
+    const { error } = await supabase.from('recherches').insert({ client_id: x.id, nom: 'Recherche principale', token_espace: jetonEspace(x.prenom, x.nom), active: true, secteurs: [] });
+    if (error) { setErreur('La recherche n’a pas pu être créée : ' + error.message); setOccupe(false); return; }
+    const r = await ecrire({ types: ['acheteur', ...types.filter(t => t !== 'acheteur')], statut: 'prospect' }, 'Le type n’a pas pu être changé');
+    await addJournal(x.id, 'creation', 'Recherche ouverte', 'Il cherche aussi à acheter');
+    setOccupe(false);
+    if (r) onNavigate('fiche', r);
+  }
+
+  /* V3.50 : supprimer un contact qui n'est pas acheteur.
+     · Pas tant qu'il possède un bien ou un document : la base les garderait
+       sans propriétaire (« on delete set null »), un mandat en cours perdait
+       son vendeur sans un mot. On propose de l'archiver à la place.
+     · Pas s'il a encore un dossier d'achat (une recherche) : c'est la fiche
+       d'acheteur qui sait tout effacer proprement.
+     · Sinon : ses rendez-vous, ses relances, ses envois et son historique
+       d'abord, puis la fiche, en vérifiant qu'elle est bien partie ; la
+       recherche du haut et la barre des fiches ouvertes l'oublient. */
+  async function supprimer() {
+    setOccupe(true); setErreur('');
+    const compter = async (table: string) => {
+      const { count, error } = await supabase.from(table).select('id', { count: 'exact', head: true }).eq('client_id', x.id);
+      /* Une table absente de ce projet (SQL pas passé) : rien ne s'y rattache. */
+      if (error && !/does not exist|schema cache/i.test(error.message)) throw new Error(error.message);
+      return error ? 0 : count || 0;
+    };
+    let nb: { biens: number; docs: number; recherches: number };
+    try {
+      const [biens, docs, recherches] = await Promise.all([compter('biens_vente'), compter('documents'), compter('recherches')]);
+      nb = { biens, docs, recherches };
+    } catch (e) {
+      setOccupe(false);
+      setErreur(`Le contact n’a pas pu être supprimé : ce qui lui est relié n’a pas pu être vérifié (${(e as Error).message}).`);
+      return;
+    }
+    if (nb.biens || nb.docs) {
+      setOccupe(false);
+      const relie = [nb.biens ? `${nb.biens} bien${nb.biens > 1 ? 's' : ''}` : '', nb.docs ? `${nb.docs} document${nb.docs > 1 ? 's' : ''}` : ''].filter(Boolean).join(' et ');
+      const pourquoi = `${x.prenom || 'Ce contact'} est relié à ${relie} : le supprimer les laisserait sans propriétaire. Archive-le plutôt.`;
+      if (archive) { alert(`${pourquoi}\n\nIl est déjà archivé : il n’apparaît plus dans la liste.`); return; }
+      if (confirm(`${pourquoi}\n\nL’archiver maintenant ?`)) await archiverOuNon(true);
+      return;
+    }
+    if (nb.recherches) {
+      setOccupe(false);
+      alert(`${x.prenom || 'Ce contact'} a encore ${nb.recherches > 1 ? `${nb.recherches} recherches` : 'une recherche'} d’achat. Pour tout effacer proprement, redonne-lui le type « Acheteur » et supprime-le depuis sa fiche d’acheteur. Ou archive-le.`);
+      return;
+    }
+    if (!confirm(`Supprimer ${nomFoyer(x)} de tes contacts ?\n\nC’est définitif : son historique et ses relances partent avec lui. Pour le garder sans le voir, archive-le plutôt.`)) { setOccupe(false); return; }
+    /* Ce qui pointe vers lui d'abord : un rendez-vous peut pointer vers une
+       relance, il part avant elle. */
+    const etapes: { quoi: string; faire: () => PromiseLike<{ error: { message: string } | null }> }[] = [
+      { quoi: 'ses rendez-vous', faire: () => supabase.from('rendez_vous').delete().eq('client_id', x.id) },
+      { quoi: 'ses relances', faire: () => supabase.from('relances').delete().eq('client_id', x.id) },
+      { quoi: 'ses envois', faire: () => supabase.from('envois').delete().eq('client_id', x.id) },
+      { quoi: 'son historique', faire: () => supabase.from('journal').delete().eq('client_id', x.id) },
+    ];
+    for (const e of etapes) {
+      const { error } = await e.faire();
+      if (error && !/does not exist|schema cache/i.test(error.message)) {
+        setOccupe(false);
+        setErreur(`La suppression s’est arrêtée sur ${e.quoi} : ${error.message}. La fiche, elle, est toujours là.`);
+        recharger();
+        return;
+      }
+    }
+    const { data: partie, error } = await supabase.from('clients').delete().eq('id', x.id).select('id');
+    setOccupe(false);
+    if (error) { setErreur('Le contact n’a pas pu être supprimé : ' + error.message + (/foreign key|violates/i.test(error.message) ? ' (il est encore relié à un bien ou à un dossier).' : '')); recharger(); return; }
+    /* La base fermée refuse parfois sans erreur : rien n'est parti. */
+    if (!partie?.length) { setErreur('Le contact n’a pas été supprimé : la base n’a rien effacé. La session a peut-être expiré : recharge la page, puis recommence.'); recharger(); return; }
+    signalerMaj();
+    retirerFicheOuverte('contact', x.id);
+    onBack();
+  }
+
+  const tels = (x.telephones || []).filter(Boolean), mails = (x.emails || []).filter(Boolean);
+  const j2 = x.couple ? conjointDe(x.conjoint) : null;
+  /* Les coordonnées dans le panneau crème, à droite, comme sur la fiche d'un
+     acheteur (V3.32) : dans un couple, chaque ligne dit à qui elle est. */
+  const civ1 = x.civilite || '', civ2 = j2?.civilite || '';
+  const qui1 = j2 ? (civ1 && civ2 && civ1 !== civ2 ? civ1 : x.prenom || civ1 || 'Personne 1') : undefined;
+  const qui2 = j2 ? (civ1 && civ2 && civ1 !== civ2 ? civ2 : j2.prenom || civ2 || 'Personne 2') : undefined;
+  const coords: Coord[] = [
+    ...tels.map(t => ({ k: 'tel' as const, val: t, qui: qui1 })),
+    ...(j2?.telephone ? [{ k: 'tel' as const, val: j2.telephone, qui: qui2 }] : []),
+    ...mails.map(m => ({ k: 'mail' as const, val: m, qui: qui1 })),
+    ...(j2?.email ? [{ k: 'mail' as const, val: j2.email, qui: qui2 }] : []),
+    ...(x.adresse ? [{ k: 'adresse' as const, val: x.adresse }] : []),
+  ];
+  const ligne = ligneContact(x);
+  /* Une adresse que la carte peut placer : chez lui, son étude, son agence,
+     son immeuble, ou le bien qu'il possède. */
+  const aUneAdresse = [x.adresse, pro.adresseEtude, pro.adresseAgence, pro.immeuble, (x as unknown as { bien_actuel_adresse?: string | null }).bien_actuel_adresse]
+    .some(v => typeof v === 'string' && v.trim().length > 4);
+  const cls = { row: c.g2, group: c.ch, label: '', input: c.in };
+  /* Sa société (V3.30) : pour un vendeur, un propriétaire, un contact sans
+     métier ; pas pour un notaire ou un confrère, qui ont déjà la leur. */
+  const structure = lireStructure(pro.structure);
+  const peutSociete = !estPro(types) || aUnBien(types);
+  /* V3.31 : juste sous le bandeau bleu (et non plus en bas de la fiche),
+     dès qu'elle est notée ; sinon « Sa société (SCI…) » dans le bandeau
+     l'ouvre là, prête à remplir. */
+  const societe = (
+    <BlocSociete key={cleSoc} client={x} notes={x.notes} ouvrir={societeOuverte} onFermer={() => setSocieteOuverte(false)}
+      onEnregistrer={async st => !!(await ecrire({ pro: { ...pro, structure: st || undefined } }, 'La société n’a pas pu être enregistrée'))}
+      onFiche={cl => onNavigate('fiche', cl)} />
+  );
+
+  return (
+    <div className={c.fiche}>
+      {mail && <FenetreMail contact={x as unknown as ContactMail} onFermer={() => setMail(false)} onEnvoye={recharger} />}
+      <div className={c.barre}>
+        <button type="button" className={c.retour} onClick={onBack}><Ic n="retour" t={16} />{retourVers === 'relances' ? 'Relances' : retourVers === 'agenda' ? 'Agenda' : retourVers === 'carte' ? 'Carte' : 'Contacts'}</button>
+        <div className={c.actions}>
+          {types.includes('confrere') && (
+            <button type="button" className={`${c.btn} ${c.btnOr}`} onClick={() => onNavigate('documents', { delegation: x.id })}><Ic n="accord" t={15} />Déléguer un mandat</button>
+          )}
+          {/* V3.51 : lui écrire sans quitter sa fiche (la trame de « Nouveau mail »). */}
+          <button type="button" className={c.btn} onClick={() => setMail(true)}><Ic n="mail" t={15} />Envoyer un mail</button>
+          <button type="button" className={c.btn} onClick={() => { setErreur(''); setEdit(formDe(x)); }}><Ic n="crayon" t={15} />Modifier</button>
+          <button type="button" className={`${c.btn} ${c.masquable}`} disabled={occupe} onClick={() => void archiverOuNon(!archive)}>
+            <Ic n="archive" t={15} />{archive ? 'Sortir des archives' : 'Archiver'}
+          </button>
+          <button type="button" className={`${c.btn} ${c.btnDanger}`} disabled={occupe} onClick={supprimer} aria-label="Supprimer ce contact"><Ic n="corbeille" t={15} /></button>
+        </div>
+      </div>
+
+      <div className={`${c.hero} ${c.heroAvecCo} ${c.heroOnglets}`}>
+        <div className={c.heroG}>
+        <div className={c.heroQui}>
+          <AvatarContact c={x} teinte={{ bg: '', fg: '#e0c36e' }} className={c.heroAv} libre />
+          <div className={c.heroTxt}>
+            {/* « Il agit pour une société ? » à droite du nom (V3.32) : une ligne de moins. */}
+            <div className={c.heroNomL}>
+              <h1 className={c.heroNom}>{nomFoyer(x) || 'Sans nom'}</h1>
+              {peutSociete && structure && (
+                <span className={c.heroSocOk}><Ic n="immeuble" t={13} /><span>{'Pour '}<b>{structure.denomination || 'une société'}</b>{structure.qualite ? ` · ${structure.qualite.split(/[,(]/)[0].trim()}` : ''}</span></span>
+              )}
+              {peutSociete && !structure && !societeOuverte && (
+                <button type="button" className={c.heroSoc} onClick={() => { setCleSoc(k => k + 1); setSocieteOuverte(true); allerA('savoir'); }}>
+                  <Ic n="immeuble" t={13} />{`${x.civilite === 'Madame' ? 'Elle' : 'Il'} agit pour une société ?`}<b>Ajouter</b>
+                </button>
+              )}
+            </div>
+            <TypesEnLigne client={x} sombre onMaj={t => { const n = { ...x, types: t } as Client; setX(n); if (t.includes('acheteur')) onNavigate('fiche', n); }} />
+            {/* La société est déjà dite à droite du nom : la ligne ne la répète pas. */}
+            {ligne && !(peutSociete && structure?.denomination && ligne.includes(structure.denomination)) && <div className={c.heroLigne}>{ligne}</div>}
+            {libelleSource((x as AvecSource).source, (x as AvecSource).source_detail) && (
+              <div className={c.heroSource}><Ic n="drapeau" t={13} /><span>{'Source : '}<b>{libelleSource((x as AvecSource).source, (x as AvecSource).source_detail)}</b></span></div>
+            )}
+          </div>
+        </div>
+        <ActiviteHero proprio={proprio} biens={biensH} archives={nbArchives} vente={vo}
+          journal={journal} relances={relances} creeLe={x.created_at} onBien={ouvrirBien}
+          onSuivi={() => allerA('suivi')} />
+        </div>
+        <Coordonnees coords={coords} onModifier={() => { setErreur(''); setEdit(formDe(x)); }}
+          pied={aUneAdresse ? <BoutonCarte focus={`c:${x.id}`} onNavigate={onNavigate} /> : undefined} />
+        {proprio && biensH && <BiensHero biens={biensH} vente={vo} onBien={ouvrirBien} onCreerBien={() => { demanderNouveauBien(x.id); onNavigate('biens'); }} />}
+      </div>
+
+      {(() => {
+        /* Le suivi (V3.23) : la frise des acheteurs, sans Veille ni Sélection.
+           Appels, rendez-vous, notes, envois ; le reste (contact créé, types
+           changés…) en lignes discrètes. V3.214 : les mêmes filtres que le
+           dossier d'un acheteur (filtreDe) ; un filtre vide ne s'affiche pas. */
+        const items = journal.map(j => ({ kind: 'event' as const, ts: j.created_at as string, data: j }));
+        const vus = filtre === 'tout' ? items : items.filter(i => filtreDe(i) === filtre);
+        const comptes: Record<string, number> = { tout: items.length };
+        for (const i of items) { const k = filtreDe(i); comptes[k] = (comptes[k] || 0) + 1; }
+        const avecDocs = !estPro(types) || aUnBien(types) || types.includes('confrere');
+        const onglets = [
+          { k: 'savoir' as OngletContact, l: <span>{'À savoir'}<span className={c.ongletLong}>{` sur ${x.prenom || (x.civilite === 'Madame' ? 'elle' : 'lui')}`}</span></span>, ic: <Ic n="personne" t={15} e={2} /> },
+          ...(avecDocs ? [{ k: 'documents' as OngletContact, l: types.includes('confrere') && estPro(types) && !aUnBien(types) ? 'Délégations' : 'Documents', n: nbDocs || undefined, ic: <Ic n="doc" t={15} e={2} /> }] : []),
+          { k: 'suivi' as OngletContact, l: 'Suivi', n: items.length || undefined, ic: <Ic n="horloge" t={15} e={2} /> },
+        ];
+        const actif = onglets.some(o => o.k === onglet) ? onglet : 'savoir';
+        return (
+          <>
+            <div id="onglets-contact" className={c.ongletsCheval}>
+              <BarreOnglets<OngletContact> label="Rubriques du contact" actif={actif} onChoisir={setOnglet} onglets={onglets} />
+            </div>
+            {archive && <div className={c.archiveBandeau}>Ce contact est archivé : il n’apparaît plus dans la liste, seulement dans « Archivés ».</div>}
+            {erreur && <div className={c.erreur}>{erreur}</div>}
+            <CorpsOnglet k={actif} ordre={ORDRE_ONGLETS}>
+              {actif === 'savoir' && (
+                <div className={c.ongletCorps}>
+                  {/* Sa société d'abord (V3.31) ; « Ajouter » dans le bandeau l'ouvre ici. */}
+                  {peutSociete && <Depliant ouvert={!!structure || societeOuverte} ecart={16}><div className={c.socHaut}>{societe}</div></Depliant>}
+                  <CarteASavoir prenom={x.prenom || ''} texte={x.notes}
+                    onEnregistrer={async t => !!(await ecrire({ notes: t || null }, 'Les infos n’ont pas pu être enregistrées'))} />
+                  <div className={c.blocs}>
+                    {types.includes('confrere') && (
+                      <section className={c.bloc}>
+                        <div className={c.blocT}><span className={c.blocIc}><Ic n="agence" t={15} /></span><h3>Son agence</h3><button type="button" className={c.lien} onClick={() => setEdit(formDe(x))}>Modifier</button></div>
+                        <div className={c.lignes}>
+                          <Li ic="personne" l="Statut" v={pro.statutPro === 'mandataire' ? 'Mandataire' : pro.statutPro === 'independant' ? 'À son compte' : pro.statutPro === 'salarie' ? 'Salarié d’une agence' : ''} />
+                          <Li ic="agence" l="Agence" v={pro.agence} />
+                          <Li ic="groupe" l="Réseau" v={pro.reseau} />
+                          <Li ic="lieu" l="Adresse" v={pro.adresseAgence} />
+                          <Li ic="globe" l="Site" v={pro.siteWeb} />
+                        </div>
+                        {!pro.agence && !pro.statutPro && <div className={c.pied}>Son agence, son statut (salarié, mandataire, à son compte) : « Modifier » pour les noter.</div>}
+                        {/* Ce que sa dernière délégation a gardé (V3.19). */}
+                        {jur?.le && (
+                          <>
+                            <div className={c.lignes} style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #eef1f6' }}>
+                              <Li ic="immeuble" l="Société" v={[jur.societe, jur.forme].filter(Boolean).join(', ')} />
+                              <Li ic="doc" l="RCS" v={jur.rcs} />
+                              <Li ic="carte" l="Carte professionnelle" v={[jur.carte, jur.cci ? `délivrée par ${jur.cci}` : ''].filter(Boolean).join(', ')} />
+                              <Li ic="bouclier" l="Garantie financière" v={jur.fonds === 'aucun' ? 'Ne détient aucuns fonds' : jur.garant} />
+                              <Li ic="balance" l="Assurance (RCP)" v={jur.rcp} />
+                            </div>
+                            <div className={c.pied}>{`Repris de sa délégation du ${new Date(jur.le + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}, et remis à jour à chaque délégation finalisée.`}</div>
+                          </>
+                        )}
+                      </section>
+                    )}
+                    {types.includes('notaire') && (
+                      <section className={c.bloc}>
+                        <div className={c.blocT}><span className={c.blocIc}><Ic n="balance" t={15} /></span><h3>Son étude</h3><button type="button" className={c.lien} onClick={() => setEdit(formDe(x))}>Modifier</button></div>
+                        <div className={c.lignes}>
+                          <Li ic="balance" l="Étude" v={pro.etude} />
+                          <Li ic="lieu" l="Adresse" v={pro.adresseEtude} />
+                          <Li ic="personne" l="Clerc ou assistant(e)" v={pro.clerc} />
+                          <Li ic="telephone" l="Son téléphone" v={pro.clercTel} />
+                        </div>
+                        {!pro.etude && !pro.adresseEtude && <div className={c.pied}>L’étude, son adresse, le clerc : « Modifier » pour les noter.</div>}
+                      </section>
+                    )}
+                    {types.includes('gardien') && (
+                      <section className={c.bloc}>
+                        <div className={c.blocT}><span className={c.blocIc}><Ic n="immeuble" t={15} /></span><h3>L’immeuble</h3><button type="button" className={c.lien} onClick={() => setEdit(formDe(x))}>Modifier</button></div>
+                        <div className={c.lignes}>
+                          <Li ic="immeuble" l="Immeuble" v={pro.immeuble} />
+                          <Li ic="horloge" l="Horaires de la loge" v={pro.horaires} />
+                          <Li ic="cle" l="Accès, clés" v={pro.acces} />
+                        </div>
+                        {!pro.immeuble && <div className={c.pied}>L’immeuble, les horaires de la loge : « Modifier » pour les noter.</div>}
+                      </section>
+                    )}
+                    {types.includes('partenaire') && (
+                      <section className={c.bloc}>
+                        <div className={c.blocT}><span className={c.blocIc}><Ic n="outil" t={15} /></span><h3>Son activité</h3><button type="button" className={c.lien} onClick={() => setEdit(formDe(x))}>Modifier</button></div>
+                        <div className={c.lignes}>
+                          <Li ic="outil" l="Métier" v={pro.metier} />
+                          <Li ic="agence" l="Société" v={pro.societe} />
+                        </div>
+                        {!pro.metier && <div className={c.pied}>Son métier, sa société : « Modifier » pour les noter.</div>}
+                      </section>
+                    )}
+                    {!estPro(types) || aUnBien(types) ? (
+                      <div className={c.aussi}>
+                        <span className={c.blocIc} style={{ width: 36, height: 36 }}><Ic n="cible" t={17} /></span>
+                        <div><b>Il cherche aussi à acheter ?</b>Ouvre-lui une recherche : il passe sur la fiche d’acheteur, avec son espace et la veille.</div>
+                        <button type="button" className={`${c.btn} ${c.btnOr}`} disabled={occupe} onClick={ouvrirRecherche}>Ouvrir une recherche</button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+              {actif === 'documents' && (
+                <div className={c.ongletCorps}>
+                  {/* Ses délégations, et « Déléguer un mandat » (V3.19). */}
+                  {types.includes('confrere') && <DocumentsDuClient clientId={x.id} prenom={x.prenom} onNavigate={onNavigate} confrere />}
+                  {/* Ses documents : mandats, avenants… signés ou en cours (V3.17). */}
+                  {(!estPro(types) || aUnBien(types)) && <DocumentsDuClient clientId={x.id} prenom={x.prenom} onNavigate={onNavigate} ouvert />}
+                </div>
+              )}
+              {actif === 'suivi' && (
+                <section id="suivi-contact" className={`${c.suiviBande} ${c.suiviOnglet}`}>
+                  <div className={c.suiviCorps}>
+                    <FriseSuivi titre="Historique"
+                      items={vus} filtre={filtre} comptes={comptes} onFiltre={setFiltre}
+                      aVenir={relances} relancesAtt={relances} biens={[]} nomAutreRecherche={() => null} surligne={null}
+                      modifiable={j => ['appel', 'rdv', 'note', 'email_libre', 'envoi_externe', 'relance_manuelle'].includes(j.type)}
+                      onModifier={j => setAction({ edition: j, type: 'note' })}
+                      onSupprimer={async j => { if (await supprimerActionContact(j, x.id)) recharger(); }}
+                      onAjouter={() => setAction({ edition: null, type: 'note' })}
+                      onAppel={() => setAction({ edition: null, type: 'appel' })}
+                      onReporter={reporterDepuisSuivi} onBienAgence={id => ouvrirBien(id)} />
+                  </div>
+                </section>
+              )}
+            </CorpsOnglet>
+          </>
+        );
+      })()}
+      <div className={c.refPied}>{`${principal.lib} · ${x.reference}`}</div>
+
+      {action && (
+        <FenetreAction clientId={x.id} prenom={x.prenom || ''} edition={action.edition} typeInitial={action.type} relanceVisee={ouverture?.relanceId}
+          onFermer={() => setAction(null)} onFait={() => { setAction(null); recharger(); }} />
+      )}
+
+      {edit && (() => {
+        /* V3.174 : un notaire — son étude d'abord, sans « D'où vient ce contact ? »
+           (sauf s'il est aussi acheteur, vendeur ou propriétaire). */
+        const notaireEdit = edit.types.includes('notaire');
+        const sansSourceEdit = notaireEdit && !edit.types.some(t => t === 'acheteur' || t === 'vendeur' || t === 'vendeur_signe' || t === 'proprietaire');
+        return (
+        <div className={c.fen} onClick={e => { if (e.target === e.currentTarget && !occupe) setEdit(null); }}>
+          <div className={c.fenIn} role="dialog" aria-modal="true" aria-label="Modifier le contact">
+            <div className={c.fenTete}>
+              <h3>{`Modifier ${nomFoyer(x) || 'le contact'}`}</h3>
+              <button type="button" className={c.btn} onClick={() => setEdit(null)} aria-label="Fermer" disabled={occupe}>✕</button>
+            </div>
+            <div className={c.fenCorps}>
+              <div className={c.groupe}>
+                <div className={c.groupeT}>Ce contact est…</div>
+                <ChoixTypes v={edit.types} onChange={t => setEdit({ ...edit, types: t })} />
+                {edit.types.includes('acheteur') && <div className={c.typesNote}>Acheteur : en enregistrant, sa fiche d’acheteur s’ouvre. Pense à lui ouvrir une recherche (« Il cherche aussi à acheter »).</div>}
+              </div>
+              {/* V3.174 (Alexandre) : un notaire se présente par son étude — « Son
+                  étude » d'abord, puis qui le joindre ; et pas de « D'où vient ce
+                  contact ? ». */}
+              {notaireEdit && <ChampsPro types={edit.types} pro={edit.pro} onChange={p => setEdit({ ...edit, pro: p })} cls={cls} />}
+              <div className={c.groupe}>
+                <div className={c.groupeT}>{edit.couple && !estPro(edit.types) ? 'Personne 1 · contact principal' : 'Qui, et comment le joindre'}</div>
+                <div className={c.pills}>
+                  {['Monsieur', 'Madame'].map(v => <button key={v} type="button" className={`${c.pill} ${edit.civilite === v ? c.pillOn : ''}`} onClick={() => setEdit({ ...edit, civilite: edit.civilite === v ? '' : v })}>{v}</button>)}
+                  {/* Un vendeur ou un propriétaire peut être un couple. */}
+                  {!estPro(edit.types) && <button type="button" className={`${c.pill} ${edit.couple ? c.pillOn : ''}`} onClick={() => setEdit({ ...edit, couple: !edit.couple })}>{edit.couple ? '✓ Un couple' : '+ Un couple'}</button>}
+                </div>
+                <div className={c.g2}>
+                  <label className={c.ch}><span>Prénom</span><input className={c.in} value={edit.prenom} onChange={e => setEdit({ ...edit, prenom: e.target.value })} /></label>
+                  <label className={c.ch}><span>Nom</span><input className={c.in} value={edit.nom} onChange={e => setEdit({ ...edit, nom: e.target.value })} /></label>
+                  <ListeCoordonnees genre="tel" etiquette="Téléphones" valeurs={edit.tels} onChange={v => setEdit({ ...edit, tels: v })} classeBloc={c.ch} classeChamp={c.in} />
+                  <ListeCoordonnees genre="mail" etiquette="E-mails" valeurs={edit.emails} onChange={v => setEdit({ ...edit, emails: v })} classeBloc={c.ch} classeChamp={c.in} />
+                </div>
+                {/* Un notaire a l'adresse de son étude juste au-dessus : la sienne seulement si elle est déjà notée. */}
+                {(!notaireEdit || !!edit.adresse) && <label className={c.ch}><span>Adresse</span><input className={c.in} value={edit.adresse} onChange={e => setEdit({ ...edit, adresse: e.target.value })} /></label>}
+              </div>
+              {edit.couple && !estPro(edit.types) && (
+                <div className={c.groupe}>
+                  <div className={c.groupeT}>Personne 2</div>
+                  <div className={c.pills}>
+                    {['Monsieur', 'Madame'].map(v => <button key={v} type="button" className={`${c.pill} ${edit.c2_civilite === v ? c.pillOn : ''}`} onClick={() => setEdit({ ...edit, c2_civilite: edit.c2_civilite === v ? '' : v })}>{v}</button>)}
+                  </div>
+                  <div className={c.g2}>
+                    <label className={c.ch}><span>Prénom</span><input className={c.in} value={edit.c2_prenom} onChange={e => setEdit({ ...edit, c2_prenom: e.target.value })} /></label>
+                    <label className={c.ch}><span>Nom</span><input className={c.in} value={edit.c2_nom} onChange={e => setEdit({ ...edit, c2_nom: e.target.value })} /></label>
+                    <label className={c.ch}><span>Téléphone</span><input className={c.in} value={edit.c2_tel} onChange={e => setEdit({ ...edit, c2_tel: e.target.value })} /></label>
+                    <label className={c.ch}><span>E-mail</span><input className={c.in} type="email" value={edit.c2_email} onChange={e => setEdit({ ...edit, c2_email: e.target.value })} /></label>
+                  </div>
+                </div>
+              )}
+              {!notaireEdit && <ChampsPro types={edit.types} pro={edit.pro} onChange={p => setEdit({ ...edit, pro: p })} cls={cls} />}
+              {!sansSourceEdit && (
+                <div className={c.groupe}>
+                  <div className={c.groupeT}>{'D’où vient ce contact ?'}<em className={c.facult} style={{ textTransform: 'none', letterSpacing: 0 }}>{' · facultatif'}</em></div>
+                  <ChoixSource source={edit.source} detail={edit.source_detail} onChange={(so, de) => setEdit({ ...edit, source: so, source_detail: de })} />
+                </div>
+              )}
+              {erreur && <div className={c.erreur}>{erreur}</div>}
+            </div>
+            <div className={c.fenPied}>
+              <button type="button" className={c.btn} disabled={occupe} onClick={() => setEdit(null)}>Annuler</button>
+              <button type="button" className={`${c.btn} ${c.btnOr}`} disabled={occupe} onClick={enregistrer}><Ic n="check" t={15} e={2.4} />{occupe ? 'Enregistrement…' : 'Enregistrer'}</button>
+            </div>
+          </div>
+        </div>
+        );
+      })()}
+    </div>
+  );
+}

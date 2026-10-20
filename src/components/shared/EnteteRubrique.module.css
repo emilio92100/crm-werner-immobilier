@@ -1,0 +1,370 @@
+/* L'en-tête d'une rubrique — voir EnteteRubrique.tsx.
+   Ordinateur : un bandeau bleu compact, aux couleurs du bloc d'identité de
+   la fiche client (même dégradé, même liseré or, mêmes lueurs), les chiffres
+   en pastilles sur une ligne. Il tranche sur la liste claire en dessous sans
+   prendre de place.
+   Téléphone : une carte blanche compacte, les chiffres en bandeau dessous. */
+
+/* ── La structure, commune aux deux ─────────────────────────────────── */
+.bloc { position: relative; overflow: hidden; isolation: isolate; }
+.haut {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.titreZone { display: flex; align-items: center; min-width: 0; }
+.icone { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; }
+.titreTextes { min-width: 0; }
+.titre { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; line-height: 1.1; margin: 0; }
+.phrase { line-height: 1.4; margin: 0; }
+
+.outils { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.recherche {
+  display: flex; align-items: center; gap: 9px; box-sizing: border-box;
+  padding: 0 13px; cursor: text; border: 1px solid transparent;
+  transition: border-color .15s, background .15s;
+}
+.recherche input {
+  flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+  font-family: inherit; height: 100%;
+}
+.bouton {
+  display: inline-flex; align-items: center; gap: 7px; border: none; cursor: pointer;
+  font-family: inherit; font-weight: 700; white-space: nowrap; transition: transform .15s, filter .15s;
+}
+.bouton:hover { filter: brightness(1.08); }
+.bouton:active { transform: scale(.97); }
+/* Le second bouton (V3.61) : discret, liseré d'or. */
+.bouton2 {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  font-family: inherit; font-weight: 700; white-space: nowrap; transition: background .15s, border-color .15s;
+}
+.court { display: none; }
+
+.rangee { position: relative; z-index: 1; }
+.tuile {
+  position: relative; display: flex; text-align: left; cursor: pointer; font-family: inherit;
+  border: 1px solid transparent;
+  transition: background .15s, border-color .15s, box-shadow .15s, transform .15s;
+}
+.tuile:active { transform: scale(.97); }
+.n { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.lib { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; }
+.point { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+
+/* ── Ordinateur : le bandeau bleu compact, celui de la fiche client ──── */
+@media (min-width: 761px) {
+  .bloc {
+    border-radius: 18px;
+    background: linear-gradient(152deg, #3a5178 0%, #27395a 52%, #2e4166 100%);
+    border: 1px solid rgba(201, 168, 76, 0.2);
+    box-shadow: 0 24px 50px -30px rgba(30, 45, 75, 0.75);
+  }
+  /* Les deux lueurs de la fiche : or en haut à droite, bleu en bas à gauche. */
+  .bloc::before, .bloc::after {
+    content: ''; position: absolute; z-index: 0; border-radius: 50%; pointer-events: none;
+  }
+  .bloc::before { width: 360px; height: 360px; right: -90px; top: -210px; background: radial-gradient(circle, rgba(201, 168, 76, 0.22), transparent 64%); }
+  .bloc::after { width: 320px; height: 320px; left: -60px; bottom: -230px; background: radial-gradient(circle, rgba(125, 185, 255, 0.12), transparent 66%); }
+  .haut { gap: 12px; padding: 14px 18px 12px; }
+  .titreZone { gap: 11px; }
+  .icone {
+    width: 34px; height: 34px; border-radius: 10px; color: #c9a84c;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+    box-shadow: inset 0 0 0 1px rgba(201, 168, 76, 0.45);
+  }
+  .icone svg { width: 18px; height: 18px; }
+  .titre { font-size: 20px; letter-spacing: -0.3px; color: #fff; }
+  .phrase { font-size: 12.5px; margin-top: 2px; color: rgba(255, 255, 255, 0.62); }
+
+  .recherche {
+    height: 36px; width: 240px; border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.16); color: rgba(255, 255, 255, 0.55);
+  }
+  .recherche:focus-within { background: rgba(255, 255, 255, 0.12); border-color: rgba(201, 168, 76, 0.6); }
+  .recherche input { font-size: 13.5px; color: #fff; }
+  .recherche input::placeholder { color: rgba(255, 255, 255, 0.45); }
+  .bouton { height: 36px; padding: 0 14px; border-radius: 10px; font-size: 13px; background: #c9a84c; color: var(--emilio); }
+  .bouton2 { height: 36px; padding: 0 13px; border-radius: 10px; font-size: 13px; background: rgba(201, 168, 76, 0.1); border: 1px solid rgba(201, 168, 76, 0.55); color: #f2dfa6; }
+  .bouton2:hover { background: rgba(201, 168, 76, 0.2); border-color: rgba(201, 168, 76, 0.8); }
+
+  /* Les chiffres : des pastilles sur une ligne, le chiffre à côté du mot. */
+  .rangee { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 14px; }
+  .tuile {
+    flex-direction: row; align-items: center; gap: 8px; padding: 7px 13px; border-radius: 10px;
+    background: rgba(255, 255, 255, 0.045); border-color: rgba(255, 255, 255, 0.1);
+  }
+  .tuile:hover { background: rgba(255, 255, 255, 0.09); border-color: rgba(255, 255, 255, 0.18); }
+  .n { font-size: 16px; color: #fff; }
+  .lib { font-size: 12.5px; color: rgba(255, 255, 255, 0.7); }
+  /* Le filtre en cours : la pastille passe en blanc, le chiffre en or. */
+  .on, .on:hover { background: #fff; border-color: #fff; box-shadow: 0 8px 18px -12px rgba(16, 24, 40, 0.7); }
+  .on .n { color: #a9822f; }
+  .on .lib { color: #1a2332; }
+  /* À zéro : on la garde (elle dit « rien ici »), mais sans lui donner de poids. */
+  .vide { opacity: 0.45; }
+  /* Une pastille qui demande une action (ex. « Compte rendu à faire »). */
+  .alerte { background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.38); }
+  .alerte .n { color: #fbbf24; }
+  .alerte .lib { color: #fde2a7; }
+  /* « Tous » : en tête, sa pastille dorée, un léger fond d'or, et un trait
+     qui la sépare des catégories. */
+  .tete { padding-left: 6px; gap: 9px; margin-right: 9px; background: rgba(201, 168, 76, 0.12); border-color: rgba(201, 168, 76, 0.42); }
+  .tete:hover { background: rgba(201, 168, 76, 0.2); border-color: rgba(201, 168, 76, 0.6); }
+  .tete::after { content: ''; position: absolute; right: -10px; top: 8px; bottom: 8px; width: 1px; background: rgba(255, 255, 255, 0.2); }
+  .tete .lib { color: #fff; font-weight: 700; }
+  .teteIc { width: 24px; height: 24px; border-radius: 7px; background: #c9a84c; color: #1a2332; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .tete.on, .tete.on:hover { background: #fff; border-color: #fff; }
+  .tete.on .lib { color: #1a2332; }
+  /* V3.77 : le groupe de fin, tout à droite (« Tri à faire », « Tous »,
+     « Archivés ») ; « Archivés » se distingue des catégories. */
+  .fin { margin-left: auto; }
+  .tete:last-child::after { display: none; }
+  .arch { padding-left: 6px; gap: 9px; background: transparent; border-style: dashed; border-color: rgba(255, 255, 255, 0.32); }
+  .arch:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.5); }
+  .arch .lib { color: rgba(255, 255, 255, 0.78); }
+  .archIc { width: 24px; height: 24px; border-radius: 7px; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.85); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .arch.on, .arch.on:hover { background: #fff; border-color: #fff; border-style: solid; }
+  .arch.on .archIc { background: #eef1f6; color: #475569; }
+  .arch.on .lib { color: #1a2332; }
+}
+
+/* ── Téléphone : la carte blanche, compacte ────────────────────────── */
+@media (max-width: 760px) {
+  .bloc {
+    border-radius: 18px; background: #fff; border: 1px solid #e3e8f0;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 12px 26px -22px rgba(26, 35, 50, 0.35);
+    /* De l'air sous le bloc : les filtres qui suivent ne viennent pas s'y coller. */
+    margin-bottom: 8px;
+  }
+  .haut { flex-wrap: wrap; padding: 14px 14px 12px; gap: 10px; }
+  .titreZone { flex: 1 1 auto; gap: 10px; }
+  .icone { width: 34px; height: 34px; border-radius: 10px; background: var(--emilio-fond); color: #e8c96a; }
+  .icone svg { width: 18px; height: 18px; }
+  .titre { font-size: 20px; letter-spacing: -0.3px; color: var(--emilio); }
+  .phrase { font-size: 12px; margin-top: 2px; color: #7a889b; }
+  /* Les outils se défont : le bouton reste à droite du titre, la recherche
+     prend toute la largeur en dessous. */
+  .outils { display: contents; }
+  .bouton { order: 2; height: 34px; padding: 0 12px; font-size: 12.5px; border-radius: 10px; background: var(--emilio-fond); color: #fff; }
+  .bouton2 { order: 2; height: 34px; padding: 0 11px; font-size: 12.5px; border-radius: 10px; background: #fdf8ea; border: 1px solid #e3c872; color: #8a6a1f; }
+  .bouton2 .long { display: none; }
+  .bouton2 .court { display: inline; }
+  .recherche {
+    order: 3; flex: 1 1 100%; height: 38px; border-radius: 10px;
+    background: #f6f8fb; border-color: #e3e8f0; color: #94a3b8;
+  }
+  .recherche:focus-within { background: #fff; border-color: #c9a84c; }
+  .recherche input { font-size: 16px; color: var(--emilio); } /* 16 px : iOS ne zoome pas au toucher */
+
+  /* Les chiffres en bandeau, séparés d'un trait ; la rangée défile au doigt. */
+  .rangee {
+    display: flex; overflow-x: auto; border-top: 1px solid #eef1f6; background: #fafbfd;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .rangee::-webkit-scrollbar { display: none; }
+  .tuile {
+    flex: 1 0 auto; min-width: 84px; flex-direction: column; align-items: flex-start; gap: 5px;
+    padding: 10px 13px 9px; border: none; border-right: 1px solid #eef1f6; border-radius: 0; background: transparent;
+  }
+  .tuile:last-child { border-right: none; }
+  .n { font-size: 20px; letter-spacing: -0.5px; color: #1a2332; }
+  .lib { font-size: 11px; color: #64748b; }
+  /* Le filtre en cours : fond blanc et un trait d'or au-dessus. */
+  .on { background: #fff; }
+  .on::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 3px; background: #c9a84c; border-radius: 0 0 3px 3px; }
+  .on .n { color: #a9822f; }
+  .on .lib { color: #1a2332; }
+  .vide .n { color: #c3cbd7; }
+  .vide .lib { color: #a0aabb; }
+  .alerte { background: #fffaf2; }
+  .alerte .n { color: #b45309; }
+  /* « Tous » : un fond d'or pâle, le mot en gras. */
+  .teteIc { display: none; }
+  .tete { background: #fdf8ec; }
+  .tete .lib { color: #7a5d1c; font-weight: 800; }
+  .tete.on { background: #fff; }
+  /* V3.77 : « Archivés », grisé, un trait en pointillés avant lui. */
+  .archIc { display: none; }
+  .arch { background: #f4f6f9; border-left: 1px dashed #cfd7e3; }
+  .arch .lib { color: #64748b; }
+  .arch.on { background: #fff; }
+  .arch.on .lib { color: #1a2332; }
+}
+
+/* ── V3.78 : « Autres types ▾ » ─────────────────────────────────────────
+   Le bouton est une tuile comme les autres, avec sa flèche ; la liste qu'il
+   ouvre est posée sur la page (portail) : elle n'hérite ni du bandeau bleu
+   ni de la rangée qui défile, d'où ces règles hors des deux écrans. */
+.chevron { flex: 0 0 auto; opacity: 0.75; transition: transform .18s; }
+.menu {
+  position: fixed; z-index: 1000; min-width: 230px; max-width: 260px; box-sizing: border-box;
+  padding: 6px; border-radius: 14px; background: #fff; border: 1px solid #e3e8f0;
+  box-shadow: 0 18px 40px -16px rgba(16, 24, 40, 0.35), 0 2px 6px rgba(16, 24, 40, 0.06);
+  display: flex; flex-direction: column; gap: 2px;
+  animation: menuEntre .16s cubic-bezier(.2, .7, .3, 1) both;
+}
+@keyframes menuEntre { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.menuL {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: none; border-radius: 9px;
+  background: transparent; cursor: pointer; font-family: inherit; text-align: left; color: #1a2332;
+}
+.menuL:hover { background: #f4f6f9; }
+.menuOn, .menuOn:hover { background: #fdf8ec; }
+.menuPoint { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+.menuLib { flex: 1 1 auto; min-width: 0; font-size: 13.5px; font-weight: 600; }
+.menuOn .menuLib { font-weight: 800; }
+.menuN { font: 800 13px 'Plus Jakarta Sans', sans-serif; font-variant-numeric: tabular-nums; color: #64748b; }
+.menuOn .menuN { color: #a9822f; }
+.menuCoche { width: 14px; height: 14px; flex: 0 0 auto; display: inline-flex; color: #a9822f; }
+@media (max-width: 760px) {
+  /* Sans chiffre au-dessus, le mot se pose au milieu de la tuile. */
+  .autres { justify-content: center; }
+  .menuL { padding: 11px 10px; }
+  .menuLib { font-size: 14.5px; }
+}
+@media (prefers-reduced-motion: reduce) { .menu { animation: none; } .chevron { transition: none; } }
+
+/* ── V3.131 : les tuiles « à cheval » (Biens) ───────────────────────────
+   Ordinateur : la rangée devient une barre blanche, posée à moitié sur le
+   bas du bandeau bleu, comme les onglets de la fiche d'un bien. Le bandeau
+   ne coupe plus ce qui dépasse : ses lueurs passent dans `.lueurs`, qui,
+   elle, garde le bord arrondi. La tuile choisie prend le bleu du CRM. */
+.lueurs { display: none; }
+@media (min-width: 761px) {
+  .cheval { overflow: visible; margin-bottom: 34px; }
+  .cheval::before, .cheval::after { display: none; }
+  .lueurs { display: block; position: absolute; inset: 0; z-index: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+  .lueurs::before, .lueurs::after { content: ''; position: absolute; border-radius: 50%; }
+  .lueurs::before { width: 360px; height: 360px; right: -90px; top: -210px; background: radial-gradient(circle, rgba(201, 168, 76, 0.22), transparent 64%); }
+  .lueurs::after { width: 320px; height: 320px; left: -60px; bottom: -230px; background: radial-gradient(circle, rgba(125, 185, 255, 0.12), transparent 66%); }
+  .cheval .haut { padding-bottom: 18px; }
+  .cheval .rangee {
+    align-items: center; gap: 4px; margin: 0 16px -25px; padding: 5px; border-radius: 16px;
+    background: #fff; border: 1px solid #e6ebf2; box-shadow: 0 16px 32px -20px rgba(26, 35, 50, 0.5), 0 2px 6px rgba(26, 35, 50, 0.05);
+  }
+  .cheval .tuile { padding: 8px 13px; border-radius: 11px; background: transparent; border-color: transparent; }
+  .cheval .tuile:hover { background: #f4f6f9; border-color: transparent; }
+  .cheval .n { color: #1a2332; }
+  .cheval .lib { color: #475569; }
+  .cheval .on, .cheval .on:hover { background: var(--emilio-fond); border-color: transparent; box-shadow: 0 8px 18px -10px rgba(46, 65, 102, 0.85); }
+  .cheval .on .n { color: #e7cf8a; }
+  .cheval .on .lib { color: #fff; }
+  .cheval .vide { opacity: 0.5; }
+  .cheval .alerte { background: #fffaf0; }
+  .cheval .alerte .n { color: #b45309; }
+  .cheval .alerte .lib { color: #92400e; }
+  .cheval .tete { background: #fdf8ec; border-color: #f1e3bd; }
+  .cheval .tete:hover { background: #faf1da; border-color: #ead49a; }
+  .cheval .tete::after { background: #e3e8f0; }
+  .cheval .tete .lib { color: #1a2332; }
+  .cheval .tete.on, .cheval .tete.on:hover { background: var(--emilio-fond); border-color: transparent; }
+  .cheval .tete.on .lib { color: #fff; }
+  .cheval .arch { border-color: #d5dce6; border-style: dashed; }
+  .cheval .arch:hover { background: #f6f8fb; border-color: #b8c3d3; }
+  .cheval .arch .lib { color: #64748b; }
+  .cheval .archIc { background: #f1f4f8; color: #64748b; }
+  .cheval .arch.on, .cheval .arch.on:hover { background: var(--emilio-fond); border-style: solid; border-color: transparent; }
+  .cheval .arch.on .archIc { background: rgba(255, 255, 255, 0.14); color: #fff; }
+  .cheval .arch.on .lib { color: #fff; }
+}
+
+/* ── V3.132 : la pastille qui glisse d'une tuile à l'autre ──────────────
+   Posée derrière les tuiles ; la tuile choisie devient transparente et
+   laisse voir la pastille, son texte change de couleur en douceur.
+   V3.167 : la glissade de « Demandes Internet » (450 ms, partie vite, posée
+   en douceur), et partout — le bandeau bleu (pastille blanche), la barre à
+   cheval (pastille bleue), le téléphone (la carte blanche et son trait
+   d'or). `.avecGlisse` : la pastille est posée. */
+.glisse { position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; }
+.glisseAnime { transition: transform .45s cubic-bezier(.2, .8, .2, 1), width .45s cubic-bezier(.2, .8, .2, 1), height .45s cubic-bezier(.2, .8, .2, 1); }
+.avecGlisse .tuile { z-index: 1; }
+.avecGlisse .n, .avecGlisse .lib, .avecGlisse .teteIc, .avecGlisse .archIc { transition: color .3s ease, background .3s ease; }
+@media (min-width: 761px) {
+  .glisse { border-radius: 10px; background: #fff; box-shadow: 0 8px 18px -12px rgba(16, 24, 40, 0.7); }
+  .cheval .glisse { border-radius: 11px; background: var(--emilio-fond); box-shadow: 0 8px 18px -10px rgba(46, 65, 102, 0.85); }
+  .cheval .tuile { transition: background .2s, border-color .2s, transform .15s; }
+  /* La pastille fait le fond : la tuile choisie s'efface derrière elle. */
+  .avecGlisse .on, .avecGlisse .on:hover, .avecGlisse .tete.on, .avecGlisse .tete.on:hover, .avecGlisse .arch.on, .avecGlisse .arch.on:hover {
+    background: transparent; border-color: transparent; box-shadow: none;
+  }
+  /* V3.136 : plusieurs tuiles allumées (Ctrl + clic), pas de pastille —
+     chacune reprend son fond bleu, et son nom reste lisible. */
+  .cheval .plusieurs .on, .cheval .plusieurs .on:hover, .cheval .plusieurs .tete.on, .cheval .plusieurs .tete.on:hover,
+  .cheval .plusieurs .arch.on, .cheval .plusieurs .arch.on:hover {
+    background: var(--emilio-fond); border-color: transparent; box-shadow: 0 8px 18px -10px rgba(46, 65, 102, 0.85);
+  }
+}
+@media (max-width: 760px) {
+  .glisse { background: #fff; }
+  .glisse::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 3px; background: #c9a84c; border-radius: 0 0 3px 3px; }
+  .avecGlisse .on, .avecGlisse .tete.on, .avecGlisse .arch.on { background: transparent; }
+  .avecGlisse .on::before { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .glisseAnime { transition: none; } }
+/* V3.136 : « Ctrl + clic… » n'a pas de sens au doigt. */
+@media (max-width: 760px) { .phraseOrdi { display: none; } }
+
+/* ── V3.152 : au téléphone, le bloc d'un bord à l'autre ─────────────────
+   Alexandre : « sur le mobile tout est bridé, condensé ». Les pages ne
+   gardent plus de marge sur les côtés : le bloc va au bord de l'écran, sans
+   arrondi ni cadre sur les côtés. La rangée des chiffres défile et s'efface
+   au bord (Defilement.tsx) : le trait qui la sépare du titre passe au titre,
+   sinon il s'effacerait avec elle. */
+@media (max-width: 760px) {
+  .bloc { border-radius: 0; border-left: none; border-right: none; }
+  /* V3.160 — Contacts (Alexandre : « remets légèrement en arrondi, mais que
+     ça prenne toute la place de l'écran ») : la carte arrondie, à 10 px des bords. */
+  .bloc.arrondi { margin-left: 10px; margin-right: 10px; border-radius: 18px; border: 1px solid #e3e8f0; }
+  .haut:has(+ .rangee) { border-bottom: 1px solid #eef1f6; }
+  .rangee { border-top: none; }
+  .on::before { top: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .glisseAnime { transition: none; } }
+
+/* ── V3.146 : le geste principal de la page, « vedette » (Visites :
+   « Organiser une visite ») ──
+   Alexandre : « un joli bouton qui flotte un peu ». Doré en dégradé, une
+   ombre portée, il monte et redescend très doucement ; au survol il se
+   soulève et un reflet le traverse. Le mouvement passe par `translate` (et
+   non `transform`) : le petit enfoncement du clic, lui, reste sur
+   `transform` (globals.css), les deux ne se marchent pas dessus. */
+.boutonIc { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.vedette {
+  position: relative; overflow: hidden; isolation: isolate;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800;
+  transition: transform .15s, filter .15s, box-shadow .25s, translate .25s cubic-bezier(.2, .9, .3, 1.2);
+  animation: flotte 3.6s ease-in-out infinite;
+}
+.vedette::after {
+  content: ''; position: absolute; z-index: -1; top: 0; bottom: 0; left: -60%; width: 45%; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-18deg); opacity: 0;
+}
+.vedette:hover { animation-play-state: paused; translate: 0 -2px; filter: brightness(1.04); }
+.vedette:hover::after { animation: reflet .75s ease; }
+@keyframes flotte { 0%, 100% { translate: 0 0; } 50% { translate: 0 -2.5px; } }
+@keyframes reflet { 0% { left: -60%; opacity: 0; } 20% { opacity: 1; } 100% { left: 120%; opacity: 0; } }
+
+@media (min-width: 761px) {
+  .vedette {
+    height: 40px; padding: 0 17px 0 8px; gap: 9px; border-radius: 13px; font-size: 13.5px; color: #1f2a3c;
+    background: linear-gradient(135deg, #ecd07a 0%, #c9a84c 55%, #b48f36 100%);
+    box-shadow: 0 12px 24px -10px rgba(201, 168, 76, 0.75), 0 2px 0 rgba(255, 255, 255, 0.35) inset;
+  }
+  .vedette:hover { box-shadow: 0 18px 30px -12px rgba(201, 168, 76, 0.95), 0 2px 0 rgba(255, 255, 255, 0.35) inset; }
+  .vedette .boutonIc { width: 26px; height: 26px; border-radius: 9px; background: rgba(31, 42, 60, 0.12); }
+}
+@media (max-width: 760px) {
+  .vedette {
+    /* Au téléphone, toute la largeur sous le titre : le geste de la page. */
+    flex: 1 1 100%; justify-content: center;
+    height: 42px; padding: 0 14px 0 8px; gap: 8px; border-radius: 12px; font-size: 13.5px; color: #fff;
+    background: linear-gradient(135deg, #3a5178 0%, #27395a 100%);
+    box-shadow: 0 10px 20px -10px rgba(39, 57, 90, 0.85);
+  }
+  .vedette .boutonIc { width: 23px; height: 23px; border-radius: 8px; background: rgba(232, 201, 106, 0.18); color: #e8c96a; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vedette { animation: none; }
+  .vedette:hover::after { animation: none; }
+}

@@ -1,0 +1,8901 @@
+'use client';
+import { useState, useCallback, useRef, useEffect, useLayoutEffect, useMemo, useId } from 'react';
+import { useRouter } from 'next/navigation';
+import { createPortal } from 'react-dom';
+import { lienBienPublic } from '@/lib/jeton';
+import { QUARTIERS, searchCommune, type CpSuggestion } from '@/lib/secteurs';
+import ArretPicker, { PastilleArret } from '@/components/shared/ArretPicker';
+import type { Arret } from '@/lib/arrets';
+import SignatureMandat, { AvantVisiteDocument, CarteMonMandat, CartePret, CarteAttente, CarteDocuments, Renonciation, mandatARenoncer, CSS_MANDAT, type MandatEspace } from './SignatureMandat';
+import { ajouterMois, jourParis, DUREE } from '@/lib/mandat';
+import { ISSUES, ISSUES_OK, RAISONS, type Issue } from '@/lib/visites';
+import { correspondance, type LigneCorr, type Correspondance } from '@/lib/correspondance';
+import CarteEspace, { CATS_ESPACE, type BienCarte, type CatEspace } from './CarteEspace';
+import Decouverte, { GalerieGlisse, CSS_DECOUVERTE, type ActionsFiche, type AvisDecouverte } from './Decouverte';
+import Bienvenue from './Bienvenue';
+import { CarteAnnonce, EnvoiAnnonce, ListeAnnonces, CSS_ANNONCES, type ResultatEnvoi } from './Annonces';
+import type { AnnonceEspace } from '@/lib/annonces-client';
+import FaireOffre, { CarteOffre, CarteOffreAccueil, offreAAccueil, phraseOffre, libelleOffre, ETIQ_TON, CSS_OFFRE, type BienOffre, type HonoOffre, type ModeOffre } from './FaireOffre';
+import { ETATS_CLIENT, FINIES, type OffreEspace, type SaisieOffre } from '@/lib/offres';
+import type { SuiviClient } from '@/lib/suivi-client';
+import ChoixDispos, { MOMENTS_DISPO, ANCIENS_DISPO, estDateDispo } from './ChoixDispos';
+
+/**
+ * L'espace acheteur, côté navigateur.
+ * Toutes les écritures passent par /api/espace/*, qui revérifie le lien.
+ */
+
+/* ══ types ════════════════════════════════════════ */
+type Bien = {
+  id: string; titre: string; secteur: string; prix: number | null;
+  /* V3.145 : ses honoraires, quand ils s'ajoutent au prix de l'annonce. */
+  hono?: number;
+  surface: number | null; pieces: number | null; chambres: number | null;
+  etage: number | null; etageTotal: number | null; expo: string | null;
+  dpe: string | null; ges: string | null; annee: number | null;
+  description: string | null; photos: string[]; plans?: string[];
+  terrasse?: boolean; balcon?: boolean; jardin?: boolean; parking?: boolean;
+  ascenseur?: boolean; cave?: boolean; gardien?: boolean;
+  cuisineEquipee?: boolean; clim?: boolean; traversant?: boolean;
+  sejour?: number | null; exterieur?: number | null;
+  surfaceTerrasse?: number | null; surfaceBalcon?: number | null;
+  nbParking?: number | null;
+  charges?: number | null; taxe?: number | null; chargesComprises?: string | null;
+  /* V3.133 : un bien de l'agence — le montant annuel saisi dans le CRM. */
+  chargesAn?: number | null;
+  chauffage?: string | null; lots?: number | null;
+  pdfUrl: string | null; envoyeLe: string | null; vuLe: string | null;
+  avis: string | null; commentaire: string | null; retourLe: string | null;
+  /* 'client' s'il a répondu ici, 'conseiller' si Alexandre l'a noté pour lui
+     après un appel. Ce n'est pas un détail : on ne présente pas à quelqu'un
+     comme « son commentaire » une phrase qu'il n'a pas écrite. */
+  retourPar?: string | null;
+  /* Ce que dit l'agenda d'Alexandre, pas le badge du bien : une visite calée
+     et pas encore passée, et la visite faite avec son compte rendu. */
+  /* Pour la note de correspondance : où est le bien, et à combien de
+     minutes à pied de la station (voir trajetDe dans page.tsx). */
+  ville?: string | null; quartier?: string | null;
+  trajet?: { minutes: number; arret: string | null } | null;
+  visitePrevue?: { date: string; heure: string | null } | null;
+  visiteFaite?: { date: string | null; commentaire: string | null; etoiles: number | null } | null;
+  etat: string;
+  /* Un bien de l'agence sous compromis ou vendu (V3.47) ; `vous` : c'est le
+     sien, il l'achète. */
+  vente?: { etat: 'compromis' | 'vendu' | 'retire' | 'pause'; vous: boolean; note?: string | null } | null;
+  /* V3.48 : son offre sur un bien de l'agence, telle que le CRM la tient. */
+  offre?: { statut: string; tombe: boolean } | null;
+  /* V3.114 : un bien de l'agence (une copie d'un de ses biens en vente).
+     Le visiter ne demande jamais de mandat de recherche. */
+  agence?: boolean;
+  /* V3.184 : né d'une annonce qu'il a envoyée — quand, son mot, et l'avis
+     qu'Alexandre a laissé en la retenant. */
+  proposeeLe?: string | null; sonMot?: string | null; avisConseiller?: string | null;
+  /* V3.189 : ses honoraires sur ce bien (pour le calcul de son offre, que le
+     serveur refait), et son offre du moment (src/lib/offres-serveur.ts). */
+  honoOffre?: HonoOffre;
+  offreSuivi?: OffreEspace | null;
+  /* V3.193 : « Où en est Alexandre » — les étapes tirées de ses appels, et
+     son mot (src/lib/suivi-client.ts). Jamais ce qui a été dit, ni l'agence. */
+  suivi?: SuiviClient | null;
+};
+const motVente = (v: NonNullable<Bien['vente']>) => (v.vous ? (v.etat === 'vendu' ? 'Votre achat' : 'Votre compromis')
+  : v.etat === 'vendu' ? 'Vendu' : v.etat === 'retire' ? 'Plus en vente' : v.etat === 'pause' ? 'En pause' : 'Sous compromis');
+/* La phrase de la fiche pour un bien de l'agence qui n'est plus disponible
+   (V3.48 : « l'acte » devient la signature chez le notaire ; « retiré » ne
+   dit plus qui l'a décidé). */
+const phraseVente = (v: NonNullable<Bien['vente']>) => (v.vous
+  ? (v.etat === 'vendu' ? 'La vente est signée : félicitations pour votre achat.' : 'Votre compromis est signé. Prochaine étape : la signature définitive chez le notaire.')
+  : v.etat === 'vendu' ? 'Ce bien a été vendu.'
+    : v.etat === 'retire' ? 'Ce bien n’est plus proposé à la vente.'
+      : v.etat === 'pause' ? 'La vente de ce bien est en pause pour le moment. Nous vous dirons s’il revient.'
+        : 'Ce bien est sous compromis de vente. Si la vente ne se fait pas, il redeviendra disponible ici.');
+/* Où en est son offre (V3.48). Avant, la fiche disait « Offre envoyée » pour
+   toujours, même acceptée, refusée ou après le compromis. */
+/* V3.189 : son offre faite d'ici (ou préparée par Alexandre) a son propre
+   fil (`offreSuivi`) : c'est lui qui parle. `fini` : elle s'est arrêtée sans
+   accord — le bien va dans « Pas pour moi », et une nouvelle offre reste possible. */
+function etatOffre(b: Bien): { etiq: string; ton: string; ligne: string; fini?: boolean } | null {
+  if (b.vente?.vous) {
+    return b.vente.etat === 'vendu' ? { etiq: 'Votre achat', ton: 'fait', ligne: 'La vente est signée : félicitations pour votre achat.' }
+      : { etiq: 'Compromis signé', ton: 'fait', ligne: 'Votre compromis est signé. Prochaine étape : la signature définitive chez le notaire.' };
+  }
+  const s = b.offreSuivi;
+  if (s) {
+    const e = ETATS_CLIENT[s.etat];
+    const prep = s.enPreparation && (s.etat === 'contre' || FINIES.includes(s.etat));
+    return {
+      etiq: libelleOffre(s), ton: prep ? 'offre' : ETIQ_TON[e.ton],
+      ligne: phraseOffre(s), fini: FINIES.includes(s.etat) && !s.enPreparation,
+    };
+  }
+  const o = b.offre;
+  if (!o && b.avis !== 'offre_faite') return null;
+  const st = o?.statut || 'en_attente';
+  if (st === 'acceptee') return { etiq: 'Offre acceptée', ton: 'fait', ligne: 'Le vendeur a accepté votre offre. Prochaine étape : le compromis chez le notaire ; votre conseiller organise la suite avec vous.' };
+  /* V3.190 : une contre-proposition notée par son conseiller (offre faite avec lui, hors de son espace). */
+  if (st === 'contre') return { etiq: 'Réponse du vendeur', ton: 'visite', ligne: 'Le vendeur a répondu à votre offre par une proposition. Votre conseiller en parle avec vous.' };
+  if (st === 'refusee') return { etiq: 'Offre non retenue', ton: 'non', fini: true, ligne: 'Le vendeur n’a pas retenu votre offre. Votre conseiller en parle avec vous.' };
+  if (st === 'retiree') return o?.tombe
+    ? { etiq: 'Vente non conclue', ton: 'non', fini: true, ligne: 'La vente ne s’est finalement pas faite. Votre conseiller fait le point avec vous.' }
+    : { etiq: 'Offre retirée', ton: 'non', fini: true, ligne: 'Votre offre a été retirée.' };
+  return { etiq: 'Offre envoyée', ton: 'fait', ligne: 'Votre offre est chez le vendeur. Votre conseiller vous prévient dès sa réponse.' };
+}
+/* Un bien de l'agence qu'il ne peut plus visiter ni acheter (vendu à un
+   autre, retiré, sous compromis, en pause). */
+const indispo = (b: Bien) => !!b.vente && !b.vente.vous;
+/* Une visite, telle que « Vos visites » la lit (voir page.tsx). `passee` :
+   faite, ou calée à une heure déjà passée. `issue` : sa réponse ou celle de
+   son conseiller, null tant que personne n'a rien dit. */
+type VisiteE = {
+  id: string; bienId: string; date: string | null; heure: string | null; passee: boolean;
+  issue: Issue | null; issuePar: 'client' | 'conseiller' | null;
+  motifs: string[]; mot: string | null; prix: number | null;
+  compteRendu: string | null; etoiles: number | null; issueLe: string | null; revisite: boolean;
+};
+type Criteres = {
+  budgetMin: number | null; budgetMax: number | null;
+  surfaceMin: number | null; surfaceMax: number | null; surfaceSejourMin: number | null;
+  piecesMin: number | null; piecesMax: number | null; chambresMin: number | null;
+  secteurs: string[];
+  typeBien: string | null; typesBien: string[];
+  etatSouhaite: string | null; anneeMin: number | null;
+  etageMin: number | null; etageMax: number | null;
+  rdcExclu: boolean; dernierEtage: boolean; etageMaxSansAscenseur: number | null;
+  exposition: string;
+  equip: string[]; exigences: Record<string, string>;
+  cuisineType: string | null; exterieurSurfaceMin: number | null;
+  dpeMax: string | null;
+  apport: number | null; financement: string | null; urgence: string | null;
+  notes: string;
+  transportMinutes: number | null; transportLignes: string[]; transportArrets: Arret[];
+};
+type Props = {
+  token: string;
+  client: { prenom: string; nom: string; reference: string; jours: number | null };
+  criteres: Criteres;
+  biens: Bien[];
+  passage: {
+    quand: string | null; lues: number | null; proposees: number | null; ecartees: number | null;
+    /* Les cumuls depuis l'ouverture du dossier, tous passages confondus. */
+    totalLues?: number; totalRetenues?: number; totalEcartees?: number; nbPassages?: number;
+  } | null;
+  semaine: { quand: string | null; lues: number }[];
+  /* Les visites calées et pas encore passées, la plus proche en premier. */
+  visites: { id: string; date: string; heure: string | null; titre: string; adresse: string; photo?: string | null; bienId: string | null }[];
+  /* ── le sélecteur de recherche ──
+     Toutes les recherches visibles du client, la plus ancienne d'abord.
+     Un client n'en a le plus souvent qu'une : dans ce cas le sélecteur ne
+     s'affiche pas du tout, et son espace est exactement celui d'avant. */
+  recherches: { id: string; nom: string; resume: string; nonLus: number }[];
+  rechercheId: string;
+  /** La place de la recherche affichée dans la liste — le « 1 » de « 1 sur 2 ». */
+  rang: number;
+  /** La recherche tourne-t-elle encore ? Voir src/app/espace/[token]/page.tsx. */
+  enCours: boolean;
+  /** Le mandat de recherche : à signer, signé, ou rien de préparé. Voir SignatureMandat.tsx. */
+  mandat: MandatEspace;
+  /** Toutes ses visites, passées et à venir, avec leur issue. */
+  mesVisites?: VisiteE[];
+  /** Ce que ses visites non abouties ont appris (les 3 raisons qui reviennent le plus). */
+  apprisClient?: string[];
+  /** V3.184 : les annonces qu'il a envoyées d'ici, la plus récente d'abord.
+      null : la table n'existe pas encore (SQL pas passé), la carte se tait. */
+  annonces?: AnnonceEspace[] | null;
+  /** V3.189 : qui pré-remplir dans « Faire une offre » — lui, tel qu'il a
+      signé son mandat (naissance comprise), puis ceux qui l'ont signé avec lui. */
+  identiteOffre?: SaisieOffre['acquereurs'];
+};
+
+/* ══ outils ═══════════════════════════════════════ */
+const EUR = (n?: number | null) =>
+  n == null ? '—' : n.toLocaleString('fr-FR').replace(/[  ]/g, ' ') + ' €';
+/* V3.113 : le prix d'un BIEN. Un bien de l'agence présenté avant le mandat
+   arrive sans prix (prixCopie) : « Prix à venir », pas un tiret. */
+const PRIX = (n?: number | null) => (n ? EUR(n) : 'Prix à venir');
+/* V3.145 : sous le prix d'un bien, quand ses honoraires ne sont pas partagés
+   (voir src/lib/honoraires-bien.ts, la même phrase partout). */
+const honoDe = (b: { prix: number | null; hono?: number }) =>
+  `+ ${EUR(b.hono || 0)} de nos honoraires, soit ${EUR((b.prix || 0) + (b.hono || 0))} frais d’agence compris`;
+/* Les descriptions d'annonces arrivent souvent d'un bloc, sans le moindre
+   saut de ligne. On respire pour le lecteur : on coupe d'abord sur les sauts
+   existants, puis on regroupe les phrases par paquets. On ne touche jamais
+   aux mots — seulement à l'air entre eux. */
+const decoupeTexte = (t?: string | null): string[] => {
+  if (!t || !t.trim()) return [];
+  const doubles = t.split(/\n{2,}/).map(x => x.trim()).filter(Boolean);
+  const source = doubles.length > 1 ? doubles : t.split(/\n+/).map(x => x.trim()).filter(Boolean);
+  const sortie: string[] = [];
+  for (const bloc of source) {
+    if (bloc.length <= 300) { sortie.push(bloc); continue; }
+    const phrases = bloc.match(/[^.!?\u2026]+[.!?\u2026]+\s*|[^.!?\u2026]+$/g) || [bloc];
+    let courant = '';
+    for (const ph of phrases) {
+      courant += ph;
+      if (courant.length >= 200) { sortie.push(courant.trim()); courant = ''; }
+    }
+    if (courant.trim()) sortie.push(courant.trim());
+  }
+  return sortie;
+};
+const MOIS = ['janv.','févr.','mars','avril','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+
+/* V3.184 : quand il a envoyé une annonce — « aujourd'hui », « hier », « le 10 oct. ». */
+function dateAnnonce(d: string) {
+  const x = new Date(d); if (isNaN(x.getTime())) return '';
+  const minuit = (v: Date) => new Date(v.getFullYear(), v.getMonth(), v.getDate()).getTime();
+  const j = Math.round((minuit(new Date()) - minuit(x)) / 86400000);
+  if (j <= 0) return 'aujourd’hui';
+  if (j === 1) return 'hier';
+  return `le ${x.getDate()} ${MOIS[x.getMonth()]}`;
+}
+
+/* « 3 oct. » — la date d'un rendez-vous, en trois mots sur une carte. */
+function dateCourte(d: string) {
+  const x = new Date(d + (d.length <= 10 ? 'T12:00:00' : ''));
+  if (isNaN(x.getTime())) return d;
+  return `${x.getDate()} ${MOIS[x.getMonth()]}`;
+}
+const JOURS = ['D','L','M','M','J','V','S'];
+/* Sous les barres de « jour après jour » : l'initiale ne suffit pas (deux M). */
+const JOURS_C = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+
+/* Depuis quand ce bien est dans l'espace du client.
+   ⚠️ Le pas compte autant que le mot : « à l'instant » tenait une heure
+   entière, donc un client qui revenait dix minutes plus tard lisait encore
+   « à l'instant » et l'information ne voulait plus rien dire. On descend donc
+   à la minute sur la première heure, puis à l'heure, puis au jour.
+
+   Et on compte en jours de calendrier au-delà de 24 h : un bien envoyé
+   avant-hier à 23 h n'est pas « hier » parce qu'il a moins de 48 heures. */
+function depuis(d?: string | null) {
+  if (!d) return '';
+  const x = new Date(d); if (isNaN(x.getTime())) return '';
+  const min = (Date.now() - x.getTime()) / 60000;
+  if (min < 0) return '';                      // horloge du téléphone en avance
+  if (min < 2) return "à l'instant";
+  if (min < 60) return `il y a ${Math.floor(min)} min`;
+  if (min < 1440) {
+    const h = Math.floor(min / 60);
+    return `il y a ${h} h`;
+  }
+  const minuit = (v: Date) => new Date(v.getFullYear(), v.getMonth(), v.getDate()).getTime();
+  const j = Math.round((minuit(new Date()) - minuit(x)) / 86400000);
+  if (j <= 1) return 'hier';
+  if (j === 2) return 'avant-hier';
+  if (j < 7) return `il y a ${j} jours`;
+  return `le ${x.getDate()} ${MOIS[x.getMonth()]}`;
+}
+/* Le bandeau dit la même chose partout : « Actualisé à 19 h 05 » le jour même,
+   « Actualisé le 14 sept. à 19 h 05 » ensuite. Pas de vocabulaire différent
+   entre le téléphone et l'ordinateur — c'est la même phrase pour tout le monde. */
+function actualiseLe(d?: string | null) {
+  if (!d) return '';
+  const x = new Date(d); if (isNaN(x.getTime())) return '';
+  const h = 'à ' + x.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ');
+  if (x.toDateString() === new Date().toDateString()) return h;
+  return `le ${x.getDate()} ${MOIS[x.getMonth()]} ${h}`;
+}
+/* Le moment de la dernière recherche, dit dans la phrase qui la raconte :
+   « aujourd'hui à 14 h 34 », « hier à 9 h 12 », « le 24 sept. à 14 h 34 ».
+   Le « mis à jour » de l'en-tête est petit et loin : sans l'heure dans la
+   phrase, « la dernière recherche » pouvait dater d'hier comme de la semaine
+   dernière.
+   Tout en heure de Paris, jours de calendrier : le serveur (en heure
+   universelle) et le téléphone écrivent ainsi la même phrase — sinon le
+   serveur disait « à 12 h 34 » et la page se corrigeait sous les yeux du
+   client (voir momentParis). */
+function momentRecherche(d?: string | null) {
+  if (!d) return '';
+  const x = new Date(d); if (isNaN(x.getTime())) return '';
+  const jour = (v: Date) => new Intl.DateTimeFormat('fr-CA', {
+    timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(v);
+  const hm: Record<string, string> = {};
+  for (const q of new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: 'numeric', minute: '2-digit', hourCycle: 'h23' }).formatToParts(x)) hm[q.type] = q.value;
+  /* Espaces insécables : « 14 h » et « 34 » ne se séparent pas en fin de ligne. */
+  const h = `à\u00a0${hm.hour}\u00a0h\u00a0${hm.minute}`;
+  const k = jour(x);
+  const j = Math.round((Date.parse(jour(new Date()) + 'T12:00:00Z') - Date.parse(k + 'T12:00:00Z')) / 86400000);
+  if (j <= 0) return `aujourd’hui ${h}`;
+  if (j === 1) return `hier ${h}`;
+  return `le ${Number(k.slice(8, 10))} ${MOIS[Number(k.slice(5, 7)) - 1]} ${h}`;
+}
+/* « Lors de la dernière recherche (aujourd'hui à 14 h 34), 21 annonces ont
+   été lues sur vos critères » — le début commun à toutes les phrases qui
+   racontent la dernière recherche. Une seule chaîne : rien ne peut se coller
+   à la compilation (AGENTS.md §2.1). */
+function debutRecherche(quand: string | null | undefined, lues: number) {
+  const q = momentRecherche(quand);
+  return `Lors de la dernière recherche${q ? ` (${q})` : ''}, ${nombre(lues)} annonce${lues > 1 ? 's ont été lues' : ' a été lue'} sur vos critères`;
+}
+
+/* ── L'en-tête : le bonjour, la date du jour, la recherche en une ligne ──
+   L'heure est celle de Paris, calculée pareil sur le serveur et dans le
+   téléphone : sans ça, le serveur (réglé en heure universelle) disait
+   « Bonjour » à 19 h, et la page se corrigeait sous les yeux du client. */
+function momentParis() {
+  try {
+    const f = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', hourCycle: 'h23' });
+    const p: Record<string, string> = {};
+    for (const x of f.formatToParts(new Date())) p[x.type] = x.value;
+    const jour = `${p.weekday} ${p.day === '1' ? '1er' : p.day} ${p.month}`;
+    return { heure: Number(p.hour), date: jour.charAt(0).toUpperCase() + jour.slice(1) };
+  } catch {
+    return { heure: new Date().getHours(), date: '' };
+  }
+}
+const salutation = (h: number) => (h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour');
+/* « 1 200 » : l'espace fine que met toLocaleString n'existe pas dans la
+   police de l'espace, et le chiffre s'affichait collé (« 1200 »). */
+const nombre = (n: number) => n.toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, '\u00a0');
+
+/* « Appartement · 4 pièces et plus · Boulogne-Billancourt · jusqu’à 950 000 € ».
+   Lue dans les critères affichés, pas dans un résumé figé côté serveur : si
+   le client change son budget, la phrase suit tout de suite. */
+function phraseRecherche(c: Criteres): string {
+  const types = (c.typesBien && c.typesBien.length ? c.typesBien : String(c.typeBien || '').split(','))
+    .map(t => String(t).trim()).filter(Boolean);
+  const bouts: string[] = [];
+  if (types.length) {
+    const t = types.slice(0, 2).map(x => x.toLowerCase()).join(' ou ');
+    bouts.push(t.charAt(0).toUpperCase() + t.slice(1));
+  }
+  if (c.piecesMin) {
+    bouts.push(c.piecesMax && c.piecesMax > c.piecesMin
+      ? `${c.piecesMin} à ${c.piecesMax} pièces`
+      : `${c.piecesMin} pièce${c.piecesMin > 1 ? 's' : ''}${c.piecesMax === c.piecesMin ? '' : ' et plus'}`);
+  } else if (c.surfaceMin) bouts.push(`${c.surfaceMin} m² et plus`);
+  const villes = grouperSecteurs(c.secteurs || []).map(v => v.ville);
+  if (villes.length) bouts.push(villes.length > 2 ? `${villes.slice(0, 2).join(', ')} +${villes.length - 2}` : villes.join(', '));
+  if (c.budgetMax) bouts.push(`jusqu’à ${EUR(c.budgetMax)}`);
+  return bouts.join(' · ');
+}
+
+/* Les onglets : la barre du bas sur téléphone, le menu de l'en-tête sur
+   ordinateur. « ton » donne la couleur de la pastille quand il y a quelque
+   chose à voir ; « pc » : seulement dans le menu de l'ordinateur. */
+const ONGLETS: { id: string; lib: string; libPc?: string; ico: string; ton: string; pc?: boolean }[] = [
+  { id: 'accueil', lib: 'Accueil', ico: 'maison', ton: '' },
+  { id: 'neufs', lib: 'Nouveautés', ico: 'etoile', ton: 'or' },
+  { id: 'consultes', lib: 'Consultés', ico: 'oeil', ton: 'bleu' },
+  /* Sur téléphone, la carte s'ouvre depuis « Consultés » (Liste | Carte), la
+     fiche d'un bien et l'accueil : pas de sixième onglet en bas. */
+  { id: 'carte', lib: 'La carte', ico: 'carte', ton: '', pc: true },
+  { id: 'recherche', lib: 'Recherche', libPc: 'Ma recherche', ico: 'cible', ton: '' },
+  { id: 'visites', lib: 'Visites', ico: 'calendrier', ton: 'vio' },
+  { id: 'marche', lib: 'Le marché', ico: 'graph', ton: '', pc: true },
+];
+
+
+/* Une petite vibration au toucher d'un onglet. Android sait faire
+   (navigator.vibrate). L'iPhone ne l'autorise pas aux pages web ; depuis
+   iOS 18, basculer un interrupteur natif produit un léger retour haptique :
+   on en pose un invisible, le temps d'un clic. Sans effet ailleurs, jamais
+   d'erreur. À appeler dans le clic lui-même. */
+function vibrer() {
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') { navigator.vibrate(12); return; }
+    const l = document.createElement('label');
+    const i = document.createElement('input');
+    i.type = 'checkbox';
+    i.setAttribute('switch', '');
+    l.appendChild(i);
+    l.setAttribute('aria-hidden', 'true');
+    l.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none';
+    document.body.appendChild(l);
+    l.click();
+    document.body.removeChild(l);
+  } catch { /* pas de vibration, pas de souci */ }
+}
+
+const DPEC: Record<string, string> = { A:'#319834', B:'#4ab84a', C:'#a8d84a', D:'#f7e017', E:'#f5b912', F:'#ee8235', G:'#e2231a' };
+const AVIS: Record<string, { e: string; n: string; c: string }> = {
+  interesse: { e: '👍', n: 'Ça me plaît', c: 'oui' },
+  souhaite_visiter: { e: '👀', n: 'Je veux visiter', c: 'visite' },
+  refuse: { e: '👎', n: 'Pas pour moi', c: 'non' },
+};
+/* Pour l'affichage seulement : « visite » n'est pas un choix du client,
+   c'est le chasseur qui l'a posé en saisissant son compte rendu. */
+const ETIQ: Record<string, { e: string; n: string; c: string }> = {
+  ...AVIS,
+  visite_prevue: { e: '📅', n: 'Visite à venir', c: 'prevue' },
+  visite: { e: '🏠', n: 'Visite effectuée', c: 'fait' },
+  /* V3.47 : pour les cartes ; jamais un avis du client (voir `repondu`). */
+  votre_achat: { e: '🔑', n: 'Votre achat', c: 'fait' },
+  plus_dispo: { e: '🔒', n: 'Plus disponible', c: 'vu' },
+};
+/* Après le clic sur un avis, on ne laisse pas un champ vide et muet :
+   on dit au client à quoi servira ce qu'il écrit, et ce qu'on attend de lui.
+   C'est ce qui fait la différence entre 10 % et 60 % de retours écrits. */
+const SUITE_AVIS: Record<string, { t: string; p: string; ph: string; btn: string }> = {
+  interesse: {
+    t: 'Qu’est-ce qui vous a plu ?',
+    p: 'Sélectionnez ce qui compte, un ou plusieurs. Plus c’est précis, plus les biens suivants ressembleront à celui-là.',
+    ph: 'Ex : la luminosité, le séjour, le quartier… et si je veux le visiter.',
+    btn: 'Envoyer mon avis',
+  },
+  souhaite_visiter: {
+    t: 'Quelles sont vos disponibilités ?',
+    /* ⚠️ Jamais un mot sur l'agence, le confrère ou le propriétaire : le client
+       n'a qu'un interlocuteur, son conseiller. C'était la seule phrase de tout
+       l'espace qui laissait entendre le contraire. */
+    p: 'Choisissez des moments, ou des dates précises dans le calendrier. Votre conseiller organise la visite et revient vers vous avec le rendez-vous.',
+    ph: 'Ex : jeudi après 18 h, vendredi midi, samedi matin…',
+    btn: 'Envoyer mes disponibilités',
+  },
+  refuse: {
+    t: 'Qu’est-ce qui n’a pas convenu ?',
+    p: 'Sélectionnez une ou plusieurs raisons — c’est ce qui nous permet d’écarter ce type de bien pour la suite. Vous pouvez aussi ajouter un mot.',
+    ph: 'Ex : trop sombre, rue trop passante, cuisine trop petite, pas de vrai extérieur…',
+    btn: 'Envoyer mon retour',
+  },
+};
+
+/* Les réponses déjà écrites, à cocher.
+
+   Le vrai frein n'a jamais été la position des boutons : c'est le cadre vide.
+   Un client sur dix remplit un champ libre ; une pastille se coche en un
+   geste. Écrire reste possible (« + Ajouter un mot »), ce n'est plus le
+   passage obligé.
+
+   Elles sont aussi choisies pour servir la recherche : sur « pas pour moi »,
+   chacune est un motif fermé que la veille reprend ensuite comme critère,
+   sans avoir à interpréter une phrase. */
+const PASTILLES: Record<string, { i: string; n: string }[]> = {
+  interesse: [
+    { i: 'soleil', n: 'La luminosité' },
+    { i: 'lieu', n: 'Le quartier' },
+    { i: 'canape', n: 'Le séjour' },
+    { i: 'etincelle', n: 'L’état' },
+    { i: 'plan', n: 'Le plan' },
+    { i: 'jardin', n: 'L’extérieur' },
+    { i: 'immeuble', n: 'L’immeuble' },
+    { i: 'euro', n: 'Le prix' },
+  ],
+  /* V3.209 : les moments en général ; les dates précises viennent du
+     calendrier (ChoixDispos). « Le mercredi », « Samedi matin »… : retirés
+     (« pourquoi le mercredi et pas les autres jours ? »). */
+  souhaite_visiter: MOMENTS_DISPO.map(x => ({ i: x.i, n: x.n })),
+  refuse: [
+    { i: 'lune', n: 'Trop sombre' },
+    { i: 'travaux', n: 'Trop de travaux' },
+    { i: 'bruit', n: 'Rue trop passante' },
+    { i: 'lieu', n: 'Le quartier' },
+    { i: 'petit', n: 'Trop petit' },
+    { i: 'jardin', n: 'Pas d’extérieur' },
+    { i: 'ascenseur', n: 'L’étage' },
+    { i: 'visavis', n: 'Le vis-à-vis' },
+    { i: 'euro', n: 'Le prix' },
+    { i: 'cuisine', n: 'La cuisine' },
+  ],
+};
+/* Pour relire un retour déjà parti sous la forme où il a été coché. */
+const ICO_PASTILLE: Record<string, string> = {};
+Object.values(PASTILLES).forEach(l => l.forEach(x => { ICO_PASTILLE[x.n] = x.i; }));
+/* Les retours envoyés avant la V3.209 se relisent encore en pastilles. */
+ANCIENS_DISPO.forEach(x => { ICO_PASTILLE[x.n] = x.i; });
+/* Une date choisie au calendrier (« Jeu. 22 oct. de 14 h à 17 h ») : un calendrier. */
+const icoPastille = (n: string) => ICO_PASTILLE[n] || (estDateDispo(n) ? 'calendrier' : '');
+/* Ce qui part dans le CRM : les pastilles d'abord, le mot libre ensuite.
+   Le champ commentaire ne change pas de forme — il se relit tel quel dans la
+   fiche client, et il part dans le même export. */
+const SEP_PASTILLES = ' · ';
+const SEP_LIBRE = ' — ';
+
+/* Les cases de rangement de « Mes derniers biens consultés », dans l'ordre
+   où elles comptent pour le client : ce qu'il attend de faire d'abord, puis
+   ce qu'il a aimé, et seulement à la fin ce qu'il a écarté.
+   « visite » vient du CRM (compte rendu de visite saisi par le chasseur). */
+const GROUPES: { id: string; e: string; court: string; titre: string; ton: string; note?: string }[] = [
+  { id: 'attente', e: '⏳', court: 'En attente', titre: 'En attente de votre avis', ton: 'c-or',
+    note: 'Vous les avez ouverts sans nous dire ce que vous en pensiez. Un mot suffit — c’est ce qui oriente la suite de la recherche.' },
+  { id: 'visite_prevue', e: '📅', court: 'Visite prévue', titre: 'Visite à venir', ton: 'c-prune',
+    note: 'Le rendez-vous est pris. Vous le retrouvez en haut de votre accueil, avec le lien pour l’ajouter à votre agenda.' },
+  { id: 'souhaite_visiter', e: '👀', court: 'À visiter', titre: 'Je veux visiter', ton: 'c-prune',
+    note: 'Votre conseiller organise les visites. Envoyez-lui vos disponibilités si ce n’est pas déjà fait.' },
+  { id: 'visite', e: '🏠', court: 'Visités', titre: 'Visite effectuée', ton: 'c-bleu',
+    note: 'Ce que vous avez vu sur place. Le compte rendu de votre conseiller est sur la fiche.' },
+  { id: 'interesse', e: '👍', court: 'Ça me plaît', titre: 'Ça me plaît', ton: 'c-vert',
+    note: 'Ce que vous gardez de côté. Dites-nous si vous voulez en visiter un, votre conseiller s’en occupe.' },
+  { id: 'refuse', e: '👎', court: 'Pas pour moi', titre: 'Pas pour moi', ton: 'c-brique',
+    note: 'Ce que vous écartez compte autant que ce que vous gardez : c’est ce qui affine vos critères.' },
+  /* V3.47 : les biens de l'agence vendus ou sous compromis. Celui qu'il
+     achète passe en tête, les autres à la fin : ils ne demandent plus rien. */
+  { id: 'plus_dispo', e: '🔒', court: 'Plus disponibles', titre: 'Plus disponibles', ton: 'c-net',
+    note: 'Sous compromis, vendus, retirés de la vente ou en pause. Vos retours comptent toujours : ils affinent la suite de la recherche.' },
+];
+GROUPES.unshift({ id: 'votre_achat', e: '🔑', court: 'Votre achat', titre: 'Votre achat', ton: 'c-or',
+  note: 'Le bien que vous achetez. Votre conseiller vous accompagne jusqu’à la signature définitive chez le notaire.' });
+/* Les filtres de « Consultés » (V3.27) : une visite calée et une visite
+   souhaitée tombent sous le même « À visiter » — deux filtres pour la même
+   intention faisaient double emploi. Les deux cadres restent distincts
+   dessous : l'un a sa date, l'autre attend la sienne. Les couleurs sont
+   celles de la carte. */
+const FILTRES_C: { id: string; e: string; court: string; groupes: string[]; c: string }[] = [
+  { id: 'attente', e: '⏳', court: 'En attente', groupes: ['attente'], c: '#E68B23' },
+  { id: 'a_visiter', e: '👀', court: 'À visiter', groupes: ['visite_prevue', 'souhaite_visiter'], c: '#7c3aed' },
+  { id: 'visite', e: '🏠', court: 'Visités', groupes: ['visite'], c: '#22497D' },
+  { id: 'interesse', e: '👍', court: 'Ça me plaît', groupes: ['interesse'], c: '#16a34a' },
+  { id: 'refuse', e: '👎', court: 'Pas pour moi', groupes: ['refuse'], c: '#b3837e' },
+];
+const filtreDe = (g: string) => FILTRES_C.find(f => f.groupes.includes(g))?.id || g;
+
+/* L'ordre compte : une visite faite l'emporte sur tout, puis une visite calée,
+   et seulement ensuite l'avis que le client a donné. C'est ce qui évite
+   d'écrire « Visite effectuée » sur un bien que personne n'a encore vu. */
+const groupeDe = (b: Bien) => {
+  if (b.vente) return b.vente.vous ? 'votre_achat' : 'plus_dispo';
+  if (b.visiteFaite) return 'visite';
+  if (b.visitePrevue) return 'visite_prevue';
+  if (b.avis === 'visite') return 'visite';
+  return b.avis && GROUPES.some(g => g.id === b.avis) ? b.avis : 'attente';
+};
+/* La même règle pour l'étiquette posée sur une carte. */
+const etiqDe = (b: Bien) => ETIQ[groupeDe(b)] || null;
+
+/* ── La carte des biens (V3.27, voir CarteEspace.tsx) ──
+   Les mêmes cases que « Consultés », regroupées en cinq couleurs : une
+   visite prévue et une visite souhaitée sont toutes deux « À visiter » ; un
+   bien pas encore ouvert attend son avis comme les autres. */
+const catCarte = (b: Bien): CatEspace => {
+  const g = groupeDe(b);
+  if (g === 'votre_achat') return 'interesse';
+  if (g === 'visite') return 'visite';
+  if (g === 'visite_prevue' || g === 'souhaite_visiter') return 'a_visiter';
+  if (g === 'interesse' || g === 'refuse') return g;
+  return 'attente';
+};
+/* « Visite jeu. 10 h », « Visite lun. 14 h 30 ». */
+const libVisite = (v: { date: string; heure: string | null }) => {
+  const j = new Date(String(v.date).slice(0, 10) + 'T12:00:00');
+  const h = v.heure && /^\d{1,2}:\d{2}/.test(v.heure)
+    ? `${Number(v.heure.slice(0, 2))} h${v.heure.slice(3, 5) === '00' ? '' : ' ' + v.heure.slice(3, 5)}` : '';
+  return `Visite ${isNaN(j.getTime()) ? '' : JOURS_C[j.getDay()]}${h ? ' ' + h : ''}`.trim();
+};
+const pourCarte = (b: Bien): BienCarte => {
+  const cat = catCarte(b);
+  const etiquette = b.visitePrevue ? libVisite(b.visitePrevue)
+    : cat === 'attente' ? (b.etat === 'neuf' ? 'Nouveau' : 'En attente de votre avis')
+      : cat === 'a_visiter' ? 'Je veux visiter'
+        : cat === 'visite' ? 'Visité' : CATS_ESPACE.find(c => c.id === cat)?.lib || '';
+  return {
+    id: b.id, titre: b.titre, prix: b.prix, photo: b.photos?.[0] || null,
+    surface: b.surface, pieces: b.pieces, lieu: [b.quartier, b.ville].filter(Boolean).join(' · ') || b.secteur,
+    cat, etiquette,
+  };
+};
+/* La ville qui revient le plus parmi ses biens : le titre de la carte. */
+const villeDeCarte = (biens: Bien[]) => {
+  const n = new Map<string, number>();
+  for (const b of biens) if (b.ville) n.set(b.ville, (n.get(b.ville) || 0) + 1);
+  return [...n.entries()].sort((a, z) => z[1] - a[1])[0]?.[0] || '';
+};
+
+/* Les secteurs sont écrits par le CRM sous la forme « Quartier (Ville) »,
+   ou « Ville » seule quand toute la ville est prise. On relit ce format —
+   on n'invente aucune liste ici, elle vient de src/lib/secteurs.ts. */
+const normVille = (x: string) => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+const lireSecteur = (label: string) => {
+  const m = label.match(/^(.*?)\s*\(([^()]+)\)\s*$/);
+  return m ? { quartier: m[1].trim(), ville: m[2].trim() } : { quartier: null as string | null, ville: label.trim() };
+};
+const grouperSecteurs = (liste: string[]) => {
+  const villes: { ville: string; quartiers: string[] }[] = [];
+  for (const s of liste) {
+    const { ville, quartier } = lireSecteur(s);
+    let v = villes.find(x => normVille(x.ville) === normVille(ville));
+    if (!v) { v = { ville, quartiers: [] }; villes.push(v); }
+    if (quartier && !v.quartiers.some(q => normVille(q) === normVille(quartier))) v.quartiers.push(quartier);
+  }
+  return villes;
+};
+const cpDeVille = (ville: string) =>
+  Object.keys(QUARTIERS).find(cp => normVille(QUARTIERS[cp].ville) === normVille(ville)) || null;
+
+
+/* Mêmes intitulés que le CRM : ce que le client lit ici est ce qu'Alexandre voit. */
+const TYPES_E: [string, string][] = [
+  ['Appartement', '🏢'], ['Maison', '🏡'], ['Loft', '🏗️'],
+  ['Duplex', '🪜'], ['Terrain', '🌱'], ['Autre', '✳️'],
+];
+const ETATS_E: [string, string, string][] = [
+  ['a_renover', 'À rénover', '🔨'], ['travaux_legers', 'Travaux légers', '🧰'],
+  ['bon_etat', 'Bon état', '✨'], ['refait_neuf', 'Refait à neuf', '💎'],
+];
+/* L'état souhaité se choisit à plusieurs, enregistré « travaux_legers,bon_etat ».
+   Rien = pas de préférence. Mêmes règles que le CRM (CriteresRecherche.tsx). */
+const etatsListe = (v?: string | null) => { const l = String(v || '').split(',').map(x => x.trim()); return ETATS_E.map(e => e[0]).filter(k => l.includes(k)); };
+const CUISINES_E: [string, string, string][] = [
+  ['', 'Indifférent', '🤷'], ['ouverte', 'Ouverte sur le séjour', '🍽️'], ['separee', 'Séparée', '🚪'],
+];
+const EXPO_E: [string, string, string][] = [['sud','Sud','☀️'],['est','Est','🌅'],['ouest','Ouest','🌇'],['nord','Nord','❄️'],['traversant','Traversant','↔️']];
+/* clé technique (colonne en base) ↔ libellé lisible ↔ emoji */
+const EQUIP_E: [string, string, string][] = [
+  ['parking','Parking','🅿️'], ['cave','Cave','📦'], ['balcon','Balcon','🌿'],
+  ['terrasse','Terrasse','☀️'], ['jardin','Jardin','🌳'], ['ascenseur','Ascenseur','🛗'],
+  ['gardien','Gardien','👮'],
+];
+const URGENCES_E: [string, string, string][] = [
+  ['immediate', 'Immédiate', '🔥'], ['3_mois', 'Sous 3 mois', '⏱️'],
+  ['6_mois', 'Sous 6 mois', '📆'], ['annee', "Dans l'année", '🗓️'],
+];
+const FINANCEMENTS_E: [string, string, string][] = [
+  ['cash', 'Cash', '💵'], ['pret_valide', 'Prêt validé', '✅'],
+  ['pret_en_cours', 'Prêt en cours', '⏳'], ['a_monter', 'Prêt à monter', '📝'],
+  ['pret_relais', 'Prêt relais', '🔁'],
+  ['mixte_cash_pret', 'Mixte · cash + prêt', '🔀'],
+  ['mixte_cash_relais', 'Mixte · cash + prêt relais', '🔀'],
+  ['mixte_pret_relais', 'Mixte · prêt + prêt relais', '🔀'],
+];
+const LETTRES_DPE = ['A','B','C','D','E','F','G'];
+
+/* Une valeur du récapitulatif : petite carte avec son icône (dessinée, V3.68). */
+function Fait({ ico, lib, val }: { ico: string; lib: string; val: React.ReactNode }) {
+  return (
+    <div className="fait">
+      <span className="fi"><Ico n={ico} t={17} /></span>
+      <span className="ft"><i>{lib}</i><b>{val}</b></span>
+    </div>
+  );
+}
+
+/* Un champ nombre : vide par défaut, jamais d'exemple grisé pris pour une valeur. */
+function ChampNum({ val, onChange, suffixe, aide }: {
+  val: string; onChange: (v: string) => void; suffixe?: string; aide?: string;
+}) {
+  return (
+    <div className="champ-n">
+      <input type="number" inputMode="numeric" value={val} onChange={(e) => onChange(e.target.value)} />
+      {suffixe ? <span className="sfx">{suffixe}</span> : null}
+      {aide ? <span className="aide">{aide}</span> : null}
+    </div>
+  );
+}
+
+/* Le petit « ? » posé après un intitulé de chiffre. */
+function BtnAide({ cle, onAide }: { cle: string; onAide: (c: string) => void }) {
+  return (
+    <button type="button" className="aide-pt" aria-label="Que veut dire ce chiffre ?"
+      onClick={(e) => { e.stopPropagation(); onAide(cle); }}>?</button>
+  );
+}
+
+/* En-tête d'une catégorie, côté acheteur : pastille d'icône + titre lisible. */
+function CatE({ ico, titre, sous, children }: { ico: string; titre: string; sous?: string; children: React.ReactNode }) {
+  return (
+    <div className="bloc cat">
+      <div className="cat-h">
+        <span className="cat-i"><Ico n={ico} t={19} /></span>
+        <span className="cat-tt"><b>{titre}</b>{sous ? <i>{sous}</i> : null}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/* Une pastille d'équipement : son icône, dorée et marquée quand c'est indispensable. */
+function PastilleE({ ico, texte, fort }: { ico: string; texte: string; fort?: boolean }) {
+  return <span className={'past' + (fort ? ' indis' : ' or')}><Ico n={ico} t={15} /><span>{texte}</span>{fort ? <i className="mk">indispensable</i> : null}</span>;
+}
+
+
+
+const T: Record<string, string[]> = {
+  /* Les équipements du bien : un trait, pas un pictogramme chargé — ils se
+     lisent à 34 px dans une pastille, pas en pleine page. */
+  terrasse:['M3 15h18','M3 21h18','M4.5 15v6','M9.5 15v6','M14.5 15v6','M19.5 15v6'],
+  jardin:['c:12,9,5','M12 14v7','M8.6 17.4 12 18.8l3.4-1.4'],
+  parking:['M4 16.5h16','M6.2 16.5v2','M17.8 16.5v2','M5.6 16.5v-4l1.9-4.2h9l1.9 4.2v4','M5.6 12.5h12.8'],
+  cave:['M4 19.5h4v-4h4v-4h4v-4h4','M4 19.5V17'],
+  ascenseur:['M6.2 3.5h11.6v17H6.2z','m10 10 2-2.6 2 2.6','m10 14 2 2.6 2-2.6'],
+  gardien:['M12 3.4 5.2 6.3v5.4c0 4.1 2.8 7.4 6.8 8.5 4-1.1 6.8-4.4 6.8-8.5V6.3z'],
+  cuisine:['M3.6 6.6h16.8v11.4H3.6z','M3.6 13.4h16.8','c:8.4,10,1.5','c:15.6,10,1.5'],
+  clim:['M12 3.4v17.2','M4.5 7.8 19.5 16.2','M19.5 7.8 4.5 16.2','m9.2 5.2 2.8 2 2.8-2','m9.2 18.8 2.8-2 2.8 2'],
+  traversant:['M3.2 12h17.6','m7.4 7.8-4 4.2 4 4.2','m16.6 7.8 4 4.2-4 4.2'],
+  etoile:['M12 2.8l2.5 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.2l-5.2 2.8 1.1-5.9-4.3-4.1 5.9-.8z'],
+  horloge:['c:12,12,9','M12 7.4V12l3.2 2'],
+  graph:['M3 20h18','M6 20V12','M11 20V6.5','M16 20v-5','M21 20v-9'],
+  cible:['c:12,12,9','c:12,12,4.6','c:12,12,.9'],
+  fleche:['m9.5 6 6 6-6 6'], retour:['m14 6-6 6 6 6'],
+  croix:['M6.5 6.5l11 11','M17.5 6.5l-11 11'], check:['m5 13 5 5L20 6'], moins:['M6 12h12'],
+  tel:['M6.2 3h3.1l1.5 3.9-2 1.3a13.4 13.4 0 0 0 6.9 6.9l1.3-2 3.9 1.5v3.1a1.9 1.9 0 0 1-2.1 1.9A17.6 17.6 0 0 1 3.1 5.1 1.9 1.9 0 0 1 5 3z'],
+  lieu:['M12 21.5S19 15 19 10a7 7 0 1 0-14 0c0 5 7 11.5 7 11.5z','c:12,10,2.6'],
+  mobile:['M8.5 2.5h7A1.5 1.5 0 0 1 17 4v16a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 20V4a1.5 1.5 0 0 1 1.5-1.5z','M11 18.5h2'],
+  aide:['c:12,12,9','M9.7 9.4a2.4 2.4 0 0 1 4.6.9c0 1.6-2.3 2.1-2.3 3.5','M12 17.2v.1'],
+  cloche:['M6.5 16v-5a5.5 5.5 0 0 1 11 0v5l1.5 2h-14z','M10 20.5a2 2 0 0 0 4 0'],
+  crayon:['M12.5 20H21','M16.4 3.6a2.1 2.1 0 0 1 3 3L7.4 18.6 3.4 19.8l1.2-4z'],
+  loupe:['c:10.8,10.8,7','m20.5 20.5-4.7-4.7'],
+  euro:['M17 6.5A6.5 6.5 0 0 0 7.5 12 6.5 6.5 0 0 0 17 17.5','M4 10.5h8','M4 13.5h8'],
+  maison:['M3 21h18','M5 21V9.5L12 4l7 5.5V21','M10 21v-6h4v6'],
+  verrou:['M5 11.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z','M8 9.5V7a4 4 0 0 1 8 0v2.5'],
+  pdf:['M12 3v12','m7.5 11 4.5 4.5 4.5-4.5','M4 20h16'],
+  partage:['M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7','M12 3v13','m7.5 7.5 4.5-4.5 4.5 4.5'],
+  mail:['M3.6 6.6h16.8v10.8H3.6z','m3.6 7 8.4 5.9 8.4-5.9'],
+  regle:['M3 8.5h18v7H3z','M7 8.5v3','M11 8.5v3','M15 8.5v3','M19 8.5v3'],
+  calendrier:['M4.5 6h15a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z','M3.5 10.5h17','M8 3.5v4','M16 3.5v4'],
+  immeuble:['M4 21V4h9v17','M13 10h7v11','M7 8h2','M7 12h2','M7 16h2','M16 14h1','M16 18h1'],
+  etincelle:['M11 3l1.7 4.6L17 9.3l-4.3 1.7L11 15.6 9.3 11 5 9.3l4.3-1.7z','M18 15l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z'],
+  eclair:['M13 2 4.8 13.4h5.9L9.8 22 19.2 10.4H13z'],
+  train:['M7.5 4h9a3 3 0 0 1 3 3v6.5a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z','M4.5 10h15','M8.6 13.6h.01','M15.4 13.6h.01','M8.5 16.5 6.5 20','M15.5 16.5l2 3.5'],
+  note:['M6.5 3h8l4.5 4.5V20a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z','M14.5 3v4.5H19','M9 12.5h6','M9 16h4'],
+  /* Les pastilles de réponse (voir PASTILLES). Même trait que les équipements :
+     elles se lisent à 15 px dans une pastille, pas en pleine page. */
+  soleil:['c:12,12,4','M12 3v2.2','M12 18.8V21','M3 12h2.2','M18.8 12H21','m5.6 5.6 1.6 1.6','m16.8 16.8 1.6 1.6','m18.4 5.6-1.6 1.6','m7.2 16.8-1.6 1.6'],
+  lune:['M20.2 14.8A8.6 8.6 0 0 1 9.2 3.8a8.6 8.6 0 1 0 11 11z'],
+  travaux:['M12 3.6 2.8 20.4h18.4z','M12 10.2v4.4','M12 17.4h.02'],
+  bruit:['M3.5 9.4h3.2L11 5.8v12.4l-4.3-3.6H3.5z','M14.6 9.6a3.6 3.6 0 0 1 0 4.8','M17.4 7a7.4 7.4 0 0 1 0 10'],
+  plan:['M3.5 5.5h17v13h-17z','M10.5 5.5v13','M3.5 12h7','M10.5 10h10'],
+  visavis:['M3.2 4.5h5.8v15H3.2z','M15 4.5h5.8v15H15z','M10.6 12h2.8'],
+  canape:['M4.5 11.4V9.2a2.2 2.2 0 0 1 4.4 0v2.2','M15.1 11.4V9.2a2.2 2.2 0 0 1 4.4 0v2.2','M3 11.4h18v5.4H3z','M5.8 16.8V19.4','M18.2 16.8V19.4'],
+  petit:['M4 4h5','M4 4v5','M20 20h-5','M20 20v-5','m4 4 6 6','m20 20-6-6'],
+  /* Le chevron du sélecteur de recherche : « il y a autre chose en dessous ». */
+  chevron:['m6 9 6 6 6-6'],
+  /* La barre du bas et l'accueil : « Consultés » et « donner mon avis ». */
+  oeil:['M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z','c:12,12,3'],
+  /* La carte des biens (V3.27) : un plan plié ; et la liste, pour y revenir. */
+  carte:['M3 6l6-2.5 6 2.5 6-2.5v14.5l-6 2.5-6-2.5-6 2.5z','M9 3.5v14.5','M15 6v14.5'],
+  liste:['M8 6h12','M8 12h12','M8 18h12','M4 6h.01','M4 12h.01','M4 18h.01'],
+  filtre:['M4 5.5h16l-6.2 7.2v5.6l-3.6 1.9v-7.5z'],
+  pouce:['M7 10.5v10H4v-10z','M7 10.5l4-7a2 2 0 0 1 2.6 2.3l-.9 4.7H19a2 2 0 0 1 2 2.3l-1.2 6.9A2 2 0 0 1 17.8 20.5H7'],
+  /* « Ma recherche » (V3.67) : un balcon, la banque du financement, le portefeuille de l'apport. */
+  balcon:['M3 13h18','M3 20h18','M5 13v7','M9 13v7','M15 13v7','M19 13v7','M8 13V5.5h8V13'],
+  banque:['M3 9.5 12 4l9 5.5','M5 10v7.5','M9.5 10v7.5','M14.5 10v7.5','M19 10v7.5','M3 20.5h18'],
+  portefeuille:['M4 7.5h14a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a1 1 0 0 1-1-1z','M4 7.5 15 4v3.5','M16 13.5h1.5'],
+  /* V3.68 : les chambres, l'orientation. */
+  lit:['M3 18.5V7','M3 14h18v4.5','M21 14v-2.5A2.5 2.5 0 0 0 18.5 9H11v5','c:7,11.3,1.8'],
+  boussole:['c:12,12,9','m15.5 8.5-2 5-5 2 2-5z'],
+  /* V3.184 : « Une annonce repérée ? » — le lien, ajouter, l'appareil photo, la galerie. */
+  lien:['M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2','M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2'],
+  plus:['M12 5v14','M5 12h14'],
+  photo:['M4 8h3l2-3h6l2 3h3v11H4z','c:12,13,3.5'],
+  galerie:['M5.5 4.5h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2z','c:9,10,1.8','m20.5 16-5-5-8 8.5'],
+};
+
+/* Le chasseur qui suit le dossier — affiché en haut de l'espace. */
+const AGENT = {
+  nom: 'Alexandre Rogelet',
+  role: 'Votre conseiller · Emilio Immobilier',
+  tel: '06 58 95 76 32',
+  telUrl: '+33658957632',
+  mail: 'arogelet@emilio-immo.com',
+};
+function Ico({ n, t = 22 }: { n: string; t?: number }) {
+  const d = T[n]; if (!d) return null;
+  return (
+    <svg width={t} height={t} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flex: '0 0 auto' }}>
+      {d.map((x, i) => x.startsWith('c:')
+        ? (([cx, cy, r]) => <circle key={i} cx={cx} cy={cy} r={r} />)(x.slice(2).split(','))
+        : <path key={i} d={x} />)}
+    </svg>
+  );
+}
+
+/* Échap ferme la couche la plus haute : plein écran, puis pop-up, puis feuille.
+   Une petite pile suffit — le dernier inscrit est celui qui répond. */
+const PILE_ECHAP: Array<() => void> = [];
+function useEchap(actif: boolean, onEchap: () => void) {
+  useEffect(() => {
+    if (!actif) return;
+    PILE_ECHAP.push(onEchap);
+    const auClavier = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (PILE_ECHAP[PILE_ECHAP.length - 1] === onEchap) { e.stopPropagation(); onEchap(); }
+    };
+    window.addEventListener('keydown', auClavier);
+    return () => {
+      const i = PILE_ECHAP.lastIndexOf(onEchap);
+      if (i >= 0) PILE_ECHAP.splice(i, 1);
+      window.removeEventListener('keydown', auClavier);
+    };
+  }, [actif, onEchap]);
+}
+
+/* ══ l'espace sur l'écran d'accueil ═══════════════ */
+/* Le lien part par SMS. La première fois, le client tape dessus ; la deuxième,
+   il ne retrouve plus le message. Une icône sur son écran d'accueil règle ça
+   une bonne fois : l'espace s'ouvre alors en plein écran, comme une
+   application, et le jeton est rangé dedans — il n'a plus rien à retenir.
+
+   Trois règles de politesse, qui comptent autant que le reste :
+     — on ne demande rien à l'arrivée. La proposition n'a de sens qu'une fois
+       qu'il a vu ce qu'il y a dedans : un bien ouvert, ou un vrai moment passé
+       sur la page ;
+     — on ne demande rien sur ordinateur. Il a ses favoris sous la souris ;
+     — deux refus valent un non. Au troisième, on insiste, et on agace. */
+
+const CLE_ECRAN = 'emilio_ecran';
+const REFUS_MAX = 2;
+const ATTENTE_MS = 40_000;
+
+type Appareil = null | 'ios' | 'android' | 'appli' | 'appliandroid' | 'bureau';
+
+/* L'événement d'Android, que le navigateur nous confie pour qu'on choisisse le
+   bon moment d'afficher sa boîte d'installation. Il n'est pas typé par TS. */
+type InviteNative = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: string }>;
+};
+
+function useEcranAccueil() {
+  const [appareil, setAppareil] = useState<Appareil>(null);
+  const [tactile, setTactile] = useState(true);
+  const [visible, setVisible] = useState(false);
+  const [auto, setAuto] = useState(false);
+  const native = useRef<InviteNative | null>(null);
+  const eveille = useRef(false);
+
+  const lire = () => { try { return localStorage.getItem(CLE_ECRAN) || ''; } catch { return ''; } };
+  const ecrire = (v: string) => { try { localStorage.setItem(CLE_ECRAN, v); } catch { /* stockage indisponible */ } };
+
+  useEffect(() => {
+    /* Déjà posé sur l'écran d'accueil : la page tourne en plein écran, la
+       question ne se pose plus. */
+    const pose = window.matchMedia?.('(display-mode: standalone)').matches
+      || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    if (pose) { ecrire('ok'); return; }
+
+    const surTactile = window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth <= 900;
+    setTactile(surTactile);
+
+    const ua = navigator.userAgent || '';
+    const ios = /iphone|ipad|ipod/i.test(ua)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    /* ⚠️ Le cas le plus fréquent de tous : le client arrive par le mail.
+       Gmail, Outlook, WhatsApp, Instagram n'ouvrent pas les liens dans le vrai
+       navigateur — ils ont chacun le leur, en réduction, qui ne sait ni
+       installer une application ni activer des notifications.
+
+       Deux façons de les reconnaître, parce qu'aucune ne suffit seule :
+         — leur signature, quand ils en laissent une (« ; wv » est celle des
+           navigateurs embarqués d'Android) ;
+         — l'absence du veilleur, que ces navigateurs ne fournissent pas.
+       Le reste du code leur montrera comment repasser par le vrai navigateur. */
+    const integre = /FBAN|FBAV|Instagram|Messenger|LinkedInApp|Line\/|Snapchat|Twitter|WhatsApp|MicroMessenger|GSA\/|; ?wv[);]/i.test(ua)
+      || !('serviceWorker' in navigator);
+
+    /* Sur téléphone, on sait tout de suite quoi montrer.
+       Sur ordinateur, on ne montre rien tant que le navigateur n'a pas dit
+       lui-même qu'il savait installer la page : Chrome et Edge le disent (et
+       l'espace se range alors dans la barre des tâches, dans sa propre
+       fenêtre), Safari et Firefox ne le proposent pas du tout. Inutile
+       d'expliquer un chemin qui n'existe pas chez celui qui lit. */
+    if (surTactile) {
+      setAppareil(ios
+        ? (integre ? 'appli' : 'ios')
+        : (integre ? 'appliandroid' : 'android'));
+    }
+
+    const etat = lire();
+    setAuto(etat !== 'ok' && (Number(etat) || 0) < REFUS_MAX);
+
+    const surInvite = (e: Event) => {
+      /* Le navigateur proposerait tout seul, au pire moment. On garde la main. */
+      e.preventDefault();
+      native.current = e as InviteNative;
+      setAppareil(surTactile ? 'android' : 'bureau');
+    };
+    const surPose = () => { ecrire('ok'); setAppareil(null); setVisible(false); };
+    window.addEventListener('beforeinstallprompt', surInvite);
+    window.addEventListener('appinstalled', surPose);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', surInvite);
+      window.removeEventListener('appinstalled', surPose);
+    };
+  }, []);
+
+  /* Le déclencheur : un bien ouvert, ou quarante secondes passées ici. */
+  const eveiller = useCallback(() => {
+    if (eveille.current) return;
+    eveille.current = true;
+    setTimeout(() => setVisible(true), 800);
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(eveiller, ATTENTE_MS);
+    return () => clearTimeout(t);
+  }, [eveiller]);
+
+  const refuser = useCallback(() => {
+    const n = (Number(lire()) || 0) + 1;
+    ecrire(String(n));
+    setVisible(false);
+    if (n >= REFUS_MAX) setAuto(false);
+  }, []);
+
+  /* Sur Android, le navigateur sait le faire lui-même : une boîte, un bouton,
+     c'est fini. Partout ailleurs, on montre le chemin. */
+  const accepter = useCallback(async (guide: () => void) => {
+    setVisible(false);
+    const inv = native.current;
+    if (!inv) { guide(); return; }
+    native.current = null;
+    try {
+      await inv.prompt();
+      const r = await inv.userChoice;
+      if (r?.outcome === 'accepted') { ecrire('ok'); setAppareil(null); }
+    } catch { guide(); }
+  }, []);
+
+  return { appareil, tactile, auto, visible, eveiller, refuser, accepter };
+}
+
+/* ══ être prévenu des nouveaux biens ═══════════════ */
+/* Le client n'a pas à venir vérifier tous les jours si un bien est arrivé :
+   c'est l'espace qui le lui dit. Deux règles, et elles comptent :
+
+     — on ne demande qu'après l'installation. Sur iPhone, les notifications
+       ne marchent QUE si l'espace est posé sur l'écran d'accueil ; ailleurs,
+       c'est simplement le moment où le client est le plus partant ;
+     — on ne demande qu'une fois. Le navigateur n'offre qu'une seule chance :
+       un « non » est définitif, et plus rien ne peut le rattraper. D'où la
+       petite fenêtre maison avant celle du téléphone — elle, on peut la
+       refermer sans conséquence. */
+
+const CLE_NOTIF = 'emilio_notif';
+const CLE_PUBLIQUE = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
+
+type EtatNotif = 'inconnu' | 'oui' | 'non' | 'bloque';
+
+/* Le résultat d'une demande, tel qu'on doit l'expliquer au client :
+     ok      → c'est en place
+     bloque  → le téléphone a dit non sans rien afficher : réglages obligatoires
+     refuse  → il a fermé la fenêtre du téléphone sans répondre : réessayable
+     erreur  → l'autorisation est là mais l'inscription n'a pas abouti */
+type Verdict = 'ok' | 'bloque' | 'refuse' | 'erreur';
+
+/* La clé publique voyage en base64 « url » ; le navigateur la veut en octets. */
+function enOctets(b64: string): ArrayBuffer {
+  const p = (b64 + '='.repeat((4 - (b64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+  const brut = atob(p);
+  const tampon = new ArrayBuffer(brut.length);
+  const out = new Uint8Array(tampon);
+  for (let i = 0; i < brut.length; i++) out[i] = brut.charCodeAt(i);
+  return tampon;
+}
+
+function useNotifications(token: string) {
+  const [possible, setPossible] = useState(false);
+  const [etat, setEtat] = useState<EtatNotif>('inconnu');
+  const veilleur = useRef<ServiceWorkerRegistration | null>(null);
+
+  const ecrire = (v: string) => { try { localStorage.setItem(CLE_NOTIF, v); } catch { /* indisponible */ } };
+
+  const abonner = useCallback(async (reg: ServiceWorkerRegistration) => {
+    try {
+      /* Le veilleur doit être ACTIF, pas seulement enregistré. S'abonner sur un
+         veilleur encore en cours d'installation échoue sur Android — et c'est
+         silencieux. Cette ligne attend qu'il soit vraiment en place. */
+      await navigator.serviceWorker.ready;
+      const deja = await reg.pushManager.getSubscription();
+      const ab = deja || await reg.pushManager.subscribe({
+        /* Obligatoire : on s'engage à toujours montrer quelque chose au
+           client. Pas de réveil silencieux dans son dos. */
+        userVisibleOnly: true,
+        applicationServerKey: enOctets(CLE_PUBLIQUE),
+      });
+      const r = await fetch('/api/espace/push', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, abonnement: ab.toJSON() }),
+      });
+      const d = await r.json().catch(() => null);
+      /* Trace dans la console du navigateur : si un jour ça ne marche pas chez
+         un client, c'est ici qu'on lira pourquoi, au lieu de deviner. */
+      if (!d?.ok) console.warn('[espace] abonnement aux notifications refusé', d?.error || r.status);
+      return !!d?.ok;
+    } catch (e) {
+      console.warn('[espace] abonnement aux notifications impossible', e);
+      return false;
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (!CLE_PUBLIQUE) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
+
+    /* ⚠️ On n'annonce « je sais faire » (possible) qu'UNE FOIS l'état connu.
+       Annoncer avant laissait une fraction de seconde pendant laquelle le
+       reste du code voyait « appareil capable » + « jamais répondu », et
+       programmait la question — même à un client qui avait déjà accepté la
+       veille. D'où un pop-up qui revenait à chaque ouverture, sans que le
+       téléphone ne redemande rien puisque lui savait. */
+    const etatConnu = (e: EtatNotif) => { setEtat(e); setPossible(true); };
+
+    navigator.serviceWorker.register('/sw.js').then(async (reg) => {
+      veilleur.current = reg;
+
+      /* On demande explicitement au navigateur d'aller voir s'il existe une
+         version plus récente du veilleur. Sans ça, il garde l'ancienne bien
+         plus longtemps qu'on ne l'imagine — et une correction livrée le matin
+         peut n'arriver sur le téléphone que le lendemain. */
+      try { reg.update(); } catch { /* sans conséquence */ }
+      if (Notification.permission === 'granted') {
+        etatConnu('oui');
+        /* Il a déjà dit oui, peut-être sur un autre appareil ou avant une
+           réinstallation : on réenregistre celui-ci, sans rien lui demander. */
+        await abonner(reg);
+        return;
+      }
+      if (Notification.permission === 'denied') { etatConnu('bloque'); return; }
+      let refuse = false;
+      try { refuse = localStorage.getItem(CLE_NOTIF) === 'non'; } catch { /* indisponible */ }
+      etatConnu(refuse ? 'non' : 'inconnu');
+    }).catch(() => { /* pas de veilleur, pas de notifications, tant pis */ });
+  }, [abonner]);
+
+  const demander = useCallback(async (): Promise<Verdict> => {
+    /* ⚠️ On demande l'autorisation AVANT toute autre chose, et sans dépendre
+       de quoi que ce soit d'autre.
+
+       La version précédente commençait par vérifier que le veilleur était prêt,
+       et abandonnait sinon — sans rien demander. Résultat : le client voyait
+       notre fenêtre, disait oui… et celle d'Android n'arrivait jamais. Or
+       Android ne pose la question qu'une fois, dans la seconde qui suit le
+       geste du client : tout ce qui retarde ce moment le fait rater. */
+    let reponse = Notification.permission;
+    if (reponse === 'default') reponse = await Notification.requestPermission();
+
+    /* « denied » veut dire que le téléphone a répondu non SANS rien afficher :
+       les notifications ont été bloquées pour cet espace une fois pour toutes,
+       et seul un passage par les réglages peut les rouvrir. C'est un cas très
+       différent d'une fenêtre simplement refermée, et le client doit pouvoir
+       faire la différence — sinon il réessaie dix fois pour rien. */
+    if (reponse === 'denied') { setEtat('bloque'); ecrire('non'); return 'bloque'; }
+    if (reponse !== 'granted') { setEtat('non'); ecrire('non'); return 'refuse'; }
+
+    setEtat('oui');
+    ecrire('ok');
+
+    /* L'autorisation est acquise ; on peut prendre le temps qu'il faut pour
+       le reste. Si le veilleur n'est pas encore là, on l'installe maintenant. */
+    let reg = veilleur.current;
+    if (!reg) {
+      try { reg = await navigator.serviceWorker.register('/sw.js'); veilleur.current = reg; }
+      catch (e) { console.warn('[espace] veilleur impossible à installer', e); return 'erreur'; }
+    }
+    return (await abonner(reg)) ? 'ok' : 'erreur';
+  }, [abonner]);
+
+  const refuser = useCallback(() => { setEtat('non'); ecrire('non'); }, []);
+
+  return { possible, etat, demander, refuser };
+}
+
+/* ══ composant ════════════════════════════════════ */
+const SANS_APPRIS: string[] = [];
+const SANS_IDENTITE: SaisieOffre['acquereurs'] = [];
+
+export default function EspaceClient({ token, client, criteres, biens: biensInit, passage, semaine, visites, recherches, rechercheId, rang, enCours, mandat: mandatInit, mesVisites, apprisClient = SANS_APPRIS, annonces: annoncesInit = null, identiteOffre = SANS_IDENTITE }: Props) {
+  const [vue, setVue] = useState('accueil');
+  /* V3.184 : ses annonces envoyées ; une nouvelle s'ajoute sans recharger. */
+  const [annonces, setAnnonces] = useState<AnnonceEspace[] | null>(annoncesInit);
+  useEffect(() => { setAnnonces(annoncesInit); }, [annoncesInit]);
+  const [biens, setBiens] = useState(biensInit);
+  /* Pour les rappels qui partent après coup (« Découvrir ») : la liste du moment. */
+  const biensRef = useRef(biens);
+  biensRef.current = biens;
+  /* Pas de valeur par défaut dans la signature : un [] neuf à chaque rendu
+     relancerait cet effet sans fin. */
+  const [mesV, setMesV] = useState<VisiteE[]>(mesVisites || []);
+  useEffect(() => { setMesV(mesVisites || []); }, [mesVisites]);
+  const [crit, setCrit] = useState(criteres);
+  const [feuille, setFeuille] = useState<React.ReactNode>(null);
+  const [ouvert, setOuvert] = useState(false);
+  const [variante, setVariante] = useState('');
+  /* « Découvrir » (V3.44) : les nouveaux biens, un par un. `ids` : la file,
+     figée à l'ouverture ; `cle` : une nouvelle ouverture repart de zéro. */
+  const [decouverte, setDecouverte] = useState<{ ids: string[]; cle: number } | null>(null);
+  const decouverteRef = useRef(decouverte);
+  decouverteRef.current = decouverte;
+  /* Sur téléphone, hors de l'accueil : dès qu'on a un peu descendu, une
+     petite pastille « Accueil » apparaît en haut à gauche. Le client n'a pas
+     à chercher le chemin du retour dans la barre du bas. */
+  const [descendu, setDescendu] = useState(false);
+  /* Le dernier onglet touché dans la barre du bas : sa clé change à chaque
+     toucher, ce qui rejoue son animation même s'il était déjà ouvert. */
+  const [tape, setTape] = useState({ id: '', n: 0 });
+  useEffect(() => {
+    const suivre = () => setDescendu(window.scrollY > 220);
+    suivre();
+    window.addEventListener('scroll', suivre, { passive: true });
+    return () => window.removeEventListener('scroll', suivre);
+  }, []);
+  /* Le client vient de dire que sa recherche est finie : la pastille verte
+     s'éteint tout de suite, sans attendre un rechargement. Au retour, c'est
+     le serveur qui tranche — il lit le journal (voir page.tsx). */
+  const [finDite, setFinDite] = useState(false);
+
+  /* `garder` (V3.44) : la requête survit à la fermeture de la page. Pour une
+     réponse de « Découvrir » qui part au moment où le téléphone met l'espace
+     en arrière-plan. Jamais pour un envoi lourd (une signature) : le
+     navigateur refuse au-delà de 64 Ko. */
+  const envoyer = useCallback(async (route: string, corps: Record<string, unknown>, garder = false) => {
+    try {
+      const r = await fetch('/api/espace/' + route, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, ...corps }),
+        ...(garder ? { keepalive: true } : {}),
+      });
+      return await r.json();
+    } catch { return { ok: false }; }
+  }, [token]);
+
+  const montrer = (n: React.ReactNode, v = '') => { setFeuille(n); setVariante(v); setOuvert(true); };
+  const fermer = () => { setOuvert(false); setTimeout(() => { setFeuille(null); setVariante(''); }, 320); };
+  /* Ce n'est pas parti (V3.17) : on le dit, au lieu d'un « c'est noté » qui
+     ne serait pas vrai. */
+  /* V3.48 : le serveur refuse une visite ou une offre sur un bien qui n'est
+     plus disponible (vendu, retiré, sous compromis) : on le dit simplement. */
+  const plusDispoMsg = () => montrer(<GrandOk titre="Ce bien n’est plus disponible"
+    texte="Il vient d’être réservé ou retiré de la vente. Votre conseiller vous en parle, et la recherche continue pour vous."
+    rappel={'Son numéro\u00a0: <b>' + AGENT.tel + '</b>'}
+    onFermer={fermer} />, 'pleine');
+  const pasParti = (titre = 'Ce n’est pas parti') => montrer(<GrandOk titre={titre}
+    texte="Un souci de connexion, sans doute. Réessayez dans un instant, ou appelez directement votre conseiller."
+    rappel={'Son numéro\u00a0: <b>' + AGENT.tel + '</b>'}
+    onFermer={fermer} />, 'pleine');
+  const aller = (v: string) => { if (v === 'carte') { setFocusCarte(null); setCarteNeufs(false); } setVue(v); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  /* La carte, posée sur un bien (« Voir sur la carte » de sa fiche). */
+  const [focusCarte, setFocusCarte] = useState<string | null>(null);
+  const allerCarte = (id: string) => { setFocusCarte(id); setCarteNeufs(false); setVue('carte'); window.scrollTo({ top: 0 }); };
+  /* La carte des nouveautés (V3.28) : « Liste | Carte » de « Nouveautés ».
+     Elle garde les biens arrivés nouveaux tant qu'ils n'ont pas d'avis :
+     un bien seulement regardé y reste ; dès qu'il reçoit un avis depuis sa
+     fiche, il en sort au retour sur la carte. */
+  const [carteNeufs, setCarteNeufs] = useState(false);
+  const [idsNouveaux] = useState(() => new Set(biensInit.filter(b => b.etat === 'neuf').map(b => b.id)));
+  const allerCarteNeufs = () => { setFocusCarte(null); setCarteNeufs(true); setVue('carte'); window.scrollTo({ top: 0 }); };
+
+  /* ── passer d'une recherche à l'autre ──
+     On recharge la page avec « ?r=<recherche> » plutôt que de rejouer le
+     dossier à l'écran. C'est une seconde d'attente, couverte par l'écran
+     d'ouverture (voir loading.tsx), et en échange rien ne peut rester à
+     cheval sur deux recherches : les biens, les visites, les critères et le
+     travail de veille sont relus d'un bloc par le serveur. */
+  const changerRecherche = (id: string) => {
+    if (!id || id === rechercheId) { fermer(); return; }
+    try {
+      const adresse = new URL(window.location.href);
+      adresse.searchParams.set('r', id);
+      /* « ?bien= » ouvre une fiche précise : elle appartient à la recherche
+         qu'on quitte, on ne la traîne pas dans l'autre. */
+      adresse.searchParams.delete('bien');
+      window.location.href = adresse.toString();
+    } catch { window.location.reload(); }
+  };
+
+  /* ── Le retour physique sous le doigt ──
+     Une vibration très courte quand le doigt se pose sur un badge : c'est ce
+     qui fait la différence entre « j'ai appuyé » et « j'ai peut-être appuyé ».
+
+     ⚠️ Android seulement. iOS n'expose pas son moteur haptique aux pages web
+     et Safari ignore `navigator.vibrate` — un iPhone n'aura donc que
+     l'animation. Rien à corriger : c'est Apple qui ne l'ouvre pas.
+
+     Posé une fois à la racine plutôt que sur chaque bouton : aucun contrôle
+     ne peut être oublié, et il n'y a rien à penser quand on en ajoute un.
+     `pointerdown` et non `click` : la vibration doit accompagner l'appui,
+     pas le relâchement, sinon elle arrive après coup et sonne faux. */
+  useEffect(() => {
+    /* ⚠️ L'intensité ne se règle pas : la commande du navigateur n'accepte
+       qu'une DURÉE, et le moteur vibre à la puissance fixe qu'a choisie le
+       constructeur du téléphone. Une impulsion plus longue se *ressent* comme
+       plus forte, mais au-delà d'une trentaine de millisecondes on passe du
+       « toc » sec au bourdonnement, et ça devient agaçant. C'est le seul
+       réglage disponible — et c'est ici qu'il se touche. */
+    const DUREES: [string, number][] = [
+      /* Le choix principal sur un bien : c'est le geste qui compte, il mérite
+         d'être plus franc que le reste. */
+      ['.avis', 30],
+      /* Un créneau de visite : un engagement, donc un cran au-dessus d'un badge. */
+      ['.creneau', 26],
+      /* Tout le reste — badges de réponse, critères, DPE, sélecteur. */
+      /* La barre collante du bas : ses trois boutons ouvrent le panneau,
+         c'est le meme geste que les gros boutons d'avis. */
+      ['.ba-b', 30],
+      /* Les onglets de « Mes derniers biens consultes » et tout le reste. */
+      ['.ch, .rep, .dpe-b, .selec, .rec, .fc, .fcz-b', 22],
+    ];
+    const toucher = (e: Event) => {
+      const depart = e.target as HTMLElement | null;
+      if (!depart?.closest) return;
+      for (const [selecteur, ms] of DUREES) {
+        const cible = depart.closest(selecteur) as HTMLElement | null;
+        if (!cible) continue;
+        /* Un bouton éteint, ou la relecture d'un retour déjà parti : rien ne
+           se passe à l'écran, donc rien ne doit se passer sous le doigt. */
+        if (cible.hasAttribute('disabled') || cible.closest('.reponses.lu')) return;
+        try { navigator.vibrate?.(ms); } catch { /* refusé, absent ou sur iPhone */ }
+        return;
+      }
+    };
+    document.addEventListener('pointerdown', toucher, { passive: true });
+    return () => document.removeEventListener('pointerdown', toucher);
+  }, []);
+
+  const plusieurs = recherches.length > 1;
+  const nomCourant = recherches.find(r => r.id === rechercheId)?.nom || '';
+  const autresNonLus = recherches.reduce((t, r) => t + (r.id === rechercheId ? 0 : r.nonLus), 0);
+  const ouvrirRecherches = () => montrer(
+    <ChoixRecherche liste={recherches} courante={rechercheId}
+      onChoisir={changerRecherche} onFermer={() => fermer()} />,
+  );
+
+  const fermerRef = useCallback(() => {
+    setOuvert(false);
+    setTimeout(() => { setFeuille(null); setVariante(''); }, 320);
+  }, []);
+  useEchap(ouvert, fermerRef);
+
+  /* V3.47 : un bien vendu (ou sous compromis) à quelqu'un d'autre ne
+     demande plus d'avis ni de visite : il sort des nouveautés, des avis à
+     donner et de la carte, et se range dans « Sous compromis ou vendus ». */
+  const libre = (b: Bien) => !b.vente || b.vente.vous;
+  const parEtat = (e: string) => biens.filter(b => b.etat === e && (e === 'avis' || libre(b)));
+  const neufs = parEtat('neuf'), vus = parEtat('vu'), donnes = parEtat('avis');
+  const plusDispo = biens.filter(b => !libre(b) && b.etat !== 'avis');
+  /* Les biens tels que la carte les montre (voir CarteEspace.tsx). */
+  const biensCarte = useMemo(() => biens.filter(b => !b.vente || b.vente.vous).map(pourCarte), [biens]);
+  const nouveautesCarte = useMemo(() => biensCarte.filter(b => idsNouveaux.has(b.id) && b.cat === 'attente'), [biensCarte, idsNouveaux]);
+  const [filtreC, setFiltreC] = useState('tout');   // filtre de « Mes derniers biens consultés »
+  /* Les filtres de « Consultés » sont repliés d'office : la place va aux biens. */
+  const [filtresOuverts, setFiltresOuverts] = useState(false);
+
+  /* ── l'espace sur l'écran d'accueil ── */
+  const ecran = useEcranAccueil();
+  const ouvrirGuideEcran = useCallback(() => {
+    const mode = ecran.appareil || (ecran.tactile ? 'ios' : 'bureau');
+    const sortie = mode === 'appli' || mode === 'appliandroid';
+    montrer(<GuideEcran appareil={mode} onFermer={() => {
+      /* Le guide « ouvrez-moi dans le vrai navigateur » n'a pas de suite : le
+         client a une manipulation à faire, on ne l'encombre pas d'un écran
+         de plus. */
+      if (sortie) { fermer(); return; }
+
+      /* Pour les autres, ce « c'est fait » est le moment le plus important de
+         tout le dispositif, et le plus facile à rater.
+         L'icône vient d'être posée, mais le client est encore dans la page
+         d'où il est parti — souvent celle ouverte depuis un mail. Or c'est
+         dans l'application, et seulement là, que nous pourrons lui proposer
+         les alertes. Aucun code ne peut la lancer à sa place : le navigateur
+         l'interdit. Alors on le lui dit, noir sur blanc, au seul instant où
+         il est encore attentif. */
+      montrer(<GrandOk
+        titre="Votre espace est posé"
+        texte={ecran.tactile
+          ? "Dernière étape : fermez cette page, et ouvrez « Ma recherche » depuis votre écran d'accueil. C'est là que nous vous proposerons de vous prévenir dès qu'un bien arrive."
+          : "Dernière étape : ouvrez « Ma recherche » depuis votre barre des tâches. C'est là que nous vous proposerons de vous prévenir dès qu'un bien arrive."}
+        rappel="Sans cette dernière ouverture, l'icône est bien là, mais les alertes ne sont pas encore activées."
+        bouton="J'ai compris"
+        onFermer={fermer} />, 'pleine');
+    }} />, 'pleine');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ecran.appareil, ecran.tactile]);
+  /* Le vocabulaire suit l'appareil : on ne parle pas d'écran d'accueil à
+     quelqu'un qui est devant un ordinateur, ni d'installation à quelqu'un qui
+     lit la page dans le navigateur de poche de sa messagerie — chez lui, la
+     première chose à faire est d'en sortir. */
+  const dansUneAppli = ecran.appareil === 'appli' || ecran.appareil === 'appliandroid';
+  /* Le bouton de l'accueil : un titre court, et en dessous ce qu'il fait. */
+  const motEcran = dansUneAppli
+    ? { t: 'Ouvrir dans le navigateur', s: 'pour installer l’appli' }
+    : ecran.tactile
+      ? { t: 'Installer l’appli', s: 'sur votre écran d’accueil' }
+      : { t: 'Installer l’application', s: 'sur votre ordinateur' };
+
+  /* ── être prévenu des nouveaux biens ── */
+  const notif = useNotifications(token);
+  const [aDemander, setADemander] = useState(false);
+
+  /* On ne demande qu'après l'installation : sur iPhone les notifications n'ont
+     aucun effet sans elle, et partout ailleurs c'est le moment où le client
+     est le plus partant. */
+  useEffect(() => {
+    if (!notif.possible || notif.etat !== 'inconnu') return;
+    const pose = window.matchMedia?.('(display-mode: standalone)').matches
+      || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    if (pose) { setADemander(true); return; }
+    const surPose = () => setADemander(true);
+    window.addEventListener('appinstalled', surPose);
+    return () => window.removeEventListener('appinstalled', surPose);
+  }, [notif.possible, notif.etat]);
+
+  /* Jamais par-dessus autre chose : si la présentation de l'espace est encore
+     ouverte, on attend qu'il l'ait refermée. Deux fenêtres coup sur coup, on
+     n'en lit aucune. */
+  useEffect(() => {
+    if (!aDemander || ouvert || decouverte) return;
+    /* Le garde-fou : entre le moment où la question est programmée et celui où
+       elle s'affiche, la réponse a pu arriver. On ne redemande jamais à
+       quelqu'un qui a déjà accepté. */
+    if (notif.etat === 'oui') { setADemander(false); return; }
+    const t = setTimeout(() => {
+      setADemander(false);
+      montrer(<DemandeNotif
+        onOui={async () => {
+          const r = await notif.demander();
+          /* Un accord doit être accusé réception. Sans cet écran, le client
+             vient de dire oui deux fois — à nous, puis à son téléphone — et
+             se retrouve devant sa page comme si rien ne s'était passé. Il
+             doit savoir ce qu'il vient d'obtenir. */
+          if (r === 'ok') {
+            montrer(<GrandOk
+              titre="C'est noté, merci"
+              texte={"Dorénavant, dès qu'un bien est déposé dans votre espace, votre téléphone vous le signale. Vous n'avez plus à venir vérifier : c'est nous qui venons à vous."}
+              rappel="Uniquement pour un nouveau bien — jamais de publicité, jamais de relance. Vous pouvez les couper quand vous voulez depuis les réglages de votre téléphone."
+              bouton="J'ai compris"
+              onFermer={fermer} />, 'pleine');
+          }
+          return r;
+        }}
+        onNon={() => { notif.refuser(); fermer(); }} />, 'pleine');
+    }, 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aDemander, ouvert, notif.etat, decouverte]);
+
+  /* ── se remettre à jour tout seul au retour ──
+     Une application posée sur l'écran d'accueil ne se relance pas quand on y
+     revient : Android rend la page telle qu'on l'avait laissée, figée. Le
+     client tape sur la notification « un nouveau bien pour vous », arrive sur
+     son espace… et ne voit rien de neuf. Le pire des scénarios : on lui a
+     promis quelque chose et l'écran le dément.
+
+     On recharge donc dès que la page revient au premier plan — d'un vrai
+     rechargement, pas d'une mise à jour « douce ».
+
+     ⚠️ La mise à jour douce de Next (router.refresh) a été essayée d'abord :
+     elle ne prend pas dans une application posée sur l'écran d'accueil, et le
+     client se retrouvait à tirer l'écran vers le bas à la main. Un
+     rechargement complet est plus brutal sur le papier, mais il est certain —
+     et l'écran d'ouverture de l'espace le rend présentable.
+
+     Deux garde-fous : on ignore les passages éclair (deux secondes sur une
+     autre application), et jamais plus d'un rechargement par quart de minute,
+     sans quoi un client qui fait des allers-retours ferait tourner le serveur
+     pour rien. */
+  const router = useRouter();
+  const masqueDepuis = useRef(0);
+  const dernierRefresh = useRef(0);
+
+  /* Les biens vivent dans un état local (pour marquer « vu » sans attendre le
+     serveur) : quand le serveur renvoie une liste fraîche, il faut la reprendre. */
+  useEffect(() => { setBiens(biensInit); }, [biensInit]);
+
+  useEffect(() => {
+    const recharger = () => {
+      /* Pas pendant une signature : le client revient de sa messagerie avec
+         son code, il doit retrouver l'écran tel qu'il l'a laissé. */
+      try { if (document.documentElement.dataset.saisie) return; } catch { /* sans effet */ }
+      /* Ni pendant qu'il répond à la question d'un nouveau bien (V3.44). */
+      try { if (document.documentElement.dataset.decouverte) return; } catch { /* sans effet */ }
+      if (Date.now() - dernierRefresh.current < 15000) return;
+      dernierRefresh.current = Date.now();
+      try { window.location.reload(); } catch { router.refresh(); }
+    };
+
+    const surChangement = () => {
+      if (document.visibilityState === 'hidden') { masqueDepuis.current = Date.now(); return; }
+      const absence = masqueDepuis.current ? Date.now() - masqueDepuis.current : 0;
+      if (absence < 2000) return;
+      recharger();
+    };
+
+    /* Deux signaux plutôt qu'un : selon les téléphones et selon la façon dont
+       l'application est rouverte, c'est tantôt l'un tantôt l'autre qui part. */
+    document.addEventListener('visibilitychange', surChangement);
+    window.addEventListener('pageshow', surChangement);
+
+    /* Et le veilleur prévient les fenêtres ouvertes dès qu'un bien arrive :
+       si le client a son espace ouvert en arrière-plan, il le trouvera à jour
+       en y revenant, sans même attendre le rechargement. */
+    const surMessage = (e: MessageEvent) => {
+      if (e?.data?.type === 'emilio-nouveau') recharger();
+    };
+    navigator.serviceWorker?.addEventListener('message', surMessage);
+
+    return () => {
+      document.removeEventListener('visibilitychange', surChangement);
+      window.removeEventListener('pageshow', surChangement);
+      navigator.serviceWorker?.removeEventListener('message', surMessage);
+    };
+  }, [router]);
+
+  /* Le petit chiffre sur l'icône, tant qu'il reste des biens non ouverts.
+     Il tombe tout seul dès qu'il les a lus — personne n'a à l'effacer. */
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      setAppBadge?: (n: number) => Promise<void>;
+      clearAppBadge?: () => Promise<void>;
+    };
+    try {
+      if (neufs.length > 0) nav.setAppBadge?.(neufs.length);
+      else nav.clearAppBadge?.();
+    } catch { /* tous les appareils ne savent pas le faire */ }
+  }, [neufs.length]);
+
+  /* ── « Découvrir » : les nouveaux biens, un par un (V3.44) ──
+     Un bien nouveau, sans réponse et sans visite, ne s'ouvre plus en fiche :
+     il arrive dans « Découvrir », à sa place dans la file des nouveautés.
+     Tous les chemins y mènent (accueil, « Nouveautés », la carte, un lien
+     ?bien= d'un mail ou d'une notification) parce qu'ils passent tous par
+     ouvrirBien. La fiche reste à un geste : « Voir le bien ».
+     Rien n'est noté « vu » tant qu'il n'a pas répondu : celui qui s'en va au
+     milieu retrouve ses nouveautés intactes, et la file reprend au premier
+     bien sans réponse — même après un rechargement (sessionStorage). */
+  const CLE_DECOUVERTE = 'emilio_decouverte';
+  /* Un bien déjà sous compromis ou vendu ne se « découvre » pas (V3.47) : sa fiche le dit. */
+  const aDecouvrir = (b: Bien) => b.etat === 'neuf' && (!b.avis || b.avis === 'propose') && !b.visitePrevue && !b.visiteFaite && !b.vente;
+  function ouvrirDecouverte(depuisId?: string, silencieux = false) {
+    if (decouverteRef.current) return;
+    const ids = biensRef.current.filter(aDecouvrir).map(b => b.id);
+    if (!ids.length) {
+      try { sessionStorage.removeItem(CLE_DECOUVERTE); } catch { /* sans effet */ }
+      if (!silencieux) aller('neufs');
+      return;
+    }
+    const file = depuisId && ids.includes(depuisId) ? [depuisId, ...ids.filter(x => x !== depuisId)] : ids;
+    try { sessionStorage.setItem(CLE_DECOUVERTE, '1'); } catch { /* sans effet */ }
+    ecran.eveiller();
+    const d = { ids: file, cle: Date.now() };
+    decouverteRef.current = d;
+    setDecouverte(d);
+  }
+  function fermerDecouverte(vers?: string) {
+    try { sessionStorage.removeItem(CLE_DECOUVERTE); } catch { /* sans effet */ }
+    decouverteRef.current = null;
+    setDecouverte(null);
+    if (vers) aller(vers);
+  }
+  /* La réponse donnée dans « Découvrir », une fois passées les cinq secondes
+     où il pouvait l'annuler. Même envoi que la fiche (route « retour »), mais
+     sans le grand « C'est noté » : l'écran passe au bien suivant. Pas partie,
+     on le dit, et le bien reste sans réponse. */
+  async function enregistrerDecouverte(id: string, avis: AvisDecouverte, commentaire: string, garder: boolean): Promise<boolean> {
+    const b = biensRef.current.find(x => x.id === id);
+    if (!b) return false;
+    const r = await envoyer('retour', { bien_id: b.id, avis, commentaire }, garder);
+    /* Le serveur réclame un mandat que l'écran ne savait pas nécessaire :
+       la signature s'ouvre, et la demande repart juste après (poserAvis). */
+    if (r?.error === 'mandat') {
+      setMandat(x => ({ ...x, etat: 'a_signer' }));
+      mandatRef.current = { ...mandatRef.current, etat: 'a_signer' };
+      ouvrirMandatPourVisite(b, avis, commentaire);
+      return false;
+    }
+    if (r?.error === 'mandat_document' && typeof r.lien === 'string') {
+      const lien = r.lien;
+      setMandat(x => ({ ...x, etat: 'sans_numero', propose: false, enRoute: { lien } }));
+      mandatRef.current = { ...mandatRef.current, etat: 'sans_numero', propose: false, enRoute: { lien } };
+      ouvrirMandatDocument(b, commentaire, lien);
+      return false;
+    }
+    if (r?.error === 'plus_dispo') { plusDispoMsg(); return false; }
+    if (!r?.ok) { pasParti('Votre réponse n’est pas partie'); return false; }
+    const le = new Date().toISOString();
+    setBiens(l => l.map(x => x.id === b.id
+      ? { ...x, avis, commentaire, etat: 'avis', retourLe: le, vuLe: x.vuLe || le } : x));
+    return true;
+  }
+  /* Le même mandat que dans la fiche : avant une demande de visite, il faut
+     signer celui qu'on lui propose ou celui qu'Alexandre lui a envoyé. Pour
+     ce dernier, seulement tant que LUI ne l'a pas signé et qu'il a un lien
+     valable à lui (`enRoute.lien`, le même que lit /api/espace/retour) :
+     signé par lui, en attente de son conjoint, ses visites passent (V3.55). */
+  /* V3.114 : `id` — un bien de l'agence ne bloque jamais : Alexandre est le
+     mandataire du vendeur, pas besoin du mandat de recherche pour le visiter
+     (le serveur ne le demande pas non plus). */
+  const visiteBloquee = (id?: string) => {
+    if (id && biensRef.current.find(x => x.id === id)?.agence) return false;
+    const m = mandatRef.current;
+    return (m.etat !== 'valide' && !!m.enRoute?.lien && m.document?.vous !== 'signe') || m.etat === 'a_signer';
+  };
+
+  /* ── ouverture d'une fiche ── */
+  function ouvrirBien(b: Bien, o?: { versCr?: boolean }) {
+    if (aDecouvrir(b)) { ouvrirDecouverte(b.id); return; }
+    if (b.etat === 'neuf') {
+      setBiens(l => l.map(x => x.id === b.id ? { ...x, etat: 'vu', vuLe: new Date().toISOString() } : x));
+    }
+    /* Chaque ouverture compte, pas seulement la première : c'est ce qui dit
+       à Alexandre qu'un bien a été rouvert trois fois dans la semaine. */
+    envoyer('vue', { bien_id: b.id });
+    /* Il vient de regarder un bien : c'est le bon moment pour lui proposer de
+       garder l'espace sous la main, et pas avant. */
+    ecran.eveiller();
+    montrer(<FicheBien b={b} client={client} crit={crit} onFermer={fermer}
+      onCarte={() => { fermer(); allerCarte(b.id); }}
+      onAvis={enregistrerAvis} onPartager={partagerBien}
+      visitesB={mesV.filter(x => x.bienId === b.id)} onRepondreVisite={repondreVisite}
+      onFaireOffre={peutOffrir(b) ? () => ouvrirOffre(b, b.offreSuivi ? { depuis: b.offreSuivi.id, derniere: b.offreSuivi.total } : {}) : undefined}
+      actionsOffre={actionsOffre(b)} versCr={!!o?.versCr} />, 'fiche');
+  }
+
+  /* ── Le mandat de recherche ──
+     Pas de visite sans mandat : « Je souhaite le visiter » ouvre d'abord la
+     signature quand un mandat peut lui être proposé, et la demande ne part
+     qu'une fois signé. Le serveur fait la même vérification de son côté
+     (réponse « mandat ») : l'écran ne peut pas être contourné. */
+  const [mandat, setMandat] = useState<MandatEspace>(mandatInit);
+  const mandatRef = useRef(mandat);
+  mandatRef.current = mandat;
+
+  function ouvrirMandat(raison: 'visite' | 'libre', apres?: () => Promise<void>, bienId?: string) {
+    montrer(<SignatureMandat mandat={mandatRef.current} raison={raison} envoyer={envoyer} tel={AGENT.tel}
+      bienId={bienId} onFermer={fermer}
+      onSigne={async (r) => {
+        const fin = ajouterMois(jourParis(r.signeLe), DUREE.mois);
+        setMandat(x => ({
+          ...x, etat: 'valide', numero: r.numero, propose: false, expiration: fin,
+          signe: { le: r.signeLe, numero: r.numero, fin: r.finRetractation, execution: r.execution },
+          /* Signé à plusieurs : « Mon mandat » suit ceux qu'on attend. */
+          ...(r.attente?.length ? { cos: r.attente } : {}),
+        }));
+        if (apres) await apres();
+      }} />, 'pleine mandat');
+  }
+
+  function ouvrirRenonciation() {
+    /* V3.56 : un mandat de la rubrique Documents signé en ligne, ou celui
+       signé ici — la même fenêtre, les mêmes mots. */
+    const doc = mandatARenoncer(mandatRef.current);
+    montrer(<Renonciation mandat={mandatRef.current} envoyer={envoyer} onFermer={fermer}
+      onFait={({ accuse, deja }) => {
+        const le = new Date().toISOString();
+        setMandat(x => ({
+          ...x, etat: 'sans_numero', numero: null, signe: null, expiration: null, propose: false,
+          /* « Mon mandat de recherche » dit qu'il y a renoncé ; il quitte
+             « Vos documents signés », comme le mandat signé ici. */
+          ...(doc ? {
+            document: { ...doc, statut: 'retracte' as const, renoncer: null, retracteLe: le },
+            documents: (x.documents || []).filter(d => d.id !== doc.id),
+          } : {}),
+        }));
+        /* V3.57 : « un accusé vient de vous être envoyé » seulement s'il est
+           parti (le serveur le dit) ; sinon Alexandre, prévenu, le confirme. */
+        montrer(<GrandOk titre="C'est enregistré"
+          texte={deja
+            ? 'Votre renonciation était déjà enregistrée : votre mandat de recherche a pris fin, sans aucun frais.'
+            : accuse
+              ? 'Votre mandat de recherche a pris fin, sans aucun frais. Un accusé de réception vient de vous être envoyé par e-mail.'
+              : 'Votre mandat de recherche a pris fin, sans aucun frais. Votre renonciation est bien enregistrée : Alexandre vous la confirmera par e-mail.'}
+          rappel="Votre espace reste ouvert : vous pouvez en parler à Alexandre quand vous voulez."
+          onFermer={fermer} />, 'pleine');
+      }} />);
+  }
+
+  /* La demande de visite qui attend la signature. Gardée dans le
+     navigateur : si le téléphone a fermé la page pendant que le client
+     cherchait son code, elle repart quand même une fois signé. */
+  const CLE_VISITE = 'emilio_visite_apres_mandat';
+  /* `doc` : il part signer le mandat qu'Alexandre lui a envoyé (V3.32), sur
+     une autre page ; sa demande l'attend une semaine, pas une heure. */
+  function garderVisite(b: Bien, commentaire: string, doc = false) {
+    try { localStorage.setItem(CLE_VISITE, JSON.stringify({ bienId: b.id, commentaire, t: Date.now(), doc })); } catch { /* sans effet */ }
+  }
+  function oublierVisite() { try { localStorage.removeItem(CLE_VISITE); } catch { /* sans effet */ } }
+  function visiteEnAttente(): { bienId: string; commentaire: string; doc?: boolean } | null {
+    try {
+      const v = JSON.parse(localStorage.getItem(CLE_VISITE) || 'null');
+      return v && typeof v.bienId === 'string' && Date.now() - Number(v.t) < (v.doc ? 7 * 86_400_000 : 3_600_000) ? v : null;
+    } catch { return null; }
+  }
+  function ouvrirMandatPourVisite(b: Bien, avis: string, commentaire: string) {
+    garderVisite(b, commentaire);
+    ouvrirMandat('visite', async () => { oublierVisite(); await poserAvis(b, avis, commentaire, true); }, b.id);
+  }
+  /* Son mandat de recherche l'attend dans le CRM (V3.32) : il va le signer
+     avec son lien, et sa demande de visite repart à son retour. */
+  function ouvrirMandatDocument(b: Bien, commentaire: string, lien: string) {
+    garderVisite(b, commentaire, true);
+    montrer(<AvantVisiteDocument lien={lien} onFermer={fermer} />, 'pleine mandat');
+  }
+
+  async function enregistrerAvis(b: Bien, avis: string, commentaire: string) {
+    const enRoute = mandatRef.current.enRoute;
+    /* V3.114 : un bien de l'agence part directement, sans mandat de recherche. */
+    if (b.agence) { await poserAvis(b, avis, commentaire, false); return; }
+    if (avis === 'souhaite_visiter' && mandatRef.current.etat !== 'valide' && enRoute?.lien && mandatRef.current.document?.vous !== 'signe') {
+      ouvrirMandatDocument(b, commentaire, enRoute.lien);
+      return;
+    }
+    if (avis === 'souhaite_visiter' && mandatRef.current.etat === 'a_signer') {
+      ouvrirMandatPourVisite(b, avis, commentaire);
+      return;
+    }
+    await poserAvis(b, avis, commentaire, false);
+  }
+
+  async function poserAvis(b: Bien, avis: string, commentaire: string, apresMandat: boolean) {
+    const r = await envoyer('retour', { bien_id: b.id, avis, commentaire });
+    /* Le serveur réclame un mandat que l'écran ne savait pas nécessaire
+       (Alexandre vient de le préparer) : on ouvre la signature, et la
+       demande repartira juste après. */
+    if (r?.error === 'mandat' && !apresMandat) {
+      setMandat(x => ({ ...x, etat: 'a_signer' }));
+      mandatRef.current = { ...mandatRef.current, etat: 'a_signer' };
+      ouvrirMandatPourVisite(b, avis, commentaire);
+      return;
+    }
+    /* Alexandre vient de lui envoyer son mandat (V3.32) : celui-là, pas un second. */
+    if (r?.error === 'mandat_document' && typeof r.lien === 'string') {
+      const lien = r.lien;
+      setMandat(x => ({ ...x, etat: 'sans_numero', propose: false, enRoute: { lien } }));
+      mandatRef.current = { ...mandatRef.current, etat: 'sans_numero', propose: false, enRoute: { lien } };
+      ouvrirMandatDocument(b, commentaire, lien);
+      return;
+    }
+    if (r?.error === 'plus_dispo') { plusDispoMsg(); return; }
+    if (!r?.ok) { pasParti('Votre réponse n’est pas partie'); return; }
+    setBiens(l => l.map(x => x.id === b.id
+      ? { ...x, avis, commentaire, etat: 'avis', retourLe: new Date().toISOString() } : x));
+    /* Juste après la signature, l'écran « Mandat signé » dit déjà que la
+       demande de visite est partie : pas de second écran par-dessus. */
+    if (apresMandat) return;
+    montrer(<GrandOk
+      titre="C'est noté, merci"
+      texte={avis === 'refuse'
+        ? "Votre retour part directement dans votre dossier. Les prochaines propositions en tiendront compte pour ne plus vous montrer ce type de bien."
+        : avis === 'souhaite_visiter'
+          ? "Alexandre est prévenu. Il vous rappelle pour caler la visite."
+          : "Alexandre est prévenu. Il va vous en chercher d'autres dans le même esprit."}
+      rappel="Chacun de vos retours est relu, et oriente les propositions suivantes."
+      onFermer={fermer} />, 'pleine');
+  }
+
+  /* Son avis après une visite. La visite change de rubrique dans « Vos
+     visites » ; le bien suit (« Pas pour moi » le range avec les biens
+     écartés). Renvoie false si rien n'est parti : le bouton le dit. */
+  async function repondreVisite(v: VisiteE, issue: Issue, motifs: string[], mot: string, prix: number | null): Promise<boolean> {
+    const r = await envoyer('visite', { visite_id: v.id, issue, motifs, mot, prix });
+    if (r?.error === 'plus_dispo') { plusDispoMsg(); return false; }
+    if (!r?.ok) return false;
+    const le = r.le || new Date().toISOString();
+    setMesV(l => l.map(x => x.id === v.id
+      ? { ...x, issue, issuePar: 'client', motifs, mot: mot || null, prix: issue === 'offre' ? prix : null, issueLe: le } : x));
+    setBiens(l => l.map(x => x.id === v.bienId
+      ? { ...x, avis: x.avis === 'offre_faite' ? x.avis : issue === 'non' ? 'refuse' : 'visite', retourLe: le } : x));
+    return true;
+  }
+  /* Depuis « Vos visites » ou l'accueil, la carte change de rubrique (ou
+     disparaît) dès la réponse : on dit donc « c'est noté » dans une feuille,
+     avec l'endroit où il retrouvera le bien. Dans la fiche, la carte le dit
+     elle-même. */
+  async function repondreEtDire(v: VisiteE, issue: Issue, motifs: string[], mot: string, prix: number | null): Promise<boolean> {
+    const ok = await repondreVisite(v, issue, motifs, mot, prix);
+    if (ok) {
+      montrer(<GrandOk titre="C'est noté, merci" texte={QUESTION_VISITE[issue].ok}
+        rappel={`Vous retrouvez ce bien dans « Vos visites », rangé dans « ${issue === 'non' ? 'Pas pour moi' : 'En cours'} ».`}
+        onFermer={fermer} />, 'pleine');
+    }
+    return ok;
+  }
+
+  /* ── Son offre, depuis son espace (V3.189) ──
+     Sur un bien qu'il a visité, toujours disponible, et sans offre qui court.
+     V3.190 : un bien de l'agence aussi (Alexandre : « même si c'est mon
+     mandat… le même visuel ») — sauf quand son conseiller a déjà noté une
+     offre de lui sur la fiche du bien, encore en cours ou acceptée. */
+  const visiteFaitePour = (b: Bien) => !!b.visiteFaite || mesV.some(v => v.bienId === b.id && v.passee);
+  function peutOffrir(b: Bien): boolean {
+    if (indispo(b) || b.vente || !visiteFaitePour(b)) return false;
+    const o = b.offreSuivi;
+    if (!o) {
+      if (b.agence && b.offre) return b.offre.statut === 'refusee' || b.offre.statut === 'retiree';
+      return b.avis !== 'offre_faite';
+    }
+    return FINIES.includes(o.etat) && !o.enPreparation;
+  }
+  const bienOffre = (b: Bien): BienOffre => ({
+    id: b.id,
+    titre: b.titre || [b.pieces ? `${b.pieces} pièces` : '', b.ville || b.secteur].filter(Boolean).join(' · ') || 'Le bien',
+    meta: [b.pieces ? `${b.pieces} pièces` : '', b.surface ? `${b.surface} m²` : '', b.ville || b.secteur].filter(Boolean).join(' · '),
+    photo: (b.photos || [])[0] || null, prix: b.prix, honoOffre: b.honoOffre || { mode: 'aucun', val: 0 }, agence: !!b.agence,
+  });
+  /* Les offres rendues par le serveur : la carte de chaque bien se met à jour. */
+  function majOffres(offres: Record<string, OffreEspace>) {
+    setBiens(l => l.map(x => {
+      if (!(x.id in offres)) return x;
+      const o = offres[x.id];
+      return { ...x, offreSuivi: o, avis: FINIES.includes(o.etat) && x.avis === 'offre_faite' ? 'visite' : x.avis };
+    }));
+  }
+  function ouvrirOffre(b: Bien, mode: ModeOffre = {}) {
+    montrer(<FaireOffre bien={bienOffre(b)} mode={mode} identite={identiteOffre} saisie={b.offreSuivi?.saisie || null}
+      apportDossier={crit.apport} mandatSigne={mandatRef.current.etat === 'valide' || mandatRef.current.document?.vous === 'signe'}
+      envoyer={envoyer} tel={AGENT.tel} onFermer={fermer}
+      onOffres={o => {
+        majOffres(o);
+        /* Sa dernière visite sans avis porte maintenant « offre » (le serveur l'a noté). */
+        const le = new Date().toISOString();
+        setMesV(l => {
+          const sans = l.filter(v => v.bienId === b.id && v.passee && !v.issue).sort((a, c) => `${c.date}${c.heure || ''}`.localeCompare(`${a.date}${a.heure || ''}`))[0];
+          return sans ? l.map(v => (v.id === sans.id ? { ...v, issue: 'offre' as Issue, issuePar: 'client' as const, issueLe: le } : v)) : l;
+        });
+      }} />, 'pleine mandat');
+  }
+  /* Les gestes de la carte « Votre offre », pour ce bien. */
+  function actionsOffre(b: Bien) {
+    const o = b.offreSuivi;
+    if (!o) return {};
+    return {
+      onAccepter: o.contre ? () => ouvrirOffre(b, { depuis: o.id, derniere: o.total, contre: o.contre, accepter: true }) : undefined,
+      onAutre: () => ouvrirOffre(b, { depuis: o.id, derniere: o.total, contre: o.contre }),
+      onNouvelle: peutOffrir(b) ? () => ouvrirOffre(b, { depuis: o.id, derniere: o.total }) : undefined,
+      onSansSuite: async () => {
+        const retrait = o.etat === 'a_relire';
+        const r = await envoyer('offre', { action: 'sans_suite', id: o.id });
+        if (!r?.ok) return false;
+        if (r.offres) majOffres(r.offres as Record<string, OffreEspace>);
+        montrer(<GrandOk titre="C’est noté"
+          texte={retrait
+            ? 'Votre offre est retirée, et votre conseiller est prévenu. Vous pourrez en faire une autre sur ce bien quand vous voulez.'
+            : 'Votre conseiller est prévenu. La recherche continue, et vous pourrez toujours faire une nouvelle offre sur ce bien.'}
+          rappel="Vous le retrouvez dans « Vos visites », rangé dans « Pas pour moi »."
+          onFermer={fermer} />, 'pleine');
+        return true;
+      },
+    };
+  }
+
+  /* Le partage s'ouvre par-dessus la fiche, en pop-up : on ne perd pas le bien
+     de vue, et le résultat de l'envoi s'affiche dans la pop-up elle-même. */
+  const partagerBien = useCallback(async (b: Bien, mail: string) => {
+    const r = await envoyer('partage', { bien_id: b.id, destinataire: mail });
+    return !!r?.ok;
+  }, [envoyer]);
+
+  /* La présentation s'ouvre une seule fois par appareil. Le petit délai laisse
+     la page se poser : elle arrive comme un accueil, pas comme une interruption.
+     V3.115 : la feuille qui monte du bas, six écrans (Bienvenue.tsx). 'auto' :
+     ouverte d'elle-même ; fermée, un mot dit où la retrouver. 'main' : par
+     « Comment ça marche ? ». */
+  const CLE_BIENVENUE = 'emilio_bienvenue';
+  const [bienvenue, setBienvenue] = useState<{ auto: boolean; n: number } | null>(null);
+  /* `n` : chaque ouverture repart du premier écran, même si le mot de fin
+     était encore affiché. */
+  const ouvrirBienvenue = useCallback(() => setBienvenue(x => ({ auto: false, n: (x?.n || 0) + 1 })), []);
+  const bienvenueVue = useCallback(() => {
+    try { localStorage.setItem(CLE_BIENVENUE, '1'); } catch { /* stockage indisponible */ }
+  }, []);
+  const bienvenueFinie = useCallback(() => setBienvenue(null), []);
+
+  useEffect(() => {
+    let deja = true;
+    try { deja = localStorage.getItem(CLE_BIENVENUE) === '1'; } catch { deja = false; }
+    if (deja) return;
+    const t = setTimeout(() => setBienvenue(x => x || { auto: true, n: 1 }), 900);
+    return () => clearTimeout(t);
+  }, []);
+
+  /* « Découvrir » était ouvert quand l'espace s'est rechargé (retour d'une
+     autre application, nouveau bien arrivé) : il le retrouve, au premier
+     bien sans réponse. Pas quand l'adresse demande autre chose (un bien, un
+     mandat, une question) : c'est elle qui décide. */
+  const repriseDecouverte = useRef(false);
+  /* L'adresse d'arrivée, lue une fois : les effets suivants la nettoient, et
+     le mode strict rejoue celui-ci après eux. */
+  const adresseDepart = useRef<string | null>(null);
+  useEffect(() => {
+    if (repriseDecouverte.current) return;
+    let veut = false;
+    try {
+      if (adresseDepart.current === null) adresseDepart.current = window.location.search;
+      veut = sessionStorage.getItem(CLE_DECOUVERTE) === '1'
+        && !/[?&](bien|vue|mandat|point|fin)=/.test(adresseDepart.current);
+    } catch { return; }
+    if (!veut) return;
+    const t = setTimeout(() => {
+      repriseDecouverte.current = true;
+      ouvrirDecouverte(undefined, true);
+    }, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* « Je ne suis plus en recherche », depuis le pied de page des mails.
+     Le lien n'annule rien : il amène ici, sur la question, et c'est le client
+     qui répond — a-t-il trouvé avec nous, ailleurs, ou met-il en pause. Rien
+     ne se clôture sans qu'Alexandre l'ait rappelé.
+     On nettoie l'adresse aussitôt : sans ça, le rechargement automatique au
+     retour rouvrirait la question à chaque fois. */
+  const finOuverte = useRef(false);
+  useEffect(() => {
+    if (finOuverte.current) return;
+    let veut = false;
+    try { veut = new URLSearchParams(window.location.search).get('fin') === '1'; } catch { return; }
+    if (!veut) return;
+    finOuverte.current = true;
+    try { window.history.replaceState(null, '', window.location.pathname); } catch { /* sans effet */ }
+    const t = setTimeout(() => ouvrirFinRecherche(), 700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* Les mails envoyés au client pointent sur /espace/<jeton>?bien=<id> : il
+     arrive directement sur le bien dont on lui parle, pas sur l'accueil à
+     chercher lequel c'est. On n'ouvre qu'une fois, et on nettoie l'adresse
+     pour qu'un rafraîchissement ne rouvre pas la fiche par surprise. */
+  /* Le lien « Faire signer le mandat » du CRM pointe sur /espace/<jeton>?mandat=1 :
+     le client arrive directement sur la signature. Même nettoyage de
+     l'adresse, pour qu'un rechargement ne la rouvre pas. */
+  const mandatOuvert = useRef(false);
+  useEffect(() => {
+    if (mandatOuvert.current) return;
+    let veut = false;
+    try { veut = new URLSearchParams(window.location.search).get('mandat') === '1'; } catch { return; }
+    if (!veut) return;
+    /* Tout se fait dans le minuteur : si l'effet est rejoué (mode strict),
+       le premier minuteur est annulé et le second ouvre bien le mandat. */
+    const t = setTimeout(() => {
+      mandatOuvert.current = true;
+      try { window.history.replaceState(null, '', window.location.pathname); } catch { /* sans effet */ }
+      const m = mandatRef.current;
+      /* V3.64 : la proposition retirée par Alexandre, le lien du mail ne
+         rouvre plus de signature : une fenêtre le dit. Même si son mandat
+         type lui permet de signer seul (il le fera en demandant une visite).
+         Rien quand un mandat est signé, ou qu'un autre l'attend (Documents). */
+      if (m.etat === 'a_signer' && m.propose) ouvrirMandat('libre');
+      else if (m.etat !== 'valide' && !m.enRoute && m.document?.vous !== 'signe') montrer(<Explication a={MANDAT_RETIRE} onFermer={fermer} />, 'pleine');
+    }, 700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* Le client a demandé son code, puis la page a été fermée (le téléphone
+     l'a libérée pendant qu'il était dans sa messagerie) : à son retour, on
+     rouvre la signature directement sur la case du code, et la demande de
+     visite qui attendait repart après la signature. */
+  const repriseFaite = useRef(false);
+  useEffect(() => {
+    if (repriseFaite.current || !mandatRef.current.code || mandatRef.current.etat !== 'a_signer') return;
+    const t = setTimeout(() => {
+      repriseFaite.current = true;
+      const v = visiteEnAttente();
+      const b = v ? biens.find(x => x.id === v.bienId) : undefined;
+      if (b && v) ouvrirMandat('visite', async () => { oublierVisite(); await poserAvis(b, 'souhaite_visiter', v.commentaire, true); }, b.id);
+      else ouvrirMandat('libre');
+    }, 700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* Il revient après avoir signé le mandat qu'Alexandre lui avait envoyé
+     (V3.32) : la demande de visite qui l'attendait part toute seule. Y
+     compris quand son conjoint n'a pas encore signé le sien (V3.55). */
+  const visiteRepartie = useRef(false);
+  useEffect(() => {
+    if (visiteRepartie.current || (mandatRef.current.etat !== 'valide' && mandatRef.current.document?.vous !== 'signe')) return;
+    const v = visiteEnAttente();
+    if (!v?.doc) return;
+    const t = setTimeout(() => {
+      visiteRepartie.current = true;
+      const b = biens.find(x => x.id === v.bienId);
+      oublierVisite();
+      if (b) void poserAvis(b, 'souhaite_visiter', v.commentaire, false);
+    }, 700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const bienOuvert = useRef(false);
+  useEffect(() => {
+    if (bienOuvert.current) return;
+    let vise = '';
+    try { vise = new URLSearchParams(window.location.search).get('bien') || ''; } catch { return; }
+    if (!vise) return;
+    bienOuvert.current = true;
+    const cible = biensInit.find(b => b.id === vise);
+    try { window.history.replaceState(null, '', window.location.pathname); } catch { /* sans effet */ }
+    if (!cible) return;
+    const t = setTimeout(() => ouvrirBien(cible), 450);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [biensInit]);
+
+  /* Un mail de plus de cinq biens se termine par « Découvrir les N autres »,
+     qui pointe sur /espace/<jeton>?vue=neufs : le client arrive sur la liste
+     de ses nouveaux biens, pas sur l'accueil. Même nettoyage de l'adresse
+     que pour `bien`. */
+  const vueOuverte = useRef(false);
+  useEffect(() => {
+    if (vueOuverte.current) return;
+    let voulue = '';
+    try { voulue = new URLSearchParams(window.location.search).get('vue') || ''; } catch { return; }
+    if (voulue !== 'neufs') return;
+    vueOuverte.current = true;
+    try { window.history.replaceState(null, '', window.location.pathname); } catch { /* sans effet */ }
+    setVue('neufs');
+    /* V3.44 : et « Découvrir » s'ouvre par-dessus. En le refermant, il
+       retrouve la liste de ce qu'il reste. Le minuteur n'est pas annulé au
+       démontage : l'adresse est déjà nettoyée, un second passage (mode
+       strict) ne le reposerait pas. */
+    setTimeout(() => ouvrirDecouverte(undefined, true), 450);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* Le mail « Où en est votre recherche ? » (point automatique) : chaque
+     bouton ouvre l'espace sur ?point=… et on ouvre la fenêtre qui répond à
+     la question. Rien ne s'enregistre ici : c'est le client qui répond, dans
+     la fenêtre. Même nettoyage de l'adresse que pour `fin`. */
+  const pointOuvert = useRef(false);
+  useEffect(() => {
+    if (pointOuvert.current) return;
+    let voulu = '';
+    try { voulu = new URLSearchParams(window.location.search).get('point') || ''; } catch { return; }
+    if (!['toujours', 'criteres', 'trouve', 'pause'].includes(voulu)) return;
+    const t = setTimeout(() => {
+      pointOuvert.current = true;
+      try { window.history.replaceState(null, '', window.location.pathname); } catch { /* sans effet */ }
+      if (voulu === 'toujours') ouvrirToujours();
+      else if (voulu === 'criteres') ouvrirCriteres();
+      else if (voulu === 'trouve') montrer(<FinRecherche onFermer={fermer} onChoisir={declarerFin}
+        seulement={['trouve_avec_vous', 'trouve_ailleurs']} titre={'Bonne nouvelle\u00a0!'}
+        intro={'Dites-nous comment, en un clic. Votre conseiller vous rappelle\u00a0: rien ne se ferme sans vous.'} />);
+      else montrer(<FinRecherche onFermer={fermer} onChoisir={declarerFin}
+        seulement={['pause', 'abandon']} titre={'Où en est votre projet\u00a0?'} />);
+    }, 700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function ouvrirToujours() {
+    montrer(<Toujours onFermer={fermer} onCriteres={ouvrirCriteres} onConfirmer={async () => {
+      const r = await envoyer('toujours', {});
+      if (r && r.ok === false) {
+        montrer(<GrandOk titre="Le message n'est pas parti"
+          texte="Un souci de connexion, sans doute. Réessayez dans un instant, ou appelez directement votre conseiller."
+          rappel={'Son numéro\u00a0: <b>' + AGENT.tel + '</b>'}
+          onFermer={fermer} />, 'pleine');
+        return;
+      }
+      montrer(<GrandOk titre="Merci, c'est noté"
+        texte="Nous continuons à chercher pour vous, sur les mêmes critères. Les prochains biens arriveront ici, comme d'habitude."
+        rappel="Un critère a bougé entre-temps ? Vous pouvez le changer à tout moment, depuis « Mes critères ont évolué »."
+        onFermer={fermer} />, 'pleine');
+    }} />);
+  }
+
+  /* « Mes critères ont évolué » ne mène plus directement à l'assistant : on
+     demande d'abord au client ce qu'il préfère. Certains veulent corriger un
+     chiffre eux-mêmes, d'autres veulent en parler — les deux sont légitimes,
+     et lui laisser le choix évite qu'il traverse neuf étapes pour dire une
+     chose qui tient en une phrase au téléphone. */
+  function ouvrirCriteres() {
+    montrer(<ChoixCriteres onFermer={fermer}
+      onModifier={ouvrirModifCriteres} onRappel={demanderRappel} />);
+  }
+
+  /* Une demande de rappel : le créneau suffit. Le numéro est celui du dossier,
+     on ne le redemande pas — ce serait une friction pour rien. */
+  async function demanderRappel(creneau: string) {
+    const r = await envoyer('rappel', { creneau });
+    const quand = creneau === 'matin' ? 'le matin'
+      : creneau === 'apres_midi' ? "l'après-midi" : 'en fin de journée';
+    /* Pas passé (V3.17) : on le dit. Déjà demandé aujourd'hui : on ne fait pas
+       croire au client que c'est reparti une fois de plus. */
+    if (!r?.ok && r?.error !== 'demande déjà enregistrée') { pasParti('Votre demande n’est pas partie'); return; }
+    if (r && r.ok === false) {
+      montrer(<GrandOk titre="Votre demande est déjà partie"
+        texte="Votre conseiller en a déjà été prévenu : il vous rappelle. Inutile de redemander, votre demande n'est pas perdue."
+        rappel={'Si c\'est urgent, vous pouvez l\'appeler directement au <b>' + AGENT.tel + '</b>.'}
+        onFermer={fermer} />, 'pleine');
+      return;
+    }
+    montrer(<GrandOk titre="C'est noté, il vous rappelle"
+      texte={"Votre conseiller est prévenu que vous souhaitez être rappelé " + quand
+        + ". Il vous appelle sur le numéro de votre dossier."}
+      rappel="En attendant, la recherche se poursuit chaque jour sur vos critères actuels."
+      onFermer={fermer} />, 'pleine');
+  }
+
+  /* Dire que la recherche est finie doit être simple et sans gêne : trois
+     réponses, un mot si on veut. Rien ne se ferme ici — le conseiller rappelle
+     d'abord, il clôture ensuite. */
+  function ouvrirFinRecherche() {
+    montrer(<FinRecherche onFermer={fermer} onChoisir={declarerFin} />);
+  }
+
+  async function declarerFin(motif: string, mot: string) {
+    const r = await envoyer('fin', { motif, mot });
+    /* Pas passé (V3.17) : rien n'est noté, il peut réessayer. */
+    if (!r?.ok && r?.error !== 'déjà signalé') { pasParti(); return; }
+    /* Dans les deux cas la déclaration existe — celle de maintenant ou celle
+       d'hier : on n'affiche plus « recherche en cours » à quelqu'un qui vient
+       de nous dire le contraire. */
+    setFinDite(true);
+    if (r && r.ok === false) {
+      montrer(<GrandOk titre="C'est déjà noté"
+        texte="Votre conseiller en a déjà été prévenu. Il vous rappelle pour en parler avec vous — inutile de le signaler à nouveau."
+        rappel={'Si c\'est urgent, vous pouvez l\'appeler directement au <b>' + AGENT.tel + '</b>.'}
+        onFermer={fermer} />, 'pleine');
+      return;
+    }
+    /* Un mot juste pour chaque situation. Celui qui a trouvé et celui qui
+       renonce ne sont pas au même endroit, et méritent qu'on le reconnaisse. */
+    const TITRES: Record<string, string> = {
+      pause: "C'est noté, on met en pause",
+      abandon: 'Merci de nous avoir prévenus',
+      trouve_avec_vous: 'Félicitations\u00a0!',
+      trouve_ailleurs: 'Félicitations, et merci de nous le dire',
+    };
+    const SUITES: Record<string, string> = {
+      trouve_avec_vous: "Votre conseiller vous rappelle pour organiser la suite avec vous. Votre espace reste accessible en attendant.",
+      trouve_ailleurs: "Nous arrêtons de vous envoyer des biens. Votre conseiller vous rappelle pour en parler et clôturer votre dossier proprement.",
+      pause: "Votre recherche est mise de côté le temps qu'il vous faut. Votre conseiller vous rappelle pour en convenir avec vous, et votre espace reste accessible.",
+      abandon: "C'est noté, et merci de l'avoir dit : ça nous évite de vous solliciter pour rien. Votre conseiller vous rappelle une dernière fois pour clôturer votre dossier proprement. Et si le projet repart un jour, vous savez où nous trouver.",
+    };
+    montrer(<GrandOk titre={TITRES[motif] || 'Merci de nous avoir prévenus'}
+      texte={SUITES[motif] || "Votre conseiller vous rappelle pour en parler et clôturer votre dossier proprement. Votre espace reste accessible en attendant."}
+      rappel="Rien n'est définitif tant que vous n'en avez pas parlé ensemble."
+      onFermer={fermer} />, 'pleine');
+  }
+
+  function ouvrirModifCriteres() {
+    montrer(<ModifCriteres crit={crit} onFermer={fermer} onEnregistrer={async (nv: Criteres, changements: string[], demandeNote: string) => {
+      const r = await envoyer('criteres', { criteres: nv });
+      /* Pas enregistrés (V3.17) : l'écran reste ouvert avec ce qu'il a choisi,
+         et le dit (voir ModifCriteres) ; rien n'a changé. */
+      if (!r?.ok) return false;
+      setCrit(nv);
+      /* La note est celle du chasseur : le client ne la réécrit pas, il demande. */
+      const demandePartie = demandeNote ? !!(await envoyer('message', { texte: 'Demande sur la note de la recherche : ' + demandeNote }))?.ok : false;
+      montrer(<GrandOk titre="C'est enregistré, merci"
+        texte="Merci d'avoir pris le temps de mettre à jour vos critères. Votre conseiller en est informé : il les intègre à votre recherche, et les biens qui vous seront proposés à partir de maintenant tiendront compte de ces changements. Si un point mérite d'être précisé de vive voix, il vous rappelle."
+        rappel={[
+          changements.length ? '<b>Ce qui a changé :</b><br>' + changements.join(' · ') : 'Votre conseiller est prévenu du changement.',
+          demandeNote ? (demandePartie
+            ? 'Votre demande concernant ses précisions lui a également été transmise.'
+            : 'Votre demande concernant ses précisions, elle, n’est pas partie : parlez-en directement à votre conseiller.') : '',
+        ].filter(Boolean).join('<br><br>')}
+        onFermer={fermer} />);
+      return true;
+    }} />, 'pleine');
+  }
+
+  function ouvrirMessage() {
+    montrer(<Message onFermer={fermer} onEnvoi={async (texte: string) => {
+      const r = await envoyer('message', { texte });
+      /* Pas parti : la fenêtre reste ouverte avec son texte (voir Message). */
+      if (!r?.ok) return false;
+      montrer(<GrandOk titre="Votre message est bien parti"
+        texte="Votre conseiller vient d'en être informé. Il le lit et vous recontacte rapidement pour en parler avec vous."
+        rappel="En attendant, la recherche se poursuit chaque jour sur vos critères actuels."
+        onFermer={fermer} />);
+      return true;
+    }} />);
+  }
+
+  /* ── « Une annonce repérée ? » (V3.184) ──
+     Il colle un lien, ou prend une photo ; Alexandre la regarde dans le CRM
+     et lui répond ici. Le même lien déjà envoyé, ou un bien déjà dans ses
+     biens : on le lui dit, rien ne repart. */
+  const peutEnvoyerAnnonce = enCours && !finDite;
+  /* V3.186 (Alexandre : « on part sur ta version ») : une annonce à la fois,
+     et après l'envoi, « Envoyer une autre annonce » rouvre le formulaire, vide. */
+  const uneAutre = { texte: 'Envoyer une autre annonce', onClick: () => { fermer(); window.setTimeout(() => ouvrirEnvoiAnnonce(), 340); } };
+  function ouvrirEnvoiAnnonce() {
+    montrer(<EnvoiAnnonce Ico={Ico} onFermer={fermer} onEnvoyer={async (d): Promise<ResultatEnvoi> => {
+      const r = await envoyer('annonce', d);
+      if (r?.ok && typeof r.dansVosBiens === 'string') {
+        const b = biensRef.current.find(x => x.id === r.dansVosBiens);
+        montrer(<GrandOk titre="Ce bien est déjà dans vos biens"
+          texte="Alexandre vous l’avait déjà envoyé : vous le retrouvez dans votre espace, avec votre avis."
+          bouton={b ? 'Voir le bien' : 'Parfait'}
+          onFermer={() => { fermer(); if (b) window.setTimeout(() => ouvrirBien(b), 340); }} />, 'pleine');
+        return 'ok';
+      }
+      if (r?.ok && r.annonce) {
+        const a = r.annonce as AnnonceEspace;
+        setAnnonces(l => [a, ...(l || []).filter(x => x.id !== a.id)]);
+        if (r.deja) {
+          montrer(<GrandOk titre="Vous la lui avez déjà envoyée"
+            texte={`C’était ${dateAnnonce(a.le)}. ${a.statut === 'nouveau' ? 'Alexandre la regarde : il vous dit vite ce qu’il en pense.' : 'Sa réponse est sur votre accueil, dans « Votre dernière annonce ».'}`}
+            onFermer={fermer} autre={uneAutre} />, 'pleine');
+          return 'ok';
+        }
+        montrer(<GrandOk titre="C’est envoyé à Alexandre"
+          texte="Il la regarde avec le même soin que les biens qu’il vous présente, et vous dit ce qu’il en pense."
+          rappel="Vous suivez sa réponse sur votre accueil&nbsp;: retenue, elle rejoint vos biens&nbsp;; écartée, il vous dit pourquoi."
+          onFermer={fermer} autre={uneAutre} />, 'pleine');
+        return 'ok';
+      }
+      return r?.error === 'trop' ? 'trop' : r?.error === 'lien' ? 'lien' : r?.error === 'photo' ? 'photo' : 'erreur';
+    }} />);
+  }
+  const carteAnnonce = annonces && (peutEnvoyerAnnonce || annonces.length > 0)
+    ? <CarteAnnonce annonces={annonces} peutEnvoyer={peutEnvoyerAnnonce} Ico={Ico}
+        onEnvoyer={ouvrirEnvoiAnnonce} onToutes={() => aller('annonces')}
+        onAide={() => montrer(<Explication a={AIDES.annonce} onFermer={fermer} />, 'pleine')} />
+    : null;
+
+  const maxLues = Math.max(1, ...semaine.map(s => s.lues));
+  const moment = momentParis();
+  /* Les pastilles du menu : ce qu'il reste à voir, à faire, à venir. */
+  const compte: Record<string, number> = { neufs: neufs.length, consultes: vus.length, visites: visites.length };
+  /* « avis à donner » mène droit aux biens en attente de son avis. */
+  const allerAvis = () => { setFiltreC('attente'); aller('consultes'); };
+
+  return (
+    <>
+      <style>{CSS + CSS_MANDAT + CSS_DECOUVERTE + CSS_ANNONCES + CSS_OFFRE}</style>
+
+      {/* L'en-tête. Sur téléphone : la marque et la date, le bonjour, la
+          recherche en une ligne et son badge vivant. Sur ordinateur, le menu
+          se loge dans la même bande, et le conseiller à droite. Le bleu est
+          celui d'Emilio, en plus clair que l'ancien : le marine presque noir
+          faisait austère. */}
+      {/* Sous « Découvrir » (V3.44), la page est inerte : ni le clavier ni un
+          lecteur d'écran ne s'y promènent. La feuille et son voile, eux,
+          restent vivants (le mandat s'ouvre par-dessus). */}
+      <div className={'chapeau' + (vue === 'accueil' ? ' ch-acc' : '') + (vue === 'carte' ? ' ch-carte' : '')}
+        inert={decouverte ? true : undefined}>
+        <div className="dedans">
+          <div className="marque">
+            <span className="motmarque">EMILIO IMMOBILIER</span>
+            <nav className="nav-haut" aria-label="Menu">
+              {ONGLETS.map(o => {
+                const n = compte[o.id] || 0;
+                /* La carte des nouveautés allume « Nouveautés », pas « La carte ». */
+                const actif = vue === 'carte' && carteNeufs ? o.id === 'neufs' : vue === o.id;
+                return (
+                  <button key={o.id} type="button" className={'nh' + (actif ? ' on' : '')}
+                    aria-current={actif ? 'page' : undefined} onClick={() => aller(o.id)}>
+                    <span>{o.libPc || o.lib}</span>
+                    {n > 0 && <span className={'nh-n ' + o.ton}>{n}</span>}
+                  </button>
+                );
+              })}
+            </nav>
+            <span className="ch-date" suppressHydrationWarning>{moment.date}</span>
+            <a className="ch-agent" href={'tel:' + AGENT.telUrl} aria-label={'Appeler ' + AGENT.nom}>
+              <span className="ch-av">AR</span>
+              <span className="ch-an">Alexandre</span>
+              <span className="ch-ap"><Ico n="tel" t={14} /><span>Appeler</span></span>
+            </a>
+          </div>
+
+          <div className="ch-salut">
+            <span className="ch-sur" suppressHydrationWarning>
+              {moment.date + (passage?.quand ? ` · mis à jour ${actualiseLe(passage.quand)}` : '')}
+            </span>
+            <h1 suppressHydrationWarning>{`${salutation(moment.heure)} ${client.prenom || ''}`.trim()}</h1>
+            <div className="ch-rech">
+              <span className="ch-rech-t">{phraseRecherche(crit) || nomCourant}</span>
+              {enCours && !finDite && (
+                /* Un raccourci : la pastille mène au rappel de sa recherche. */
+                <button type="button" className="ch-vif" onClick={() => aller('recherche')} title="Voir le rappel de ma recherche">
+                  <i className="ch-vif-pt" /><span>Recherche en cours</span><Ico n="fleche" t={12} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {plusieurs && (
+            <button type="button" className="selec" onClick={ouvrirRecherches}
+              aria-label={`Recherche ${rang} sur ${recherches.length} — changer de recherche`}>
+              <span className="selec-in">
+                <span className="selec-h">
+                  <span className="selec-n">{rang} sur {recherches.length}</span>
+                  <span className="selec-l">Recherche en cours</span>
+                </span>
+                <span className="selec-v">{nomCourant}</span>
+                {autresNonLus > 0 && (
+                  <span className="selec-d">
+                    <b>{autresNonLus} nouveau{autresNonLus > 1 ? 'x' : ''} bien{autresNonLus > 1 ? 's' : ''}</b>
+                    {recherches.length > 2 ? ' sur vos autres recherches' : ' sur votre autre recherche'}
+                  </span>
+                )}
+              </span>
+              <span className="selec-cv"><Ico n="chevron" t={13} /></span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className={'page' + (vue === 'carte' ? ' p-carte' : '')} inert={decouverte ? true : undefined}>
+        <div className="vue" key={vue}>
+          {vue === 'accueil' && (
+            <Accueil client={client} crit={crit} neufs={neufs} vus={vus} donnes={donnes} nbPlusDispo={plusDispo.length}
+              passage={passage} semaine={semaine} maxLues={maxLues} aller={aller} visites={visites}
+              onOuvrir={ouvrirBien} onAvis={allerAvis}
+              /* « Découvrir » : les nouveaux biens un par un (V3.44). Le
+                 bouton doré se compte sur les biens qu'il fera passer. */
+              onDecouvrir={neufs.some(aDecouvrir) ? () => ouvrirDecouverte() : undefined}
+              nbDecouvrir={neufs.filter(aDecouvrir).length}
+              onFiltre={(f: string) => { setFiltreC(f); aller('consultes'); }}
+              /* Avec plusieurs recherches, « ma recherche » devient ambigu :
+                 l'accueil dit alors « cette recherche ». */
+              plusieurs={plusieurs}
+              /* La pastille vivante de la carte des critères. */
+              enCours={enCours && !finDite}
+              onBienvenue={ouvrirBienvenue}
+              onEcran={ecran.appareil ? () => ecran.accepter(ouvrirGuideEcran) : null}
+              motEcran={motEcran}
+              /* Une seule pastille à la fois : tant qu'il peut installer, c'est
+                 la priorité. Une fois installé, on lui propose les alertes s'il
+                 les avait passées ou refusées. */
+              /* Y compris quand c'est bloqué : c'est justement là qu'il faut
+                 pouvoir rouvrir la fenêtre pour lire comment débloquer. */
+              onNotif={!ecran.appareil && notif.possible && notif.etat !== 'oui'
+                ? () => setADemander(true) : null}
+              onFin={ouvrirFinRecherche}
+              /* Alexandre a préparé le mandat : une carte le propose, sans
+                 attendre la première demande de visite. */
+              mandatPret={<>
+                {mandat.propose && mandat.etat === 'a_signer'
+                  ? <CartePret onSigner={() => ouvrirMandat('libre')} />
+                  /* Signé, mais on attend encore son conjoint : l'accueil le dit. */
+                  : mandat.cos?.some(c => c.statut === 'invite')
+                    ? <CarteAttente mandat={mandat} onVoir={() => aller('recherche')} /> : null}
+                {/* Ses documents (rubrique Documents, et le mandat signé ici) :
+                    à signer, en attente d'un autre, signés. */}
+                <CarteDocuments documents={mandat.documents || []} mandat={mandat} envoyer={envoyer}
+                  onVoirMandat={() => aller('recherche')} />
+              </>}
+              /* Sa dernière visite, sans réponse encore : la question l'attend
+                 en haut de l'accueil pendant 7 jours. */
+              avisVisite={(() => {
+                const x = visiteSansAvis(mesV, biens);
+                /* V3.189 : son offre, quand il y a du neuf ou un geste à faire. */
+                let bo: Bien | null = null, score = 0;
+                for (const b of biens) { const s = offreAAccueil(b.offreSuivi); if (s > score) { score = s; bo = b; } }
+                return <>
+                  {bo && bo.offreSuivi && <CarteOffreAccueil bien={bienOffre(bo)} o={bo.offreSuivi} indispo={indispo(bo)}
+                    onOuvrir={() => ouvrirBien(bo as Bien)} onVoir={() => aller('visites')} {...actionsOffre(bo)} />}
+                  {x ? <CarteAvisAccueil b={x.b} v={x.v} onRepondre={repondreEtDire}
+                    onOuvrir={() => ouvrirBien(x.b)} onVoir={() => aller('visites')}
+                    onFaireOffre={peutOffrir(x.b) ? () => ouvrirOffre(x.b) : undefined} /> : null}
+                </>;
+              })()}
+              onAide={(c: string) => montrer(<Explication a={AIDES[c]} onFermer={fermer} />, 'pleine')}
+              /* V3.184 : « Une annonce repérée ? » — après les nouveaux biens
+                 au téléphone, en haut de la colonne de droite sur ordinateur. */
+              carteAnnonce={carteAnnonce} />
+          )}
+          {vue === 'annonces' && (
+            <Vue icone="lien" titre="Vos annonces envoyées" aller={aller}
+              sous="Ce qu’Alexandre en a pensé, la plus récente d’abord.">
+              <ListeAnnonces annonces={annonces || []} peutEnvoyer={peutEnvoyerAnnonce} Ico={Ico}
+                onEnvoyer={ouvrirEnvoiAnnonce}
+                onBien={id => { const b = biens.find(x => x.id === id); if (b) ouvrirBien(b); }} />
+            </Vue>
+          )}
+          {vue === 'neufs' && (
+            <Vue icone="etoile" titre="Nouveaux biens pour vous" aller={aller}
+              droite={neufs.length > 0 ? (
+                /* Liste | Carte, comme dans « Consultés » (V3.28). */
+                <div className="lc" role="group" aria-label="Affichage">
+                  <button type="button" className="lc-b on" aria-pressed="true"><Ico n="liste" t={15} />Liste</button>
+                  <button type="button" className="lc-b" onClick={allerCarteNeufs}><Ico n="carte" t={15} />Carte</button>
+                </div>
+              ) : null}
+              /* Sans nouveauté, pas de phrase ici : le cadre juste dessous le
+                 dit déjà (deux fois la même chose, V3.28). */
+              sous={neufs.length
+                ? `${neufs.length} bien${neufs.length > 1 ? 's' : ''} retenu${neufs.length > 1 ? 's' : ''} pour vous depuis votre dernière visite, du plus récent au plus ancien. Ouvrez-les, puis dites-moi ce que vous en pensez.`
+                : undefined}>
+              {/* V3.44 : en tête de liste, le chemin le plus court — un bien à la
+                  fois, les photos puis l'avis. Toucher une carte de la liste
+                  y mène aussi, à ce bien-là (voir ouvrirBien). */}
+              {neufs.some(aDecouvrir) && (
+                <button type="button" className="decouvrir-b" onClick={() => ouvrirDecouverte()}>
+                  <span className="db-i"><Ico n="pouce" t={20} /></span>
+                  <span className="db-t"><b>Les découvrir un par un</b><i>{'Les photos, puis votre avis d’un geste.'}</i></span>
+                  <span className="db-f"><Ico n="fleche" t={18} /></span>
+                </button>
+              )}
+              {neufs.length ? <Liste biens={neufs} onOuvrir={ouvrirBien} crit={crit} vide="" /> : (
+                <div className="vide-neuf">
+                  <span className="vn-ic"><Ico n="loupe" t={22} /></span>
+                  <b>Rien de nouveau pour le moment</b>
+                  {enCours && !finDite
+                    ? <span>{'Nous cherchons pour vous tous les jours : dès qu’un bien correspond à ce que vous voulez, il s’affiche ici.'}<br />{'Vous n’êtes pas en attente.'}</span>
+                    : <span>{'Votre recherche est en pause : les nouveautés reprendront avec elle.'}</span>}
+                </div>
+              )}
+              {/* Le détail du travail de la veille n'a de sens que s'il a donné
+                  quelque chose. Sinon on dit l'inverse, mais on le dit. */}
+              {neufs.length > 0 && !!passage?.lues && (
+                /* Centrée sur ordinateur, sous les deux colonnes de biens (V3.28). */
+                <div className="relance relance-pc" style={{ marginTop: 16 }}><Ico n="loupe" t={18} />
+                  <span suppressHydrationWarning>{`Ces biens sont ceux qui ont passé tous vos critères. ${debutRecherche(passage.quand, passage.lues)}.`}</span>
+                </div>
+              )}
+              {/* « Aucun nouveau bien » ne veut pas dire « aucun bien retenu » :
+                  si le dernier passage en a retenu, ils sont simplement déjà ouverts.
+                  Dire le contraire serait faux, et le client le verrait tout de suite. */}
+              {neufs.length === 0 && !!passage?.lues && (
+                /* Centré, comme le cadre juste au-dessus (V3.28). */
+                <div className="relance relance-centre" style={{ marginTop: 16 }}><Ico n="loupe" t={18} />
+                  {/* « passage » est un mot du CRM : jamais devant le client (AGENTS.md §5). */}
+                  {passage.proposees ? (
+                    <span suppressHydrationWarning>{`${debutRecherche(passage.quand, passage.lues)} et ${passage.proposees} bien${passage.proposees > 1 ? 's ont été retenus' : ' a été retenu'} pour vous. Vous ${passage.proposees > 1 ? 'les avez déjà ouverts\u00a0: ils vous attendent' : 'l\u2019avez déjà ouvert\u00a0: il vous attend'} dans «\u00a0Mes derniers biens consultés\u00a0».`}</span>
+                  ) : (
+                    <span suppressHydrationWarning>{`${debutRecherche(passage.quand, passage.lues)} : aucune ne cochait toutes vos cases. Mieux vaut ne rien vous envoyer que vous faire perdre du temps.`}</span>
+                  )}
+                </div>
+              )}
+            </Vue>
+          )}
+          {vue === 'consultes' && (() => {
+            const ouverts = [...vus, ...donnes, ...plusDispo];
+            const par: Record<string, Bien[]> = {};
+            ouverts.forEach(b => { const g = groupeDe(b); (par[g] ||= []).push(b); });
+            const visibles = GROUPES.filter(g => (par[g.id] || []).length > 0);
+            const choisi = filtreC === 'tout' ? 'tout' : filtreDe(filtreC);
+            const montres = choisi === 'tout' ? visibles : visibles.filter(g => filtreDe(g.id) === choisi);
+            const nbFiltre = (f: typeof FILTRES_C[number]) => f.groupes.reduce((n, g) => n + (par[g]?.length || 0), 0);
+            return (
+            <Vue icone="oeil" titre="Mes biens consultés" aller={aller}
+              sous="Tout ce que vous avez déjà ouvert, du plus récent au plus ancien, avec vos retours."
+              droite={biens.length > 0 ? (
+                /* Liste | Carte : la même sélection, vue sur un plan. */
+                <div className="lc" role="group" aria-label="Affichage">
+                  <button type="button" className="lc-b on" aria-pressed="true"><Ico n="liste" t={15} />Liste</button>
+                  <button type="button" className="lc-b" onClick={() => aller('carte')}><Ico n="carte" t={15} />Carte</button>
+                </div>
+              ) : null}>
+              {ouverts.length === 0 ? (
+                <div className="vide-sec">Vous n&apos;avez encore ouvert aucun bien.<br />Ils se rangeront ici au fur et à mesure, avec vos retours.</div>
+              ) : (<>
+                {/* Replié d'office : ce qu'on regarde (« Tout », ou le filtre
+                    choisi, avec sa croix), et « Filtrer mes biens » qui déplie
+                    les pastilles à la couleur de chaque avis. Un second clic
+                    les replie. */}
+                {(() => {
+                  const actif = FILTRES_C.find(f => f.id === choisi);
+                  return (
+                    <div className="fcz">
+                      <div className="fcz-l">
+                        {actif ? (
+                          <button type="button" className="fc on" style={{ '--c': actif.c } as React.CSSProperties}
+                            onClick={() => setFiltreC('tout')} aria-label={`${actif.court} : revenir à tous mes biens`}>
+                            <span className="fe">{actif.e}</span>{actif.court}<i>{nbFiltre(actif)}</i><span className="fcz-x"><Ico n="croix" t={11} /></span>
+                          </button>
+                        ) : (
+                          <span className="fc on fcz-tout">Tout<i>{ouverts.length}</i></span>
+                        )}
+                        <button type="button" className={'fcz-b' + (filtresOuverts ? ' ouvert' : '')} aria-expanded={filtresOuverts}
+                          onClick={() => setFiltresOuverts(o => !o)}>
+                          <Ico n="filtre" t={15} /><span>{actif ? 'Filtrer' : 'Filtrer mes biens'}</span><span className="fcz-cv"><Ico n="chevron" t={13} /></span>
+                        </button>
+                      </div>
+                      <div className={'fcz-pli' + (filtresOuverts ? ' ouvert' : '')} aria-hidden={!filtresOuverts}>
+                        <div className="fcz-in">
+                          <div className="filtres-c" role="group" aria-label="Filtrer mes biens">
+                            {FILTRES_C.filter(f => nbFiltre(f) > 0).map(f => (
+                              <button key={f.id} type="button" className={'fc' + (choisi === f.id ? ' on' : '')} aria-pressed={choisi === f.id}
+                                tabIndex={filtresOuverts ? 0 : -1} style={{ '--c': f.c } as React.CSSProperties}
+                                onClick={() => setFiltreC(choisi === f.id ? 'tout' : f.id)}>
+                                <span className="fe">{f.e}</span>{f.court}<i>{nbFiltre(f)}</i>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* Une catégorie = une carte à sa couleur : titre, explication et
+                    biens dans le même cadre. On ne confond plus deux sections. */}
+                {montres.map(g => (
+                  <div className={'gr-cadre ' + g.ton} key={g.id}>
+                    <div className="gr-tete">
+                      <span className="ge">{g.e}</span>
+                      <h3>{g.titre}</h3>
+                      <span className="gn">{par[g.id].length}</span>
+                    </div>
+                    {g.note && <div className="gr-note">{g.note}</div>}
+                    <Liste biens={par[g.id]} onOuvrir={ouvrirBien} vide="" sansEtiq crit={crit} />
+                  </div>
+                ))}
+              </>)}
+            </Vue>
+            );
+          })()}
+          {vue === 'carte' && (
+            <CarteEspace key={carteNeufs ? 'neufs' : 'tout'} token={token}
+              biens={carteNeufs ? nouveautesCarte : biensCarte} focus={focusCarte} ville={villeDeCarte(biens)}
+              titre={carteNeufs ? 'Vos nouveautés' : 'Vos biens'} sansFiltres={carteNeufs}
+              vide={carteNeufs ? 'Vous avez donné votre avis sur toutes les nouveautés : merci ! Elles vous attendent dans « Consultés ».' : undefined}
+              onOuvrir={id => { const b = biens.find(x => x.id === id); if (b) ouvrirBien(b); }}
+              onListe={() => aller(carteNeufs ? 'neufs' : 'consultes')} />
+          )}
+          {vue === 'marche' && (
+            <Marche passage={passage} semaine={semaine} maxLues={maxLues} aller={aller} biens={biens} crit={crit}
+              onAide={(c: string) => montrer(<Explication a={AIDES[c]} onFermer={fermer} />, 'pleine')} />
+          )}
+          {vue === 'recherche' && (
+            <Recherche crit={crit} aller={aller} onCriteres={ouvrirCriteres} onMessage={ouvrirMessage}
+              mandatCarte={<CarteMonMandat mandat={mandat} envoyer={envoyer}
+                onSigner={() => ouvrirMandat('libre')} onRenoncer={ouvrirRenonciation} />} />
+          )}
+          {vue === 'visites' && (
+            <VueVisites biens={biens} mesV={mesV} visites={visites} token={token} apprisClient={apprisClient}
+              aller={aller} onOuvrir={ouvrirBien} onRepondre={repondreEtDire}
+              onFaireOffre={b => (peutOffrir(b) ? () => ouvrirOffre(b, b.offreSuivi ? { depuis: b.offreSuivi.id, derniere: b.offreSuivi.total } : {}) : undefined)}
+              actionsOffre={actionsOffre} />
+          )}
+        </div>
+
+        {/* La signature, puis les mentions. Le cœur reste collé à « rien que
+            pour vous » : sur téléphone, la phrase passe à la ligne avant lui. */}
+        <div className="pied">
+          <div className="pied-sig">{'Imaginé et créé par '}<b>Emilio Immobilier</b>{', '}<span className="insecable">{'rien que pour vous '}<svg className="pied-coeur" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 20.6s-7.6-4.6-9.4-9.3C1.3 7.9 3.4 4.4 6.9 4.4c2 0 3.6 1.1 5.1 3 1.5-1.9 3.1-3 5.1-3 3.5 0 5.6 3.5 4.3 6.9-1.8 4.7-9.4 9.3-9.4 9.3z" fill="currentColor" /></svg></span></div>
+          <div className="pied-trait" />
+          <b>Emilio Immobilier</b><br />
+          Numéro de carte professionnelle&nbsp;: <span className="insecable">CPI 9201 2020 000 045 344</span><br />
+          Chasse immobilière sur mesure · Paris &amp; Hauts-de-Seine
+        </div>
+      </div>
+
+      {/* La barre du bas, sur téléphone : les cinq endroits de l'espace, et une
+          pastille qui vit tant qu'il reste quelque chose à voir. Elle passe
+          sous les fiches et les fenêtres (z-index plus bas que la feuille). */}
+      {vue !== 'accueil' && !ouvert && (
+        <button type="button" className={'retour-flot' + (descendu ? ' vu' : '')} onClick={() => aller('accueil')}
+          inert={decouverte ? true : undefined}
+          aria-label="Retour à l'accueil" tabIndex={descendu ? 0 : -1}>
+          <Ico n="retour" t={16} /><span>Accueil</span>
+        </button>
+      )}
+      <nav className="barre-bas" aria-label="Menu" inert={decouverte ? true : undefined}>
+        {ONGLETS.filter(o => !o.pc).map(o => {
+          const n = compte[o.id] || 0;
+          /* La carte est une façon de voir « Consultés » : l'onglet reste allumé. */
+          const actif = vue === o.id || (vue === 'carte' && o.id === (carteNeufs ? 'neufs' : 'consultes'));
+          return (
+            <button key={o.id} type="button" className={'bb' + (actif ? ' on' : '')} data-o={o.id}
+              aria-current={actif ? 'page' : undefined}
+              onClick={() => { vibrer(); setTape(t => ({ id: o.id, n: t.n + 1 })); aller(o.id); }}>
+              <span className="bb-i" key={'i' + (tape.id === o.id ? tape.n : 0)}>
+                <span className={'bb-ic' + (n > 0 && !actif ? ' lueur' : '')}><Ico n={o.ico} t={20} /></span>
+                {n > 0 && <span className={'bb-n ' + o.ton}>{n}</span>}
+              </span>
+              <span className="bb-l" key={'l' + (tape.id === o.id ? tape.n : 0)}>{o.lib}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* La proposition d'écran d'accueil. Elle ne s'affiche jamais par-dessus
+          une fiche ouverte : on ne coupe pas la parole. */}
+      {ecran.appareil && ecran.auto && ecran.visible && !ouvert && !decouverte && vue !== 'carte' && (
+        <div className="ecran">
+          <div className="ecran-dedans">
+            <span className="ecran-sceau"><Ico n={dansUneAppli ? 'partage' : 'maison'} t={19} /></span>
+            <div className="ecran-txt">
+              <b>Ne ratez aucun bien</b>
+              <span>{dansUneAppli
+                ? <>Ouvrez cet espace dans votre navigateur&nbsp;: vous pourrez le garder sous la main et être prévenu dès qu&apos;un bien arrive.</>
+                : ecran.tactile
+                  ? <>Posez votre espace sur votre écran d&apos;accueil&nbsp;: vous y êtes en un geste, et vous êtes prévenu dès que votre conseiller vous en envoie un.</>
+                  : <>Posez votre espace dans votre barre des tâches&nbsp;: vous y êtes en un clic, et vous êtes prévenu dès que votre conseiller vous envoie un bien.</>}</span>
+            </div>
+            <button type="button" className="ecran-oui" onClick={() => ecran.accepter(ouvrirGuideEcran)}>
+              {dansUneAppli ? 'Voir comment' : 'Installer'}
+            </button>
+            <button type="button" className="ecran-x" onClick={ecran.refuser} aria-label="Plus tard">
+              <Ico n="croix" t={13} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* « Découvrir » (V3.44) : par-dessus la page (z-index 56), sous la
+          feuille (61) — la signature du mandat, « Ce n'est pas parti » et la
+          présentation passent devant. */}
+      {decouverte && (
+        <Decouverte key={decouverte.cle} biens={biens} depart={decouverte.ids}
+          pastilles={PASTILLES} Ico={Ico} useEchap={useEchap}
+          note={id => { const b = biens.find(x => x.id === id); return b ? correspondance(b, crit)?.note ?? null : null; }}
+          quand={id => { const q = depuis(biens.find(x => x.id === id)?.envoyeLe); return q ? `Nouveau · ${q}` : 'Nouveau'; }}
+          fiche={(id, actions) => {
+            const b = biens.find(x => x.id === id);
+            return b ? <FicheBien b={b} client={client} crit={crit} onFermer={actions.onRetour}
+              onAvis={enregistrerAvis} onPartager={partagerBien} decouverte={actions} /> : null;
+          }}
+          /* « Voir le bien » : la ligne « a ouvert la fiche » du conseiller,
+             sans marquer le bien vu (il reste dans ses nouveautés). */
+          onVoir={id => { void envoyer('vue', { bien_id: id, apercu: true }); }}
+          enregistrer={enregistrerDecouverte}
+          visiteBloquee={visiteBloquee}
+          demanderVisite={(id, commentaire) => {
+            const b = biensRef.current.find(x => x.id === id);
+            if (b) void enregistrerAvis(b, 'souhaite_visiter', commentaire);
+          }}
+          onFermer={fermerDecouverte} />
+      )}
+
+      <div className={'voile' + (ouvert ? ' on' : '')} onClick={fermer} />
+      <div className={'feuille' + (ouvert ? ' on' : '') + (variante ? ' ' + variante : '')}
+        role="dialog" aria-modal="true">
+        {!variante && <div className="poignee" />}{feuille}
+      </div>
+      {bienvenue && (
+        <Bienvenue key={bienvenue.n} prenom={client.prenom || ''} conseiller={AGENT.nom.split(' ')[0]} auto={bienvenue.auto}
+          onVu={bienvenueVue} onFini={bienvenueFinie} />
+      )}
+    </>
+  );
+}
+
+/* ══ l'accueil sur ordinateur : deux colonnes qui s'équilibrent (V3.152) ══
+   « Il faudrait mieux dispatcher […] en fonction de ce qu'il y a, du nombre
+   de biens proposés ; votre conseiller est encore trop en bas à droite, à
+   gauche il y a du vide » (Alexandre). La colonne des biens a la hauteur de ce
+   qu'elle contient ; celle de droite empilait toujours les mêmes sept blocs.
+   Avec un seul nouveau bien, la gauche s'arrêtait 800 px avant la droite.
+
+   La page est donc une grille de trois pistes de même largeur. Les biens
+   occupent les deux premières ; la troisième garde en haut ce qui doit y
+   rester (la visite, la carte, le rappel de la recherche). Les quatre autres
+   blocs vont là où ils comblent le mieux : sous les biens, côte à côte, ou à
+   droite. Les trois pistes ayant la même largeur, un bloc a la même hauteur
+   où qu'on le pose : on le mesure là où il est, et le calcul est exact — pas
+   d'aller-retour, pas d'oscillation.
+
+   Au téléphone et sur tablette (< 1024 px), rien ne bouge : tous les blocs
+   restent « à droite », c'est-à-dire dessous, dans l'ordre d'avant. Le
+   rendu du serveur est celui-là aussi ; l'ordinateur se rééquilibre dès que
+   la page s'anime, puis à chaque changement de taille (photos, police,
+   nouvelles données). */
+const BLOCS_LIBRES = ['marche', 'conseiller', 'engage', 'lien'];
+/** La piste de chaque bloc posé sous les biens (1 à gauche, 2 à droite). Un
+    bloc absent est à droite, dans la colonne d'origine. */
+type Repartition = Record<string, 1 | 2>;
+type Mesures = { main: number; fixe: number; h: Record<string, number>; ecart: number; sous: number };
+const memeRep = (a: Repartition, b: Repartition) =>
+  BLOCS_LIBRES.every(k => (a[k] || 0) === (b[k] || 0));
+
+/* Toutes les répartitions possibles (au plus 3⁴ = 81) : on garde celle dont
+   la plus longue des trois pistes est la plus courte — c'est elle qui laisse
+   le moins de blanc. L'ordre des blocs est gardé dans chaque piste. */
+function repartir(m: Mesures, avant: Repartition): Repartition {
+  const blocs = BLOCS_LIBRES.filter(k => m.h[k] != null);
+  const essais: { r: Repartition; cout: number; cons: number; bouges: number }[] = [];
+  for (let code = 0; code < 3 ** blocs.length; code++) {
+    const r: Repartition = {};
+    const bas = [m.main, m.main, m.fixe], nb = [0, 0, 0];
+    let c = code, cons = 0, bouges = 0, premier = -1;
+    for (const k of blocs) {
+      const p = c % 3; c = Math.floor(c / 3);      // 0 et 1 : sous les biens ; 2 : à droite
+      const haut = p === 2 || nb[p] ? bas[p] + m.ecart : m.main + m.sous;
+      if (k === 'conseiller') cons = haut;
+      bas[p] = haut + m.h[k]; nb[p]++;
+      if (p < 2) { r[k] = (p + 1) as 1 | 2; bouges++; if (premier < 0) premier = p; }
+    }
+    /* Sous les biens, on lit de gauche à droite : le premier bloc (dans
+       l'ordre d'avant) ouvre la piste de gauche. Un bloc seul y est à
+       gauche, pas au milieu. */
+    if (premier === 1) continue;
+    essais.push({ r, cout: Math.max(...bas), cons, bouges });
+  }
+  const min = Math.min(...essais.map(x => x.cout));
+  /* À une douzaine de pixels près, deux répartitions se valent. On garde
+     alors celle qui est à l'écran (rien ne saute au moindre redimensionnement),
+     sinon celle qui remonte le plus le conseiller, puis celle qui déplace le
+     moins de blocs. */
+  const proches = essais.filter(x => x.cout <= min + 12);
+  if (proches.some(x => memeRep(x.r, avant))) return avant;
+  proches.sort((a, b) => a.cons - b.cons || a.bouges - b.bouges || a.cout - b.cout);
+  return proches[0]?.r || {};
+}
+
+function useRepartition(ref: React.RefObject<HTMLDivElement | null>): Repartition {
+  const [rep, setRep] = useState<Repartition>({});
+  useLayoutEffect(() => {
+    const cols = ref.current;
+    if (!cols || typeof ResizeObserver === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(min-width:1024px)');
+    const calcule = () => {
+      if (!mq.matches) { setRep(r => (Object.keys(r).length ? {} : r)); return; }
+      const g = cols.querySelector<HTMLElement>('.acc-g'), main = cols.querySelector<HTMLElement>('.acc-main');
+      const d = cols.querySelector<HTMLElement>('.acc-d'), rech = cols.querySelector<HTMLElement>('[data-bloc="rech"]');
+      if (!g || !main || !d || !rech) return;
+      const h: Record<string, number> = {};
+      cols.querySelectorAll<HTMLElement>('[data-bloc]').forEach(x => { h[x.dataset.bloc || ''] = x.getBoundingClientRect().height; });
+      /* Les deux écarts viennent de la feuille de style (--ecart, --sous) :
+         une seule source, le calcul ne peut pas s'en écarter. */
+      const st = getComputedStyle(cols);
+      const m: Mesures = {
+        main: main.getBoundingClientRect().bottom - g.getBoundingClientRect().top,
+        fixe: rech.getBoundingClientRect().bottom - d.getBoundingClientRect().top,
+        h, ecart: parseFloat(st.getPropertyValue('--ecart')) || 0, sous: parseFloat(st.getPropertyValue('--sous')) || 0,
+      };
+      setRep(r => { const n = repartir(m, r); return memeRep(n, r) ? r : n; });
+    };
+    /* Ici, avant le premier affichage : passer d'un onglet à l'accueil ne
+       montre jamais la répartition par défaut. */
+    calcule();
+    /* La page arrive du serveur avec les blocs dans la colonne de droite : ils
+       restent invisibles sur ordinateur jusqu'à ce premier calcul, puis
+       apparaissent en fondu à leur place (rien ne saute sous les yeux). */
+    cols.dataset.pret = '1';
+    /* Ensuite, à chaque changement de taille : la colonne des biens (une
+       photo, un bien de plus), les deux colonnes (la police qui arrive, un
+       bloc qui grandit), la fenêtre. Un bloc déplacé change la taille de sa
+       colonne, le calcul repasse et retombe sur la même répartition. */
+    const ro = new ResizeObserver(calcule);
+    cols.querySelectorAll<HTMLElement>('.acc-main, .acc-g, .acc-d').forEach(x => ro.observe(x));
+    mq.addEventListener?.('change', calcule);
+    return () => { ro.disconnect(); mq.removeEventListener?.('change', calcule); };
+  }, [ref]);
+  return rep;
+}
+
+/* ══ accueil ══════════════════════════════════════
+   Dans l'ordre où le client en a besoin : ce qui l'attend aujourd'hui (trois
+   cases, toujours cliquables, même à zéro), les nouveaux biens en grand, les
+   biens qui attendent son avis, ses derniers retours ; puis, à côté sur
+   ordinateur et en dessous sur téléphone, sa visite, sa recherche, le marché
+   et son conseiller. */
+function Accueil({ client, crit, neufs, vus, donnes, nbPlusDispo = 0, passage, semaine, maxLues, aller, onBienvenue, onEcran, motEcran, onNotif, onAide, onFin, visites, onOuvrir, onAvis, onFiltre, plusieurs, enCours, mandatPret, avisVisite, onDecouvrir, nbDecouvrir, carteAnnonce }: any) {
+  const lues = passage?.totalLues ?? passage?.lues;
+  /* La dernière recherche : son chiffre à elle, et son moment (« aujourd'hui
+     à 14 h 34 »). C'est ce que « Aujourd'hui pour vous » doit montrer. */
+  const duJour = passage?.lues ?? null;
+  const quandJour = momentRecherche(passage?.quand);
+  const retours = [...donnes].sort((a: Bien, b: Bien) => String(b.retourLe || '').localeCompare(String(a.retourLe || '')));
+  /* La carte de ses biens (V3.27) : un aperçu dessiné, pas une vraie carte. */
+  /* V3.48 : comme la vraie carte, sans les biens vendus à un autre ou retirés. */
+  const surCarte: Bien[] = [...neufs, ...vus, ...donnes].filter((b: Bien) => !b.vente || b.vente.vous);
+  const achat = [...vus, ...donnes].find((b: Bien) => b.vente?.vous) as Bien | undefined;
+  const apercu = surCarte.length > 0 ? <ApercuCarte biens={surCarte} onVoir={() => aller('carte')} /> : null;
+  const apercuFondu = surCarte.length > 0 ? <ApercuCarte biens={surCarte} onVoir={() => aller('carte')} fondu /> : null;
+  /* « Aujourd'hui pour vous » ne doit pas afficher 0 · 0 · 0. Une case à zéro
+     (plus d'avis à donner, pas de visite prévue) cède sa place à ce que le
+     client a déjà : les biens qui lui plaisent, puis tous ses biens
+     consultés. S'il ne reste vraiment rien, la case dit « Aucune visite
+     prévue » en toutes lettres, jamais « 0 ». */
+  type Case = { cle: string; cls: string; ico: string; n: number; l: string; go: () => void; aucun?: string };
+  const plait = donnes.filter((b: Bien) => groupeDe(b) === 'interesse').length;
+  /* V3.48 : le même total que « Tout » dans Consultés (les biens plus disponibles compris). */
+  const ouverts = vus.length + donnes.length + nbPlusDispo;
+  const reserve: Case[] = [];
+  if (plait) reserve.push({ cle: 'plait', cls: 'c-plait', ico: 'pouce', n: plait,
+    l: plait > 1 ? 'biens qui vous plaisent' : 'bien qui vous plaît', go: () => onFiltre('interesse') });
+  if (ouverts) reserve.push({ cle: 'vus', cls: 'c-vus', ico: 'oeil', n: ouverts,
+    l: ouverts > 1 ? 'biens consultés' : 'bien consulté', go: () => onFiltre('tout') });
+  const case2: Case = vus.length
+    ? { cle: 'avis', cls: 'c-avis', ico: 'pouce', n: vus.length, l: 'avis à donner', go: onAvis }
+    : reserve.shift() || { cle: 'avis', cls: 'c-avis', ico: 'pouce', n: 0, l: 'avis à donner', go: onAvis, aucun: 'Aucun' };
+  const case3: Case = visites.length
+    ? { cle: 'vis', cls: 'c-vis', ico: 'calendrier', n: visites.length, l: visites.length > 1 ? 'visites prévues' : 'visite prévue', go: () => aller('visites') }
+    : reserve.shift() || { cle: 'vis', cls: 'c-vis', ico: 'calendrier', n: 0, l: 'visite prévue', go: () => aller('visites'), aucun: 'Aucune' };
+
+  /* V3.152 : les quatre blocs qui se déplacent sur ordinateur. `bloc` est une
+     fonction appelée, pas un composant (AGENTS.md §2.4). Leurs marges d'avant
+     (26 px au-dessus de « Votre conseiller », 12 px au-dessus de l'engagement
+     et du lien) viennent de la feuille de style, plus du style en ligne : sur
+     ordinateur, c'est l'écart de la colonne qui les remplace. */
+  const colsRef = useRef<HTMLDivElement>(null);
+  const rep = useRepartition(colsRef);
+  const dessous = (p: 1 | 2) => BLOCS_LIBRES.filter(k => rep[k] === p);
+  const bloc = (k: string) => (
+    <div key={k} className="acc-bl" data-bloc={k}>
+      {k === 'marche' && (
+        <button className="case large" onClick={() => aller('marche')}>
+          <div className="tete-case"><span className="ico"><Ico n="graph" t={21} /></span></div>
+          <div><h3>Le marché sur vos critères</h3>
+            <p>{`${nombre(semaine.reduce((s: number, x: any) => s + x.lues, 0))} annonces lues ces 7 derniers jours`}</p></div>
+          <div className="apm">
+            <div className="apm-t">Annonces lues · 7 derniers jours</div>
+            <div className="mini">{semaine.map((d: any, i: number) => (
+              <i key={i} className={i === semaine.reduce((k: number, x: any, j: number) => (x.lues > 0 ? j : k), -1) ? 'fort' : ''}
+                style={{ height: Math.max(8, d.lues / maxLues * 100) + '%', animationDelay: i * .05 + 's' }} />
+            ))}</div>
+          </div>
+          <div className="pied-case"><span /><span className="chev"><Ico n="fleche" t={18} /></span></div>
+        </button>
+      )}
+      {k === 'conseiller' && <>
+        <div className="sep"><span>Votre conseiller</span><i /></div>
+        <div className="chasseur">
+          <div className="av">AR</div>
+          <div><h4>Alexandre Rogelet</h4><p>Il cherche pour vous au quotidien</p></div>
+          <a className="tel" href="tel:0658957632"><Ico n="tel" t={15} /> Appeler</a>
+        </div>
+      </>}
+      {k === 'engage' && (
+        <div className="engage">
+          <div className="t">Mon engagement</div>
+          <div><span className="k"><Ico n="check" t={15} /></span><span>Une recherche menée chaque jour&nbsp;: les principaux portails immobiliers, notre carnet d&apos;adresses de confrères et de partenaires, et notre base off-market.</span></div>
+          <div><span className="k"><Ico n="check" t={15} /></span><span>Tout bien qui passe vos critères arrive ici dans la journée, avant qu&apos;il ne circule.</span></div>
+          <div><span className="k"><Ico n="check" t={15} /></span><span>Chacun de vos retours est relu, et oriente les propositions suivantes.</span></div>
+        </div>
+      )}
+      {k === 'lien' && (
+        <div className="avis-lien"><Ico n="lieu" t={16} />
+          <span><b style={{ color: 'var(--encre)' }}>Ce lien est le vôtre.</b>{' '}Il vous ouvre votre espace sans mot de passe
+            — gardez-le pour vous, ou transmettez-le à votre conjoint ou à un proche qui suit le projet avec vous&nbsp;:
+            il verra exactement la même chose.</span></div>
+      )}
+    </div>
+  );
+  return (
+    <div className="acc">
+      <section className="auj" aria-label="Aujourd’hui pour vous">
+        <div className="auj-h">
+          <span className="auj-t">Aujourd’hui pour vous</span>
+        </div>
+        <div className="auj-g">
+          {/* Rien de neuf : pas de « 0 », on dit qu'il est à jour. */}
+          {/* Des nouveautés : « Découvrir » s'ouvre directement (V3.44). */}
+          <button type="button" className={'auj-c c-neuf' + (neufs.length ? ' on' : ' ajour')}
+            onClick={() => (neufs.length && onDecouvrir ? onDecouvrir() : aller('neufs'))}>
+            <span className="auj-ic"><Ico n={neufs.length ? 'etoile' : 'check'} t={17} /></span>
+            <span className="auj-tx">
+              {neufs.length
+                ? <span className="auj-n tab">{neufs.length}</span>
+                : <span className="auj-n mot">À jour</span>}
+              <span className="auj-l">{neufs.length ? (neufs.length > 1 ? 'nouveaux biens' : 'nouveau bien') : 'rien de nouveau'}</span>
+            </span>
+          </button>
+          {[case2, case3].map(k => (
+            <button key={k.cle} type="button" className={'auj-c ' + k.cls + (k.n ? ' on' : '')} onClick={k.go}>
+              <span className="auj-ic"><Ico n={k.ico} t={17} /></span>
+              <span className="auj-tx">
+                {k.n ? <span className="auj-n tab">{k.n}</span> : <span className="auj-n mot">{k.aucun}</span>}
+                <span className="auj-l">{k.l}</span>
+              </span>
+            </button>
+          ))}
+          {/* Sur ordinateur seulement : la quatrième case. Sur téléphone, le
+              même chiffre est dans la ligne du pied. Elle dit la dernière
+              recherche, pas le total : sous « Aujourd'hui pour vous », un total
+              de plusieurs centaines se lisait comme le travail du jour. Le
+              total est dans « Le marché sur vos critères ». */}
+          {duJour != null && (
+            <div className="auj-c c-lues on">
+              <span className="auj-ic"><Ico n="loupe" t={17} /></span>
+              <span className="auj-tx">
+                <span className="auj-n tab">{nombre(duJour)}</span>
+                <span className="auj-l" suppressHydrationWarning>{`annonce${duJour > 1 ? 's lues' : ' lue'} ${quandJour || 'lors de la dernière recherche'}`}</span>
+              </span>
+            </div>
+          )}
+        </div>
+        {/* Le pied dit d'abord la dernière recherche, avec son moment, puis le
+            total, nommé « depuis l'ouverture » : sans ces mots, les 455 se
+            lisaient comme le travail d'aujourd'hui. */}
+        {(duJour != null || lues != null) && (
+          <div className="auj-pied2">
+            {duJour != null && (
+              <span className="ap-jour"><span className="ap-i"><Ico n="loupe" t={15} /></span>
+                <span suppressHydrationWarning>{quandJour
+                  ? <>{`${quandJour.charAt(0).toUpperCase() + quandJour.slice(1)} : `}<b className="tab">{`${nombre(duJour)} annonce${duJour > 1 ? 's lues' : ' lue'}`}</b>{' sur vos\u00a0critères'}</>
+                  : <><b className="tab">{`${nombre(duJour)} annonce${duJour > 1 ? 's lues' : ' lue'}`}</b>{' lors de la dernière recherche'}</>}</span>
+              </span>
+            )}
+            {lues != null && (
+              <span className="ap-tot"><span className="ap-i"><Ico n="horloge" t={15} /></span>
+                {/* Pas de « en 3 jours » : ce nombre compte les jours depuis la
+                    création de la fiche, jours sans recherche compris, et se
+                    lisait comme trois journées de recherche. */}
+                <span>{'Depuis l’ouverture de votre dossier : '}<span className="nv"><b className="tab">{nombre(lues)}</b><BtnAide cle="lues" onAide={onAide} /></span>{` annonce${lues > 1 ? 's\u00a0lues' : '\u00a0lue'}`}</span>
+              </span>
+            )}
+          </div>
+        )}
+      </section>
+
+      {avisVisite}
+
+      {mandatPret}
+
+      {/* Une bande à deux boutons, côte à côte : l'installation (ou, une fois
+          installé, les alertes) et le mode d'emploi. Chacun dit en dessous ce
+          qu'il fait. Seul, « Comment ça marche ? » prend toute la largeur. */}
+      <div className="al3-r">
+        {/* Toujours là, même après un « plus tard » : celui qui change d'avis
+            trois semaines plus tard doit le retrouver sans chercher. */}
+        {onEcran && (
+          <button type="button" className="al3" onClick={onEcran}>
+            <span className="al3-i or"><Ico n="mobile" t={17} /></span>
+            <span className="al3-t"><b>{motEcran.t}</b><i>{motEcran.s}</i></span>
+          </button>
+        )}
+        {onNotif && (
+          <button type="button" className="al3" onClick={onNotif}>
+            <span className="al3-i or"><Ico n="cloche" t={17} /></span>
+            <span className="al3-t"><b>Être prévenu</b><i>dès qu’un bien arrive</i></span>
+          </button>
+        )}
+        <button type="button" className="al3" onClick={onBienvenue}>
+          <span className="al3-i"><Ico n="aide" t={17} /></span>
+          <span className="al3-t"><b className="al3-1">Comment ça marche&nbsp;?</b><i>en une minute</i></span>
+        </button>
+      </div>
+
+      {/* V3.152 : sur ordinateur, les blocs d'à côté se répartissent selon ce
+          que la page contient (voir useRepartition). Chacun est enveloppé
+          dans un .acc-bl sans marge ni bordure : au téléphone, les marges
+          traversent l'enveloppe et la page est exactement celle d'avant. */}
+      <div className="acc-cols" ref={colsRef}>
+        <div className="acc-g">
+          <div className="acc-main">
+            {neufs.length > 0
+              ? <>
+                <CarrouselNeufs biens={neufs} crit={crit} onOuvrir={onOuvrir} aller={aller} onDecouvrir={onDecouvrir} nbDecouvrir={nbDecouvrir} />
+                {/* Le même récapitulatif que dans « Rien de nouveau », en une
+                    ligne : il y en a toujours un, et un seul, sur l'accueil. */}
+                {!!passage?.lues && <RecapRecherche aller={aller} />}
+              </>
+              : <RienDeNeuf passage={passage} aVoir={vus.length + donnes.length > 0} aller={aller} enCours={enCours} achat={achat || null} />}
+            {vus.length > 0 && <AvisAttendus biens={vus} onOuvrir={onOuvrir} />}
+            {/* V3.184 : au téléphone, après les nouveaux biens et les avis
+                attendus, avant la carte de ses biens et sa recherche. */}
+            {carteAnnonce && <div className="ac-tel ra-tel">{carteAnnonce}</div>}
+            {/* Au téléphone (V3.28), la carte coiffe « Vos derniers retours » et
+                s'y fond : elle était tout en bas, après la visite. Sans retour,
+                elle se pose seule au même endroit. */}
+            {retours.length > 0
+              ? <DerniersRetours biens={retours} onOuvrir={onOuvrir} aller={aller} carte={apercuFondu} />
+              : apercu && <div className="ac-tel">{apercu}</div>}
+          </div>
+          {/* Sous les biens, sur ordinateur : deux pistes de la largeur de la
+              colonne de droite, pour les blocs qui y remplissent le vide. */}
+          {(dessous(1).length > 0 || dessous(2).length > 0) && (
+            <div className="acc-sous">
+              <div className="acc-p">{dessous(1).map(bloc)}</div>
+              <div className="acc-p">{dessous(2).map(bloc)}</div>
+            </div>
+          )}
+        </div>
+
+        <div className="acc-d">
+          {visites?.length > 0 && (
+            <ProchainesVisites visites={visites} onVoir={() => aller('visites')} />
+          )}
+          {/* V3.184 : sur ordinateur, en haut de la colonne de droite, à côté
+              des nouveaux biens (au téléphone : à gauche, sous eux). */}
+          {carteAnnonce && <div className="ac-pc">{carteAnnonce}</div>}
+          {/* La carte de ses biens : en haut de la colonne de droite, sur
+              ordinateur. Au téléphone, elle est plus haut (voir à gauche). */}
+          {apercu && <div className="ac-pc">{apercu}</div>}
+          <div className="acc-cartes">
+            {/* La visite, la carte et le rappel de la recherche restent en
+                haut à droite, quoi qu'il arrive : le calcul part de leur bas. */}
+            <div className="acc-bl" data-bloc="rech">
+              <div className={'case large bloc-rech' + (enCours ? ' vivant' : '')}>
+                <button className="rech-haut" onClick={() => aller('recherche')}>
+                  {/* Le badge « Recherche en cours » est monté dans l'en-tête ;
+                      la carte garde sa lueur verte quand la recherche tourne. */}
+                  <div className="tete-case">
+                    <span className="ico"><Ico n="cible" /></span>
+                  </div>
+                  <div><h3>{plusieurs ? 'Les critères de cette recherche' : 'Rappel de ma recherche'}</h3>
+                    <p>{crit.budgetMax ? `Jusqu'à ${EUR(crit.budgetMax)}` : 'Budget à préciser'}
+                      {crit.surfaceMin ? ` · ${crit.surfaceMin} m² minimum` : ''}
+                      {crit.piecesMin ? ` · ${crit.piecesMin} pièces` : ''}</p></div>
+                  <div className="pied-case">
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--plume)' }}>Vos critères ont changé&nbsp;? Modifiez-les ici</span>
+                    <span className="chev"><Ico n="fleche" t={18} /></span></div>
+                </button>
+                <button className="rech-bas" onClick={onFin}>
+                  <span className="rb-ico">🏁</span>
+                  <span className="rb-txt">
+                    <b>{plusieurs ? 'Cette recherche est terminée' : 'Ma recherche est terminée'}</b>
+                    <i>Vous avez trouvé, ou vous faites une pause&nbsp;? Dites-le-nous.</i>
+                  </span>
+                  <span className="chev"><Ico n="fleche" t={17} /></span>
+                </button>
+              </div>
+            </div>
+            {!rep.marche && bloc('marche')}
+          </div>
+          {BLOCS_LIBRES.filter(k => k !== 'marche' && !rep[k]).map(bloc)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Les nouveaux biens, en grand : la photo, le prix, et ce qui compte. Sur
+   téléphone ils défilent au doigt. Sur ordinateur (V3.152), la rangée prend
+   toujours toute la largeur : un seul bien s'affiche en grand, la photo à
+   gauche et tout le reste à droite (il occupait le tiers de la colonne, et
+   le reste était vide) ; deux biens côte à côte ; trois par ligne ensuite,
+   et une ligne de deux pour finir quand le compte tombe mal (cinq). */
+function CarrouselNeufs({ biens, crit, onOuvrir, aller, onDecouvrir, nbDecouvrir = 0 }: { biens: Bien[]; crit: Criteres; onOuvrir: (b: Bien) => void; aller: (v: string) => void; onDecouvrir?: () => void; nbDecouvrir?: number }) {
+  const n = Math.min(biens.length, 6);
+  return (
+    <section className="bloc-n" data-n={n}>
+      <div className="bloc-h">
+        <h2>Nouveaux biens pour vous</h2>
+        <button type="button" className="bloc-lien" onClick={() => aller('neufs')}>Tout voir</button>
+      </div>
+      <div className="carrou" data-n={n}>
+        {biens.slice(0, 6).map((b, i) => {
+          const corr = correspondance(b, crit);
+          const quand = depuis(b.envoyeLe);
+          /* Sur ordinateur : cette carte est-elle dans une ligne de trois ? */
+          const tiers = n === 3 || n === 6 || (n === 5 && i < 3);
+          return (
+            <button key={b.id} type="button" className={'cn' + (tiers ? ' cn-tiers' : '')} onClick={() => onOuvrir(b)}>
+              <span className="cn-ph">
+                {b.photos[0] ? <img src={b.photos[0]} alt="" /> : <span className="cn-vide"><Ico n="maison" t={40} /></span>}
+                <span className="cn-new">{quand ? `Nouveau · ${quand}` : 'Nouveau'}</span>
+                {b.photos.length > 1 && <span className="cn-nb">{`${b.photos.length} photos`}</span>}
+              </span>
+              <span className="cn-c">
+                <span className="cn-p">
+                  <b className="tab">{PRIX(b.prix)}</b>
+                  {b.prix && b.surface ? <i className="tab">{`${nombre(Math.round(b.prix / b.surface))} €/m²`}</i> : null}
+                </span>
+                {b.prix && b.hono ? <span className="cn-h">{`+ ${EUR(b.hono)} de nos honoraires`}</span> : null}
+                <span className="cn-t">{b.titre}</span>
+                <span className="cn-m">{[b.surface && b.surface + ' m²', b.pieces && b.pieces + ' pièces', b.secteur].filter(Boolean).join(' · ')}</span>
+                {corr && (
+                  <span className="cn-j">
+                    <span className="cn-jb"><i style={{ width: corr.note + '%' }} /></span>
+                    <b className="tab">{`${corr.note} % de vos critères`}</b>
+                  </span>
+                )}
+                {/* Le bien en grand, sur ordinateur : « Le découvrir » est
+                    dans la carte (le bouton du dessous s'efface). Toucher la
+                    carte fait exactement la même chose : un seul bien à
+                    découvrir, c'est lui que « Découvrir » ouvre (ouvrirBien). */}
+                {n === 1 && onDecouvrir && (
+                  <span className="cn-go"><span>{nbDecouvrir > 1 ? 'Les découvrir un par un' : 'Le découvrir'}</span><Ico n="fleche" t={17} /></span>
+                )}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {/* V3.44 : un bien à la fois, les photos puis l'avis d'un geste. Une
+          carte touchée y mène aussi, en commençant par elle. */}
+      {onDecouvrir && (
+        <button type="button" className="cn-decouvrir" onClick={onDecouvrir}>
+          <span>{nbDecouvrir > 1 ? 'Les découvrir un par un' : 'Le découvrir'}</span>
+          <Ico n="fleche" t={17} />
+        </button>
+      )}
+    </section>
+  );
+}
+
+/* Sous les nouveaux biens : la dernière recherche en une phrase, et le chemin
+   vers son détail. On ne redit pas combien de biens elle a retenus : le
+   compteur de la recherche n'est pas le nombre de biens posés dans l'espace
+   (AGENTS.md §5), et les nouveaux biens sont juste au-dessus. */
+function RecapRecherche({ aller }: { aller: (v: string) => void }) {
+  return (
+    <section className="recap-r">
+      <button type="button" className="calme-b calme-m" onClick={() => aller('marche')}>
+        <Ico n="graph" t={16} /><span>Voir le marché sur vos critères</span><Ico n="fleche" t={16} />
+      </button>
+    </section>
+  );
+}
+
+/* Rien de nouveau : on le dit, et on dit pourquoi — jamais un bloc vide. */
+function RienDeNeuf({ passage, aVoir, aller, enCours = true, achat = null }: { passage: Props['passage']; aVoir: boolean; aller: (v: string) => void; enCours?: boolean; achat?: Bien | null }) {
+  /* V3.48 : sous compromis, la recherche est souvent en pause — on ne dit plus « elle continue ». */
+  const etat = achat?.vente
+    ? (achat.vente.etat === 'vendu' ? 'Votre achat est signé : félicitations.'
+      : enCours ? 'Votre compromis est signé ; la recherche continue en attendant la signature définitive.' : 'Votre compromis est signé : la recherche est en pause jusqu’à la signature définitive.')
+    : enCours ? 'Votre recherche continue, rien n’est bloqué.' : 'Votre recherche est en pause pour le moment.';
+  return (
+    <section className="calme">
+      <div className="calme-h">
+        <span className="calme-ic"><Ico n="loupe" t={21} /></span>
+        <div>
+          <h2>Rien de nouveau depuis votre dernière visite</h2>
+          <p>{etat}</p>
+        </div>
+      </div>
+      <div className="calme-l">
+        {!!passage?.lues && (
+          <span><span className="calme-k"><Ico n="check" t={15} /></span>
+            {/* Le chiffre et l'heure sont juste au-dessus, dans « Aujourd'hui
+                pour vous » : on ne les redit pas, on dit ce qu'ils ont donné. */}
+            <span>{passage.proposees
+              ? `La dernière recherche a retenu ${passage.proposees} bien${passage.proposees > 1 ? 's' : ''} : vous ${passage.proposees > 1 ? 'les avez' : 'l’avez'} déjà ouvert${passage.proposees > 1 ? 's' : ''}.`
+              : 'Aucune des annonces lues lors de la dernière recherche ne cochait toutes vos cases. Mieux vaut ne rien vous envoyer que vous faire perdre du temps.'}</span>
+          </span>
+        )}
+        <span><span className="calme-k"><Ico n="etincelle" t={15} /></span>
+          <span>Dès qu’un bien correspond à ce que vous voulez, il arrive ici.</span>
+        </span>
+      </div>
+      {/* Le détail de ce travail est dans « Le marché sur vos critères ». La
+          carte du même nom est tout en bas de l'accueil : on y mène d'ici,
+          juste sous la phrase qui raconte la dernière recherche. */}
+      {!!passage?.lues && (
+        <button type="button" className="calme-b calme-m" onClick={() => aller('marche')}>
+          <Ico n="graph" t={16} /><span>Voir le marché sur vos critères</span><Ico n="fleche" t={16} />
+        </button>
+      )}
+      {aVoir && (
+        <button type="button" className="calme-b" onClick={() => aller('consultes')}>
+          <span>Revoir les biens déjà consultés</span><Ico n="fleche" t={16} />
+        </button>
+      )}
+    </section>
+  );
+}
+
+/* Les biens ouverts sans avis : une seule phrase, et un bouton par bien qui
+   ouvre sa fiche — là où se trouvent les boutons d'avis habituels. */
+function AvisAttendus({ biens, onOuvrir }: { biens: Bien[]; onOuvrir: (b: Bien) => void }) {
+  const n = biens.length;
+  return (
+    <section className="avis-att">
+      <div className="aa-h">
+        <span className="aa-ic"><Ico n="pouce" t={18} /></span>
+        <div>
+          <h2>{`${n} bien${n > 1 ? 's' : ''} attend${n > 1 ? 'ent' : ''} votre avis`}</h2>
+          <p>Vous les avez ouverts : dites-nous ce que vous en pensez.</p>
+        </div>
+      </div>
+      <div className="aa-l">
+        {biens.slice(0, 8).map(b => {
+          const quand = depuis(b.vuLe);
+          return (
+            <button key={b.id} type="button" className="aa-c" onClick={() => onOuvrir(b)}>
+              <span className="aa-ph">
+                {b.photos[0] ? <img src={b.photos[0]} alt="" /> : <Ico n="maison" t={30} />}
+                {quand && <span className="aa-q">{`Ouvert ${quand}`}</span>}
+              </span>
+              <span className="aa-t">{b.titre}</span>
+              <span className="aa-m">{PRIX(b.prix) + (b.surface ? ` · ${b.surface} m²` : '')}</span>
+              <span className="aa-b">Donner mon avis</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* L'aperçu de la carte de ses biens (V3.27) : dessiné, pas une vraie carte —
+   la bibliothèque de carte ne se charge qu'à l'ouverture. « fondu » : la
+   version qui coiffe « Vos derniers retours » au téléphone (V3.28), le plan
+   plus haut, une étiquette posée dessus, et le bas qui se fond dans la liste. */
+function ApercuCarte({ biens, onVoir, fondu }: { biens: Bien[]; onVoir: () => void; fondu?: boolean }) {
+  const plan = (
+    <span className="ac-plan" aria-hidden="true">
+      <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice">
+        <path d="M-10 84 C60 70 110 96 180 76 S290 40 340 52" className="ac-fleuve" />
+        <path d="M20 -10 L70 130 M120 -10 L150 130 M210 -10 L190 130 M-10 30 L330 18 M-10 62 L330 76 M260 -10 L300 130" className="ac-rue" />
+        <path d="M-10 104 L330 96 M40 -10 L100 130 M170 -10 L240 130" className="ac-ruelle" />
+      </svg>
+      {/* Posées plus bas dans la version fondue : l'étiquette est en haut. */}
+      {biens.slice(0, 6).map((b, i) => (
+        <i key={b.id} className={'ac-z ac-' + catCarte(b)} style={fondu
+          ? { left: `${[20, 44, 66, 86, 34, 76][i]}%`, top: `${[52, 42, 56, 36, 72, 70][i]}%` }
+          : { left: `${[16, 38, 60, 27, 74, 50][i]}%`, top: `${[34, 22, 44, 66, 30, 70][i]}%` }} />
+      ))}
+    </span>
+  );
+  if (fondu) return (
+    <button type="button" className="dr-carte" onClick={onVoir}>
+      {plan}
+      <span className="dr-carte-l"><Ico n="carte" t={14} /><b>Vos biens sur la carte</b><Ico n="fleche" t={14} /></span>
+    </button>
+  );
+  return (
+    <button type="button" className="case large apercu-carte" onClick={onVoir}>
+      {plan}
+      <span className="ac-bas">
+        <span><b>Vos biens sur la carte</b><i>Chacun dans sa petite zone, à la couleur de votre avis</i></span>
+        <span className="chev"><Ico n="fleche" t={18} /></span>
+      </span>
+    </button>
+  );
+}
+
+/* Ses trois derniers retours, avec l'avis en toutes lettres. Au téléphone,
+   la carte de ses biens les coiffe, d'un seul tenant (V3.28). */
+function DerniersRetours({ biens, onOuvrir, aller, carte }: { biens: Bien[]; onOuvrir: (b: Bien) => void; aller: (v: string) => void; carte?: React.ReactNode }) {
+  return (
+    <section className={'dr' + (carte ? ' dr-avec' : '')}>
+      <div className="bloc-h">
+        <h2>Vos derniers retours</h2>
+        <button type="button" className="bloc-lien" onClick={() => aller('consultes')}>Tout voir</button>
+      </div>
+      <div className="dr-fus">
+      {carte}
+      <div className="dr-l">
+        {biens.slice(0, 3).map(b => {
+          const a = etiqDe(b);
+          return (
+            <button key={b.id} type="button" className="dr-c" onClick={() => onOuvrir(b)}>
+              <span className="dr-ph">{b.photos[0] ? <img src={b.photos[0]} alt="" /> : <Ico n="maison" t={24} />}</span>
+              <span className="dr-x">
+                {a && <span className={'etiq ' + a.c}>{`${a.e} ${a.n}`}</span>}
+                <span className="dr-t">{b.titre}</span>
+                <span className="dr-m">{PRIX(b.prix) + (b.commentaire ? ` · « ${b.commentaire} »` : '')}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      </div>
+    </section>
+  );
+}
+
+/* V3.206 (canevas « Les visites dans l'espace client », planches 2 et 3) —
+   Alexandre : « trop de texte, on ne pourrait pas remettre la photo du bien à
+   côté ». Ses prochaines visites, une ligne chacune : la photo en petit avec
+   le jour dessus, le jour et l'heure, le bien en court (page.tsx, `court`).
+   Au téléphone, la première prend la photo en grand. Trois au plus, puis
+   « Tout voir ». Le détail (adresse, agenda) est dans l'onglet Visites. */
+const capi = (t: string) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
+/** « 18:00 » → « 18 h », « 17:30 » → « 17 h 30 » (insécables : l'heure ne se coupe pas en fin de ligne) */
+const heureVisite = (h: unknown) => {
+  const [a, b] = String(h || '').split(':');
+  return a ? `${Number(a)}\u00a0h${b && b.slice(0, 2) !== '00' ? `\u00a0${b.slice(0, 2)}` : ''}` : '';
+};
+function ProchainesVisites({ visites, onVoir }: { visites: any[]; onVoir: () => void }) {
+  const n = visites.length;
+  return (
+    <section className="va">
+      <div className="va-t">
+        <Ico n="calendrier" t={14} /><span>{n > 1 ? `Vos prochaines visites · ${n}` : 'Votre prochaine visite'}</span>
+        {n > 1 && <button type="button" className="va-tout" onClick={onVoir}>Tout voir</button>}
+      </div>
+      {visites.slice(0, 3).map((v, i) => {
+        const x = new Date(String(v.date).slice(0, 10) + 'T12:00:00');
+        const ok = !isNaN(x.getTime());
+        const bientot = joursAvant(v.date);
+        const heure = heureVisite(v.heure);
+        const jour = ok ? `${capi(JOURS_L[x.getDay()].slice(0, 3))}. ${x.getDate()}\u00a0${MOIS[x.getMonth()]}` : '';
+        return (
+          <button key={v.id} type="button" className={'va-l' + (i === 0 ? ' va-1' : '')} onClick={onVoir}>
+            <span className="va-ph">
+              {v.photo ? <img src={v.photo} alt="" /> : <span className="va-vide"><Ico n="maison" t={22} /></span>}
+              <span className="va-j"><b className="tab">{ok ? x.getDate() : ''}</b><i>{ok ? MOIS[x.getMonth()] : ''}</i></span>
+              <span className="va-jg"><i>{ok ? JOURS_L[x.getDay()].slice(0, 3) + '.' : ''}</i><b className="tab">{ok ? x.getDate() : ''}</b><i>{ok ? MOIS[x.getMonth()] : ''}</i></span>
+              {bientot && <span className="va-bg">{capi(bientot)}</span>}
+              {heure && <span className="va-hg">{heure}</span>}
+            </span>
+            <span className="va-x">
+              <b className="va-q">{[jour, heure].filter(Boolean).join(' · ')}</b>
+              <span className="va-b">{v.court || v.titre}</span>
+              {bientot && <span className="va-c">{capi(bientot)}</span>}
+            </span>
+            <span className="va-f"><Ico n="fleche" t={18} /></span>
+          </button>
+        );
+      })}
+      {n > 3 && <button type="button" className="va-plus" onClick={onVoir}>{`Et ${n - 3} autre${n - 3 > 1 ? 's' : ''} ensuite : tout voir`}</button>}
+    </section>
+  );
+}
+
+/* ══ briques de vue ═══════════════════════════════ */
+function Vue({ icone, titre, sous, aller, droite, children }: any) {
+  return (
+    <>
+      <button className="retour" onClick={() => aller('accueil')}><Ico n="retour" t={17} /> Retour à l&apos;accueil</button>
+      <div className={droite ? 'tete-bloc' : undefined}>
+        <div className="tete-vue"><span className="ico"><Ico n={icone} /></span><h2>{titre}</h2></div>
+        {sous && <p className="sous-vue">{sous}</p>}
+        {droite}
+      </div>
+      {children}
+    </>
+  );
+}
+
+/* ══ la correspondance d'un bien avec la recherche ═══════════════
+   La note (« 96 % de vos critères ») et son détail viennent de
+   src/lib/correspondance.ts : la même règle sert au CRM (biens en vente). */
+
+/* La phrase qui accompagne la note : elle dit où en est le bien, jamais ce qui cloche. */
+function motCorrespondance(n: number) {
+  return n >= 90 ? 'Très proche de votre recherche'
+    : n >= 75 ? 'Proche de votre recherche'
+      : n >= 60 ? 'Correspond en partie à votre recherche'
+        : 'S’éloigne de votre recherche sur plusieurs points';
+}
+
+/* Les plus du bien : des faits de la fiche, en dehors des critères déjà
+   comparés. Ils valorisent l'annonce sans toucher à la note. */
+function plusDuBien(b: Bien, lignes: LigneCorr[]): { ico: string; t: string }[] {
+  const deja = new Set(lignes.map(x => x.lib.toLowerCase()));
+  const out: { ico: string; t: string }[] = [];
+  const ext = b.exterieur || ((b.surfaceTerrasse || 0) + (b.surfaceBalcon || 0)) || 0;
+  const m2 = ext ? ` de ${String(ext).replace('.', ',')} m²` : '';
+  if (b.traversant) out.push({ ico: 'traversant', t: 'Traversant' });
+  if (b.terrasse && !deja.has('terrasse') && !deja.has('extérieur')) out.push({ ico: 'terrasse', t: `Terrasse${m2}` });
+  else if (b.balcon && !deja.has('balcon') && !deja.has('extérieur')) out.push({ ico: 'terrasse', t: `Balcon${m2}` });
+  if (b.jardin && !deja.has('jardin') && !deja.has('extérieur')) out.push({ ico: 'jardin', t: 'Jardin' });
+  if (b.parking && !deja.has('parking')) out.push({ ico: 'parking', t: b.nbParking && b.nbParking > 1 ? `${b.nbParking} parkings` : 'Parking' });
+  if (b.cave && !deja.has('cave')) out.push({ ico: 'cave', t: 'Cave' });
+  if (b.ascenseur && !deja.has('ascenseur')) out.push({ ico: 'ascenseur', t: 'Ascenseur' });
+  if (b.gardien && !deja.has('gardien')) out.push({ ico: 'gardien', t: 'Gardien' });
+  if (b.cuisineEquipee) out.push({ ico: 'cuisine', t: 'Cuisine équipée' });
+  if (b.clim) out.push({ ico: 'clim', t: 'Climatisation' });
+  if (b.etage != null && b.etageTotal && b.etage === b.etageTotal && b.etage > 0 && !deja.has('étage')) out.push({ ico: 'immeuble', t: 'Dernier étage' });
+  return out;
+}
+
+/* L'anneau de la note : un seul accent, l'or, sur le chiffre qui compte. */
+function AnneauNote({ note, t = 48 }: { note: number; t?: number }) {
+  const r = 20, tour = 2 * Math.PI * r;
+  return (
+    <span className="anneau" style={{ width: t, height: t }}>
+      <svg width={t} height={t} viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="24" r={r} fill="none" stroke="var(--trait)" strokeWidth="4" />
+        <circle cx="24" cy="24" r={r} fill="none" stroke="var(--or)" strokeWidth="4" strokeLinecap="round"
+          strokeDasharray={`${(tour * note) / 100} ${tour}`} transform="rotate(-90 24 24)" />
+      </svg>
+      <span className="anneau-n tab">{note}<i>%</i></span>
+    </span>
+  );
+}
+
+/* Une valeur longue — un quartier « selon l'annonce », une ville à rallonge —
+   ne tient pas à droite sur un téléphone : elle écrasait le libellé en une
+   colonne de trois lettres et débordait de la carte. Elle passe alors sous le
+   libellé, sur toute la largeur, précédée de « Ce bien : ». */
+function LigneCritere({ x }: { x: LigneCorr }) {
+  const long = x.valeur.length > 18;
+  return (
+    <div className={'an-l ' + x.etat + (long ? ' long' : '')}>
+      <span className="an-case">{x.etat === 'oui' ? <Ico n="check" t={12} /> : x.etat === 'presque' ? '≈' : <Ico n="moins" t={12} />}</span>
+      <span className="an-lib"><b>{x.lib}</b><i>{x.demande}</i></span>
+      <span className="an-val tab">{long ? <><em>{'Ce bien :'}</em>{' '}{x.valeur}</> : x.valeur}</span>
+    </div>
+  );
+}
+
+/* La fiche d'analyse : ce qui correspond, ce qui s'en écarte, les plus du
+   bien, et comment la note se calcule. Deux colonnes sur ordinateur, une
+   seule sur téléphone. */
+function ModaleCorrespondance({ b, r, onFermer }: { b: Bien; r: Correspondance; onFermer: () => void }) {
+  useEchap(true, onFermer);
+  const oui = r.lignes.filter(x => x.etat === 'oui');
+  const autres = [...r.lignes.filter(x => x.etat === 'presque'), ...r.lignes.filter(x => x.etat === 'non')];
+  const plus = plusDuBien(b, r.lignes);
+  return createPortal(
+    <div className="pop" role="dialog" aria-modal="true">
+      <div className="pop-voile" onClick={onFermer} />
+      <div className="pop-carte an-carte">
+        <div className="an-tete">
+          <div className="an-tete-txt">
+            <div className="an-sur">Correspondance avec vos critères</div>
+            <div className="an-titre">{b.titre}</div>
+          </div>
+          <div className="an-note"><b className="tab">{r.note}<i>%</i></b><span>{motCorrespondance(r.note)}</span></div>
+          <button className="fermer an-x" onClick={onFermer} aria-label="Fermer"><Ico n="croix" t={14} /></button>
+        </div>
+        <div className="pop-corps an-corps">
+          <div className="an-col">
+            <div className="an-t"><Ico n="check" t={14} /> {`Ce qui correspond · ${oui.length}`}</div>
+            <div className="an-liste">{oui.map((x, i) => <LigneCritere key={i} x={x} />)}</div>
+            {autres.length > 0 && (
+              <>
+                <div className="an-t autre"><Ico n="moins" t={14} /> {`Ce qui s’en écarte · ${autres.length}`}</div>
+                <div className="an-liste">{autres.map((x, i) => <LigneCritere key={i} x={x} />)}</div>
+              </>
+            )}
+          </div>
+          <div className="an-col">
+            {plus.length > 0 && (
+              <>
+                <div className="an-t"><Ico n="etoile" t={14} /> Les plus de ce bien</div>
+                <div className="an-plus">{plus.map((x, i) => (
+                  <span key={i}><span className="an-plus-i"><Ico n={x.ico} t={16} /></span>{x.t}</span>
+                ))}</div>
+              </>
+            )}
+            <div className="an-aide">
+              <div className="an-t neutre">Comment cette note se calcule</div>
+              <div className="puces">
+                <span><span className="k"><Ico n="check" t={15} /></span><span>Elle compare ce bien à chacun de vos critères&nbsp;: budget, secteur, trajet jusqu’à la station, surfaces, pièces, étage, énergie, exposition et équipements. Rien d’autre&nbsp;: ni le marché, ni les autres biens.</span></span>
+                <span><span className="k"><Ico n="check" t={15} /></span><span>Vos indispensables comptent trois fois plus&nbsp;; le budget, le secteur, le trajet, la surface et les chambres, deux fois. Un critère presque atteint compte pour moitié.</span></span>
+                <span><span className="k"><Ico n="check" t={15} /></span><span>Elle ne juge pas ce qui se découvre sur place&nbsp;: la lumière, le calme, l’état. C’est pour ça que votre conseiller vous présente aussi des biens qui ne cochent pas toutes les cases.</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="pop-corps">
+          <button className="btn or" style={{ width: '100%', marginTop: 4 }} onClick={onFermer}>J&apos;ai compris</button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/* `sansEtiq` : dans « Mes derniers biens consultés », la catégorie est déjà
+   écrite en grand au-dessus du groupe. La répéter sur chaque carte fait doublon. */
+function Liste({ biens, onOuvrir, vide, sansEtiq, crit }: { biens: Bien[]; onOuvrir: (b: Bien) => void; vide: string; sansEtiq?: boolean; crit?: Criteres }) {
+  if (!biens.length) return vide ? <div className="vide-sec" dangerouslySetInnerHTML={{ __html: vide }} /> : null;
+  return (
+    <div className="liste">
+      {biens.map(b => {
+        const a = etiqDe(b);
+        const corr = correspondance(b, crit);
+        /* Une carte en hauteur : la bande de photos, puis le titre, puis le
+             prix, puis le commentaire. L'ancienne grille « vignette | texte »
+             s'étirait dès qu'un commentaire s'ajoutait, et la vignette flottait
+             au milieu d'un grand vide blanc. */
+          const vues = (b.photos || []).slice(0, 3);
+          const cases = vues.length ? vues : [null];
+          return (
+          <button key={b.id} className={'bien' + (b.etat === 'neuf' ? ' neuf' : '')} onClick={() => onOuvrir(b)}>
+            <span className={'bande-ph n' + cases.length} style={{ position: 'relative' }}>
+              {/* Les photos d'abord, le badge ensuite : la grande vue doit rester
+                  le premier enfant, sinon elle perd sa double hauteur et une
+                  case grise vide apparaît dans la mosaïque. */}
+              {cases.map((ph, i) => (
+                <span className="ph" key={i}>
+                  {ph ? <img src={ph} alt="" /> : <span className="ph-vide">▣</span>}
+                </span>
+              ))}
+              {corr && <span className="an-badge"><b className="tab">{corr.note}&nbsp;%</b><i>correspondance</i></span>}
+              {b.vente && <span className={'ruban-vente' + (b.vente.vous ? ' vous' : '')}>{motVente(b.vente)}</span>}
+            </span>
+            <span className="corps-bien">
+              <span className="haut-bien">
+                {sansEtiq ? null : b.etat === 'neuf'
+                  ? <span className="etiq neuf">Nouveau</span>
+                  : a
+                    ? <span className={'etiq ' + a.c}>{a.e} {a.n}</span>
+                    : <span className="etiq vu">Vu</span>}
+                <span className="dat">{depuis(b.envoyeLe)}</span>
+                <span className="fleche"><Ico n="fleche" t={18} /></span>
+              </span>
+              <h4>{b.titre}</h4>
+              <span className="meta">{[
+                b.surface && b.surface + ' m²', b.pieces && b.pieces + ' pièces',
+                b.chambres && b.chambres + ' chambres', b.secteur,
+              ].filter(Boolean).join(' · ')}</span>
+              <span className="prix tab">{PRIX(b.prix)}</span>
+              {b.prix && b.hono ? <span className="hono-c">{`+ ${EUR(b.hono)} de nos honoraires`}</span> : null}
+              {/* V3.184 : né d'une annonce qu'il a envoyée, avec l'avis d'Alexandre. */}
+              {b.proposeeLe && <span className="ra-pp"><Ico n="lien" t={12} /><span>{`Vous nous l’aviez envoyée ${dateAnnonce(b.proposeeLe)}`}</span></span>}
+              {b.avisConseiller && (
+                <span className="mon-com fait">
+                  <span className="mc-t">{'L’avis d’Alexandre'}</span>
+                  <span className="mc-c">{`« ${b.avisConseiller} »`}</span>
+                </span>
+              )}
+              {/* V3.193 : où en est Alexandre, d'un coup d'œil (le détail est sur la fiche). */}
+              {b.suivi && !b.suivi.calee && (() => {
+                const e = b.suivi.etapes.find(x => x.etat === 'encours');
+                return e ? <span className="suivi-l"><span className="suivi-pt" aria-hidden="true" /><span>{e.t}</span></span> : null;
+              })()}
+              {b.visitePrevue && !b.visiteFaite && (
+                <span className="rdv-l"><Ico n="calendrier" t={13} />
+                  Visite le {dateCourte(b.visitePrevue.date)}
+                  {b.visitePrevue.heure ? ` à ${String(b.visitePrevue.heure).slice(0, 5).replace(':', ' h ')}` : ''}
+                </span>
+              )}
+              {b.visiteFaite?.commentaire && (
+                <span className="mon-com fait">
+                  <span className="mc-t">Compte rendu de votre conseiller</span>
+                  <span className="mc-c">« {b.visiteFaite.commentaire} »</span>
+                </span>
+              )}
+              {b.etat === 'avis' && b.commentaire && (
+                /* Ce que le client a écrit lui appartient : on l'annonce et on le
+                   rend lisible, au lieu d'une ligne grise en italique tout en bas. */
+                <span className={'mon-com ' + (a ? a.c : '')}>
+                  <span className="mc-t">{b.retourPar === 'conseiller'
+                    ? 'Noté par votre conseiller' : 'Votre commentaire'}</span>
+                  <span className="mc-c">« {b.commentaire} »</span>
+                </span>
+              )}
+            </span>
+          </button>
+          );
+      })}
+    </div>
+  );
+}
+
+/* La phrase qui relie la dernière recherche au total du dossier. « re » : ce
+   qu'elle a retenu ; « ret » : ce qu'il y a dans l'espace, toutes recherches
+   confondues (plus ce que le conseiller a ajouté lui-même).
+   Pas de numéro de recherche (« la 6e ») : il se lisait sur le nombre de
+   dépôts faits dans le CRM, et un même jour de recherche peut en compter
+   plusieurs. Le chiffre était faux ; on ne le donne plus. */
+function bilanRecherche(re: number, ret: number): string {
+  if (!re) {
+    return ret
+      ? `Cette recherche n’a rien retenu de nouveau : vos ${ret} bien${ret > 1 ? 's' : ''} retenu${ret > 1 ? 's' : ''} depuis l’ouverture restent dans votre espace.`
+      : 'Cette recherche n’a rien retenu : aucune annonce ne correspondait assez à ce que vous cherchez.';
+  }
+  const elle = `Cette recherche a retenu ${re} bien${re > 1 ? 's' : ''}`;
+  if (ret > re) return `${elle}. Avec ceux déjà retenus avant, cela fait ${ret} biens retenus pour vous depuis l’ouverture.`;
+  if (ret < re) return `${elle} : votre conseiller les vérifie un par un avant de les déposer dans votre espace.`;
+  return `${elle}, que vous retrouvez dans votre espace.`;
+}
+
+function Marche({ passage, semaine, maxLues, aller, biens, crit, onAide }: any) {
+  const total = semaine.reduce((s: number, x: any) => s + x.lues, 0);
+  /* « semaine » : les sept derniers jours, un par un (voir page.tsx). */
+  const nbJours = semaine.filter((x: any) => x.lues > 0).length;
+  const derJour = semaine.reduce((k: number, x: any, i: number) => (x.lues > 0 ? i : k), -1);
+  const lues = passage?.totalLues ?? 0;
+  /* Le nombre de biens retenus, c'est le nombre de biens posés dans l'espace,
+     point. Pas le compteur interne de la veille : les deux se mettent à
+     diverger dès qu'un bien est ajouté à la main, et le client se retrouvait
+     avec deux chiffres différents sur la même page. */
+  const ret = (biens || []).length;
+  /* Les écartées se déduisent, elles ne se lisent pas : un second compteur
+     finirait par ne plus tomber juste avec les deux autres, et le client
+     verrait trois nombres qui ne s'additionnent pas. */
+  const ecart = Math.max(0, lues - ret);
+  const sur = ret > 0 ? Math.round(lues / ret) : 0;
+
+  const avecPrix = (biens || []).filter((b: Bien) => b.prix && b.prix > 0);
+  const prix = avecPrix.map((b: Bien) => b.prix as number).sort((a: number, z: number) => a - z);
+  const auM2 = avecPrix.filter((b: Bien) => b.surface && b.surface > 0)
+    .map((b: Bien) => Math.round((b.prix as number) / (b.surface as number)));
+  const moyM2 = auM2.length ? Math.round(auM2.reduce((t: number, x: number) => t + x, 0) / auM2.length) : 0;
+  const bmax = crit?.budgetMax || 0;
+  const sous = bmax ? prix.filter((x: number) => x <= bmax).length : 0;
+
+  return (
+    <Vue icone="graph" titre="Le marché sur vos critères" aller={aller}>
+      <div className="intro-m">
+        <span className="im-i"><Ico n="loupe" t={18} /></span>
+        <span>Chaque jour, nous parcourons ce qui sort sur vos secteurs et dans votre budget&nbsp;:
+          portails immobiliers, confrères et partenaires, base off-market. Voici ce que ça donne.</span>
+      </div>
+
+      {/* ── Le bilan depuis l'ouverture du dossier ── */}
+      {lues > 0 && (
+        <div className="gr-cadre c-net">
+          <div className="gr-tete">
+            <span className="ge or"><Ico n="loupe" t={16} /></span>
+            <h3>Bilan depuis l&apos;ouverture de votre dossier</h3>
+          </div>
+          <div className="tuiles">
+            <div className="tu">
+              <span className="tu-i"><Ico n="note" t={19} /></span>
+              <span className="tu-c">
+                <b className="tab"><span className="nv">{nombre(lues)}<BtnAide cle="lues" onAide={onAide} /></span></b>
+                <span>annonce{lues > 1 ? 's' : ''} lue{lues > 1 ? 's' : ''} pour vous</span></span></div>
+            <div className="tu gris">
+              <span className="tu-i"><Ico n="croix" t={19} /></span>
+              <span className="tu-c">
+                <b className="tab"><span className="nv">{ecart.toLocaleString('fr-FR')}<BtnAide cle="ecartees" onAide={onAide} /></span></b>
+                <span>écartée{ecart > 1 ? 's' : ''} avant vous</span></span></div>
+            <div className="tu or">
+              <span className="tu-i"><Ico n="etoile" t={19} /></span>
+              <span className="tu-c">
+                <b className="tab"><span className="nv">{ret.toLocaleString('fr-FR')}<BtnAide cle="retenus" onAide={onAide} /></span></b>
+                <span>bien{ret > 1 ? 's' : ''} retenu{ret > 1 ? 's' : ''} pour vous</span></span></div>
+          </div>
+          {sur > 1 && (
+            <div className="gr-note">
+              {/* Tout en chaînes : aucune espace ne peut se perdre à la
+                  compilation (voir AGENTS.md §2.1). */}
+              <span>{'Les trois chiffres s\u2019additionnent\u00a0: '}<b>{nombre(lues)}</b>
+                {' annonces lues, '}<b>{nombre(ecart)}</b>
+                {' qui ne vous correspondaient pas, '}<b>{nombre(ret)}</b>
+                {` déposée${ret > 1 ? 's' : ''} dans votre espace. Soit `}<b>{`une annonce retenue sur ${nombre(sur)}`}</b>{'.'}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── La dernière recherche ── */}
+      <div className="gr-cadre c-net">
+        <div className="gr-tete">
+          <span className="ge"><Ico n="cible" t={16} /></span>
+          <h3>La dernière recherche</h3>
+          {passage?.quand && depuis(passage.quand) && <span className="gn" suppressHydrationWarning>{`actualisé ${depuis(passage.quand)}`}</span>}
+        </div>
+        <div className="entonnoir">
+          {(() => {
+            const l = passage?.lues ?? 0;
+            const ec = passage?.ecartees ?? 0;
+            const re = passage?.proposees ?? 0;
+            const pc = (n: number) => (l ? Math.max(5, Math.round((n / l) * 100)) : 0);
+            return (
+              <>
+                <div className="ent">
+                  <div className="ent-h"><b className="tab">{l || '—'}</b>
+                    <span>annonce{l > 1 ? 's' : ''} lue{l > 1 ? 's' : ''} lors de cette recherche</span></div>
+                  <div className="ent-b"><i style={{ width: '100%' }} /></div>
+                </div>
+                <div className="ent">
+                  <div className="ent-h"><b className="tab pale">{ec || '—'}</b>
+                    <span className="nv-l">écartée{ec > 1 ? 's' : ''}<BtnAide cle="ecartees" onAide={onAide} /></span></div>
+                  <div className="ent-b"><i className="pale" style={{ width: pc(ec) + '%' }} /></div>
+                </div>
+                <div className="ent">
+                  <div className="ent-h"><b className="tab or">{re || '—'}</b>
+                    <span className="or">{`retenue${re > 1 ? 's' : ''} lors de cette recherche`}</span></div>
+                  <div className="ent-b"><i className="or" style={{ width: pc(re) + '%' }} /></div>
+                </div>
+                {/* Ce qui manquait : dire où se place cette recherche dans le
+                    dossier. Sans ça, « 3 retenues » à côté de « 12 retenus
+                    depuis l'ouverture » ressemblait à une erreur. */}
+                {!!passage?.quand && (
+                  <div className="ent-bilan">
+                    <span className="eb-i"><Ico n="etoile" t={15} /></span>
+                    <span>{bilanRecherche(re, ret)}</span>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
+        <div className="gr-note">
+          {/* Une ligne, pas un paragraphe : le détail est derrière le « ? » de
+              « écartées », juste au-dessus. La page se lit d'un coup d'œil. */}
+          <span>Vos critères guident la recherche, ils ne l&apos;enferment pas&nbsp;: il nous arrive
+            d&apos;aller au-delà quand un bien le mérite.</span>
+        </div>
+      </div>
+
+      {/* ── Les biens retenus ── */}
+      {prix.length >= 2 && (
+        <div className="gr-cadre c-net">
+          <div className="gr-tete">
+            <span className="ge"><Ico n="maison" t={16} /></span>
+            <h3>Les biens retenus pour vous</h3>
+            <span className="gn">{ret}</span>
+          </div>
+          <div className="tuiles">
+            <div className="tu">
+              <span className="tu-i"><Ico n="euro" t={19} /></span>
+              <span className="tu-c"><b className="tab">{EUR(prix[0])}</b><span>le moins cher</span></span></div>
+            <div className="tu">
+              <span className="tu-i"><Ico n="euro" t={19} /></span>
+              <span className="tu-c"><b className="tab">{EUR(prix[prix.length - 1])}</b><span>le plus cher</span></span></div>
+            {moyM2 > 0 && (
+              <div className="tu">
+                <span className="tu-i"><Ico n="regle" t={19} /></span>
+                <span className="tu-c">
+                  <b className="tab"><span className="nv">{moyM2.toLocaleString('fr-FR')} €<BtnAide cle="m2" onAide={onAide} /></span></b>
+                  <span>du m² en moyenne</span></span></div>
+            )}
+          </div>
+          <div className="gr-note">
+            <span>Ces trois chiffres viennent des biens déposés dans votre espace, et sont recalculés
+              à chaque nouveau bien&nbsp;: ils ne peuvent pas être périmés.
+              {bmax > 0 && (sous === prix.length
+                ? <> Tous tiennent dans votre budget de <b>{EUR(bmax)}</b>.</>
+                : <> <b>{sous} sur {prix.length}</b> tiennent dans votre budget de {EUR(bmax)}&nbsp;; les autres
+                  vous ont été montrés parce qu&apos;ils le valaient.</>)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Le rythme ── */}
+      <div className="gr-cadre c-net">
+        <div className="gr-tete">
+          <span className="ge"><Ico n="calendrier" t={16} /></span>
+          <h3>Jour après jour</h3>
+          <BtnAide cle="rythme" onAide={onAide} />
+        </div>
+        {nbJours >= 2 ? (
+          <>
+            <div className="gr-note"><span><b>{`${nombre(total)} annonces`}</b>
+              {` lues ces 7 derniers jours${nbJours < 7 ? `, sur ${nbJours} journées de recherche` : ''}. Chaque barre est une journée : ce que nous avons regardé ce jour-là sur vos secteurs et votre budget. La barre dorée est la dernière journée de recherche.`}</span></div>
+            <div className="barres">
+              {semaine.map((d: any, i: number) => {
+                const x = new Date(String(d.quand).slice(0, 10) + 'T12:00:00');
+                const ok = !isNaN(x.getTime());
+                const auj = i === semaine.length - 1;
+                return (
+                  <span className={'barre' + (i === derJour ? ' dern' : '') + (d.lues ? '' : ' vide')} key={i}>
+                    <b className="tab">{d.lues ? nombre(d.lues) : '—'}</b>
+                    <span className="barre-t">
+                      <i style={{ height: d.lues ? Math.max(6, (d.lues / maxLues) * 100) + '%' : '3px', animationDelay: i * 0.06 + 's' }} />
+                    </span>
+                    <span className="barre-j">{auj ? 'auj.' : ok ? JOURS_C[x.getDay()] : ''}</span>
+                    <span className="barre-d tab">{ok ? x.getDate() : ''}</span>
+                  </span>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          /* Une section vide inquiète plus qu'elle n'informe : on dit pourquoi. */
+          <div className="vide-doux">
+            <span className="vd-i"><Ico n="graph" t={26} /></span>
+            {nbJours === 1 ? (<>
+              <b>Le graphique arrive à la deuxième journée de recherche</b>
+              <span>{'Il faut au moins deux journées pour comparer. Revenez demain : vous verrez ici, jour par jour, combien d’annonces ont été lues pour vous.'}</span>
+            </>) : (<>
+              <b>Pas de recherche ces sept derniers jours</b>
+              <span>{'Le graphique reprend dès la prochaine journée de recherche. Vos biens et vos critères, eux, restent là.'}</span>
+            </>)}
+          </div>
+        )}
+      </div>
+    </Vue>
+  );
+}
+
+/* La phrase du haut : seulement ce qui est renseigné, dans l'ordre où on le
+   dirait à l'oral. Rien n'est inventé, et ce qui manque ne se dit pas —
+   « surface non précisée » n'apprend rien au client. */
+const ARTICLE_TYPE: Record<string, string> = {
+  appartement: 'un', maison: 'une', loft: 'un', duplex: 'un', terrain: 'un', autre: 'un',
+};
+/* « Un appartement ou une maison » : chaque type garde son article, et le
+   premier prend la majuscule. Un type inconnu du CRM passe au masculin
+   plutôt que de disparaître de la phrase. */
+function listeTypes(types: string[]): string {
+  const bouts = types.map((x, i) => {
+    const n = x.toLowerCase();
+    const art = ARTICLE_TYPE[n] || 'un';
+    return (i === 0 ? art.charAt(0).toUpperCase() + art.slice(1) : art) + ' ' + n;
+  });
+  if (bouts.length === 1) return bouts[0];
+  return bouts.slice(0, -1).join(', ') + ' ou ' + bouts[bouts.length - 1];
+}
+
+function morceauxResume(crit: any, villes: { ville: string }[]) {
+  const m: { t: string; fort?: boolean }[] = [];
+  const types: string[] = crit.typesBien?.length ? crit.typesBien
+    : (crit.typeBien ? [crit.typeBien] : []);
+  m.push({ t: types.length ? listeTypes(types) : 'Un bien' });
+  if (crit.surfaceMin) {
+    m.push({ t: " d'au moins " });
+    m.push({ t: `${crit.surfaceMin} m²`, fort: true });
+  }
+  if (crit.chambresMin) {
+    m.push({ t: ' avec ' });
+    m.push({ t: `${crit.chambresMin} chambre${crit.chambresMin > 1 ? 's' : ''}`, fort: true });
+  }
+  if (villes.length) {
+    const courts = villes.map(v => v.ville.replace(/-sur-Seine$/i, '').replace(/-Billancourt$/i, ''));
+    m.push({ t: ', à ' });
+    m.push({
+      t: courts.length <= 2 ? courts.join(' ou ')
+        : `${courts[0]}, ${courts[1]} et ${courts.length - 2} autre${courts.length > 3 ? 's' : ''}`,
+      fort: true,
+    });
+  }
+  if (crit.budgetMax) {
+    m.push({ t: crit.budgetMin ? ', entre ' : ", jusqu'à " });
+    if (crit.budgetMin) { m.push({ t: EUR(crit.budgetMin), fort: true }); m.push({ t: ' et ' }); }
+    m.push({ t: EUR(crit.budgetMax), fort: true });
+  }
+  m.push({ t: '.' });
+  return m;
+}
+
+/* ══ « Ma recherche » ══════════════════════════════════════════════
+   V3.68 — Alexandre, après la V3.67 (bandeau bleu, rubriques A + B) :
+   « finalement, j'aime bien celle qu'on avait », mais avec plus d'icônes :
+   surface, pièces, chambres, les pastilles d'étage… On revient donc à la
+   présentation d'avant, une icône dessinée partout, plus aucun émoji. */
+const ICO_EQUIP: Record<string, string> = {
+  parking: 'parking', cave: 'cave', balcon: 'balcon', terrasse: 'terrasse', jardin: 'jardin', ascenseur: 'ascenseur', gardien: 'gardien',
+};
+const ICO_TYPE: Record<string, string> = { Appartement: 'immeuble', Maison: 'maison', Loft: 'immeuble', Duplex: 'immeuble', Terrain: 'jardin', Autre: 'maison' };
+const ICO_EXPO: Record<string, string> = { sud: 'soleil', est: 'soleil', ouest: 'soleil', nord: 'boussole', traversant: 'traversant' };
+
+function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
+  /* On n'invente rien : s'il n'y a pas de minimum, on écrit « jusqu'à ». */
+  const bmin: number | null = crit.budgetMin || null;
+  const bmax: number | null = crit.budgetMax || null;
+  const ex: Record<string, string> = crit.exigences || {};
+  const expos: string[] = (crit.exposition || '').split(',').map((x: string) => x.trim()).filter(Boolean);
+  const types: string[] = crit.typesBien?.length ? crit.typesBien : (crit.typeBien ? [crit.typeBien] : []);
+  const iDpe = crit.dpeMax ? LETTRES_DPE.indexOf(crit.dpeMax) : -1;
+
+  /* Les équipements retenus, dans l'ordre du CRM, avec leur niveau. */
+  const equips: { ico: string; texte: string; fort: boolean }[] = [];
+  EQUIP_E.forEach(([cle, lib]) => {
+    if (crit.equip.includes(lib) || ex[cle]) equips.push({ ico: ICO_EQUIP[cle] || 'check', texte: lib, fort: ex[cle] === 'indispensable' });
+  });
+  if (ex.exterieur) equips.push({ ico: 'terrasse', texte: `Extérieur${crit.exterieurSurfaceMin ? ` de ${crit.exterieurSurfaceMin} m² mini` : ''}`, fort: ex.exterieur === 'indispensable' });
+  if (crit.cuisineType) equips.push({ ico: 'cuisine', texte: `Cuisine ${crit.cuisineType === 'ouverte' ? 'ouverte' : 'séparée'}`, fort: ex.cuisine === 'indispensable' });
+
+  /* V3.68 : chaque pastille d'étage a son icône (Alexandre : « à partir du
+     deuxième, pas de rez-de-chaussée… il n'y a pas d'icône »). */
+  const etage: { ico: string; t: string }[] = [
+    crit.etageMin ? { ico: 'immeuble', t: `à partir du ${crit.etageMin}e` } : null,
+    crit.etageMax ? { ico: 'immeuble', t: `jusqu'au ${crit.etageMax}e` } : null,
+    crit.rdcExclu ? { ico: 'croix', t: 'pas de rez-de-chaussée' } : null,
+    crit.dernierEtage ? { ico: 'etoile', t: 'dernier étage recherché' } : null,
+    crit.etageMaxSansAscenseur ? { ico: 'ascenseur', t: `${crit.etageMaxSansAscenseur}e maximum sans ascenseur` } : null,
+  ].filter((x): x is { ico: string; t: string } => !!x);
+
+  const aQuelqueChose = types.length || crit.etatSouhaite || crit.anneeMin;
+  const villesResume = grouperSecteurs(crit.secteurs || []);
+
+  return (
+    <Vue icone="cible" titre="Rappel de ma recherche" aller={aller}
+      sous="Ce qu'Alexandre a noté de votre projet, catégorie par catégorie. Vous pouvez le faire évoluer vous-même à tout moment.">
+
+      {/* 0 — Le rappel en une phrase, avant le détail catégorie par catégorie. */}
+      <div className="resume-r">
+        <div className="resume-k"><i /> En une phrase</div>
+        <p className="resume-p">
+          {morceauxResume(crit, villesResume).map((x, i) => x.fort
+            ? <b key={i}>{x.t}</b>
+            : <span key={i}>{x.t}</span>)}
+        </p>
+      </div>
+
+      {/* 1 — Le bien recherché */}
+      {aQuelqueChose ? (
+        <CatE ico="maison" titre="Le bien recherché" sous="type et état">
+          {types.length ? <div className="pastilles">{types.map((t: string) => <span className="past or" key={t}><Ico n={ICO_TYPE[t] || 'maison'} t={15} /><span>{t}</span></span>)}</div> : null}
+          {(crit.etatSouhaite || crit.anneeMin) && (
+            <div className="faits">
+              {etatsListe(crit.etatSouhaite).length > 0 && <Fait ico="etincelle" lib="État souhaité" val={etatsListe(crit.etatSouhaite).map((k, i) => { const l = ETATS_E.find(x => x[0] === k)?.[1] || k; return i ? l.charAt(0).toLowerCase() + l.slice(1) : l; }).join(' ou ')} />}
+              {crit.anneeMin ? <Fait ico="calendrier" lib="Construit après" val={<span className="tab">{crit.anneeMin}</span>} /> : null}
+            </div>
+          )}
+        </CatE>
+      ) : null}
+
+      {/* 2 — Surfaces & volumes */}
+      <CatE ico="regle" titre="Surfaces & volumes" sous="la taille du bien">
+        <div className="trio">
+          <div className="mini-t"><span className="mini-i"><Ico n="regle" t={17} /></span><div className="v tab">{crit.surfaceMin ? crit.surfaceMin + ' m²' : '—'}</div><div className="l">surface min.</div></div>
+          <div className="mini-t"><span className="mini-i"><Ico n="plan" t={17} /></span><div className="v tab">{crit.piecesMin ?? '—'}</div><div className="l">pièces min.</div></div>
+          <div className="mini-t"><span className="mini-i"><Ico n="lit" t={17} /></span><div className="v tab">{crit.chambresMin ?? '—'}</div><div className="l">chambres min.</div></div>
+        </div>
+        {(crit.surfaceMax || crit.surfaceSejourMin || crit.piecesMax) && (
+          <div className="faits">
+            {crit.surfaceMax ? <Fait ico="regle" lib="Surface maximum" val={<span className="tab">{crit.surfaceMax} m²</span>} /> : null}
+            {crit.piecesMax ? <Fait ico="plan" lib="Pièces maximum" val={<span className="tab">{crit.piecesMax}</span>} /> : null}
+            {crit.surfaceSejourMin ? <Fait ico="canape" lib="Séjour d’au moins" val={<span className="tab">{crit.surfaceSejourMin} m²</span>} /> : null}
+          </div>
+        )}
+      </CatE>
+
+      {/* 3 — Étage & exposition */}
+      {(etage.length || expos.length) ? (
+        <CatE ico="immeuble" titre="Étage & exposition" sous="où se trouve le bien dans l'immeuble">
+          {etage.length ? <div className="pastilles">{etage.map(e => <span className="past" key={e.t}><Ico n={e.ico} t={15} /><span>{e.t}</span></span>)}</div> : null}
+          {expos.length ? (
+            <div style={{ marginTop: etage.length ? 12 : 0 }}>
+              <div className="ss-t">Exposition souhaitée</div>
+              <div className="pastilles">{expos.map(e => {
+                const t = EXPO_E.find(x => x[0] === e);
+                return <span className="past or" key={e}><Ico n={ICO_EXPO[e] || 'boussole'} t={15} /><span>{t ? t[1] : e}</span></span>;
+              })}</div>
+            </div>
+          ) : null}
+        </CatE>
+      ) : null}
+
+      {/* 4 — Équipements */}
+      {equips.length ? (
+        <CatE ico="etincelle" titre="Équipements" sous="ce qui compte pour vous">
+          <div className="pastilles">{equips.map(e => <PastilleE key={e.texte} ico={e.ico} texte={e.texte} fort={e.fort} />)}</div>
+          {equips.some(e => e.fort) && <div className="note-cat">Ce qui est marqué <b>indispensable</b> n&apos;est jamais mis de côté : un bien qui ne l&apos;a pas ne vous est pas présenté.</div>}
+        </CatE>
+      ) : null}
+
+      {/* 5 — Performance énergétique */}
+      {crit.dpeMax ? (
+        <CatE ico="eclair" titre="Performance énergétique" sous="la plus mauvaise lettre acceptée">
+          <div className="dpe-r">{LETTRES_DPE.map((d, i) => (
+            <span key={d} className={'dpe-l' + (i <= iDpe ? ' ok' : '') + (d === crit.dpeMax ? ' pt' : '')}>{d}</span>
+          ))}</div>
+          <div className="note-cat">Vous gardez <b>{LETTRES_DPE.slice(0, iDpe + 1).join(' ')}</b>{iDpe < 6 ? <> — les logements classés {LETTRES_DPE.slice(iDpe + 1).join(' ')} sont écartés.</> : '.'}</div>
+        </CatE>
+      ) : null}
+
+      {/* 6 — Où je cherche */}
+      {!!crit.secteurs.length && (
+        <CatE ico="lieu" titre="Où je cherche" sous="vos communes et quartiers">
+          <div className="villes">
+            {grouperSecteurs(crit.secteurs).map(v => (
+              <div className="ville" key={v.ville}>
+                <div className="ville-n"><span className="ville-i"><Ico n="lieu" t={16} /></span>{v.ville}</div>
+                {v.quartiers.length
+                  ? <div className="pastilles">{v.quartiers.map(q => <span className="past" key={q}>{q}</span>)}</div>
+                  : <div className="ville-tout">Toute la ville</div>}
+              </div>
+            ))}
+          </div>
+        </CatE>
+      )}
+
+      {/* 7 — Transports */}
+      {crit.transportArrets?.length ? (
+        <CatE ico="train" titre="Transports" sous="vos arrêts et le temps à pied">
+          <div className="arrets-v">
+            {crit.transportArrets.map((a: Arret, i: number) => (
+              <div className="arret-v" key={a.nom + i}>
+                <div className="arret-h"><span className="ville-i"><Ico n="train" t={16} /></span>
+                  <div className="arret-n">{a.nom}<span className="arret-m">{`à moins de ${a.minutes || 10} min à pied`}</span></div></div>
+                <div className="pastilles" style={{ marginTop: 8, marginLeft: 40, alignItems: 'center' }}>
+                  {a.lignes.map(l => <PastilleArret id={l} key={l} t={24} />)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CatE>
+      ) : crit.transportMinutes ? (
+        <CatE ico="train" titre="Transports" sous="temps à pied maximum">
+          <div className="gros tab">{crit.transportMinutes} <small>minutes à pied maximum d&apos;une station</small></div>
+        </CatE>
+      ) : null}
+
+      {/* 8 — Budget */}
+      <CatE ico="euro" titre="Budget" sous="votre enveloppe">
+        <div className="gros tab">
+          {bmin && bmax ? <>{EUR(bmin)} <small>à</small> {EUR(bmax)}</>
+            : bmax ? <><small>Jusqu&apos;à</small> {EUR(bmax)}</>
+              : bmin ? <><small>À partir de</small> {EUR(bmin)}</>
+                : <small>À préciser ensemble</small>}
+        </div>
+        {(crit.apport || crit.financement) && (
+          <div className="faits">
+            {crit.apport ? <Fait ico="portefeuille" lib="Apport" val={<span className="tab">{EUR(crit.apport)}</span>} /> : null}
+            {crit.financement && <Fait ico="banque" lib="Financement" val={(FINANCEMENTS_E.find(x => x[0] === crit.financement)?.[1]) || crit.financement} />}
+          </div>
+        )}
+      </CatE>
+
+      {/* 9 — Mon projet + la note d'Alexandre, en lecture seule */}
+      <CatE ico="note" titre="Mon projet" sous="échéance et précisions">
+        {crit.urgence && (
+          <div className="faits">
+            <Fait ico="horloge" lib="Échéance souhaitée" val={(URGENCES_E.find(x => x[0] === crit.urgence)?.[1]) || crit.urgence} />
+          </div>
+        )}
+        <div className="precisions" style={{ marginTop: crit.urgence ? 14 : 4 }}>
+          <div className="k">
+            <span><Ico n="crayon" t={13} /> Précisions sur votre recherche</span>
+            <span className="cadenas"><Ico n="verrou" t={11} /> Noté par Alexandre</span>
+          </div>
+          <blockquote className="corps">{crit.notes || 'Aucune précision notée pour l’instant.'}</blockquote>
+          <button className="cta-prec" onClick={onMessage}>
+            <span><b>Une précision à ajouter ou à retirer&nbsp;?</b>
+              <span className="s">Dites-le-lui, il met à jour et vous recontacte.</span></span>
+            <span className="chev"><Ico n="fleche" t={18} /></span>
+          </button>
+        </div>
+      </CatE>
+
+      <div className="duo"><button className="btn or" onClick={onCriteres}><Ico n="crayon" t={16} /> Mes critères ont évolué</button></div>
+      {mandatCarte}
+    </Vue>
+  );
+}
+/* Où chercher — une carte par ville, ses quartiers en dessous.
+   Même format et mêmes listes que le CRM (src/lib/secteurs.ts) : ce que le
+   client coche ici est directement relisible par la chasse. */
+function Localisation({ secteurs, onChange }: { secteurs: string[]; onChange: (s: string[]) => void }) {
+  const [q, setQ] = useState('');
+  const [sug, setSug] = useState<CpSuggestion[]>([]);
+  const [libre, setLibre] = useState<Record<string, string>>({});
+  const villes = grouperSecteurs(secteurs);
+
+  const chercher = async (v: string) => {
+    setQ(v);
+    if (v.trim().length < 2) { setSug([]); return; }
+    try { setSug((await searchCommune(v)).slice(0, 6)); } catch { setSug([]); }
+  };
+
+  /* On réécrit d'un bloc les entrées d'une ville : aucun quartier coché
+     signifie « toute la ville ». */
+  const majVille = (ville: string, quartiers: string[]) => {
+    const autres = secteurs.filter(x => normVille(lireSecteur(x).ville) !== normVille(ville));
+    const neufs = quartiers.length ? quartiers.map(x => `${x} (${ville})`) : [ville];
+    onChange([...autres, ...neufs].slice(0, 20));
+  };
+  const retirerVille = (ville: string) =>
+    onChange(secteurs.filter(x => normVille(lireSecteur(x).ville) !== normVille(ville)));
+  const ajouterVille = (ville: string) => {
+    setQ(''); setSug([]);
+    if (villes.some(v => normVille(v.ville) === normVille(ville))) return;
+    onChange([...secteurs, ville].slice(0, 20));
+  };
+
+  return (
+    <div className="loc">
+      {villes.map(v => {
+        const cp = cpDeVille(v.ville);
+        const proposes = cp ? QUARTIERS[cp].quartiers : [];
+        const tous = [...proposes];
+        for (const qt of v.quartiers) if (!tous.some(x => normVille(x) === normVille(qt))) tous.push(qt);
+        const coche = (qt: string) => v.quartiers.some(x => normVille(x) === normVille(qt));
+        return (
+          <div className="loc-ville" key={v.ville}>
+            <div className="loc-tete">
+              <span className="loc-n">{v.ville}{cp ? <em> · {cp}</em> : null}</span>
+              <button type="button" className="loc-x" onClick={() => retirerVille(v.ville)}
+                aria-label={`Retirer ${v.ville}`}><Ico n="croix" t={12} /> Retirer</button>
+            </div>
+
+            <div className="choix">
+              <button type="button" className="ch" aria-pressed={v.quartiers.length === 0}
+                onClick={() => majVille(v.ville, [])}>Toute la ville</button>
+              {tous.map(qt => (
+                <button type="button" key={qt} className="ch" aria-pressed={coche(qt)}
+                  onClick={() => majVille(v.ville, coche(qt)
+                    ? v.quartiers.filter(x => normVille(x) !== normVille(qt))
+                    : [...v.quartiers, qt])}>{qt}</button>
+              ))}
+            </div>
+
+            <div className="loc-ajout">
+              <input value={libre[v.ville] || ''} placeholder={`Autre quartier de ${v.ville}…`}
+                onChange={e => setLibre(l => ({ ...l, [v.ville]: e.target.value }))}
+                onKeyDown={e => {
+                  const val = (libre[v.ville] || '').trim();
+                  if (e.key === 'Enter' && val) {
+                    e.preventDefault();
+                    majVille(v.ville, [...v.quartiers, val]);
+                    setLibre(l => ({ ...l, [v.ville]: '' }));
+                  }
+                }} />
+              <button type="button" className="loc-plus" onClick={() => {
+                const val = (libre[v.ville] || '').trim();
+                if (!val) return;
+                majVille(v.ville, [...v.quartiers, val]);
+                setLibre(l => ({ ...l, [v.ville]: '' }));
+              }}>Ajouter</button>
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="loc-ville loc-neuve">
+        <div className="loc-n2">Ajouter une ville</div>
+        <div className="loc-rech">
+          <input value={q} onChange={e => chercher(e.target.value)}
+            placeholder="Code postal ou nom de ville — ex. 92200, Neuilly…" />
+          {!!sug.length && (
+            <div className="loc-sug">
+              {sug.map((x, i) => (
+                <button type="button" key={x.cp + i} onClick={() => ajouterVille(QUARTIERS[x.cp]?.ville || x.ville)}>
+                  <b>{x.cp}</b> {QUARTIERS[x.cp]?.ville || x.ville}
+                  {QUARTIERS[x.cp] ? <em>quartiers proposés</em> : null}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══ galerie photos ═══════════════════════════════ */
+/* Le défilement est natif (scroll-snap) : c'est le seul qui se comporte
+   correctement au doigt sur iOS comme sur Android. L'index suit la
+   position réelle de la bande, jamais l'inverse. */
+function Galerie({ photos, onAgrandir }: { photos: string[]; onAgrandir: (n: number) => void }) {
+  const bande = useRef<HTMLDivElement | null>(null);
+  const depart = useRef<{ x: number; y: number } | null>(null);
+  const [i, setI] = useState(0);
+
+  const surDefilement = () => {
+    const el = bande.current;
+    if (!el) return;
+    const un = el.firstElementChild as HTMLElement | null;
+    const l = un?.clientWidth || el.clientWidth;
+    if (!l) return;
+    const n = Math.max(0, Math.min(photos.length - 1, Math.round(el.scrollLeft / l)));
+    setI((v) => (v === n ? v : n));
+  };
+  const versPhoto = (n: number) => {
+    const el = bande.current;
+    if (!el) return;
+    const c = el.children[n] as HTMLElement | undefined;
+    el.scrollTo({ left: c ? c.offsetLeft : 0, behavior: 'smooth' });
+  };
+
+  if (!photos.length) {
+    return <div className="photo-h"><span style={{ fontSize: 30 }}>▣</span></div>;
+  }
+
+  return (
+    <div className="galerie">
+      <div className="bande" ref={bande} onScroll={surDefilement}>
+        {photos.map((p, n) => (
+          <button
+            type="button" className="photo-g" key={n}
+            aria-label={`Agrandir la photo ${n + 1}`}
+            onPointerDown={(e) => { depart.current = { x: e.clientX, y: e.clientY }; }}
+            onClick={(e) => {
+              // un glissement n'est pas un clic
+              const d = depart.current;
+              if (d && Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 12) return;
+              onAgrandir(n);
+            }}
+          >
+            <img src={p} alt="" loading={n < 2 ? 'eager' : 'lazy'} draggable={false} />
+          </button>
+        ))}
+      </div>
+      {photos.length > 1 && (
+        <>
+          <button type="button" className="fl g" aria-label="Photo précédente"
+            onClick={() => versPhoto(Math.max(0, i - 1))}><Ico n="retour" t={18} /></button>
+          <button type="button" className="fl d" aria-label="Photo suivante"
+            onClick={() => versPhoto(Math.min(photos.length - 1, i + 1))}><Ico n="fleche" t={18} /></button>
+          <div className="compteur tab"><Ico n="loupe" t={12} />{i + 1}/{photos.length}</div>
+          {photos.length <= 8 && (
+            <div className="points">{photos.map((_, n) => (
+              <button type="button" key={n} onClick={() => versPhoto(n)}
+                className={n === i ? 'on' : ''} aria-label={`Photo ${n + 1}`} />
+            ))}</div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* Plein écran — rendu dans <body> par portail : la feuille porte un
+   transform, et un position:fixed à l'intérieur s'y trouverait enfermé.
+   La bande est posée en absolu (inset:0) plutôt qu'en flex:1 — sur iOS
+   un flex:1 dans un conteneur fixed peut se résoudre à zéro, et on se
+   retrouve avec un écran noir qui ne défile pas. */
+function PleinEcran({ photos, depart, onFermer }: { photos: string[]; depart: number; onFermer: () => void }) {
+  const bande = useRef<HTMLDivElement | null>(null);
+  const cases = useRef<(HTMLDivElement | null)[]>([]);
+  const [i, setI] = useState(depart);
+
+  // On se place AVANT la peinture, et par scrollIntoView : poser un
+  // scrollLeft à la main se fait ré-aligner par le scroll-snap de Safari.
+  useLayoutEffect(() => {
+    const el = cases.current[depart];
+    if (el) el.scrollIntoView({ inline: 'center', block: 'nearest' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEchap(true, onFermer);
+
+  useEffect(() => {
+    const auClavier = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') cases.current[Math.min(i + 1, photos.length - 1)]?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+      if (e.key === 'ArrowLeft') cases.current[Math.max(i - 1, 0)]?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    };
+    window.addEventListener('keydown', auClavier);
+    return () => window.removeEventListener('keydown', auClavier);
+  }, [i, photos.length]);
+
+  const surDefilement = () => {
+    const el = bande.current;
+    if (!el || !el.clientWidth) return;
+    const n = Math.max(0, Math.min(photos.length - 1, Math.round(el.scrollLeft / el.clientWidth)));
+    setI((v) => (v === n ? v : n));
+  };
+
+  return createPortal(
+    <div className="plein" role="dialog" aria-modal="true">
+      <div className="bande-pe" ref={bande} onScroll={surDefilement}>
+        {photos.map((p, n) => (
+          <div className="photo-pe" key={n} ref={(el) => { cases.current[n] = el; }}>
+            <img src={p} alt="" draggable={false} />
+          </div>
+        ))}
+      </div>
+      {photos.length > 1 && (
+        <>
+          <button type="button" className="fl g" aria-label="Photo précédente"
+            onClick={() => cases.current[Math.max(0, i - 1)]?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })}>
+            <Ico n="retour" t={20} /></button>
+          <button type="button" className="fl d" aria-label="Photo suivante"
+            onClick={() => cases.current[Math.min(photos.length - 1, i + 1)]?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })}>
+            <Ico n="fleche" t={20} /></button>
+        </>
+      )}
+      <div className="barre-pe">
+        <span className="tab">{i + 1} / {photos.length}</span>
+        <button type="button" className="ferme-pe" onClick={onFermer} aria-label="Fermer les photos">
+          <Ico n="croix" t={15} />
+        </button>
+      </div>
+      {photos.length > 1 && (
+        <div className="points-pe">{photos.slice(0, 14).map((_, n) => (
+          <span key={n} className={n === i ? 'on' : ''} />
+        ))}</div>
+      )}
+    </div>,
+    document.body,
+  );
+}
+
+/* Bouton d'envoi : tant que ça part, on le dit. */
+function BtnEnvoi({ enCours, libelle, enCoursTexte = 'Envoi en cours…', classe = 'btn or', onClick, style }: {
+  enCours?: boolean; libelle: React.ReactNode; enCoursTexte?: string; classe?: string;
+  onClick?: () => void; style?: React.CSSProperties;
+}) {
+  return (
+    <button type="button" className={classe} disabled={!!enCours} aria-busy={!!enCours}
+      onClick={onClick} style={{ marginTop: 14, ...(style || {}) }}>
+      {enCours ? <><span className="tourne" aria-hidden="true" />{enCoursTexte}</> : libelle}
+    </button>
+  );
+}
+
+/* ══ feuilles ═════════════════════════════════════ */
+/* Les trois boutons. Deux endroits les affichent : le panneau qui monte
+   depuis la barre du bas, et le bas de la fiche. Une seule écriture pour que
+   les deux ne divergent jamais. */
+function TroisAvis({ avis, onChoisir, fige }:
+  { avis: string | null; onChoisir: (k: string) => void; fige?: boolean }) {
+  return (
+    <div className="avis3">
+      {Object.entries(AVIS).map(([k, a]) => (
+        <button key={k} type="button" className="avis" data-a={a.c}
+          data-fige={fige ? '1' : undefined}
+          aria-pressed={avis === k} disabled={fige}
+          onClick={() => onChoisir(k)}>
+          <span className="e">{a.e}</span><span className="n">{a.n}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ══ Après la visite ═════════════════════════════
+   Chaque visite passée attend une issue : il veut faire une offre, il
+   aimerait revoir le bien, il hésite, ou ce n'est pas pour lui. Il la donne
+   ici en deux gestes ; son conseiller peut aussi la poser dans son compte
+   rendu. « Vos visites » range ensuite chaque bien dans sa rubrique. */
+const ICO_ISSUE: Record<Issue, string> = { offre: 'euro', revoir: 'oeil', reflexion: 'horloge', non: 'croix' };
+/* La couleur de chaque issue, avec les tons déjà en place (.etiq, .rep). */
+const ETIQ_ISSUE: Record<Issue, string> = { offre: 'fait', revoir: 'visite', reflexion: 'vu', non: 'non' };
+const TON_ISSUE: Record<Issue, string> = { offre: 'or', revoir: 'visite', reflexion: 'bleu', non: 'non' };
+const QUESTION_VISITE: Record<Issue, { t: string; p: string; ph: string; btn: string; ok: string }> = {
+  offre: {
+    t: 'Vous avez un prix en tête ?',
+    p: 'Facultatif, frais d’agence compris. Votre conseiller vous appelle pour préparer l’offre avec vous : le prix, le financement, les conditions.',
+    ph: 'Un mot pour votre conseiller, si vous voulez…',
+    btn: 'Prévenir mon conseiller',
+    ok: 'Votre conseiller est prévenu. Il vous appelle pour préparer l’offre avec vous.',
+  },
+  revoir: {
+    t: 'Pourquoi le revoir ?',
+    p: 'Une ou plusieurs raisons, et vos disponibilités si vous voulez. Votre conseiller cale la 2e visite.',
+    ph: 'Ex : un soir de semaine, avec mon père…',
+    btn: 'Envoyer ma demande',
+    ok: 'Votre conseiller cale une 2e visite et revient vers vous avec le rendez-vous.',
+  },
+  reflexion: {
+    t: 'Qu’est-ce qui vous fait hésiter ?',
+    p: 'Une ou plusieurs raisons. Votre conseiller fait le point avec vous dans les prochains jours.',
+    ph: 'Ex : j’aimerais savoir si le vendeur accepterait une négociation…',
+    btn: 'Envoyer',
+    ok: 'Votre conseiller fait le point avec vous dans les prochains jours.',
+  },
+  non: {
+    t: 'Qu’est-ce qui n’a pas convenu sur place ?',
+    p: 'Une ou plusieurs raisons : les prochains biens en tiendront compte.',
+    ph: 'Ex : le séjour donne sur un mur…',
+    btn: 'Envoyer mon retour',
+    ok: 'Merci. Les prochains biens en tiendront compte, et celui-ci reste dans vos visites.',
+  },
+};
+
+/* La visite la plus récente, passée depuis moins de 7 jours, où personne n'a
+   encore rien dit : c'est elle que l'accueil propose. */
+function visiteSansAvis(mesV: VisiteE[], biens: Bien[]): { v: VisiteE; b: Bien } | null {
+  const limite = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  const l = mesV
+    .filter(v => v.passee && !v.issue && v.date && v.date.slice(0, 10) >= limite)
+    .sort((a, c) => `${c.date}${c.heure || ''}`.localeCompare(`${a.date}${a.heure || ''}`));
+  for (const v of l) {
+    const b = biens.find(x => x.id === v.bienId);
+    /* Une visite plus récente du même bien, ou une offre déjà en cours : pas de question. */
+    if (!b || etatOffre(b) || indispo(b)) continue;
+    if (mesV.some(x => x.bienId === v.bienId && x.id !== v.id && `${x.date}${x.heure || ''}` > `${v.date}${v.heure || ''}`)) continue;
+    return { v, b };
+  }
+  return null;
+}
+
+/* V3.189 : les gestes de la carte « Votre offre » (voir actionsOffre). */
+type ActionsOffre = { onAccepter?: () => void; onAutre?: () => void; onNouvelle?: () => void; onSansSuite?: () => Promise<boolean> };
+
+/* Les quatre choix, puis la question qui va avec. */
+function AvisVisite({ v, onRepondre, sansNote, sansSuite, onFaireOffre }: { v: VisiteE; onRepondre: (v: VisiteE, i: Issue, motifs: string[], mot: string, prix: number | null) => Promise<boolean>; sansNote?: boolean;
+  /* V3.48 : le bien n'est plus disponible — ni offre, ni deuxième visite. */
+  sansSuite?: boolean;
+  /* V3.189 : il peut préparer son offre lui-même (pas un bien de l'agence). */
+  onFaireOffre?: () => void }) {
+  const [choix, setChoix] = useState<Issue | null>(null);
+  /* « Je préfère que mon conseiller m'appelle » : la question d'avant. */
+  const [rappel, setRappel] = useState(false);
+  const [motifs, setMotifs] = useState<string[]>([]);
+  const [ecrire, setEcrire] = useState(false);
+  const [mot, setMot] = useState('');
+  const [prix, setPrix] = useState('');
+  const [enCours, setEnCours] = useState(false);
+  const [envoye, setEnvoye] = useState<Issue | null>(null);
+  const [rate, setRate] = useState(false);
+
+  if (envoye) {
+    return (
+      <div className="vv-q vv-fait">
+        <span className={'etiq ' + ETIQ_ISSUE[envoye]}><Ico n={ICO_ISSUE[envoye]} t={13} />{ISSUES[envoye].client}</span>
+        <p className="aa-p" style={{ margin: '8px 0 0' }}>{QUESTION_VISITE[envoye].ok}</p>
+      </div>
+    );
+  }
+  if (!choix) {
+    return (
+      <div className="vv-q">
+        <div className="vv-q-t">{'Alors, qu’en avez-vous pensé ?'}</div>
+        <div className="vv-choix">
+          {ISSUES_OK.filter(i => !sansSuite || (i !== 'offre' && i !== 'revoir')).map(i => (
+            <button key={i} type="button" className="vv-c" data-a={i}
+              onClick={() => { setChoix(i); setMotifs([]); setEcrire(false); setRappel(false); }}>
+              <i><Ico n={ICO_ISSUE[i]} t={17} /></i><span>{ISSUES[i].choix}</span>
+            </button>
+          ))}
+        </div>
+        {!sansNote && <div className="vv-libre">{'Rien ne vous oblige à répondre tout de suite.'}</div>}
+      </div>
+    );
+  }
+  /* V3.189 : « Je veux faire une offre » — il la prépare ici, ou son conseiller l'appelle. */
+  if (choix === 'offre' && onFaireOffre && !rappel) {
+    return (
+      <div className="vv-q">
+        <span className="etiq offre"><Ico n={ICO_ISSUE.offre} t={13} />{ISSUES.offre.choix}</span>
+        <div className="apres-avis vv-suite">
+          <div className="aa-t">{'Préparez votre offre ici'}</div>
+          <p className="aa-p">{'En quelques minutes : votre prix, avec le calcul des frais, puis vos informations. Vous la signez vous-même, ou vous la confiez à votre conseiller pour qu’il la relise.'}</p>
+          <div className="ofr-faire">
+            <button type="button" className="btn or" onClick={onFaireOffre}><Ico n="euro" t={16} /><span>Faire mon offre</span></button>
+            <button type="button" className="btn fant" onClick={() => setRappel(true)}><Ico n="tel" t={16} /><span>{'Je préfère que mon conseiller m’appelle'}</span></button>
+          </div>
+          <button type="button" className="vv-retour" onClick={() => setChoix(null)}>Changer de réponse</button>
+        </div>
+      </div>
+    );
+  }
+  const q = QUESTION_VISITE[choix];
+  const raisons = RAISONS[choix];
+  const bascule = (n: string) => setMotifs(l => l.includes(n) ? l.filter(x => x !== n) : [...l, n]);
+  async function envoyer() {
+    if (!choix) return;
+    setEnCours(true); setRate(false);
+    const p = Number(String(prix).replace(/[^\d]/g, ''));
+    const ok = await onRepondre(v, choix, motifs, mot.trim(), choix === 'offre' && p >= 10000 ? p : null);
+    setEnCours(false);
+    if (ok) { setEnvoye(choix); vibrer(); } else setRate(true);
+  }
+  return (
+    <div className="vv-q">
+      <span className={'etiq ' + ETIQ_ISSUE[choix]}><Ico n={ICO_ISSUE[choix]} t={13} />{ISSUES[choix].choix}</span>
+      <div className="apres-avis vv-suite">
+        <div className="aa-t">{q.t}</div>
+        <p className="aa-p">{q.p}</p>
+        {choix === 'offre' && (
+          <label className="vv-offre-prix">
+            <input inputMode="numeric" value={prix} placeholder="Ex : 660 000"
+              onChange={e => { const d = e.target.value.replace(/[^\d]/g, '').slice(0, 9); setPrix(d ? Number(d).toLocaleString('fr-FR') : ''); }} />
+            <span>€</span>
+          </label>
+        )}
+        {raisons.length > 0 && (
+          <div className="reponses">
+            {raisons.map(r => (
+              <button key={r.n} type="button" className="rep" data-a={TON_ISSUE[choix]}
+                aria-pressed={motifs.includes(r.n)} onClick={() => bascule(r.n)}>
+                <Ico n={r.i} t={15} /><span>{r.n}</span>
+              </button>
+            ))}
+            {!ecrire && <button type="button" className="rep plus" onClick={() => setEcrire(true)}>+ Ajouter un mot</button>}
+          </div>
+        )}
+        {(ecrire || choix === 'offre') && (
+          <textarea rows={3} value={mot} onChange={e => setMot(e.target.value)} placeholder={q.ph} style={{ marginTop: 10 }} />
+        )}
+        {rate && <p className="vv-rate">{'Votre réponse n’est pas partie. Vérifiez votre connexion et réessayez.'}</p>}
+        <BtnEnvoi enCours={enCours} libelle={q.btn} style={{ marginTop: 12 }} onClick={envoyer} />
+        <button type="button" className="vv-retour" onClick={() => setChoix(null)}>Changer de réponse</button>
+      </div>
+    </div>
+  );
+}
+
+/* Où en est un bien visité : l'étiquette, la phrase qui dit la suite, ses
+   raisons, et qui a donné l'avis. */
+function EtatVisite({ b, v, enLigne }: { b: Bien; v: VisiteE;
+  /* V3.196 : sur la fiche, « Noté par votre conseiller » suit la phrase au lieu d'une ligne à lui. */
+  enLigne?: boolean }) {
+  const eo = etatOffre(b);
+  const offreFaite = !!eo;
+  const i = v.issue;
+  const ligne = eo ? eo.ligne
+    : i === 'offre' ? `Votre conseiller vous appelle pour préparer l’offre avec vous.${v.prix ? ` Votre prix en tête : ${EUR(v.prix)}.` : ''}`
+    : i === 'revoir' ? 'Votre conseiller cale une 2e visite : le rendez-vous s’affichera dans « À venir ».'
+    : i === 'reflexion' ? 'Votre conseiller fait le point avec vous dans les prochains jours.'
+    : '';
+  const source = offreFaite ? null
+    : v.issuePar === 'client' ? `Votre avis${v.issueLe ? `, le ${dateCourte(v.issueLe)}` : ''}`
+    : 'Noté par votre conseiller';
+  return (
+    <>
+      {ligne && <div className="vv-ligne">{ligne}{enLigne && source ? <span className="vv-src-in">{` · ${source}`}</span> : null}</div>}
+      {v.motifs.length > 0 && i && (
+        <div className="reponses lu vv-lu">
+          {v.motifs.map(m => {
+            const r = RAISONS[i].find(x => x.n === m);
+            return <span key={m} className="rep" data-a={TON_ISSUE[i]} aria-pressed="true">{r ? <Ico n={r.i} t={14} /> : null}<span>{m}</span></span>;
+          })}
+        </div>
+      )}
+      {v.mot && <div className="vv-mot">{`« ${v.mot} »`}</div>}
+      {source && !(enLigne && ligne) && <div className="vv-src">{source}</div>}
+    </>
+  );
+}
+function EtiqVisite({ b, v }: { b: Bien; v: VisiteE }) {
+  const eo = etatOffre(b);
+  if (eo) return <span className={'etiq ' + eo.ton}><Ico n={b.vente?.vous ? 'maison' : 'euro'} t={13} />{eo.etiq}</span>;
+  if (!v.issue) return <span className="etiq neuf"><Ico n="note" t={13} />Votre avis ?</span>;
+  return <span className={'etiq ' + ETIQ_ISSUE[v.issue]}><Ico n={ICO_ISSUE[v.issue]} t={13} />{ISSUES[v.issue].client}</span>;
+}
+
+function CarteVisite({ b, v, onOuvrir, onCompteRendu, onRepondre, onFaireOffre, actionsOffre }: { b: Bien; v: VisiteE; onOuvrir: () => void;
+  /* V3.195 : la fiche s'ouvre et descend jusqu'au compte rendu. */
+  onCompteRendu?: () => void; onRepondre: (v: VisiteE, i: Issue, motifs: string[], mot: string, prix: number | null) => Promise<boolean>;
+  /* V3.189 : préparer son offre ; les gestes de la carte « Votre offre ». */
+  onFaireOffre?: () => void; actionsOffre?: ActionsOffre }) {
+  const ph = (b.photos || [])[0];
+  const quand = v.date ? `visité le ${dateCourte(v.date)}` : 'visité';
+  const o = b.offreSuivi;
+  /* V3.206 (planche 4) : la photo en haut, son étiquette dessus ; le prix et
+     la date de la visite, puis ce qui suit — trois cartes par ligne. */
+  return (
+    <div className={'vv-carte' + (v.issue === 'non' || etatOffre(b)?.fini ? ' gris' : '')}>
+      <button type="button" className="vv-photo" onClick={onOuvrir} aria-label="Ouvrir le bien">
+        {ph ? <img src={ph} alt="" /> : <Ico n="maison" t={28} />}
+        <span className="vv-etq"><EtiqVisite b={b} v={v} /></span>
+      </button>
+      <div className="vv-corps">
+      <button type="button" className="vv-tete" onClick={onOuvrir}>
+        <span className="vv-l1"><b className="vv-prix tab">{PRIX(b.prix)}</b><span className="vv-quand">{quand}</span></span>
+        <span className="vv-meta">{[b.pieces === 1 ? 'Studio' : b.pieces && `${b.pieces} pièces`, b.surface && `${b.surface} m²`, b.ville || b.secteur].filter(Boolean).join(' · ')}</span>
+      </button>
+      {o ? <CarteOffre o={o} indispo={indispo(b)} sansEtiquette {...(actionsOffre || {})} />
+        : v.issue || etatOffre(b) ? (
+          <>
+            <EtatVisite b={b} v={v} />
+            {onFaireOffre && v.passee && v.issue !== 'non' && (
+              <button type="button" className="ofr-mini" onClick={onFaireOffre}><Ico n="euro" t={14} /><span>{v.issue === 'offre' ? 'Préparer mon offre moi-même' : 'Faire une offre'}</span></button>
+            )}
+          </>
+        ) : <AvisVisite v={v} onRepondre={onRepondre} sansNote sansSuite={indispo(b)} onFaireOffre={onFaireOffre} />}
+      {v.compteRendu && (
+        <button type="button" className="vv-cr" onClick={onCompteRendu || onOuvrir}>
+          <Ico n="note" t={14} /><span>{'Le compte rendu de votre conseiller'}</span><Ico n="fleche" t={14} />
+        </button>
+      )}
+      </div>
+    </div>
+  );
+}
+
+/* La carte de l'accueil : sa dernière visite, et la question. */
+function CarteAvisAccueil({ b, v, onRepondre, onOuvrir, onVoir, onFaireOffre }: { b: Bien; v: VisiteE; onRepondre: (v: VisiteE, i: Issue, motifs: string[], mot: string, prix: number | null) => Promise<boolean>; onOuvrir: () => void; onVoir: () => void; onFaireOffre?: () => void }) {
+  const auj = jourParis();
+  const hier = jourParis(new Date(Date.now() - 86400000));
+  const j = (v.date || '').slice(0, 10);
+  const quand = j === auj ? 'd’aujourd’hui' : j === hier ? 'd’hier' : `du ${dateCourte(j)}`;
+  const ph = (b.photos || [])[0];
+  return (
+    <section className="vv-acc">
+      <div className="vv-acc-t"><Ico n="calendrier" t={14} /><span>{`Votre visite ${quand}`}</span></div>
+      <div className="vv-acc-c">
+        <button type="button" className="vv-haut" onClick={onOuvrir}>
+          <span className="vv-ph">{ph ? <img src={ph} alt="" /> : <Ico n="maison" t={20} />}</span>
+          <span className="vv-t">
+            <b className="vv-prix tab">{PRIX(b.prix)}</b>
+            <span className="vv-meta">{[b.pieces === 1 ? 'Studio' : b.pieces && `${b.pieces} pièces`, b.surface && `${b.surface} m²`, b.ville || b.secteur].filter(Boolean).join(' · ')}</span>
+          </span>
+        </button>
+        <AvisVisite v={v} onRepondre={onRepondre} onFaireOffre={onFaireOffre} />
+        <button type="button" className="vv-retour" onClick={onVoir}>Voir toutes mes visites</button>
+      </div>
+    </section>
+  );
+}
+
+/* « Vos visites » : des rubriques, un bien par ligne, rangé d'après sa
+   dernière visite. Les chiffres du haut s'additionnent. Jamais « retenu »
+   ici : dans l'espace, ce mot désigne les biens que la recherche a retenus
+   pour lui. V3.189 : « Vos offres » en tête — une offre qui court passe
+   avant tout ; celle qui s'arrête sans accord rejoint « Pas pour moi », avec
+   son étiquette, et une nouvelle offre reste possible. */
+function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir, onRepondre, onFaireOffre, actionsOffre }: {
+  biens: Bien[]; mesV: VisiteE[]; visites: any[]; token: string; apprisClient: string[];
+  aller: (v: string) => void; onOuvrir: (b: Bien, o?: { versCr?: boolean }) => void;
+  onRepondre: (v: VisiteE, i: Issue, motifs: string[], mot: string, prix: number | null) => Promise<boolean>;
+  onFaireOffre?: (b: Bien) => (() => void) | undefined;
+  actionsOffre?: (b: Bien) => ActionsOffre;
+}) {
+  const cle = (v: VisiteE) => `${v.date || ''}${v.heure || ''}`;
+  const parBien = new Map<string, VisiteE[]>();
+  mesV.forEach(v => parBien.set(v.bienId, [...(parBien.get(v.bienId) || []), v]));
+  type L = { b: Bien; v: VisiteE }[];
+  const offres: L = [], aVenir: L = [], avis: L = [], retenus: L = [], non: L = [];
+  parBien.forEach((l, bid) => {
+    const b = biens.find(x => x.id === bid);
+    if (!b) return;
+    const tri = l.slice().sort((a, c) => cle(a).localeCompare(cle(c)));
+    const passees = tri.filter(v => v.passee);
+    const eo = etatOffre(b);
+    if (eo && !eo.fini) { offres.push({ b, v: passees[passees.length - 1] || tri[tri.length - 1] }); return; }
+    const future = tri.find(v => !v.passee);
+    if (future) { aVenir.push({ b, v: future }); return; }
+    const v = tri[tri.length - 1];
+    if (eo?.fini) non.push({ b, v });
+    else if (!v.issue) avis.push({ b, v });
+    else if (v.issue === 'non') non.push({ b, v });
+    else retenus.push({ b, v });
+  });
+  aVenir.sort((a, c) => cle(a.v).localeCompare(cle(c.v)));
+  [offres, avis, retenus, non].forEach(l => l.sort((a, c) => cle(c.v).localeCompare(cle(a.v))));
+  const deja = offres.length + avis.length + retenus.length + non.length;
+  const total = aVenir.length + deja;
+  const minus = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
+  const nonOffres = non.some(x => etatOffre(x.b)?.fini);
+  const noteNon = `${apprisClient.length
+    ? `Ce qui ne vous a pas plu sur place oriente la suite de la recherche : ${apprisClient.map(minus).join(', ')}.`
+    : 'Ce qui ne vous a pas plu sur place oriente la suite de la recherche.'}${nonOffres ? ' Les offres qui n’ont pas abouti sont ici aussi : vous pouvez toujours en refaire une.' : ''}`;
+  /* V3.206 (planche 4) — Alexandre : « on ne peut pas cliquer sur En cours, on
+     est obligé de scroller ». Les biens déjà visités, rangés par étape dans
+     des onglets ; « Tout » les montre ensemble. Les onglets vides ne sont pas
+     là, et un seul rang n'en a pas besoin. Les chiffres s'additionnent :
+     « Tout » = la somme des autres ; en haut, à venir + déjà visités = total. */
+  type Onglet = 'tout' | 'offres' | 'avis' | 'encours' | 'non';
+  const [onglet, setOnglet] = useState<Onglet>('tout');
+  const RANGS: { k: Onglet; l: string; l2: L; ton: string; note: string }[] = [
+    { k: 'offres', l: 'Vos offres', l2: offres, ton: 'vert', note: 'Où en est chacune, et ce que le vendeur a répondu.' },
+    { k: 'avis', l: 'Votre avis', l2: avis, ton: 'or', note: 'Un geste suffit : c’est ce qui décide de la suite.' },
+    { k: 'encours', l: 'En cours', l2: retenus, ton: 'bleu', note: 'Ceux que vous gardez en tête, et où on en est.' },
+    { k: 'non', l: 'Pas pour moi', l2: non, ton: 'brique', note: noteNon },
+  ];
+  const pleins = RANGS.filter(r => r.l2.length > 0);
+  const actif = pleins.find(r => r.k === onglet) || null;
+  const liste = actif ? actif.l2 : [...offres, ...avis, ...retenus, ...non];
+  const note = actif ? actif.note : pleins.length === 1 ? pleins[0].note : 'Chaque bien visité, rangé d’après votre dernière visite.';
+  const carte = ({ b, v }: { b: Bien; v: VisiteE }) => (
+    <CarteVisite key={v.id} b={b} v={v} onOuvrir={() => onOuvrir(b)} onCompteRendu={() => onOuvrir(b, { versCr: true })} onRepondre={onRepondre}
+      onFaireOffre={onFaireOffre?.(b)} actionsOffre={actionsOffre?.(b)} />
+  );
+
+  return (
+    <Vue icone="calendrier" aller={aller} titre="Vos visites"
+      sous={total ? undefined : 'Aucune visite pour l’instant. Quand un bien vous plaît, dites « Je veux visiter » sur sa fiche : votre conseiller organise la visite, et elle s’affiche ici.'}>
+      {total > 0 && (
+        <div className="vv-res">
+          <span className="vv-res-ic" aria-hidden="true"><Ico n="calendrier" t={22} /></span>
+          <span className="vv-res-t">
+            <b>{`${total} bien${total > 1 ? 's' : ''} avec votre conseiller`}</b>
+            <span>{'Il cale chaque visite et vous accompagne sur place.'}</span>
+          </span>
+          <span className="vv-res-p">
+            {aVenir.length > 0 && <span className="vv-pil" data-ton="prune"><b className="tab">{aVenir.length}</b><span>à venir</span></span>}
+            {deja > 0 && <span className="vv-pil" data-ton="bleu"><b className="tab">{deja}</b><span>{`déjà visité${deja > 1 ? 's' : ''}`}</span></span>}
+            {avis.length > 0 && deja > 0 && <span className="vv-pil" data-ton="or"><span>dont</span><b className="tab">{avis.length}</b><span>{avis.length > 1 ? 'attendent votre avis' : 'attend votre avis'}</span></span>}
+          </span>
+        </div>
+      )}
+      {aVenir.length > 0 && (
+        <div className="vv-groupe">
+          <div className="sep vv-sep-prune"><span>{`Prochainement · ${aVenir.length}`}</span><i /></div>
+          <div className="vv-liste">
+            {aVenir.map(({ b, v }, i) => {
+              const r = visites.find((x: any) => x.id === v.id);
+              const titre = `${i === 0 ? 'Votre prochaine visite' : 'Visite suivante'}${v.revisite ? ' · 2e visite' : ''}`;
+              return r
+                ? <ProchaineVisite key={v.id} v={r} autres={0} token={token} titre={titre} onBien={() => onOuvrir(b)} />
+                : carte({ b, v });
+            })}
+          </div>
+        </div>
+      )}
+      {deja > 0 && (
+        <div className="vv-groupe">
+          <div className="sep"><span>{`Déjà visités · ${deja}`}</span><i /></div>
+          {pleins.length > 1 && (
+            <div className="vv-onglets" role="tablist" aria-label="Vos biens visités, par étape">
+              <button type="button" role="tab" aria-selected={!actif} className="vv-ong" data-ton="encre" onClick={() => setOnglet('tout')}>
+                <i aria-hidden="true" /><span>Tout</span><b className="tab">{deja}</b>
+              </button>
+              {pleins.map(r => (
+                <button key={r.k} type="button" role="tab" aria-selected={actif?.k === r.k} className="vv-ong" data-ton={r.ton} onClick={() => setOnglet(r.k)}>
+                  <i aria-hidden="true" /><span>{r.l}</span><b className="tab">{r.l2.length}</b>
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="vv-note">{note}</p>
+          <div className="vv-grille" key={actif?.k || 'tout'}>{liste.map(carte)}</div>
+        </div>
+      )}
+    </Vue>
+  );
+}
+
+/* Ce qui suit le choix : la question, les pastilles, et le texte libre
+   seulement s'il le demande. L'ordre compte — les pastilles avant le clavier,
+   sinon on retombe sur le cadre vide qu'on cherchait à supprimer. */
+function SuiteAvis({ avis, choisies, onBasculer, com, setCom, ecrire, setEcrire,
+  enCours, onEnvoyer, onVisiter }: any) {
+  const s = SUITE_AVIS[avis];
+  if (!s) return null;
+  const liste = PASTILLES[avis] || [];
+  const ton = AVIS[avis] ? AVIS[avis].c : 'oui';
+  return (
+    <div className="apres-avis">
+      <div className="aa-t">{s.t}</div>
+      <p className="aa-p">{s.p}</p>
+      {/* V3.209 : des moments, et des dates au calendrier (ChoixDispos). */}
+      {avis === 'souhaite_visiter' ? (
+        <>
+          <ChoixDispos choisies={choisies} onBasculer={onBasculer} />
+          {!ecrire && (
+            <div className="reponses" style={{ marginTop: 10 }}>
+              <button type="button" className="rep plus" onClick={() => setEcrire(true)}>+ Ajouter un mot</button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="reponses">
+          {liste.map((x: { i: string; n: string }) => (
+            <button key={x.n} type="button" className="rep" data-a={ton}
+              aria-pressed={choisies.includes(x.n)} onClick={() => onBasculer(x.n)}>
+              <Ico n={x.i} t={15} /><span>{x.n}</span>
+            </button>
+          ))}
+          {!ecrire && (
+            <button type="button" className="rep plus" onClick={() => setEcrire(true)}>+ Ajouter un mot</button>
+          )}
+        </div>
+      )}
+      {/* Celui qui aime un bien veut souvent le voir : on lui évite de revenir
+          changer sa réponse. C'est là que se gagnent les rendez-vous. */}
+      {avis === 'interesse' && (
+        <div className="reponses" style={{ marginTop: 10 }}>
+          <button type="button" className="rep bascule" onClick={onVisiter}>
+            <Ico n="calendrier" t={15} /><span>Et je veux le visiter</span>
+          </button>
+        </div>
+      )}
+      {ecrire && (
+        <textarea rows={4} value={com} onChange={(e: any) => setCom(e.target.value)}
+          placeholder={s.ph} autoFocus />
+      )}
+      <BtnEnvoi enCours={enCours} libelle={s.btn} style={{ marginTop: 12 }} onClick={onEnvoyer} />
+    </div>
+  );
+}
+
+/* Un retour déjà parti se relit comme il a été coché : les pastilles
+   redeviennent des pastilles, le mot libre reste du texte. Un commentaire
+   saisi par le conseiller, lui, ne correspond à aucune pastille : il
+   s'affiche tel quel. */
+function RetourLu({ texte, ton }: { texte: string; ton: string }) {
+  const bouts = texte.split(SEP_LIBRE);
+  const noms = bouts[0].split(SEP_PASTILLES).map(x => x.trim()).filter(Boolean);
+  const libre = bouts.slice(1).join(SEP_LIBRE).trim();
+  if (noms.length === 0 || !noms.every(n => icoPastille(n))) {
+    return <div className="fige">{texte}</div>;
+  }
+  return (
+    <>
+      <div className="reponses lu">
+        {noms.map(n => (
+          <span key={n} className="rep" data-a={ton} aria-pressed="true">
+            <Ico n={icoPastille(n)} t={15} /><span>{n}</span>
+          </span>
+        ))}
+      </div>
+      {libre ? <div className="fige" style={{ marginTop: 9 }}>{libre}</div> : null}
+    </>
+  );
+}
+
+/* `decouverte` (V3.44) : la fiche ouverte depuis « Découvrir » (« Voir le
+   bien »). Même contenu, avec la galerie qui glisse, un « Retour » vers la
+   carte, et en bas trois grands boutons de réponse à la place de la barre
+   « Qu'en pensez-vous ? ». `colonne` : sur ordinateur, elle prend la colonne
+   de droite — les photos restent à gauche, la galerie n'est pas répétée. */
+/* ══ V3.195 : le texte du compte rendu de visite, mis en forme ══════════
+   Tel qu'Alexandre l'écrit dans le CRM : un paragraphe par ligne ; les
+   lignes qui commencent par « - », « • » ou « * » deviennent une liste, celles
+   par « + » ou « ✓ » une liste cochée ; « Luminosité : très bonne » met son
+   intitulé en gras. */
+const PUCE_CR = /^([-•*–·+✓✔])\s+/;
+function lignesCR(t: string) {
+  const m = t.match(/^([^:.!?]{2,32}?)\s?:\s+(.+)$/);
+  return m ? <><b>{m[1]}</b>{` : ${m[2]}`}</> : t;
+}
+function TexteCR({ texte }: { texte: string }) {
+  type Bloc = { k: 'p'; t: string } | { k: 'l'; l: { t: string; plus: boolean }[] };
+  const blocs: Bloc[] = [];
+  for (const brut of String(texte || '').replace(/\r/g, '').split('\n')) {
+    const l = brut.trim();
+    if (!l) continue;
+    const m = l.match(PUCE_CR);
+    if (m) {
+      const item = { t: l.slice(m[0].length), plus: m[1] === '+' || m[1] === '✓' || m[1] === '✔' };
+      const der = blocs[blocs.length - 1];
+      if (der && der.k === 'l') der.l.push(item); else blocs.push({ k: 'l', l: [item] });
+    } else blocs.push({ k: 'p', t: l });
+  }
+  return (
+    <div className="cpr-texte">
+      {blocs.map((x, i) => (x.k === 'l' ? (
+        <ul key={i} className="cpr-puces">
+          {x.l.map((y, j) => (
+            <li key={j} data-plus={y.plus ? '1' : undefined}>
+              <span className="cpr-pc" aria-hidden="true">{y.plus ? <Ico n="check" t={12} /> : null}</span>
+              <span>{lignesCR(y.t)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : <p key={i}>{lignesCR(x.t)}</p>))}
+    </div>
+  );
+}
+
+/* ══ V3.193 : « Où en est Alexandre », sur la fiche du bien ══════════════
+   Alexandre : « que le client voie que je travaille dessus ». Des étapes
+   neutres (« Alexandre a laissé un message au vendeur »), la dernière en
+   cours, et son mot quand il en écrit un. Maquettes validées le 15 octobre
+   (canvas « Son suivi visible par le client », A + B). */
+const debutJour = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+function quandEtape(iso?: string) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const j = Math.round((debutJour(new Date()) - debutJour(d)) / 86400000);
+  if (j === 0) return 'Aujourd’hui';
+  if (j === 1) return 'Hier';
+  return `Le ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`;
+}
+function EtapeOE({ e }: { e: SuiviClient['etapes'][number] }) {
+  const quand = e.etat !== 'avenir' ? quandEtape(e.le) : '';
+  return (
+    <li className={'oe-e oe-' + e.etat}>
+      <span className="oe-p" aria-hidden="true">{e.etat === 'fait' ? <Ico n="check" t={13} /> : e.etat === 'encours' ? <span className="oe-pt" /> : null}</span>
+      <span className="oe-c">
+        <b>{e.t}</b>
+        {(quand || e.sous) && <small>{[quand, e.sous].filter(Boolean).join(' · ')}</small>}
+        {e.mot && (
+          <span className="oe-mot">
+            <i>{'Le mot d’Alexandre'}</i>
+            <span>{`« ${e.mot} »`}</span>
+          </span>
+        )}
+      </span>
+    </li>
+  );
+}
+/* V3.194 — Alexandre : « il affiche les trois, et s'il y en a quatre, un
+   petit message : voir tout l'historique des échanges, ça se déplie en mode
+   fluide, et il peut replier ». Les appels d'avant les trois derniers
+   (`ancien`) restent repliés à leur place, sous son avis. */
+function OuEnEst({ s }: { s: SuiviClient }) {
+  const [tout, setTout] = useState(false);
+  const id = useId();
+  const premier = s.etapes.findIndex(e => e.ancien);
+  const anciens = s.etapes.filter(e => e.ancien);
+  const avant = premier < 0 ? [] : s.etapes.slice(0, premier);
+  const apres = premier < 0 ? s.etapes : s.etapes.slice(premier + anciens.length);
+  const n = anciens.length;
+  const lib = tout
+    ? (n === 1 ? 'Replier l’échange plus ancien' : 'Replier les échanges plus anciens')
+    : (n === 1 ? 'Voir l’échange plus ancien' : `Voir les ${n} échanges plus anciens`);
+  return (
+    <div className="oe">
+      <div className="oe-tete">
+        <span className="oe-t">{'Où en est Alexandre'}</span>
+        <span className={'oe-b' + (s.calee ? ' oe-ok' : '')}>{s.calee ? 'Visite calée' : 'En cours'}</span>
+      </div>
+      <ol className="oe-fil">
+        {avant.map((e, i) => <EtapeOE key={'a' + i} e={e} />)}
+        {n > 0 && (
+          <li className="oe-plus">
+            <span className="oe-plus-l" aria-hidden="true" />
+            <button type="button" className="oe-plus-b" aria-expanded={tout} aria-controls={id} onClick={() => setTout(t => !t)}>
+              <span>{lib}</span>
+              <span className="oe-plus-ch" data-o={tout ? '1' : undefined}><Ico n="chevron" t={14} /></span>
+            </button>
+          </li>
+        )}
+        {n > 0 && (
+          <li className="oe-anciens" data-o={tout ? '1' : undefined}>
+            <div className="oe-anc-in" id={id} inert={tout ? undefined : true}>
+              <ol className="oe-fil oe-sous">
+                {anciens.map((e, i) => <EtapeOE key={'v' + i} e={e} />)}
+              </ol>
+            </div>
+          </li>
+        )}
+        {apres.map((e, i) => <EtapeOE key={'r' + i} e={e} />)}
+      </ol>
+      <p className="oe-pied">{'Les étapes se mettent à jour à chaque appel d’Alexandre.'}</p>
+    </div>
+  );
+}
+
+function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, visitesB = [], onRepondreVisite, decouverte, onFaireOffre, actionsOffre, versCr }: any) {
+  const dec = decouverte as ActionsFiche | undefined;
+  /* V3.195 : ouverte depuis « Le compte rendu de votre conseiller » (Vos
+     visites), la fiche descend jusqu'à lui, une fois la fenêtre posée. */
+  const refCr = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!versCr) return;
+    const t = setTimeout(() => refCr.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 450);
+    return () => clearTimeout(t);
+  }, [versCr]);
+  /* ⚠️ `avis` vient de `badge_retour`, et un bien présenté mais sans réponse
+     y porte déjà 'propose' — ce n'est pas un retour du client, c'est l'état
+     de départ. Seules les quatre valeurs d'ETIQ sont de vraies réponses.
+     Tester `!!b.avis` figeait la fiche dès la première ouverture. */
+  /* Visité, le bien a sa propre question (l'issue de la visite) : la barre
+     « Qu'en pensez-vous ? » d'avant la visite ne revient pas, même quand le
+     badge n'est pas un avis connu (une offre en cours, par exemple). */
+  const repondu = (!!b.avis && !!ETIQ[b.avis]) || !!b.visiteFaite || !!etatOffre(b);
+  const [avis, setAvis] = useState<string | null>(b.avis && AVIS[b.avis] ? b.avis : null);
+  const [com, setCom] = useState(b.commentaire || '');
+  /* Un avis déjà parti a été lu, et il a peut-être déjà orienté une
+     recherche : on ne le laisse plus bouger. Tant qu'il n'est pas parti,
+     le client reste libre de se raviser. */
+  const envoye = repondu;
+  const etiqRetour = repondu ? ETIQ[b.avis as string] : null;
+  const parConseiller = repondu && b.retourPar === 'conseiller';
+  const dateRetour = b.retourLe
+    ? new Date(b.retourLe).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+    : null;
+  const [plein, setPlein] = useState<number | null>(null);
+  const [pleinPlan, setPleinPlan] = useState<number | null>(null);
+  const [texteOuvert, setTexteOuvert] = useState(false);
+  const refTexte = useRef<HTMLDivElement>(null);
+  const [hTexte, setHTexte] = useState(0);
+  const [partage, setPartage] = useState(false);
+  const [bientot, setBientot] = useState(false);
+  /* La note de correspondance, et son détail en pop-up. */
+  const corr = correspondance(b, crit);
+  const [voirCorr, setVoirCorr] = useState(false);
+  /* V3.145 : le « ? » du prix. */
+  const [aidePrix, setAidePrix] = useState(false);
+  /* V3.188 : le « ? » de ses honoraires, quand ils s'ajoutent au prix. */
+  const [aideHono, setAideHono] = useState(false);
+  const [envoiAvis, setEnvoiAvis] = useState(false);
+  /* Les pastilles cochées, le texte libre seulement s'il le demande, et le
+     panneau de la barre du bas. */
+  /* ── La place reservee sous la fiche, mesuree et non devinee ──
+     La barre flotte au-dessus du texte ; il faut donc laisser sous le dernier
+     paragraphe exactement sa hauteur, sinon elle en recouvre la fin. Cette
+     hauteur depend de la taille de police du telephone, de la longueur des
+     libelles et de la zone de securite du bas : une valeur ecrite en dur se
+     trompe forcement quelque part. On la mesure.
+
+     Le panneau ouvert est ignore volontairement : il monte par-dessus, la
+     reserve doit rester celle de la barre fermee. */
+  const barreRef = useRef<HTMLDivElement>(null);
+  const [hBarre, setHBarre] = useState(0);
+  useEffect(() => {
+    const el = barreRef.current;
+    if (!el || panneau) return;
+    const mesurer = () => setHBarre(el.offsetHeight);
+    mesurer();
+    if (typeof ResizeObserver === 'undefined') return;
+    const oeil = new ResizeObserver(mesurer);
+    oeil.observe(el);
+    return () => oeil.disconnect();
+  });
+
+  const [choisies, setChoisies] = useState<string[]>([]);
+  const [ecrire, setEcrire] = useState(false);
+  const [panneau, setPanneau] = useState(false);
+  /* Changer d'avis remet les pastilles à zéro : celles de « pas pour moi »
+     n'ont aucun sens sous « ça me plaît ». */
+  const choisir = (k: string) => {
+    setAvis(v => (v === k ? null : k));
+    setChoisies([]); setEcrire(false);
+  };
+  const basculer = (n: string) =>
+    setChoisies(l => (l.includes(n) ? l.filter(x => x !== n) : [...l, n]));
+  const envoyerAvis = async () => {
+    if (!avis) return;
+    setEnvoiAvis(true);
+    const texte = [choisies.join(SEP_PASTILLES), com.trim()].filter(Boolean).join(SEP_LIBRE);
+    await onAvis(b, avis, texte);
+  };
+  /* « Ça me plaît » déjà envoyé : le client peut encore dire qu'il veut le
+     visiter, sans rien défaire. Ses disponibilités partent avec, et Alexandre
+     est prévenu (une relance du jour dans le CRM, et un mail). */
+  const peutVisiter = envoye && b.avis === 'interesse' && !b.visitePrevue && !b.visiteFaite && !indispo(b);
+  const [versVisite, setVersVisite] = useState(false);
+  const envoyerVisite = async () => {
+    setEnvoiAvis(true);
+    const texte = [choisies.join(SEP_PASTILLES), com.trim()].filter(Boolean).join(SEP_LIBRE);
+    await onAvis(b, 'souhaite_visiter', texte);
+  };
+  const propsSuite = {
+    avis, choisies, onBasculer: basculer, com, setCom, ecrire, setEcrire,
+    enCours: envoiAvis, onEnvoyer: envoyerAvis,
+    onVisiter: () => { setAvis('souhaite_visiter'); setChoisies([]); setEcrire(false); },
+  };
+  const photos: string[] = b.photos || [];
+  const plans: string[] = b.plans || [];
+  /* Deux rubriques de plus sous la description. Elles se construisent ici
+     pour que le rendu reste lisible, et surtout pour qu'une rubrique vide ne
+     laisse aucune trace à l'écran — pas de titre orphelin. */
+  const inclus: [string, string][] = [];
+  if (b.terrasse) inclus.push(['terrasse', 'Terrasse']);
+  if (b.balcon) inclus.push(['terrasse', 'Balcon']);
+  if (b.jardin) inclus.push(['jardin', 'Jardin']);
+  if (b.parking) inclus.push(['parking', b.nbParking && b.nbParking > 1 ? `${b.nbParking} parkings` : 'Parking']);
+  if (b.cave) inclus.push(['cave', 'Cave']);
+  if (b.ascenseur) inclus.push(['ascenseur', 'Ascenseur']);
+  if (b.gardien) inclus.push(['gardien', 'Gardien']);
+  if (b.cuisineEquipee) inclus.push(['cuisine', 'Cuisine équipée']);
+  if (b.clim) inclus.push(['clim', 'Climatisation']);
+  if (b.traversant) inclus.push(['traversant', 'Traversant']);
+
+  /* Les charges se saisissent au trimestre dans le CRM : on l'écrit tel quel
+     plutôt que de multiplier par quatre un chiffre dont on n'est pas sûr. */
+  const couts: [string, string, string, string][] = [];
+  /* V3.133 (Alexandre : « les charges, je les mets à l'année ») : pour un bien
+     de l'agence, le montant annuel saisi, et ce qu'il fait par mois. */
+  if (b.chargesAn) couts.push(['euro', 'Charges', EUR(b.chargesAn), `par an · ${EUR(Math.round(b.chargesAn / 12))} par mois`]);
+  else if (b.charges) couts.push(['euro', 'Charges', EUR(b.charges), 'par trimestre']);
+  if (b.taxe) couts.push(['immeuble', 'Taxe foncière', EUR(b.taxe), 'par an']);
+  /* V3.171 : « Collectif » en gros, « gaz, par radiateurs » dessous (le
+     texte entier est composé côté serveur, src/lib/chauffage.ts). */
+  if (b.chauffage) {
+    const [mode, ...reste] = b.chauffage.split(', ');
+    couts.push(['eclair', 'Chauffage', mode, reste.join(', ')]);
+  }
+  if (b.lots) couts.push(['maison', 'Copropriété', String(b.lots), b.lots > 1 ? 'lots' : 'lot']);
+
+  /* La surface d'extérieur est parfois saisie en bloc, parfois balcon par
+     terrasse : on prend le total quand il existe, la somme sinon. */
+  const ext = b.exterieur || ((b.surfaceTerrasse || 0) + (b.surfaceBalcon || 0)) || null;
+  const nb = (v: number) => String(v).replace('.', ',');
+
+  /* La description : en paragraphes, et repliée quand elle est longue. On
+     mesure sa hauteur réelle pour que l'ouverture glisse au lieu de sauter. */
+  const paras = decoupeTexte(b.description);
+  useLayoutEffect(() => {
+    if (refTexte.current) setHTexte(refTexte.current.scrollHeight);
+  }, [b.id, paras.length]);
+  const texteLong = hTexte > 176;
+
+  /* DPE et GES : une lettre colorée dans une carte, comme le reste. */
+  const lettre = (v?: string | null) => {
+    const k = v ? v.toUpperCase()[0] : '';
+    return k && DPEC[k] ? k : null;
+  };
+  const lDpe = lettre(b.dpe), lGes = lettre(b.ges);
+
+  return (
+    <>
+      {dec ? (dec.colonne ? null : (
+        <div className="barre-retour">
+          <button type="button" className="dec-f-retour" onClick={dec.onRetour}>
+            <Ico n="retour" t={18} /><span>Retour</span>
+          </button>
+        </div>
+      )) : (
+        <div className="barre-retour">
+          <button type="button" className="retour-f" onClick={onFermer} aria-label="Revenir à la liste">
+            <Ico n="retour" t={18} />
+          </button>
+        </div>
+      )}
+      {dec ? (dec.colonne ? null : <GalerieGlisse photos={photos} variante="fiche" onTouche={setPlein} />)
+        : <Galerie photos={photos} onAgrandir={setPlein} />}
+      {plein !== null && (
+        <PleinEcran photos={photos} depart={plein} onFermer={() => setPlein(null)} />
+      )}
+      {pleinPlan !== null && (
+        <PleinEcran photos={plans} depart={pleinPlan} onFermer={() => setPleinPlan(null)} />
+      )}
+      {partage && (
+        <ModalePartage b={b} client={client} onFermer={() => setPartage(false)}
+          onEnvoyer={(mail: string) => onPartager(b, mail)} />
+      )}
+      {bientot && <ModaleBientot onFermer={() => setBientot(false)}
+        onPartager={() => { setBientot(false); setPartage(true); }} />}
+      {voirCorr && corr && <ModaleCorrespondance b={b} r={corr} onFermer={() => setVoirCorr(false)} />}
+      {aidePrix && <ModaleAide a={AIDES.prix} onFermer={() => setAidePrix(false)} />}
+      {aideHono && <ModaleAide a={AIDES.honoraires} onFermer={() => setAideHono(false)} />}
+      <div className="fiche-droite" data-barre={!envoye && !dec && !b.vente ? '1' : undefined}>
+      {dec?.colonne && (
+        <div className="dec-f-haut">
+          <button type="button" className="dec-f-retour col" onClick={dec.onRetour}>
+            <Ico n="retour" t={18} /><span>Retour</span>
+          </button>
+        </div>
+      )}
+      {/* V3.196 — Alexandre : « à côté du prix il n'y a rien : les honoraires,
+          on peut les mettre à côté ». Ils entrent dans le bandeau : à côté du
+          prix sur ordinateur, dessous sur téléphone (CSS). */}
+      <div className="bandeau-prix">
+        <span className="p tab">{b.prix ? <span className="nv">{PRIX(b.prix)}<BtnAide cle="prix" onAide={() => setAidePrix(true)} /></span> : PRIX(b.prix)}</span>
+        {/* V3.145 : ses honoraires, seulement quand ils s'ajoutent — en petit. */}
+        {/* V3.188 (Alexandre : « quand il y a un prix affiché en plus, une petite
+            interrogation ») : un « ? » collé au dernier mot, pour qu'il ne parte
+            pas seul à la ligne sur téléphone. */}
+        {b.prix && b.hono ? (() => {
+          const t = honoDe(b);
+          const i = t.lastIndexOf(' ');
+          return (
+            <span className="hono-l">
+              {t.slice(0, i + 1)}
+              <span className="hono-fin">{t.slice(i + 1)}<BtnAide cle="honoraires" onAide={() => setAideHono(true)} /></span>
+            </span>
+          );
+        })() : null}
+        {b.prix && b.surface ? <span className="m2 tab">{Math.round(b.prix / b.surface).toLocaleString('fr-FR').replace(/[  ]/g, ' ')} €/m²</span> : null}
+      </div>
+      <div className="tete-f" style={{ paddingTop: 10 }}>
+        <div><h3>{b.titre}</h3>
+          {b.secteur && <div className="meta" style={{ color: 'var(--plume)', fontSize: 13, marginTop: 5, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Ico n="lieu" t={13} /><span>{b.secteur}</span>
+            {onCarte && <button type="button" className="voir-carte" onClick={onCarte}><Ico n="carte" t={13} /><span>Voir sur la carte</span></button>}</div>}</div>
+      </div>
+      <div className="corps-f">
+        {b.vente && (
+          <div className={'avis-vente' + (b.vente.vous ? ' vous' : '')}>
+            <Ico n={b.vente.vous ? 'check' : 'maison'} t={17} />
+            <span>{phraseVente(b.vente)}</span>
+          </div>
+        )}
+        {/* V3.164 : le mot de son conseiller, quand il a dit le bien plus disponible. */}
+        {b.vente?.note && (
+          <div className="mot-indispo">
+            <i>{'Le mot de votre conseiller'}</i>
+            <span>{`« ${b.vente.note} »`}</span>
+          </div>
+        )}
+        {/* V3.184 : un bien né d'une annonce qu'il a envoyée lui-même. */}
+        {b.proposeeLe && (
+          <div className="ra-propose">
+            <b><Ico n="lien" t={14} /><span>{`Vous nous l’aviez envoyée ${dateAnnonce(b.proposeeLe)}`}</span></b>
+            {b.avisConseiller && <span><i>{'L’avis d’Alexandre\u00a0: '}</i>{`«\u00a0${b.avisConseiller}\u00a0»`}</span>}
+            {b.sonMot && <span><i>{'Votre mot\u00a0: '}</i>{`«\u00a0${b.sonMot}\u00a0»`}</span>}
+          </div>
+        )}
+        {/* V3.195 — Alexandre : « le compte rendu est tout en bas, sur un fond
+            gris : le monter pour qu'on le voie directement, et le rendre plus
+            joli ». Après la visite : son issue (ou la question, s'il n'a rien
+            dit), puis le compte rendu, en carte blanche, juste sous le titre. */}
+        {b.visiteFaite && (() => {
+          const cle = (v: VisiteE) => `${v.date || ''}${v.heure || ''}`;
+          const faites = (visitesB as VisiteE[]).filter(v => v.passee).sort((a, c) => cle(c).localeCompare(cle(a)));
+          const v = faites[0];
+          const et = b.visiteFaite.etoiles || 0;
+          /* V3.196 — Alexandre : « En réflexion à côté de Visite effectuée,
+             Faire une offre à côté, sur la même ligne : ne pas créer des
+             lignes pour un mot ». */
+          const avecEtat = !b.offreSuivi && !!v && !!(v.issue || etatOffre(b));
+          return (
+            <div className="vf">
+              <div className="vf-tete">
+                <span className="vf-ic" aria-hidden="true"><Ico n="maison" t={18} /></span>
+                <span className="vf-tt">
+                  <b>{'Visite effectuée'}</b>
+                  {b.visiteFaite.date && <small>{dateLongue(b.visiteFaite.date)}</small>}
+                </span>
+                {avecEtat && v && (
+                  <span className="vf-actions">
+                    <EtiqVisite b={b} v={v} />
+                    {onFaireOffre && v.issue !== 'non' && (
+                      <button type="button" className="ofr-mini" onClick={onFaireOffre}><Ico n="euro" t={14} /><span>{v.issue === 'offre' ? 'Préparer mon offre moi-même' : 'Faire une offre'}</span></button>
+                    )}
+                  </span>
+                )}
+              </div>
+              {/* V3.189 : son offre, avec tout son historique ; sinon son avis,
+                  et « Faire une offre » tant qu'aucune ne court. */}
+              {b.offreSuivi
+                ? <CarteOffre o={b.offreSuivi} indispo={indispo(b)} historique {...(actionsOffre || {})} />
+                : avecEtat && v
+                  ? <div className="vf-etat"><EtatVisite b={b} v={v} enLigne /></div>
+                  : v && onRepondreVisite ? <AvisVisite v={v} onRepondre={onRepondreVisite} sansSuite={indispo(b)} onFaireOffre={onFaireOffre} /> : null}
+              {b.visiteFaite.commentaire ? (
+                <div className="cpr" ref={refCr}>
+                  <div className="cpr-tete">
+                    <span className="cpr-ic" aria-hidden="true"><Ico n="note" t={16} /></span>
+                    <span className="cpr-tt">{'Le compte rendu d’Alexandre'}</span>
+                    {et > 0 && <span className="cpr-et" aria-label={`${et} sur 5`}>{'★'.repeat(et)}<i>{'★'.repeat(Math.max(0, 5 - et))}</i></span>}
+                  </div>
+                  <TexteCR texte={b.visiteFaite.commentaire} />
+                  <div className="cpr-sign">
+                    <span className="cpr-av" aria-hidden="true">AR</span>
+                    <span><b>{AGENT.nom}</b><small>{' · Votre conseiller'}</small></span>
+                  </div>
+                </div>
+              ) : (
+                <div className="vf-attente" ref={refCr}>
+                  <Ico n="horloge" t={16} />
+                  <span>{'Votre conseiller vous fait un retour détaillé de sa visite.'}</span>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+        {b.suivi && <OuEnEst s={b.suivi} />}
+        {corr && (
+          <button type="button" className="corresp" onClick={() => setVoirCorr(true)}>
+            <AnneauNote note={corr.note} />
+            <span className="corresp-txt">
+              <i>Correspondance avec vos critères</i>
+              <b>{motCorrespondance(corr.note)}</b>
+            </span>
+            <span className="corresp-ch"><Ico n="fleche" t={16} /></span>
+          </button>
+        )}
+        <div className="specs">
+          {b.surface ? <div className="spec"><div className="v tab">{b.surface} m²</div><div className="l">Surface</div></div> : null}
+          {b.pieces ? <div className="spec"><div className="v tab">{b.pieces}</div><div className="l">Pièces</div></div> : null}
+          {b.chambres ? <div className="spec"><div className="v tab">{b.chambres}</div><div className="l">Chambres</div></div> : null}
+          {b.etage != null ? <div className="spec"><div className="v tab">{b.etage === 0 ? 'RDC' : b.etage + 'e'}{b.etageTotal ? '/' + b.etageTotal : ''}</div><div className="l">Étage</div></div> : null}
+          {b.expo ? <div className="spec"><div className="v">{b.expo}</div><div className="l">Exposition</div></div> : null}
+          {b.sejour ? <div className="spec"><div className="v tab">{nb(b.sejour)} m²</div><div className="l">Séjour</div></div> : null}
+          {ext ? <div className="spec"><div className="v tab">{nb(ext)} m²</div><div className="l">Extérieur</div></div> : null}
+          {b.annee ? <div className="spec"><div className="v tab">{b.annee}</div><div className="l">Construction</div></div> : null}
+        </div>
+        {(lDpe || lGes) && (
+          <>
+            <label className="lab">Performance énergétique</label>
+            <div className="cout">
+              {lDpe ? (
+                <div className="c">
+                  <div className="h"><Ico n="eclair" t={15} /><span className="l">DPE</span></div>
+                  <div className="v"><span className="lettre" style={{ background: DPEC[lDpe] }}>{lDpe}</span></div>
+                </div>
+              ) : null}
+              {lGes ? (
+                <div className="c">
+                  <div className="h"><Ico n="etincelle" t={15} /><span className="l">GES</span></div>
+                  <div className="v"><span className="lettre" style={{ background: DPEC[lGes] }}>{lGes}</span></div>
+                </div>
+              ) : null}
+            </div>
+          </>
+        )}
+
+        {paras.length > 0 && (
+          <div className="desc">
+            <div ref={refTexte} className="desc-t" data-court={texteLong && !texteOuvert ? '1' : undefined}
+              style={texteLong ? { maxHeight: texteOuvert ? hTexte : 176 } : undefined}>
+              {paras.map((x, n) => <p className="txt" key={n}>{x}</p>)}
+            </div>
+            {texteLong && (
+              <button type="button" className="plus" onClick={() => setTexteOuvert(o => !o)}>
+                <span>{texteOuvert ? 'Réduire' : 'Lire la suite'}</span>
+                <span className="ch" data-o={texteOuvert ? '1' : undefined}><Ico n="fleche" t={14} /></span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {plans.length > 0 && (
+          <>
+            <label className="lab">{plans.length > 1 ? 'Les plans' : 'Le plan'}</label>
+            <div className="plans-f">
+              {plans.map((u, n) => (
+                <button type="button" className="plan-f" key={u + n} onClick={() => setPleinPlan(n)}
+                  aria-label={plans.length > 1 ? `Agrandir le plan ${n + 1}` : 'Agrandir le plan'}>
+                  <img src={u} alt={plans.length > 1 ? `Plan ${n + 1}` : 'Plan du bien'} loading="lazy" draggable={false} />
+                  <span className="plan-z"><Ico n="loupe" t={14} />Agrandir</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {inclus.length > 0 && (
+          <>
+            <label className="lab">Ce que le bien comprend</label>
+            <div className="incl">{inclus.map(([i, n]) => (
+              <div className="ic" key={n}><span className="r"><Ico n={i} t={19} /></span><span className="n">{n}</span></div>
+            ))}</div>
+          </>
+        )}
+
+        {couts.length > 0 && (
+          <>
+            <label className="lab">Charges et énergie</label>
+            <div className="cout">
+              {couts.map(([i, l, v, u]) => (
+                <div className="c" key={l}>
+                  <div className="h"><Ico n={i} t={15} /><span className="l">{l}</span></div>
+                  <div className="v tab">{v}{u ? <span className="u">{u}</span> : null}</div>
+                </div>
+              ))}
+            </div>
+            {(b.chargesAn || b.charges) && b.chargesComprises ? (
+              <p className="cout-compris"><b>Compris dans les charges :</b> {b.chargesComprises}</p>
+            ) : null}
+          </>
+        )}
+
+        {/* Tant que le client n'a pas répondu, la question ne vit qu'à un seul
+            endroit : la barre du bas, qu'il a sous les yeux en permanence. La
+            poser deux fois sur la même fiche brouille plus qu'elle n'incite. */}
+        {/* Une fois le bien visité, son retour, c'est l'issue de la visite
+            (le bloc « Visite effectuée » plus bas) : les trois boutons d'avant
+            la visite, figés et vides, ne diraient plus rien. */}
+        {envoye && !b.visiteFaite && (
+          <>
+            <label className="lab">Votre retour</label>
+            <TroisAvis avis={avis} onChoisir={choisir} fige />
+          </>
+        )}
+
+        {/* Le retour est parti : on le montre tel qu'il est parti, et rien
+            ne se remodifie ici. Le client qui change d'avis le dit de vive
+            voix — c'est plus juste qu'un deuxième retour qui écrase le
+            premier sans qu'Alexandre sache lequel comptait. */}
+        {/* Le rendez-vous, quand il est pris : c'est l'information la plus
+            attendue sur la fiche, elle passe avant l'avis déjà donné. */}
+        {b.visitePrevue && !b.visiteFaite && (
+          <div className="apres-avis fini">
+            <div className="aa-t">📅 Visite à venir</div>
+            <p className="aa-p">
+              Votre conseiller a calé le rendez-vous&nbsp;: <b>{dateLongue(b.visitePrevue.date)}</b>
+              {b.visitePrevue.heure ? <> à <b>{String(b.visitePrevue.heure).slice(0, 5).replace(':', ' h ')}</b></> : null}.
+              Vous le retrouvez dans « Vos visites », avec le lien pour l’ajouter à votre agenda.
+            </p>
+          </div>
+        )}
+
+        {envoye && !b.visiteFaite && (
+          <div className="apres-avis fini">
+            <div className="aa-t">{etiqRetour ? `${etiqRetour.e} ${etiqRetour.n}` : 'Retour enregistré'}</div>
+            <p className="aa-p">{b.avis === 'visite'
+              ? 'Vous avez visité ce bien avec votre conseiller.'
+              : parConseiller
+                ? `Votre conseiller a noté ce retour${dateRetour ? ` le ${dateRetour}` : ''}, d’après votre échange. Il oriente déjà la suite de votre recherche.`
+                : `Votre conseiller a reçu ce retour${dateRetour ? ` le ${dateRetour}` : ''}. Il oriente déjà la suite de votre recherche.`}</p>
+            {b.commentaire ? (
+              <>
+                <div className="fige-t">{parConseiller ? 'Ce qu’il a retenu' : 'Ce que vous nous avez dit'}</div>
+                <RetourLu texte={b.commentaire}
+                  ton={(AVIS[b.avis] && AVIS[b.avis].c) || 'oui'} />
+              </>
+            ) : null}
+            {peutVisiter && (
+              <div className="envie-visite" data-ouvert={versVisite ? '1' : undefined}>
+                {!versVisite ? (
+                  <>
+                    <div className="ev-t"><Ico n="calendrier" t={16} /><span>{'Envie de le voir en vrai\u00a0?'}</span></div>
+                    <p className="ev-p">{'Dites-le en un geste\u00a0: votre conseiller organise la visite et revient vers vous avec le rendez-vous.'}</p>
+                    <button type="button" className="btn ev-b" onClick={() => { setVersVisite(true); setChoisies([]); setEcrire(false); setCom(''); }}>
+                      <Ico n="calendrier" t={16} /><span>Je souhaite le visiter</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <SuiteAvis {...propsSuite} avis="souhaite_visiter" onEnvoyer={envoyerVisite} />
+                    <button type="button" className="btn lien" style={{ marginTop: 4 }} onClick={() => setVersVisite(false)}>Finalement, pas maintenant</button>
+                  </>
+                )}
+              </div>
+            )}
+            <p className="aa-n">{parConseiller
+              ? 'Ce n’est pas tout à fait ça ? Dites-le à votre conseiller, il corrige.'
+              : 'Vous avez changé d’avis sur ce bien ? Dites-le à votre conseiller, il met le dossier à jour.'}</p>
+          </div>
+        )}
+
+        <div className="duo">
+          <button className="btn fant" onClick={() => setPartage(true)}><Ico n="partage" t={16} /> Partager</button>
+          {/* Le téléchargement existe toujours à l'écran : quand la fiche est prête
+              il l'ouvre, sinon il explique qu'elle arrive. Un bouton qui apparaît
+              et disparaît selon les biens est plus déroutant qu'un bouton en attente. */}
+          {b.pdfUrl ? (
+            <a className="btn fant" href={b.pdfUrl} target="_blank" rel="noopener noreferrer">
+              <Ico n="pdf" t={16} /> La fiche PDF</a>
+          ) : (
+            <button type="button" className="btn fant attente" onClick={() => setBientot(true)}>
+              <Ico n="pdf" t={16} /> Télécharger la fiche</button>
+          )}
+        </div>
+      </div>
+      {/* La barre du bas. Elle ne bouge pas avec le défilement : le client la
+          voit dès la première seconde, il n'a plus à descendre jusqu'au bout
+          de la fiche pour donner son avis. Une fois le retour parti, elle
+          disparaît pour de bon sur ce bien. */}
+      {/* Depuis « Découvrir » : trois grands boutons, qui ramènent à l'écran
+          des nouveautés pour la question qui suit (V3.44). */}
+      {dec && !envoye && (
+        <div className="dec-f-bas">
+          <button type="button" className="non" onClick={() => dec.onRepondre('refuse')}>
+            <Ico n="croix" t={20} /><span>Pas pour moi</span>
+          </button>
+          <button type="button" className="vis" onClick={() => dec.onRepondre('souhaite_visiter')}>
+            <Ico n="calendrier" t={20} /><span>Je veux visiter</span>
+          </button>
+          <button type="button" className="oui" onClick={() => dec.onRepondre('interesse')}>
+            <Ico n="check" t={20} /><span>Ça me plaît</span>
+          </button>
+        </div>
+      )}
+      {!envoye && !dec && !b.vente && (
+        <div className="rail-avis" style={hBarre ? { height: hBarre } : undefined}>
+          {panneau && (
+            <button type="button" className="voile-avis" aria-label="Fermer"
+              onClick={() => setPanneau(false)} />
+          )}
+          <div className="barre-avis" ref={barreRef} data-ouvert={panneau ? '1' : undefined}>
+            {panneau ? (
+              <div className="ba-panneau">
+                <button type="button" className="ba-fermer" aria-label="Replier"
+                  onClick={() => setPanneau(false)}><Ico n="fleche" t={16} /></button>
+                <TroisAvis avis={avis} onChoisir={choisir} />
+                {avis && <SuiteAvis {...propsSuite} />}
+              </div>
+            ) : (
+              <>
+                <div className="ba-q">Qu’en pensez-vous&nbsp;?</div>
+                <div className="ba-trois">
+                  {Object.entries(AVIS).map(([k, a]) => (
+                    <button key={k} type="button" className="ba-b" data-a={a.c}
+                      onClick={() => { choisir(k); setPanneau(true); }}>
+                      <span className="e">{a.e}</span><span className="n">{a.n}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      </div>
+    </>
+  );
+}
+
+/* Le téléchargement de la fiche n'est pas encore ouvert. Le premier message
+   (« Nous préparons un document à télécharger… ») se lisait comme un
+   téléchargement en cours : des clients attendaient un fichier qui n'arrivait
+   pas. On dit donc en toutes lettres que la fonction est en cours de
+   développement, que rien n'est en route vers l'appareil, et ce qu'on peut
+   faire à la place tout de suite : partager le bien. */
+/* Un « ? » ouvert depuis une fiche (V3.145) : la même explication, dans une
+   fenêtre posée sur la fiche. */
+function ModaleAide({ a, onFermer }: { a: typeof AIDES[string]; onFermer: () => void }) {
+  useEchap(true, onFermer);
+  return createPortal(
+    <div className="pop" role="dialog" aria-modal="true">
+      <div className="pop-voile" onClick={onFermer} />
+      <div className="pop-carte"><div className="pop-aide"><Explication a={a} onFermer={onFermer} /></div></div>
+    </div>,
+    document.body,
+  );
+}
+
+function ModaleBientot({ onFermer, onPartager }: { onFermer: () => void; onPartager: () => void }) {
+  useEchap(true, onFermer);
+  return createPortal(
+    <div className="pop" role="dialog" aria-modal="true" aria-labelledby="bientot-t">
+      <div className="pop-voile" onClick={onFermer} />
+      <div className="pop-carte">
+        <div className="pop-fin bientot">
+          <div className="rond-ok"><Ico n="horloge" t={30} /></div>
+          <div className="bt-etiq">En cours de développement</div>
+          <h3 id="bientot-t">{'Le téléchargement n\u2019est pas encore disponible'}</h3>
+          <p>{'Cette fonction est en cours de développement. Vous pourrez très bientôt télécharger la fiche du bien, directement ici.'}</p>
+          <div className="bt-astuce">
+            <Ico n="partage" t={18} />
+            <span>{'En attendant, le bouton «\u00a0Partager\u00a0», juste à gauche, vous permet déjà d\u2019envoyer ce bien à vos proches.'}</span>
+          </div>
+          <div className="bt-actions">
+            <button type="button" className="btn or" onClick={onPartager}>
+              <Ico n="partage" t={16} /><span>Partager ce bien</span>
+            </button>
+            <button type="button" className="btn lien" onClick={onFermer}>Fermer</button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function ModalePartage({ b, client, onFermer, onEnvoyer }: any) {
+  const [mail, setMail] = useState('');
+  const [erreur, setErreur] = useState(false);
+  const [copie, setCopie] = useState(false);
+  const [etat, setEtat] = useState<'saisie' | 'envoi' | 'ok' | 'ko'>('saisie');
+  /* La même adresse que celle qui partira vraiment (voir /api/espace/partage) :
+     l'aperçu montrait window.location.origin, donc parfois une adresse qui
+     n'existe pas sur ce domaine. */
+  const lien = lienBienPublic(b.id);
+
+  const fermerSiPossible = useCallback(() => { if (etat !== 'envoi') onFermer(); }, [etat, onFermer]);
+  useEchap(true, fermerSiPossible);
+
+  async function partir() {
+    if (!/.+@.+\..+/.test(mail.trim())) { setErreur(true); return; }
+    setEtat('envoi');
+    const ok = await onEnvoyer(mail.trim());
+    setEtat(ok ? 'ok' : 'ko');
+  }
+
+  return createPortal(
+    <div className="pop" role="dialog" aria-modal="true">
+      <div className="pop-voile" onClick={() => { if (etat !== 'envoi') onFermer(); }} />
+      <div className="pop-carte">
+        {etat === 'ok' ? (
+          <div className="pop-fin">
+            <div className="rond-ok"><Ico n="check" t={32} /></div>
+            <h3>La fiche est partie</h3>
+            <p>{mail} vient de recevoir la fiche du bien.</p>
+            <button className="btn or" onClick={onFermer}>Parfait</button>
+          </div>
+        ) : (
+          <>
+            <div className="pop-tete">
+              <div><div className="sur">Partager ce bien</div><h3>{b.titre}</h3></div>
+              <button className="fermer" onClick={onFermer} aria-label="Fermer" disabled={etat === 'envoi'}>
+                <Ico n="croix" t={14} /></button>
+            </div>
+            <div className="pop-corps">
+              <label className="lab" htmlFor="mail-partage">À qui l&apos;envoyer&nbsp;?</label>
+              <input id="mail-partage" type="email" autoComplete="email" inputMode="email"
+                placeholder="son adresse e-mail" value={mail} disabled={etat === 'envoi'}
+                style={erreur ? { borderColor: 'var(--brique)' } : undefined}
+                onChange={e => { setMail(e.target.value); setErreur(false); }}
+                onKeyDown={e => { if (e.key === 'Enter') partir(); }} />
+              {erreur && <div className="err">Il manque une adresse e-mail valide.</div>}
+
+              <div className="ape">
+                <div className="ape-t">Aperçu du message</div>
+                <div className="ape-l"><span>Objet</span>{client.prenom} vous partage un bien</div>
+                <div className="ape-c">Bonjour,<br />Voici un bien que je suis en train de regarder avec
+                  mon conseiller immobilier. Dites-moi ce que vous en pensez.<br /><br />
+                  <b>{b.titre}</b><br />
+                  {[b.surface && b.surface + ' m²', PRIX(b.prix)].filter(Boolean).join(' · ')}<br />
+                  <span className="lien-ap">{lien}</span><br /><br />{client.prenom}</div>
+              </div>
+
+              {etat === 'ko' && <div className="err">L&apos;envoi n&apos;a pas abouti. Réessayez dans un instant, ou copiez le lien.</div>}
+
+              <BtnEnvoi enCours={etat === 'envoi'} onClick={partir}
+                libelle={<><Ico n="partage" t={16} /> Envoyer la fiche</>} />
+
+              <div style={{ textAlign: 'center' }}>
+                <button className="btn lien" onClick={() => {
+                  navigator.clipboard?.writeText(lien);
+                  setCopie(true); setTimeout(() => setCopie(false), 1800);
+                }}>{copie ? '✓ Lien copié' : 'ou copier le lien'}</button>
+              </div>
+              <p className="txt mention">Le message part au nom d&apos;Emilio Immobilier.</p>
+            </div>
+          </>
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/* « Mes critères ont évolué » — le même parcours que le CRM d'Alexandre,
+   mais en neuf étapes, pensées pour un pouce sur un téléphone.
+   On peut sauter directement à la catégorie que l'on veut changer. */
+function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
+  const [enr, setEnr] = useState(false);
+  const [rate, setRate] = useState(false);
+  const [etape, setEtape] = useState(0);
+  const [sens, setSens] = useState<1 | -1>(1);
+  const [demandeNote, setDemandeNote] = useState('');
+  const [t, setT] = useState({
+    typesBien: [...(crit.typesBien || [])] as string[],
+    etatSouhaite: crit.etatSouhaite || '',
+    anneeMin: crit.anneeMin ? String(crit.anneeMin) : '',
+    budgetMin: crit.budgetMin || 0,
+    budgetMax: crit.budgetMax || 1000000,
+    apport: crit.apport ? String(crit.apport) : '',
+    financement: crit.financement || '',
+    surfaceMin: crit.surfaceMin || 60,
+    surfaceMax: crit.surfaceMax ? String(crit.surfaceMax) : '',
+    surfaceSejourMin: crit.surfaceSejourMin ? String(crit.surfaceSejourMin) : '',
+    piecesMin: crit.piecesMin || 3,
+    chambresMin: crit.chambresMin || 2,
+    etageMin: crit.etageMin ? String(crit.etageMin) : '',
+    etageMax: crit.etageMax ? String(crit.etageMax) : '',
+    rdcExclu: !!crit.rdcExclu,
+    dernierEtage: !!crit.dernierEtage,
+    etageMaxSansAscenseur: crit.etageMaxSansAscenseur ? String(crit.etageMaxSansAscenseur) : '',
+    exposition: crit.exposition || '',
+    exigences: { ...(crit.exigences || {}) } as Record<string, string>,
+    cuisineType: crit.cuisineType || '',
+    exterieurSurfaceMin: crit.exterieurSurfaceMin ? String(crit.exterieurSurfaceMin) : '',
+    dpeMax: crit.dpeMax || '',
+    urgence: crit.urgence || '',
+    transportMinutes: crit.transportMinutes || 0,
+    arrets: [...(crit.transportArrets || [])] as Arret[],
+    secteurs: [...crit.secteurs],
+  });
+  /* Les valeurs de départ, pour savoir ensuite si le client a touché un curseur. */
+  const depart = useRef(t).current;
+
+  /* Une borne ne tire plus l'autre : on bloque seulement quand elles se
+     croisent, et on retient celle que l'on est en train de bouger. */
+  const pas = (cle: string, d: number) => {
+    setT(v => {
+      const n = { ...v } as any;
+      const p = cle === 'surfaceMin' ? 5 : 25000;
+      const plancher = cle === 'surfaceMin' ? 20 : (cle === 'budgetMin' ? 0 : 50000);
+      n[cle] = Math.max(plancher, n[cle] + d * p);
+      if (n.budgetMin && n.budgetMin > n.budgetMax) {
+        if (cle === 'budgetMin') n.budgetMin = n.budgetMax; else n.budgetMax = n.budgetMin;
+      }
+      return n;
+    });
+  };
+  const basculeType = (v: string) =>
+    setT(x => ({ ...x, typesBien: x.typesBien.includes(v) ? x.typesBien.filter((y: string) => y !== v) : [...x.typesBien, v] }));
+  const expos: string[] = t.exposition.split(',').map((x: string) => x.trim()).filter(Boolean);
+  const basculeExpo = (k: string) =>
+    setT(x => ({ ...x, exposition: (expos.includes(k) ? expos.filter((y: string) => y !== k) : [...expos, k]).join(', ') }));
+  const niv = (k: string) => t.exigences[k] || '';
+  const setNiv = (k: string, n: string) => setT(x => {
+    const e = { ...x.exigences };
+    if (n) e[k] = n; else delete e[k];
+    return { ...x, exigences: e };
+  });
+  const tourner = (k: string) => { const c = ['', 'souhaite', 'indispensable']; setNiv(k, c[(c.indexOf(niv(k)) + 1) % 3]); };
+
+  const num = (cle: string) => (v: string) => setT(x => ({ ...x, [cle]: v }));
+
+  const ETAPES: { id: string; ico: string; titre: string; sous: string; contenu: React.ReactNode }[] = [
+    {
+      id: 'bien', ico: 'maison', titre: 'Le bien recherché', sous: 'Quel type de bien, dans quel état',
+      contenu: (<>
+        <label className="lab">Type de bien <i>plusieurs choix possibles</i></label>
+        <div className="choix">{TYPES_E.map(([x, i]) => (
+          <button key={x} className="ch or" aria-pressed={t.typesBien.includes(x)} onClick={() => basculeType(x)}>{i} {x}</button>))}</div>
+        <label className="lab">État souhaité <i>plusieurs choix possibles</i></label>
+        <div className="choix">
+          <button className="ch" aria-pressed={!etatsListe(t.etatSouhaite).length} onClick={() => setT(x => ({ ...x, etatSouhaite: '' }))}>🤷 Pas de préférence</button>
+          {ETATS_E.map(([k, l, i]) => {
+            const actif = etatsListe(t.etatSouhaite).includes(k);
+            return (
+              <button key={k} className="ch" aria-pressed={actif}
+                onClick={() => setT(x => { const deja = etatsListe(x.etatSouhaite); return { ...x, etatSouhaite: ETATS_E.map(e => e[0]).filter(y => (y === k ? !actif : deja.includes(y))).join(',') }; })}>{i} {l}</button>
+            );
+          })}
+        </div>
+        <label className="lab">📅 Construit après</label>
+        <ChampNum val={t.anneeMin} onChange={num('anneeMin')} aide="Laissez vide si l’année n’a pas d’importance" />
+      </>),
+    },
+    {
+      id: 'surfaces', ico: 'regle', titre: 'Surfaces & volumes', sous: 'La taille du bien',
+      contenu: (<>
+        <label className="lab">Surface minimum</label>
+        <div className="pas"><button className="rond" onClick={() => pas('surfaceMin', -1)}>−</button>
+          <span className="val tab">{t.surfaceMin} m²</span>
+          <button className="rond" onClick={() => pas('surfaceMin', 1)}>+</button></div>
+        <label className="lab">Surface maximum</label>
+        <ChampNum val={t.surfaceMax} onChange={num('surfaceMax')} suffixe="m²" aide="Vide = pas de plafond" />
+        <label className="lab">Pièces minimum</label>
+        <div className="choix">{[2, 3, 4, 5, 6].map(n => (
+          <button key={n} className="ch" aria-pressed={t.piecesMin === n} onClick={() => setT(v => ({ ...v, piecesMin: n }))}>{n}{n === 6 ? '+' : ''}</button>))}</div>
+        <label className="lab">Chambres minimum</label>
+        <div className="choix">{[1, 2, 3, 4, 5].map(n => (
+          <button key={n} className="ch" aria-pressed={t.chambresMin === n} onClick={() => setT(v => ({ ...v, chambresMin: n }))}>{n}{n === 5 ? '+' : ''}</button>))}</div>
+        <label className="lab">Séjour d’au moins</label>
+        <ChampNum val={t.surfaceSejourMin} onChange={num('surfaceSejourMin')} suffixe="m²" aide="Vide si vous n’avez pas d’exigence sur le séjour" />
+      </>),
+    },
+    {
+      id: 'etage', ico: 'immeuble', titre: 'Étage & exposition', sous: 'La place dans l’immeuble et l’orientation',
+      contenu: (<>
+        <label className="lab">Étage</label>
+        <div className="duo-n">
+          <div><div className="borne">À partir du</div><ChampNum val={t.etageMin} onChange={num('etageMin')} suffixe="e" /></div>
+          <div><div className="borne">Jusqu’au</div><ChampNum val={t.etageMax} onChange={num('etageMax')} suffixe="e" /></div>
+        </div>
+        <div className="choix" style={{ marginTop: 12 }}>
+          <button className="ch" aria-pressed={t.rdcExclu} onClick={() => setT(x => ({ ...x, rdcExclu: !x.rdcExclu }))}>Pas de rez-de-chaussée</button>
+          <button className="ch" aria-pressed={t.dernierEtage} onClick={() => setT(x => ({ ...x, dernierEtage: !x.dernierEtage }))}>Dernier étage</button>
+        </div>
+        <label className="lab">Ascenseur</label>
+        <div className="choix">
+          <button className={'ch niv' + (niv('ascenseur') ? ' n' + niv('ascenseur') : '')} aria-pressed={!!niv('ascenseur')} onClick={() => tourner('ascenseur')}>
+            🛗 Ascenseur{niv('ascenseur') ? <i className="mk">{niv('ascenseur') === 'indispensable' ? 'indispensable' : 'souhaité'}</i> : null}
+          </button>
+        </div>
+        {niv('ascenseur') !== 'indispensable' && (
+          <>
+            <div className="borne" style={{ marginTop: 12 }}>Sans ascenseur, j’accepte jusqu’au</div>
+            <ChampNum val={t.etageMaxSansAscenseur} onChange={num('etageMaxSansAscenseur')} suffixe="e étage" aide="Vide si monter à pied ne vous dérange pas" />
+          </>
+        )}
+        <label className="lab">Exposition souhaitée <i>plusieurs choix possibles</i></label>
+        <div className="choix">{EXPO_E.map(([k, l, i]) => (
+          <button key={k} className="ch or" aria-pressed={expos.includes(k)} onClick={() => basculeExpo(k)}>{i} {l}</button>))}</div>
+      </>),
+    },
+    {
+      id: 'equip', ico: 'etincelle', titre: 'Équipements', sous: 'Ce qui ferait plaisir, et ce sans quoi c’est non',
+      contenu: (<>
+        <label className="lab">Appuyez une fois pour « souhaité », deux fois pour « indispensable »</label>
+        <div className="choix">{EQUIP_E.filter(([k]) => k !== 'ascenseur').map(([k, l, i]) => (
+          <button key={k} className={'ch niv' + (niv(k) ? ' n' + niv(k) : '')} aria-pressed={!!niv(k)} onClick={() => tourner(k)}>
+            {i} {l}{niv(k) ? <i className="mk">{niv(k) === 'indispensable' ? 'indispensable' : 'souhaité'}</i> : null}
+          </button>))}</div>
+        <label className="lab">Un extérieur</label>
+        <div className="choix">
+          <button className={'ch niv' + (niv('exterieur') ? ' n' + niv('exterieur') : '')} aria-pressed={!!niv('exterieur')} onClick={() => tourner('exterieur')}>
+            🌤️ Balcon, terrasse ou jardin{niv('exterieur') ? <i className="mk">{niv('exterieur') === 'indispensable' ? 'indispensable' : 'souhaité'}</i> : null}
+          </button>
+        </div>
+        {niv('exterieur') ? (<>
+          <div className="borne" style={{ marginTop: 12 }}>D’au moins</div>
+          <ChampNum val={t.exterieurSurfaceMin} onChange={num('exterieurSurfaceMin')} suffixe="m²" aide="Vide si la taille importe peu" />
+        </>) : null}
+        <label className="lab">Cuisine</label>
+        <div className="choix">
+          {CUISINES_E.map(([k, l, i]) => (
+            <button key={k || 'ind'} className="ch" aria-pressed={t.cuisineType === k} onClick={() => setT(x => ({ ...x, cuisineType: k }))}>{i} {l}</button>))}
+        </div>
+        {t.cuisineType ? (
+          <div className="choix" style={{ marginTop: 9 }}>
+            {[['souhaite', 'Simple préférence'], ['indispensable', 'Indispensable']].map(([k, l]) => (
+              <button key={k} className="ch or" aria-pressed={niv('cuisine') === k} onClick={() => setNiv('cuisine', niv('cuisine') === k ? '' : k)}>{l}</button>))}
+          </div>
+        ) : null}
+      </>),
+    },
+    {
+      id: 'energie', ico: 'eclair', titre: 'Performance énergétique', sous: 'La plus mauvaise lettre que vous acceptez',
+      contenu: (<>
+        <div className="dpe-choix">{LETTRES_DPE.map(d => {
+          const i = LETTRES_DPE.indexOf(t.dpeMax);
+          const passe = t.dpeMax ? LETTRES_DPE.indexOf(d) <= i : false;
+          return <button key={d} className={'dpe-b' + (passe ? ' ok' : '') + (t.dpeMax === d ? ' pt' : '')}
+            onClick={() => setT(x => ({ ...x, dpeMax: x.dpeMax === d ? '' : d }))}>{d}</button>;
+        })}</div>
+        <p className="txt" style={{ marginTop: 12 }}>
+          {t.dpeMax
+            ? <>Vous gardez <b>{LETTRES_DPE.slice(0, LETTRES_DPE.indexOf(t.dpeMax) + 1).join(' ')}</b>{LETTRES_DPE.indexOf(t.dpeMax) < 6 ? <> et écartez {LETTRES_DPE.slice(LETTRES_DPE.indexOf(t.dpeMax) + 1).join(' ')}.</> : '.'}</>
+            : <>Aucune exigence — toutes les étiquettes passent.</>}
+        </p>
+      </>),
+    },
+    {
+      id: 'lieu', ico: 'lieu', titre: 'Où je cherche', sous: 'Vos communes, puis vos quartiers',
+      contenu: <Localisation secteurs={t.secteurs} onChange={(v) => setT(x => ({ ...x, secteurs: v }))} />,
+    },
+    {
+      id: 'transports', ico: 'train', titre: 'Transports', sous: 'Cherchez un arrêt, puis réglez le temps à pied',
+      contenu: <ArretPicker arrets={t.arrets} onChange={(v) => setT(x => ({ ...x, arrets: v }))} minutesDefaut={t.transportMinutes || 10} />,
+    },
+    {
+      id: 'budget', ico: 'euro', titre: 'Budget', sous: 'Votre enveloppe et son financement',
+      contenu: (<>
+        <div className="borne">Minimum</div>
+        <div className="pas"><button className="rond" onClick={() => pas('budgetMin', -1)}>−</button>
+          <span className="val tab">{t.budgetMin ? EUR(t.budgetMin) : 'Aucun'}</span>
+          <button className="rond" onClick={() => pas('budgetMin', 1)}>+</button></div>
+        <div className="borne">Maximum</div>
+        <div className="pas"><button className="rond" onClick={() => pas('budgetMax', -1)}>−</button>
+          <span className="val tab">{EUR(t.budgetMax)}</span>
+          <button className="rond" onClick={() => pas('budgetMax', 1)}>+</button></div>
+        <label className="lab">Apport</label>
+        <ChampNum val={t.apport} onChange={num('apport')} suffixe="€" aide="Vide si vous préférez ne pas le préciser ici" />
+        <label className="lab">Financement</label>
+        <div className="choix">{FINANCEMENTS_E.map(([k, l, i]) => (
+          <button key={k} className="ch" aria-pressed={t.financement === k} onClick={() => setT(x => ({ ...x, financement: x.financement === k ? '' : k }))}>{i} {l}</button>))}</div>
+      </>),
+    },
+    {
+      id: 'projet', ico: 'note', titre: 'Mon projet', sous: 'Votre échéance, et la note d’Alexandre',
+      contenu: (<>
+        <label className="lab">Échéance souhaitée</label>
+        <div className="choix">{URGENCES_E.map(([k, l, i]) => (
+          <button key={k} className="ch" aria-pressed={t.urgence === k} onClick={() => setT(x => ({ ...x, urgence: x.urgence === k ? '' : k }))}>{i} {l}</button>))}</div>
+        <div className="note-verr">
+          <div className="k"><span><Ico n="verrou" t={12} /> Précisions notées par Alexandre</span></div>
+          <blockquote className="corps">{crit.notes || 'Aucune précision notée pour l’instant.'}</blockquote>
+          <div className="pq">Cette note lui appartient : vous ne pouvez pas la modifier vous-même. Dites-lui ce que vous voudriez y changer, il s’en occupe.</div>
+          <textarea rows={3} value={demandeNote} onChange={e => setDemandeNote(e.target.value)}
+            placeholder="Ce que je voudrais qu’Alexandre corrige dans cette note… (facultatif)" />
+        </div>
+      </>),
+    },
+  ];
+
+  const nb = ETAPES.length;
+  const i = Math.min(Math.max(etape, 0), nb - 1);
+  const e = ETAPES[i];
+  const aller = (n: number) => { setSens(n > i ? 1 : -1); setEtape(Math.max(0, Math.min(nb - 1, n))); };
+  /* La frise défile : on ramène toujours l'étape en cours sous les yeux. */
+  const friseRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = friseRef.current?.querySelector('.fp.on');
+    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [i]);
+
+  async function enregistrer() {
+    /* Un curseur doit bien partir de quelque part : quand le dossier n'avait
+       ni budget, ni surface, ni pièces, ni chambres, l'écran propose une
+       valeur de départ (1 000 000 €, 60 m², 3 pièces, 2 chambres). Tant que
+       le client n'y a pas touché, ce n'est pas son choix : on renvoie ce qu'il
+       y avait avant, et rien ne s'écrit à sa place. */
+    type Curseur = 'budgetMax' | 'surfaceMin' | 'piecesMin' | 'chambresMin';
+    const choisi = (k: Curseur) => (t[k] === depart[k] ? (crit[k] ?? null) : t[k]);
+    const budgetMax = choisi('budgetMax'), surfaceMin = choisi('surfaceMin');
+    const piecesMin = choisi('piecesMin'), chambresMin = choisi('chambresMin');
+    const c: string[] = [];
+    if ((t.budgetMin || null) !== (crit.budgetMin || null) || budgetMax !== (crit.budgetMax ?? null)) {
+      c.push('budget ' + (t.budgetMin ? EUR(t.budgetMin) + ' – ' + EUR(t.budgetMax) : 'jusqu’à ' + EUR(t.budgetMax)));
+    }
+    if (surfaceMin !== (crit.surfaceMin ?? null)) c.push(t.surfaceMin + ' m² minimum');
+    if (piecesMin !== (crit.piecesMin ?? null)) c.push(t.piecesMin + ' pièces minimum');
+    if (chambresMin !== (crit.chambresMin ?? null)) c.push(t.chambresMin + ' chambres minimum');
+    if (t.typesBien.join() !== (crit.typesBien || []).join()) c.push(t.typesBien.length ? 'type de bien : ' + t.typesBien.join(', ') : 'plus de contrainte de type');
+    if (t.secteurs.join() !== crit.secteurs.join()) c.push(t.secteurs.length + ' secteurs');
+    if (JSON.stringify(t.exigences) !== JSON.stringify(crit.exigences || {})) c.push('équipements souhaités');
+    if ((t.dpeMax || '') !== (crit.dpeMax || '')) c.push(t.dpeMax ? 'DPE ' + t.dpeMax + ' maximum' : 'plus de contrainte de DPE');
+    if (t.exposition !== (crit.exposition || '')) c.push('exposition');
+    const arretsAvant = (crit.transportArrets || []).map((a: Arret) => a.nom + a.minutes).join();
+    if (t.arrets.map(a => a.nom + a.minutes).join() !== arretsAvant) {
+      c.push(t.arrets.length
+        ? 'transports : ' + t.arrets.map(a => `${a.nom} (${a.minutes || 10} min)`).join(' · ')
+        : 'plus de contrainte de transport');
+    }
+    const nombre = (v: string) => (v.trim() === '' ? null : Number(v));
+    setEnr(true); setRate(false);
+    const ok = await onEnregistrer({
+      ...crit, ...t,
+      budgetMax, surfaceMin, piecesMin, chambresMin,
+      budgetMin: t.budgetMin || null,
+      apport: nombre(t.apport), anneeMin: nombre(t.anneeMin),
+      surfaceMax: nombre(t.surfaceMax), surfaceSejourMin: nombre(t.surfaceSejourMin),
+      etageMin: nombre(t.etageMin), etageMax: nombre(t.etageMax),
+      etageMaxSansAscenseur: nombre(t.etageMaxSansAscenseur),
+      exterieurSurfaceMin: nombre(t.exterieurSurfaceMin),
+      equip: EQUIP_E.filter(([k]) => t.exigences[k]).map(([, l]) => l),
+      transportMinutes: t.transportMinutes || null,
+      transportArrets: t.arrets,
+    }, c, demandeNote.trim());
+    if (!ok) { setEnr(false); setRate(true); }
+  }
+
+  return (
+    <>
+      <div className="tete-f">
+        <div><div className="sur">Votre recherche</div><h3>{e.titre}</h3></div>
+        <button className="fermer" onClick={onFermer} aria-label="Fermer"><Ico n="croix" t={14} /></button>
+      </div>
+
+      <div className="frise-e" ref={friseRef}>
+        {ETAPES.map((s, k) => (
+          <button key={s.id} type="button" aria-label={s.titre} title={s.titre}
+            className={'fp' + (k === i ? ' on' : k < i ? ' fait' : '')} onClick={() => aller(k)}>
+            <Ico n={s.ico} t={15} />
+            <span>{s.titre}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="corps-f corps-e">
+        <div key={e.id} className={'pan-e ' + (sens === 1 ? 'av' : 'ar')}>
+          <p className="sous-e">{e.sous}</p>
+          {e.contenu}
+        </div>
+      </div>
+
+      {rate && <div style={{ padding: '0 18px' }}><EchecEnvoi /></div>}
+      <div className="nav-e">
+        <button className="btn" onClick={() => (i === 0 ? onFermer() : aller(i - 1))}>{i === 0 ? 'Annuler' : '← Précédent'}</button>
+        <span className="cpt">{i + 1} / {nb}</span>
+        {i < nb - 1
+          ? <button className="btn or" onClick={() => aller(i + 1)}>Suivant →</button>
+          : <BtnEnvoi enCours={enr} libelle="Enregistrer" enCoursTexte="Enregistrement…" onClick={enregistrer} />}
+      </div>
+    </>
+  );
+}
+/* « Je cherche toujours », depuis le mail « Où en est votre recherche ? ».
+   Le lien du mail n'enregistre rien en arrivant : les messageries ouvrent les
+   liens pour les vérifier, et répondraient à la place du client. C'est ce
+   bouton-ci, pressé par lui, qui prévient son conseiller. */
+function Toujours({ onFermer, onConfirmer, onCriteres }: any) {
+  const [envoi, setEnvoi] = useState(false);
+  return (
+    <>
+      <div className="tete-f">
+        <div><div className="sur">Votre recherche</div><h3>Vous cherchez toujours&nbsp;?</h3></div>
+        <button className="fermer" onClick={onFermer} aria-label="Fermer"><Ico n="croix" t={14} /></button>
+      </div>
+      <div className="corps-f">
+        <p className="txt" style={{ marginTop: 0, color: 'var(--plume)' }}>
+          {'Un clic pour le confirmer à votre conseiller\u00a0: la recherche continue, sur les mêmes critères.'}
+        </p>
+        <BtnEnvoi enCours={envoi} classe="btn or" libelle="Oui, je cherche toujours"
+          enCoursTexte="Envoi en cours…"
+          onClick={async () => { setEnvoi(true); await onConfirmer(); }} />
+        <button className="cta-prec" style={{ marginTop: 12 }} onClick={onCriteres}>
+          <span><b>Mes critères ont évolué</b>
+            <span className="s">{'Vous les modifiez vous-même, ou votre conseiller vous rappelle pour en parler.'}</span></span>
+          <span className="chev"><Ico n="fleche" t={18} /></span>
+        </button>
+      </div>
+    </>
+  );
+}
+
+/* Le carrefour de « Mes critères ont évolué » : modifier soi-même, ou être
+   rappelé. Le créneau se choisit ici même — ouvrir une deuxième pop-up pour
+   trois boutons, c'est une étape de trop. */
+/* Trois réponses, jamais une de plus : on ne fait pas remplir un formulaire
+   à quelqu'un qui vient nous dire qu'il s'en va. */
+function FinRecherche({ onFermer, onChoisir, seulement, titre, intro }: any) {
+  const [motif, setMotif] = useState('');
+  const [mot, setMot] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const TOUS: [string, string, string][] = [
+    ['trouve_avec_vous', "J'ai trouvé, grâce à vous", 'Le bien vient de votre sélection.'],
+    ['trouve_ailleurs', "J'ai trouvé par un autre biais", 'Une autre agence, un particulier, une relation.'],
+    ['pause', 'Je mets ma recherche en pause', 'Le projet est reporté, sans être abandonné.'],
+    /* Quatrième réponse, et pas un doublon de la pause : l'une se relance,
+       l'autre se clôture. Un client qui renonce et à qui on propose seulement
+       « pause » répondra « pause » — et continuera de recevoir des biens. */
+    ['abandon', "J'arrête ma recherche", 'Le projet ne se fera pas, au moins pour le moment.'],
+  ];
+  /* Depuis le mail « Où en est votre recherche ? », le bouton « J'ai trouvé »
+     ne montre que les deux réponses « trouvé », et « Pause ou arrêt » les
+     deux autres : le client a déjà dit laquelle, on ne lui repose pas la
+     question entière. */
+  const CHOIX = Array.isArray(seulement) ? TOUS.filter(c => seulement.includes(c[0])) : TOUS;
+  return (
+    <>
+      <div className="tete-f">
+        <div><div className="sur">Votre recherche</div><h3>{titre || 'Votre recherche est terminée\u00a0?'}</h3></div>
+        <button className="fermer" onClick={onFermer} aria-label="Fermer"><Ico n="croix" t={14} /></button>
+      </div>
+      <div className="corps-f">
+        <p className="txt" style={{ marginTop: 0, color: 'var(--plume)' }}>
+          {intro || 'Dites-le-nous en un clic. Votre conseiller vous rappelle pour en parler\u00a0: rien ne se ferme sans vous.'}
+        </p>
+
+        {CHOIX.map(([cle, titre, sous]) => (
+          <button key={cle} className="cta-prec" onClick={() => setMotif(cle)}
+            style={motif === cle ? { borderColor: 'var(--or)', background: 'var(--or-fond)' } : undefined}>
+            <span><b>{titre}</b><span className="s">{sous}</span></span>
+            <span className="chev"><Ico n="fleche" t={18} /></span>
+          </button>
+        ))}
+
+        {motif && (
+          <div className="bloc-rappel">
+            <div className="lib-rappel">Un mot, si vous voulez en dire plus</div>
+            <textarea value={mot} onChange={e => setMot(e.target.value)} rows={3}
+              placeholder="Facultatif"
+              style={{ width: '100%', border: '1px solid var(--trait)', borderRadius: 12,
+                padding: '11px 13px', fontFamily: 'inherit', fontSize: 14,
+                color: 'var(--encre)', resize: 'vertical', outline: 'none', background: '#fff' }} />
+            <BtnEnvoi enCours={envoi} classe="btn or" libelle="Prévenir mon conseiller"
+              enCoursTexte="Envoi en cours…" style={{ marginTop: 12 }}
+              onClick={async () => { setEnvoi(true); await onChoisir(motif, mot); }} />
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function ChoixCriteres({ onFermer, onModifier, onRappel }: any) {
+  const [ouvertRappel, setOuvertRappel] = useState(false);
+  const [creneau, setCreneau] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const CRENEAUX: [string, string, string][] = [
+    ['matin', 'Le matin', '8h – 12h'],
+    ['apres_midi', "L'après-midi", '12h – 18h'],
+    ['soir', 'En fin de journée', '18h – 20h'],
+  ];
+  return (
+    <>
+      <div className="tete-f">
+        <div><div className="sur">Votre recherche</div><h3>Comment préférez-vous faire&nbsp;?</h3></div>
+        <button className="fermer" onClick={onFermer} aria-label="Fermer"><Ico n="croix" t={14} /></button>
+      </div>
+      <div className="corps-f">
+        <p className="txt" style={{ marginTop: 0, color: 'var(--plume)' }}>
+          Deux façons de faire évoluer votre recherche. Les deux arrivent chez votre conseiller.
+        </p>
+
+        <button className="cta-prec" onClick={onModifier}>
+          <span><b>Je modifie moi-même ma recherche</b>
+            <span className="s">Vous reprenez vos critères un par un. Vos changements sont
+              transmis à votre conseiller, qui les intègre aussitôt à la recherche.</span></span>
+          <span className="chev"><Ico n="fleche" t={18} /></span>
+        </button>
+
+        <button className="cta-prec" onClick={() => setOuvertRappel(true)}
+          style={ouvertRappel ? { borderColor: 'var(--or)' } : undefined}>
+          <span><b>Je souhaite être rappelé</b>
+            <span className="s">Votre conseiller vous appelle pour en parler de vive voix,
+              et met la recherche à jour avec vous.</span></span>
+          <span className="chev"><Ico n="tel" t={18} /></span>
+        </button>
+
+        {ouvertRappel && (
+          <div className="bloc-rappel">
+            <div className="lib-rappel">À quel moment de la journée&nbsp;?</div>
+            <div className="creneaux">
+              {CRENEAUX.map(([cle, titre, heures]) => (
+                <button key={cle} type="button"
+                  className={'creneau' + (creneau === cle ? ' pris' : '')}
+                  onClick={() => setCreneau(cle)}>
+                  <b>{titre}</b><span>{heures}</span>
+                </button>
+              ))}
+            </div>
+            <BtnEnvoi enCours={envoi} classe="btn or" libelle="Demander à être rappelé"
+              enCoursTexte="Envoi en cours…" style={{ marginTop: 12, opacity: creneau ? 1 : .5 }}
+              onClick={async () => { if (!creneau) return; setEnvoi(true); await onRappel(creneau); }} />
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+/* ══ « Vos recherches » ═══════════════════════════
+   Ce qui s'ouvre quand le client appuie sur le sélecteur de l'en-tête.
+
+   On n'arrive ici qu'avec plusieurs recherches : la liste est donc toujours
+   courte. Chaque ligne dit deux choses, et pas une de plus — de quoi il
+   s'agit, et s'il y a du nouveau dedans.
+
+   Le choix recharge la page (voir `changerRecherche`) : on garde donc la
+   ligne marquée « Ouverture… » pendant la seconde d'attente, plutôt que de
+   laisser croire que l'appui n'a rien fait. */
+function ChoixRecherche({ liste, courante, onChoisir, onFermer }: {
+  liste: { id: string; nom: string; resume: string; nonLus: number }[];
+  courante: string;
+  onChoisir: (id: string) => void;
+  onFermer?: () => void;
+}) {
+  const [en, setEn] = useState<string | null>(null);
+  return (
+    <>
+      <div className="tete-f">
+        <div><div className="sur">Votre dossier</div><h3>Vos recherches</h3></div>
+        {onFermer && (
+          <button className="fermer" onClick={onFermer} aria-label="Fermer"><Ico n="croix" t={14} /></button>
+        )}
+      </div>
+      <div className="corps-f">
+        {/* ⚠️ Une seule chaîne, pas du texte JSX autour d'un {…}.
+            Le compilateur rogne les espaces en bord d'un bloc de texte qui
+            court sur plusieurs lignes : « Vous en avez {n} en cours » ressortait
+            collé, « 2en cours ». Écrit d'un bloc, le problème ne peut plus se
+            poser — et les espaces insécables sont posés à la main. */}
+        <p className="txt" style={{ marginTop: 0, color: 'var(--plume)' }}>
+          {`Vous en avez ${liste.length} en cours. Choisissez celle que vous voulez suivre ; `
+            + (liste.length > 2
+              ? 'vous pourrez changer quand vous voudrez.'
+              : 'vous pourrez revenir à l’autre quand vous voudrez.')}
+        </p>
+        <div className="recs">
+          {liste.map((r) => {
+            const prise = r.id === courante;
+            return (
+              <button key={r.id} type="button" disabled={!!en}
+                className={'rec' + (prise ? ' prise' : '') + (en === r.id ? ' en' : '')}
+                onClick={() => { if (prise || en) return; setEn(r.id); onChoisir(r.id); }}>
+                <span className="rec-rd">{prise ? <Ico n="check" t={12} /> : null}</span>
+                <span className="rec-txt">
+                  <b>{r.nom}</b>
+                  {r.resume ? <span>{r.resume}</span> : null}
+                </span>
+                {en === r.id
+                  ? <span className="rec-etat">Ouverture…</span>
+                  : (!prise && r.nonLus > 0)
+                    ? <span className="rec-neuf">{r.nonLus} nouveau{r.nonLus > 1 ? 'x' : ''}</span>
+                    : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* Pas parti (V3.17) : dit sous le bouton, la fenêtre reste ouverte avec ce
+   qu'il a saisi — il n'a qu'à réessayer. */
+function EchecEnvoi() {
+  return (
+    <div role="alert" style={{
+      marginTop: 12, color: '#991b1b', background: 'var(--brique-fond)', border: '1px solid var(--brique-trait)',
+      borderRadius: 12, padding: '11px 13px', lineHeight: 1.55, fontSize: 14,
+    }}>
+      {`Ce n’est pas parti : un souci de connexion, sans doute. Ce que vous avez saisi est gardé, réessayez dans un instant. Sinon, votre conseiller : ${AGENT.tel}.`}
+    </div>
+  );
+}
+
+function Message({ onFermer, onEnvoi }: any) {
+  const [txt, setTxt] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const [rate, setRate] = useState(false);
+  return (
+    <>
+      <div className="tete-f">
+        <div><div className="sur">Message</div><h3>Dites-moi tout</h3></div>
+        <button className="fermer" onClick={onFermer} aria-label="Fermer"><Ico n="croix" t={14} /></button>
+      </div>
+      <div className="corps-f">
+        <p className="txt" style={{ marginTop: 0, color: 'var(--plume)' }}>Alexandre le reçoit tout de suite et vous rappelle.</p>
+        <textarea rows={5} value={txt} onChange={e => setTxt(e.target.value)} autoFocus
+          placeholder="Ex : finalement on pourrait regarder un peu plus loin, et on peut monter si le bien est refait." />
+        <BtnEnvoi enCours={envoi} classe="btn encre" libelle="Envoyer" style={{ marginTop: 12 }}
+          onClick={async () => {
+            if (!txt.trim()) return;
+            setEnvoi(true); setRate(false);
+            if (!(await onEnvoi(txt.trim()))) { setEnvoi(false); setRate(true); }
+          }} />
+        {rate && <EchecEnvoi />}
+      </div>
+    </>
+  );
+}
+
+const JOURS_L = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const MOIS_L = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+/* « Jeudi 25 septembre » plutôt que « 25/09/2026 » : on lit une date de
+   rendez-vous comme on la dirait au téléphone. */
+function dateLongue(d: string) {
+  const x = new Date(d + (d.length <= 10 ? 'T12:00:00' : ''));
+  if (isNaN(x.getTime())) return d;
+  const t = `${JOURS_L[x.getDay()]} ${x.getDate()} ${MOIS_L[x.getMonth()]}`;
+  return t.charAt(0).toUpperCase() + t.slice(1);   // « Mercredi 23 septembre », pas « Mercredi 23 Septembre »
+}
+function joursAvant(d: string) {
+  const x = new Date(d + (d.length <= 10 ? 'T12:00:00' : ''));
+  const a = new Date(); a.setHours(12, 0, 0, 0);
+  const n = Math.round((x.getTime() - a.getTime()) / 86400000);
+  if (n < 0) return null;
+  if (n === 0) return "aujourd'hui";
+  if (n === 1) return 'demain';
+  if (n < 8) return `dans ${n} jours`;
+  return null;
+}
+
+/* Sur Android, un fichier .ics se télécharge puis il faut aller l'ouvrir :
+   pour Google Agenda, un lien direct est bien plus simple. On propose donc
+   les deux, chacun fait un seul geste. */
+function lienGoogle(v: { date: string; heure: string | null; titre: string; adresse: string }) {
+  const hh = v.heure ? String(v.heure).slice(0, 5) : '10:00';
+  const debut = new Date(`${String(v.date).slice(0, 10)}T${hh}:00`);
+  const fin = new Date(debut.getTime() + 3600000);
+  const z = (n: number) => String(n).padStart(2, '0');
+  const fmt = (d: Date) => `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}T${z(d.getHours())}${z(d.getMinutes())}00`;
+  const p = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: 'Visite — ' + v.titre,
+    dates: `${fmt(debut)}/${fmt(fin)}`,
+    details: 'Visite organisée par Emilio Immobilier.\nAlexandre Rogelet · 06 58 95 76 32',
+    ctz: 'Europe/Paris',
+  });
+  if (v.adresse) p.set('location', v.adresse);
+  return 'https://calendar.google.com/calendar/render?' + p.toString();
+}
+
+/* V3.206 (planche 4) — la carte violette, qu'Alexandre aime, avec la vraie
+   photo du bien : à gauche sur ordinateur, en haut sur un téléphone. */
+function ProchaineVisite({ v, autres, token, onBien, titre = 'Votre prochaine visite' }: { v: any; autres: number; token: string; onBien?: () => void; titre?: string }) {
+  const bientot = joursAvant(v.date);
+  /* La photo et le titre mènent au bien : quand le rendez-vous tombe une
+     semaine plus tard, la première question est « c'était lequel, déjà ? ». */
+  return (
+    <div className="visite-a-venir vav2">
+      {v.photo && (onBien
+        ? <button type="button" className="vav-photo" onClick={onBien} aria-label="Revoir le bien"><img src={v.photo} alt="" /></button>
+        : <span className="vav-photo"><img src={v.photo} alt="" /></span>)}
+      <div className="vav-corps">
+        <div className="vav-t"><Ico n="calendrier" t={15} /><span>{titre}</span></div>
+        <div className="vav-q">
+          {dateLongue(v.date)}{v.heure ? ` à ${heureVisite(v.heure)}` : ''}
+          {bientot && <span className="vav-b">{bientot}</span>}
+        </div>
+        <div className="vav-b2">{v.titre}</div>
+        {v.adresse && <div className="vav-a"><Ico n="lieu" t={13} /><span>{v.adresse}</span></div>}
+        <div className="vav-act">
+          {onBien && <button type="button" className="vav-voir2" onClick={onBien}><span>Revoir le bien</span><Ico n="fleche" t={14} /></button>}
+          <span className="vav-ag-t">Ajouter à mon agenda</span>
+          <span className="vav-ag-b">
+            <a className="vav-ics" href={lienGoogle(v)} target="_blank" rel="noopener noreferrer">Google&nbsp;Agenda</a>
+            <a className="vav-ics" href={`/api/espace/agenda?token=${encodeURIComponent(token)}&v=${encodeURIComponent(v.id)}`}>Apple&nbsp;· Outlook</a>
+          </span>
+        </div>
+        {autres > 0 && <div className="vav-p">Et {autres} autre{autres > 1 ? 's' : ''} visite{autres > 1 ? 's' : ''} prévue{autres > 1 ? 's' : ''} ensuite.</div>}
+      </div>
+    </div>
+  );
+}
+
+/* Les trois chiffres de l'accueil ne parlent pas d'eux-mêmes : « 119 annonces
+   lues », lues par qui, et pour quoi faire ? Chacun a son explication, derrière
+   un point d'interrogation. On dit ce que le chiffre est, et ce qu'il n'est pas. */
+const AIDES: Record<string, { ico: string; sur: string; titre: string; texte: string; puces: string[] }> = {
+  /* V3.184 : le « ? » de « Une annonce repérée ? » (texte validé par Alexandre). */
+  annonce: {
+    ico: 'lien', sur: 'Une annonce repérée', titre: 'Vous avez vu un bien qui vous plaît ailleurs\u00a0?',
+    texte: 'Envoyez-le à Alexandre : il le regarde avec le même soin que les biens qu’il vous présente, et vous dit ce qu’il en pense.',
+    puces: [
+      'Collez le lien de l’annonce : SeLoger, Leboncoin, le site d’une agence… Pas de lien ? Vous avez vu une affiche en vitrine ou un panneau « À vendre » ? Prenez-le en photo, depuis votre téléphone.',
+      'Il vérifie le prix, le quartier, la copropriété, et appelle l’agence si besoin.',
+      'Vous suivez sa réponse sur votre accueil : retenue, elle rejoint vos biens ; écartée, il vous dit pourquoi.',
+      'Cela ne vous engage à rien : c’est une question, comme un message.',
+    ],
+  },
+  /* V3.145 : le « ? » du prix d'un bien (texte validé par Alexandre). */
+  prix: {
+    ico: 'euro', sur: 'Le prix', titre: 'Prix demandé pour ce bien.',
+    texte: 'Le plus souvent, vous n’avez rien à payer en plus.',
+    puces: [
+      'Sinon, nos honoraires s’ajoutent : c’est alors écrit sur le bien, avec leur montant.',
+      'Les frais de notaire sont toujours en plus.',
+    ],
+  },
+  /* V3.188 : le « ? » de « + 6 000 € de nos honoraires » (Alexandre : « dans le
+     cadre d'une négociation, le but c'est que vous payiez le moins cher, et que
+     le fait qu'on vous accompagne soit compris dans votre négociation »). */
+  honoraires: {
+    ico: 'euro', sur: 'Nos honoraires', titre: 'Notre accompagnement, compris dans la négociation.',
+    texte: 'Ce montant, ce sont nos honoraires : notre accompagnement, de la recherche du bien jusqu’à la signature chez le notaire.',
+    puces: [
+      'Le prix affiché est celui de l’annonce. Quand vous faites une offre, nous négocions pour que vous payiez le moins cher possible.',
+      'Notre but : que la baisse obtenue couvre nos honoraires. Notre accompagnement est alors compris dans votre négociation.',
+      'Vous ne les payez que si vous achetez ce bien, le jour de la signature chez le notaire. Rien avant.',
+      'Les frais de notaire restent en plus.',
+    ],
+  },
+  decouvrir: {
+    ico: 'etoile', sur: 'Vos nouveautés', titre: 'Ce que veut dire « à découvrir »',
+    texte: "C'est le nombre de biens retenus pour vous que vous n'avez pas encore ouverts.",
+    puces: [
+      'Dès qu’un bien passe tous vos critères, il arrive ici et le compteur monte.',
+      'Il redescend à mesure que vous les ouvrez : ceux-là partent dans « Mes derniers biens consultés ».',
+      'À zéro, vous êtes à jour — rien ne vous attend, et rien ne s’est perdu.',
+    ],
+  },
+  lues: {
+    ico: 'loupe', sur: 'Le travail de fond', titre: 'Ce que veut dire « annonces lues »',
+    texte: "Le nombre d'annonces que nous avons lues pour vous depuis l'ouverture de votre dossier.",
+    puces: [
+      'Chaque jour, nous passons en revue ce qui sort sur votre secteur : portails, confrères, off-market.',
+      'Ce ne sont pas des biens qui vous correspondent : c’est tout ce que nous avons regardé pour en trouver. La grande majorité est écartée.',
+      'Ce total ne fait que monter, un peu plus à chaque journée de recherche.',
+    ],
+  },
+  retenus: {
+    ico: 'etoile', sur: 'Ce qui vous arrive', titre: 'Ce que veut dire « bien retenu pour vous »',
+    texte: "C'est le nombre de biens que nous avons jugés dignes de vous être montrés, et que vous retrouvez dans cet espace.",
+    puces: [
+      'Un bien n’arrive ici que s’il passe tous vos critères — ou s’il en vaut vraiment la peine, et nous vous disons alors pourquoi.',
+      'C’est exactement ce que vous avez sous les yeux : ce chiffre est le nombre de biens présents dans votre espace, ni plus ni moins.',
+      'Il monte lentement, et c’est normal : c’est le signe qu’on ne vous envoie pas tout et n’importe quoi.',
+    ],
+  },
+  ecartees: {
+    ico: 'croix', sur: 'Le tri', titre: 'Ce que veut dire « écartée »',
+    texte: "Une annonce écartée est une annonce que nous avons lue et qui ne méritait pas de vous être présentée.",
+    puces: [
+      'Le plus souvent, elle s’éloignait trop de ce que vous cherchez : le budget, la surface, le secteur, l’étage.',
+      'Mais vos critères ne sont pas une barrière. Quelques mètres carrés de moins, un étage imprévu, un prix un peu au-dessus quand il y a de la négociation à aller chercher : si le reste y est, nous vous le présentons quand même, en vous disant pourquoi.',
+      'Nous ne les gardons pas une par une : ce qui est conservé, c’est le compte, pour que vous voyiez le volume de tri fait pour vous.',
+      'Si vous trouvez qu’on écarte trop, ou pas assez, dites-le : vos critères se modifient depuis « Rappel de ma recherche ».',
+    ],
+  },
+  m2: {
+    ico: 'regle', sur: 'Vos repères', titre: 'Ce que veut dire « du m² en moyenne »',
+    texte: "C'est la moyenne du prix au mètre carré des biens présents dans votre espace.",
+    puces: [
+      'Elle est calculée sur vos biens à vous, pas sur une statistique de quartier : elle dit le prix du marché tel que vous le rencontrez.',
+      'Elle est recalculée à chaque bien déposé : elle ne peut pas être périmée.',
+      'Elle sert de repère pour situer un bien : nettement en dessous, il y a souvent une raison ; nettement au-dessus, elle doit se justifier.',
+    ],
+  },
+  rythme: {
+    ico: 'calendrier', sur: 'Le rythme', titre: 'Ce que montre « jour après jour »',
+    texte: "Une barre par journée, sur les sept derniers jours : le nombre d'annonces que nous avons lues ce jour-là sur vos critères. Sous chaque barre, le jour et la date.",
+    puces: [
+      'Les barres bougent d’un jour à l’autre : le marché ne sort pas le même volume tous les jours, le lundi et le samedi n’ont rien à voir.',
+      'Une barre basse ne veut pas dire qu’on a moins travaillé : elle veut dire qu’il est sorti moins d’annonces à regarder.',
+      'Un tiret : pas de recherche ce jour-là.',
+      'La barre dorée est la dernière journée de recherche.',
+    ],
+  },
+  jours: {
+    ico: 'horloge', sur: 'Votre dossier', titre: 'Ce que veut dire « jours de suivi »',
+    texte: "C'est le nombre de jours écoulés depuis l'ouverture de votre dossier chez nous.",
+    puces: [
+      'La recherche est reprise chaque jour depuis cette date, y compris les jours où rien n’est retenu.',
+      'Une recherche aboutit rarement en une semaine : compter en jours permet de voir où en est le projet, sans se raconter d’histoires.',
+      'Tout ce qui a été fait depuis reste consultable dans « Mes derniers biens consultés ».',
+    ],
+  },
+};
+
+/* V3.64 : il ouvre le lien « Lire et signer mon mandat » d'un mail, alors
+   qu'Alexandre a retiré sa proposition. Il a reçu un e-mail pour le lui dire
+   (si Alexandre l'a laissé partir) ; la fenêtre le redit, sans rien à faire. */
+const MANDAT_RETIRE: typeof AIDES[string] = {
+  ico: 'note', sur: 'Votre mandat de recherche', titre: 'Ce mandat n’est plus à signer',
+  texte: 'Alexandre a retiré sa proposition pour le moment.',
+  puces: [
+    'Vous n’avez rien à faire de votre côté.',
+    'S’il faut en signer un plus tard, Alexandre vous le dira.',
+    `Une question ? Appelez-le au ${AGENT.tel}.`,
+  ],
+};
+
+function Explication({ a, onFermer }: { a: typeof AIDES[string]; onFermer: () => void }) {
+  return (
+    <div className="bienv">
+      <div className="bienv-sceau"><Ico n={a.ico} t={28} /></div>
+      <div className="bienv-sur">{a.sur}</div>
+      <h3>{a.titre}</h3>
+      <p>{a.texte}</p>
+      <div className="puces">
+        {a.puces.map((t, i) => (
+          <span key={i}><span className="k"><Ico n="check" t={15} /></span><span>{t}</span></span>
+        ))}
+      </div>
+      <button className="btn or" style={{ marginTop: 22, width: '100%' }} onClick={onFermer}>J&apos;ai compris</button>
+    </div>
+  );
+}
+
+/* ══ la demande d'alertes ═════════════════════════ */
+/* Cette fenêtre-ci est la nôtre : la refermer ne coûte rien. Celle du
+   téléphone, qui arrive juste après s'il dit oui, ne se présente qu'une fois
+   dans la vie du dossier — d'où ce filtre en amont. On explique d'abord, on
+   demande ensuite. */
+const ECHECS: Record<string, React.ReactNode> = {
+  bloque: <>Votre téléphone a refusé sans rien afficher. Deux causes possibles&nbsp;:
+    <br /><br />
+    <b>1.</b>{' '}Vous avez ouvert cette page depuis un mail ou un message. Le petit navigateur
+    de ces applications ne sait pas gérer les alertes. Ouvrez plutôt cette page dans
+    <b> Chrome</b> ou <b>Safari</b> — c&apos;est le cas le plus fréquent.
+    <br /><br />
+    <b>2.</b>{' '}Les alertes ont été bloquées pour cet espace. Pour les rouvrir&nbsp;:
+    <b>Réglages</b> de votre téléphone → <b>Applications</b> → <b>Ma recherche</b> →
+    <b> Notifications</b>.</>,
+  refuse: <>La fenêtre de votre téléphone a été refermée sans réponse. Vous pouvez réessayer.</>,
+  erreur: <>L&apos;autorisation est bien donnée, mais l&apos;inscription n&apos;a pas abouti.
+    Réessayez dans un instant&nbsp;; si ça persiste, prévenez votre conseiller.</>,
+};
+
+function DemandeNotif({ onOui, onNon }: { onOui: () => Promise<string>; onNon: () => void }) {
+  const [envoi, setEnvoi] = useState(false);
+  const [echec, setEchec] = useState<string | null>(null);
+
+  /* Un échec ne doit pas se solder par une fenêtre qui se referme sans rien
+     dire : le client croirait que c'est fait, et n'aurait jamais de nouvelles.
+     Et chaque échec a sa cause, donc son texte — « ça n'a pas marché » tout
+     court ne dit pas quoi faire ensuite. */
+  const accepter = async () => {
+    setEnvoi(true); setEchec(null);
+    const r = await onOui();
+    if (r !== 'ok') { setEnvoi(false); setEchec(r); }
+  };
+
+  return (
+    <div className="bienv">
+      <div className="bienv-sceau"><Ico n="etincelle" t={28} /></div>
+      <div className="bienv-sur">Rester au courant</div>
+      <h3>Vous prévenir dès qu&apos;un bien arrive&nbsp;?</h3>
+      <p>Votre conseiller dépose dans ce dossier les biens qu&apos;il retient pour vous, au fil
+        de la semaine. Si vous le souhaitez, votre téléphone vous le signale&nbsp;— vous
+        n&apos;avez plus à venir vérifier.</p>
+      <div className="puces">
+        <span><span className="k"><Ico n="check" t={15} /></span><span>Uniquement quand un <b>nouveau bien</b> est déposé pour vous.</span></span>
+        <span><span className="k"><Ico n="check" t={15} /></span><span>Jamais de publicité, jamais de relance commerciale.</span></span>
+        <span><span className="k"><Ico n="check" t={15} /></span><span>Vous pouvez les couper quand vous voulez, depuis les réglages de votre téléphone.</span></span>
+      </div>
+      <button className="btn or" style={{ marginTop: 22, width: '100%' }} disabled={envoi}
+        onClick={accepter}>
+        {envoi ? 'Un instant…' : echec ? 'Réessayer' : 'Oui, prévenez-moi'}
+      </button>
+      <button className="btn fant" style={{ marginTop: 10, width: '100%' }} onClick={onNon}>
+        {echec ? 'Fermer' : 'Non merci'}
+      </button>
+      {echec ? (
+        <div className="bienv-pied" style={{
+          color: '#991b1b', background: 'var(--brique-fond)', border: '1px solid var(--brique-trait)',
+          borderRadius: 12, padding: '11px 13px', lineHeight: 1.55, textAlign: 'left',
+        }}>
+          {ECHECS[echec] || ECHECS.erreur}
+        </div>
+      ) : (
+        <div className="bienv-pied">Votre téléphone va vous demander confirmation juste après.</div>
+      )}
+    </div>
+  );
+}
+
+/* ══ le chemin vers l'écran d'accueil ═════════════ */
+/* Trois textes, parce qu'il y a trois situations, et qu'une notice qui ne
+   correspond pas à ce qu'on a sous les yeux ne sert à rien. */
+const CHEMINS: Record<string, { sur: string; titre: string; texte: string; etapes: React.ReactNode[]; pied: string }> = {
+  ios: {
+    sur: 'Sur votre iPhone',
+    titre: 'En trois gestes',
+    texte: "Votre espace se posera à côté de vos applications. Il s'ouvrira en plein écran, déjà sur votre dossier : plus besoin de retrouver le lien dans vos messages.",
+    etapes: [
+      <>Appuyez sur le bouton <b>Partager</b>, en bas de l&apos;écran — le carré avec une flèche vers le haut.</>,
+      <>Faites défiler, puis choisissez <b>« Sur l&apos;écran d&apos;accueil »</b>.</>,
+      <>Appuyez sur <b>Ajouter</b>, en haut à droite.</>,
+    ],
+    pied: "Rien ne s'installe sur votre téléphone : c'est un raccourci, et il se retire comme n'importe quelle application.",
+  },
+  bureau: {
+    sur: 'Sur votre ordinateur',
+    titre: 'En deux clics',
+    texte: "Votre espace se rangera dans votre barre des tâches et s'ouvrira dans sa propre fenêtre, sans onglet ni barre d'adresse.",
+    etapes: [
+      <>Cliquez sur l&apos;icône d&apos;installation, à droite de la barre d&apos;adresse&nbsp;— un petit écran avec une flèche.</>,
+      <>Sinon&nbsp;: menu <b>⋮</b> → <b>« Diffuser, enregistrer et partager »</b> → <b>« Installer la page en tant qu&apos;application »</b>.</>,
+      <>Confirmez avec <b>Installer</b>.</>,
+    ],
+    pied: "Rien ne s'installe vraiment sur votre ordinateur : c'est un raccourci, et il se retire comme n'importe quelle application.",
+  },
+  android: {
+    sur: 'Sur votre téléphone',
+    titre: 'En trois gestes',
+    texte: "Votre espace se posera à côté de vos applications. Il s'ouvrira en plein écran, déjà sur votre dossier : plus besoin de retrouver le lien dans vos messages.",
+    etapes: [
+      <>Appuyez sur le menu <b>⋮</b>, en haut à droite du navigateur.</>,
+      <>Choisissez <b>« Installer l&apos;application »</b> — ou <b>« Ajouter à l&apos;écran d&apos;accueil »</b>.</>,
+      <>Confirmez avec <b>Installer</b>.</>,
+    ],
+    pied: "Rien ne s'installe vraiment sur votre téléphone : c'est un raccourci, et il se retire comme n'importe quelle application.",
+  },
+  appli: {
+    sur: 'Une étape avant',
+    titre: 'Ouvrez-le dans Safari',
+    texte: "Vous lisez cette page dans le navigateur intégré de votre messagerie (ou de WhatsApp, Instagram…). Celui-là ne sait ni installer l'application, ni activer les alertes. Une fois dans Safari, tout devient possible.",
+    etapes: [
+      <>Appuyez sur <b>•••</b> ou sur la petite boussole, en bas de l&apos;écran.</>,
+      <>Choisissez <b>« Ouvrir dans Safari »</b>.</>,
+      <>Puis <b>Partager</b> → <b>« Sur l&apos;écran d&apos;accueil »</b>.</>,
+    ],
+    pied: "Vous pouvez aussi copier le lien ci-dessous et le coller dans Safari.",
+  },
+  /* Le même cas sur Android, et de loin le plus courant : le client ouvre le
+     mail dans Gmail, qui affiche la page dans son navigateur de poche. */
+  appliandroid: {
+    sur: 'Une étape avant',
+    titre: 'Ouvrez-le dans Chrome',
+    texte: "Vous lisez cette page dans le navigateur intégré de votre messagerie. Celui-là ne sait ni installer l'application, ni activer les alertes. Une fois dans Chrome, tout devient possible.",
+    etapes: [
+      <>Appuyez sur <b>⋮</b> en haut à droite de l&apos;écran.</>,
+      <>Choisissez <b>« Ouvrir dans Chrome »</b> — ou <b>« Ouvrir dans le navigateur »</b>.</>,
+      <>Puis <b>⋮</b> → <b>« Installer l&apos;application »</b>.</>,
+    ],
+    pied: "Vous pouvez aussi copier le lien ci-dessous et le coller dans Chrome.",
+  },
+};
+
+function GuideEcran({ appareil, onFermer }: { appareil: string; onFermer: () => void }) {
+  const c = CHEMINS[appareil] || CHEMINS.ios;
+  const [copie, setCopie] = useState(false);
+  /* Les deux navigateurs de poche, iPhone et Android, partagent le même
+     traitement : on ne peut rien y installer, on montre la sortie. */
+  const dansUneAppli = appareil === 'appli' || appareil === 'appliandroid';
+
+  const copier = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopie(true);
+      setTimeout(() => setCopie(false), 2400);
+    } catch { /* le presse-papier n'est pas toujours autorisé */ }
+  };
+
+  return (
+    <div className="bienv">
+      <div className="bienv-sceau"><Ico n={dansUneAppli ? 'partage' : 'lieu'} t={28} /></div>
+      <div className="bienv-sur">{c.sur}</div>
+      <h3>{c.titre}</h3>
+      <p>{c.texte}</p>
+      <div className="puces etapes">
+        {c.etapes.map((t, i) => (
+          <span key={i}><span className="k num">{i + 1}</span><span>{t}</span></span>
+        ))}
+      </div>
+      {dansUneAppli && (
+        <button className="btn fant" style={{ marginTop: 18, width: '100%' }} onClick={copier}>
+          {copie ? '✓ Lien copié' : 'Copier le lien'}
+        </button>
+      )}
+      <button className="btn or" style={{ marginTop: 12, width: '100%' }} onClick={onFermer}>
+        {dansUneAppli ? 'Fermer' : "C'est fait"}
+      </button>
+      <div className="bienv-pied">{c.pied}</div>
+    </div>
+  );
+}
+
+/* `autre` (V3.186) : un second bouton, plus discret, sous « Parfait » —
+   « Envoyer une autre annonce » après un envoi. */
+function GrandOk({ titre, texte, rappel, bouton, onFermer, autre }: any) {
+  return (
+    <div className="grandok">
+      <div className="rond-ok"><Ico n="check" t={36} /></div>
+      <h3>{titre}</h3>
+      <p>{texte}</p>
+      {rappel && <div className="rappel" dangerouslySetInnerHTML={{ __html: rappel }} />}
+      <button className="btn or" style={{ marginTop: 22 }} onClick={onFermer}>{bouton || 'Parfait'}</button>
+      {autre && <button className="btn fant" style={{ marginTop: 10 }} onClick={autre.onClick}><Ico n={autre.ico || 'plus'} t={17} /><span>{autre.texte}</span></button>}
+    </div>
+  );
+}
+
+/* ══ styles ═══════════════════════════════════════ */
+const CSS = `
+/* Le CRM verrouille le défilement (html,body overflow:hidden dans globals.css)
+   parce que c'est une appli à écran fixe. L'espace client, lui, est une page
+   web classique : on rend la main au navigateur. */
+html, body{ height:auto !important; min-height:100% !important;
+  overflow-x:hidden !important; overflow-y:auto !important;
+  -webkit-overflow-scrolling:touch }
+:root{
+  /* V3.116 : les couleurs du site emilio-immo.com (plus de marine ni de doré) :
+     l'encre pour le texte, le bleu de la marque pour les aplats sombres,
+     l'orange pour l'accent (orange clair sur fond bleu, orange foncé pour
+     un texte sur fond clair). */
+  --encre:#13243D; --encre2:#22497D; --or:#E68B23; --or-fonce:#A95808; --or-clair:#F2B266;
+  --marque:#22497D; --marque-fonce:#1B3D6B;
+  --fond:#F5F8FC; --carte:#fff; --trait:#E8EDF3; --trait-fort:#DCE3EC;
+  --plume:#5B6B80; --plume-clair:#8FA3BF;
+  --vert:#15803d; --vert-fond:#f0fdf4; --vert-trait:#bbf7d0;
+  --prune:#7c3aed; --prune-fond:#f5f3ff; --prune-trait:#ddd6fe;
+  --brique:#dc2626; --brique-fond:#fef2f2; --brique-trait:#fecaca;
+  --or-fond:#FFF6EC; --or-trait:#F7D5B0;
+  --bleu:#22497D; --bleu-fond:#E8EFF8; --bleu-trait:#C9D5E6;
+  --ambre:#E68B23; --ambre-clair:#F2B266; --ambre-fond:#fff6ec; --ambre-trait:#f7d5b0;
+  --ombre:0 1px 2px rgba(19,36,61,.04), 0 10px 26px -20px rgba(19,36,61,.3);
+  --ombre-f:0 2px 4px rgba(19,36,61,.05), 0 20px 44px -24px rgba(19,36,61,.5);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--fond); color:var(--encre);
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif; font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:'Plus Jakarta Sans',system-ui,sans-serif; letter-spacing:-.4px}
+.tab{font-variant-numeric:tabular-nums}
+button{font-family:inherit; cursor:pointer; color:inherit; border:none; background:none}
+input, textarea, select{font-family:inherit}
+:focus-visible{outline:2px solid var(--or); outline-offset:2px; border-radius:8px}
+
+.chapeau{background:linear-gradient(152deg,#2A5A96 0%,#1B3D6B 52%,#22497D 100%);
+  color:#fff; padding:22px 20px 26px; position:relative; overflow:hidden}
+.chapeau::after{content:""; position:absolute; top:-130px; right:-80px; width:320px; height:320px;
+  border-radius:50%; background:radial-gradient(circle,rgba(230,139,35,.24),transparent 64%)}
+.marque{position:relative; display:flex; align-items:center; justify-content:space-between; gap:12px}
+.motmarque{font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:800; letter-spacing:2.2px; color:var(--or-clair)}
+.confid{font-size:9.5px; letter-spacing:1.3px; color:rgba(255,255,255,.42); text-transform:uppercase; font-weight:700}
+.chapeau .dedans{position:relative; max-width:680px; margin:0 auto}
+.rangee{position:relative; margin-top:18px; display:flex; flex-direction:column; gap:13px}
+.ident{position:relative; display:flex; align-items:center; gap:13px}
+.mono{width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,.08);
+  border:1px solid rgba(230,139,35,.45); display:flex; align-items:center; justify-content:center;
+  font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:18px; color:var(--or-clair); flex:0 0 auto}
+.ident h1{margin:0; font-size:19.5px; font-weight:800; color:#fff; line-height:1.18; letter-spacing:-.2px}
+.ident .ref{font-size:11.5px; color:rgba(255,255,255,.45); margin-top:3px}
+
+/* — le sélecteur de recherche —
+   Il n'apparaît qu'à partir de la deuxième recherche du client. Le compteur
+   passe devant le mot : c'est « 1 sur 2 » qui annonce qu'il y a autre chose
+   à voir, et c'est donc lui qu'on doit lire en premier.
+
+   Le doré est en contour, pas plein : dans cet espace, le doré plein veut
+   dire « appuie ici » (Appeler, Envoyer mon retour). Ici c'est la ligne
+   entière qui est le bouton, pas la pastille. */
+.selec{position:relative; display:flex; align-items:center; gap:10px; width:100%;
+  background:rgba(255,255,255,.09); border:1px solid rgba(230,139,35,.4);
+  border-radius:14px; padding:10px 13px; text-align:left; cursor:pointer;
+  font-family:inherit; color:#fff;
+  transition:transform .16s cubic-bezier(.16,1,.3,1), background .2s}
+.selec:hover{background:rgba(255,255,255,.13)}
+.selec:active{transform:scale(.985)}
+.selec-in{min-width:0}
+.selec-h{display:flex; align-items:center; gap:8px}
+.selec-n{font-family:'Plus Jakarta Sans',sans-serif; font-size:10px; font-weight:800;
+  letter-spacing:.4px; color:var(--or-clair); background:rgba(230,139,35,.18);
+  border:1px solid rgba(230,139,35,.55); border-radius:99px; padding:3px 8px; white-space:nowrap}
+.selec-l{font-size:9.5px; letter-spacing:1.3px; text-transform:uppercase;
+  color:var(--or-clair); font-weight:800; white-space:nowrap}
+.selec-v{display:block; font-family:'Plus Jakarta Sans',sans-serif; font-size:14px;
+  font-weight:800; color:#fff; margin-top:4px; line-height:1.25;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.selec-d{display:block; font-size:11px; color:rgba(255,255,255,.5); margin-top:3px}
+.selec-d b{color:var(--or-clair); font-weight:800}
+.selec-cv{margin-left:auto; flex:0 0 auto; width:26px; height:26px; border-radius:50%;
+  background:rgba(255,255,255,.1); color:var(--or-clair);
+  display:flex; align-items:center; justify-content:center}
+/* Sur les petits écrans, « RECHERCHE EN COURS » passerait à la ligne à côté
+   du compteur : on garde le compteur, qui porte l'information. */
+@media(max-width:359px){.selec-l{display:none}}
+
+/* — la liste des recherches, dans la feuille — */
+.recs{display:flex; flex-direction:column; gap:10px; margin-top:14px}
+.rec{display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+  background:var(--carte); border:1px solid var(--trait); border-radius:15px;
+  padding:13px 14px; cursor:pointer; font-family:inherit; color:var(--encre);
+  transition:border-color .2s, background .2s, transform .16s cubic-bezier(.16,1,.3,1)}
+.rec:hover{border-color:var(--trait-fort)}
+.rec:active{transform:scale(.99)}
+.rec.prise{border-color:var(--or); background:#FFF6EC; cursor:default}
+.rec.en{opacity:.72}
+.rec:disabled{cursor:default}
+.rec-rd{width:20px; height:20px; border-radius:50%; border:2px solid var(--trait-fort);
+  flex:0 0 auto; display:flex; align-items:center; justify-content:center; color:var(--encre)}
+.rec.prise .rec-rd{border-color:var(--or); background:var(--or)}
+.rec-txt{min-width:0}
+.rec-txt b{display:block; font-family:'Plus Jakarta Sans',sans-serif; font-size:14.5px;
+  font-weight:800; line-height:1.25}
+.rec-txt span{display:block; font-size:11.5px; color:var(--plume); margin-top:3px}
+.rec-neuf{margin-left:auto; flex:0 0 auto; font-size:10px; font-weight:800; letter-spacing:.6px;
+  text-transform:uppercase; color:var(--encre); background:#fdf1c9;
+  border:1px solid #f0e2bd; border-radius:99px; padding:4px 8px; white-space:nowrap}
+.rec-etat{margin-left:auto; flex:0 0 auto; font-size:11.5px; font-weight:700; color:var(--plume)}
+
+/* — le chasseur qui suit le dossier — */
+.agent{display:flex; align-items:center; gap:12px;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14);
+  border-radius:16px; padding:11px 12px 11px 14px}
+.agent-id{min-width:0; margin-right:auto}
+.agent-sur{display:block; font-size:9.5px; letter-spacing:1.3px; text-transform:uppercase;
+  color:var(--or-clair); font-weight:800}
+.agent-id b{display:block; font-family:'Plus Jakarta Sans',sans-serif; font-size:14.5px;
+  font-weight:800; color:#fff; margin-top:3px; line-height:1.2}
+.agent-role{display:block; font-size:11px; color:rgba(255,255,255,.45); margin-top:3px}
+.agent-act{display:flex; gap:8px; flex:0 0 auto}
+.act{display:inline-flex; align-items:center; gap:7px; border-radius:99px; padding:9px 14px;
+  font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:800;
+  text-decoration:none; white-space:nowrap; background:var(--or); color:#13243D;
+  border:1px solid transparent; transition:transform .16s cubic-bezier(.16,1,.3,1), background .2s}
+.act.fant{background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.2); color:#fff}
+.act:active{transform:scale(.96)}
+/* Sur téléphone, le chasseur tient sur une seule ligne discrète sous le nom
+   du client : il est présent dans toutes les vues, il ne doit pas peser. */
+@media(max-width:759px){
+  .agent{background:none; border:0; border-top:1px solid rgba(255,255,255,.13);
+    border-radius:0; padding:11px 0 0; gap:10px}
+  .agent-id{display:flex; align-items:center; gap:7px; flex-wrap:wrap}
+  .agent-sur{font-size:9px; letter-spacing:1.1px; color:rgba(255,255,255,.4)}
+  .agent-id b{font-size:12.5px; margin-top:0; color:rgba(255,255,255,.92)}
+  .agent-role{display:none}
+  .agent-act{gap:7px}
+  .act{width:33px; height:33px; padding:0; border-radius:50%; justify-content:center}
+  .act span{display:none}
+}
+.veilleligne{position:relative; display:inline-flex; align-items:center; gap:9px;
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15);
+  border-radius:99px; padding:7px 15px 7px 12px; font-size:12.5px; color:rgba(255,255,255,.85)}
+.veilleligne{white-space:nowrap}
+.pouls{width:7px; height:7px; border-radius:50%; background:#5fd39b; flex:0 0 auto;
+  box-shadow:0 0 0 0 rgba(95,211,155,.6); animation:pouls 2.6s ease-out infinite}
+@keyframes pouls{0%{box-shadow:0 0 0 0 rgba(95,211,155,.5)}70%{box-shadow:0 0 0 9px rgba(95,211,155,0)}100%{box-shadow:0 0 0 0 rgba(95,211,155,0)}}
+
+.page{max-width:680px; margin:0 auto; padding:0 20px 80px}
+.accueil{display:block}
+
+/* Les règles grand écran sont regroupées en fin de feuille (voir plus bas). */
+@keyframes monte{from{opacity:0; transform:translateY(18px)}to{opacity:1; transform:none}}
+.vue > *{animation:monte .5s cubic-bezier(.16,1,.3,1) both}
+.vue > *:nth-child(2){animation-delay:.06s} .vue > *:nth-child(3){animation-delay:.12s}
+.vue > *:nth-child(4){animation-delay:.18s} .vue > *:nth-child(5){animation-delay:.24s}
+.vue > *:nth-child(6){animation-delay:.3s} .vue > *:nth-child(7){animation-delay:.36s}
+.vue > *:nth-child(8){animation-delay:.42s} .vue > *:nth-child(9){animation-delay:.48s}
+/* ⚠️ La cascade s'arrêtait ici : « Rappel de ma recherche » compte onze blocs,
+   et les deux derniers apparaissaient d'un coup, sans décalage. */
+.vue > *:nth-child(10){animation-delay:.54s} .vue > *:nth-child(11){animation-delay:.6s}
+.vue > *:nth-child(12){animation-delay:.66s} .vue > *:nth-child(13){animation-delay:.72s}
+
+.hero{position:relative; overflow:hidden; margin-top:24px; background:var(--carte);
+  border:1px solid var(--trait); border-radius:22px; padding:24px 22px; box-shadow:var(--ombre)}
+.hero::before{content:""; position:absolute; top:-90px; right:-70px; width:240px; height:240px;
+  border-radius:50%; background:radial-gradient(circle,rgba(230,139,35,.14),transparent 68%)}
+.hero::after{content:""; position:absolute; left:0; top:0; bottom:0; width:4px;
+  background:linear-gradient(180deg,var(--or),var(--ambre))}
+.hero .sur{position:relative; font-size:10px; letter-spacing:1.6px; text-transform:uppercase; color:var(--or-fonce); font-weight:800}
+.hero h2{position:relative; margin:9px 0 11px; font-size:26px; font-weight:800; line-height:1.15}
+.hero p{position:relative; margin:0; color:var(--plume); font-size:14.5px; line-height:1.7}
+.hero p b{color:var(--encre); font-weight:700}
+.puces{position:relative; display:flex; flex-direction:column; gap:10px; margin-top:18px; padding-top:18px; border-top:1px solid var(--trait)}
+.puces > span{display:flex; align-items:flex-start; gap:10px; font-size:13.5px; color:var(--encre); line-height:1.5}
+.puces > span > span:not(.k){display:block; min-width:0}
+.puces .k{color:var(--vert); flex:0 0 auto; margin-top:1px}
+.prochaine{position:relative; display:inline-flex; align-items:center; gap:9px; margin-top:18px;
+  background:var(--vert-fond); border:1px solid var(--vert-trait); border-radius:99px;
+  padding:8px 15px 8px 12px; font-size:12.5px; font-weight:700; color:var(--vert)}
+
+.bandeau-chiffres{display:flex; gap:1px; background:var(--trait); border:1px solid var(--trait);
+  border-radius:16px; overflow:hidden; margin-top:20px; box-shadow:var(--ombre)}
+.bc{flex:1; background:var(--carte); padding:14px 10px; text-align:center}
+/* Le « ? » est en exposant, HORS du flux : le chiffre reste donc parfaitement
+   centré au-dessus de son intitulé, la pastille déborde simplement à sa droite. */
+.bc .n{font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:21px; letter-spacing:-.8px;
+  line-height:1; display:block}
+.bc .nv{position:relative; display:inline-block}
+.bc .nv .aide-pt{position:absolute; left:100%; top:-5px; margin-left:3px}
+.bc .n.or{color:var(--or-fonce)}
+.bc .l{font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:var(--plume-clair);
+  font-weight:700; margin-top:6px}
+.aide-pt{width:15px; height:15px; flex:0 0 auto; border-radius:50%; border:1px solid var(--trait-fort);
+  background:var(--carte); color:var(--plume-clair); font-family:inherit; font-size:10px; font-weight:800;
+  line-height:1; display:inline-flex; align-items:center; justify-content:center; padding:0;
+  transition:color .15s, border-color .15s, background .15s}
+.aide-pt:hover{color:var(--or-fonce); border-color:var(--or-trait); background:var(--or-fond)}
+.sep{display:flex; align-items:center; gap:12px; margin:26px 0 14px}
+.sep span{font-size:11px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase;
+  color:var(--plume-clair); white-space:nowrap}
+.sep i{flex:1; height:1px; background:var(--trait); min-width:16px}
+/* Les liens du séparateur ont leur propre rangée : à deux boutons sur la ligne
+   du titre, le second débordait de l'écran sur un téléphone. Ici ils passent à
+   la ligne tout seuls quand il n'y a plus la place. */
+.sep-liens{display:flex; flex-wrap:wrap; gap:8px; margin:-6px 0 14px}
+
+.grille{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+.case{position:relative; background:var(--carte); border:1px solid var(--trait); border-radius:20px;
+  padding:18px 17px 16px; text-align:left; box-shadow:var(--ombre); width:100%; overflow:hidden;
+  display:flex; flex-direction:column; gap:13px;
+  transition:transform .24s cubic-bezier(.16,1,.3,1), box-shadow .24s ease, border-color .24s ease}
+.case:hover{transform:translateY(-4px); box-shadow:var(--ombre-f); border-color:var(--trait-fort)}
+.case:hover .ico{transform:translateY(-2px) rotate(-4deg)}
+.case:hover .chev{transform:translateX(4px)}
+.case:active{transform:scale(.982)}
+.case.large{grid-column:1 / -1}
+.ico{width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+  background:var(--fond); border:1px solid var(--trait); color:var(--encre2);
+  transition:transform .32s cubic-bezier(.34,1.56,.64,1)}
+.case h3{margin:0 0 4px; font-size:16px; font-weight:800; line-height:1.28}
+.case p{margin:0; font-size:13px; color:var(--plume); line-height:1.5}
+.chev{color:var(--plume-clair); transition:transform .24s cubic-bezier(.16,1,.3,1)}
+.pied-case{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:auto}
+.case.phare{border-color:var(--ambre-trait); background:linear-gradient(150deg,var(--ambre-fond) 0%,var(--carte) 56%)}
+.case.phare .ico{background:linear-gradient(140deg,var(--ambre-clair),var(--ambre)); border-color:var(--ambre);
+  color:#fff; box-shadow:0 10px 20px -8px var(--ambre)}
+.case.phare::before{content:""; position:absolute; top:-70px; right:-50px; width:190px; height:190px;
+  border-radius:50%; background:radial-gradient(circle,rgba(224,130,46,.18),transparent 66%)}
+.case.phare .badge{background:var(--ambre); box-shadow:0 6px 16px -4px var(--ambre)}
+.case.phare .pied-case span:first-child{color:var(--ambre)}
+.tete-case{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; position:relative}
+.badge{min-width:26px; height:26px; border-radius:99px; background:var(--or); color:#fff;
+  font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:13px;
+  display:flex; align-items:center; justify-content:center; padding:0 8px;
+  box-shadow:0 6px 16px -5px var(--or); animation:pop .55s cubic-bezier(.34,1.56,.64,1) both}
+.badge.gris{background:var(--trait); color:var(--plume); box-shadow:none}
+@keyframes pop{from{transform:scale(.3); opacity:0}to{transform:scale(1); opacity:1}}
+.apercu{display:flex; flex-direction:column; gap:7px; position:relative}
+/* Les cartes du haut font une demi-largeur : l'aperçu n'a qu'environ 105 px.
+   « 68 m² · 790 000 € » n'y tient pas d'un bloc et se ferait couper en plein
+   milieu du prix. On empile : le prix d'abord, la surface en dessous. */
+.apl{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--plume); min-width:0}
+.apl .et{min-width:0; display:flex; flex-direction:column; line-height:1.32}
+.apl .et i{font-style:normal; font-size:11px; color:var(--plume-clair);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.apl .pt{width:24px; height:24px; border-radius:7px; flex:0 0 auto; font-size:9px; overflow:hidden;
+  background:linear-gradient(148deg,#2A5A96,#1B3D6B); color:rgba(255,255,255,.5);
+  display:flex; align-items:center; justify-content:center}
+.apl .pt img{width:100%; height:100%; object-fit:cover}
+.apl b{color:var(--encre); font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.apl-s{font-size:11.5px; color:var(--plume-clair); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-left:32px; margin-top:-3px}
+.mini{display:flex; align-items:flex-end; gap:4px; height:34px}
+.mini i{flex:1; background:var(--or-trait); border-radius:3px 3px 0 0; min-height:4px;
+  animation:pousse .7s cubic-bezier(.16,1,.3,1) both; transform-origin:bottom}
+.mini i.fort{background:var(--or)}
+@keyframes pousse{from{transform:scaleY(.05); opacity:0}to{transform:scaleY(1); opacity:1}}
+
+.chasseur{display:flex; align-items:center; gap:14px; background:var(--carte); border:1px solid var(--trait);
+  border-radius:20px; padding:16px; box-shadow:var(--ombre)}
+.chasseur .av{width:48px; height:48px; border-radius:50%; background:var(--marque); color:var(--or-clair);
+  display:flex; align-items:center; justify-content:center; font-family:'Plus Jakarta Sans',sans-serif;
+  font-weight:800; font-size:16px; flex:0 0 auto}
+.chasseur h4{margin:0; font-size:15px; font-weight:800}
+.chasseur p{margin:2px 0 0; font-size:12.5px; color:var(--plume)}
+.tel{margin-left:auto; background:var(--vert-fond); color:var(--vert); border:1px solid var(--vert-trait);
+  border-radius:12px; padding:10px 14px; font-weight:800; font-size:13px; text-decoration:none;
+  display:inline-flex; align-items:center; gap:7px; font-family:'Plus Jakarta Sans',sans-serif}
+.engage{display:flex; flex-direction:column; gap:11px; background:var(--marque); color:var(--fond);
+  border-radius:20px; padding:20px; box-shadow:var(--ombre)}
+.engage .t{font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--or-clair); font-weight:800}
+.engage div{display:flex; gap:11px; align-items:flex-start; font-size:13.5px; line-height:1.55}
+.engage .k{color:var(--or-clair); flex:0 0 auto; margin-top:1px}
+.avis-lien{background:var(--fond); border:1px dashed var(--trait-fort); border-radius:16px;
+  padding:14px 16px; font-size:12.5px; color:var(--plume); line-height:1.65; display:flex; gap:11px; align-items:flex-start}
+
+.retour{display:inline-flex; align-items:center; gap:8px; background:var(--carte); border:1px solid var(--trait);
+  border-radius:99px; padding:9px 16px 9px 12px; font-family:'Plus Jakarta Sans',sans-serif;
+  font-weight:700; font-size:13.5px; color:var(--encre); margin:22px 0 18px; box-shadow:var(--ombre);
+  transition:transform .18s cubic-bezier(.16,1,.3,1), box-shadow .18s, border-color .18s}
+.retour:hover{border-color:var(--trait-fort); box-shadow:var(--ombre-f)}
+.retour:active{transform:scale(.95)}
+.tete-vue{display:flex; align-items:center; gap:13px; margin-bottom:8px}
+.tete-vue .ico{width:46px; height:46px; border-radius:15px}
+.tete-vue h2{margin:0; font-size:22px; font-weight:800; line-height:1.2}
+.sous-vue{color:var(--plume); font-size:14.5px; margin:0 0 22px; line-height:1.65}
+.bloc-titre{display:flex; align-items:center; gap:10px; margin:28px 0 13px}
+.bloc-titre h3{margin:0; font-size:16px; font-weight:800}
+.bloc-titre .n{background:var(--trait); color:var(--plume); border-radius:99px; padding:1px 9px;
+  font-size:12px; font-weight:800; font-family:'Plus Jakarta Sans',sans-serif}
+.bloc-titre .n.or{background:var(--ambre); color:#fff}
+
+.liste{display:flex; flex-direction:column; gap:11px}
+/* Une carte est un bouton, et un bouton centre son contenu en hauteur : sur
+   ordinateur, à côté d'une carte plus haute (avec un commentaire), la photo
+   descendait et laissait une bande blanche au-dessus. En colonne flex, le
+   contenu part du haut et les deux cartes restent alignées. */
+.bien{display:flex; flex-direction:column; justify-content:flex-start; background:var(--carte); border:1px solid var(--trait); border-radius:18px;
+  padding:0; text-align:left; width:100%; box-shadow:var(--ombre); position:relative; overflow:hidden;
+  transition:transform .2s cubic-bezier(.16,1,.3,1), box-shadow .2s ease, border-color .2s ease}
+.bien:hover{transform:translateY(-3px); border-color:var(--trait-fort); box-shadow:var(--ombre-f)}
+.bien:hover .fleche{transform:translateX(4px)}
+.bien:active{transform:scale(.99)}
+.bien.neuf{border-color:var(--ambre-trait)}
+.bien.neuf::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--ambre); z-index:2}
+/* La bande de photos : une à trois vues côte à côte, en haut de la carte. */
+/* Hauteur fixe et mosaïque : une grande vue à gauche, deux petites empilées.
+   Sans hauteur imposée, les petites tuiles laissaient un vide gris sous elles. */
+.bande-ph{display:grid; gap:2px; background:var(--trait); height:158px}
+.bande-ph.n1{grid-template-columns:1fr}
+.bande-ph.n2{grid-template-columns:1fr 1fr}
+.bande-ph.n3{grid-template-columns:1.9fr 1fr; grid-template-rows:1fr 1fr}
+.bande-ph.n3 .ph:first-child{grid-row:span 2}
+.bande-ph .ph{display:flex; align-items:center; justify-content:center; overflow:hidden; min-height:0;
+  background:linear-gradient(148deg,#2A5A96,#1B3D6B); color:rgba(255,255,255,.45)}
+.bande-ph img{width:100%; height:100%; object-fit:cover; display:block}
+@media(min-width:760px){ .bande-ph{height:196px} }
+.ph-vide{font-size:20px}
+.corps-bien{display:block; padding:12px 14px 14px}
+.haut-bien{display:flex; align-items:center; gap:8px; margin-bottom:7px}
+.dat{font-size:11px; font-weight:700; color:var(--plume-clair)}
+.bien h4{margin:0 0 4px; font-size:15.5px; font-weight:800; line-height:1.3;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.bien .meta{font-size:12.5px; color:var(--plume); display:block; line-height:1.5}
+.bien .prix{display:block; font-family:'Plus Jakarta Sans',sans-serif; font-size:19px; font-weight:800;
+  color:var(--or-fonce); line-height:1.1; margin-top:9px; letter-spacing:-.5px}
+.fleche{margin-left:auto; color:var(--plume-clair); display:flex; transition:transform .2s cubic-bezier(.16,1,.3,1)}
+.etiq{display:inline-flex; align-items:center; gap:5px; border-radius:99px; padding:3px 10px;
+  font-size:11px; font-weight:800; border:1px solid transparent}
+.etiq.neuf{background:var(--ambre); color:#fff}
+.etiq.vu{background:var(--bleu-fond); color:var(--bleu); border-color:var(--bleu-trait)}
+.etiq.oui{background:var(--vert-fond); color:var(--vert); border-color:var(--vert-trait)}
+.etiq.visite{background:var(--prune-fond); color:var(--prune); border-color:var(--prune-trait)}
+.etiq.non{background:var(--brique-fond); color:var(--brique); border-color:var(--brique-trait)}
+.relance{background:var(--or-fond); border:1px solid var(--or-trait); border-radius:16px;
+  padding:14px 16px; font-size:13.5px; color:var(--or-fonce); display:flex; gap:11px; align-items:flex-start; margin-bottom:12px}
+.vide-sec{color:var(--plume-clair); font-size:14px; padding:26px 16px; text-align:center;
+  background:var(--carte); border:1px dashed var(--trait-fort); border-radius:16px; line-height:1.6}
+
+.note{font-size:14px; color:var(--plume); margin-top:16px; line-height:1.7}
+.legende{font-size:12.5px; color:var(--plume-clair); line-height:1.6; margin:10px 0 0}
+
+/* l'aperçu du marché sur la carte d'accueil */
+.apm-t{font-size:9.5px; letter-spacing:.8px; text-transform:uppercase; color:var(--plume-clair);
+  font-weight:800; margin-bottom:8px}
+
+/* l'entonnoir : lues → écartées → retenues */
+.entonnoir{background:var(--carte); border:1px solid var(--trait); border-radius:18px;
+  padding:18px; box-shadow:var(--ombre)}
+.ent-t{font-size:10.5px; letter-spacing:1.3px; text-transform:uppercase; color:var(--plume-clair);
+  font-weight:800; margin-bottom:15px}
+.ent + .ent{margin-top:14px}
+.ent-h{display:flex; align-items:baseline; gap:9px; font-size:13.5px; color:var(--plume); line-height:1.4}
+.ent-h b{font-family:'Plus Jakarta Sans',sans-serif; font-size:21px; font-weight:800;
+  letter-spacing:-.7px; color:var(--encre); flex:0 0 auto}
+.ent-h b.or, .ent-h .or{color:var(--or-fonce)}
+.ent-h b.pale{color:var(--plume-clair)}
+.ent-b{height:8px; border-radius:99px; background:var(--fond); margin-top:8px; overflow:hidden}
+.ent-b i{display:block; height:100%; border-radius:99px; background:var(--encre2);
+  animation:etire .8s cubic-bezier(.16,1,.3,1) both; transform-origin:left}
+.ent-b i.pale{background:var(--trait-fort)}
+.ent-b i.or{background:linear-gradient(90deg,var(--or),var(--ambre))}
+.ent-bilan{display:flex; gap:9px; align-items:flex-start; margin-top:16px; padding:11px 13px; border-radius:13px;
+  background:var(--or-fond); border:1px solid var(--or-trait); font-size:13px; line-height:1.55; color:var(--encre)}
+.eb-i{color:var(--or-fonce); display:flex; margin-top:2px; flex:0 0 auto}
+@keyframes etire{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.graphe{background:var(--carte); border:1px solid var(--trait); border-radius:18px; padding:18px; box-shadow:var(--ombre); margin-top:12px}
+.barres{display:flex; align-items:flex-end; gap:7px; margin-top:14px}
+.barre{flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:5px; justify-content:flex-end}
+/* La hauteur des barres se mesure dans une piste fixe : le chiffre et la date
+   au-dessus et en dessous ne peuvent plus l'écraser. */
+.barre-t{height:86px; width:100%; display:flex; align-items:flex-end; flex:0 0 auto}
+.barre .barre-j{margin-top:2px; font-size:10px; font-weight:700; color:var(--plume); line-height:1}
+.barre .barre-d{font-size:10.5px; font-weight:800; color:var(--plume-clair); line-height:1}
+.barre.dern .barre-j, .barre.dern .barre-d{color:var(--or-fonce)}
+.barre i{width:100%; background:var(--or-trait); border-radius:5px 5px 0 0; min-height:3px;
+  animation:pousse .8s cubic-bezier(.16,1,.3,1) both; transform-origin:bottom}
+/* La barre dorée : la dernière journée de recherche. (Ne pas l'appeler
+   « .auj » : la case « Aujourd'hui pour vous » porte ce nom et venait
+   l'habiller d'une carte blanche qui l'écrasait.) */
+.barre.dern i{background:var(--or)}
+.barre b{font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:800; color:var(--encre)}
+.barre.vide b{color:var(--plume-clair); font-weight:600}
+.barre span{font-size:10px; color:var(--plume-clair); font-weight:700}
+
+.bloc{background:var(--carte); border:1px solid var(--trait); border-radius:18px; padding:18px; box-shadow:var(--ombre)}
+.bloc + .bloc{margin-top:12px}
+.bloc .t{display:flex; align-items:center; gap:9px; font-size:10.5px; letter-spacing:1.3px; text-transform:uppercase;
+  color:var(--plume-clair); font-weight:800; margin-bottom:13px}
+.gros{font-family:'Plus Jakarta Sans',sans-serif; font-size:26px; font-weight:800; letter-spacing:-1px; line-height:1.1}
+.gros small{font-size:14px; font-weight:700; color:var(--plume); letter-spacing:0}
+.trio{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+.mini-t{background:var(--fond); border:1px solid var(--trait); border-radius:14px; padding:13px 8px; text-align:center}
+.mini-i{width:32px; height:32px; border-radius:10px; margin:0 auto 8px; display:flex; align-items:center; justify-content:center;
+  background:var(--or-fond); border:1px solid var(--or-trait); color:var(--or-fonce)}
+.mini-t .v{font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:18px; letter-spacing:-.5px}
+.mini-t .l{font-size:9.5px; letter-spacing:.8px; text-transform:uppercase; color:var(--plume-clair); margin-top:4px; font-weight:700}
+.pastilles{display:flex; flex-wrap:wrap; gap:7px}
+.past{background:var(--fond); border:1px solid var(--trait); border-radius:99px; padding:6px 13px; font-size:13px; font-weight:600;
+  display:inline-flex; align-items:center; gap:6px}
+.past > svg{color:var(--plume)}
+.past.or > svg{color:var(--or-fonce)}
+.past.indis > svg{color:var(--or-clair)}
+.past.or{background:var(--or-fond); border-color:var(--or-trait); color:var(--or-fonce); font-weight:700}
+.precisions{background:var(--carte); border:1px solid var(--trait); border-radius:18px; padding:18px; margin-top:12px; box-shadow:var(--ombre)}
+.precisions .k{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  font-size:10.5px; letter-spacing:1.3px; text-transform:uppercase;
+  color:var(--plume-clair); font-weight:800; margin-bottom:13px}
+.precisions .k > span:first-child{display:flex; align-items:center; gap:8px}
+.cadenas{display:inline-flex; align-items:center; gap:5px; background:var(--fond);
+  border:1px solid var(--trait); border-radius:99px; padding:4px 10px; font-size:9.5px;
+  letter-spacing:.7px; color:var(--plume-clair); font-weight:800; text-transform:uppercase}
+/* une note citée, pas un champ de saisie : trait doré à gauche, pas de cadre */
+.precisions .corps{margin:0; background:none; border:0; border-left:3px solid var(--or-trait);
+  border-radius:0; padding:3px 0 3px 16px; font-size:14.5px; line-height:1.78;
+  color:var(--encre); white-space:pre-line}
+.cta-prec{display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;
+  margin-top:14px; background:var(--or-fond); border:1px solid var(--or-trait); border-radius:14px;
+  padding:14px 16px; text-align:left;
+  transition:transform .18s cubic-bezier(.16,1,.3,1), box-shadow .18s, border-color .18s}
+.cta-prec:hover{border-color:var(--or); box-shadow:var(--ombre-f)}
+.cta-prec:hover .chev{transform:translateX(4px)}
+.cta-prec:active{transform:scale(.985)}
+.cta-prec b{display:block; font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; font-weight:800; color:var(--or-fonce)}
+.cta-prec span.s{display:block; font-size:12.5px; color:var(--plume); margin-top:3px}
+
+/* La phrase de rappel, en tête de « Rappel de ma recherche » */
+.resume-r{margin:22px 0 20px; background:var(--carte); border:1px solid var(--trait);
+  border-radius:20px; padding:20px 18px 18px; box-shadow:var(--ombre)}
+.resume-k{display:flex; align-items:center; gap:7px; font-size:9.5px; letter-spacing:1.8px;
+  text-transform:uppercase; font-weight:800; color:var(--or-fonce); margin-bottom:12px}
+.resume-k i{width:18px; height:2px; border-radius:2px; background:var(--or); display:block}
+.resume-p{margin:0; font-family:'Plus Jakarta Sans',sans-serif; font-size:17.5px; line-height:1.5;
+  font-weight:600; letter-spacing:-.3px; color:var(--encre)}
+.resume-p b{color:var(--or-fonce); font-weight:800}
+
+/* Le picto de localisation, en face du nom de la commune. La ligne est un
+   flex : le carré et le nom sont centrés l'un sur l'autre quoi qu'il arrive,
+   même quand un nom passe sur deux lignes. */
+.ville-i{flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center;
+  width:30px; height:30px; border-radius:10px; background:var(--or-fond);
+  border:1px solid var(--or-trait); color:var(--or-fonce)}
+/* Les quartiers s'alignent sous le nom, pas sous le picto. */
+.ville-n + .pastilles, .ville-n + .ville-tout{margin-left:40px}
+
+/* Le choix du créneau, sous « Je souhaite être rappelé ». Trois cases et rien
+   d'autre : on ne demande pas au client d'écrire pour obtenir un appel. */
+/* ── « Recherche en cours » ───────────────────────────────────────
+   Une étiquette d'état posée contre le picto de la carte des critères,
+   avec un point vert qui bat en continu. Elle dit au client, sans qu'il
+   ait à cliquer, que son dossier tourne aujourd'hui.
+
+   Le battement dure 2,6 s, comme celui de la ligne de veille en entête :
+   deux signaux vivants dans le même espace doivent battre pareil, sinon
+   l'œil croit qu'ils parlent de deux choses différentes. Les images, elles,
+   sont à part (onde-vif) — le vert menthe de l'entête, posé sur le vert
+   pâle de l'étiquette, ne se verrait plus. */
+.tete-case.tc-vif{justify-content:flex-start; align-items:center}
+.vif{display:inline-flex; align-items:center; gap:7px; padding:5px 12px 5px 10px;
+  border-radius:99px; background:var(--vert-fond); border:1px solid var(--vert-trait);
+  font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; font-weight:800;
+  color:var(--vert); white-space:nowrap}
+/* Le point est plus soutenu que le halo : sur un fond vert pâle, le vert
+   menthe de l'entête disparaîtrait. Même battement, même durée. */
+.vif-pt{width:7px; height:7px; border-radius:50%; background:#22b573; flex:0 0 auto;
+  box-shadow:0 0 0 0 rgba(34,181,115,.6);
+  animation:onde-vif 2.6s ease-out infinite, respire 2.6s ease-in-out infinite}
+@keyframes onde-vif{0%{box-shadow:0 0 0 0 rgba(34,181,115,.5)}
+  70%{box-shadow:0 0 0 8px rgba(34,181,115,0)}100%{box-shadow:0 0 0 0 rgba(34,181,115,0)}}
+@keyframes respire{0%,100%{opacity:1; transform:scale(1)}50%{opacity:.55; transform:scale(.78)}}
+@media(max-width:400px){.vif{font-size:11px; padding:4px 10px 4px 9px}}
+
+/* ── La carte vivante de « Rappel de ma recherche » ───────────────
+   Recherche en cours : une lueur verte entoure la carte et respire
+   lentement. On ne touche à rien d'autre — le trait de la carte reste
+   gris, comme sur toutes les autres. La couleur est dehors, autour ;
+   l'intérieur ne bouge pas.
+
+   C'est la carte entière qui s'éclaire, pas seulement le bloc du haut :
+   encadrer la moitié d'une carte arrondie donne deux angles droits en
+   bas, et ça ne ressemble à rien. Essayé, regardé, abandonné.
+
+   La lueur est écrite une première fois dans la règle, avant l'animation :
+   si l'animation ne part pas — mouvement réduit, vieux navigateur — il
+   reste une carte doucement éclairée au lieu de rien du tout. */
+.bloc-rech.vivant{
+  box-shadow:var(--ombre), 0 0 0 1px rgba(34,197,94,.27), 0 10px 30px -12px rgba(34,197,94,.5);
+  animation:halo-vif 3.6s ease-in-out infinite}
+@keyframes halo-vif{
+  0%,100%{box-shadow:var(--ombre), 0 0 0 1px rgba(34,197,94,.20), 0 8px 24px -12px rgba(34,197,94,.35)}
+  50%{box-shadow:var(--ombre), 0 0 0 1px rgba(34,197,94,.34), 0 12px 34px -12px rgba(34,197,94,.62)}}
+/* Qui a demandé moins de mouvement en obtient moins : la lueur reste, elle
+   ne respire plus, et le point ne bat plus. La règle globale plus bas
+   ramène toutes les durées à .01 ms — sur une animation infinie, ce serait
+   pire que tout. */
+@media(prefers-reduced-motion:reduce){
+  .bloc-rech.vivant, .vif-pt{animation:none}
+}
+
+.bloc-rech{padding:0; gap:0; cursor:default}
+.bloc-rech:hover{transform:none; box-shadow:var(--ombre); border-color:var(--trait)}
+.bloc-rech:active{transform:none}
+.rech-haut{display:flex; flex-direction:column; gap:13px; width:100%; text-align:left;
+  background:transparent; border:none; padding:18px 17px 16px; cursor:pointer;
+  font-family:inherit; border-radius:20px 20px 0 0; transition:background .2s ease}
+.rech-haut:hover{background:var(--fond)}
+.rech-haut:hover .ico{transform:translateY(-2px) rotate(-4deg)}
+.rech-haut:hover .chev{transform:translateX(4px)}
+.rech-bas{display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+  background:transparent; border:none; border-top:1px solid var(--trait);
+  padding:13px 17px; cursor:pointer; font-family:inherit;
+  border-radius:0 0 20px 20px; transition:background .2s ease}
+.rech-bas:hover{background:var(--or-fond)}
+.rech-bas:hover .chev{transform:translateX(4px)}
+.rech-bas:active{background:var(--or-trait)}
+.rech-bas .rb-ico{width:30px; height:30px; flex-shrink:0; border-radius:10px;
+  background:var(--or-fond); border:1px solid var(--or-trait);
+  display:flex; align-items:center; justify-content:center; font-size:14px}
+.rech-bas .rb-txt{flex-grow:1; min-width:0}
+.rech-bas .rb-txt b{display:block; font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13.5px; font-weight:800; color:var(--encre)}
+.rech-bas .rb-txt i{display:block; font-style:normal; font-size:12.5px;
+  color:var(--plume); margin-top:1px}
+.bloc-rappel{margin-top:12px; background:var(--fond); border:1px solid var(--trait);
+  border-radius:14px; padding:14px}
+.lib-rappel{font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:800;
+  color:var(--encre); margin-bottom:10px}
+.creneaux{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.creneau{background:var(--carte); border:1px solid var(--trait); border-radius:12px;
+  padding:11px 6px; text-align:center;
+  transition:border-color .16s, background .16s, transform .16s cubic-bezier(.16,1,.3,1)}
+.creneau:active{transform:scale(.97)}
+.creneau b{display:block; font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px;
+  font-weight:800; color:var(--encre)}
+.creneau span{display:block; font-size:11.5px; color:var(--plume); margin-top:2px}
+.creneau.pris{border-color:var(--or); background:var(--or-fond)}
+.creneau.pris b{color:var(--or-fonce)}
+
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:14px;
+  padding:15px 20px; font-family:'Plus Jakarta Sans',sans-serif; font-size:14.5px; font-weight:800;
+  border:1px solid transparent; width:100%; text-decoration:none;
+  transition:transform .16s cubic-bezier(.16,1,.3,1), box-shadow .16s ease}
+.btn:active{transform:scale(.982)}
+.btn.or{background:var(--or); color:#fff; box-shadow:0 12px 24px -12px var(--or)}
+.btn.fant{background:var(--carte); color:var(--encre); border-color:var(--trait-fort)}
+.btn.encre{background:var(--marque); color:var(--fond)}
+.btn.lien{background:none; border:none; color:var(--plume); font-weight:700; font-size:13.5px; padding:12px; width:auto}
+.duo{display:flex; gap:10px; margin-top:18px}
+.duo .btn{flex:1}
+
+.voile{position:fixed; inset:0; background:rgba(19,36,61,.55); backdrop-filter:blur(3px);
+  opacity:0; pointer-events:none; transition:opacity .3s ease; z-index:60}
+.voile.on{opacity:1; pointer-events:auto}
+.feuille{position:fixed; left:0; right:0; bottom:0; z-index:61; background:var(--carte);
+  border-radius:26px 26px 0 0; max-height:92vh; overflow-y:auto; overscroll-behavior:contain;
+  transform:translateY(102%); transition:transform .44s cubic-bezier(.16,1,.28,1);
+  padding-bottom:calc(22px + env(safe-area-inset-bottom,0px)); box-shadow:0 -12px 40px rgba(19,36,61,.32)}
+.feuille.on{transform:translateY(0)}
+/* une fiche bien occupe tout l'écran : plus de bandeau de fond au-dessus */
+@media(max-width:639px){
+  .feuille.pleine, .feuille.fiche{top:0; height:100vh; height:100dvh; max-height:none; border-radius:0;
+    padding-bottom:calc(26px + env(safe-area-inset-bottom,0px))}
+  .feuille.pleine .grandok{min-height:100dvh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:24px}
+}
+@media(min-width:640px){
+  .feuille{left:50%; right:auto; bottom:auto; top:50%; width:570px; max-height:88vh; border-radius:24px;
+    transform:translate(-50%,-44%) scale(.97); opacity:0}
+  .feuille.on{transform:translate(-50%,-50%) scale(1); opacity:1}
+}
+.poignee{width:40px; height:4px; border-radius:99px; background:var(--trait-fort); margin:10px auto 0}
+@media(min-width:640px){.poignee{display:none}}
+.tete-f{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding:16px 20px 12px}
+.tete-f h3{margin:0; font-size:19px; font-weight:800; line-height:1.28}
+.tete-f .sur{font-size:10px; letter-spacing:1.3px; text-transform:uppercase; color:var(--plume-clair); font-weight:800; margin-bottom:5px}
+.fermer{background:var(--fond); border:1px solid var(--trait); border-radius:50%; width:33px; height:33px;
+  flex:0 0 auto; color:var(--plume); display:flex; align-items:center; justify-content:center}
+.corps-f{padding:0 20px}
+.photo-h{position:relative; width:100%; aspect-ratio:3/2; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(148deg,#2A5A96,#1B3D6B); color:rgba(255,255,255,.5); overflow:hidden}
+.photo-h img{width:100%; height:100%; object-fit:cover}
+.points{position:absolute; bottom:10px; left:0; right:0; display:flex; justify-content:center; gap:5px}
+.points button{width:6px; height:6px; border-radius:99px; background:rgba(255,255,255,.5); padding:0;
+  transition:width .3s cubic-bezier(.16,1,.3,1), background .3s}
+.points button.on{width:16px; background:#fff}
+/* la pastille reste fine à l'oeil mais large au doigt */
+.points button{position:relative}
+.points button::after{content:''; position:absolute; inset:-12px}
+
+/* — galerie dans la fiche — */
+.galerie{position:relative; background:linear-gradient(148deg,#2A5A96,#1B3D6B)}
+.bande{display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; scrollbar-width:none}
+.bande::-webkit-scrollbar{display:none}
+/* scroll-snap-stop:always = une photo par geste, jamais trois d'un coup */
+.bande .photo-g{flex:0 0 100%; scroll-snap-align:start; scroll-snap-stop:always;
+  width:100%; aspect-ratio:3/2; padding:0; border:0;
+  background:transparent; display:block; overflow:hidden; cursor:zoom-in}
+.bande .photo-g img{width:100%; height:100%; object-fit:cover; display:block}
+/* Sur ordinateur il n'y a pas de doigt : on donne des flèches. */
+.fl{display:none; position:absolute; top:50%; transform:translateY(-50%); z-index:3;
+  width:38px; height:38px; border-radius:50%; border:0; color:#fff; background:rgba(19,36,61,.5);
+  align-items:center; justify-content:center; backdrop-filter:blur(5px);
+  transition:background .2s, transform .16s}
+.fl.g{left:10px} .fl.d{right:10px}
+.fl:hover{background:rgba(19,36,61,.72)}
+.fl:active{transform:translateY(-50%) scale(.93)}
+@media(hover:hover) and (pointer:fine){ .fl{display:flex} }
+.plein .fl{width:46px; height:46px; background:rgba(255,255,255,.14)}
+.plein .fl:hover{background:rgba(255,255,255,.26)}
+.plein .fl.g{left:18px} .plein .fl.d{right:18px}
+
+.compteur{position:absolute; top:calc(12px + env(safe-area-inset-top,0px)); right:12px; z-index:2;
+  display:flex; align-items:center; gap:5px; background:rgba(19,36,61,.5); color:#fff;
+  font-size:11.5px; font-weight:700; padding:6px 11px; border-radius:99px;
+  backdrop-filter:blur(5px); pointer-events:none}
+
+/* — retour : posé sur la photo et jamais emporté par le défilement —
+   un position:fixed se comporterait comme un absolute (la feuille porte un
+   transform) et filerait avec le contenu : on passe par un rail collant de
+   hauteur nulle, placé en tout premier dans la feuille. */
+.barre-retour{position:sticky; top:0; z-index:6; height:0}
+.retour-f{position:absolute; z-index:6; top:calc(12px + env(safe-area-inset-top,0px)); left:12px;
+  width:42px; height:42px; border-radius:50%; border:0; color:#fff; background:rgba(19,36,61,.48);
+  backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 20px -8px rgba(0,0,0,.65)}
+.retour-f:active{transform:scale(.94)}
+
+/* — plein écran photos — */
+.plein{position:fixed; inset:0; z-index:90; background:#0a0e14}
+.bande-pe{position:absolute; inset:0; display:flex; overflow-x:auto; overflow-y:hidden;
+  scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; touch-action:pan-x;
+  overscroll-behavior:contain; scrollbar-width:none}
+.bande-pe::-webkit-scrollbar{display:none}
+.photo-pe{flex:0 0 100%; width:100%; height:100%; scroll-snap-align:center; scroll-snap-stop:always;
+  display:flex; align-items:center; justify-content:center;
+  padding:calc(56px + env(safe-area-inset-top,0px)) 0 calc(46px + env(safe-area-inset-bottom,0px))}
+.photo-pe img{max-width:100%; max-height:100%; object-fit:contain; display:block}
+.barre-pe{position:absolute; top:0; left:0; right:0; z-index:2; display:flex; align-items:center;
+  justify-content:space-between; color:#fff; font-size:13px; font-weight:700; pointer-events:none;
+  padding:calc(12px + env(safe-area-inset-top,0px)) 14px 18px;
+  background:linear-gradient(180deg,rgba(0,0,0,.65),transparent)}
+.ferme-pe{pointer-events:auto; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.2);
+  color:#fff; border:0; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px)}
+.points-pe{position:absolute; left:0; right:0; bottom:calc(16px + env(safe-area-inset-bottom,0px)); z-index:2;
+  display:flex; justify-content:center; gap:5px; pointer-events:none}
+.points-pe span{width:6px; height:6px; border-radius:99px; background:rgba(255,255,255,.35);
+  transition:width .3s cubic-bezier(.16,1,.3,1), background .3s}
+.points-pe span.on{width:16px; background:#fff}
+
+/* — envoi en cours — */
+.tourne{width:15px; height:15px; border-radius:50%; display:inline-block;
+  border:2px solid rgba(255,255,255,.4); border-top-color:#fff; animation:tourne .7s linear infinite}
+.btn.fant .tourne{border-color:rgba(19,36,61,.22); border-top-color:var(--encre)}
+@keyframes tourne{to{transform:rotate(360deg)}}
+/* En attente : assez présent pour qu'on le voie, assez discret pour qu'on
+   comprenne qu'il n'est pas encore tout à fait à nous. */
+.btn.fant.attente{color:var(--plume-clair); border-color:var(--trait); border-style:dashed;
+  background:var(--fond)}
+.btn[disabled]{opacity:.82; cursor:default}
+.btn[disabled]:active{transform:none}
+
+/* — pop-up (partage) — */
+.pop{position:fixed; inset:0; z-index:95; display:flex; align-items:flex-end; justify-content:center}
+.pop-voile{position:absolute; inset:0; background:rgba(10,14,22,.62); backdrop-filter:blur(4px);
+  animation:popVoile .26s ease both}
+.pop-carte{position:relative; width:100%; max-width:480px; background:var(--carte);
+  border-radius:24px 24px 0 0; max-height:92vh; max-height:92dvh; overflow-y:auto;
+  overscroll-behavior:contain; box-shadow:0 -14px 44px rgba(19,36,61,.34);
+  padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  animation:popBas .34s cubic-bezier(.16,1,.28,1) both}
+@media(min-width:640px){
+  .pop{align-items:center}
+  .pop-carte{border-radius:22px; max-height:88vh; animation-name:popCentre;
+    box-shadow:0 26px 70px rgba(19,36,61,.34)}
+}
+@keyframes popVoile{from{opacity:0} to{opacity:1}}
+@keyframes popBas{from{transform:translateY(100%)} to{transform:translateY(0)}}
+@keyframes popCentre{from{transform:scale(.96); opacity:0} to{transform:scale(1); opacity:1}}
+.pop-tete{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding:20px 20px 12px}
+.pop-tete h3{margin:0; font-size:18px; font-weight:800; line-height:1.3}
+.pop-tete .sur{font-size:10px; letter-spacing:1.3px; text-transform:uppercase;
+  color:var(--plume-clair); font-weight:800; margin-bottom:5px}
+.pop-corps{padding:0 20px}
+.pop-fin{text-align:center; padding:28px 24px 10px}
+.pop-fin h3{margin:0 0 10px; font-size:20px; font-weight:800}
+.pop-fin p{margin:0 0 20px; color:var(--plume); font-size:14.5px; line-height:1.65}
+.pop-fin .rond-ok{width:68px; height:68px; border-radius:50%; margin:0 auto 18px; display:flex;
+  align-items:center; justify-content:center; background:var(--or-fond); color:var(--or-fonce);
+  border:1px solid var(--or-trait)}
+/* « Télécharger la fiche » : la fonction n'existe pas encore, et on le dit. */
+.bientot .bt-etiq{display:inline-block; margin:0 0 12px; padding:4px 11px; border-radius:99px;
+  font-size:10.5px; letter-spacing:1.2px; text-transform:uppercase; font-weight:800;
+  color:var(--or-fonce); background:var(--or-fond); border:1px solid var(--or-trait)}
+.bientot h3{text-wrap:balance}
+.bientot .bt-astuce{display:flex; gap:11px; align-items:flex-start; text-align:left;
+  margin:0 0 18px; padding:13px 14px; border-radius:14px; background:var(--fond);
+  border:1px solid var(--trait); color:var(--encre); font-size:13.5px; line-height:1.55}
+.bientot .bt-astuce > svg{flex:none; margin-top:1px; color:var(--or-fonce)}
+.bientot .bt-actions{display:flex; flex-direction:column; align-items:stretch; gap:2px}
+.bientot .bt-actions .btn.lien{align-self:center}
+.ape{margin-top:14px; border:1px solid var(--trait); border-radius:15px; overflow:hidden; background:var(--fond)}
+.ape-t{font-size:10px; letter-spacing:1.1px; text-transform:uppercase; font-weight:800;
+  color:var(--plume-clair); padding:12px 14px 0}
+.ape-l{display:flex; gap:8px; font-size:13px; padding:9px 14px 0; color:var(--encre); font-weight:700}
+.ape-l span{color:var(--plume-clair); font-weight:800; min-width:42px}
+.ape-c{font-size:13px; line-height:1.65; color:var(--plume); padding:10px 14px 14px}
+.ape-c .lien-ap{color:var(--or-fonce); word-break:break-all}
+.err{margin-top:8px; font-size:12.5px; font-weight:700; color:var(--brique)}
+.mention{font-size:12.5px; color:var(--plume-clair); text-align:center; margin-bottom:0}
+.bandeau-prix{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; column-gap:12px; row-gap:5px; padding:16px 20px 0}
+
+/* — la correspondance avec la recherche —
+   Une carte qui s'ouvre sur son détail. L'or ne marque que la note. */
+.corresp{display:flex; align-items:center; gap:13px; width:100%; margin:4px 0 2px; padding:12px 14px;
+  background:var(--carte); border:1px solid var(--trait); border-radius:16px; text-align:left;
+  box-shadow:var(--ombre); transition:transform .16s cubic-bezier(.16,1,.3,1), border-color .2s}
+.corresp:hover{border-color:var(--or-trait)}
+.corresp:active{transform:scale(.985)}
+.corresp-txt{display:flex; flex-direction:column; gap:2px; min-width:0; flex:1}
+.corresp-txt i{font-style:normal; font-size:10px; letter-spacing:1.2px; text-transform:uppercase; font-weight:800; color:var(--plume-clair)}
+.corresp-txt b{font-size:14.5px; font-weight:800; color:var(--encre); line-height:1.35}
+.corresp-ch{color:var(--plume-clair); display:flex; flex:0 0 auto}
+.anneau{position:relative; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto}
+.anneau svg{position:absolute; inset:0}
+.anneau-n{position:relative; font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:14px; color:var(--encre); letter-spacing:-.4px}
+.anneau-n i{font-style:normal; font-size:.62em; font-weight:800; color:var(--plume); margin-left:1px}
+.cr-tete .anneau-n{font-size:19px}
+/* la fiche d'analyse */
+.an-carte{max-width:780px !important}
+.an-tete{position:relative; display:flex; align-items:center; gap:14px 18px; flex-wrap:wrap; padding:20px 58px 20px 22px;
+  background:linear-gradient(152deg,#2A5A96 0%,#1B3D6B 60%,#22497D 100%); color:#fff}
+.an-tete-txt{flex:1 1 240px; min-width:0}
+.an-sur{font-size:10px; letter-spacing:1.4px; text-transform:uppercase; font-weight:800; color:var(--or-fonce)}
+.an-titre{font-family:'Plus Jakarta Sans',sans-serif; font-size:17px; font-weight:800; line-height:1.3; margin-top:4px}
+.an-note{display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.08); border:1px solid rgba(230,139,35,.45); border-radius:16px; padding:10px 14px}
+.an-note b{font-family:'Plus Jakarta Sans',sans-serif; font-size:30px; font-weight:800; color:var(--or-fonce); line-height:1}
+.an-note b i{font-style:normal; font-size:15px}
+.an-note span{font-size:13px; font-weight:700; max-width:160px; line-height:1.35}
+.an-x{position:absolute; top:14px; right:14px; background:rgba(255,255,255,.1) !important; border-color:rgba(255,255,255,.22) !important; color:#fff}
+.an-corps{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(310px,100%),1fr)); gap:18px 22px; padding-top:18px !important}
+.an-col{min-width:0}
+.an-t{display:flex; align-items:center; gap:6px; font-size:11px; letter-spacing:1px; text-transform:uppercase; font-weight:800; color:var(--or-fonce); margin:0 0 6px}
+.an-t.autre{color:var(--plume); margin-top:18px}
+.an-t.neutre{color:var(--plume-clair); margin-bottom:2px}
+.an-liste{display:flex; flex-direction:column}
+.an-l{display:grid; grid-template-columns:22px minmax(0,1fr) auto; align-items:center; gap:10px; padding:9px 0; border-bottom:1px dashed var(--trait)}
+.an-case{width:22px; height:22px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800}
+.an-l.oui .an-case{background:var(--or); color:#fff}
+.an-l.presque .an-case{background:var(--or-fond); color:var(--or-fonce); border:1.5px solid var(--or-trait)}
+.an-l.non .an-case{background:var(--fond); color:var(--plume); border:1.5px solid var(--trait-fort)}
+.an-lib{display:flex; flex-direction:column; min-width:0}
+.an-lib b{font-size:14px; font-weight:800; line-height:1.3}
+.an-lib i{font-style:normal; font-size:12px; color:var(--plume); line-height:1.35}
+.an-val{font-size:14px; font-weight:800; text-align:right; white-space:nowrap}
+.an-l.non .an-val, .an-l.presque .an-val{color:var(--plume)}
+.an-l.long{grid-template-columns:22px minmax(0,1fr); align-items:start; row-gap:5px}
+.an-l.long .an-case{margin-top:1px}
+.an-l.long .an-val{grid-column:2; text-align:left; white-space:normal; overflow-wrap:anywhere; font-size:13.5px; line-height:1.4}
+.an-l.long .an-val em{font-style:normal; font-weight:600; color:var(--plume)}
+.an-plus{display:flex; flex-direction:column; gap:2px; margin-bottom:16px}
+.an-plus > span{display:flex; align-items:center; gap:10px; padding:5px 0; font-size:14px; font-weight:700}
+.an-plus-i{width:32px; height:32px; border-radius:10px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; background:var(--or-fond); color:var(--or-fonce); border:1px solid var(--or-trait)}
+.an-aide{background:var(--fond); border-radius:14px; padding:13px 14px}
+.an-aide .puces{margin-top:6px; padding-top:0; border-top:0; gap:9px}
+.an-aide .puces > span{font-size:12.5px; color:var(--plume); line-height:1.5}
+.an-badge{position:absolute; left:10px; bottom:10px; z-index:2; display:flex; align-items:baseline; gap:5px;
+  background:rgba(19,36,61,.82); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); color:#fff; border-radius:99px; padding:5px 11px; pointer-events:none}
+.an-badge b{font-size:14px; font-weight:800; color:var(--or-fonce)}
+.an-badge i{font-style:normal; font-size:11px; opacity:.82}
+.ruban-vente{position:absolute; top:10px; left:10px; z-index:2; padding:5px 10px; border-radius:99px; background:rgba(19,36,61,.88); color:#fff; font-size:12px; font-weight:800; letter-spacing:.2px}
+.ruban-vente.vous{background:var(--or); color:#13243D}
+.avis-vente{display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border-radius:14px; background:#F2F5F9; color:#13243D; font-size:14px; line-height:1.5; margin-bottom:14px}
+/* V3.195 : « Visite effectuée » et le compte rendu, sous le titre, en blanc.
+   ⚠️ Préfixes vf- et cpr- (l'espace a déjà .fait, .fige, .apres-avis). */
+.vf{display:flex; flex-direction:column; gap:12px; margin:0 0 16px; padding:15px; border-radius:18px; background:#fff; border:1px solid var(--trait); box-shadow:0 10px 26px -20px rgba(19,36,61,.5)}
+.vf-tete{display:flex; align-items:center; gap:11px}
+.vf-ic{flex:0 0 auto; width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:var(--vert-fond); color:var(--vert); border:1px solid var(--vert-trait)}
+.vf-tt{display:flex; flex-direction:column; gap:1px; min-width:0}
+.vf-tt b{font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:800; color:var(--encre)}
+.vf-tt small{font-size:13px; font-weight:600; color:var(--plume)}
+.vf-tete{flex-wrap:wrap; row-gap:10px}
+.vf-actions{margin-left:auto; display:flex; align-items:center; flex-wrap:wrap; gap:8px}
+.vf-actions .ofr-mini{margin-top:0}
+.vf-etat{display:flex; flex-direction:column; align-items:flex-start; gap:6px}
+.vf-etat .vv-ligne{margin-top:0}
+.vf-etat .vv-lu, .vf-etat .vv-mot{margin-top:2px !important}
+.vv-src-in{font-size:12px; font-weight:700; color:var(--plume-clair); white-space:nowrap}
+@media(max-width:560px){ .vf-actions{margin-left:0; flex:1 1 100%} }
+.vf-attente{display:flex; align-items:center; gap:9px; padding:11px 13px; border-radius:13px; background:var(--fond); color:var(--plume); font-size:13.5px; line-height:1.5; scroll-margin-top:72px}
+.vf-attente svg{flex-shrink:0}
+.cpr{display:flex; flex-direction:column; gap:12px; padding:14px 15px 13px; border-radius:15px; background:linear-gradient(180deg,#FFFBF5,#fff 70%); border:1px solid var(--or-trait); scroll-margin-top:72px}
+.cpr-tete{display:flex; align-items:center; gap:9px}
+.cpr-ic{flex:0 0 auto; width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--or-fond); color:var(--or-fonce); border:1px solid var(--or-trait)}
+.cpr-tt{flex:1 1 auto; min-width:0; font-size:12px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--or-fonce)}
+.cpr-et{flex:0 0 auto; font-size:15px; letter-spacing:1px; color:var(--or)}
+.cpr-et i{font-style:normal; color:#E3E8F0}
+.cpr-texte{display:flex; flex-direction:column; gap:9px; font-size:15px; line-height:1.65; color:var(--encre)}
+.cpr-texte p{margin:0; overflow-wrap:anywhere}
+.cpr-texte b{font-weight:800}
+.cpr-puces{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px}
+.cpr-puces li{display:flex; align-items:flex-start; gap:10px; overflow-wrap:anywhere}
+.cpr-pc{flex:0 0 auto; width:20px; height:20px; margin-top:2px; box-sizing:border-box; border-radius:50%; display:flex; align-items:center; justify-content:center}
+.cpr-pc::before{content:''; width:7px; height:7px; border-radius:50%; background:var(--or)}
+.cpr-puces li[data-plus] .cpr-pc{background:var(--vert-fond); color:var(--vert); border:1px solid var(--vert-trait)}
+.cpr-puces li[data-plus] .cpr-pc::before{display:none}
+.cpr-sign{display:flex; align-items:center; gap:9px; padding-top:10px; border-top:1px solid #F3E6D4}
+.cpr-av{flex:0 0 auto; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--marque); color:#fff; font-size:11px; font-weight:800; letter-spacing:.4px}
+.cpr-sign > span:last-child{min-width:0; line-height:1.4}
+.cpr-sign b{font-size:14px; font-weight:800; color:var(--encre)}
+.cpr-sign small{font-size:12.5px; font-weight:600; color:var(--plume)}
+/* V3.193 : « Où en est Alexandre » sur la fiche, et sa ligne sur la carte.
+   ⚠️ Classes préfixées : l'espace a déjà .fait (un bloc) et d'autres mots courts. */
+.oe{display:flex; flex-direction:column; gap:12px; margin:0 0 16px; padding:15px 15px 13px; border-radius:18px; background:#fff; border:1px solid var(--trait); box-shadow:0 10px 26px -20px rgba(19,36,61,.5)}
+.oe-tete{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.oe-t{font-size:11.5px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--plume)}
+.oe-b{flex-shrink:0; font-size:12px; font-weight:700; color:var(--or-fonce); background:var(--or-fond); border:1px solid var(--or-trait); border-radius:99px; padding:3px 10px}
+.oe-b.oe-ok{color:var(--vert); background:var(--vert-fond); border-color:var(--vert-trait)}
+.oe-fil{list-style:none; margin:0; padding:0; display:flex; flex-direction:column}
+.oe-e{position:relative; display:flex; gap:12px; padding-bottom:14px}
+.oe-e:last-child{padding-bottom:0}
+.oe-e::before{content:''; position:absolute; left:12px; top:28px; bottom:2px; width:2px; border-radius:2px; background:var(--trait)}
+.oe-e.oe-fait::before{background:var(--vert-trait)}
+.oe-e:last-child::before{display:none}
+.oe-p{flex:0 0 auto; width:26px; height:26px; border-radius:50%; box-sizing:border-box; display:flex; align-items:center; justify-content:center; background:#fff; border:2px solid #D5DDE8; position:relative; z-index:1}
+.oe-e.oe-fait .oe-p{background:var(--vert); border-color:var(--vert); color:#fff}
+.oe-e.oe-encours .oe-p{border:3px solid var(--or)}
+.oe-pt{width:8px; height:8px; border-radius:50%; background:var(--or)}
+.oe-c{display:flex; flex-direction:column; gap:2px; min-width:0; padding-top:3px}
+.oe-c > b{font-size:14.5px; font-weight:700; line-height:1.35; color:var(--encre)}
+.oe-e.oe-encours .oe-c > b{font-weight:800; color:var(--or-fonce)}
+.oe-e.oe-avenir .oe-c > b{color:#8592A6}
+.oe-c > small{font-size:12.5px; font-weight:600; line-height:1.45; color:var(--plume)}
+.oe-e.oe-avenir .oe-c > small{color:#8592A6}
+.oe-mot{display:flex; flex-direction:column; gap:4px; margin-top:6px; padding:10px 12px; border-radius:13px; background:#FFF8EF; border:1px solid #F7DDBC}
+.oe-mot i{font-style:normal; font-size:11px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--or-fonce)}
+.oe-mot > span{font-size:14px; font-weight:600; line-height:1.55; color:var(--encre); overflow-wrap:anywhere}
+.oe-plus{position:relative; display:flex; align-items:center; gap:12px; padding-bottom:14px}
+.oe-plus-l{flex:0 0 auto; width:26px; align-self:stretch; display:flex; justify-content:center}
+.oe-plus-l::before{content:''; width:0; border-left:2px dotted var(--vert-trait); margin-bottom:-14px}
+.oe-plus-b{display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:0 12px; border-radius:99px; border:1px solid var(--trait-fort); background:#fff; color:var(--marque); font:inherit; font-size:13px; font-weight:700; cursor:pointer}
+.oe-plus-b:hover{border-color:var(--marque)}
+.oe-plus-ch{display:inline-flex; transition:transform .3s ease}
+.oe-plus-ch[data-o="1"]{transform:rotate(180deg)}
+.oe-anciens{display:grid; grid-template-rows:0fr; opacity:0; transition:grid-template-rows .4s ease, opacity .3s ease}
+.oe-anciens[data-o="1"]{grid-template-rows:1fr; opacity:1}
+.oe-anc-in{min-height:0; overflow:hidden}
+.oe-sous .oe-e:last-child{padding-bottom:14px}
+.oe-sous .oe-e:last-child::before{display:block}
+@media (prefers-reduced-motion: reduce){ .oe-anciens, .oe-plus-ch{transition:none} }
+.oe-pied{margin:0; padding-top:10px; border-top:1px solid #EEF2F7; font-size:12.5px; line-height:1.5; color:var(--plume)}
+.suivi-l{display:flex; align-items:center; gap:7px; margin-top:9px; font-size:12.5px; font-weight:700; line-height:1.35; color:var(--or-fonce)}
+.suivi-pt{flex:0 0 auto; width:7px; height:7px; border-radius:50%; background:var(--or)}
+/* V3.164 : le mot du conseiller sur un bien plus disponible. */
+.mot-indispo{display:flex; flex-direction:column; gap:4px; margin:-6px 0 14px; padding:11px 14px; border-radius:14px; background:white; border:1px solid #E3E8F0; border-left:3px solid var(--or); color:#13243D; font-size:14px; line-height:1.55}
+.mot-indispo i{font-style:normal; font-size:11.5px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; color:#8592A6}
+.avis-vente svg{flex-shrink:0; margin-top:2px}
+.avis-vente.vous{background:#fbf6e9; color:#5c4a1a}
+.bandeau-prix .p{font-family:'Plus Jakarta Sans',sans-serif; font-size:27px; font-weight:800; color:var(--or-fonce); letter-spacing:-1px}
+.bandeau-prix .m2{font-size:12.5px; color:var(--plume-clair); font-weight:700}
+.bandeau-prix .nv{position:relative; display:inline-block; padding-right:22px}
+.bandeau-prix .nv .aide-pt{position:absolute; right:0; top:4px}
+.hono-l{font-size:12px; line-height:1.45; color:var(--plume); font-weight:600}
+/* V3.196 : dans le bandeau du prix — dessous (téléphone), à côté (ordinateur). */
+.bandeau-prix .hono-l{order:3; flex:1 0 100%}
+.hono-fin{white-space:nowrap}
+.hono-l .aide-pt{margin-left:5px; vertical-align:middle; position:relative; top:-1px}
+.bien .hono-c{display:block; font-size:11.5px; color:var(--plume); font-weight:600; margin-top:3px}
+.cn-h{display:block; font-size:11.5px; color:var(--plume); font-weight:600; margin-top:-2px}
+.pop-aide{padding:26px 22px 22px}
+.specs{display:grid; grid-template-columns:repeat(auto-fit,minmax(86px,1fr)); gap:8px; margin:16px 0 4px}
+.spec{background:var(--fond); border:1px solid var(--trait); border-radius:13px; padding:11px 8px; text-align:center}
+.spec .v{font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:15px}
+.spec .l{font-size:9px; letter-spacing:.9px; text-transform:uppercase; color:var(--plume-clair); margin-top:4px; font-weight:700}
+.txt{font-size:14.5px; line-height:1.7; margin:14px 0 0}
+.dpe{display:inline-flex; align-items:center; gap:7px; margin-right:14px; margin-top:14px}
+.dpe .l{width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:14px; color:#13243D}
+.dpe .t{font-size:10.5px; letter-spacing:.9px; text-transform:uppercase; color:var(--plume-clair); font-weight:800}
+/* Ce que le bien comprend : une carte par équipement, avec son icône. C'est
+   ce que l'acquéreur cherche des yeux en premier — ça mérite de la place. */
+.incl{display:grid; grid-template-columns:repeat(auto-fit,minmax(152px,1fr)); gap:9px; margin-top:10px}
+.incl .ic{display:flex; align-items:center; gap:11px; background:var(--carte);
+  border:1px solid var(--trait); border-radius:15px; padding:11px 13px}
+.incl .ic .r{width:34px; height:34px; border-radius:11px; background:var(--fond);
+  color:var(--or-fonce); display:flex; align-items:center; justify-content:center; flex:0 0 auto}
+.incl .ic .n{font-family:'Plus Jakarta Sans',sans-serif; font-weight:700;
+  font-size:13.5px; color:var(--encre); line-height:1.25}
+
+/* Ce que le bien coûte à vivre : même grammaire, le chiffre en avant et
+   l'unité en dessous, pour qu'on ne confonde pas trimestre et année. */
+.cout{display:grid; grid-template-columns:repeat(auto-fit,minmax(152px,1fr)); gap:9px; margin-top:10px}
+.cout .c{background:var(--carte); border:1px solid var(--trait); border-radius:15px; padding:13px 14px}
+.cout .c .h{display:flex; align-items:center; gap:7px; color:var(--plume-clair)}
+.cout .c .l{font-size:9.5px; letter-spacing:1px; text-transform:uppercase; font-weight:800}
+.cout .c .v{font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:18px;
+  color:var(--encre); margin-top:8px; line-height:1.2}
+.cout .c .lettre{display:inline-flex; align-items:center; justify-content:center;
+  width:36px; height:36px; border-radius:11px; color:#13243D;
+  font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:18px}
+.cout .c .u{display:block; font-family:'Inter',sans-serif; font-size:11px;
+  color:var(--plume-clair); font-weight:700; margin-top:3px; letter-spacing:.3px}
+.cout-compris{margin:9px 2px 0; font-size:12.5px; line-height:1.5; color:var(--plume)}
+.cout-compris b{font-weight:700; color:var(--encre)}
+
+/* Le plan : sur fond blanc, entier, et on l'agrandit d'un geste. */
+.plans-f{display:grid; gap:9px; margin-top:10px}
+.plan-f{position:relative; display:block; width:100%; padding:12px; background:#fff;
+  border:1px solid var(--trait); border-radius:15px; cursor:zoom-in; font:inherit}
+.plan-f img{display:block; width:100%; max-height:440px; object-fit:contain; margin:0 auto}
+.plan-z{position:absolute; right:10px; bottom:10px; display:inline-flex; align-items:center; gap:6px;
+  background:rgba(19,36,61,.88); color:#fff; border-radius:10px; padding:6px 10px;
+  font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:800}
+
+/* La description : un pavé de dix lignes décourage la lecture. On n'en montre
+   que le début, le bas s'estompe, et « Lire la suite » déroule le reste. */
+.desc{margin-top:16px}
+.desc-t{overflow:hidden; transition:max-height .42s cubic-bezier(.16,1,.3,1)}
+.desc-t[data-court]{-webkit-mask-image:linear-gradient(#000 58%,transparent 100%);
+  mask-image:linear-gradient(#000 58%,transparent 100%)}
+.desc-t .txt:first-child{margin-top:0}
+.plus{display:inline-flex; align-items:center; gap:7px; margin-top:8px; padding:7px 0;
+  background:none; border:none; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px; font-weight:800; color:var(--or-fonce); letter-spacing:.2px}
+.plus .ch{display:flex; transform:rotate(90deg);
+  transition:transform .4s cubic-bezier(.16,1,.3,1)}
+.plus .ch[data-o]{transform:rotate(-90deg)}
+
+.avis3{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-top:8px}
+.avis{background:var(--fond); border:2px solid var(--trait); border-radius:16px; padding:14px 6px;
+  display:flex; flex-direction:column; align-items:center; gap:7px;
+  transition:transform .22s cubic-bezier(.16,1,.3,1), border-color .2s, background .2s}
+.avis .e{font-size:23px; line-height:1}
+.avis .n{font-size:12px; font-weight:700; color:var(--plume); text-align:center; line-height:1.3}
+.avis:active{transform:scale(.95)}
+.avis[aria-pressed="true"]{transform:translateY(-3px)}
+
+/* ── Le petit ressort de la sélection ──
+   Il se joue au moment où l'élément DEVIENT sélectionné, et une seule fois :
+   une animation CSS ne rejoue pas tant que le sélecteur reste vrai. Donc rien
+   à gérer en JavaScript, et aucun risque qu'elle reparte à chaque rendu.
+
+   Deux courbes, parce que les trois gros boutons d'avis montent de 3 px quand
+   ils sont choisis : leur animation doit finir à cette hauteur-là, sinon ils
+   retomberaient d'un coup à la fin. */
+@keyframes choisi{
+  0%  {transform:scale(.70) rotate(-2.5deg)}
+  32% {transform:scale(1.28) rotate(2deg)}
+  55% {transform:scale(.92)  rotate(-1.2deg)}
+  78% {transform:scale(1.09) rotate(.6deg)}
+  100%{transform:scale(1)    rotate(0)}
+}
+@keyframes choisi-haut{
+  0%  {transform:translateY(0)    scale(.84)}
+  38% {transform:translateY(-7px) scale(1.12)}
+  62% {transform:translateY(-1px) scale(.96)}
+  100%{transform:translateY(-3px) scale(1)}
+}
+/* L'onde qui part du badge. C'est elle qu'on voit du coin de l'œil : le
+   changement de taille seul passait inaperçu au milieu d'un changement de
+   couleur. currentColor la teinte automatiquement — verte sur « ça me
+   plaît », brique sur « pas pour moi », marine sur un critère. */
+@keyframes onde{
+  0%  {box-shadow:0 0 0 0 currentColor; opacity:.6}
+  55% {opacity:.3}
+  100%{box-shadow:0 0 0 22px currentColor; opacity:0}
+}
+.ch[aria-pressed="true"],
+.reponses:not(.lu) .rep[aria-pressed="true"],
+.creneau.pris,
+.dpe-b.pt,
+.fc.on{animation:choisi .5s cubic-bezier(.34,1.56,.64,1)}
+.avis[aria-pressed="true"]{animation:choisi-haut .5s cubic-bezier(.34,1.56,.64,1)}
+
+/* L'onde vit dans un ::after pour ne pas écraser l'ombre du bouton lui-même.
+   pointer-events:none : elle déborde du badge, elle ne doit rien intercepter. */
+.ch, .rep, .creneau, .dpe-b, .avis, .fc, .ba-b{position:relative}
+.ch[aria-pressed="true"]::after,
+.reponses:not(.lu) .rep[aria-pressed="true"]::after,
+.creneau.pris::after,
+.dpe-b.pt::after,
+.fc.on::after,
+.avis[aria-pressed="true"]::after{
+  content:""; position:absolute; inset:0; border-radius:inherit;
+  pointer-events:none; animation:onde .6s ease-out forwards}
+
+/* ── Les onglets et les gros boutons de la barre du bas ──
+   Ces deux-là n'ont pas d'etat « selectionne » sur lequel accrocher une
+   animation : un onglet filtre une liste, un bouton de la barre ouvre
+   aussitot le panneau. Le retour se joue donc a l'appui, et il doit etre
+   plus marque que le discret scale(.95) d'origine — c'est ce qu'Alexandre
+   ne voyait pas. */
+.fc{transition:background .18s, color .18s, transform .16s cubic-bezier(.34,1.56,.64,1)}
+.fc:active{transform:scale(.9)}
+.ba-b{transition:transform .16s cubic-bezier(.34,1.56,.64,1), border-color .2s, background .2s}
+.ba-b:active{transform:scale(.9)}
+/* La relecture d'un retour déjà envoyé (.reponses.lu) arrive avec ses
+   pastilles déjà sélectionnées : elles n'ont aucune raison de sautiller.
+   ⚠️ Pas d'accent inverse dans ce bloc, il fermerait le gabarit JS. */
+
+/* Certains règlent leur téléphone pour que rien ne bouge — souvent pour de
+   bonnes raisons (mal des transports, vertiges). Le système le dit, on écoute. */
+@media(prefers-reduced-motion:reduce){
+  .ch[aria-pressed="true"],
+  .reponses:not(.lu) .rep[aria-pressed="true"],
+  .creneau.pris, .dpe-b.pt, .fc.on,
+  .avis[aria-pressed="true"],
+  .fc.on::after,
+  .ch[aria-pressed="true"]::after,
+  .reponses:not(.lu) .rep[aria-pressed="true"]::after,
+  .creneau.pris::after, .dpe-b.pt::after,
+  .avis[aria-pressed="true"]::after{animation:none}
+}
+.avis[data-a="oui"][aria-pressed="true"]{border-color:var(--vert); background:var(--vert-fond)}
+.avis[data-a="oui"][aria-pressed="true"] .n{color:var(--vert)}
+.avis[data-a="visite"][aria-pressed="true"]{border-color:var(--prune); background:var(--prune-fond)}
+.avis[data-a="visite"][aria-pressed="true"] .n{color:var(--prune)}
+.avis[data-a="non"][aria-pressed="true"]{border-color:var(--brique); background:var(--brique-fond)}
+.avis[data-a="non"][aria-pressed="true"] .n{color:var(--brique)}
+/* Avis envoyé : les trois boutons restent lisibles, le choix garde sa
+   couleur, les deux autres s'effacent. Plus rien ne réagit au doigt. */
+.avis[data-fige="1"]{cursor:default}
+.avis[data-fige="1"]:active{transform:none}
+.avis[data-fige="1"][aria-pressed="false"]{opacity:.38}
+textarea,input[type="email"]{width:100%; border:1px solid var(--trait-fort); border-radius:13px; padding:13px;
+  font-family:inherit; font-size:15px; color:var(--encre); background:var(--fond); resize:vertical}
+textarea:focus,input:focus{outline:none; border-color:var(--or); background:var(--carte)}
+label.lab{display:block; font-size:10px; letter-spacing:1.3px; text-transform:uppercase;
+  color:var(--plume-clair); font-weight:800; margin:18px 0 8px}
+.fige{background:var(--fond); border:1px solid var(--trait); border-radius:13px; padding:13px;
+  font-size:13.5px; color:var(--plume); line-height:1.65}
+.pas{display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--fond); border:1px solid var(--trait); border-radius:14px; padding:8px 10px}
+.pas .val{font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:19px; flex:1; text-align:center; letter-spacing:-.5px}
+.rond{width:34px; height:34px; border-radius:50%; border:1px solid var(--trait-fort); background:var(--carte);
+  font-size:19px; line-height:1; display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+  transition:transform .16s cubic-bezier(.16,1,.3,1)}
+.rond:active{transform:scale(.87)}
+/* — où je cherche : une ville, ses quartiers — */
+.villes{display:flex; flex-direction:column; gap:14px}
+.ville-n{display:flex; align-items:center; gap:10px;
+  font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:800;
+  color:var(--encre); margin-bottom:10px; letter-spacing:-.2px}
+.ville-tout{font-size:13px; color:var(--plume); font-style:italic}
+.ville + .ville{border-top:1px solid var(--trait); padding-top:14px}
+
+/* — le sélecteur, dans « Mes critères ont évolué » — */
+.loc{display:flex; flex-direction:column; gap:12px}
+.loc-ville{background:var(--fond); border:1px solid var(--trait); border-radius:16px; padding:14px}
+.loc-tete{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:11px}
+.loc-n{font-family:'Plus Jakarta Sans',sans-serif; font-size:15.5px; font-weight:800; color:var(--encre)}
+.loc-n em{font-style:normal; font-size:12px; font-weight:700; color:var(--plume-clair)}
+.loc-n2{font-family:'Plus Jakarta Sans',sans-serif; font-size:13.5px; font-weight:800;
+  color:var(--plume); margin-bottom:10px}
+.loc-x{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700;
+  color:var(--plume-clair); background:var(--carte); border:1px solid var(--trait);
+  border-radius:99px; padding:5px 11px}
+.loc-x:hover{color:var(--brique); border-color:var(--brique-trait); background:var(--brique-fond)}
+.loc-ajout{display:flex; gap:7px; margin-top:10px}
+.loc-ajout input{flex:1; border:1px solid var(--trait-fort); border-radius:11px; padding:10px 12px;
+  font-size:13.5px; font-family:inherit; background:var(--carte); color:var(--encre)}
+.loc-ajout input:focus{outline:none; border-color:var(--or)}
+.loc-plus{flex:0 0 auto; border-radius:11px; padding:0 15px; font-size:12.5px; font-weight:800;
+  font-family:'Plus Jakarta Sans',sans-serif; background:var(--marque); color:#fff; border:0}
+.loc-neuve{border-style:dashed}
+.loc-rech{position:relative}
+.loc-rech input{width:100%; border:1px solid var(--trait-fort); border-radius:11px; padding:11px 12px;
+  font-size:13.5px; font-family:inherit; background:var(--carte); color:var(--encre)}
+.loc-rech input:focus{outline:none; border-color:var(--or)}
+.loc-sug{position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:4; background:var(--carte);
+  border:1px solid var(--trait); border-radius:13px; box-shadow:var(--ombre-f); overflow:hidden}
+.loc-sug button{display:flex; align-items:center; gap:9px; width:100%; text-align:left;
+  padding:11px 13px; font-size:13.5px; color:var(--encre); background:none; border:0}
+.loc-sug button + button{border-top:1px solid var(--trait)}
+.loc-sug button:hover{background:var(--fond)}
+.loc-sug b{font-weight:800; color:var(--plume)}
+.loc-sug em{margin-left:auto; font-style:normal; font-size:10.5px; font-weight:700; color:var(--or-fonce)}
+
+/* — arrêts de transport choisis — */
+.arrets-v{display:flex; flex-direction:column; gap:14px}
+.arret-v + .arret-v{border-top:1px solid var(--trait); padding-top:14px}
+.arret-h{display:flex; align-items:center; gap:10px}
+.arret-n{font-family:'Plus Jakarta Sans',sans-serif; font-size:15.5px; font-weight:800; color:var(--encre)}
+.arret-m{display:block; font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:600;
+  color:var(--plume); margin-top:3px}
+.past-x{margin-left:6px; opacity:.5; background:none; border:0; color:inherit; padding:0;
+  display:inline-flex; vertical-align:middle}
+.past-x:hover{opacity:1; color:var(--brique)}
+.sep-crit{display:flex; align-items:center; gap:12px; margin:24px 0 14px}
+.sep-crit span{font-size:10.5px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase;
+  color:var(--plume-clair)}
+.sep-crit i{flex:1; height:1px; background:var(--trait)}
+.rappel-lignes{display:flex; align-items:center; gap:7px; margin-top:9px; font-size:12px;
+  color:var(--plume-clair); font-weight:600}
+.borne{font-size:10px; letter-spacing:1.1px; text-transform:uppercase; color:var(--plume-clair);
+  font-weight:800; margin:12px 0 7px}
+.jauge{height:6px; border-radius:99px; background:var(--trait); margin-top:11px; overflow:hidden}
+.jauge i{display:block; height:100%; background:var(--or); border-radius:99px;
+  transition:width .42s cubic-bezier(.16,1,.3,1), margin-left .42s cubic-bezier(.16,1,.3,1)}
+.choix{display:flex; flex-wrap:wrap; gap:7px}
+.ch{background:var(--fond); border:1.5px solid var(--trait); border-radius:99px; padding:9px 15px;
+  font-size:13.5px; font-weight:700; color:var(--plume);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1), border-color .18s, background .18s, color .18s}
+.ch:active{transform:scale(.93)}
+.ch[aria-pressed="true"]{background:var(--marque); border-color:var(--marque); color:var(--fond)}
+.ch.or[aria-pressed="true"]{background:var(--or); border-color:var(--or); color:#fff}
+.grandok{text-align:center; padding:8px 24px 26px}
+.grandok .rond-ok{width:76px; height:76px; border-radius:50%; margin:14px auto 20px;
+  background:var(--vert-fond); color:var(--vert); display:flex; align-items:center; justify-content:center;
+  border:2px solid var(--vert-trait); animation:pop .6s cubic-bezier(.34,1.56,.64,1) both}
+.grandok h3{margin:0 0 12px; font-size:22px; font-weight:800; line-height:1.25}
+.grandok p{margin:0 auto; max-width:380px; color:var(--plume); font-size:14.5px; line-height:1.7}
+.grandok .rappel{margin-top:18px; background:var(--fond); border:1px solid var(--trait); border-radius:14px;
+  padding:14px 16px; font-size:13px; color:var(--plume); line-height:1.6}
+.grandok .rappel b{color:var(--encre)}
+.pied{text-align:center; padding:34px 20px 10px; color:var(--plume-clair); font-size:12px; line-height:1.8}
+.pied b{color:var(--plume); font-weight:700}
+.pied .insecable{white-space:nowrap}
+.pied-sig{font-size:13.5px; color:var(--plume); line-height:1.5}
+.pied-sig b{color:var(--encre)}
+.pied-coeur{display:inline-block; vertical-align:-2px; color:#d9534f}
+.pied-trait{width:36px; height:2px; border-radius:2px; background:var(--or-trait); margin:14px auto 12px}
+/* À partir de la tablette, la page s'élargit et le client et son chasseur
+   tiennent sur une ligne. Le sous-titre du chasseur saute pour rester compact. */
+@media(min-width:760px){
+  .chapeau{padding:22px 30px 26px}
+  .chapeau .dedans{max-width:900px}
+  .page{max-width:900px; padding:0 30px 84px}
+  .rangee{flex-direction:row; align-items:center; justify-content:space-between; gap:20px}
+  .ident h1{font-size:22px; white-space:nowrap}
+  .agent{padding:9px 10px 9px 14px}
+  .agent-id b{font-size:13px}
+  .agent-role{display:none}
+  .act{padding:8px 12px; font-size:12px}
+  .sur-dossier{display:inline}
+}
+
+/* Sur écran d'ordinateur, la page s'étale au lieu de rester en colonne. */
+@media(min-width:1024px){
+  .chapeau{padding:24px 40px 28px}
+  .chapeau .dedans{max-width:1160px}
+  .ident h1{font-size:24px}
+  .mono{width:52px; height:52px; font-size:19px}
+  .agent{min-width:320px; padding:10px 11px 10px 16px}
+  .agent-id b{font-size:13.5px}
+  .agent-role{display:block; font-size:10.5px}
+  .act{padding:8px 13px; font-size:12px}
+
+  .page{max-width:1160px; padding:0 40px 90px}
+  /* Colonne gauche : la présentation, puis le chasseur et l'engagement.
+     Colonne droite : les cartes, qui tiennent sur les deux rangées. */
+  /* ⚠️ grid-template-rows:auto 1fr — la colonne droite couvre les deux
+     rangées et elle est plus haute que la gauche : sans « 1fr », la grille
+     répartissait ce surplus sur la PREMIÈRE rangée, et un grand blanc
+     s'ouvrait sous les chiffres, avant « Votre conseiller ». Le surplus va
+     maintenant tout en bas de la colonne gauche. */
+  .accueil{display:grid; grid-template-columns:minmax(0,.94fr) minmax(0,1.06fr);
+    grid-template-rows:auto 1fr;
+    column-gap:30px; row-gap:0; align-items:start; margin-top:26px}
+  .accueil .col-a{grid-column:1; grid-row:1}
+  .accueil .col-c{grid-column:1; grid-row:2}
+  .accueil .col-b{grid-column:2; grid-row:1 / span 2}
+  .accueil .hero{margin-top:0}
+  .accueil .col-b .sep{margin-top:2px}
+  .grille{gap:16px}
+  /* les listes de biens passent sur deux colonnes */
+  .liste{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:stretch}
+  .sous-vue{max-width:820px}
+  .relance{max-width:820px}
+}
+@media(min-width:1440px){
+  .chapeau .dedans{max-width:1280px}
+  .page{max-width:1280px}
+}
+
+/* La fiche d'un bien sur ordinateur : une largeur confortable, une seule
+   colonne qui défile, et en haut une bande de trois photos côte à côte —
+   pas une photo géante. */
+@media(min-width:900px){
+  .feuille.fiche{width:min(1000px,92vw); max-height:86vh; height:auto;
+    overflow-y:auto; overscroll-behavior:contain; padding-bottom:26px}
+  .feuille.fiche .galerie{border-radius:24px 24px 0 0; overflow:hidden}
+  .feuille.fiche .bande{gap:2px}
+  .feuille.fiche .bande .photo-g{flex:0 0 calc(33.333% - 2px); aspect-ratio:4/3; cursor:zoom-in}
+  .feuille.fiche .retour-f{top:14px; left:14px}
+  .feuille.fiche .compteur{top:14px; left:66px; right:auto}
+  .feuille.fiche .points{display:none}
+  .feuille.fiche .bandeau-prix{padding:22px 26px 0}
+  .feuille.fiche .bandeau-prix .hono-l{order:2; flex:1 1 220px; font-size:13px}
+  .feuille.fiche .bandeau-prix .m2{order:3}
+  .feuille.fiche .tete-f{padding:14px 26px 12px}
+  .feuille.fiche .corps-f{padding:0 26px}
+  .feuille.fiche .corps-f .txt{max-width:74ch}
+}
+
+/* La barre de défilement, sur ordinateur. globals.css (celle du CRM) la
+   réduit à 4 px gris clair : dans la fiche d'un bien, les clients ne la
+   voyaient pas, et ceux qui descendent en l'attrapant à la souris la
+   rataient. Ici elle est large, contrastée, et fonce au survol — dans la
+   fiche comme sur la page entière. Rien ne change au doigt : sur
+   téléphone, c'est le système qui la dessine.
+   ⚠️ La barre de la page entière se règle sur « body », pas sur « html » :
+   html et body sont tous deux en overflow:auto (voir plus haut), et Chrome
+   prend alors le style de body. « html » seul ne changeait rien. */
+/* V3.28 : encore plus visible. La poignée faisait 8 px de large, gris
+   clair (#9aa6b8) : on la voyait mal, surtout sur la fiche d'un bien. Elle
+   fait maintenant 11 px, en gris ardoise, et plus longue au minimum. */
+/* V3.29 : toujours pas visible chez Alexandre. Sa machine est une tablette
+   Windows (écran tactile) : pour le navigateur, le pointeur principal est le
+   doigt, « (pointer:fine) » était faux, et rien de tout ça ne s'appliquait.
+   On règle maintenant sur la largeur de l'écran, ou dès qu'une souris existe
+   (« any-pointer »). Et plus large, et bien plus foncé : la poignée est
+   bleu marine, la piste gris clair. */
+/* V3.117 : trop grosse, au contraire (Alexandre, sur la fiche d'un bien :
+   « une grosse barre bleue à droite… ça fait moche »). Elle s'affichait même
+   sur son téléphone : un Samsung avec stylet dit avoir un pointeur fin
+   (« any-pointer:fine »). Désormais : rien au téléphone (la barre du
+   système, fine et qui s'efface) ; à partir de 900 px, une barre fine, gris
+   bleuté, sans piste, qui fonce au survol. */
+@media (min-width:900px){
+  html::-webkit-scrollbar, body::-webkit-scrollbar, .feuille::-webkit-scrollbar, .pop-carte::-webkit-scrollbar{width:10px; height:10px}
+  html::-webkit-scrollbar-track, body::-webkit-scrollbar-track, .feuille::-webkit-scrollbar-track, .pop-carte::-webkit-scrollbar-track{background:transparent}
+  html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .feuille::-webkit-scrollbar-thumb, .pop-carte::-webkit-scrollbar-thumb{
+    background:#C2CEDF; border-radius:99px; border:2px solid transparent; background-clip:padding-box; min-height:48px}
+  html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover, .feuille::-webkit-scrollbar-thumb:hover, .pop-carte::-webkit-scrollbar-thumb:hover{background-color:#8FA3BF}
+  html::-webkit-scrollbar-thumb:active, body::-webkit-scrollbar-thumb:active, .feuille::-webkit-scrollbar-thumb:active, .pop-carte::-webkit-scrollbar-thumb:active{background-color:#5B6B80}
+  /* la fiche a des coins arrondis : la barre ne touche ni le haut ni le bas */
+  .feuille.fiche::-webkit-scrollbar-track{margin-top:14px; margin-bottom:14px}
+}
+/* Firefox ne connaît pas les règles ci-dessus : il a les siennes. */
+@supports (-moz-appearance:none){
+  @media (min-width:900px){
+    html, .feuille, .pop-carte{scrollbar-width:thin; scrollbar-color:#C2CEDF transparent}
+  }
+}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important; transition-duration:.01ms !important}}
+
+/* ═══ Récapitulatif de recherche : une catégorie = un bloc lisible ═══ */
+.bloc.cat{padding:0}
+.cat + .cat{margin-top:14px}
+.cat-h{display:flex; align-items:center; gap:12px; padding:15px 18px;
+  border-bottom:1px solid var(--trait); background:linear-gradient(180deg,#fbfcfe,#fff)}
+.cat-i{width:38px; height:38px; border-radius:12px; flex:0 0 auto; display:flex;
+  align-items:center; justify-content:center; color:#fff;
+  background:linear-gradient(140deg,#33486c,#25364f); box-shadow:0 8px 16px -10px rgba(19,36,61,.9)}
+.cat-tt{display:flex; flex-direction:column; min-width:0}
+.cat-tt b{font-family:'Plus Jakarta Sans',sans-serif; font-size:16.5px; font-weight:800; letter-spacing:-.3px}
+.cat-tt i{font-style:normal; font-size:12px; color:var(--plume-clair); margin-top:1px}
+.bloc.cat > *:not(.cat-h){padding-left:18px; padding-right:18px}
+.bloc.cat > *:not(.cat-h):first-of-type{padding-top:0}
+.bloc.cat > .trio, .bloc.cat > .pastilles, .bloc.cat > .gros,
+.bloc.cat > .villes, .bloc.cat > .arrets-v, .bloc.cat > .dpe-r{margin-top:15px}
+.bloc.cat > *:last-child{padding-bottom:17px}
+.ss-t{font-size:10.5px; letter-spacing:1.3px; text-transform:uppercase; color:var(--plume-clair);
+  font-weight:800; margin-bottom:8px}
+.faits{margin-top:13px; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:9px}
+.fait{display:flex; align-items:center; gap:10px; background:var(--fond); border:1px solid var(--trait);
+  border-radius:14px; padding:11px 12px; min-width:0}
+.fait .fi{width:32px; height:32px; border-radius:10px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+  background:var(--carte); border:1px solid var(--or-trait); color:var(--or-fonce)}
+.fait .ft{display:flex; flex-direction:column; min-width:0}
+.fait .ft i{font-style:normal; font-size:9.5px; letter-spacing:.9px; text-transform:uppercase;
+  color:var(--plume-clair); font-weight:800}
+.fait .ft b{font-size:14.5px; font-weight:800; margin-top:2px; overflow-wrap:anywhere}
+
+.note-cat{margin-top:11px; font-size:12.5px; color:var(--plume); line-height:1.55}
+.past.indis{background:var(--marque); border-color:var(--or); color:#FDEBD3; font-weight:700}
+.past .mk{font-style:normal; font-size:8.5px; letter-spacing:.9px; text-transform:uppercase;
+  background:var(--or); color:#fff; border-radius:6px; padding:2px 5px; margin-left:7px}
+.dpe-r{display:flex; gap:5px; flex-wrap:wrap}
+.dpe-l{width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:13px; border:1px solid var(--trait); color:var(--plume-clair); background:var(--fond)}
+.dpe-l.ok{border-color:var(--vert-trait); background:var(--vert-fond); color:var(--vert)}
+.dpe-l.pt{border-color:var(--marque); background:var(--marque); color:#fff}
+
+/* ═══ « Mes critères ont évolué » : l'assistant en neuf étapes ═══ */
+.frise-e{display:flex; gap:6px; overflow-x:auto; padding:2px 20px 12px; scrollbar-width:none;
+  -webkit-overflow-scrolling:touch}
+.frise-e::-webkit-scrollbar{display:none}
+.fp{flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 10px;
+  border-radius:99px; border:1.5px solid var(--trait); background:var(--carte); color:var(--plume-clair);
+  font-size:12.5px; font-weight:700; max-width:38px; overflow:hidden; white-space:nowrap;
+  transition:max-width .3s cubic-bezier(.34,1.25,.64,1), background .2s, color .2s, border-color .2s}
+.fp span{opacity:0; transition:opacity .18s .06s}
+.fp.on{max-width:260px; border-color:var(--marque); background:var(--marque); color:#fff}
+.fp.on span{opacity:1}
+.fp.fait{border-color:var(--or-trait); background:var(--or-fond); color:var(--or-fonce)}
+.corps-e{overflow-x:hidden; min-height:230px}
+.sous-e{margin:0 0 14px; font-size:13.5px; color:var(--plume); line-height:1.5}
+@keyframes pan-av{from{opacity:0; transform:translateX(26px)} to{opacity:1; transform:translateX(0)}}
+@keyframes pan-ar{from{opacity:0; transform:translateX(-26px)} to{opacity:1; transform:translateX(0)}}
+.pan-e.av{animation:pan-av .3s cubic-bezier(.22,.8,.3,1) both}
+.pan-e.ar{animation:pan-ar .3s cubic-bezier(.22,.8,.3,1) both}
+.nav-e{position:sticky; bottom:0; display:flex; align-items:center; gap:10px; justify-content:space-between;
+  padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px)); margin-top:18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.72),var(--carte) 42%); border-top:1px solid var(--trait);
+  backdrop-filter:blur(6px)}
+.nav-e .btn{padding:11px 16px; font-size:14px}
+.nav-e .cpt{font-size:11px; font-weight:800; letter-spacing:1.2px; color:var(--or-fonce); white-space:nowrap; flex:0 0 auto}
+.nav-e .btn{flex:0 1 auto; white-space:nowrap}
+label.lab i{font-style:normal; text-transform:none; letter-spacing:0; font-size:11px;
+  color:var(--plume-clair); font-weight:600; margin-left:7px}
+.champ-n{position:relative; display:flex; align-items:center; gap:9px; flex-wrap:wrap}
+.champ-n input{flex:0 0 118px; width:118px; background:var(--fond); border:1.5px solid var(--trait);
+  border-radius:12px; padding:11px 13px; font-size:16px; font-family:inherit; font-weight:700;
+  color:var(--encre); outline:none}
+.champ-n input:focus{border-color:var(--or)}
+.champ-n .sfx{font-size:14px; font-weight:700; color:var(--plume)}
+.champ-n .aide{flex:1 1 100%; font-size:11.5px; color:var(--plume-clair)}
+.duo-n{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.duo-n > *{min-width:0}
+.ch.niv{position:relative}
+.ch.niv.nsouhaite{border-color:var(--vert-trait); background:var(--vert-fond); color:var(--vert)}
+.ch.niv.nindispensable{border-color:var(--or); background:var(--marque); color:#FDEBD3}
+.ch .mk{font-style:normal; font-size:8.5px; letter-spacing:.9px; text-transform:uppercase;
+  margin-left:8px; opacity:.9; font-weight:800}
+.dpe-choix{display:flex; gap:7px; flex-wrap:wrap}
+.dpe-b{width:44px; height:44px; border-radius:13px; border:1.5px solid var(--trait); background:var(--fond);
+  color:var(--plume); font-weight:800; font-size:16px}
+.dpe-b.ok{border-color:var(--vert-trait); background:var(--vert-fond); color:var(--vert)}
+.dpe-b.pt{border-color:var(--marque); background:var(--marque); color:#fff}
+.note-verr{margin-top:20px; background:var(--fond); border:1px solid var(--trait); border-radius:16px; padding:14px}
+.note-verr .k{display:flex; align-items:center; gap:7px; font-size:10px; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--plume-clair); font-weight:800}
+.note-verr .k span{display:inline-flex; align-items:center; gap:6px}
+.note-verr .corps{margin:10px 0 0; padding:11px 13px; background:var(--carte); border:1px solid var(--trait);
+  border-left:3px solid var(--or); border-radius:12px; font-size:14px; line-height:1.6; color:var(--encre)}
+.note-verr .pq{margin-top:10px; font-size:12px; color:var(--plume); line-height:1.5}
+.note-verr textarea{width:100%; margin-top:9px; background:var(--carte); border:1.5px solid var(--trait);
+  border-radius:12px; padding:11px 13px; font-size:15px; font-family:inherit; color:var(--encre);
+  outline:none; resize:vertical}
+.note-verr textarea:focus{border-color:var(--or)}
+
+
+/* ═══ Téléphone : le bandeau ne doit pas manger l'écran ═══
+   Il est présent sur toutes les vues, donc chaque pixel qu'il prend est
+   un pixel en moins pour les biens. On le réduit franchement. */
+@media(max-width:759px){
+  .chapeau{padding:11px 16px 12px}
+  .chapeau::after{top:-110px; right:-70px; width:230px; height:230px}
+  .motmarque{font-size:9.5px; letter-spacing:1.8px}
+  .confid{font-size:8.5px; letter-spacing:1px}
+  .rangee{margin-top:10px; gap:8px}
+  .ident{gap:10px}
+  .mono{width:34px; height:34px; font-size:13px; border-width:1px}
+  .ident h1{font-size:15.5px; line-height:1.15}
+  .ident .ref{font-size:10px; margin-top:1px}
+  .agent{padding:8px 0 0; gap:8px}
+  .agent-sur{font-size:8.5px; letter-spacing:1px}
+  .agent-id b{font-size:11.5px}
+  .act{width:29px; height:29px}
+  .veilleligne{padding:4px 9px 4px 8px; font-size:10px; gap:5px; min-width:0}
+  .agent-id{flex-direction:column; align-items:flex-start; gap:1px}
+  .agent{flex-wrap:nowrap}
+  .pouls{width:6px; height:6px}
+  .page{padding:0 16px 70px}
+  .hero{margin-top:14px; padding:18px 16px; border-radius:18px}
+  .retour{margin-top:14px}
+}
+
+
+/* ═══ La présentation de l'espace (première visite) ═══ */
+.bienv{padding:8px 20px 24px; text-align:center}
+.bienv-sceau{width:66px; height:66px; border-radius:50%; margin:6px auto 16px;
+  display:flex; align-items:center; justify-content:center; color:var(--or-fonce);
+  background:var(--or-fond); border:1px solid var(--or-trait)}
+.bienv-sur{font-size:10px; letter-spacing:1.6px; text-transform:uppercase; color:var(--or-fonce); font-weight:800}
+.bienv h3{margin:8px 0 12px; font-size:25px; font-weight:800; line-height:1.15}
+.bienv > p{margin:0; color:var(--plume); font-size:14.5px; line-height:1.7}
+.bienv .puces{text-align:left; margin-top:20px; padding-top:18px}
+.bienv .puces span{font-size:13.5px}
+.bienv .puces b{font-weight:700}
+.bienv-pied{margin-top:12px; font-size:11.5px; color:var(--plume-clair)}
+@media(min-width:640px){ .bienv{padding:8px 26px 26px} }
+@media(max-width:639px){
+  .feuille.pleine .bienv{min-height:100dvh; display:flex; flex-direction:column; justify-content:center}
+}
+
+/* Le lien discret qui la rouvre, au bout du séparateur « Votre espace ». */
+.lien-aide{flex:0 0 auto; font-family:inherit; font-size:11.5px; font-weight:700;
+  color:var(--plume-clair); border:1px solid var(--trait); background:var(--carte);
+  border-radius:99px; padding:4px 11px; white-space:nowrap; transition:color .15s, border-color .15s}
+.lien-aide:hover{color:var(--or-fonce); border-color:var(--or-trait)}
+/* Celui de l'écran d'accueil porte son icône : deux liens côte à côte se
+   distinguent mieux d'un coup d'œil qu'avec deux libellés seuls. */
+.lien-ecran{display:inline-flex; align-items:center; gap:5px; color:var(--or-fonce);
+  border-color:var(--or-trait); background:var(--or-fond)}
+.lien-ecran:hover{border-color:var(--or)}
+
+
+/* ═══ L'espace sur l'écran d'accueil ═══ */
+/* Une bande basse, jamais une fenêtre : elle propose, elle ne barre pas la
+   route. Elle passe sous la feuille (z-index 60) pour ne jamais recouvrir une
+   fiche ouverte. */
+.ecran{position:fixed; left:0; right:0; bottom:0; z-index:50;
+  padding:0 12px calc(12px + env(safe-area-inset-bottom,0px));
+  animation:monte-ecran .4s cubic-bezier(.16,1,.3,1) both; pointer-events:none}
+@keyframes monte-ecran{ from{ opacity:0; transform:translateY(16px) } to{ opacity:1; transform:none } }
+.ecran-dedans{pointer-events:auto; display:flex; align-items:center; gap:11px;
+  max-width:560px; margin:0 auto; padding:11px 12px 11px 13px;
+  background:var(--marque); color:#fff; border-radius:17px;
+  box-shadow:0 8px 20px -6px rgba(19,36,61,.45), 0 24px 48px -28px rgba(19,36,61,.9)}
+.ecran-sceau{flex:0 0 auto; width:36px; height:36px; border-radius:11px;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--or-clair); background:rgba(230,139,35,.14); border:1px solid rgba(230,139,35,.3)}
+.ecran-txt{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px}
+.ecran-txt b{font-size:13px; font-weight:800; line-height:1.25}
+.ecran-txt span{font-size:11.5px; line-height:1.4; color:rgba(255,255,255,.66)}
+.ecran-oui{flex:0 0 auto; font-family:inherit; font-size:12.5px; font-weight:800;
+  background:var(--or); color:#fff; border:none; border-radius:11px; padding:9px 15px;
+  white-space:nowrap; transition:transform .15s}
+.ecran-oui:active{transform:scale(.96)}
+.ecran-x{flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:flex;
+  align-items:center; justify-content:center; background:transparent; border:none;
+  color:rgba(255,255,255,.42); transition:color .15s, background .15s}
+.ecran-x:hover{color:#fff; background:rgba(255,255,255,.1)}
+@media(max-width:400px){
+  .ecran-txt span{display:none}
+  .ecran-dedans{gap:9px}
+}
+
+/* Les étapes du guide : le même alignement que les puces, un chiffre à la
+   place de la coche — on suit une marche à suivre, on ne coche pas une liste. */
+.etapes .num{display:flex; align-items:center; justify-content:center;
+  width:21px; height:21px; margin-top:0; border-radius:50%;
+  font-size:11.5px; font-weight:800; color:var(--or-fonce);
+  background:var(--or-fond); border:1px solid var(--or-trait)}
+.bienv .etapes span{line-height:1.55}
+
+
+/* ═══ Biens consultés : filtres et groupes ═══ */
+/* Un seul bandeau, les choix collés les uns aux autres : c'est un même
+   réglage à plusieurs positions, pas six boutons indépendants. */
+.filtres{display:flex; gap:2px; overflow-x:auto; margin-bottom:4px; padding:4px;
+  background:var(--fond); border:1px solid var(--trait); border-radius:99px;
+  scrollbar-width:none; -webkit-overflow-scrolling:touch}
+.filtres::-webkit-scrollbar{display:none}
+.fc{flex:0 0 auto; display:inline-flex; align-items:center; gap:6px; border-radius:99px;
+  padding:8px 14px; font-family:inherit; font-size:12.5px; font-weight:700; white-space:nowrap;
+  background:transparent; border:none; color:var(--plume);
+  transition:background .18s, color .18s}
+.fc:hover{background:rgba(255,255,255,.72); color:var(--encre)}
+.fc .fe{font-size:13px; line-height:1}
+.fc i{font-style:normal; font-size:11px; font-weight:800; background:rgba(148,163,184,.2);
+  color:var(--plume-clair); border-radius:99px; padding:1px 7px}
+.fc.on{background:var(--marque); color:#fff; box-shadow:0 4px 10px -6px rgba(19,36,61,.9)}
+.fc.on i{background:rgba(255,255,255,.18); color:#fff}
+.fc.on:hover{background:var(--marque); color:#fff}
+/* Sur un écran étroit, le bandeau passe en deux colonnes égales plutôt que
+   de cacher la moitié des choix derrière un défilement qui ne se voit pas.
+   Deux par ligne, chacun sur toute sa moitié : plus de vide à droite quand
+   un intitulé long (« Visite prévue ») ne tenait pas à côté des autres.
+   S'il en reste un seul sur la dernière ligne, il prend toute la largeur. */
+@media(max-width:560px){
+  .filtres{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); overflow:visible; border-radius:20px; gap:3px}
+  .fc{justify-content:center; padding:8px 8px; font-size:12px; min-width:0}
+  .fc:last-child:nth-child(odd){grid-column:1 / -1}
+}
+
+/* ═══ Une catégorie de biens consultés = une carte à sa couleur ═══ */
+.gr-cadre{border:1px solid var(--trait); border-radius:20px; padding:0 13px 13px;
+  background:var(--carte); display:flex; flex-direction:column; gap:11px; overflow:hidden}
+.gr-cadre + .gr-cadre{margin-top:16px}
+.gr-tete{display:flex; align-items:center; gap:10px; margin:0 -13px; padding:13px 15px;
+  border-bottom:1px solid var(--trait)}
+.gr-tete .ge{font-size:17px; line-height:1}
+.gr-tete h3{margin:0; font-size:15.5px; font-weight:800; letter-spacing:-.2px}
+.gr-tete .gn{margin-left:auto; white-space:nowrap; font-size:11.5px; font-weight:800; border-radius:99px; padding:2px 9px;
+  background:var(--fond); color:var(--plume)}
+.gr-note{font-size:12.5px; line-height:1.55; color:var(--plume); padding:1px 3px 0}
+
+.gr-cadre.c-or{border-color:var(--or-trait); background:var(--or-fond)}
+.gr-cadre.c-or .gr-tete{border-color:var(--or-trait); background:rgba(230,139,35,.08)}
+.gr-cadre.c-or .gr-tete h3, .gr-cadre.c-or .gr-note{color:var(--or-fonce)}
+.gr-cadre.c-or .gn{background:var(--or); color:#fff}
+
+.gr-cadre.c-prune{border-color:var(--prune-trait); background:var(--prune-fond)}
+.gr-cadre.c-prune .gr-tete{border-color:var(--prune-trait); background:rgba(124,58,237,.06)}
+.gr-cadre.c-prune .gr-tete h3, .gr-cadre.c-prune .gr-note{color:var(--prune)}
+.gr-cadre.c-prune .gn{background:var(--prune); color:#fff}
+
+.gr-cadre.c-vert{border-color:var(--vert-trait); background:var(--vert-fond)}
+.gr-cadre.c-vert .gr-tete{border-color:var(--vert-trait); background:rgba(21,128,61,.06)}
+.gr-cadre.c-vert .gr-tete h3, .gr-cadre.c-vert .gr-note{color:var(--vert)}
+.gr-cadre.c-vert .gn{background:var(--vert); color:#fff}
+
+.gr-cadre.c-brique{border-color:var(--brique-trait); background:var(--brique-fond)}
+.gr-cadre.c-brique .gr-tete{border-color:var(--brique-trait); background:rgba(220,38,38,.05)}
+.gr-cadre.c-brique .gr-tete h3, .gr-cadre.c-brique .gr-note{color:var(--brique)}
+.gr-cadre.c-brique .gn{background:var(--brique); color:#fff}
+
+.gr-cadre.c-bleu{border-color:var(--bleu-trait); background:var(--bleu-fond)}
+.gr-cadre.c-bleu .gr-tete{border-color:var(--bleu-trait); background:rgba(37,99,235,.06)}
+.gr-cadre.c-bleu .gr-tete h3, .gr-cadre.c-bleu .gr-note{color:var(--bleu)}
+.gr-cadre.c-bleu .gn{background:var(--bleu); color:#fff}
+
+/* Ce que le client a écrit sur un bien. */
+.mon-com{display:block; margin-top:10px; padding:9px 12px; border-radius:12px;
+  background:var(--fond); border:1px solid var(--trait); border-left:3px solid var(--trait-fort)}
+.mon-com .mc-t{display:block; font-size:9.5px; font-weight:800; letter-spacing:1px;
+  text-transform:uppercase; color:var(--plume-clair)}
+.mon-com .mc-c{display:block; margin-top:3px; font-size:13.5px; line-height:1.55; color:var(--encre)}
+.mon-com.oui{background:var(--vert-fond); border-color:var(--vert-trait); border-left-color:var(--vert)}
+.mon-com.oui .mc-t{color:var(--vert)}
+.mon-com.visite{background:var(--prune-fond); border-color:var(--prune-trait); border-left-color:var(--prune)}
+.mon-com.visite .mc-t{color:var(--prune)}
+.mon-com.non{background:var(--brique-fond); border-color:var(--brique-trait); border-left-color:var(--brique)}
+.mon-com.non .mc-t{color:var(--brique)}
+.mon-com.fait{background:var(--or-fond); border-color:var(--or-trait); border-left-color:var(--or)}
+.mon-com.fait .mc-t{color:var(--or-fonce)}
+
+/* La demande d'avis sur la carte d'accueil. */
+.alerte-avis{display:inline-flex; align-items:flex-start; gap:6px; margin-top:3px;
+  background:var(--ambre-fond); border:1px solid var(--ambre-trait); color:var(--ambre);
+  border-radius:12px; padding:6px 10px; font-size:12px; font-weight:800; line-height:1.38}
+.case.large .alerte-avis, .vue-large .alerte-avis{border-radius:99px; padding:5px 12px; font-size:12.5px}
+.groupe + .groupe{margin-top:26px}
+.bloc-titre .ge{font-size:16px; line-height:1}
+.etiq.fait{background:var(--or-fond); color:var(--or-fonce); border-color:var(--or-trait)}
+.etiq.prevue{background:var(--prune-fond); color:var(--prune); border-color:var(--prune-trait)}
+.mon-com.fait{background:var(--or-fond); border-color:var(--or-trait)}
+.mon-com.fait .mc-t{color:var(--or-fonce)}
+
+/* ═══ Après le choix d'un avis : on invite vraiment à écrire ═══ */
+.apres-avis{margin-top:14px; background:var(--fond); border:1px solid var(--trait);
+  border-left:3px solid var(--or); border-radius:16px; padding:15px}
+.aa-t{font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:800; color:var(--encre)}
+.aa-p{margin:6px 0 12px; font-size:13px; line-height:1.6; color:var(--plume)}
+.apres-avis textarea{width:100%; background:var(--carte); border:1.5px solid var(--trait);
+  border-radius:14px; padding:13px 14px; font-size:15px; font-family:inherit; color:var(--encre);
+  outline:none; resize:vertical; min-height:108px; line-height:1.6}
+.apres-avis textarea:focus{border-color:var(--or)}
+.apres-avis.fini{border-left-color:var(--vert)}
+.fige-t{font-size:9.5px; letter-spacing:1.1px; text-transform:uppercase; font-weight:800;
+  color:var(--plume-clair); margin:2px 0 6px}
+.aa-n{margin:12px 0 0; font-size:12.5px; line-height:1.6; color:var(--plume-clair)}
+
+/* ═══ Les réponses toutes prêtes ═══
+   Une pastille se coche en un geste ; un cadre vide se ferme. C'est tout
+   l'écart entre un dossier qui s'affine et un dossier muet. */
+.reponses{display:flex; flex-wrap:wrap; gap:7px; margin-top:12px}
+.rep{display:inline-flex; align-items:center; gap:6px; background:var(--carte);
+  border:1.5px solid var(--trait); border-radius:999px; padding:7px 13px 7px 10px;
+  font-size:12.5px; font-weight:600; color:var(--plume); white-space:nowrap; line-height:1.2;
+  transition:transform .12s ease, background .16s ease, border-color .16s ease, color .16s ease}
+.rep svg{flex:0 0 auto; color:var(--plume-clair)}
+.rep:active{transform:scale(.95)}
+.rep[aria-pressed="true"] svg{color:currentColor}
+.rep[aria-pressed="true"][data-a="oui"]{background:var(--vert-fond); border-color:var(--vert); color:var(--vert)}
+.rep[aria-pressed="true"][data-a="visite"]{background:var(--prune-fond); border-color:var(--prune); color:var(--prune)}
+.rep[aria-pressed="true"][data-a="non"]{background:var(--brique-fond); border-color:var(--brique); color:var(--brique)}
+.rep.plus{border-style:dashed; color:var(--plume-clair); padding-left:12px}
+/* « Je souhaite le visiter », après un « ça me plaît » déjà envoyé */
+.envie-visite{margin-top:14px; padding:14px; border-radius:16px; background:var(--prune-fond);
+  border:1px solid var(--prune-trait); animation:evEntre .4s cubic-bezier(.16,1,.3,1) both}
+.envie-visite[data-ouvert]{background:var(--carte)}
+.envie-visite .apres-avis{margin-top:0; border-left-color:var(--prune)}
+.ev-t{display:flex; align-items:center; gap:8px; font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:15px; font-weight:800; color:var(--prune)}
+.ev-p{margin:6px 0 12px; font-size:13px; line-height:1.6; color:var(--plume)}
+.btn.ev-b{background:var(--prune); color:#fff; box-shadow:0 12px 24px -14px var(--prune)}
+@keyframes evEntre{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+/* la bascule vers la visite, depuis « ça me plaît » */
+.rep.bascule{border-color:var(--prune-trait); background:var(--prune-fond); color:var(--prune); font-weight:800}
+.rep.bascule svg{color:var(--prune)}
+/* relecture d'un retour déjà parti : plus rien ne se clique */
+.reponses.lu{margin-top:0}
+.rep[aria-pressed="true"][data-a="or"]{background:var(--or-fond); border-color:var(--or); color:var(--or-fonce)}
+.rep[aria-pressed="true"][data-a="bleu"]{background:var(--bleu-fond); border-color:var(--bleu); color:var(--bleu)}
+
+/* ─── Vos visites : les rubriques, les cartes, l'avis après la visite ─── */
+/* V3.206 (planche 4) : la case du haut — combien de biens, et où ils en sont. */
+.vv-res{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:4px; padding:16px 18px;
+  background:var(--carte); border:1px solid var(--trait); border-radius:20px; box-shadow:var(--ombre)}
+.vv-res-ic{width:48px; height:48px; border-radius:15px; background:#f3f0fa; color:#6f60a2; flex:0 0 auto;
+  display:flex; align-items:center; justify-content:center}
+.vv-res-t{flex:1 1 220px; min-width:0; display:flex; flex-direction:column; gap:2px}
+.vv-res-t b{font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; font-weight:800; color:var(--encre)}
+.vv-res-t span{font-size:13.5px; color:var(--plume); line-height:1.45}
+.vv-res-p{display:flex; gap:8px; flex-wrap:wrap}
+.vv-pil{display:inline-flex; align-items:center; gap:6px; padding:9px 13px; border-radius:14px; font-size:13.5px; font-weight:700}
+.vv-pil b{font-family:'Plus Jakarta Sans',sans-serif; font-size:19px; font-weight:800; line-height:1}
+.vv-pil[data-ton="prune"]{background:#f3f0fa; color:#5b4d91}
+.vv-pil[data-ton="bleu"]{background:var(--bleu-fond); color:var(--bleu)}
+.vv-pil[data-ton="or"]{background:var(--or-fond); color:var(--or-fonce)}
+.vv-sep-prune span{color:#6f60a2}
+/* Les onglets des biens déjà visités : un appui, une étape. */
+.vv-onglets{display:flex; gap:4px; padding:5px; margin:0 0 12px; border-radius:16px; background:var(--carte);
+  border:1px solid var(--trait); overflow-x:auto; scrollbar-width:none; width:max-content; max-width:100%; box-sizing:border-box}
+.vv-onglets::-webkit-scrollbar{display:none}
+.vv-ong{flex:0 0 auto; display:inline-flex; align-items:center; gap:8px; padding:9px 13px; border:0; border-radius:12px;
+  background:none; font:inherit; font-size:14px; font-weight:700; color:var(--encre2); cursor:pointer; white-space:nowrap;
+  transition:background .2s, color .2s}
+.vv-ong:hover{background:var(--fond)}
+.vv-ong i{width:8px; height:8px; border-radius:50%; background:var(--trait-fort)}
+.vv-ong b{min-width:22px; height:22px; padding:0 6px; box-sizing:border-box; border-radius:99px; background:var(--fond);
+  display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:800}
+.vv-ong[data-ton="vert"] i{background:var(--vert)}
+.vv-ong[data-ton="or"] i{background:var(--or)}
+.vv-ong[data-ton="bleu"] i{background:var(--bleu)}
+.vv-ong[data-ton="brique"] i{background:#b4532a}
+.vv-ong[aria-selected="true"]{background:var(--encre); color:#fff}
+.vv-ong[aria-selected="true"] i{background:#fff}
+.vv-ong[aria-selected="true"] b{background:rgba(255,255,255,.18); color:#fff}
+.vv-grille{display:grid; gap:14px; align-items:start; animation:vvEntre .35s cubic-bezier(.16,1,.3,1) both}
+@keyframes vvEntre{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+@media(prefers-reduced-motion:reduce){.vv-grille{animation:none}}
+@media(min-width:760px){.vv-grille{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1100px){.vv-grille{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.vv-groupe .sep{margin-top:22px}
+.vv-note{margin:-6px 2px 12px; font-size:12.5px; line-height:1.55; color:var(--plume)}
+.vv-liste{display:grid; gap:10px}
+.vv-liste .visite-a-venir{margin:0}
+@media(min-width:760px){.vv-liste.deux{grid-template-columns:1fr 1fr; align-items:start}}
+.vv-carte{background:var(--carte); border:1px solid var(--trait); border-radius:20px; overflow:hidden; box-shadow:var(--ombre)}
+/* V3.206 : la photo en haut, l'étiquette posée dessus. */
+.vv-photo{position:relative; display:flex; align-items:center; justify-content:center; width:100%; height:160px; padding:0;
+  border:0; background:var(--fond); color:var(--plume-clair); cursor:pointer}
+.vv-photo img{width:100%; height:100%; object-fit:cover; display:block}
+.vv-carte.gris .vv-photo img{filter:grayscale(.55); opacity:.9}
+.vv-etq{position:absolute; top:10px; left:10px; display:flex}
+.vv-etq .etiq{font-size:11.5px; padding:4px 10px; box-shadow:0 6px 14px -8px rgba(19,36,61,.55)}
+.vv-corps{padding:12px 14px 14px}
+.vv-tete{display:flex; flex-direction:column; gap:2px; width:100%; background:none; border:0; padding:0;
+  text-align:left; font:inherit; color:inherit; cursor:pointer}
+.vv-tete .vv-l1{display:flex; align-items:baseline; justify-content:space-between; gap:10px}
+.vv-tete .vv-prix{flex:0 1 auto; font-size:18px}
+.vv-quand{font-size:12px; color:var(--plume); white-space:nowrap}
+.vv-tete .vv-meta{font-size:13.5px; color:var(--encre2)}
+.vv-haut{display:flex; gap:11px; align-items:flex-start; width:100%; background:none; border:0; padding:0;
+  text-align:left; font:inherit; color:inherit; cursor:pointer}
+.vv-ph{width:76px; height:62px; border-radius:10px; overflow:hidden; flex:0 0 auto; background:var(--fond);
+  display:flex; align-items:center; justify-content:center; color:var(--plume-clair)}
+.vv-ph img{width:100%; height:100%; object-fit:cover; display:block}
+.vv-carte.gris .vv-ph img{filter:grayscale(.55)}
+.vv-t{flex:1; min-width:0; display:flex; flex-direction:column}
+.vv-l1{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+.vv-prix{flex:1; font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:15.5px; color:var(--encre)}
+.vv-meta{font-size:12.5px; color:var(--plume); margin-top:2px; line-height:1.4}
+.vv-ligne{font-size:13px; line-height:1.55; color:var(--encre2); margin-top:9px}
+.vv-lu{margin-top:8px !important}
+.vv-mot{font-size:13px; line-height:1.55; color:var(--encre2); margin-top:8px; background:var(--fond);
+  border-radius:10px; padding:8px 10px}
+.vv-src{font-size:11.5px; color:var(--plume-clair); font-weight:700; margin-top:7px}
+.vv-cr{display:flex; align-items:center; gap:7px; width:100%; margin-top:10px; padding:9px 0 0;
+  border:0; border-top:1px solid var(--trait); background:none; font:inherit; font-size:13px; font-weight:800;
+  color:var(--bleu); cursor:pointer; text-align:left}
+.vv-cr span{flex:1}
+.vv-q{margin-top:11px; padding-top:11px; border-top:1px solid var(--trait)}
+.apres-avis .vv-q{border-top:0; padding-top:0}
+.vv-q-t{font-family:'Plus Jakarta Sans',sans-serif; font-size:15.5px; font-weight:800; color:var(--encre)}
+.vv-choix{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px}
+.vv-c{display:flex; align-items:center; gap:9px; background:var(--carte); border:1px solid var(--trait);
+  border-radius:13px; padding:10px; font:inherit; font-size:13px; font-weight:800; color:var(--encre);
+  text-align:left; cursor:pointer; line-height:1.25; min-height:52px}
+.vv-c:active{transform:scale(.97)}
+.vv-c i{width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  flex:0 0 auto; font-style:normal}
+.vv-c[data-a="offre"] i{background:var(--or-fond); color:var(--or-fonce)}
+.vv-c[data-a="revoir"] i{background:var(--prune-fond); color:var(--prune)}
+.vv-c[data-a="reflexion"] i{background:var(--bleu-fond); color:var(--bleu)}
+.vv-c[data-a="non"] i{background:var(--brique-fond); color:var(--brique)}
+.vv-libre{font-size:12px; color:var(--plume-clair); margin-top:9px}
+.vv-suite{margin-top:10px}
+label.vv-offre-prix{display:flex; align-items:center; gap:8px; background:var(--carte); border:1.5px solid var(--trait);
+  border-radius:12px; padding:0 14px; margin-top:4px}
+label.vv-offre-prix input{flex:1; min-width:0; border:0; outline:0; background:none; font:inherit; font-size:17px;
+  font-weight:800; color:var(--encre); padding:12px 0}
+label.vv-offre-prix span{font-weight:800; color:var(--plume)}
+label.vv-offre-prix:focus-within{border-color:var(--or)}
+.vv-rate{margin:10px 0 0; font-size:12.5px; color:var(--brique)}
+.vv-retour{display:block; margin:10px auto 0; background:none; border:0; padding:4px; font:inherit;
+  font-size:12.5px; font-weight:700; color:var(--plume); text-decoration:underline; cursor:pointer}
+.vv-fait .aa-p{color:var(--encre2)}
+.vv-acc{margin-top:16px; background:var(--carte); border:1px solid var(--or-trait); border-radius:18px;
+  overflow:hidden; box-shadow:var(--ombre)}
+.vv-acc-t{display:flex; align-items:center; gap:7px; padding:9px 14px; background:var(--or-fond);
+  font-size:11.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--or-fonce)}
+.vv-acc-c{padding:12px 13px 10px}
+@media(max-width:359px){.vv-choix{grid-template-columns:1fr} .vv-comptes{grid-template-columns:1fr 1fr}}
+.reponses.lu .rep{cursor:default}
+.reponses.lu .rep:active{transform:none}
+
+/* ═══ La barre du bas de la fiche ═══
+   Même procédé que le bouton retour (voir .barre-retour) : la feuille porte
+   un transform, donc un position:fixed y filerait avec le contenu. On passe
+   par un rail collant de hauteur nulle, posé en tout dernier. */
+.rail-avis{position:sticky; bottom:0; z-index:7; height:0}
+.barre-avis{position:absolute; left:0; right:0; bottom:0;
+  background:rgba(255,255,255,.97); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  border-top:1px solid var(--trait); box-shadow:0 -14px 34px -22px rgba(19,36,61,.75);
+  /* la feuille porte déjà le retrait bas et la zone de sécurité : on n'en
+     rajoute pas, sinon la barre flotte au-dessus du bord de l'écran */
+  padding:11px 20px 13px}
+.ba-q{font-size:11px; font-weight:800; letter-spacing:.4px; color:var(--plume);
+  text-align:center; margin-bottom:9px}
+.ba-trois{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.ba-b{border-radius:14px; padding:10px 4px; display:flex; flex-direction:column;
+  align-items:center; gap:4px; border:1.5px solid var(--trait); background:var(--fond)}
+.ba-b .e{font-size:19px; line-height:1}
+.ba-b .n{font-size:10.5px; font-weight:700; color:var(--plume); text-align:center; line-height:1.2}
+.ba-b:active{transform:scale(.95)}
+/* dépliée : le panneau monte, et il se referme sans avoir à répondre */
+.barre-avis[data-ouvert="1"]{border-radius:22px 22px 0 0; padding-top:14px;
+  max-height:78vh; overflow-y:auto; overscroll-behavior:contain}
+.ba-fermer{display:flex; align-items:center; justify-content:center; margin:0 0 6px auto;
+  width:32px; height:32px; border-radius:50%; background:var(--fond); color:var(--plume)}
+.ba-fermer svg{transform:rotate(90deg)}
+.barre-avis .apres-avis{background:var(--carte)}
+.barre-avis .apres-avis textarea{min-height:86px}
+/* ⚠️ La barre doit toucher le bord bas de l'écran. Un sticky ne sort jamais
+   de son bloc conteneur : tant que la feuille portait son retrait bas, la
+   barre flottait 26 px trop haut et on voyait la fiche défiler dessous. On
+   déplace donc ce retrait du conteneur vers le contenu. */
+.feuille.fiche{padding-bottom:0}
+.fiche-droite .corps-f{padding-bottom:calc(26px + env(safe-area-inset-bottom,0px))}
+.fiche-droite[data-barre="1"] .corps-f{padding-bottom:calc(132px + env(safe-area-inset-bottom,0px))}
+.barre-avis{padding-bottom:calc(13px + env(safe-area-inset-bottom,0px)); z-index:2}
+
+/* ── La barre reste en bas, meme sur une fiche courte ──
+   position:sticky ne colle que si le contenu depasse l'ecran. Sur un bien
+   sans photo ni description — un bien qu'on vient de saisir a la main — la
+   fiche est plus courte que l'ecran : la barre se posait juste sous le
+   dernier bouton, avec du blanc en dessous jusqu'en bas. Elle avait l'air
+   posee au milieu de nulle part.
+
+   On fait donc grandir la colonne jusqu'a remplir la hauteur, et
+   margin-top:auto pousse le rail tout en bas. Sur une fiche longue, rien ne
+   change : flex-grow ne retire jamais de hauteur (0 en flex-shrink), le
+   contenu deborde comme avant et sticky reprend la main au defilement. */
+@media(max-width:639px){
+  .feuille.fiche{display:flex; flex-direction:column}
+  .feuille.fiche > *{flex:0 0 auto}
+  /* La colonne grandit jusqu'a remplir la hauteur : sur une fiche plus courte
+     que l'ecran, la barre descend quand meme tout en bas. */
+  .feuille.fiche .fiche-droite{flex:1 0 auto; display:flex; flex-direction:column}
+  /* 20 px d'air sous le dernier bouton. A zero, le contenu touchait la barre :
+     l'ombre et le flou de celle-ci mordaient dessus, et « Partager » avait
+     l'air coupe. La reserve (le rail, ci-dessous) fait la hauteur exacte de la
+     barre ; cette marge-la est ce qui les separe. */
+  .fiche-droite[data-barre="1"] .corps-f{flex:1 0 auto; padding-bottom:20px}
+  /* ⚠️ .corps-f et .rail-avis sont FRERES, tous deux enfants de .fiche-droite.
+     Une version precedente ecrivait « .corps-f .rail-avis » : le selecteur ne
+     designait rien, la reserve disparaissait, et la barre recouvrait la fin du
+     texte. La hauteur ci-dessous n'est qu'un repli pour le premier affichage —
+     ensuite elle est mesuree sur la vraie barre (voir hBarre). */
+  .fiche-droite[data-barre="1"] .rail-avis{
+    flex:0 0 auto; height:calc(132px + env(safe-area-inset-bottom,0px))}
+}
+
+/* Le voile : le panneau se pose sur la fiche au lieu de surgir. Un
+   position:fixed se résout ici sur la feuille (elle porte un transform),
+   donc il couvre bien tout l'écran sans défiler avec le contenu. */
+.voile-avis{position:fixed; inset:0; z-index:1; border:0; padding:0;
+  background:rgba(19,36,61,.34); -webkit-tap-highlight-color:transparent;
+  animation:avis-voile .26s ease both}
+@keyframes avis-voile{from{opacity:0} to{opacity:1}}
+
+/* L'ouverture : le panneau monte, il n'apparaît pas d'un coup. */
+.ba-panneau{animation:avis-monte .36s cubic-bezier(.16,1,.28,1) both}
+@keyframes avis-monte{from{opacity:0; transform:translateY(18px)} to{opacity:1; transform:none}}
+.barre-avis{transition:border-radius .3s ease, box-shadow .3s ease}
+.barre-avis[data-ouvert="1"]{box-shadow:0 -22px 54px -18px rgba(19,36,61,.55)}
+/* les pastilles arrivent l'une après l'autre, très légèrement */
+.barre-avis[data-ouvert="1"] .reponses .rep{animation:avis-pastille .3s ease both}
+@keyframes avis-pastille{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+.barre-avis[data-ouvert="1"] .reponses .rep:nth-child(1){animation-delay:.04s}
+.barre-avis[data-ouvert="1"] .reponses .rep:nth-child(2){animation-delay:.07s}
+.barre-avis[data-ouvert="1"] .reponses .rep:nth-child(3){animation-delay:.1s}
+.barre-avis[data-ouvert="1"] .reponses .rep:nth-child(4){animation-delay:.13s}
+.barre-avis[data-ouvert="1"] .reponses .rep:nth-child(5){animation-delay:.16s}
+.barre-avis[data-ouvert="1"] .reponses .rep:nth-child(n+6){animation-delay:.19s}
+
+
+/* ═══ La prochaine visite, en tête de l'accueil ═══ */
+.visite-a-venir{position:relative; overflow:hidden; margin-top:18px; background:var(--marque); color:#fff;
+  border-radius:20px; padding:16px 18px 17px; box-shadow:0 18px 34px -24px rgba(19,36,61,.95)}
+.visite-a-venir::after{content:""; position:absolute; top:-80px; right:-60px; width:210px; height:210px;
+  border-radius:50%; background:radial-gradient(circle,rgba(230,139,35,.26),transparent 66%)}
+.vav-t{position:relative; display:flex; align-items:center; gap:8px; font-size:10px; font-weight:800;
+  letter-spacing:1.4px; text-transform:uppercase; color:var(--or-clair)}
+.vav-q{position:relative; display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:9px;
+  font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; letter-spacing:-.4px;
+  line-height:1.2}
+.vav-b{text-transform:none; font-size:11px; font-weight:800; letter-spacing:.6px; border-radius:99px;
+  padding:3px 10px; background:var(--or); color:#13243D}
+.vav-bien{position:relative; display:flex; align-items:center; gap:13px; width:100%; margin-top:12px;
+  padding:9px 11px 9px 9px; border-radius:14px; text-align:left; font-family:inherit;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); color:inherit;
+  transition:background .18s, border-color .18s}
+button.vav-bien{cursor:pointer}
+button.vav-bien:hover{background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.28)}
+.vav-ph{flex:0 0 auto; width:62px; height:52px; border-radius:10px; overflow:hidden; background:rgba(255,255,255,.1);
+  display:flex; align-items:center; justify-content:center}
+.vav-ph img{width:100%; height:100%; object-fit:cover; display:block}
+.vav-ph-vide{color:rgba(255,255,255,.4)}
+.vav-txt{display:flex; flex-direction:column; gap:3px; min-width:0}
+.vav-b2{font-size:14px; font-weight:700; color:rgba(255,255,255,.94); line-height:1.35}
+.vav-a{display:flex; align-items:center; gap:6px; font-size:12.5px; color:rgba(255,255,255,.55)}
+.vav-voir{display:flex; align-items:center; gap:5px; margin-top:2px; font-size:11.5px; font-weight:700; color:var(--or-clair)}
+.vav-ag{position:relative; margin-top:14px; padding-top:13px; border-top:1px solid rgba(255,255,255,.14)}
+.vav-ag-t{display:block; font-size:10px; font-weight:800; letter-spacing:1.1px; text-transform:uppercase;
+  color:rgba(255,255,255,.5)}
+.vav-ag-b{display:flex; gap:8px; flex-wrap:wrap; margin-top:9px}
+.vav-ics{display:inline-flex; align-items:center; gap:8px;
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff;
+  border-radius:99px; padding:9px 15px; font-size:12.5px; font-weight:700; text-decoration:none;
+  transition:background .18s}
+.vav-ics:hover{background:rgba(255,255,255,.2)}
+.vav-p{position:relative; margin-top:10px; font-size:12px; color:rgba(255,255,255,.5)}
+/* V3.206 (planche 4) : la photo du bien à côté (en haut sur un téléphone). */
+.vav2{display:flex; flex-direction:column; gap:14px}
+.vav-photo{position:relative; z-index:1; display:block; width:100%; height:180px; padding:0; border:0; border-radius:14px;
+  overflow:hidden; background:rgba(255,255,255,.1); cursor:pointer}
+span.vav-photo{cursor:default}
+.vav-photo img{width:100%; height:100%; object-fit:cover; display:block; transition:transform .4s ease}
+button.vav-photo:hover img{transform:scale(1.03)}
+.vav-corps{position:relative; flex:1; min-width:0; display:flex; flex-direction:column}
+.vav2 .vav-b2{margin-top:8px; font-size:15.5px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
+.vav2 .vav-a{margin-top:5px; color:rgba(255,255,255,.75)}
+.vav-act{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:13px;
+  border-top:1px solid rgba(255,255,255,.18)}
+.vav-voir2{display:inline-flex; align-items:center; gap:6px; padding:9px 15px; border:0; border-radius:99px;
+  background:#fff; color:#13243D; font:inherit; font-size:13px; font-weight:800; cursor:pointer}
+.vav-act .vav-ag-t{flex:1 1 100%; order:2; margin-top:4px}
+.vav-act .vav-voir2{order:1}
+.vav-act .vav-ag-b{order:3; margin-top:0}
+@media(min-width:760px){
+  .vav2{flex-direction:row; gap:22px; padding:18px}
+  .vav-photo{flex:0 0 280px; width:280px; height:auto; min-height:190px; border-radius:16px}
+  .vav2 .vav-q{font-size:24px}
+  .vav-act .vav-ag-t{flex:0 0 auto; order:2; margin:0 0 0 auto}
+}
+
+/* Le rendez-vous rappelé sur la carte du bien, dans « Mes derniers biens consultés » */
+.rdv-l{display:flex; align-items:center; gap:7px; margin-top:9px; padding:6px 10px; border-radius:9px;
+  background:#f5f3ff; border:1px solid #ddd6fe; color:#6d28d9; font-size:12.5px; font-weight:700}
+
+
+/* ═══ Les bilans de la page « marché » ═══ */
+.bilan{background:var(--carte); border:1px solid var(--trait); border-radius:18px; padding:16px 17px;
+  box-shadow:var(--ombre)}
+.bilan-t{font-size:10.5px; font-weight:800; letter-spacing:1.3px; text-transform:uppercase; color:var(--plume-clair)}
+.bilan-g{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-top:13px}
+.bg-c{background:var(--fond); border:1px solid var(--trait); border-radius:14px; padding:12px 11px; text-align:center}
+.bg-i{display:flex; align-items:center; justify-content:center; width:32px; height:32px; margin:0 auto 9px;
+  border-radius:11px; background:var(--carte); border:1px solid var(--trait); color:var(--plume)}
+.bg-c.or .bg-i{background:#fff; border-color:var(--or-trait); color:var(--or-fonce)}
+.bg-c b{display:block; font-family:'Plus Jakarta Sans',sans-serif; font-size:19px; font-weight:800;
+  letter-spacing:-.6px; line-height:1.1}
+.bg-c span{display:block; margin-top:5px; font-size:9.5px; letter-spacing:.8px; text-transform:uppercase;
+  color:var(--plume-clair); font-weight:700; line-height:1.35}
+.bg-c.or{background:var(--or-fond); border-color:var(--or-trait)}
+.bg-c.or b{color:var(--or-fonce)}
+.bg-c.or span{color:var(--or-fonce); opacity:.75}
+.bilan-r{margin-top:12px; font-size:13px; line-height:1.6; color:var(--plume)}
+.bilan-r b{color:var(--encre); font-weight:800}
+
+
+
+/* ═══ La page « marché » : des blocs colorés, pas des tableaux blancs ═══ */
+/* Le chapeau chevauche la première carte : il la coiffe au lieu de la
+   toucher. Sans ça, deux bords se collaient et ça faisait bavure. */
+.intro-m{display:flex; gap:12px; align-items:flex-start; margin-top:16px; background:var(--carte);
+  border:1px solid var(--trait); border-radius:18px; padding:15px 16px 16px; box-shadow:var(--ombre-f);
+  font-size:13.5px; line-height:1.65; color:var(--plume);
+  position:relative; z-index:2; margin-bottom:-22px}
+.intro-m + .gr-cadre{padding-top:34px}
+.im-i{flex:0 0 auto; width:32px; height:32px; border-radius:10px; display:flex;
+  align-items:center; justify-content:center; background:var(--fond); color:var(--plume)}
+
+.tuiles{display:grid; grid-template-columns:1fr; gap:9px}
+.tu{border-radius:15px; padding:12px 13px; border:1px solid var(--trait); background:var(--carte);
+  display:flex; align-items:center; gap:12px;
+  background:var(--carte)}
+.tu-i{flex:0 0 auto; width:38px; height:38px; border-radius:12px; display:flex;
+  align-items:center; justify-content:center; background:rgba(255,255,255,.72)}
+.tu-c{min-width:0}
+.tu b{display:block; font-family:'Plus Jakarta Sans',sans-serif; font-size:19px; font-weight:800;
+  letter-spacing:-.6px; line-height:1.15; color:var(--encre)}
+.tu-c > span{display:block; margin-top:3px; font-size:10px; letter-spacing:.7px;
+  text-transform:uppercase; font-weight:800; line-height:1.35; color:var(--plume-clair)}
+.tu b{color:var(--encre)}
+.tu .tu-c > span{color:var(--plume-clair)}
+.tu .tu-i{color:var(--plume); background:var(--fond)}
+/* l'entonnoir se lit de gauche à droite : lu (encre) → écarté (gris) → retenu (or) */
+.tu.gris b{color:var(--plume-clair)}
+.tu.gris .tu-i{color:var(--plume-clair)}
+/* une seule tuile porte l'or : celle qui dit ce qu'on a retenu pour vous */
+.tu.or{background:var(--or-fond); border-color:var(--or-trait)}
+.tu.or b{color:var(--or-fonce)}
+.tu.or .tu-c > span{color:var(--or-fonce); opacity:.75}
+.tu.or .tu-i{color:#fff; background:var(--or)}
+
+.vide-doux{text-align:center; padding:22px 14px 6px}
+.vd-i{display:inline-flex; width:54px; height:54px; border-radius:50%; margin-bottom:12px;
+  align-items:center; justify-content:center; background:var(--fond); color:var(--plume-clair)}
+.vide-doux b{display:block; font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:800}
+.vide-doux > span:not(.vd-i){display:block; margin-top:7px; font-size:13px; line-height:1.6;
+  color:var(--plume); max-width:46ch; margin-left:auto; margin-right:auto}
+
+/* l'entonnoir vit désormais dans une carte de catégorie */
+@media(min-width:540px){
+  .tuiles{grid-template-columns:repeat(3,1fr)}
+  .tu{flex-direction:column; text-align:center; gap:9px; padding:15px 11px 14px}
+  .tu-i{width:40px; height:40px}
+}
+/* ── la carte nette : blanc, filet gris, titre encre ─────────────
+   Sur la page du marché, quatre cartes se suivent. Quatre teintes
+   différentes, c'était un arc-en-ciel : ici le fond se tait et l'or
+   ne souligne que le chiffre qui compte. */
+.gr-cadre.c-net{border-color:var(--trait); background:var(--carte); box-shadow:var(--ombre)}
+/* La note de bas de carte est un commentaire, pas la suite du contenu :
+   un filet et de l'air la détachent de ce qu'elle explique. */
+.gr-cadre.c-net .tuiles + .gr-note,
+.gr-cadre.c-net .entonnoir + .gr-note{margin-top:15px; padding-top:13px; border-top:1px solid var(--trait)}
+.gr-cadre.c-net .gr-tete + .gr-note{margin-top:13px}
+/* le « ? » se pose en exposant, à droite du chiffre, sans le décentrer */
+.tu .nv, .nv-l{position:relative; display:inline-block}
+.tu .nv .aide-pt{position:absolute; left:100%; top:-4px; margin-left:4px}
+.nv-l .aide-pt{position:absolute; left:100%; top:-1px; margin-left:5px}
+.gr-tete .aide-pt{margin-left:-4px}
+.gr-cadre.c-net .gr-tete{border-color:var(--trait); background:none; padding-bottom:12px}
+.gr-cadre.c-net .gr-tete h3{color:var(--encre)}
+.gr-cadre.c-net .gr-note{color:var(--plume)}
+.gr-cadre.c-net .gn{background:var(--marque); color:#fff}
+.gr-cadre.c-net .ge{width:28px; height:28px; border-radius:9px; display:flex;
+  align-items:center; justify-content:center; background:var(--fond); color:var(--encre2)}
+.gr-cadre.c-net .ge.or{background:var(--or); color:#fff}
+.gr-cadre .entonnoir{background:none; border:none; padding:0; box-shadow:none}
+.gr-cadre .barres{margin-top:12px}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   LE NOUVEL ESPACE (septembre 2026)
+   En-tête bleu Emilio plus clair, « Aujourd'hui pour vous », les nouveaux
+   biens en grand, la barre du bas sur téléphone, le menu dans la bande sur
+   ordinateur. Ces règles viennent en dernier : elles l'emportent sur les
+   anciennes quand elles se recouvrent.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* — l'en-tête — */
+.chapeau{background:linear-gradient(152deg,#3A6AA8 0%,#22497D 55%,#3A6AA8 100%); padding:16px 20px 22px}
+.chapeau.ch-acc{padding-bottom:70px}
+.chapeau::after{background:radial-gradient(circle,rgba(232,203,122,.3),transparent 64%);
+  animation:ch-flotte 8s ease-in-out infinite}
+@keyframes ch-flotte{0%,100%{transform:translate(0,0)}50%{transform:translate(-12px,10px)}}
+.motmarque{color:#F2B266}
+.ch-date{position:relative; font-size:12.5px; color:rgba(255,255,255,.82); white-space:nowrap}
+.nav-haut, .ch-agent, .ch-sur{display:none}
+.ch-salut{position:relative; margin-top:12px; display:flex; flex-direction:column; gap:8px}
+.ch-salut h1{margin:0; font-size:28px; font-weight:800; letter-spacing:-.6px; line-height:1.12; color:#fff}
+.ch-rech{display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px}
+.ch-rech-t{font-size:14px; line-height:1.45; color:rgba(255,255,255,.93)}
+.ch-vif{display:inline-flex; align-items:center; gap:7px; padding:4px 10px 4px 8px; border-radius:99px;
+  background:rgba(34,197,94,.24); border:1px solid rgba(134,239,172,.45);
+  font-size:12px; font-weight:700; color:#fff; white-space:nowrap}
+.ch-vif{font-family:inherit; cursor:pointer; transition:background .2s, transform .15s}
+.ch-vif:hover{background:rgba(34,197,94,.34)}
+.ch-vif:active{transform:scale(.95)}
+.ch-vif svg{opacity:.8; margin-left:-2px}
+.ch-vif-pt{width:7px; height:7px; border-radius:50%; background:#4ade80; flex:0 0 auto;
+  animation:onde-vif 2.6s ease-out infinite, respire 2.6s ease-in-out infinite}
+.chapeau .selec{margin-top:14px}
+
+/* — Aujourd'hui pour vous — */
+.acc{display:flex; flex-direction:column}
+.auj{position:relative; z-index:2; margin-top:-50px; background:var(--carte); border-radius:22px; padding:15px;
+  box-shadow:0 18px 40px -22px rgba(27,61,107,.5); display:flex; flex-direction:column; gap:12px}
+.auj-h{display:flex; align-items:baseline; justify-content:space-between; gap:10px}
+.auj-t{font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:800; letter-spacing:1.5px;
+  text-transform:uppercase; color:var(--plume)}
+.auj-maj{font-size:11.5px; color:var(--plume); white-space:nowrap}
+.auj-g{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px}
+.auj-c{display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:12px 11px; border-radius:17px;
+  text-align:left; background:#F5F8FC; border:1px solid var(--trait); color:var(--encre); font-family:inherit;
+  transition:transform .18s ease, box-shadow .25s ease}
+button.auj-c:active{transform:scale(.96)}
+.auj-ic{width:30px; height:30px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  background:#F2F5F9; color:#8FA3BF; flex:0 0 auto}
+.auj-tx{display:flex; flex-direction:column; gap:2px; min-width:0}
+.auj-n{font-family:'Plus Jakarta Sans',sans-serif; font-size:25px; font-weight:800; line-height:1; color:#8FA3BF}
+.auj-l{font-size:12px; font-weight:600; line-height:1.3; color:#13243D}
+.auj-c.c-neuf.on{background:#FFF6EC; border-color:#F7D5B0}
+.auj-c.c-neuf.on .auj-ic{background:#FDEBD3; color:var(--or-fonce)}
+.auj-c.c-neuf.on .auj-n{color:var(--or-fonce)}
+.auj-c.c-avis.on{background:#fff7ed; border-color:#fed7aa}
+.auj-c.c-avis.on .auj-ic{background:#ffedd5; color:#c2410c}
+.auj-c.c-avis.on .auj-n{color:#c2410c}
+.auj-c.c-vis.on{background:#f5f3fa; border-color:#e1dbef}
+.auj-c.c-vis.on .auj-ic{background:#ece8f6; color:#7b6ba8}
+.auj-c.c-vis.on .auj-n{color:#7b6ba8}
+.auj-c.c-plait.on{background:#f1fbf4; border-color:#c6ecd2}
+.auj-c.c-plait.on .auj-ic{background:#dcf5e4; color:#15803d}
+.auj-c.c-plait.on .auj-n{color:#15803d}
+.auj-c.c-vus.on{background:#f3f6fb; border-color:#d9e2ef}
+.auj-c.c-vus.on .auj-ic{background:#E6EDF6; color:#22497D}
+.auj-c.c-vus.on .auj-n{color:#22497D}
+.auj-c.c-neuf.ajour .auj-ic{background:#e7f6ec; color:#15803d}
+.auj-n.mot{font-size:20px; letter-spacing:-.4px; color:var(--encre); line-height:1.25}
+.auj-c.c-lues{display:none}
+.auj-c.c-lues .auj-ic{background:#E6EDF6; color:#22497D}
+.auj-c.c-lues .auj-n{color:#22497D}
+.auj-n .nv, .auj-pied .nv{position:relative; display:inline-block; padding-right:17px}
+.auj-n .nv .aide-pt, .auj-pied .nv .aide-pt{position:absolute; left:auto; right:0; top:-6px}
+.auj-pied{display:flex; flex-wrap:wrap; gap:4px 16px; padding-top:10px; border-top:1px solid #F2F5F9;
+  font-size:12.5px; color:var(--plume)}
+.auj-pied b{color:var(--encre); font-weight:800}
+.auj-pied2{display:flex; flex-direction:column; gap:7px; padding-top:11px; border-top:1px solid #F2F5F9; margin-top:1px}
+.auj-pied2 > span{display:flex; align-items:flex-start; gap:8px; line-height:1.45}
+.ap-i{display:flex; flex:0 0 auto; margin-top:1px}
+.ap-jour{font-size:13px; color:#13243D}
+.ap-jour .ap-i{color:#22497D}
+.ap-jour b{color:var(--encre); font-weight:800}
+.ap-tot{font-size:12px; color:var(--plume)}
+.ap-tot .ap-i{color:var(--plume-clair)}
+.ap-tot b{color:#46566B; font-weight:800}
+.ap-tot .nv{position:relative; display:inline-block; padding-right:17px}
+.ap-tot .nv .aide-pt{position:absolute; left:auto; right:0; top:-6px}
+.acc-liens{margin-top:14px}
+.al3-r{display:flex; margin:14px 0 16px; background:var(--carte); border:1px solid var(--trait); border-radius:18px;
+  box-shadow:var(--ombre); overflow:hidden}
+/* L'icône au-dessus du texte : à côté, « Comment ça marche ? » ne tenait pas
+   sur une ligne dans une demi-largeur de téléphone (138 px pour 117). */
+.al3{flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:12px 12px 11px;
+  text-align:left; -webkit-tap-highlight-color:transparent; transition:background .15s}
+.al3:active{background:#F5F8FC}
+.al3 + .al3{border-left:1px solid var(--trait)}
+.al3-i{width:30px; height:30px; border-radius:10px; background:#E8EFF8; color:#22497D; display:flex; align-items:center;
+  justify-content:center; flex:0 0 auto}
+.al3-i.or{background:#FDEBD3; color:var(--or-fonce)}
+.al3-t{display:flex; flex-direction:column; min-width:0}
+.al3-t b{font-size:12.5px; font-weight:800; color:var(--encre); line-height:1.25}
+.al3-t b.al3-1{white-space:nowrap}
+.al3-t i{font-style:normal; font-size:11px; color:var(--plume); line-height:1.3}
+
+/* — les blocs de l'accueil — */
+.acc-cols{display:block}
+.acc-main > section, .acc-d > .va, .acc-cartes{margin-top:22px}
+.acc-cartes{display:flex; flex-direction:column; gap:12px}
+/* V3.152 : chaque bloc d'à côté a son enveloppe (.acc-bl), sans marge ni
+   bordure ; les marges de son contenu la traversent, comme avant. Ces 12 px
+   étaient écrits en ligne : ils sont ici pour que l'ordinateur les retire. */
+.acc-bl > .engage, .acc-bl > .avis-lien{margin-top:12px}
+.bloc-h{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:12px}
+.bloc-h h2{margin:0; font-size:18px; font-weight:800; letter-spacing:-.3px}
+.bloc-lien{font-size:13px; font-weight:700; color:var(--or-fonce); padding:4px 0; white-space:nowrap}
+
+.carrou{display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; margin:0 -20px;
+  padding:2px 20px 8px; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+.carrou::-webkit-scrollbar{display:none}
+.cn{flex:0 0 272px; scroll-snap-align:start; background:var(--carte); border:1px solid var(--trait);
+  border-radius:20px; overflow:hidden; text-align:left; display:flex; flex-direction:column; padding:0;
+  font-family:inherit; color:var(--encre);
+  animation:cn-entre .7s cubic-bezier(.16,1,.3,1) backwards;
+  transition:transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s ease}
+.cn:nth-child(2){animation-delay:.1s} .cn:nth-child(3){animation-delay:.2s} .cn:nth-child(4){animation-delay:.3s}
+@keyframes cn-entre{from{opacity:0; transform:translateX(36px)}to{opacity:1; transform:none}}
+.cn:active{transform:scale(.985)}
+.cn-ph{position:relative; display:flex; align-items:center; justify-content:center; height:156px;
+  background:#8ea3b8; color:rgba(255,255,255,.65); overflow:hidden}
+.cn-ph img{width:100%; height:100%; object-fit:cover; display:block}
+.cn-new{position:absolute; left:12px; top:12px; font-size:11px; font-weight:800; letter-spacing:.3px;
+  color:#13243D; background:#F2B266; border-radius:99px; padding:4px 10px}
+.cn-nb{position:absolute; right:12px; bottom:12px; font-size:11px; font-weight:700; color:#fff;
+  background:rgba(19,36,61,.55); border-radius:99px; padding:3px 9px}
+.cn-c{display:flex; flex-direction:column; gap:6px; padding:13px 14px 14px}
+.cn-p{display:flex; align-items:baseline; justify-content:space-between; gap:8px}
+.cn-p b{font-family:'Plus Jakarta Sans',sans-serif; font-size:19px; font-weight:800; letter-spacing:-.4px}
+.cn-p i{font-style:normal; font-size:12px; color:var(--plume); white-space:nowrap}
+.cn-t{font-size:14px; font-weight:600; line-height:1.35}
+.cn-m{font-size:12.5px; color:var(--plume)}
+.cn-j{display:flex; align-items:center; gap:8px; margin-top:2px}
+.cn-jb{flex:1; height:6px; border-radius:6px; background:#F2F5F9; overflow:hidden}
+.cn-jb i{display:block; height:100%; border-radius:6px; background:var(--or);
+  animation:cn-jauge 1.1s cubic-bezier(.16,1,.3,1) .4s backwards}
+@keyframes cn-jauge{from{width:0}}
+.cn-j b{font-size:11.5px; font-weight:700; color:var(--or-fonce); white-space:nowrap}
+/* « Le découvrir » dans la carte du bien en grand : ordinateur seulement. */
+.cn-go{display:none}
+/* — « Les découvrir un par un » (V3.44) : le chemin vers « Découvrir ». Sur
+   l'accueil, sous les nouveaux biens ; en tête de « Nouveautés ». — */
+.cn-decouvrir{margin-top:10px; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+  min-height:52px; padding:0 22px; border-radius:16px; background:var(--or); color:#13243D;
+  font-size:15.5px; font-weight:800; box-shadow:0 12px 24px -14px rgba(169,130,47,.9)}
+@media(min-width:760px){ .cn-decouvrir{width:auto; display:inline-flex} }
+.decouvrir-b{width:100%; display:flex; align-items:center; gap:12px; padding:14px 16px; margin-bottom:14px;
+  border-radius:18px; background:var(--carte); border:1px solid var(--or-trait); text-align:left;
+  color:var(--encre); box-shadow:var(--ombre)}
+.db-i{flex:0 0 auto; width:44px; height:44px; border-radius:14px; display:flex; align-items:center;
+  justify-content:center; background:var(--or); color:#13243D}
+.db-t{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:1px}
+.db-t b{font-family:'Plus Jakarta Sans',sans-serif; font-size:15.5px; font-weight:800}
+.db-t i{font-style:normal; font-size:13px; color:var(--plume)}
+.db-f{flex:0 0 auto; display:flex; color:var(--or-fonce)}
+
+.calme{background:var(--carte); border:1px solid var(--trait); border-radius:22px; padding:18px;
+  display:flex; flex-direction:column; gap:13px}
+.calme-h{display:flex; align-items:center; gap:12px}
+.calme-ic{width:46px; height:46px; border-radius:15px; background:#E8EFF8; color:#22497D; flex:0 0 auto;
+  display:flex; align-items:center; justify-content:center; animation:calme-flotte 3.2s ease-in-out infinite}
+@keyframes calme-flotte{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.calme-h h2{margin:0; font-size:16.5px; font-weight:800; line-height:1.3}
+.calme-h p{margin:2px 0 0; font-size:12.5px; color:var(--plume)}
+.calme-l{display:flex; flex-direction:column; gap:9px; padding:13px 14px; border-radius:16px; background:#F5F8FC}
+.calme-l > span{display:flex; gap:9px; font-size:13.5px; line-height:1.5}
+.calme-k{color:#22497D; display:flex; margin-top:2px; flex:0 0 auto}
+.calme-b{display:flex; align-items:center; justify-content:center; gap:8px; height:44px; border-radius:13px;
+  border:1px solid var(--trait-fort); color:#1B3D6B; font-size:13.5px; font-weight:700; background:var(--carte)}
+/* « Voir le marché sur vos critères » : le même bouton, un cran plus marqué —
+   c'est la suite naturelle de la phrase juste au-dessus. */
+.calme-m{background:#E8EFF8; border-color:#d6e1f1; color:#1B3D6B}
+.calme-m > span{flex:1; text-align:left}
+.calme-m > svg:first-child{color:#22497D}
+.recap-r{display:flex; flex-direction:column}
+.rr-t{display:flex; gap:9px; font-size:13.5px; line-height:1.5}
+
+.avis-att{background:var(--carte); border:1px solid #fed7aa; border-radius:22px; padding:16px;
+  box-shadow:0 12px 30px -26px rgba(194,65,12,.6)}
+.aa-h{display:flex; align-items:center; gap:11px; margin-bottom:12px}
+.aa-ic{width:38px; height:38px; border-radius:12px; background:#fff7ed; border:1px solid #fed7aa; color:#c2410c;
+  display:flex; align-items:center; justify-content:center; flex:0 0 auto}
+.aa-h h2{margin:0; font-size:16px; font-weight:800; line-height:1.3}
+.aa-h p{margin:1px 0 0; font-size:12.5px; color:var(--plume); line-height:1.4}
+.aa-l{display:flex; gap:10px; overflow-x:auto; margin:0 -16px; padding:0 16px 2px; scrollbar-width:none}
+.aa-l::-webkit-scrollbar{display:none}
+.aa-c{flex:0 0 200px; display:flex; flex-direction:column; border-radius:16px; overflow:hidden; padding:0;
+  border:1px solid #f1e7da; background:#fffdfa; text-align:left; font-family:inherit; color:var(--encre)}
+.aa-c:active{transform:scale(.98)}
+.aa-ph{position:relative; height:96px; background:#9aae9b; color:rgba(255,255,255,.65);
+  display:flex; align-items:center; justify-content:center; overflow:hidden}
+.aa-ph img{width:100%; height:100%; object-fit:cover; display:block}
+.aa-q{position:absolute; left:8px; top:8px; font-size:10.5px; font-weight:800; color:#c2410c;
+  background:#fff; border-radius:99px; padding:3px 8px}
+.aa-t{padding:10px 11px 0; font-size:13px; font-weight:700; line-height:1.3}
+.aa-m{padding:4px 11px 0; font-size:12px; color:var(--plume)}
+.aa-b{margin:9px 11px 11px; margin-top:auto; display:flex; align-items:center; justify-content:center; height:34px;
+  border-radius:10px; background:#c2410c; color:#fff; font-size:12.5px; font-weight:700}
+.aa-m + .aa-b{margin-top:9px}
+
+.dr-l{display:flex; flex-direction:column; gap:10px}
+.dr-c{display:flex; align-items:center; gap:12px; width:100%; text-align:left; font-family:inherit; color:var(--encre);
+  background:var(--carte); border:1px solid var(--trait); border-radius:16px; padding:10px}
+.dr-ph{width:58px; height:58px; border-radius:12px; overflow:hidden; background:#c3c9d2; flex:0 0 auto;
+  display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.75)}
+.dr-ph img{width:100%; height:100%; object-fit:cover; display:block}
+.dr-x{display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:0}
+.dr-t{font-size:13.5px; font-weight:700; line-height:1.3}
+.dr-m{font-size:12px; color:var(--plume); line-height:1.4}
+
+/* V3.206 — Ses prochaines visites, à l'accueil : une ligne chacune, la photo
+   en petit avec le jour dessus (planche 2) ; au téléphone, la première en
+   grand (planche 3). */
+.va{background:var(--carte); border:1px solid #e1dbef; border-radius:22px; padding:12px 10px 6px;
+  box-shadow:0 18px 34px -26px rgba(79,64,130,.55)}
+.va-t{display:flex; align-items:center; gap:7px; padding:2px 6px 8px; font-size:11px; font-weight:800;
+  letter-spacing:1.1px; text-transform:uppercase; color:#6f60a2}
+.va-tout{margin-left:auto; background:none; border:0; padding:2px 4px; font:inherit; font-size:12.5px; font-weight:700;
+  letter-spacing:0; text-transform:none; color:#6f60a2; cursor:pointer}
+.va-l{display:flex; align-items:center; gap:13px; width:100%; padding:8px 6px; border:0; border-radius:16px;
+  background:none; font:inherit; color:var(--encre); text-align:left; cursor:pointer; transition:background .18s}
+.va-l:hover{background:#f8f6fc}
+.va-l:active{transform:scale(.99)}
+.va-l + .va-l{margin-top:2px}
+.va-ph{position:relative; flex:0 0 96px; height:80px; border-radius:14px; overflow:hidden; background:#f3f0fa;
+  display:flex; align-items:center; justify-content:center; color:#9c8cd0}
+.va-ph img{width:100%; height:100%; object-fit:cover; display:block}
+.va-j{position:absolute; left:6px; bottom:6px; display:flex; align-items:baseline; gap:4px; padding:3px 7px;
+  border-radius:8px; background:#6f60a2; color:#fff}
+.va-j b{font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:800; line-height:1}
+.va-j i{font-style:normal; font-size:10px; font-weight:800; letter-spacing:.8px; text-transform:uppercase}
+.va-jg, .va-bg, .va-hg{display:none}
+.va-x{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px}
+.va-q{font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:800; line-height:1.3}
+.va-b{font-size:13.5px; color:var(--plume); line-height:1.35; overflow:hidden; display:-webkit-box;
+  -webkit-line-clamp:2; -webkit-box-orient:vertical}
+.va-c{margin-top:2px; align-self:flex-start; padding:3px 10px; border-radius:99px; background:#f3f0fa;
+  color:#5b4d91; font-size:12px; font-weight:700}
+.va-f{color:#6f60a2; display:flex; flex:0 0 auto}
+.va-plus{display:block; width:100%; margin:2px 0 4px; padding:8px; border:0; background:none; font:inherit;
+  font-size:13px; font-weight:700; color:#6f60a2; cursor:pointer}
+@media(max-width:1023px){
+  .va-1{flex-direction:column; align-items:stretch; gap:0; padding:0 0 4px; margin-bottom:6px}
+  .va-1:hover{background:none}
+  .va-1 .va-ph{flex:0 0 auto; width:100%; height:170px; border-radius:16px}
+  .va-1 .va-ph::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(19,36,61,0) 45%,rgba(19,36,61,.55))}
+  .va-1 .va-j, .va-1 .va-q, .va-1 .va-c, .va-1 .va-f{display:none}
+  .va-1 .va-jg{display:flex; position:absolute; top:10px; left:10px; z-index:1; width:54px; padding:6px 0;
+    border-radius:13px; background:#fff; flex-direction:column; align-items:center; box-shadow:0 8px 18px -10px rgba(19,36,61,.6)}
+  .va-jg i{font-style:normal; font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#6f60a2}
+  .va-jg b{font-family:'Plus Jakarta Sans',sans-serif; font-size:22px; font-weight:800; line-height:1.05; color:var(--encre)}
+  .va-1 .va-bg{display:block; position:absolute; top:12px; right:10px; z-index:1; padding:5px 10px; border-radius:99px;
+    background:#6f60a2; color:#fff; font-size:12px; font-weight:700}
+  .va-1 .va-hg{display:block; position:absolute; left:13px; bottom:10px; z-index:1; color:#fff;
+    font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:800}
+  .va-1 .va-x{padding:10px 6px 2px}
+  .va-1 .va-b{font-family:'Plus Jakarta Sans',sans-serif; font-size:15.5px; font-weight:800; color:var(--encre)}
+}
+
+/* La visite, dans l'onglet Visites : le même violet adouci que partout. */
+.visite-a-venir{background:linear-gradient(152deg,#8475b4 0%,#6f60a2 100%); box-shadow:0 18px 34px -24px rgba(79,64,130,.8)}
+.visite-a-venir::after{background:radial-gradient(circle,rgba(255,255,255,.18),transparent 66%)}
+.vav-t{color:#ece8f6}
+.vav-b{background:#ece8f6; color:#4f4082}
+.vav-voir{color:#fff}
+.vis-faites{margin-top:26px}
+.vis-faites .sep{margin-bottom:12px}
+
+/* — les pastilles vivantes (barre du bas et menu de l'ordinateur) —
+   Tant qu'il y a un chiffre, il respire : un halo qui s'ouvre, et un petit
+   rebond toutes les quatre secondes, décalé d'une pastille à l'autre pour
+   qu'elles ne bougent jamais ensemble. Rien du tout si le téléphone demande
+   moins d'animations. */
+@keyframes halo-or{0%{box-shadow:0 0 0 0 rgba(230,139,35,.7)}70%{box-shadow:0 0 0 7px rgba(230,139,35,0)}100%{box-shadow:0 0 0 0 rgba(230,139,35,0)}}
+@keyframes halo-bleu{0%{box-shadow:0 0 0 0 rgba(34,73,125,.55)}70%{box-shadow:0 0 0 7px rgba(34,73,125,0)}100%{box-shadow:0 0 0 0 rgba(34,73,125,0)}}
+@keyframes halo-vio{0%{box-shadow:0 0 0 0 rgba(123,107,168,.6)}70%{box-shadow:0 0 0 7px rgba(123,107,168,0)}100%{box-shadow:0 0 0 0 rgba(123,107,168,0)}}
+@keyframes halo-blanc{0%{box-shadow:0 0 0 0 rgba(255,255,255,.6)}70%{box-shadow:0 0 0 7px rgba(255,255,255,0)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
+@keyframes tic{0%,84%,100%{transform:scale(1)}88%{transform:scale(1.25)}92%{transform:scale(.92)}96%{transform:scale(1.07)}}
+@keyframes lueur{0%,100%{filter:drop-shadow(0 0 0 rgba(230,139,35,0))}50%{filter:drop-shadow(0 0 5px rgba(230,139,35,.6))}}
+
+/* — la barre du bas (téléphone) — */
+.barre-bas{position:fixed; left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom,0px)); z-index:45;
+  height:66px; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); align-items:center; padding:0 4px;
+  background:rgba(255,255,255,.97); border:1px solid var(--trait); border-radius:24px;
+  box-shadow:0 14px 34px -14px rgba(27,61,107,.42); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px)}
+.bb{display:flex; flex-direction:column; align-items:center; gap:4px; padding:0; color:var(--plume);
+  font-family:inherit; transition:transform .2s ease; -webkit-tap-highlight-color:transparent}
+.bb:active{transform:scale(.92)}
+.bb-i{position:relative; width:50px; height:30px; border-radius:99px; display:flex; align-items:center; justify-content:center;
+  transition:background .25s ease, color .25s ease}
+.bb-ic{display:flex}
+.bb.on{color:#1B3D6B}
+.bb.on .bb-i{background:#22497D; color:#fff; animation:bb-pop .45s cubic-bezier(.3,1.4,.5,1)}
+@keyframes bb-pop{from{transform:scale(.6)}to{transform:none}}
+.bb-l{font-size:11px; font-weight:600; white-space:nowrap}
+.bb.on .bb-l{font-weight:800}
+.bb-n{position:absolute; top:-5px; right:1px; min-width:18px; height:18px; padding:0 4px; border-radius:99px;
+  border:2px solid #fff; font-size:10.5px; font-weight:800; line-height:1;
+  display:flex; align-items:center; justify-content:center}
+.bb-n.or{background:#E68B23; color:#13243D; animation:halo-or 2.4s ease-out infinite, tic 4s ease-in-out infinite}
+.bb-n.bleu{background:#22497D; color:#fff; animation:halo-bleu 2.4s ease-out infinite, tic 4s ease-in-out .8s infinite}
+.bb-n.vio{background:#7b6ba8; color:#fff; animation:halo-vio 2.4s ease-out infinite, tic 4s ease-in-out 1.6s infinite}
+.bb.on .bb-n{border-color:#fff}
+.bb-ic.lueur{color:#1B3D6B; animation:lueur 3s ease-in-out infinite}
+/* Au toucher : une onde autour de la pastille, le mot qui remonte, et une
+   animation propre à chaque onglet — la maison rebondit, l'étoile tourne,
+   l'œil cligne, la cible se resserre, le calendrier se balance. */
+.bb-i::after{content:""; position:absolute; inset:0; border-radius:99px; pointer-events:none}
+.bb.on .bb-i::after{animation:bb-onde .6s ease-out}
+@keyframes bb-onde{from{box-shadow:0 0 0 0 rgba(34,73,125,.45)}to{box-shadow:0 0 0 12px rgba(34,73,125,0)}}
+.bb.on .bb-l{animation:bb-mot .45s cubic-bezier(.2,1.2,.4,1) both}
+@keyframes bb-mot{from{transform:translateY(5px); opacity:.25}to{transform:none; opacity:1}}
+.bb.on[data-o="accueil"] .bb-ic{animation:bb-maison .6s cubic-bezier(.3,1.5,.5,1)}
+@keyframes bb-maison{0%{transform:none}35%{transform:translateY(-6px) scale(1.12)}65%{transform:translateY(1px) scale(.95)}100%{transform:none}}
+.bb.on[data-o="neufs"] .bb-ic{animation:bb-etoile .7s cubic-bezier(.3,1.4,.5,1)}
+@keyframes bb-etoile{0%{transform:rotate(-140deg) scale(.4)}70%{transform:rotate(14deg) scale(1.22)}100%{transform:none}}
+.bb.on[data-o="consultes"] .bb-ic{animation:bb-oeil .55s ease-in-out}
+@keyframes bb-oeil{0%,100%{transform:none}30%{transform:scaleY(.1)}60%{transform:scaleY(1.15)}}
+.bb.on[data-o="recherche"] .bb-ic{animation:bb-cible .6s cubic-bezier(.3,1.5,.5,1)}
+@keyframes bb-cible{0%{transform:scale(.45)}45%{transform:scale(1.32)}72%{transform:scale(.92)}100%{transform:none}}
+.bb.on[data-o="visites"] .bb-ic{animation:bb-cal .7s ease-in-out}
+@keyframes bb-cal{0%,100%{transform:none}20%{transform:rotate(-15deg)}40%{transform:rotate(11deg)}60%{transform:rotate(-7deg)}80%{transform:rotate(3deg)}}
+@media(max-width:1023px){
+  .page{padding-bottom:112px}
+  /* la bande « installer » passe au-dessus de la barre, jamais dessous */
+  .ecran{bottom:calc(78px + env(safe-area-inset-bottom,0px))}
+}
+@media(max-width:359px){.bb-l{font-size:10px}}
+/* Hors de l'accueil, sur téléphone : l'en-tête se fait discret (le bonjour
+   en petit, sans la ligne de recherche). « Retour à l'accueil » reste en haut
+   de chaque page, et une pastille le relaie quand on descend (.retour-flot). */
+@media(max-width:1023px){
+  .chapeau:not(.ch-acc){padding-bottom:16px}
+  .chapeau:not(.ch-acc) .ch-salut{margin-top:6px}
+  .chapeau:not(.ch-acc) .ch-salut h1{font-size:20px; letter-spacing:-.3px}
+  .chapeau:not(.ch-acc) .ch-rech{display:none}
+  .retour{margin:18px 0 14px; padding:8px 14px 8px 11px; font-size:13px}
+}
+/* La pastille « Accueil » qui suit le client quand il descend (téléphone). */
+.retour-flot{position:fixed; z-index:44; top:calc(10px + env(safe-area-inset-top,0px)); left:12px;
+  display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 15px 0 11px; border-radius:99px;
+  background:rgba(255,255,255,.96); border:1px solid var(--trait); color:#1B3D6B;
+  box-shadow:0 10px 24px -12px rgba(27,61,107,.5); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+  font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700;
+  opacity:0; transform:translateY(-14px); pointer-events:none;
+  transition:opacity .25s ease, transform .3s cubic-bezier(.16,1,.3,1)}
+.retour-flot.vu{opacity:1; transform:none; pointer-events:auto}
+.retour-flot:active{transform:scale(.94)}
+@media(min-width:1024px){ .retour-flot{display:none} }
+@media(min-width:1024px){
+  .chapeau:not(.ch-acc) .ch-salut{margin-top:22px}
+  .chapeau:not(.ch-acc) .ch-salut h1{font-size:30px}
+}
+
+/* — sur ordinateur : le menu dans la bande bleue, quatre cases, deux colonnes — */
+@media(min-width:1024px){
+  .barre-bas{display:none}
+  .chapeau{padding:22px 40px 30px}
+  .chapeau.ch-acc{padding-bottom:100px}
+  .marque{justify-content:flex-start; gap:24px}
+  .ch-date{display:none}
+  .nav-haut{position:relative; display:flex; align-items:center; gap:4px; padding:5px; border-radius:99px;
+    background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.15)}
+  .nh{display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 14px; border-radius:99px;
+    color:rgba(255,255,255,.88); font-size:14px; font-weight:600; transition:background .2s, color .2s}
+  .nh:hover{background:rgba(255,255,255,.1); color:#fff}
+  .nh.on{background:#fff; color:#1B3D6B; font-weight:800; box-shadow:0 8px 18px -10px rgba(0,0,0,.35)}
+  .nh-n{min-width:20px; height:20px; padding:0 5px; border-radius:99px; font-size:11.5px; font-weight:800;
+    display:inline-flex; align-items:center; justify-content:center; line-height:1}
+  .nh-n.or{background:#F2B266; color:#13243D; animation:halo-or 2.4s ease-out infinite, tic 4s ease-in-out infinite}
+  .nh-n.bleu{background:rgba(255,255,255,.24); color:#fff; animation:halo-blanc 2.4s ease-out infinite, tic 4s ease-in-out .8s infinite}
+  .nh.on .nh-n.bleu{background:#22497D}
+  .nh-n.vio{background:#9a8cc4; color:#fff; animation:halo-vio 2.4s ease-out infinite, tic 4s ease-in-out 1.6s infinite}
+  .ch-agent{position:relative; display:flex; align-items:center; gap:10px; margin-left:auto; padding:5px 5px 5px 6px;
+    border-radius:99px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.15); color:#fff; text-decoration:none}
+  .ch-av{width:32px; height:32px; border-radius:50%; background:#F2B266; color:#1B3D6B; display:flex; align-items:center;
+    justify-content:center; font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:800}
+  .ch-an{font-size:13.5px; font-weight:600}
+  .ch-ap{display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:99px;
+    background:#F2B266; color:#1B3D6B; font-size:13px; font-weight:700}
+  .ch-sur{display:block; font-size:14px; color:rgba(255,255,255,.82)}
+  .ch-salut{margin-top:32px; gap:8px}
+  .ch-salut h1{font-size:40px; letter-spacing:-1px}
+  .ch-rech-t{font-size:16px}
+  .chapeau .selec{max-width:520px}
+
+  .auj{margin-top:-64px; padding:0; background:none; box-shadow:none; border-radius:0}
+  .auj-h, .auj-pied, .auj-pied2{display:none}
+  /* Sur ordinateur, la bande prend la largeur de ses boutons, pas de la page. */
+  .al3-r{width:fit-content; max-width:100%; margin:18px 0 22px}
+  .al3{flex:0 0 auto; min-width:230px; flex-direction:row; align-items:center; gap:11px; padding:12px 18px 12px 14px}
+  .al3:hover{background:#F5F8FC}
+  /* V3.152 : autant de colonnes que de cases, trois ou quatre, sur toute la
+     largeur. Avec quatre colonnes fixes, trois cases laissaient un quart vide. */
+  .auj-g{grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:16px}
+  .auj-c{flex-direction:row; align-items:center; gap:14px; padding:16px 18px; border-radius:20px;
+    background:var(--carte) !important; box-shadow:0 16px 34px -26px rgba(27,61,107,.55)}
+  button.auj-c:hover{box-shadow:0 20px 38px -24px rgba(27,61,107,.6)}
+  .auj-c.c-lues{display:flex}
+  .auj-ic{width:46px; height:46px; border-radius:14px}
+  .auj-n{font-size:27px}
+  .auj-l{font-size:13.5px}
+
+  /* V3.152 : trois pistes de même largeur. Les biens prennent les deux
+     premières, la colonne de droite la troisième ; sous les biens, .acc-sous
+     redécoupe la même largeur en deux pistes (même écart, donc mêmes
+     largeurs au pixel près). --ecart et --sous sont lus par useRepartition. */
+  .acc-cols{--ecart:16px; --sous:22px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:26px;
+    align-items:start; margin-top:20px}
+  .acc-g{grid-column:1 / 3; min-width:0}
+  .acc-d{min-width:0; display:flex; flex-direction:column; gap:var(--ecart)}
+  .acc-main > section:first-child, .acc-d > .va{margin-top:0}
+  .acc-cartes{display:contents}
+  .ac-pc .apercu-carte{margin-top:0}
+  .acc-bl > .sep{margin:0 0 12px}
+  /* Le titre « Votre conseiller » sous un autre bloc : un peu d'air au-dessus. */
+  .acc-bl:not(:first-child) > .sep{margin-top:10px}
+  .acc-bl > .engage, .acc-bl > .avis-lien{margin-top:0}
+  /* Avant la répartition (page tout juste arrivée du serveur), les blocs qui
+     peuvent bouger attendent, invisibles ; au pire, ils se montrent au bout de
+     3 s même sans JavaScript. */
+  .acc-cols:not([data-pret]) .acc-bl{opacity:0; animation:accMontre .3s ease 3s forwards}
+  .acc-cols[data-pret] .acc-bl{animation:accMontre .32s ease both}
+  @keyframes accMontre{from{opacity:0} to{opacity:1}}
+  .acc-sous{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:26px; align-items:start; margin-top:var(--sous)}
+  .acc-p{display:flex; flex-direction:column; gap:var(--ecart); min-width:0}
+  .bloc-h h2{font-size:21px}
+  /* Six colonnes : une carte en prend trois (deux par ligne) ou deux (trois
+     par ligne, .cn-tiers). La rangée tombe toujours juste, de 1 à 6 biens. */
+  .carrou{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:18px; overflow:visible; margin:0; padding:0}
+  .cn{flex:none; grid-column:span 3}
+  .cn.cn-tiers{grid-column:span 2}
+  .cn-tiers .cn-ph{height:176px}
+  .cn-tiers .cn-c{padding:12px 14px 14px}
+  .cn-tiers .cn-p{flex-wrap:wrap; row-gap:2px}
+  .cn-tiers .cn-p b{font-size:21px}
+  .cn-tiers .cn-t{font-size:15px}
+  .cn-tiers .cn-m{font-size:13px}
+  /* La jauge garde une longueur lisible ; faute de place, la phrase passe dessous. */
+  .cn-tiers .cn-j{flex-wrap:wrap; row-gap:4px}
+  .cn-tiers .cn-jb{min-width:56px}
+  /* Un seul bien : en grand, la photo à gauche, le reste à droite. */
+  .carrou[data-n="1"] > .cn{grid-column:1 / -1; flex-direction:row; min-height:300px}
+  .carrou[data-n="1"] .cn-ph{flex:0 0 55%; height:auto}
+  .carrou[data-n="1"] .cn-ph img{position:absolute; inset:0}
+  .carrou[data-n="1"] .cn-c{flex:1 1 auto; min-width:0; justify-content:center; gap:8px; padding:28px 30px}
+  .carrou[data-n="1"] .cn-p{flex-wrap:wrap; row-gap:2px}
+  .carrou[data-n="1"] .cn-p b{font-size:30px; letter-spacing:-.8px; white-space:nowrap}
+  .carrou[data-n="1"] .cn-t{font-size:18px; font-weight:700}
+  .carrou[data-n="1"] .cn-m{font-size:14px}
+  .carrou[data-n="1"] .cn-j{margin-top:8px}
+  .cn-go{display:inline-flex; align-self:flex-start; align-items:center; gap:8px; margin-top:16px; min-height:50px;
+    padding:0 22px; border-radius:16px; background:var(--or); color:#13243D; font-size:15.5px; font-weight:800;
+    box-shadow:0 12px 24px -14px rgba(169,130,47,.9)}
+  .bloc-n[data-n="1"] .cn-decouvrir{display:none}
+  .cn:hover{transform:translateY(-3px); box-shadow:0 22px 40px -26px rgba(27,61,107,.55)}
+  .cn-ph{height:220px}
+  .cn-p b{font-size:24px}
+  .cn-t{font-size:16.5px}
+  .cn-m{font-size:13.5px}
+  .aa-l{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); overflow:visible; margin:0; padding:0}
+  .aa-c{flex:none}
+  .dr-l{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px}
+  .dr-c{flex-direction:column; align-items:stretch; padding:0; overflow:hidden; gap:0}
+  .dr-ph{width:100%; height:112px; border-radius:0}
+  .dr-x{padding:12px 14px 14px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .bb-n, .nh-n, .bb-ic.lueur, .vc-d, .calme-ic, .chapeau::after, .cn, .cn-jb i{animation:none !important}
+}
+
+/* « Rien de nouveau pour le moment » (V3.28) : un seul message, avec sa loupe
+   qui cherche doucement ; la dernière recherche, dessous, centrée pareil. */
+.relance-centre{flex-direction:column; align-items:center; text-align:center; gap:8px; padding:16px 18px}
+/* Sur ordinateur, le cadre lui-même est centré sous les biens (V3.28) : à
+   820 px de large, il restait collé à gauche d'une page de 1 080. */
+@media(min-width:1024px){
+  .relance-centre, .relance-pc{margin-left:auto; margin-right:auto}
+  .relance-pc{flex-direction:column; align-items:center; text-align:center; gap:8px; padding:16px 22px}
+}
+/* Sur téléphone, un titre de rubrique tient sur une ligne (« Nouveaux biens
+   pour vous » laissait « vous » seul dessous). */
+@media(max-width:560px){
+  .tete-vue{gap:11px}
+  .tete-vue .ico{width:40px; height:40px; border-radius:13px}
+  .tete-vue h2{font-size:20px; letter-spacing:-.4px}
+}
+.vide-neuf{display:flex; flex-direction:column; align-items:center; gap:6px; padding:24px 18px 22px; text-align:center;
+  background:var(--carte); border:1px dashed var(--trait-fort); border-radius:18px; color:var(--plume); font-size:14px; line-height:1.6}
+.vide-neuf b{font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:800; color:var(--encre)}
+.vide-neuf > span:last-child{max-width:440px}
+.vn-ic{width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:4px;
+  background:var(--or-fond); color:var(--or-fonce); border:1px solid var(--or-trait); animation:vn-cherche 3.2s ease-in-out infinite}
+@keyframes vn-cherche{0%,100%{transform:translate(0,0) rotate(0)}25%{transform:translate(3px,-2px) rotate(-8deg)}50%{transform:translate(0,-3px) rotate(0)}75%{transform:translate(-3px,-2px) rotate(8deg)}}
+@media (prefers-reduced-motion:reduce){ .vn-ic{animation:none} }
+
+/* ═══ La carte des biens (V3.27) — voir CarteEspace.tsx ═══ */
+/* Le menu de l'ordinateur compte un onglet de plus (« La carte ») : chaque
+   intitulé tient sur une ligne, et entre 1024 et 1440 px le menu se resserre
+   (le prénom du conseiller s'efface, son bouton « Appeler » reste). */
+@media(min-width:1024px){ .nh, .motmarque{white-space:nowrap} }
+@media(min-width:1024px) and (max-width:1439px){
+  .marque{gap:14px}
+  .motmarque{letter-spacing:1.6px}
+  .nh{padding:0 11px; gap:6px; font-size:13.5px}
+  .ch-an{display:none}
+}
+/* Sur téléphone, la carte prend tout l'écran : son bandeau bleu remplace
+   l'en-tête, et le pied de page n'a rien à faire dessous. */
+@media(max-width:1023px){
+  .chapeau.ch-carte{display:none}
+  .page.p-carte{padding-bottom:0}
+  .page.p-carte .pied, .page.p-carte ~ .retour-flot{display:none}
+}
+/* Les filtres de « Consultés », à la couleur de chaque avis (V3.27). Repliés
+   d'office sous « Filtrer mes biens » ; ils se déplient en douceur. */
+.fcz{margin:2px 0 14px}
+.fcz-l{display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+.fcz .fcz-tout{cursor:default} .fcz .fcz-tout:active{transform:none}
+.fcz-x{display:inline-flex; margin-left:1px; opacity:.85}
+.fcz-b{display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 12px 0 13px; border-radius:99px;
+  border:1px solid var(--trait) !important; background:#fff !important; color:#1B3D6B; font-size:13px; font-weight:700;
+  box-shadow:0 6px 14px -12px rgba(27,61,107,.6); transition:background .2s, border-color .2s, transform .15s}
+.fcz-b:hover{background:#F5F8FC !important; border-color:#DCE3EC !important}
+.fcz-b:active{transform:scale(.95)}
+.fcz-b.ouvert{border-color:#E68B23 !important; background:#FFF6EC !important}
+.fcz-cv{display:inline-flex; transition:transform .3s cubic-bezier(.16,1,.3,1)}
+.fcz-b.ouvert .fcz-cv{transform:rotate(180deg)}
+.fcz-pli{display:grid; grid-template-rows:0fr; opacity:0; transition:grid-template-rows .34s cubic-bezier(.16,1,.3,1), opacity .25s ease}
+.fcz-pli.ouvert{grid-template-rows:1fr; opacity:1}
+.fcz-in{overflow:hidden; min-height:0}
+.fcz-in .filtres-c{margin:10px 0 2px; padding:2px}
+.filtres-c{display:flex; flex-wrap:wrap; gap:7px; margin:2px 0 14px}
+.fcz-l .fc, .filtres-c .fc{--c:#1B3D6B; height:36px; padding:0 12px 0 13px; gap:7px; font-size:13px; font-weight:700;
+  color:color-mix(in srgb, var(--c) 78%, black); background:color-mix(in srgb, var(--c) 9%, white);
+  border:1px solid color-mix(in srgb, var(--c) 28%, white); box-shadow:none}
+.fcz-l .fc:hover, .filtres-c .fc:hover{background:color-mix(in srgb, var(--c) 15%, white); color:color-mix(in srgb, var(--c) 78%, black)}
+.filtres-c .fc .fe, .fcz-l .fc .fe{font-size:13px; line-height:1}
+.fcz-l .fc i, .filtres-c .fc i{background:color-mix(in srgb, var(--c) 16%, white); color:color-mix(in srgb, var(--c) 85%, black); padding:1px 7px}
+.fcz-l .fc.on, .filtres-c .fc.on{background:var(--c); color:#fff; border-color:var(--c); box-shadow:0 8px 16px -10px color-mix(in srgb, var(--c) 80%, black)}
+.fcz-l .fc.on i, .filtres-c .fc.on i{background:rgba(255,255,255,.24); color:#fff}
+@media(max-width:560px){ .filtres-c{gap:6px} .filtres-c .fc{height:34px; padding:0 10px 0 11px; font-size:12.5px} }
+@media(prefers-reduced-motion:reduce){ .fcz-pli, .fcz-cv{transition:none} }
+
+/* « Liste | Carte », en tête de « Consultés » : à droite du titre sur un
+   grand écran, sur toute la largeur sous la phrase sur téléphone. */
+.tete-bloc{position:relative}
+.tete-bloc > .lc{display:flex; margin:2px 0 14px}
+.tete-bloc > .lc .lc-b{flex:1; justify-content:center; height:36px}
+@media(min-width:640px){
+  .tete-bloc .tete-vue{padding-right:220px}
+  .tete-bloc > .lc{position:absolute; top:4px; right:0; margin:0}
+  .tete-bloc > .lc .lc-b{flex:none; height:34px}
+}
+.lc{display:inline-flex; padding:3px; gap:2px; border-radius:99px; background:#E8EFF8; border:1px solid var(--trait); flex:0 0 auto}
+.lc-b{display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:99px;
+  font-size:13px; font-weight:700; color:#46566B; transition:background .2s, color .2s, transform .15s}
+.lc-b:hover{color:#1B3D6B}
+.lc-b:active{transform:scale(.94)}
+.lc-b.on{background:#fff; color:#1B3D6B; box-shadow:0 4px 12px -6px rgba(27,61,107,.45); cursor:default}
+/* « Voir sur la carte », sur la fiche d'un bien. */
+.voir-carte{display:inline-flex; align-items:center; gap:5px; height:26px; padding:0 10px 0 8px; border-radius:99px;
+  border:1px solid var(--trait) !important; background:#fff !important; color:#1B3D6B; font-size:12px; font-weight:700;
+  transition:background .15s, border-color .15s}
+.voir-carte:hover{background:#F5F8FC !important; border-color:#E68B23 !important}
+/* L'aperçu de la carte, sur l'accueil. */
+.apercu-carte{display:flex !important; flex-direction:column; align-items:stretch; padding:0 !important; overflow:hidden; text-align:left; margin-top:12px; width:100%}
+.ac-plan{position:relative; display:block; height:104px; background:#f3efe6; overflow:hidden}
+.ac-plan svg{position:absolute; inset:0; width:100%; height:100%}
+.ac-fleuve{fill:none; stroke:#bcd6ec; stroke-width:14; stroke-linecap:round}
+.ac-rue{fill:none; stroke:#fff; stroke-width:5}
+.ac-ruelle{fill:none; stroke:#fff; stroke-width:2.5; opacity:.9}
+.ac-z{position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%;
+  background:color-mix(in srgb, var(--c) 22%, transparent); border:1.5px solid var(--c);
+  animation:ac-respire 3.2s ease-in-out infinite}
+.ac-z:nth-of-type(2n){animation-delay:.8s} .ac-z:nth-of-type(3n){animation-delay:1.6s}
+@keyframes ac-respire{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.ac-interesse{--c:#16a34a} .ac-visite{--c:#22497D} .ac-a_visiter{--c:#7c3aed} .ac-attente{--c:#E68B23} .ac-refuse{--c:#b3837e}
+.ac-bas{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 16px 14px}
+.ac-bas > span:first-child{display:flex; flex-direction:column; gap:2px; min-width:0}
+.ac-bas b{font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:800; color:var(--encre)}
+.ac-bas i{font-style:normal; font-size:13px; color:var(--plume)}
+@media (prefers-reduced-motion:reduce){ .ac-z{animation:none} }
+/* La carte au téléphone (V3.28) : elle coiffe « Vos derniers retours », dans
+   la même carte ; son bas se fond dans la liste, et le premier retour
+   remonte un peu dessus. Sur ordinateur, elle reste à droite, seule. */
+.ac-pc{display:none}
+.ac-tel .apercu-carte{margin-top:22px}
+.dr-avec .dr-fus{background:var(--carte); border:1px solid var(--trait); border-radius:20px; overflow:hidden;
+  box-shadow:0 16px 34px -28px rgba(27,61,107,.55)}
+.dr-carte{position:relative; display:block; width:100%; padding:0; border:none; background:none; text-align:left;
+  font-family:inherit; color:var(--encre); cursor:pointer}
+.dr-carte .ac-plan{height:150px}
+.dr-carte .ac-plan::after{content:''; position:absolute; left:0; right:0; bottom:0; height:64px; pointer-events:none;
+  background:linear-gradient(to bottom, color-mix(in srgb, var(--carte) 0%, transparent), var(--carte) 88%)}
+.dr-carte-l{position:absolute; left:12px; top:12px; display:inline-flex; align-items:center; gap:6px; height:32px;
+  padding:0 10px 0 10px; border-radius:99px; background:rgba(255,255,255,.95); color:var(--encre);
+  box-shadow:0 8px 20px -10px rgba(27,61,107,.55); font-size:12.5px; transition:transform .24s cubic-bezier(.16,1,.3,1)}
+.dr-carte-l b{font-weight:800}
+.dr-carte-l svg:first-child{color:var(--or-fonce)}
+.dr-carte:active .dr-carte-l{transform:scale(.97)}
+.dr-avec .dr-l{position:relative; gap:0; margin-top:-22px; padding:0 6px 6px}
+.dr-avec .dr-c{border:none; border-radius:0; background:none; padding:10px}
+.dr-avec .dr-c + .dr-c{box-shadow:inset 0 1px 0 var(--trait)}
+@media(min-width:1024px){
+  .ac-pc{display:block}
+  .ac-tel, .dr-carte{display:none}
+  .dr-avec .dr-fus{background:none; border:none; border-radius:0; overflow:visible; box-shadow:none}
+  .dr-avec .dr-l{margin-top:0; padding:0; gap:14px}
+  .dr-avec .dr-c, .dr-avec .dr-c + .dr-c{border:1px solid var(--trait); border-radius:16px; background:var(--carte); padding:0; box-shadow:none}
+}
+
+`;

@@ -1,0 +1,456 @@
+'use client';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
+import Sidebar from '@/components/layout/Sidebar';
+import Topbar from '@/components/layout/Topbar';
+import Dashboard from '@/components/dashboard/Dashboard';
+import Clients, { NouveauContactPartout } from '@/components/clients/Clients';
+import FicheSelonType from '@/components/contacts/FicheContact';
+import PageRelances from '@/components/pages/PageRelances';
+import PageVisites from '@/components/pages/PageVisites';
+import PageAgenda, { NouveauRdvPartout } from '@/components/pages/PageAgenda';
+import PageMail, { NouveauMailPartout } from '@/components/pages/PageMail';
+import PageActivite from '@/components/pages/PageActivite';
+import PageParametres from '@/components/pages/PageParametres';
+import PageDocuments, { type IntentionDocuments } from '@/components/documents/PageDocuments';
+import PageRegistre from '@/components/documents/PageRegistre';
+import PageBiens from '@/components/biens/PageBiens';
+import PageCarte from '@/components/carte/PageCarte';
+import PageDemandesSite from '@/components/demandes/PageDemandesSite';
+import RappelCarte from '@/components/layout/RappelCarte';
+import NouvelleVersion from '@/components/layout/NouvelleVersion';
+import EnvoiPortails from '@/components/layout/EnvoiPortails';
+import Avertissements from '@/components/layout/Avertissements';
+import Succes from '@/components/layout/Succes';
+import SuiviRemises from '@/components/layout/SuiviRemises';
+import Defilement from '@/components/layout/Defilement';
+import GardePlace from '@/components/layout/GardePlace';
+import Mouvement from '@/components/layout/Mouvement';
+import styles from './AppLayout.module.css';
+/* Toute l'adaptation au téléphone des écrans du CRM, au même endroit. */
+import '@/styles/crm-mobile.css';
+import type { Client } from '@/lib/supabase';
+import { reprendreSuspendus } from '@/lib/suspension';
+import FichesOuvertes, { type FicheOuverte, EVT_FICHE_OUVERTE, EVT_BIEN_ACTIF, EVT_DOC_ACTIF, lireFiches, ecrireFiches, ajouterFiche } from '@/components/layout/FichesOuvertes';
+import { nomFoyer } from '@/lib/foyer';
+import { signalerEchec } from '@/lib/ecritures';
+import { signalerMaj, prendreOuvertureUrl, lireOuvertureFiche } from '@/lib/intentions';
+import { figerLesFenetres } from '@/lib/fenetres-figees';
+import SqueletteFiche from '@/components/shared/SqueletteFiche';
+
+/**
+ * L'écran affiché, et le client ouvert, vivent dans l'URL — pas seulement en
+ * mémoire. Sans ça : un F5 sur une fiche renvoyait au tableau de bord, les
+ * flèches Précédent / Suivant du navigateur ne faisaient rien, et une fiche
+ * client n'était pas partageable par lien.
+ *
+ * L'URL reste volontairement une query string (`/?page=fiche&client=<id>`) :
+ * le CRM tient sur une seule route Next, on ne redécoupe pas l'application.
+ */
+const PAGES = ['dashboard', 'clients', 'fiche', 'biens', 'carte', 'demandes', 'agenda', 'visites',
+  'relances', 'documents', 'registre', 'mail', 'activite', 'parametres'];
+
+/* Le menu de gauche réduit à ses icônes : le choix se retient dans ce
+   navigateur (V3.35). */
+const CLE_MENU_REDUIT = 'menu.reduit';
+
+function lireUrl(): { page: string; clientId: string | null } {
+  if (typeof window === 'undefined') return { page: 'dashboard', clientId: null };
+  const p = new URLSearchParams(window.location.search);
+  const page = p.get('page') || 'dashboard';
+  return { page: PAGES.includes(page) ? page : 'dashboard', clientId: p.get('client') };
+}
+
+function ecrireUrl(page: string, clientId?: string | null, remplacer = false) {
+  if (typeof window === 'undefined') return;
+  const p = new URLSearchParams();
+  if (page !== 'dashboard') p.set('page', page);
+  if (page === 'fiche' && clientId) p.set('client', clientId);
+  const q = p.toString();
+  const url = q ? `${window.location.pathname}?${q}` : window.location.pathname;
+  if (url === window.location.pathname + window.location.search) return;
+  window.history[remplacer ? 'replaceState' : 'pushState'](null, '', url);
+}
+
+/* Une fiche de contact pour la barre du bas (FichesOuvertes). */
+function ficheDeContact(c: Client): FicheOuverte {
+  const x = c as unknown as Record<string, unknown>;
+  return {
+    k: 'contact', id: c.id, titre: nomFoyer(c) || 'Contact', sous: c.reference || undefined, statut: c.statut,
+    personne: { prenom: c.prenom, nom: c.nom, civilite: (x.civilite as string) || null, couple: !!x.couple, conjoint: x.conjoint, types: x.types },
+  };
+}
+
+export default function AppLayout() {
+  const [activePage, setActivePage] = useState('dashboard');
+  const [sens, setSens] = useState<'avant' | 'arriere'>('avant');
+  const [ficheClient, setFicheClient] = useState<Client | null>(null);
+  const [chargeFiche, setChargeFiche] = useState(false);
+  const [intention, setIntention] = useState<IntentionDocuments | null>(null);
+  /* Chaque navigation remonte l'écran, même vers celui qui est déjà affiché :
+     « Biens en vente » depuis la fiche d'un bien revient à la liste. */
+  const [navN, setNavN] = useState(0);
+  /* La barre des fiches ouvertes : lue dans le navigateur après le montage
+     (le serveur ne la connaît pas), puis gardée à chaque changement. */
+  const [fiches, setFiches] = useState<FicheOuverte[]>([]);
+  const [bienActif, setBienActif] = useState<string | null>(null);
+  /* V3.175 : le document juridique ouvert dans l'éditeur (Documents). */
+  const [docActif, setDocActif] = useState<string | null>(null);
+  const docActifRef = useRef<string | null>(null);
+  useEffect(() => { docActifRef.current = docActif; }, [docActif]);
+  const fichesLues = useRef(false);
+  /* Le tiroir de navigation du téléphone (le bouton ☰ de la barre du haut). */
+  const [menuOuvert, setMenuOuvert] = useState(false);
+  const fermerMenu = useCallback(() => setMenuOuvert(false), []);
+  /* Sur ordinateur, le menu de gauche peut se réduire à ses icônes. Le choix
+     d'Alexandre (le bouton de la barre du haut) est retenu : le menu reste
+     réduit d'un écran à l'autre, et après un rechargement (V3.35 ; avant, il
+     se redépliait à chaque clic). L'agenda l'ouvre réduit quoi qu'il arrive,
+     pour gagner la largeur de la semaine ; l'y déplier ne vaut que le temps
+     d'y rester. */
+  const [prefReduit, setPrefReduit] = useState(false);
+  const [agendaDeplie, setAgendaDeplie] = useState(false);
+  useEffect(() => {
+    try { setPrefReduit(localStorage.getItem(CLE_MENU_REDUIT) === '1'); } catch { /* sans mémoire, le menu part déplié */ }
+  }, []);
+  /* Sur téléphone, c'est cette zone-ci qui défile, barre du haut comprise :
+     la barre part avec la page quand on descend, et seule la barre d'onglets
+     du bas reste à l'écran (voir AppLayout.module.css). Sur ordinateur,
+     c'est le <main> qui défile, sous une barre fixe. */
+  const zoneBarre = useRef<HTMLDivElement>(null);
+  const contenu = useRef<HTMLElement>(null);
+
+  /* L'écran qu'on quitte, lu au moment d'ouvrir une fiche : de Relances, la
+     fiche y ramènera (V3.102). handleNavigate ne se recrée pas, d'où le ref. */
+  const pageRef = useRef(activePage);
+  useEffect(() => { pageRef.current = activePage; }, [activePage]);
+
+  /* V3.192 : un clic à côté d'une fenêtre où l'on écrit ne la ferme plus
+     (src/lib/fenetres-figees.ts). */
+  useEffect(() => figerLesFenetres(), []);
+
+  /* La classe « crm » sur <html> : les règles du téléphone s'appliquent au
+     CRM et à ses fenêtres (posées sur <body>), jamais à l'espace client. */
+  useEffect(() => {
+    document.documentElement.classList.add('crm');
+    return () => document.documentElement.classList.remove('crm');
+  }, []);
+
+  /* ── La session Supabase, sans laquelle le CRM est aveugle ──
+     Deux serrures protègent ce CRM : le cookie, qui autorise l'affichage des
+     pages, et la session Supabase, qui autorise la lecture des données (le
+     RLS — voir migration-rls.sql). Le cookie tient trente jours, la session
+     beaucoup moins.
+
+     Sans ce garde-fou, une session perdue donnerait des écrans parfaitement
+     vides, sans le moindre message : les pages s'affichent (le cookie est
+     bon), mais chaque requête revient sans rien. On préfère renvoyer vers la
+     page de connexion, qui dit au moins quoi faire.
+
+     `onAuthStateChange` couvre aussi la déconnexion depuis un autre onglet. */
+  useEffect(() => {
+    let vivant = true;
+
+    const dehors = async () => {
+      try { await fetch('/api/login', { method: 'DELETE' }); } catch { /* on sort quand même */ }
+      /* V3.50 : on revient là où on était après la connexion (la page ET sa
+         question : tout le CRM vit dans « ?page=… »). */
+      const ici = `${window.location.pathname}${window.location.search}`;
+      window.location.href = ici && ici !== '/' ? `/login?suite=${encodeURIComponent(ici)}` : '/login';
+    };
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (vivant && !data.session) dehors();
+    });
+
+    const { data: ecoute } = supabase.auth.onAuthStateChange((evenement, session) => {
+      if (!vivant) return;
+      if (evenement === 'SIGNED_OUT' || (!session && evenement !== 'INITIAL_SESSION')) dehors();
+    });
+
+    return () => { vivant = false; ecoute.subscription.unsubscribe(); };
+  }, []);
+
+  /* « Suspendu jusqu'au… » : à l'ouverture du CRM, les dossiers dont la date
+     de reprise est arrivée repassent en « Actif » (src/lib/suspension.ts).
+     Une fois par ouverture ; un échec s'affiche en rouge comme les autres. */
+  useEffect(() => {
+    setFiches(lireFiches());
+    fichesLues.current = true;
+    const ouverte = (e: Event) => setFiches(l => ajouterFiche(l, (e as CustomEvent<FicheOuverte>).detail));
+    const actif = (e: Event) => setBienActif((e as CustomEvent<string | null>).detail);
+    const docOuvert = (e: Event) => setDocActif((e as CustomEvent<string | null>).detail);
+    window.addEventListener(EVT_FICHE_OUVERTE, ouverte);
+    window.addEventListener(EVT_BIEN_ACTIF, actif);
+    window.addEventListener(EVT_DOC_ACTIF, docOuvert);
+    return () => {
+      window.removeEventListener(EVT_FICHE_OUVERTE, ouverte); window.removeEventListener(EVT_BIEN_ACTIF, actif); window.removeEventListener(EVT_DOC_ACTIF, docOuvert);
+    };
+  }, []);
+  useEffect(() => { if (fichesLues.current) ecrireFiches(fiches); }, [fiches]);
+
+  useEffect(() => {
+    reprendreSuspendus(supabase).then(({ repris, erreurs }) => {
+      for (const e of erreurs) signalerEchec('La reprise automatique d’un dossier suspendu', e);
+      if (repris.length) signalerMaj();
+    });
+  }, []);
+
+  /* Le serveur rend la page sans connaître l'URL du navigateur : on la lit
+     après le montage, puis on ouvre ce qu'elle désigne. Le même chemin sert
+     au retour arrière du navigateur. */
+  useEffect(() => {
+    let vivant = true;
+    const ouvrir = async ({ page, clientId }: { page: string; clientId: string | null }) => {
+      if (page === 'fiche' && clientId) {
+        setActivePage('fiche');
+        setChargeFiche(true);
+        const { data } = await supabase.from('clients').select('*').eq('id', clientId).maybeSingle();
+        if (!vivant) return;
+        setChargeFiche(false);
+        if (data) { setFicheClient(data as Client); setFiches(l => ajouterFiche(l, ficheDeContact(data as Client))); return; }
+        /* Le client n'existe plus : on ne laisse pas un écran vide derrière. */
+        setFicheClient(null);
+        setActivePage('clients');
+        ecrireUrl('clients', null, true);
+        return;
+      }
+      setFicheClient(null);
+      setActivePage(page === 'fiche' ? 'clients' : page);
+    };
+    /* V3.191 : un lien qui vise un bien (Ringover, quand une agence appelle). */
+    prendreOuvertureUrl();
+    ouvrir(lireUrl());
+    const retour = () => { ouvrir(lireUrl()); };
+    window.addEventListener('popstate', retour);
+    return () => { vivant = false; window.removeEventListener('popstate', retour); };
+  }, []);
+
+  const handleNavigate = useCallback((page: string, data?: unknown) => {
+    setMenuOuvert(false);
+    /* Documents peut s'ouvrir avec une tâche (« Préparer un avenant »
+       depuis la fiche d'un client). */
+    setIntention(page === 'documents' && data && typeof data === 'object' ? (data as IntentionDocuments) : null);
+    /* Entrer dans une fiche pousse l'écran vers le haut, en sortir le fait
+       redescendre : le mouvement dit d'où l'on vient. */
+    const focusCarte = page === 'carte' && data && typeof data === 'object' ? (data as { focus?: string }).focus : undefined;
+    setSens(page === 'fiche' || focusCarte ? 'avant' : 'arriere');
+    if (page === 'fiche' && data) {
+      const c = data as Client;
+      /* V3.102 — D'où vient la fiche. Ouverte depuis Relances (« Ouvrir la
+         fiche », ou un bloc de la barre cliqué sur Relances), la fermer y
+         ramène. Ouverte d'ailleurs, l'origine s'efface (la clé est posée,
+         vide, pour écraser une ancienne). D'une fiche à l'autre, chacune
+         garde la sienne. */
+      const f = ficheDeContact(c);
+      const de = pageRef.current;
+      /* V3.219 : ouverte depuis la carte, son bouton retour y ramène (même vue,
+         même zoom, mêmes filtres : la carte les a gardés en partant). */
+      if (de !== 'fiche') f.depuis = de === 'relances' ? 'relances' : de === 'agenda' ? 'agenda' : de === 'carte' ? 'carte' : undefined;
+      setFicheClient(c);
+      setFiches(l => ajouterFiche(l, f));
+      setChargeFiche(false);
+      setActivePage('fiche');
+      /* V3.191 : une demande précise (un bien à ouvrir) sur la fiche déjà
+         affichée : on la remonte, pour qu'elle la lise. */
+      if (lireOuvertureFiche(c.id)) setNavN(n => n + 1);
+      ecrireUrl('fiche', c.id);
+      return;
+    }
+    setFicheClient(null);
+    setActivePage(page);
+    setNavN(n => n + 1);
+    ecrireUrl(page, null);
+    /* V3.102 — Le retour sur Relances (fiche fermée, bouton retour, bloc
+       « Relances » de la barre) : la page reprend la tuile et la relance
+       qu'on avait laissées. Le menu de gauche, lui, l'ouvre comme toujours
+       sur « À faire » (V3.85). */
+    if (page === 'relances' && data && typeof data === 'object' && (data as { retour?: boolean }).retour) {
+      window.history.replaceState(null, '', `${window.location.pathname}?page=relances&retour=1`);
+    }
+    /* V3.179 — De même pour Contacts : fermer une fiche (×, « Tout fermer »,
+       le bouton retour) ou toucher le bloc « Mes contacts » rouvre la liste
+       telle qu'on l'avait laissée (Clients, `lireRetour`). Le menu de gauche,
+       lui, l'ouvre comme avant. */
+    if (page === 'clients' && data && typeof data === 'object' && (data as { retour?: boolean }).retour) {
+      window.history.replaceState(null, '', `${window.location.pathname}?page=clients&retour=1`);
+    }
+    /* V3.138 — Le retour à l'agenda (Alexandre : « quand on fait retour, on
+       ne revient pas sur la fiche qui était ouverte depuis l'agenda ») :
+       l'agenda a noté, en partant, le jour, la vue et le rendez-vous ouvert
+       (PageAgenda, `memoriserRetour`) ; il les relit dans l'adresse. */
+    if (page === 'agenda' && data && typeof data === 'object' && (data as { retour?: boolean }).retour) {
+      let q: string | null = null;
+      try { q = window.sessionStorage.getItem('emi-retour-agenda'); } catch { /* sans mémoire, l'agenda du jour */ }
+      if (q && q.startsWith('?page=agenda')) window.history.replaceState(null, '', `${window.location.pathname}${q}`);
+    }
+    /* « Mes vendeurs », « Mes estimations »… (le menu de gauche, V3.24) : la
+       rubrique s'ouvre sur cette catégorie. */
+    const vue = (page === 'clients' || page === 'biens') && data && typeof data === 'object' ? (data as { vue?: string }).vue : undefined;
+    if (vue) window.history.replaceState(null, '', `${window.location.pathname}?page=${page}&vue=${encodeURIComponent(vue)}`);
+    /* Un bien en vente précis (« Voir le bien ») : Biens en vente le lit
+       dans l'URL en s'ouvrant. */
+    const bienId = page === 'biens' && data && typeof data === 'object' ? (data as { bien?: string }).bien : undefined;
+    /* V3.138 : ouvert depuis l'agenda, son bouton retour y ramène.
+       V3.219 : de même depuis la carte. */
+    const depuisBien = bienId ? (data as { depuis?: string }).depuis : undefined;
+    const origine = depuisBien === 'agenda' || depuisBien === 'carte' ? depuisBien : '';
+    if (bienId) window.history.replaceState(null, '', `${window.location.pathname}?page=biens&bien=${encodeURIComponent(bienId)}${origine ? `&depuis=${origine}` : ''}`);
+    /* « Voir sur la carte » depuis une fiche (V3.26) : la carte s'ouvre sur
+       ce contact ou ce bien (« c:<id> », « b:<id> »). */
+    if (focusCarte) window.history.replaceState(null, '', `${window.location.pathname}?page=carte&focus=${encodeURIComponent(focusCarte)}`);
+  }, []);
+
+  /* Rouvrir une fiche de la barre du bas. Un contact se relit (la barre ne
+     garde que son nom) ; un contact supprimé depuis sort de la barre. */
+  const ouvrirFiche = useCallback(async (f: FicheOuverte) => {
+    if (f.k === 'bien') { handleNavigate('biens', { bien: f.id }); return; }
+    /* La carte (V3.27) : elle se rouvre là où on l'avait laissée (PageCarte
+       relit sa vue et le repère choisi). */
+    if (f.k === 'carte') { handleNavigate('carte'); return; }
+    /* Relances (V3.102) : rouverte sur la tuile et la relance laissées. Déjà
+       à l'écran, le bloc ne la recharge pas. */
+    if (f.k === 'relances') { if (pageRef.current !== 'relances') handleNavigate('relances', { retour: true }); return; }
+    /* La liste des contacts (V3.179) : rouverte telle qu'on l'avait laissée. */
+    if (f.k === 'contacts') { if (pageRef.current !== 'clients') handleNavigate('clients', { retour: true }); return; }
+    /* Un document juridique (V3.175) : rouvert dans l'éditeur, à l'étape
+       laissée. Déjà à l'écran, le bloc ne le recharge pas. */
+    if (f.k === 'document') { if (!(pageRef.current === 'documents' && docActifRef.current === f.id)) handleNavigate('documents', { ouvrir: f.id }); return; }
+    const { data, error } = await supabase.from('clients').select('*').eq('id', f.id).maybeSingle();
+    if (error) { signalerEchec('L’ouverture de la fiche', error.message); return; }
+    if (!data) { setFiches(l => l.filter(x => !(x.k === 'contact' && x.id === f.id))); return; }
+    handleNavigate('fiche', data);
+  }, [handleNavigate]);
+
+  /* Le <main> (sur téléphone : la zone qui le contient) est le seul élément
+     qui défile du CRM (html et body sont en overflow:hidden), et React ne le
+     recrée jamais d'un écran à l'autre : il gardait donc sa position. On
+     arrivait sur une fiche déjà défilée de la hauteur où on avait laissé la
+     liste précédente, entête hors écran. */
+  useEffect(() => {
+    contenu.current?.scrollTo({ top: 0 });
+    zoneBarre.current?.scrollTo({ top: 0 });
+  }, [activePage, ficheClient?.id]);
+  useEffect(() => { setAgendaDeplie(false); }, [activePage]);
+  const menuReduit = prefReduit || (activePage === 'agenda' && !agendaDeplie);
+  const basculerMenu = useCallback(() => {
+    const reduire = !menuReduit;
+    setPrefReduit(reduire);
+    if (!reduire && activePage === 'agenda') setAgendaDeplie(true);
+    try { localStorage.setItem(CLE_MENU_REDUIT, reduire ? '1' : '0'); } catch { /* retenu pour cette visite seulement */ }
+  }, [menuReduit, activePage]);
+
+  /* Fermer (×) dans la barre des fiches ouvertes la fiche qu'on regarde :
+     on revient à sa liste — Contacts pour un contact, Biens pour un bien
+     (V3.35 ; avant, la fiche restait à l'écran, sortie de la barre). Fermer
+     une autre fiche ne change pas d'écran.
+     V3.102 — Un contact ouvert depuis Relances ramène à Relances, sur la
+     tuile laissée (Alexandre : « quand je ferme la fiche, ça me remet dans
+     mes contacts ; je dois rappuyer sur Relances, puis sur Aujourd'hui »).
+     Le bouton retour de la fiche (seul moyen d'en sortir sur téléphone, où
+     la barre n'est pas) fait de même. */
+  const fermerContact = useCallback((f?: FicheOuverte) => {
+    if (f?.depuis === 'relances') handleNavigate('relances', { retour: true });
+    else if (f?.depuis === 'agenda') handleNavigate('agenda', { retour: true });
+    else if (f?.depuis === 'carte') handleNavigate('carte');
+    else handleNavigate('clients', { retour: true });
+  }, [handleNavigate]);
+  const ficheAffichee = ficheClient ? fiches.find(x => x.k === 'contact' && x.id === ficheClient.id) : undefined;
+  const fermerFiche = useCallback((f: FicheOuverte) => {
+    setFiches(l => l.filter(x => !(x.k === f.k && x.id === f.id)));
+    if (f.k === 'contact' && activePage === 'fiche' && ficheClient?.id === f.id) fermerContact(f);
+    else if (f.k === 'bien' && activePage === 'biens' && bienActif === f.id) handleNavigate('biens');
+    else if (f.k === 'document' && activePage === 'documents' && docActif === f.id) handleNavigate('documents');
+  }, [activePage, ficheClient?.id, bienActif, docActif, handleNavigate, fermerContact]);
+  const toutFermer = useCallback(() => {
+    setFiches([]);
+    if (activePage === 'fiche' && ficheClient) fermerContact(ficheAffichee);
+    else if (activePage === 'biens' && bienActif) handleNavigate('biens');
+    else if (activePage === 'documents' && docActif) handleNavigate('documents');
+  }, [activePage, ficheClient, ficheAffichee, bienActif, docActif, handleNavigate, fermerContact]);
+
+  const renderPage = () => {
+    if (activePage === 'fiche') {
+      if (ficheClient) {
+        /* Un acheteur a sa fiche d'acheteur ; un vendeur, un notaire, un
+           confrère… la fiche d'un contact (voir src/lib/contacts.ts). */
+        return (
+          <FicheSelonType
+            client={ficheClient}
+            onBack={() => fermerContact(ficheAffichee)}
+            retourVers={ficheAffichee?.depuis}
+            onNavigate={handleNavigate}
+          />
+        );
+      }
+      if (chargeFiche) {
+        return <SqueletteFiche />;
+      }
+    }
+    switch (activePage) {
+      case 'dashboard':  return <Dashboard onNavigate={handleNavigate} />;
+      case 'clients':    return <Clients onNavigate={handleNavigate} />;
+      case 'biens':      return <PageBiens onNavigate={handleNavigate} />;
+      case 'carte':      return <PageCarte onNavigate={handleNavigate} onMenu={() => setMenuOuvert(true)} />;
+      /* Les demandes des formulaires du site emilio-immo.com (V3.34). */
+      case 'demandes':   return <PageDemandesSite onNavigate={handleNavigate} />;
+      case 'agenda':     return <PageAgenda onNavigate={handleNavigate} />;
+      case 'visites':    return <PageVisites onNavigate={handleNavigate} />;
+      case 'relances':   return <PageRelances onNavigate={handleNavigate} />;
+      case 'documents':  return <PageDocuments onNavigate={handleNavigate} intention={intention} onIntention={() => setIntention(null)} />;
+      case 'registre':   return <PageRegistre onNavigate={handleNavigate} />;
+      case 'mail':       return <PageMail onNavigate={handleNavigate} />;
+      case 'activite':   return <PageActivite />;
+      case 'parametres': return <PageParametres />;
+      default:           return <Dashboard onNavigate={handleNavigate} />;
+    }
+  };
+
+  return (
+    <div className={`${styles.appLayout} crm-app`}>
+      <Sidebar activePage={activePage} onNavigate={handleNavigate} ouvert={menuOuvert} onFermer={fermerMenu} reduit={menuReduit} />
+      {/* Sur la carte, au téléphone, la barre du haut s'efface (V3.28) : la
+          carte a sa propre recherche et son bouton de menu. */}
+      <div className={`${styles.mainArea} ${activePage === 'carte' ? styles.surCarte : ''}`} ref={zoneBarre}>
+        <Topbar onNavigate={handleNavigate} onMenu={() => setMenuOuvert(true)} menuReduit={menuReduit} onBasculerMenu={basculerMenu} />
+        <main className={`${styles.content} ${fiches.length ? styles.contentAvecFiches : ''}`} ref={contenu}>
+          {/* La carte professionnelle à renouveler (Paramètres › Agence). */}
+          <RappelCarte page={activePage} onNavigate={handleNavigate} />
+          <div key={`${activePage}:${ficheClient?.id || ''}:${navN}`} className={sens === 'avant' ? 'ecran-avant' : 'ecran-arriere'}>
+            {renderPage()}
+          </div>
+        </main>
+        {/* Les fiches ouvertes : on passe d'un contact ou d'un bien à l'autre. */}
+        <FichesOuvertes fiches={fiches}
+          active={activePage === 'fiche' && ficheClient ? { k: 'contact', id: ficheClient.id } : activePage === 'biens' && bienActif ? { k: 'bien', id: bienActif } : activePage === 'carte' ? { k: 'carte', id: 'carte' } : activePage === 'relances' ? { k: 'relances', id: 'relances' } : activePage === 'clients' ? { k: 'contacts', id: 'contacts' } : activePage === 'documents' && docActif ? { k: 'document', id: docActif } : null}
+          onOuvrir={ouvrirFiche}
+          onRanger={setFiches}
+          onFermer={fermerFiche}
+          onToutFermer={toutFermer} />
+      </div>
+      {/* « Nouveau rendez-vous », de n'importe quel écran : la fenêtre de
+          l'agenda, posée ici une fois pour toutes (voir PageAgenda). */}
+      <NouveauRdvPartout />
+      {/* « Nouveau contact », de même, sans quitter l'écran (V3.152). Sur
+          Contacts, c'est la page qui ouvre sa fenêtre. */}
+      <NouveauContactPartout actif={activePage !== 'clients'} onNavigate={handleNavigate} />
+      <NouveauMailPartout />
+      {/* « Une nouvelle version est prête — Recharger », après une mise en ligne. */}
+      <NouvelleVersion />
+      <EnvoiPortails />
+      {/* « … : pas enregistré », quand une écriture échoue (V3.17). */}
+      <Avertissements />
+      {/* « C'est fait », en haut à droite (V3.174) : un contact notaire créé… */}
+      <Succes />
+      {/* « Le mail est-il arrivé ? » après chaque envoi (V3.151). */}
+      <SuiviRemises onFiche={c => handleNavigate('fiche', c)} />
+      {/* Le fondu au bord des rangées qui défilent de côté (V3.152). */}
+      <Defilement />
+      {/* Changer d'onglet ou de filtre ne fait plus remonter la page (V3.167). */}
+      <GardePlace />
+      {/* Les fenêtres sortent du bouton touché et y rentrent, les onglets
+          arrivent en cascade (V3.152, src/lib/mouvement.ts). */}
+      <Mouvement />
+    </div>
+  );
+}

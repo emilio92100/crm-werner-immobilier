@@ -1,0 +1,1494 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { lienEspace, lienBienPublic, BIENS_PAR_MAIL, HOTE_ESPACE } from '@/lib/jeton';
+import { nommerRecherche } from '@/lib/espace';
+import { tauxDe, forfaitDe, honorairesCourt, honorairesDuPrix, DUREE, RETRACTATION_JOURS, type Honoraires } from '@/lib/mandat';
+import { ecritServeur } from '@/lib/ecritures';
+import { personnaliser, conseillerDe } from '@/lib/mail-variables';
+import { LIEN_POLICE_MAIL, LOGO_BLANC_MAIL } from '@/lib/mail-charte';
+import { adresseVente } from '@/lib/adresse-vente';
+import { prixDuBien } from '@/lib/honoraires-bien';
+import { versBienAcheteur, type BienVente } from '@/lib/biens-vente';
+import { avecRemises, noterRemises } from '@/lib/remise-mail';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || 'arogelet@emilio-immo.com';
+const FROM_NAME = process.env.MAILJET_FROM_NAME || 'Alexandre ROGELET — Emilio Immobilier';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://emilio-immo-chasseimmo.vercel.app';
+/* V3.199 : un client sans espace ouvre l'adresse d'Emilio, jamais l'adresse
+   technique (…vercel.app), mal vue des filtres anti-spam. SITE_URL ne sert plus
+   qu'aux anciens jetons de 64 caractères (lienEspace). */
+const ESPACE_URL = `https://${HOTE_ESPACE}`;
+
+/* V3.118 : les couleurs du site emilio-immo.com (src/lib/mail-charte.ts). */
+const BLEU = '#22497D';
+const DORE = '#E68B23';
+const ENCRE = '#13243D';
+const DORE_TEXTE = '#A95808';
+const DORE_CLAIR = '#F2B266';
+const FOND = '#FFF6EC';
+
+interface BienLite {
+  id: string;
+  titre?: string | null;
+  ville?: string | null;
+  code_postal?: string | null;
+  type_bien?: string | null;
+  surface?: number | null;
+  nb_pieces?: number | null;
+  nb_chambres?: number | null;
+  etage?: number | null;
+  prix_vendeur?: number | null;
+  prix_acquereur?: number | null;
+  bien_vente_id?: string | null;
+  photos?: string[] | null;
+  score?: number | null;
+}
+
+function fmt(n?: number | null) {
+  if (!n) return null;
+  return new Intl.NumberFormat('fr-FR').format(n);
+}
+
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* Le bouton de chaque bien mène à l'espace acheteur, ouvert sur ce bien-là :
+   c'est la seule page où le client peut répondre « ça me plaît », demander une
+   visite ou dire non. La fiche publique /bien/<id> reste, mais elle est en
+   lecture seule : elle sert au partage à un tiers, pas au client lui-même.
+
+   lienEspace() choisit tout seul la bonne adresse : la courte pour les
+   nouveaux jetons, l'ancienne pour les liens déjà envoyés (voir
+   src/lib/jeton.ts). Un client ne verra donc jamais son lien changer. */
+function lienBien(b: BienLite, token?: string | null, recherche?: string | null): string {
+  if (!token) return lienBienPublic(b.id);
+  /* `r` dit sur quelle recherche ouvrir l'espace. Sans lui, un client qui en
+     a deux pourrait arriver sur l'autre, et la fiche ne s'ouvrirait pas :
+     elle n'y existe pas (voir src/lib/espace.ts). */
+  const r = recherche ? `r=${encodeURIComponent(recherche)}&` : '';
+  return `${lienEspace(token, SITE_URL)}?${r}bien=${b.id}`;
+}
+
+/* « Je ne suis plus en recherche ».
+   Le lien n'annule rien en arrivant : il ouvre l'espace sur la question, et
+   c'est le client qui choisit sa réponse. C'est volontaire — les messageries
+   et les antivirus ouvrent les liens des mails pour les vérifier, et un lien
+   qui agirait au simple clic clôturerait des dossiers tout seul. */
+function lienFin(token?: string | null): string {
+  return token ? `${lienEspace(token, SITE_URL)}?fin=1` : '';
+}
+
+/* « Découvrir les 7 autres » : l'espace s'ouvre directement sur la liste des
+   nouveaux biens (voir `vue=neufs` dans EspaceClient), sur la bonne recherche. */
+function lienNeufs(token?: string | null, recherche?: string | null): string {
+  if (!token) return '';
+  const r = recherche ? `r=${encodeURIComponent(recherche)}&` : '';
+  return `${lienEspace(token, SITE_URL)}?${r}vue=neufs`;
+}
+
+/* L'ordre des biens dans un mail : c'est lui qui décide lesquels le client
+   voit en détail quand il y en a plus que BIENS_PAR_MAIL.
+   D'abord ceux qu'Alexandre a ajoutés lui-même (sans note : il les a choisis
+   à la main, c'est un choix fort), puis les mieux notés par la veille. À
+   égalité, le plus récent. */
+function ordonner<T extends BienLite>(biens: T[]): T[] {
+  const rang = (b: BienLite) => {
+    const s = Number(b.score);
+    return b.score == null || !isFinite(s) ? 101 : s;
+  };
+  return biens
+    .map((b, i) => ({ b, i }))
+    .sort((x, y) => rang(y.b) - rang(x.b) || x.i - y.i)
+    .map(v => v.b);
+}
+
+function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; token?: string | null; recherche?: string | null }): string {
+  const { corps, biens } = opts;
+  const corpsHtml = escapeHtml(corps).replace(/\n/g, '<br/>');
+  const token = opts.token;
+  const rech = opts.recherche || null;
+  const single = biens.length === 1;
+
+  const photoOf = (b: BienLite) => (Array.isArray(b.photos) && b.photos.length > 0 ? b.photos[0] : null);
+  const titreOf = (b: BienLite) => b.titre || `${b.type_bien || 'Bien'}${b.surface ? ` de ${b.surface} m²` : ''}`;
+  const locOf = (b: BienLite) => [b.code_postal, b.ville].filter(Boolean).join(' ');
+  /* V3.145 : le prix de l'annonce, comme dans l'espace ; ses honoraires en
+     petit dessous, seulement quand ils s'ajoutent. */
+  const prixOf = (b: BienLite) => prixDuBien(b).demande;
+  const honoOf = (b: BienLite) => {
+    const p = prixDuBien(b);
+    return p.hono && p.total ? `+ ${fmt(p.hono)} € de nos honoraires, soit ${fmt(p.total)} € frais d’agence compris` : '';
+  };
+  const etageOf = (b: BienLite) => {
+    const e = (b as { etage?: number | null }).etage;
+    if (e === 0) return 'RDC';
+    if (e) return `${e}ème`;
+    return '';
+  };
+
+  const hairline = `<tr><td class="bord" style="padding:0 28px;"><div style="border-top:1px solid #E8EDF3;line-height:0;font-size:0;">&nbsp;</div></td></tr>`;
+
+  function singleBloc(b: BienLite): string {
+    const photo = photoOf(b);
+    const prix = prixOf(b);
+    const loc = locOf(b);
+    const etageTxt = etageOf(b);
+    const cells: { v: string; l: string }[] = [];
+    if (b.surface) cells.push({ v: `${b.surface} m²`, l: 'Surface' });
+    if (b.nb_pieces) cells.push({ v: `${b.nb_pieces}`, l: b.nb_pieces > 1 ? 'Pièces' : 'Pièce' });
+    if (b.nb_chambres) cells.push({ v: `${b.nb_chambres}`, l: b.nb_chambres > 1 ? 'Chambres' : 'Chambre' });
+    if (etageTxt) cells.push({ v: etageTxt, l: 'Étage' });
+    const statsRow = cells.map((c, i) => `${i > 0 ? '<td width="1" style="background:#E8EDF3;"></td>' : ''}<td align="center" style="padding:10px 6px;"><div style="font-size:17px;font-weight:700;color:${BLEU};">${c.v}</div><div style="font-size:11px;color:#8FA3BF;margin-top:2px;">${c.l}</div></td>`).join('');
+    return `
+      ${photo ? `<tr><td style="padding:0;"><img src="${escapeHtml(photo)}" alt="" width="600" style="width:100%;max-width:600px;height:auto;display:block;border:0;" /></td></tr>` : ''}
+      <tr><td class="bord" style="padding:24px 28px 8px;">
+        <div style="font-size:20px;font-weight:700;color:${BLEU};line-height:1.3;margin-bottom:6px;">${escapeHtml(titreOf(b))}</div>
+        ${loc ? `<div style="font-size:13px;color:#8FA3BF;"><span style="color:${DORE};">&#9679;</span> ${escapeHtml(loc)}</div>` : ''}
+      </td></tr>
+      ${statsRow ? `<tr><td class="bord" style="padding:14px 28px 4px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E8EDF3;border-bottom:1px solid #E8EDF3;"><tr>${statsRow}</tr></table></td></tr>` : ''}
+      <tr><td class="bord" style="padding:18px 28px 6px;">
+        ${prix ? `<div style="font-size:26px;font-weight:800;color:${BLEU};line-height:1;">${fmt(prix)} €</div><div style="font-size:11px;color:${DORE_TEXTE};font-weight:600;margin:6px 0 ${honoOf(b) ? '4' : '18'}px;">${b.bien_vente_id && b.prix_acquereur ? 'Prix FAI · honoraires inclus' : 'Prix demandé'}</div>${honoOf(b) ? `<div style="font-size:12px;color:#5B6B80;margin:0 0 18px;">${honoOf(b)}</div>` : ''}` : ''}
+        <a href="${lienBien(b, token, rech)}" style="display:block;background:${BLEU};color:#ffffff;text-decoration:none;text-align:center;padding:15px;border-radius:11px;font-size:15px;font-weight:600;">Consulter le bien &rarr;</a>
+      </td></tr>`;
+  }
+
+  function multiItem(b: BienLite, idx: number, total: number): string {
+    const photo = photoOf(b);
+    const prix = prixOf(b);
+    const loc = locOf(b);
+    const etageTxt = etageOf(b);
+    const carac = [b.surface ? `${b.surface} m²` : '', b.nb_pieces ? `${b.nb_pieces} p.` : '', b.nb_chambres ? `${b.nb_chambres} ch.` : '', etageTxt ? `${etageTxt} ét.` : ''].filter(Boolean).join(' · ');
+    return `
+      <tr><td class="bord" style="padding:${idx === 0 ? '20' : '18'}px 28px 18px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td width="150" class="miphoto" style="vertical-align:top;">
+            ${photo ? `<img src="${escapeHtml(photo)}" alt="" width="150" class="miimg" style="width:150px;height:115px;object-fit:cover;display:block;border-radius:10px;border:0;" />` : `<div class="miimg" style="width:150px;height:115px;background:${BLEU};border-radius:10px;"></div>`}
+          </td>
+          <td class="mibody" style="vertical-align:top;padding-left:16px;">
+            <div style="font-size:15px;font-weight:700;color:${BLEU};margin-bottom:3px;">${escapeHtml(titreOf(b))}</div>
+            ${loc ? `<div style="font-size:12px;color:#8FA3BF;margin-bottom:6px;"><span style="color:${DORE};">&#9679;</span> ${escapeHtml(loc)}</div>` : ''}
+            ${carac ? `<div style="font-size:12px;color:#5B6B80;margin-bottom:8px;">${escapeHtml(carac)}</div>` : ''}
+            ${prix ? `<div style="font-size:17px;font-weight:800;color:${BLEU};margin-bottom:${honoOf(b) ? '2' : '8'}px;">${fmt(prix)} €</div>${honoOf(b) ? `<div style="font-size:11.5px;color:#5B6B80;margin-bottom:8px;">+ ${fmt(prixDuBien(b).hono)} € de nos honoraires</div>` : ''}` : ''}
+            <a href="${lienBien(b, token, rech)}" style="color:${DORE_TEXTE};text-decoration:none;font-size:13px;font-weight:700;">Consulter le bien &rarr;</a>
+          </td>
+        </tr></table>
+      </td></tr>
+      ${idx < total - 1 ? hairline : ''}`;
+  }
+
+  /* Au-delà de BIENS_PAR_MAIL, le mail s'arrête là et passe la main à
+     l'espace : un encart avec les vignettes des suivants et un seul bouton. */
+  function blocReste(reste: BienLite[]): string {
+    const n = reste.length;
+    const lien = lienNeufs(token, rech);
+    const vignettes = reste.slice(0, 4).map(b => {
+      const ph = photoOf(b);
+      return `<td width="68" style="padding-right:8px;">${ph
+        ? `<img src="${escapeHtml(ph)}" alt="" width="60" height="46" style="width:60px;height:46px;object-fit:cover;display:block;border-radius:8px;border:0;" />`
+        : `<div style="width:60px;height:46px;background:${BLEU};border-radius:8px;"></div>`}</td>`;
+    }).join('');
+    const plus = n > 4
+      ? `<td width="60"><div style="width:60px;height:46px;line-height:46px;text-align:center;background:#E8EFF8;color:${BLEU};border-radius:8px;font-size:14px;font-weight:800;">+${n - 4}</div></td>`
+      : '';
+    /* Sans lien d'espace (dossier pas encore repris), on liste les suivants
+       avec leur fiche publique : le client ne perd aucun bien. */
+    const sansEspace = lien ? '' : reste.map(b => {
+      const prix = prixOf(b);
+      return `<div style="font-size:13px;color:#46566B;margin-top:8px;"><a href="${lienBienPublic(b.id)}" style="color:${BLEU};font-weight:700;text-decoration:none;">${escapeHtml(titreOf(b))}</a>${prix ? ` · ${fmt(prix)} €` : ''}</div>`;
+    }).join('');
+    return `
+      ${hairline}
+      <tr><td class="bord" style="padding:20px 28px 26px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F8FC;border:1px solid #F7D5B0;border-radius:14px;">
+          <tr><td style="padding:18px 20px 20px;">
+            <div style="font-size:10.5px;letter-spacing:2px;color:${DORE_TEXTE};font-weight:700;">DANS VOTRE ESPACE</div>
+            <div style="font-size:18px;font-weight:800;color:${BLEU};margin-top:6px;line-height:1.3;">${n === 1 ? 'Un autre bien vous attend' : `${n} autres biens vous attendent`}</div>
+            <div style="font-size:13px;color:#5B6B80;line-height:1.6;margin-top:5px;">Pour que ce message reste agréable à lire, les ${BIENS_PAR_MAIL} premiers sont ci-dessus. ${n === 1 ? 'Le suivant est' : 'Les suivants sont'} dans votre espace, avec toutes leurs photos et leur fiche complète.</div>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;"><tr>${vignettes}${plus}</tr></table>
+            ${lien
+              ? `<a href="${lien}" style="display:block;margin-top:16px;background:${BLEU};color:#ffffff;text-decoration:none;text-align:center;padding:14px;border-radius:11px;font-size:15px;font-weight:700;">${n === 1 ? 'Découvrir l’autre bien' : `Découvrir les ${n} autres biens`} &rarr;</a>`
+              : sansEspace}
+          </td></tr>
+        </table>
+      </td></tr>`;
+  }
+
+  const montres = biens.length > BIENS_PAR_MAIL ? biens.slice(0, BIENS_PAR_MAIL) : biens;
+  const reste = biens.slice(montres.length);
+  const propertyRows = single
+    ? singleBloc(biens[0])
+    : montres.map((b, i) => multiItem(b, i, montres.length)).join('') + (reste.length ? blocReste(reste) : '');
+
+  /* « Sélection privée » seulement quand le mail porte des biens : un mail
+     sans bien (rendez-vous, message libre de l'Agenda) n'en est pas une. */
+  return coque({ etiquette: biens.length > 0 ? 'SÉLECTION PRIVÉE' : '', corpsHtml, contenu: biens.length > 0 ? propertyRows : '', token });
+}
+
+/* La feuille commune à tous les mails illustrés : en-tête marine avec le
+   logo, le message d'Alexandre, le contenu (biens ou visites), le pied, et
+   la sortie « Je ne suis plus en recherche » dessous. */
+function coque(o: { etiquette: string; corpsHtml: string; contenu: string; token?: string | null }): string {
+  const { etiquette, corpsHtml, contenu, token } = o;
+  // Séparateur doux (petite barre dorée centrée) pour lier les sections
+  const softDivider = `<tr><td class="bord" align="center" style="padding:18px 28px 0;"><div style="width:46px;height:2px;background:${DORE};opacity:0.55;line-height:2px;font-size:0;">&nbsp;</div></td></tr>`;
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Emilio Immobilier</title>
+${LIEN_POLICE_MAIL}
+<style>
+  @media only screen and (max-width:600px) {
+    .sheet { width:100% !important; }
+    .miphoto, .mibody { display:block !important; width:100% !important; padding-left:0 !important; }
+    .miphoto .miimg { width:100% !important; height:190px !important; margin-bottom:12px; }
+    .cadre  { padding:0 !important; }
+    .carte  { border-radius:0 !important; border-left:0 !important; border-right:0 !important; }
+    .bord   { padding-left:18px !important; padding-right:18px !important; }
+    .etroit { padding-left:18px !important; padding-right:18px !important; }
+    .vign   { width:48px !important; }
+    .accroche { font-size:21px !important; }
+    /* Le pied : le nom et le numéro se serraient l'un contre l'autre. */
+    .pied-nom, .pied-tel { display:block !important; width:100% !important; text-align:left !important; }
+    .pied-tel { padding-top:12px !important; font-size:17px !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#E6EDF6;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E6EDF6;">
+    <tr><td align="center" class="cadre" style="padding:26px 12px;">
+
+      <!-- FEUILLE UNIQUE -->
+      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #DCE3EC;border-radius:18px;overflow:hidden;">
+
+        <!-- En-tête -->
+        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
+          <table role="presentation" width="100%"><tr>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Emilio Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">${etiquette}</td>
+          </tr></table>
+        </td></tr>
+
+        <!-- Message -->
+        <tr><td class="bord" style="padding:26px 28px 4px;">
+          <div style="font-size:14.5px;color:#46566B;line-height:1.7;">${corpsHtml}</div>
+        </td></tr>
+
+        ${contenu ? softDivider : ''}
+
+        <!-- Annonce(s) -->
+        ${contenu}
+
+        <!-- Pied -->
+        <tr><td class="bord" style="background:${BLEU};padding:20px 28px;margin-top:10px;">
+          <table role="presentation" width="100%"><tr>
+            <td class="pied-nom">
+              <div style="font-size:14px;font-weight:700;color:#ffffff;">Alexandre Rogelet</div>
+              <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
+            </td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">06 58 95 76 32</td>
+          </tr></table>
+        </td></tr>
+
+      </table>
+
+      <!-- Sous la feuille, en gris sur gris : la sortie.
+           Elle a sa place dans chaque envoi — un client qui a trouvé ailleurs
+           et qui continue de recevoir des biens finit par ne plus ouvrir du
+           tout. Mieux vaut qu'il le dise, et qu'Alexandre l'apprenne. -->
+      <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+        <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
+          <div style="font-size:11.5px;color:#8FA3BF;line-height:1.7;">
+            Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.${
+              lienFin(token)
+                ? `<br/><a href="${lienFin(token)}" style="color:#8FA3BF;text-decoration:underline;">Je ne suis plus en recherche</a>`
+                : ''
+            }
+          </div>
+        </td></tr>
+      </table>
+
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+
+
+
+
+/* ══ Le mail de bienvenue ══
+   Il part une fois, à l'ouverture de la recherche. Son seul travail : faire
+   ouvrir l'espace et le faire poser sur l'écran d'accueil du téléphone. Un
+   client qui l'a installé reçoit les biens en notification ; les autres
+   attendent un mail qu'ils ouvriront peut-être.
+
+   Pas de biens dedans, pas de chiffres : c'est une mise en route, pas une
+   proposition. Et un seul bouton — plusieurs liens dilueraient le geste.
+
+   ⚠️ Les vignettes sont des emoji, pas des SVG ni des images hébergées.
+   Gmail n'affiche pas les SVG, et une image servie depuis le site peut être
+   bloquée tant que le client n'a pas cliqué « afficher les images ». Un emoji
+   s'affiche partout, sans rien à servir. */
+function buildBienvenue(opts: { prenom: string; token?: string | null }): string {
+  const { token } = opts;
+  const prenom = escapeHtml(opts.prenom);
+  const lien = token ? lienEspace(token, SITE_URL) : ESPACE_URL;
+
+  /* L'emoji posé dans le même rond ivoire bordé d'or que dans l'espace. */
+  const rond = (e: string, t = 44, police = 20) => `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td align="center" valign="middle" width="${t}" height="${t}" style="width:${t}px;height:${t}px;background:#FFF6EC;border:1px solid #F7D5B0;border-radius:${Math.round(t / 2)}px;text-align:center;line-height:${t}px;"><span style="font-size:${police}px;line-height:${t}px;">${e}</span></td>
+    </tr></table>`;
+
+  /* Les trois lignes restent alignées à gauche : ce sont des listes, elles se
+     lisent mal centrées, et la vignette donne le rail visuel. */
+  const puce = (e: string, titre: string, texte: string) => `
+    <tr><td style="padding:0 0 15px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td width="56" class="vign" valign="top">${rond(e)}</td>
+        <td valign="top" style="padding-left:2px;">
+          <div style="font-size:14.5px;font-weight:700;color:${BLEU};line-height:1.35;padding-top:6px;">${titre}</div>
+          <div style="font-size:13.5px;color:#5B6B80;line-height:1.65;margin-top:4px;">${texte}</div>
+        </td></tr></table></td></tr>`;
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Emilio Immobilier</title>
+${LIEN_POLICE_MAIL}
+<style>
+  /* ── Sur un téléphone ──
+     Le liseré beige autour de la carte mangeait une bande de chaque côté, et
+     le texte se retrouvait dans un couloir étroit. Sur mobile la carte prend
+     donc toute la largeur, bord à bord, et les marges intérieures rétrécissent.
+     Outlook sur ordinateur ignore ces règles : il garde la mise en page large,
+     qui lui va très bien. */
+  @media only screen and (max-width:600px) {
+    .sheet  { width:100% !important; }
+    .cadre  { padding:0 !important; }
+    .carte  { border-radius:0 !important; border-left:0 !important; border-right:0 !important; }
+    .bord   { padding-left:18px !important; padding-right:18px !important; }
+    .etroit { padding-left:18px !important; padding-right:18px !important; }
+    .vign   { width:48px !important; }
+    .accroche { font-size:21px !important; }
+    /* Le pied : le nom et le numéro se serraient l'un contre l'autre. */
+    .pied-nom, .pied-tel { display:block !important; width:100% !important; text-align:left !important; }
+    .pied-tel { padding-top:12px !important; font-size:17px !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#E6EDF6;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E6EDF6;">
+    <tr><td align="center" class="cadre" style="padding:26px 12px;">
+
+      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #DCE3EC;border-radius:18px;overflow:hidden;">
+
+        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
+          <table role="presentation" width="100%"><tr>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Emilio Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">VOTRE ESPACE</td>
+          </tr></table>
+        </td></tr>
+
+        <!-- L'accueil, centré : c'est la seule partie du mail qui doit se lire
+             comme une parole, pas comme une fiche. -->
+        <tr><td class="bord" align="center" style="padding:32px 34px 0;">
+          <div class="accroche" style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.3px;color:${BLEU};line-height:1.3;">Bienvenue, ${prenom}.</div>
+          <div style="font-size:14.5px;color:#46566B;line-height:1.75;margin-top:12px;">
+            Ravi de commencer cette recherche avec vous. Elle est enregistrée&nbsp;: j&#39;ai maintenant
+            ce qu&#39;il me faut pour parcourir le marché, et je vous ai ouvert un espace personnel
+            où tout se retrouve au même endroit.
+          </div>
+        </td></tr>
+
+        <tr><td class="bord" align="center" style="padding:26px 28px 6px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td align="center" style="background:${DORE};border-radius:12px;">
+              <a href="${lien}" style="display:inline-block;padding:15px 32px;font-size:15.5px;font-weight:700;color:${ENCRE};text-decoration:none;">&#128273;&nbsp;&nbsp;Ouvrir mon espace</a>
+            </td>
+          </tr></table>
+          <div style="font-size:12px;color:#8FA3BF;margin-top:11px;">Ce lien est le vôtre, il ne change pas.</div>
+        </td></tr>
+
+        <tr><td class="bord" style="padding:26px 28px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            ${puce('&#11088;', 'Les biens retenus pour vous', 'Ils arrivent au fil de l&#39;eau. Vous dites en un geste ce que vous en pensez — et c&#39;est ce qui affine la suite.')}
+            ${puce('&#9999;&#65039;', 'Vos critères, modifiables à tout moment', 'Un budget qui bouge, un secteur à ajouter : vous le changez vous-même, j&#39;en tiens compte dès la recherche suivante.')}
+            ${puce('&#128270;', 'L&#39;avancée de votre dossier', 'Ce qui a été parcouru, ce qui a été retenu, vos visites à venir.')}
+          </table>
+        </td></tr>
+
+        <!-- Le conseil. C'est la ligne la plus rentable du mail : un client qui
+             pose l'espace sur son écran d'accueil reçoit les biens en
+             notification, les autres les découvrent trois jours plus tard. -->
+        <tr><td class="bord" style="padding:8px 28px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${FOND};border:1px solid #F7D5B0;border-radius:14px;">
+            <!-- L'icône et le titre sur une ligne ; la phrase EN DESSOUS, sur
+                 toute la largeur du bloc.
+                 Avant, la phrase partageait sa ligne avec l'icône : sur un
+                 téléphone il ne restait qu'une colonne d'une centaine de
+                 pixels, et le texte tombait en escalier de deux ou trois mots
+                 par ligne. Une cellule qui court sur les deux colonnes règle
+                 le problème partout, sans dépendre d'une règle CSS que telle
+                 ou telle messagerie pourrait ignorer. -->
+            <tr>
+              <td width="62" align="center" valign="middle" style="padding:15px 0 0 14px;">${rond('&#9889;', 44, 22)}</td>
+              <td valign="middle" style="padding:15px 16px 0 10px;">
+                <div style="font-size:15px;font-weight:700;color:${BLEU};line-height:1.3;">Le conseil qui change tout</div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding:10px 16px 16px;">
+                <div style="font-size:13.5px;color:#5B6B80;line-height:1.7;">
+                  Ouvrez ce lien depuis votre téléphone, puis ajoutez-le à votre écran d&#39;accueil
+                  (le menu du navigateur, «&nbsp;Ajouter à l&#39;écran d&#39;accueil&nbsp;»). Vous serez
+                  prévenu dès qu&#39;un bien vous est proposé, sans avoir à guetter vos mails —
+                  et sur ce marché, quelques heures font souvent la différence.
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- Coupée en deux lignes : un bloc centré de longueurs inégales tient mal. -->
+        <tr><td class="etroit" align="center" style="padding:24px 40px 28px;">
+          <div style="font-size:14.5px;color:#46566B;line-height:1.75;">
+            Une question, une précision à me donner&nbsp;?<br/>Répondez simplement à ce message, ou appelez-moi.
+          </div>
+        </td></tr>
+
+        <tr><td class="bord" style="background:${BLEU};padding:20px 28px;">
+          <table role="presentation" width="100%"><tr>
+            <td class="pied-nom">
+              <div style="font-size:14px;font-weight:700;color:#ffffff;">Alexandre Rogelet</div>
+              <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
+            </td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">06 58 95 76 32</td>
+          </tr></table>
+        </td></tr>
+
+      </table>
+
+      <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+        <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
+          <div style="font-size:11.5px;color:#8FA3BF;line-height:1.7;">
+            Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.${
+              lienFin(token)
+                ? `<br/><a href="${lienFin(token)}" style="color:#8FA3BF;text-decoration:underline;">Je ne suis plus en recherche</a>`
+                : ''
+            }
+          </div>
+        </td></tr>
+      </table>
+
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+/* La version texte, pour les messageries qui n'affichent pas le HTML. */
+function texteBienvenue(prenom: string, token?: string | null): string {
+  const lien = token ? lienEspace(token, SITE_URL) : ESPACE_URL;
+  return `Bienvenue, ${prenom}.
+
+Ravi de commencer cette recherche avec vous. Elle est enregistrée : j'ai maintenant ce qu'il me faut pour parcourir le marché, et je vous ai ouvert un espace personnel où tout se retrouve au même endroit.
+
+Ouvrir mon espace : ${lien}
+Ce lien est le vôtre, il ne change pas.
+
+- Les biens retenus pour vous. Ils arrivent au fil de l'eau, et vous dites en un geste ce que vous en pensez.
+- Vos critères, modifiables à tout moment. Vous les changez vous-même, j'en tiens compte dès la recherche suivante.
+- L'avancée de votre dossier. Ce qui a été parcouru, ce qui a été retenu, vos visites à venir.
+
+Le conseil qui change tout : ouvrez ce lien depuis votre téléphone, puis ajoutez-le à votre écran d'accueil. Vous serez prévenu dès qu'un bien vous est proposé, sans avoir à guetter vos mails.
+
+Une question, une précision à me donner ? Répondez simplement à ce message, ou appelez-moi.
+
+Alexandre ROGELET — Emilio Immobilier
+06 58 95 76 32${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
+}
+
+
+/* ══ La deuxième recherche ══
+   Le client a déjà son espace, et souvent déjà l'icône sur son téléphone. On
+   ne lui renvoie donc PAS un mail de bienvenue : ni nouveau lien, ni « posez
+   ceci sur votre écran d'accueil » — il l'a fait. Un mot court, qui dit
+   seulement que la recherche est ouverte et qu'elle se trouve au même
+   endroit que l'autre.
+
+   Le bouton porte quand même le lien : c'est le même qu'avant, et c'est le
+   geste le plus court pour aller voir. */
+function buildNouvelle(opts: { prenom: string; recherche: string; token?: string | null; total?: number }): string {
+  const { token } = opts;
+  /* Deux recherches, ou davantage : les tournures ne sont pas les mêmes, et
+     « à côté de la première » sonnerait faux sur la quatrième. */
+  const deux = (opts.total || 2) <= 2;
+  const prenom = escapeHtml(opts.prenom);
+  const recherche = escapeHtml(opts.recherche);
+  const lien = token ? lienEspace(token, SITE_URL) : ESPACE_URL;
+
+  const rond = (e: string, t = 44, police = 20) => `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td align="center" valign="middle" width="${t}" height="${t}" style="width:${t}px;height:${t}px;background:#FFF6EC;border:1px solid #F7D5B0;border-radius:${Math.round(t / 2)}px;text-align:center;line-height:${t}px;"><span style="font-size:${police}px;line-height:${t}px;">${e}</span></td>
+    </tr></table>`;
+
+  const puce = (e: string, titre: string, texte: string) => `
+    <tr><td style="padding:0 0 15px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td width="56" class="vign" valign="top">${rond(e)}</td>
+        <td valign="top" style="padding-left:2px;">
+          <div style="font-size:14.5px;font-weight:700;color:${BLEU};line-height:1.35;padding-top:6px;">${titre}</div>
+          <div style="font-size:13.5px;color:#5B6B80;line-height:1.65;margin-top:4px;">${texte}</div>
+        </td></tr></table></td></tr>`;
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Emilio Immobilier</title>
+${LIEN_POLICE_MAIL}
+<style>
+  /* ── Sur un téléphone ──
+     Le liseré beige autour de la carte mangeait une bande de chaque côté, et
+     le texte se retrouvait dans un couloir étroit. Sur mobile la carte prend
+     donc toute la largeur, bord à bord, et les marges intérieures rétrécissent.
+     Outlook sur ordinateur ignore ces règles : il garde la mise en page large,
+     qui lui va très bien. */
+  @media only screen and (max-width:600px) {
+    .sheet  { width:100% !important; }
+    .cadre  { padding:0 !important; }
+    .carte  { border-radius:0 !important; border-left:0 !important; border-right:0 !important; }
+    .bord   { padding-left:18px !important; padding-right:18px !important; }
+    .etroit { padding-left:18px !important; padding-right:18px !important; }
+    .vign   { width:48px !important; }
+    .accroche { font-size:21px !important; }
+    /* Le pied : le nom et le numéro se serraient l'un contre l'autre. */
+    .pied-nom, .pied-tel { display:block !important; width:100% !important; text-align:left !important; }
+    .pied-tel { padding-top:12px !important; font-size:17px !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#E6EDF6;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E6EDF6;">
+    <tr><td align="center" class="cadre" style="padding:26px 12px;">
+
+      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #DCE3EC;border-radius:18px;overflow:hidden;">
+
+        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
+          <table role="presentation" width="100%"><tr>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Emilio Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">VOTRE ESPACE</td>
+          </tr></table>
+        </td></tr>
+
+        <tr><td class="bord" align="center" style="padding:32px 34px 0;">
+          <div class="accroche" style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.3px;color:${BLEU};line-height:1.3;">${deux ? 'Une deuxième recherche' : 'Une nouvelle recherche'}, ${prenom}.</div>
+          <div style="font-size:14.5px;color:#46566B;line-height:1.75;margin-top:12px;">
+            <b style="color:${BLEU};">${recherche}</b> est enregistrée. Elle s&#39;ajoute à votre espace,
+            à côté ${deux ? 'de la première' : 'des précédentes'}&nbsp;: vous n&#39;avez rien de nouveau
+            à installer, c&#39;est le même endroit et le même lien qu&#39;avant.
+          </div>
+        </td></tr>
+
+        <tr><td class="bord" align="center" style="padding:26px 28px 6px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td align="center" style="background:${DORE};border-radius:12px;">
+              <a href="${lien}" style="display:inline-block;padding:15px 32px;font-size:15.5px;font-weight:700;color:${ENCRE};text-decoration:none;">&#128273;&nbsp;&nbsp;Ouvrir mon espace</a>
+            </td>
+          </tr></table>
+        </td></tr>
+
+        <tr><td class="bord" style="padding:26px 28px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            ${puce('&#128260;',
+              deux ? 'Vos deux recherches au même endroit' : 'Toutes vos recherches au même endroit',
+              `Tout en haut de votre espace, une ligne indique celle que vous êtes en train de regarder. Appuyez dessus pour ${deux ? 'passer à l&#39;autre' : 'changer'}.`)}
+            ${puce('&#11088;',
+              deux ? 'Les biens arrivent dans les deux' : 'Les biens arrivent dans chacune',
+              'Vous êtes prévenu de la même façon, quelle que soit la recherche concernée.')}
+          </table>
+        </td></tr>
+
+        <tr><td class="etroit" align="center" style="padding:14px 40px 28px;">
+          <div style="font-size:14.5px;color:#46566B;line-height:1.75;">
+            Une question, une précision à me donner&nbsp;?<br/>Répondez simplement à ce message, ou appelez-moi.
+          </div>
+        </td></tr>
+
+        <tr><td class="bord" style="background:${BLEU};padding:20px 28px;">
+          <table role="presentation" width="100%"><tr>
+            <td class="pied-nom">
+              <div style="font-size:14px;font-weight:700;color:#ffffff;">Alexandre Rogelet</div>
+              <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
+            </td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">06 58 95 76 32</td>
+          </tr></table>
+        </td></tr>
+
+      </table>
+
+      <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+        <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
+          <div style="font-size:11.5px;color:#8FA3BF;line-height:1.7;">
+            Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.${
+              lienFin(token)
+                ? `<br/><a href="${lienFin(token)}" style="color:#8FA3BF;text-decoration:underline;">Je ne suis plus en recherche</a>`
+                : ''
+            }
+          </div>
+        </td></tr>
+      </table>
+
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function texteNouvelle(prenom: string, recherche: string, token?: string | null, total?: number): string {
+  const lien = token ? lienEspace(token, SITE_URL) : ESPACE_URL;
+  const deux = (total || 2) <= 2;
+  return `${deux ? 'Une deuxième recherche' : 'Une nouvelle recherche'}, ${prenom}.
+
+${recherche} est enregistrée. Elle s'ajoute à votre espace, à côté ${deux ? 'de la première' : 'des précédentes'} : vous n'avez rien de nouveau à installer, c'est le même endroit et le même lien qu'avant.
+
+Ouvrir mon espace : ${lien}
+
+- ${deux ? 'Vos deux recherches' : 'Toutes vos recherches'} au même endroit. Tout en haut de votre espace, une ligne indique celle que vous êtes en train de regarder. Appuyez dessus pour ${deux ? "passer à l'autre" : 'changer'}.
+- Les biens arrivent dans ${deux ? 'les deux' : 'chacune'}. Vous êtes prévenu de la même façon, quelle que soit la recherche concernée.
+
+Une question, une précision à me donner ? Répondez simplement à ce message, ou appelez-moi.
+
+Alexandre ROGELET — Emilio Immobilier
+06 58 95 76 32${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
+}
+
+
+/* ══ Le lien, renvoyé (V3.110) ══
+   Alexandre : « le mail de bienvenue, on ne peut plus le renvoyer ; avoir un
+   bouton à côté, renvoyer le lien, si un client me dit : je ne l'ai pas
+   reçu ». Un mot court : le même lien qu'avant, et le rappel pour le poser
+   sur l'écran d'accueil du téléphone. Ni biens, ni présentation de l'espace :
+   le client le connaît déjà, ou il a seulement perdu le mail. Il ne touche
+   pas à la date du mail de bienvenue. */
+const OBJET_LIEN = 'Le lien de votre espace';
+function buildLien(opts: { prenom: string; token: string }): string {
+  const prenom = escapeHtml(opts.prenom);
+  const lien = lienEspace(opts.token, SITE_URL);
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Emilio Immobilier</title>
+${LIEN_POLICE_MAIL}
+<style>
+  @media only screen and (max-width:600px) {
+    .sheet  { width:100% !important; }
+    .cadre  { padding:0 !important; }
+    .carte  { border-radius:0 !important; border-left:0 !important; border-right:0 !important; }
+    .bord   { padding-left:18px !important; padding-right:18px !important; }
+    .etroit { padding-left:18px !important; padding-right:18px !important; }
+    .accroche { font-size:21px !important; }
+    .pied-nom, .pied-tel { display:block !important; width:100% !important; text-align:left !important; }
+    .pied-tel { padding-top:12px !important; font-size:17px !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#E6EDF6;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#E6EDF6;">
+    <tr><td align="center" class="cadre" style="padding:26px 12px;">
+
+      <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #DCE3EC;border-radius:18px;overflow:hidden;">
+
+        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
+          <table role="presentation" width="100%"><tr>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Emilio Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">VOTRE ESPACE</td>
+          </tr></table>
+        </td></tr>
+
+        <tr><td class="bord" align="center" style="padding:32px 34px 0;">
+          <div class="accroche" style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.3px;color:${BLEU};line-height:1.3;">Bonjour ${prenom},</div>
+          <div style="font-size:14.5px;color:#46566B;line-height:1.75;margin-top:12px;">
+            Voici de nouveau le lien de votre espace personnel. C&#39;est toujours le même&nbsp;:
+            vous pouvez garder ce message pour le retrouver facilement.
+          </div>
+        </td></tr>
+
+        <tr><td class="bord" align="center" style="padding:26px 28px 6px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td align="center" style="background:${DORE};border-radius:12px;">
+              <a href="${lien}" style="display:inline-block;padding:15px 32px;font-size:15.5px;font-weight:700;color:${ENCRE};text-decoration:none;">&#128273;&nbsp;&nbsp;Ouvrir mon espace</a>
+            </td>
+          </tr></table>
+          <div style="font-size:12px;color:#8FA3BF;margin-top:11px;word-break:break-all;">${lien}</div>
+        </td></tr>
+
+        <tr><td class="bord" style="padding:22px 28px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${FOND};border:1px solid #F7D5B0;border-radius:14px;">
+            <tr><td style="padding:14px 16px;">
+              <div style="font-size:14px;font-weight:700;color:${BLEU};line-height:1.3;">Pour être prévenu sur votre téléphone</div>
+              <div style="font-size:13.5px;color:#5B6B80;line-height:1.7;margin-top:6px;">
+                Ouvrez ce lien depuis votre téléphone, puis ajoutez-le à votre écran d&#39;accueil
+                (le menu du navigateur, «&nbsp;Ajouter à l&#39;écran d&#39;accueil&nbsp;»). Vous serez
+                prévenu dès qu&#39;un bien vous est proposé.
+              </div>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td class="etroit" align="center" style="padding:24px 40px 28px;">
+          <div style="font-size:14.5px;color:#46566B;line-height:1.75;">
+            Un souci pour l&#39;ouvrir&nbsp;?<br/>Répondez simplement à ce message, ou appelez-moi.
+          </div>
+        </td></tr>
+
+        <tr><td class="bord" style="background:${BLEU};padding:20px 28px;">
+          <table role="presentation" width="100%"><tr>
+            <td class="pied-nom">
+              <div style="font-size:14px;font-weight:700;color:#ffffff;">Alexandre Rogelet</div>
+              <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
+            </td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">06 58 95 76 32</td>
+          </tr></table>
+        </td></tr>
+
+      </table>
+
+      <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+        <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
+          <div style="font-size:11.5px;color:#8FA3BF;line-height:1.7;">
+            Vous recevez ce message parce que votre recherche est en cours avec Emilio Immobilier.${
+              lienFin(opts.token)
+                ? `<br/><a href="${lienFin(opts.token)}" style="color:#8FA3BF;text-decoration:underline;">Je ne suis plus en recherche</a>`
+                : ''
+            }
+          </div>
+        </td></tr>
+      </table>
+
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function texteLien(prenom: string, token: string): string {
+  const lien = lienEspace(token, SITE_URL);
+  return `Bonjour ${prenom},
+
+Voici de nouveau le lien de votre espace personnel. C'est toujours le même : vous pouvez garder ce message pour le retrouver facilement.
+
+Ouvrir mon espace : ${lien}
+
+Pour être prévenu sur votre téléphone : ouvrez ce lien depuis votre téléphone, puis ajoutez-le à votre écran d'accueil (le menu du navigateur, « Ajouter à l'écran d'accueil »). Vous serez prévenu dès qu'un bien vous est proposé.
+
+Un souci pour l'ouvrir ? Répondez simplement à ce message, ou appelez-moi.
+
+Alexandre ROGELET — Emilio Immobilier
+06 58 95 76 32${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
+}
+
+
+/* ══ Le mail « vos visites » ═══════════════════════════════════════════
+   Un rappel (ou une confirmation) pour une ou plusieurs visites du même
+   client : l'heure, la photo, l'adresse, un lien vers le bien dans son
+   espace et l'itinéraire. Même feuille que les autres mails. */
+type BienVisite = BienLite & { adresse?: string | null; adresse_probable?: string | null; quartier?: string | null };
+interface LigneVisite { id: string; date_visite: string | null; heure: string | null; bien: BienVisite | null }
+
+const JOURS_MAIL = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const MOIS_MAIL = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+function jourMail(iso: string): string {
+  const [a, m, j] = iso.slice(0, 10).split('-').map(Number);
+  const d = new Date(Date.UTC(a, (m || 1) - 1, j || 1));
+  return `${JOURS_MAIL[d.getUTCDay()]} ${d.getUTCDate() === 1 ? '1er' : d.getUTCDate()} ${MOIS_MAIL[d.getUTCMonth()]}`;
+}
+function heureMail(h: string): string {
+  const [hh, mm] = h.slice(0, 5).split(':');
+  return `${Number(hh)} h${mm && mm !== '00' ? ` ${mm}` : ''}`;
+}
+function lieuMail(b: BienVisite | null): string {
+  if (!b) return '';
+  const adresse = b.adresse || b.adresse_probable || '';
+  const ville = b.ville || '';
+  if (adresse) return ville && !adresse.toLowerCase().includes(ville.toLowerCase()) ? `${adresse}, ${ville}` : adresse;
+  return [b.quartier, ville].filter(Boolean).join(', ');
+}
+/* V3.134 : la date toujours à côté de l'heure (« Mardi 13 octobre · 18 h 30 »).
+   Alexandre : « à côté de l'horaire, remettre la date ». Avant, elle n'y
+   était que si les visites tombaient sur plusieurs jours. */
+function quandMail(l: LigneVisite): string {
+  const h = l.heure ? heureMail(l.heure) : 'Heure à confirmer';
+  if (!l.date_visite) return h;
+  const j = jourMail(l.date_visite);
+  return `${j.charAt(0).toUpperCase() + j.slice(1)} · ${h}`;
+}
+
+function buildVisites(o: { corps: string; lignes: LigneVisite[]; token?: string | null; recherche?: string | null }): string {
+  const corpsHtml = escapeHtml(o.corps).replace(/\n/g, '<br/>');
+  const hairline = `<tr><td class="bord" style="padding:0 28px;"><div style="border-top:1px solid #E8EDF3;line-height:0;font-size:0;">&nbsp;</div></td></tr>`;
+  const rows = o.lignes.map((l, i) => {
+    const b = l.bien;
+    const photo = b && Array.isArray(b.photos) && b.photos.length > 0 ? b.photos[0] : null;
+    const titre = b ? (b.titre || `${b.type_bien || 'Bien'}${b.surface ? ` de ${b.surface} m²` : ''}`) : 'Visite';
+    const adresse = lieuMail(b);
+    const itineraire = adresse ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adresse)}` : '';
+    const liens = [
+      b ? `<a href="${lienBien(b, o.token, o.recherche)}" style="color:${DORE_TEXTE};text-decoration:none;font-size:13px;font-weight:700;">Revoir le bien &rarr;</a>` : '',
+      itineraire ? `<a href="${itineraire}" style="color:${BLEU};text-decoration:none;font-size:13px;font-weight:700;">Itinéraire &rarr;</a>` : '',
+    ].filter(Boolean).join('<span style="color:#DCE3EC;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>');
+    return `
+      <tr><td class="bord" style="padding:${i === 0 ? '20' : '18'}px 28px 18px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td width="150" class="miphoto" style="vertical-align:top;">
+            ${photo ? `<img src="${escapeHtml(photo)}" alt="" width="150" class="miimg" style="width:150px;height:115px;object-fit:cover;display:block;border-radius:10px;border:0;" />` : `<div class="miimg" style="width:150px;height:115px;background:${BLEU};border-radius:10px;"></div>`}
+          </td>
+          <td class="mibody" style="vertical-align:top;padding-left:16px;">
+            <div style="display:inline-block;background:${BLEU};color:#ffffff;font-size:13px;font-weight:800;padding:5px 11px;border-radius:8px;margin-bottom:9px;">${escapeHtml(quandMail(l))}</div>
+            <div style="font-size:15px;font-weight:700;color:${BLEU};margin-bottom:4px;line-height:1.35;">${escapeHtml(titre)}</div>
+            ${adresse ? `<div style="font-size:13px;color:#5B6B80;margin-bottom:9px;line-height:1.5;"><span style="color:${DORE};">&#9679;</span> ${escapeHtml(adresse)}</div>` : ''}
+            ${liens ? `<div>${liens}</div>` : ''}
+          </td>
+        </tr></table>
+      </td></tr>
+      ${i < o.lignes.length - 1 ? hairline : ''}`;
+  }).join('');
+  return coque({ etiquette: 'VOS VISITES', corpsHtml, contenu: rows, token: o.token });
+}
+
+/* ══ « Votre mandat de recherche est prêt » ══
+   Envoyé depuis la fiche (« Faire signer le mandat » → « Envoyer par
+   e-mail »). L'essentiel en trois lignes — dont les honoraires, au taux
+   qu'Alexandre a choisi — et un seul bouton, qui ouvre l'espace sur le
+   mandat (…?mandat=1). */
+function lienMandat(token?: string | null, recherche?: string | null): string {
+  if (!token) return '';
+  return `${lienEspace(token, SITE_URL)}?${recherche ? `r=${encodeURIComponent(recherche)}&` : ''}mandat=1`;
+}
+function buildMandatPret(o: { prenom: string; hono: Honoraires; token?: string | null; recherche?: string | null }): string {
+  const corpsHtml = `Bonjour ${escapeHtml(o.prenom)},<br/><br/>Comme convenu, votre <b>mandat de recherche</b> est prêt dans votre espace. Il se lit et se signe en deux minutes, avec un code reçu par e-mail.`;
+  const ligne = (t: string, v: string, d: string) => `
+    <tr><td style="padding:10px 0;border-top:1px solid #E8EDF3;">
+      <div style="font-size:10px;letter-spacing:1.6px;text-transform:uppercase;font-weight:700;color:#A95808;">${t}</div>
+      <div style="font-size:15px;font-weight:700;color:${BLEU};margin-top:3px;">${v}</div>
+      <div style="font-size:12.5px;color:#5B6B80;margin-top:2px;">${d}</div>
+    </td></tr>`;
+  const lien = lienMandat(o.token, o.recherche);
+  const contenu = `
+    <tr><td class="bord" style="padding:18px 28px 6px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        ${ligne('Honoraires', escapeHtml(honorairesDuPrix(o.hono)).replace(/^./, c => c.toUpperCase()), 'réglés le jour de l’acte, chez le notaire — rien avant')}
+        ${ligne('Durée', `${DUREE.mois} mois au plus`, `vous pouvez y mettre fin à tout moment, avec ${DUREE.preavis} jours de préavis`)}
+        ${ligne('Votre liberté', 'Mandat non exclusif', `vous restez libre de chercher de votre côté · ${RETRACTATION_JOURS} jours de rétractation`)}
+      </table>
+    </td></tr>
+    ${lien ? `<tr><td class="bord" align="center" style="padding:14px 28px 26px;">
+      <a href="${lien}" style="display:inline-block;background:${DORE};color:${ENCRE};text-decoration:none;font-size:15px;font-weight:800;padding:14px 26px;border-radius:12px;">Lire et signer mon mandat</a>
+      <div style="font-size:12px;color:#8FA3BF;margin-top:12px;line-height:1.6;">Une question avant de signer&nbsp;? Répondez simplement à ce message.</div>
+    </td></tr>` : ''}`;
+  return coque({ etiquette: 'VOTRE MANDAT', corpsHtml, contenu, token: o.token });
+}
+function texteMandatPret(prenom: string, hono: Honoraires, token?: string | null, recherche?: string | null): string {
+  const lien = lienMandat(token, recherche);
+  return `Bonjour ${prenom},
+
+Comme convenu, votre mandat de recherche est prêt dans votre espace. Il se lit et se signe en deux minutes, avec un code reçu par e-mail.
+
+- Honoraires : ${honorairesDuPrix(hono)}, réglés le jour de l'acte chez le notaire
+- Durée : ${DUREE.mois} mois au plus, fin possible à tout moment avec ${DUREE.preavis} jours de préavis
+- Mandat non exclusif : vous restez libre de chercher de votre côté, ${RETRACTATION_JOURS} jours de rétractation
+${lien ? `
+Lire et signer mon mandat : ${lien}
+` : ''}
+Une question avant de signer ? Répondez simplement à ce message.
+
+---
+Alexandre Rogelet · Emilio Immobilier · 06 58 95 76 32`;
+}
+
+function texteVisites(corps: string, lignes: LigneVisite[], token?: string | null): string {
+  const liste = lignes.map(l => {
+    const b = l.bien;
+    const titre = b?.titre || b?.ville || 'Visite';
+    const adresse = lieuMail(b);
+    return `- ${quandMail(l)} : ${titre}${adresse ? ` (${adresse})` : ''}`;
+  }).join('\n');
+  return `${corps}\n\n${liste}\n\n---\nAlexandre Rogelet · Emilio Immobilier · 06 58 95 76 32${
+    lienFin(token) ? `\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''
+  }`;
+}
+
+
+/* V3.151 : les mails partis sont rendus avec la réponse (`remise`), pour
+   vérifier qu'ils sont bien arrivés (src/lib/remise-mail.ts). */
+export async function POST(req: NextRequest) { return avecRemises(() => envoyer(req)); }
+
+async function envoyer(req: NextRequest) {
+  /* V3.50 : une erreur imprévue après la réservation de la date du mail de
+     bienvenue la rend aussi (sinon le bouton resterait « Déjà envoyé »). */
+  let rendreSiErreur: (() => Promise<void>) | null = null;
+  /* Ce qui n'a pas été noté après un envoi réussi (V3.17) : le mail est
+     parti, le CRM le dit quand même. */
+  const avertissements: string[] = [];
+  try {
+    const apiKey = process.env.MAILJET_API_KEY;
+    const apiSecret = process.env.MAILJET_API_SECRET;
+    if (!apiKey || !apiSecret) {
+      return NextResponse.json({ error: 'Mailjet non configuré (clés manquantes)' }, { status: 500 });
+    }
+
+    const body = await req.json();
+    const { client_ids, recherche_id, objet, corps, biens_ids, destinataires_override, mode, visites_ids, apercu, ventes_ids } = body as {
+      client_ids: string[];
+      recherche_id?: string;
+      objet: string;
+      corps: string;
+      biens_ids?: string[];           // Optionnel : si fourni, on n'envoie que ces biens
+      destinataires_override?: string[]; // Optionnel : override des emails par défaut du client
+      mode?: 'libre' | 'biens' | 'bienvenue' | 'lien' | 'visites' | 'mandat'; // 'libre' = mail texte, 'bienvenue' = mise en route, 'lien' = le lien de l'espace renvoyé (V3.110), 'visites' = rappel de visites, 'mandat' = mandat prêt à signer, 'biens' = défaut
+      visites_ids?: string[];         // mode 'visites' : les visites à annoncer
+      apercu?: boolean;               // modes 'visites' (V3.134) et 'biens' (V3.148) : rend le mail tel que le client le recevra, sans rien envoyer ni noter
+      ventes_ids?: string[];          // aperçu 'biens' (V3.148) : les biens en vente qui partiront
+    };
+    /* L'aperçu n'existe que pour le rappel de visite (V3.134) et l'envoi de
+       biens de l'agence (V3.148) : ailleurs, il ne doit jamais être pris pour
+       un envoi. */
+    if (apercu && mode !== 'visites' && mode !== 'biens') return NextResponse.json({ error: 'Aperçu possible seulement pour un rappel de visite ou un envoi de biens' }, { status: 400 });
+    /* Le mail de bienvenue s'écrit tout seul : ni objet ni corps à saisir,
+       et surtout aucun bien. On le traite donc avant les contrôles. */
+    const bienvenue = mode === 'bienvenue';
+    /* V3.110 : le lien de l'espace, renvoyé. Lui aussi s'écrit tout seul. */
+    const lienSeul = mode === 'lien';
+
+    if (!Array.isArray(client_ids) || client_ids.length === 0) {
+      return NextResponse.json({ error: 'Aucun destinataire' }, { status: 400 });
+    }
+    if (!bienvenue && !lienSeul && mode !== 'mandat' && !objet?.trim()) {
+      return NextResponse.json({ error: "L'objet est obligatoire" }, { status: 400 });
+    }
+    if ((bienvenue || mode === 'mandat') && !recherche_id) {
+      return NextResponse.json({ error: 'Recherche manquante' }, { status: 400 });
+    }
+
+    // Récupère clients
+    const { data: clients } = await supabase
+      .from('clients')
+      .select('id, prenom, nom, reference, emails, token_espace')
+      .in('id', client_ids);
+
+    if (!clients || clients.length === 0) {
+      return NextResponse.json({ error: 'Clients introuvables' }, { status: 404 });
+    }
+
+    /* {{conseiller}} : le nom posé dans les Paramètres (V3.20). Les autres
+       variables viennent de la fiche de chaque client. */
+    const { data: reglages } = await supabase.from('parametres').select('cle, valeur')
+      .in('cle', ['conseiller_prenom', 'conseiller_nom']);
+    const conseiller = conseillerDe(Object.fromEntries((reglages || []).map((r: { cle: string; valeur: string | null }) => [r.cle, r.valeur || ''])));
+
+    /* Un mail écrit depuis « Nouveau mail » ne dit pas de quel dossier il
+       parle : sans recherche, son envoi n'apparaissait dans aucun onglet
+       Suivi (§6.19). On le range dans la recherche que sa fiche ouvre d'office :
+       la première dont la veille tourne, sinon la première tout court. */
+    const dossierDuClient: Record<string, string | null> = {};
+    if (!recherche_id) {
+      const { data: rs } = await supabase.from('recherches').select('id, client_id, active, created_at')
+        .in('client_id', client_ids).order('created_at', { ascending: true });
+      for (const id of client_ids) {
+        const siennes = (rs || []).filter((r: { client_id: string }) => r.client_id === id) as { id: string; active: boolean | null }[];
+        dossierDuClient[id] = (siennes.find(r => r.active !== false) || siennes[0])?.id || null;
+      }
+    }
+    const dossierDe = (clientId: string) => recherche_id || dossierDuClient[clientId] || null;
+
+    /* Le jeton de l'espace acheteur, pour que chaque bouton du mail ouvre la
+       bonne fiche. S'il manque, les liens retombent sur la page publique :
+       le mail part quand même, il est juste moins bien.
+
+       ⚠️ C'est le jeton du CLIENT qu'on envoie (voir src/lib/espace.ts) : le
+       même lien toute sa vie, quel que soit le nombre de recherches. Celui de
+       la recherche ne sert plus qu'en secours, pour les dossiers qui n'ont
+       pas encore été repris. */
+    let tokenEspace: string | null = null;
+    let recherche: Record<string, unknown> | null = null;
+    if (recherche_id) {
+      const { data: rech } = await supabase
+        .from('recherches').select('*, clients(token_espace)').eq('id', recherche_id).maybeSingle();
+      recherche = (rech as Record<string, unknown>) || null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tokenEspace = ((rech as any)?.clients?.token_espace as string) || (rech?.token_espace as string) || null;
+    }
+
+    /* Mise en route, ou recherche qui s'ajoute à un espace déjà ouvert ?
+       On ne le demande pas au CRM : on le lit en base, comme ça les deux ne
+       peuvent pas se contredire. Le client qui a déjà reçu son lien ne doit
+       pas en recevoir un deuxième — il n'a rien à réinstaller. */
+    let nouvelleRecherche = false;
+    let totalRecherches = 2;
+    if (bienvenue && recherche?.client_id) {
+      const { data: soeurs } = await supabase
+        .from('recherches').select('id')
+        .eq('client_id', recherche.client_id as string)
+        .neq('id', recherche_id as string)
+        .not('bienvenue_envoye_le', 'is', null)
+        .limit(1);
+      nouvelleRecherche = !!(soeurs && soeurs.length > 0);
+      if (nouvelleRecherche) {
+        const { count } = await supabase
+          .from('recherches').select('id', { count: 'exact', head: true })
+          .eq('client_id', recherche.client_id as string);
+        totalRecherches = count || 2;
+      }
+    }
+
+    /* V3.50 : un double clic, ou deux onglets, envoyaient le mail de
+       bienvenue deux fois. On refuse un second envoi pour le même client
+       moins de 5 minutes après le premier ; plus tard, le renvoi reste
+       possible (exprès). La date est réservée AVANT l'envoi, sous condition
+       qu'elle n'ait pas bougé depuis notre lecture : de deux demandes
+       simultanées, une seule passe. Un envoi raté rend l'ancienne date. */
+    const DELAI_BIENVENUE = 5 * 60_000;
+    let reserveBienvenue: { avant: string | null } | null = null;
+    if (bienvenue && recherche?.client_id) {
+      const ilYa = new Date(Date.now() - DELAI_BIENVENUE).toISOString();
+      const dejaParti = 'pas de second envoi, ce même mail est parti il y a moins de 5 minutes (un double clic, ou un autre onglet ?). Il est sûrement dans sa boîte : pour le renvoyer exprès, attends quelques minutes.';
+      /* La même recherche seulement : annoncer une 2e recherche juste après le
+         mail de bienvenue de la 1re est voulu, pas un double clic. */
+      const { data: recents, error: eRecents } = await supabase.from('recherches').select('id')
+        .eq('id', recherche_id as string).gte('bienvenue_envoye_le', ilYa).limit(1);
+      if (eRecents) return NextResponse.json({ success: false, error: `Le mail de bienvenue n’a pas pu être vérifié : ${eRecents.message}` }, { status: 500 });
+      if (recents && recents.length) return NextResponse.json({ success: false, error: dejaParti }, { status: 409 });
+      const avant = (recherche.bienvenue_envoye_le as string | null | undefined) || null;
+      const reserver = supabase.from('recherches').update({ bienvenue_envoye_le: new Date().toISOString() }).eq('id', recherche_id as string);
+      const { data: pris, error: ePris } = await (avant ? reserver.eq('bienvenue_envoye_le', avant) : reserver.is('bienvenue_envoye_le', null)).select('id');
+      if (ePris) return NextResponse.json({ success: false, error: `Le mail de bienvenue n’a pas pu être préparé : ${ePris.message}` }, { status: 500 });
+      if (!pris || !pris.length) return NextResponse.json({ success: false, error: dejaParti }, { status: 409 });
+      reserveBienvenue = { avant };
+    }
+    /* L'envoi a raté : la date d'avant revient, le bouton n'est pas condamné. */
+    const rendreBienvenue = async () => {
+      if (!reserveBienvenue) return;
+      await ecritServeur('La date du mail de bienvenue', supabase.from('recherches')
+        .update({ bienvenue_envoye_le: reserveBienvenue.avant }).eq('id', recherche_id as string), avertissements);
+    };
+    rendreSiErreur = rendreBienvenue;
+
+    /* Le nom qu'on montre au client. « Recherche 2 » ne lui dit rien : on
+       retombe alors sur ses critères, comme dans son espace. */
+    const nomRecherche = recherche
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? nommerRecherche(recherche as any, 2)
+      : 'Votre nouvelle recherche';
+
+    /* V3.148 — l'aperçu d'un envoi de biens de l'agence (Alexandre : « un
+       aperçu de ce qui va être vraiment envoyé au client »). Avant l'envoi,
+       les biens ne sont pas encore dans son dossier : chacun est pris tel
+       qu'il y entrera — sa copie si elle existe déjà (mettreEnSelection la
+       réutilise), sinon la copie que versBienAcheteur écrira. Puis le même
+       buildHtml que l'envoi. Rien ne part, rien n'est noté. */
+    if (apercu && mode === 'biens') {
+      const client = clients[0];
+      const ids = [...new Set((Array.isArray(ventes_ids) ? ventes_ids : []).map(String).filter(Boolean))].slice(0, 30);
+      if (!ids.length) return NextResponse.json({ error: 'Aucun bien à montrer' }, { status: 400 });
+      const [{ data: vs, error: eV }, { data: cs, error: eC }] = await Promise.all([
+        supabase.from('biens_vente').select('*').in('id', ids),
+        recherche_id
+          ? supabase.from('biens')
+            .select('id, titre, ville, code_postal, type_bien, surface, nb_pieces, nb_chambres, etage, prix_vendeur, prix_acquereur, bien_vente_id, photos, score')
+            .eq('recherche_id', recherche_id).in('bien_vente_id', ids)
+          : Promise.resolve({ data: [] as BienLite[], error: null }),
+      ]);
+      if (eV || eC) return NextResponse.json({ error: (eV || eC)?.message || 'Les biens n’ont pas pu être lus' }, { status: 500 });
+      const montres = ids.map(id => {
+        const copie = ((cs || []) as BienLite[]).find(c => c.bien_vente_id === id);
+        if (copie) return copie;
+        const v = ((vs || []) as BienVente[]).find(x => x.id === id);
+        return v ? ({ id: v.id, ...versBienAcheteur(v, { clientId: client.id, rechercheId: recherche_id || '', quand: '' }) } as BienLite) : null;
+      }).filter((b): b is BienLite => !!b);
+      if (!montres.length) return NextResponse.json({ error: 'Bien introuvable' }, { status: 404 });
+      const emails = (client.emails || []).filter((e: string) => e && e.includes('@'));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const jeton = ((client as any).token_espace as string) || tokenEspace;
+      return NextResponse.json({
+        success: true, apercu: true, objet: personnaliser(objet, client, conseiller), destinataires: emails,
+        html: buildHtml({ prenom: client.prenom, corps: personnaliser(corps || '', client, conseiller), biens: ordonner(montres), token: jeton, recherche: recherche_id || null }),
+      });
+    }
+
+    /* Le mail « vos visites » : les visites demandées, leurs biens, un envoi
+       par client. Chaque visite du mail garde la date d'envoi
+       (rappel_envoye_le), qui affiche « Rappel envoyé le … » dans le CRM. */
+    if (mode === 'visites') {
+      if (!Array.isArray(visites_ids) || visites_ids.length === 0) {
+        return NextResponse.json({ error: 'Aucune visite' }, { status: 400 });
+      }
+      const { data: vis, error: eVis } = await supabase
+        .from('visites').select('id, client_id, date_visite, heure, bien_id').in('id', visites_ids);
+      if (eVis || !vis || vis.length === 0) {
+        return NextResponse.json({ error: eVis?.message || 'Visites introuvables' }, { status: 404 });
+      }
+      const idsBiens = [...new Set(vis.map(v => v.bien_id).filter(Boolean))] as string[];
+      const { data: bs } = idsBiens.length
+        ? await supabase.from('biens')
+          .select('id, titre, ville, code_postal, quartier, adresse, adresse_probable, type_bien, surface, nb_pieces, nb_chambres, etage, prix_vendeur, prix_acquereur, photos, bien_vente_id')
+          .in('id', idsBiens)
+        : { data: [] as BienVisite[] };
+      /* V3.134 : un bien de l'agence n'a que sa ville dans le dossier de
+         l'acheteur ; le mail annonçait « l'adresse est juste en dessous » et
+         ne montrait que « Clamart ». L'adresse complète vient du bien en vente. */
+      const idsVente = [...new Set(((bs || []) as (BienVisite & { bien_vente_id?: string | null })[]).map(b => b.bien_vente_id).filter(Boolean))] as string[];
+      const { data: vs, error: eVentes } = idsVente.length
+        ? await supabase.from('biens_vente').select('id, adresse, code_postal, ville').in('id', idsVente)
+        : { data: [] as { id: string; adresse: string | null; code_postal: string | null; ville: string | null }[], error: null };
+      if (eVentes) console.error('[send-mail] adresse des biens visités', eVentes.message);
+      const ventes = Object.fromEntries((vs || []).map(x => [x.id, x]));
+      const parId = Object.fromEntries(((bs || []) as (BienVisite & { bien_vente_id?: string | null })[]).map(b => {
+        const complete = b.bien_vente_id ? adresseVente(ventes[b.bien_vente_id]) : '';
+        return [b.id, complete ? { ...b, adresse: complete } : b];
+      }));
+      const cle = (v: { date_visite: string | null; heure: string | null }) => `${(v.date_visite || '').slice(0, 10)} ${(v.heure || '99:99').slice(0, 5)}`;
+      const authV = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
+      const resultats: { client_id: string; success: boolean; error?: string }[] = [];
+      let avertissement: string | null = null;
+
+      for (const client of clients) {
+        const sourceEmails = Array.isArray(destinataires_override) && destinataires_override.length > 0
+          ? destinataires_override : (client.emails || []);
+        const emails = sourceEmails.filter((e: string) => e && e.includes('@'));
+        if (emails.length === 0 && !apercu) { resultats.push({ client_id: client.id, success: false, error: 'Pas d\'email valide' }); continue; }
+        const lignes: LigneVisite[] = vis
+          .filter(v => !v.client_id || v.client_id === client.id)
+          .sort((a, b) => cle(a).localeCompare(cle(b)))
+          .map(v => ({ id: v.id, date_visite: v.date_visite, heure: v.heure, bien: v.bien_id ? parId[v.bien_id] || null : null }));
+        if (lignes.length === 0) { resultats.push({ client_id: client.id, success: false, error: 'Aucune visite pour ce client' }); continue; }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const jeton = ((client as any).token_espace as string) || tokenEspace;
+        const corpsPerso = personnaliser(corps || '', client, conseiller);
+        const sujetV = personnaliser(objet, client, conseiller);
+        /* V3.134 — l'aperçu (Alexandre : « montre-moi l'aperçu que le client
+           reçoit […] si je ne le vois pas, c'est compliqué de se donner une
+           idée »). Le même mail, construit de la même façon, rendu à la
+           fenêtre du rappel : rien ne part chez Mailjet, rien n'est noté. */
+        if (apercu) {
+          return NextResponse.json({
+            success: true, apercu: true, objet: sujetV, destinataires: emails,
+            html: buildVisites({ corps: corpsPerso, lignes, token: jeton, recherche: recherche_id || null }),
+          });
+        }
+        try {
+          const mjRes = await fetch('https://api.mailjet.com/v3.1/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Basic ${authV}` },
+            body: JSON.stringify({
+              Messages: [{
+                From: { Email: FROM_EMAIL, Name: FROM_NAME },
+                To: emails.map((e: string) => ({ Email: e, Name: `${client.prenom} ${client.nom}` })),
+                Subject: sujetV,
+                TextPart: texteVisites(corpsPerso, lignes, jeton),
+                HTMLPart: buildVisites({ corps: corpsPerso, lignes, token: jeton, recherche: recherche_id || null }),
+                /* V3.215 : Mailjet refuse un CustomID de plus de 64 caractères.
+                   « chasse-visites-<uuid>-<13 chiffres> » en faisait 65 : le
+                   rappel de visite ne partait jamais (« Characters limit
+                   exceeded for the property. Max allowed - 64 »). */
+                CustomID: `visites-${client.id}-${Date.now()}`,
+                TrackOpens: 'disabled',
+                TrackClicks: 'disabled',
+              }],
+            }),
+          });
+          const mjJson = await mjRes.json();
+          const ok = mjRes.ok && mjJson?.Messages?.[0]?.Status === 'success';
+          if (!ok) {
+            resultats.push({ client_id: client.id, success: false, error: mjJson?.Messages?.[0]?.Errors?.[0]?.ErrorMessage || JSON.stringify(mjJson).slice(0, 200) });
+            continue;
+          }
+          noterRemises(mjJson, { clientId: client.id, rechercheId: dossierDe(client.id), nom: `${client.prenom || ''} ${client.nom || ''}`.trim(), objet: sujetV });
+          /* Après l'envoi, jamais avant : un échec Mailjet ne doit pas afficher
+             « Rappel envoyé ». Si la colonne manque (SQL pas encore lancé), le
+             mail est parti quand même : on le dit au CRM. */
+          const { error: eDate } = await supabase.from('visites')
+            .update({ rappel_envoye_le: new Date().toISOString() }).in('id', lignes.map(l => l.id));
+          if (eDate) avertissement = eDate.message;
+          await ecritServeur('L’envoi (communications)', supabase.from('envois').insert({
+            client_id: client.id, recherche_id: dossierDe(client.id), type: 'mail_libre',
+            objet: sujetV, corps: corpsPerso, destinataires: emails, biens_ids: [], sms_envoye: false,
+          }), avertissements);
+          await ecritServeur('L’historique du client', supabase.from('journal').insert({
+            client_id: client.id, recherche_id: dossierDe(client.id), type: 'mail_envoye',
+            titre: `📅 Mail envoyé — ${sujetV}`,
+            description: `À : ${emails.join(', ')}\n\n${corpsPerso}\n\n${lignes.map(l => `- ${quandMail(l)} : ${l.bien?.titre || 'Visite'}`).join('\n')}`,
+          }), avertissements);
+          resultats.push({ client_id: client.id, success: true });
+        } catch (e) {
+          resultats.push({ client_id: client.id, success: false, error: (e as Error).message });
+        }
+      }
+      const nbOk = resultats.filter(r => r.success).length;
+      return NextResponse.json({ success: nbOk > 0, sent: nbOk, total: resultats.length, results: resultats, avertissement, avertissements });
+    }
+
+    /* « Votre mandat de recherche est prêt » : un envoi par client, au taux
+       enregistré sur la recherche (celui que le client verra en ouvrant). */
+    if (mode === 'mandat') {
+      if (!recherche) return NextResponse.json({ error: 'Recherche introuvable' }, { status: 404 });
+      const hono: Honoraires = { taux: tauxDe(recherche.mandat_taux), forfait: forfaitDe(recherche.mandat_forfait) };
+      const authM = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
+      const resultats: { client_id: string; success: boolean; error?: string }[] = [];
+      for (const client of clients) {
+        const sourceEmails = Array.isArray(destinataires_override) && destinataires_override.length > 0
+          ? destinataires_override : (client.emails || []);
+        const emails = sourceEmails.filter((e: string) => e && e.includes('@'));
+        if (emails.length === 0) { resultats.push({ client_id: client.id, success: false, error: 'Pas d\'email valide' }); continue; }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const jeton = ((client as any).token_espace as string) || tokenEspace;
+        const sujet = objet?.trim() || 'Votre mandat de recherche est prêt';
+        try {
+          const mjRes = await fetch('https://api.mailjet.com/v3.1/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Basic ${authM}` },
+            body: JSON.stringify({
+              Messages: [{
+                From: { Email: FROM_EMAIL, Name: FROM_NAME },
+                To: emails.map((e: string) => ({ Email: e, Name: `${client.prenom} ${client.nom}` })),
+                Subject: sujet,
+                TextPart: texteMandatPret(client.prenom || '', hono, jeton, recherche_id || null),
+                HTMLPart: buildMandatPret({ prenom: client.prenom || '', hono, token: jeton, recherche: recherche_id || null }),
+                CustomID: `mandat-pret-${client.id}-${Date.now()}`,
+                TrackOpens: 'disabled',
+                TrackClicks: 'disabled',
+              }],
+            }),
+          });
+          const mjJson = await mjRes.json();
+          const ok = mjRes.ok && mjJson?.Messages?.[0]?.Status === 'success';
+          if (!ok) {
+            resultats.push({ client_id: client.id, success: false, error: mjJson?.Messages?.[0]?.Errors?.[0]?.ErrorMessage || JSON.stringify(mjJson).slice(0, 200) });
+            continue;
+          }
+          noterRemises(mjJson, { clientId: client.id, rechercheId: dossierDe(client.id), nom: `${client.prenom || ''} ${client.nom || ''}`.trim(), objet: sujet });
+          await ecritServeur('L’envoi (communications)', supabase.from('envois').insert({
+            client_id: client.id, recherche_id: recherche_id || null, type: 'mail_libre',
+            objet: sujet, corps: `Mandat de recherche prêt à signer · honoraires ${honorairesCourt(hono)}`, destinataires: emails, biens_ids: [], sms_envoye: false,
+          }), avertissements);
+          await ecritServeur('L’historique du client', supabase.from('journal').insert({
+            client_id: client.id, recherche_id: dossierDe(client.id), type: 'mail_envoye',
+            titre: `✉️ Mail envoyé — ${sujet}`,
+            description: `À : ${emails.join(', ')}\nMandat de recherche prêt à signer · honoraires ${honorairesCourt(hono)}`,
+          }), avertissements);
+          resultats.push({ client_id: client.id, success: true });
+        } catch (e) {
+          resultats.push({ client_id: client.id, success: false, error: (e as Error).message });
+        }
+      }
+      const nbOk = resultats.filter(r => r.success).length;
+      return NextResponse.json({ success: nbOk > 0, sent: nbOk, total: resultats.length, results: resultats, error: nbOk ? undefined : resultats[0]?.error, avertissements });
+    }
+
+    // Récupère les biens UNIQUEMENT si mode != 'libre'
+    let tousBiens: (BienLite & { client_id: string })[] = [];
+    if (mode !== 'libre' && !bienvenue && !lienSeul) {
+      let query = supabase
+        .from('biens')
+        .select('id, client_id, titre, ville, code_postal, type_bien, surface, nb_pieces, nb_chambres, etage, prix_vendeur, prix_acquereur, bien_vente_id, photos, badge_retour, score')
+        .in('client_id', client_ids)
+        .order('created_at', { ascending: false });
+
+      // Si biens_ids fourni → on filtre sur ces biens-là seulement
+      if (Array.isArray(biens_ids) && biens_ids.length > 0) {
+        query = query.in('id', biens_ids);
+      } else {
+        // Sinon, on prend tous les biens actifs (non refusés)
+        query = query.neq('badge_retour', 'refuse');
+      }
+
+      const { data } = await query;
+      tousBiens = (data || []) as (BienLite & { client_id: string })[];
+    }
+
+    const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
+    const results: { client_id: string; success: boolean; error?: string }[] = [];
+
+    for (const client of clients) {
+      // Si override fourni → utiliser cette liste, sinon les emails du client
+      const sourceEmails = Array.isArray(destinataires_override) && destinataires_override.length > 0
+        ? destinataires_override
+        : (client.emails || []);
+      const emails = sourceEmails.filter((e: string) => e && e.includes('@'));
+      if (emails.length === 0) {
+        if (bienvenue) await rendreBienvenue();
+        results.push({ client_id: client.id, success: false, error: 'Pas d\'email valide' });
+        continue;
+      }
+
+      const biensClient = ordonner(tousBiens.filter(b => b.client_id === client.id));
+      /* Chaque client reçoit SON lien. Celui tiré de la recherche ne sert
+         qu'en secours, pour les dossiers pas encore repris. */
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const jeton = ((client as any).token_espace as string) || tokenEspace;
+      /* V3.110 : renvoyer le lien. Sans lien, rien à envoyer ; et pas deux
+         fois en deux minutes (un double clic, un autre onglet). */
+      if (lienSeul) {
+        if (!jeton) { results.push({ client_id: client.id, success: false, error: 'ce client n’a pas encore de lien d’espace' }); continue; }
+        const { data: recent, error: eRecent } = await supabase.from('envois').select('id')
+          .eq('client_id', client.id).eq('objet', OBJET_LIEN).gte('created_at', new Date(Date.now() - 2 * 60_000).toISOString()).limit(1);
+        if (eRecent) { results.push({ client_id: client.id, success: false, error: `le dernier envoi n’a pas pu être vérifié : ${eRecent.message}` }); continue; }
+        if (recent && recent.length) { results.push({ client_id: client.id, success: false, error: 'ce mail est parti il y a moins de deux minutes (un double clic ?) : il est sûrement déjà dans sa boîte' }); continue; }
+      }
+
+      const corpsPerso = lienSeul && jeton ? texteLien(client.prenom, jeton) : bienvenue
+        ? (nouvelleRecherche
+          ? texteNouvelle(client.prenom, nomRecherche, jeton, totalRecherches)
+          : texteBienvenue(client.prenom, jeton))
+        : personnaliser(corps || '', client, conseiller);
+      const objetFinal = lienSeul ? OBJET_LIEN : bienvenue
+        ? (nouvelleRecherche ? 'Votre nouvelle recherche est ouverte' : 'Votre espace de recherche est ouvert')
+        : personnaliser(objet, client, conseiller);
+      const html = lienSeul && jeton ? buildLien({ prenom: client.prenom, token: jeton }) : bienvenue
+        ? (nouvelleRecherche
+          ? buildNouvelle({ prenom: client.prenom, recherche: nomRecherche, token: jeton, total: totalRecherches })
+          : buildBienvenue({ prenom: client.prenom, token: jeton }))
+        : buildHtml({ prenom: client.prenom, corps: corpsPerso, biens: biensClient, token: jeton, recherche: recherche_id || null });
+      /* La version texte suit la version illustrée : les premiers biens avec
+         leur lien, puis le lien vers les suivants dans l'espace. */
+      const enTete = biensClient.slice(0, BIENS_PAR_MAIL);
+      const suivants = biensClient.length - enTete.length;
+      const lienSuite = suivants > 0 ? lienNeufs(jeton, recherche_id || null) : '';
+      const listeTexte = biensClient.length > 0
+        ? `Biens proposés :\n${enTete.map(b => `- ${b.titre || 'Bien'} : ${lienBien(b, jeton, recherche_id || null)}`).join('\n')}${
+          suivants > 0
+            ? (lienSuite
+              ? `\n\nEt ${suivants} autre${suivants > 1 ? 's' : ''} dans votre espace : ${lienSuite}`
+              : `\n${biensClient.slice(BIENS_PAR_MAIL).map(b => `- ${b.titre || 'Bien'} : ${lienBienPublic(b.id)}`).join('\n')}`)
+            : ''
+        }\n\n`
+        : '';
+      /* La version texte suit la version illustrée : le message tel
+         qu'Alexandre l'a écrit (il porte déjà « Bonjour » et la signature),
+         puis les biens. Elle ajoutait un second « Bonjour » et une seconde
+         signature, codée en dur. */
+      const text = `${corpsPerso.trim()}\n\n${listeTexte}${
+        lienFin(jeton) ? `---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(jeton)}` : ''
+      }`.trim();
+
+      try {
+        const mjRes = await fetch('https://api.mailjet.com/v3.1/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${auth}`,
+          },
+          body: JSON.stringify({
+            Messages: [{
+              From: { Email: FROM_EMAIL, Name: FROM_NAME },
+              To: emails.map((e: string) => ({ Email: e, Name: `${client.prenom} ${client.nom}` })),
+              Subject: objetFinal,
+              TextPart: bienvenue || lienSeul ? corpsPerso : text,
+              HTMLPart: html,
+              CustomID: `chasse-${client.id}-${Date.now()}`,
+              TrackOpens: 'disabled',
+              TrackClicks: 'disabled',
+            }],
+          }),
+        });
+
+        const mjJson = await mjRes.json();
+        const ok = mjRes.ok && mjJson?.Messages?.[0]?.Status === 'success';
+
+        if (ok) {
+          noterRemises(mjJson, { clientId: client.id, rechercheId: dossierDe(client.id), nom: `${client.prenom || ''} ${client.nom || ''}`.trim(), objet: objetFinal });
+          /* Parti : plus question de rendre la date, quoi qu'il arrive ensuite. */
+          if (bienvenue) rendreSiErreur = null;
+          /* Le mail de bienvenue ne part qu'une fois : on horodate la recherche,
+             et c'est cette date qui grise le bouton dans le CRM. On l'écrit
+             après l'envoi, jamais avant — un échec Mailjet ne doit pas
+             condamner le bouton. */
+          if (bienvenue) {
+            await ecritServeur('La date du mail de bienvenue', supabase.from('recherches')
+              .update({ bienvenue_envoye_le: new Date().toISOString() })
+              .eq('id', recherche_id), avertissements);
+          }
+          const typeEnvoi = bienvenue ? 'mail_libre'
+            : biensClient.length === 0 ? 'mail_libre'
+              : biensClient.length === 1 ? 'envoi_bien' : 'selection_biens';
+          await ecritServeur('L’envoi (communications)', supabase.from('envois').insert({
+            client_id: client.id,
+            recherche_id: dossierDe(client.id),
+            type: typeEnvoi,
+            objet: objetFinal,
+            corps: corpsPerso,
+            destinataires: emails,
+            biens_ids: biensClient.map(b => b.id),
+            sms_envoye: false,
+          }), avertissements);
+          /* V3.50 : le serveur est le seul à écrire cette ligne (la fiche
+             l'écrivait aussi : elle apparaissait deux fois). Une recherche
+             qui s'ajoute garde son titre à elle. */
+          const titreJournal = lienSeul ? '🔗 Lien de l’espace renvoyé' : bienvenue
+            ? (nouvelleRecherche ? `✉️ Nouvelle recherche annoncée — ${String(recherche?.nom || nomRecherche)}` : '👋 Mail de bienvenue envoyé')
+            : biensClient.length === 0
+            ? `✉️ Mail envoyé — ${objetFinal}`
+            : biensClient.length === 1
+              ? `📤 Bien envoyé — ${biensClient[0].titre || biensClient[0].ville || 'bien'}`
+              : `📤 Sélection envoyée — ${biensClient.length} biens`;
+          await ecritServeur('L’historique du client', supabase.from('journal').insert({
+            client_id: client.id,
+            recherche_id: dossierDe(client.id),
+            type: biensClient.length === 0 ? 'mail_envoye' : 'envoi_bien',
+            titre: titreJournal,
+            description: `À : ${emails.join(', ')}\n\n${corpsPerso}${biensClient.length > 0 ? `\n\nBiens joints : ${biensClient.length}` : ''}`,
+          }), avertissements);
+          results.push({ client_id: client.id, success: true });
+        } else {
+          const errMsg = mjJson?.Messages?.[0]?.Errors?.[0]?.ErrorMessage || JSON.stringify(mjJson).slice(0, 200);
+          if (bienvenue) await rendreBienvenue();
+          results.push({ client_id: client.id, success: false, error: errMsg });
+        }
+      } catch (e) {
+        if (bienvenue) await rendreBienvenue();
+        results.push({ client_id: client.id, success: false, error: (e as Error).message });
+      }
+    }
+
+    const okCount = results.filter(r => r.success).length;
+    return NextResponse.json({
+      success: okCount > 0,
+      sent: okCount,
+      total: results.length,
+      results,
+      /* Le mail est parti, mais son suivi n'a pas été noté (V3.17). */
+      avertissements,
+    });
+
+  } catch (e) {
+    if (rendreSiErreur) { try { await rendreSiErreur(); } catch { /* déjà signalé */ } }
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+  }
+}

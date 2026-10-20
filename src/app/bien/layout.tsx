@@ -1,0 +1,30 @@
+import type { Metadata } from 'next';
+
+/* V3.43 : la fiche d'un bien se partage par son lien, elle n'a rien à faire
+   dans les moteurs de recherche. */
+export const metadata: Metadata = { robots: { index: false, follow: false } };
+
+export default function BienLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <style>{`
+        html, body { height: auto !important; overflow: auto !important; }
+        body { background: #ece6da; }
+        /* La barre de défilement, sur ordinateur : globals.css (celle du CRM)
+           la réduit à 4 px gris clair, on ne la voyait pas. Réglée aussi sur
+           body : html et body sont en overflow:auto, Chrome prend alors le
+           style de body pour la barre de la page. */
+        @media (hover:hover) and (pointer:fine) {
+          html::-webkit-scrollbar, body::-webkit-scrollbar { width: 14px; }
+          html::-webkit-scrollbar-track, body::-webkit-scrollbar-track { background: #e2dccf; }
+          html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb { background: #9a9282; border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; min-height: 48px; }
+          html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover { background-color: #6f6758; }
+        }
+        @supports (-moz-appearance:none) {
+          @media (hover:hover) and (pointer:fine) { html { scrollbar-width: auto; scrollbar-color: #9a9282 #e2dccf; } }
+        }
+      `}</style>
+      {children}
+    </>
+  );
+}

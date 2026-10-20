@@ -1,0 +1,811 @@
+.page { display: flex; flex-direction: column; min-height: 100%; background: #f8fafc; }
+
+.pageHeader {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; background: white; border-bottom: 1px solid #e3e8f0;
+  flex-shrink: 0;
+  /* La barre d'actions de la fiche reste accessible une fois qu'on a
+     défilé : sans ça, « Action » et « Ajouter un bien » disparaissaient
+     dès le premier tour de molette. */
+  position: sticky; top: 0; z-index: 20;
+}
+
+.backBtn { background: none; border: none; color: #64748b; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: color 0.15s; }
+.backBtn:hover { color: var(--emilio); }
+
+.btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #e3e8f0; background: white; color: #4a5568; font-family: 'DM Sans', sans-serif; transition: all 0.12s; }
+.btn:hover { background: #f7f9fc; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btnPrimary { background: var(--emilio-fond); color: white; border-color: var(--emilio); }
+.btnPrimary:hover { background: var(--emilio-clair); }
+
+.identiteBar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px; background: white; border-bottom: 1px solid #e3e8f0; border-top: 1px solid #f1f5f9;
+  flex-shrink: 0; gap: 20px; flex-wrap: wrap;
+}
+
+.avatarWrap { display: flex; align-items: center; gap: 14px; }
+.avatar { width: 54px; height: 54px; border-radius: 15px; background: var(--emilio-fond); display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; color: #c9a84c; font-size: 18px; flex-shrink: 0; }
+.clientName { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px; color: var(--emilio); }
+.clientMeta { font-size: 12px; color: #94a3b8; margin-top: 3px; }
+
+.syntheseItem { background: #f8fafc; border-radius: 12px; padding: 12px 18px; text-align: center; min-width: 70px; }
+.syntheseVal  { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 24px; line-height: 1; }
+.syntheseLabel { font-size: 10px; color: #94a3b8; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* CONTENU CENTRÉ */
+.contentWrap { flex: 1; overflow-y: visible; padding: 16px 24px 80px; display: flex; flex-direction: column; gap: 12px; }
+
+/* ROW INFO */
+/* Le mandat est remonté sur la ligne du sélecteur de recherche :
+   les critères occupent désormais toute la largeur. */
+.infoRow { display: block; }
+/* « Ses biens » et « Ses documents », repliés, côte à côte (V3.17). */
+.replis { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; align-items: flex-start; }
+.replis > * { flex: 1 1 380px; }
+.replis:empty { display: none; }
+
+.infoCard { background: white; border-radius: 14px; border: 1px solid #e3e8f0; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.infoCardHeader { padding: 12px 16px; border-bottom: 1px solid #f8fafc; display: flex; align-items: center; justify-content: space-between; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 13px; color: var(--emilio); }
+.infoCardBody { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+
+.editBtn { font-size: 12px; color: #94a3b8; background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; transition: color 0.15s; }
+.editBtn:hover { color: var(--emilio); }
+
+.contactLine { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--emilio); }
+.contactIcon { width: 20px; text-align: center; color: #94a3b8; font-size: 14px; flex-shrink: 0; }
+
+.criteresGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.critItem {}
+.critLabel { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+.critVal   { font-size: 14px; font-weight: 700; color: var(--emilio); }
+
+.secteurTag { background: #fef9c3; color: #854d0e; border: 1px solid #fde68a; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; }
+
+/* TABS */
+.tabs { display: flex; background: white; border-radius: 12px; border: 1px solid #e3e8f0; padding: 4px; gap: 2px; overflow-x: auto; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.tab { padding: 9px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: none; font-family: 'DM Sans', sans-serif; color: #64748b; white-space: nowrap; transition: all 0.12s; }
+.tab:hover { background: #f8fafc; color: var(--emilio); }
+.tabActive { background: var(--emilio-fond) !important; color: white !important; }
+
+.emptyTab { background: white; border-radius: 14px; border: 1px solid #e3e8f0; padding: 56px 24px; text-align: center; }
+
+.bienCard { background: white; border-radius: 14px; border: 1px solid #e3e8f0; display: flex; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: all 0.15s; }
+.bienCard:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); border-color: rgba(201,168,76,0.3); }
+.bienPhoto { width: 120px; min-width: 120px; background: linear-gradient(135deg, #e2e8f0, #f1f5f9); display: flex; align-items: center; justify-content: center; font-size: 32px; overflow: hidden; }
+.bienBody  { padding: 14px 16px; flex: 1; min-width: 0; }
+
+.card { background: white; border-radius: 14px; border: 1px solid #e3e8f0; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+
+/* FORMULAIRES */
+.formRow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* sans min-width:0, un libellé long élargit sa colonne et déborde de la pop-up */
+.formRow > * { min-width: 0; }
+.lbl { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px; }
+.inp { width: 100%; background: #f8fafc; border: 1.5px solid #e3e8f0; border-radius: 9px; padding: 9px 12px; font-size: 13px; color: var(--emilio); font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.15s; }
+.inp:focus { border-color: #c9a84c; background: white; }
+
+/* V3.72 — L'adresse proposée pendant la frappe (Modifier le contact) */
+.adr { position: relative; }
+.adrSug { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; right: 0; margin: 0; padding: 4px; list-style: none; background: white; border: 1px solid #e3e8f0; border-radius: 14px; box-shadow: 0 14px 34px rgba(15,23,42,.16); }
+.adrSug button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; padding: 8px 10px; border: none; border-radius: 10px; background: none; text-align: left; font-family: inherit; cursor: pointer; }
+.adrSug button:hover { background: #fbf8ef; }
+.adrSug b { font-size: 13.5px; color: var(--emilio); font-weight: 700; }
+.adrSug small { font-size: 12px; color: #8593a8; }
+.adrAide { display: block; margin-top: 4px; font-size: 11.5px; color: #94a3b8; }
+
+/* V3.73 — Un acheteur archivé : dit tout en haut de sa fiche */
+.archiveBandeau { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 16px 24px 0; padding: 11px 14px; border-radius: 14px; background: #f8fafc; border: 1px solid #e3e8f0; font-size: 13px; color: #64748b; }
+.archiveBandeau button { height: 32px; padding: 0 13px; border-radius: 10px; border: 1px solid #d6dee9; background: white; color: var(--emilio); font-size: 12.5px; font-weight: 700; font-family: inherit; cursor: pointer; }
+
+.suggestions { position: absolute; top: 100%; left: 0; right: 0; z-index: 50; background: white; border: 1px solid #e3e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); overflow: hidden; margin-top: 3px; }
+.suggItem { padding: 10px 14px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f8fafc; transition: background 0.12s; }
+.suggItem:hover { background: #f8fafc; }
+
+/* MODAL */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(24px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.overlay { position: fixed; inset: 0; background: rgba(15,22,35,0.55); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; backdrop-filter: blur(4px); animation: fadeIn 0.18s ease; }
+.modal { background: white; border-radius: 20px; width: 100%; max-width: 680px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 48px rgba(0,0,0,0.18); animation: slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1); }
+.modalHeader { padding: 18px 22px 14px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.modalTitle { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 17px; color: var(--emilio); }
+.modalClose { width: 28px; height: 28px; border-radius: 7px; border: 1px solid #e3e8f0; background: white; color: #64748b; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.modalBody { flex: 1; overflow-y: auto; padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+.modalFooter { padding: 14px 22px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
+
+.mandatCompact { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+
+/* ═══ Critères de recherche — mode « étape par étape » ═══ */
+
+/* Bascule « Tout afficher » / « Étape par étape ». */
+.critBasc { display: inline-flex; background: #f1f5f9; border-radius: 10px; padding: 3px; gap: 3px; }
+.critBascBtn { border: none; background: transparent; color: #64748b; font-family: inherit; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: background 0.18s, color 0.18s, box-shadow 0.18s; white-space: nowrap; }
+.critBascBtn:hover { color: var(--emilio); }
+.critBascOn { background: white; color: var(--emilio); box-shadow: 0 1px 3px rgba(15,22,35,0.12); }
+
+/* Frise : une pastille par étape, celle en cours s'ouvre pour afficher son nom. */
+.critFrise { display: flex; align-items: center; gap: 4px; padding: 14px 22px 0; flex-shrink: 0; overflow-x: auto; scrollbar-width: none; }
+.critFrise::-webkit-scrollbar { display: none; }
+.critPuce { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; height: 34px; padding: 0 9px; border-radius: 999px; border: 1.5px solid #e3e8f0; background: white; color: #94a3b8; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; overflow: hidden; max-width: 36px; transition: max-width 0.3s cubic-bezier(0.34,1.25,0.64,1), background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s; }
+.critPuce:hover { border-color: #c9a84c; }
+.critPuceIco { font-size: 15px; line-height: 1; flex-shrink: 0; }
+.critPuceTxt { white-space: nowrap; opacity: 0; transition: opacity 0.18s 0.08s; }
+.critPuceOn { max-width: 280px; border-color: var(--emilio); background: var(--emilio-fond); color: white; box-shadow: 0 4px 12px rgba(26,35,50,0.22); }
+.critPuceOn .critPuceTxt { opacity: 1; }
+.critPuceFait { border-color: #e2cf9a; background: #fdf9ef; color: #9a7d2e; }
+.critTrait { flex: 1 1 10px; min-width: 10px; height: 2px; border-radius: 2px; background: #e3e8f0; transition: background 0.25s; }
+.critTraitFait { background: #d8bf76; }
+
+/* Panneau d'étape : glisse de la droite en « Suivant », de la gauche en « Précédent ». */
+@keyframes critAvant { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes critArriere { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
+.critCorps { overflow-x: hidden; min-height: 300px; }
+.critPanneau { display: flex; flex-direction: column; gap: 14px; }
+.critAvant { animation: critAvant 0.3s cubic-bezier(0.22,0.8,0.3,1) both; }
+.critArriere { animation: critArriere 0.3s cubic-bezier(0.22,0.8,0.3,1) both; }
+
+/* En-tête de l'étape en cours. */
+.critEnTete { display: flex; align-items: center; gap: 12px; padding-bottom: 13px; border-bottom: 1px solid #e3e8f0; }
+.critEnTeteIco { width: 42px; height: 42px; border-radius: 13px; background: var(--emilio-fond); color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(26,35,50,0.2); }
+.critEnTeteT { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 15.5px; color: var(--emilio); letter-spacing: 0.3px; }
+.critEnTeteS { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+.critCompteur { margin-left: auto; font-size: 10.5px; font-weight: 800; color: #c9a84c; letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0; }
+
+/* Pied de page en mode étapes : Précédent à gauche, Suivant / Sauvegarder à droite. */
+.critNav { justify-content: space-between; align-items: center; }
+.critNavD { display: flex; gap: 8px; align-items: center; }
+
+@media (max-width: 720px) {
+  .critFrise { padding: 12px 16px 0; }
+  .critPuceOn { max-width: 200px; }
+  .critEnTeteIco { width: 36px; height: 36px; border-radius: 11px; font-size: 17px; }
+}
+
+/* ═══ L'en-tête des critères — la recherche EST le titre du bloc ═══
+   Le sélecteur flottait au-dessus de la carte, comme un onglet posé à côté.
+   Il est maintenant dedans : un seul cadre, un seul en-tête. */
+.critEntete {
+  display: flex; align-items: center; gap: 13px; flex-wrap: wrap;
+  padding: 13px 16px; border-bottom: 1px solid #f1f5f9;
+}
+.critFilet { width: 4px; height: 30px; border-radius: 4px; background: #c9a84c; flex-shrink: 0; }
+.critSur {
+  display: block; font-size: 10.5px; font-weight: 700; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: 0.6px;
+}
+.critLigne { display: flex; align-items: center; gap: 9px; margin-top: 1px; flex-wrap: wrap; }
+.critNom {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 800;
+  color: var(--emilio); letter-spacing: -0.2px;
+}
+.critNom:hover { color: #a9822f; }
+.critRenommer {
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 12.5px; color: #94a3b8; text-decoration: underline;
+}
+.critRenommer:hover { color: var(--emilio); }
+.critPause {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 99px;
+  padding: 3px 11px; font-size: 11px; font-weight: 800; color: #64748b;
+}
+
+/* Le mandat en ardoise : une information de dossier, pas de recherche. */
+.critMandat {
+  display: inline-flex; align-items: center; gap: 9px; max-width: 100%;
+  background: #eef4fb; border: 1px solid #d6e3f5; border-radius: 10px;
+  padding: 6px 12px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: border-color 0.15s, background 0.15s;
+}
+.critMandat:hover { border-color: #b9d0ee; background: #e6eefb; }
+.critMandat b {
+  font-size: 10px; font-weight: 800; color: #6b8bb0;
+  text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0;
+}
+.critMandat span { font-size: 12.5px; font-weight: 600; color: #3d5f85; white-space: nowrap; }
+.critMandat i {
+  font-style: normal; flex-shrink: 0; font-size: 11px; font-weight: 800;
+  border-radius: 99px; padding: 2px 9px;
+  background: #ffffff; border: 1px solid #cfdff3; color: #2d5c8f;
+}
+
+@media (max-width: 860px) {
+  .critMandat span { white-space: normal; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LA VERSION TÉLÉPHONE
+   En haut, une barre : le retour, le nom du client, sa relance, puis les
+   quatre gestes du quotidien en boutons à pictogramme. Elle ne reste plus
+   collée : elle part avec la page, pour laisser tout l'écran à la fiche. Les
+   fenêtres montent du bas de l'écran, leurs boutons restent sous le pouce.
+   Sur ordinateur, rien ne change : les libellés « bureau » restent affichés.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.surMobile { display: none; }
+
+/* Tablette : les boutons de la barre passent sous le nom au lieu de
+   l'écraser. */
+@media (max-width: 900px) {
+  /* Sur téléphone, rien ne reste accroché en haut en descendant : la barre
+     défile avec la fiche (voir AppLayout.module.css). */
+  .pageHeader { flex-wrap: wrap; row-gap: 10px; position: static; }
+}
+
+@media (max-width: 760px) {
+  .surBureau { display: none !important; }
+  .surMobile { display: contents; }
+
+  /* ── La barre du haut de la fiche ── */
+  .pageHeader {
+    flex-wrap: wrap; gap: 9px; padding: 9px 10px 10px;
+    box-shadow: 0 6px 18px -14px rgba(15,22,35,.35);
+  }
+  .fil { flex: 1 1 100%; min-width: 0; gap: 9px !important; }
+  .filSep { display: none; }
+  .backBtn {
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 38px; height: 38px; border-radius: 12px;
+    border: 1px solid #e3e8f0; background: #fff; color: var(--emilio);
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* V3.219 : « ← Carte », venu de la carte. */
+  .backCarte { width: auto; padding: 0 12px 0 9px; gap: 5px; font: 700 13.5px 'Plus Jakarta Sans', sans-serif; }
+  .filNom {
+    flex: 1 1 auto; min-width: 0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 15.5px !important; font-weight: 800 !important; letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .filRelance { flex-shrink: 0; font-size: 11px !important; padding: 4px 9px !important; }
+
+  .actionsFiche {
+    flex: 1 1 100%; display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) 36px; gap: 5px !important;
+  }
+  .actionsFiche .actionFiche {
+    flex-direction: column; justify-content: center; align-items: center; gap: 4px;
+    min-height: 50px; padding: 6px 3px; border-radius: 13px;
+    font-size: 10.5px; font-weight: 700; line-height: 1.15; text-align: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .actionsFiche .actionFiche:not(.btnPrimary) { color: #334155; }
+  .actionsFiche .actionSuppr {
+    background: #fff !important; border: 1px solid #eef1f6 !important; border-radius: 14px !important;
+    padding: 0 !important; align-self: stretch !important; font-size: 16px !important;
+    display: inline-flex; align-items: center; justify-content: center; color: #b6c1d1 !important;
+  }
+
+  /* ── Le contenu ── */
+  .contentWrap { padding: 12px 12px 28px; gap: 12px; }
+  .infoCard { border-radius: 18px; }
+  .infoCardBody { padding: 12px; }
+
+  /* L'en-tête des critères : la recherche, le mandat, puis les trois
+     outils en pastilles, chacun sur une zone franche pour le doigt. */
+  .critEntete { gap: 10px; padding: 13px 13px 12px; }
+  .critEntete > span:nth-child(3) { display: none; }
+  .critMandat { width: 100%; justify-content: flex-start; flex-wrap: wrap; row-gap: 4px; padding: 9px 12px; }
+  .critMandat i { margin-left: auto; }
+  .critOutils { width: 100%; gap: 7px !important; flex-wrap: wrap; }
+  .critOutils > .editBtn {
+    flex: 1 1 auto; justify-content: center;
+    background: #f8fafc; border: 1px solid #e3e8f0; border-radius: 11px;
+    padding: 9px 10px; font-size: 12.5px; color: #475569;
+  }
+  .critNom { font-size: 17px; text-align: left; }
+
+  .secteurTag { font-size: 13px; padding: 4px 11px; }
+  .emptyTab { padding: 40px 18px; }
+  .card { border-radius: 16px; }
+
+  /* ── Les fenêtres : des panneaux qui montent du bas ── */
+  .overlay { align-items: flex-end; padding: 0; }
+  .modal {
+    max-width: none !important; max-height: calc(100dvh - 10px);
+    border-radius: 22px 22px 0 0;
+    animation: feuilleMonte .34s cubic-bezier(.22,.9,.3,1);
+  }
+  .modalHeader { padding: 16px 16px 13px; gap: 10px; }
+  .modalTitle { font-size: 17px; }
+  .modalClose { width: 36px; height: 36px; border-radius: 11px; font-size: 15px; flex-shrink: 0; }
+  .modalBody { padding: 14px 16px 18px; }
+  .modalFooter {
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    flex-wrap: wrap; background: #fbfcfe;
+  }
+  .modalFooter > .btn, .modalFooter > button { flex: 1 1 0; justify-content: center; padding: 12px 10px; font-size: 14px; border-radius: 12px; }
+  .critNav { flex-wrap: wrap; }
+  .critNavD { flex: 1 1 100%; }
+  .critNavD > .btn { flex: 1 1 0; justify-content: center; padding: 12px 10px; font-size: 14px; border-radius: 12px; }
+
+  /* « Étape par étape » : les neuf étapes tiennent sur une seule ligne,
+     sans défiler. Chaque pastille garde son pictogramme, l'étape en cours
+     est cerclée d'or, celles déjà faites sont dorées, le fil entre elles
+     se remplit au fur et à mesure. Le nom de l'étape est juste dessous,
+     dans l'en-tête du panneau. */
+  .critFrise { padding: 14px 16px 4px; gap: 0; overflow: visible; }
+  .critPuce {
+    flex: 0 0 32px; width: 32px; height: 32px; max-width: 32px;
+    padding: 0; justify-content: center; border-width: 1.5px;
+  }
+  .critPuceOn { max-width: 32px; box-shadow: 0 0 0 4px rgba(201,168,76,.3); }
+  .critPuceTxt { display: none; }
+  .critPuceIco { font-size: 15px; }
+  .critTrait { flex: 1 1 2px; min-width: 2px; margin: 0 1px; }
+
+  .critEnTete {
+    background: #f8fafc; border: 1px solid #eef1f6; border-radius: 16px;
+    padding: 12px; gap: 11px;
+  }
+  .critEnTeteT { font-size: 15px; }
+  .critEnTeteS { font-size: 12.5px; line-height: 1.35; }
+  .critCompteur {
+    align-self: flex-start; background: #fdf6e3; border: 1px solid #ecdcb4;
+    border-radius: 99px; padding: 3px 9px; letter-spacing: .4px; font-size: 10.5px;
+  }
+
+  /* La fenêtre des critères : le titre et la croix en haut, la bascule
+     « Tout afficher / Étape par étape » en dessous, sur toute la largeur. */
+  /* Hauteur fixe : le panneau ne saute plus d'une étape à l'autre. */
+  .critFenetre { height: calc(100dvh - 10px); }
+  .critTete { flex-wrap: wrap; row-gap: 12px; }
+  .critTete > div:last-child { display: contents !important; }
+  .critTete .modalTitle { flex: 1 1 auto; order: 1; }
+  .critTete .modalClose { order: 2; }
+  .critTete .critBasc { order: 3; flex: 1 1 100%; }
+  .critTete .critBascBtn { flex: 1 1 0; padding: 8px 10px; font-size: 13px; }
+  .modalBody:last-child { padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+
+  .formRow { grid-template-columns: 1fr; gap: 12px; }
+  .lbl { font-size: 10.5px; }
+  .inp { font-size: 16px; padding: 11px 12px; border-radius: 11px; }
+  .btn { padding: 9px 14px; }
+}
+
+@keyframes feuilleMonte { from { transform: translateY(60px); opacity: .4; } to { transform: none; opacity: 1; } }
+
+/* ══ L'en-tête de la fiche contact (V3.29) ══════════════════════════════
+   Le bloc bleu : qui, où en est son dossier, son espace, et un panneau de
+   coordonnées qui se déplie par-dessus les onglets (le bloc ne grandit
+   jamais). Les onglets sont posés à cheval sur son bord bas. */
+.teteZone { background: #f8fafc; padding: 16px 24px 0; }
+.tete {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 24px;
+  padding: 24px 22px 48px 28px; border-radius: 22px; color: #fff;
+  background: linear-gradient(152deg, #3a5178 0%, #27395a 52%, #2e4166 100%);
+  border: 1px solid rgba(201, 168, 76, .2); box-shadow: 0 24px 50px -30px rgba(30, 45, 75, .75);
+}
+.teteFond { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.teteHalo1 { position: absolute; top: -140px; right: -90px; width: 360px; height: 360px; border-radius: 50%; background: radial-gradient(circle, rgba(201, 168, 76, .2), transparent 64%); }
+.teteHalo2 { position: absolute; bottom: -160px; left: -60px; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(125, 185, 255, .12), transparent 66%); }
+.teteG { position: relative; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+/* Ses biens à lui (V3.84) : sous les tuiles et les coordonnées, sur toute la
+   largeur, le même rang que dans la fiche d'un vendeur (BiensBandeau.tsx). */
+.teteBiens { grid-column: 1 / -1; position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.teteBiensT { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 11px; font-weight: 800; letter-spacing: .9px; text-transform: uppercase; color: rgba(255, 255, 255, .62); }
+.teteBiensT::after { content: ''; flex: 1 1 auto; height: 1px; background: linear-gradient(90deg, rgba(232, 201, 106, .35), rgba(255, 255, 255, 0)); }
+.teteBiensT b { font-weight: 800; color: #e8c96a; }
+.teteBiensT em { font-style: normal; min-width: 18px; height: 18px; padding: 0 6px; box-sizing: border-box; border-radius: 99px; display: inline-flex; align-items: center; justify-content: center; background: rgba(232, 201, 106, .18); color: #f0dc9c; font-size: 11px; letter-spacing: 0; }
+.teteBiensT small { font-size: 11px; font-weight: 700; letter-spacing: 0; text-transform: none; color: rgba(255, 255, 255, .5); }
+.teteQui { display: flex; align-items: flex-start; gap: 17px; min-width: 0; }
+/* « Achète pour SCI … » ou « Pour une société (SCI…) ? Ajouter » (V3.31). */
+.teteSoc {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 28px; padding: 3px 11px; border-radius: 99px; cursor: pointer; text-align: left;
+  border: 1px solid rgba(227, 200, 114, .35); background: rgba(255, 255, 255, .06); color: rgba(255, 255, 255, .82);
+  font: 600 12px 'DM Sans', sans-serif; transition: background .15s, border-color .15s;
+}
+.teteSoc svg { color: #e0c36e; flex-shrink: 0; }
+.teteSoc span b { color: #e8c96a; font-weight: 800; }
+.teteSoc:hover { background: rgba(255, 255, 255, .12); border-color: #e0c36e; }
+.teteSocVide { border-style: dashed; padding-right: 5px; }
+.teteSocVide > b { padding: 2px 9px; border-radius: 99px; background: #c9a84c; color: #1a2332; font-size: 11px; font-weight: 800; }
+.teteAvatar {
+  width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .02));
+  border: 1.5px solid rgba(201, 168, 76, .55); color: #e0c36e;
+  font: 800 22px 'Plus Jakarta Sans', sans-serif; letter-spacing: .5px;
+}
+.teteEtat { position: absolute; right: 1px; bottom: 1px; width: 13px; height: 13px; border-radius: 50%; border: 2.5px solid #2b3f63; }
+
+/* Où en est son dossier (V3.33) : les tuiles de src/components/shared/Tuiles.tsx. */
+
+.teteEspace {
+  display: inline-flex; align-items: center; gap: 8px; padding: 0;
+  border: none; background: none; cursor: pointer; font: 500 12.5px 'DM Sans', sans-serif; color: rgba(255, 255, 255, .78);
+}
+.teteEspace b { color: #fff; font-weight: 700; }
+.teteEspace:hover b { color: #e8c96a; }
+.teteEspaceOn, .teteEspaceOff { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.teteEspaceOn { background: #4ade80; animation: espaceVivant 2s ease-out infinite; }
+.teteEspaceOff { background: rgba(255, 255, 255, .3); }
+@keyframes espaceVivant { 0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, .6); } 80%, 100% { box-shadow: 0 0 0 7px rgba(74, 222, 128, 0); } }
+
+/* Les coordonnées : trois lignes, puis « Tout voir » par-dessus les onglets.
+   V3.29 : sur fond crème doré (choix d'Alexandre, variante C) plutôt qu'en
+   bleu transparent, où les numéros se perdaient dans le bloc. */
+/* V3.33 : le panneau prend toute la hauteur du bandeau (plus de bleu vide
+   en dessous) ; « Voir sur la carte » ou « Tout voir » se posent en bas. */
+.coZone { position: relative; align-self: stretch; display: flex; flex-direction: column; min-width: 0; }
+.coZone > .coPanneau:first-child { flex: 1 1 auto; }
+.coZone > .coPanneau:first-child > .coPied,
+.coZone > .coPanneau:first-child > .coPlus { margin-top: auto; }
+.coPanneau {
+  display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 18px;
+  background: #fbf6e9; border: 1px solid #f1e3bd; box-shadow: 0 14px 30px -18px rgba(10, 18, 32, .55);
+}
+.coDeplie {
+  position: absolute; left: auto; right: 0; top: 0; z-index: 6; width: max(100%, 460px); box-sizing: border-box; max-height: min(70vh, 560px); overflow-y: auto;
+  background: #fbf6e9; border-color: #e7d39c;
+  box-shadow: 0 30px 60px -24px rgba(15, 23, 42, .6);
+  animation: coOuvre .24s cubic-bezier(.16, 1, .3, 1);
+}
+@keyframes coOuvre { from { opacity: 0; clip-path: inset(0 0 60% 0 round 18px); } to { opacity: 1; clip-path: inset(0 0 0 0 round 18px); } }
+.coTete {
+  display: flex; align-items: center; justify-content: space-between; padding: 0 4px 6px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: #8a6a1f;
+}
+.coTete button { border: none; background: none; padding: 0; cursor: pointer; color: #8a6a1f; font: 700 12px 'DM Sans', sans-serif; letter-spacing: 0; text-transform: none; text-decoration: underline; text-underline-offset: 2px; }
+.coLigne { display: flex; align-items: center; gap: 2px; border-radius: 11px; transition: background .15s; }
+.coLigne:hover { background: rgba(255, 255, 255, .75); }
+.coLien {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 4px 0 8px;
+  color: #1a2332; text-decoration: none; font: 700 13.5px 'DM Sans', sans-serif;
+}
+a.coLien:hover { color: #1a2332; }
+.coIc { width: 28px; height: 28px; border-radius: 9px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: #fff; color: #a07c28; }
+.coVal { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.coQui { flex-shrink: 0; font-style: normal; font-size: 12px; font-weight: 600; color: #8a7a55; }
+.coCopie {
+  width: 30px; height: 30px; margin-right: 4px; flex-shrink: 0; border: none; border-radius: 9px; background: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; color: #a8946a; transition: background .15s, color .15s;
+}
+.coCopie:hover { background: #fff; color: #1a2332; }
+.coVide { padding: 6px 4px; font-size: 13px; color: #6b5a33; }
+.coVide button { border: none; background: none; padding: 0; cursor: pointer; color: #8a6a1f; font: 700 13px 'DM Sans', sans-serif; text-decoration: underline; text-underline-offset: 2px; }
+.coPlus {
+  display: flex; align-items: center; justify-content: flex-start; gap: 8px; height: 34px; margin-top: 4px; padding: 0 10px;
+  border: none; border-radius: 10px; background: #fff; color: #1a2332; cursor: pointer; font: 700 12.5px 'DM Sans', sans-serif;
+  transition: background .15s, box-shadow .15s;
+}
+.coPlus:hover { box-shadow: 0 0 0 1px #e7d39c; }
+.coPlus svg { color: #a07c28; }
+.coReduire svg { transform: rotate(180deg); }
+.coGroupe { padding: 8px 4px 2px; font-size: 10px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase; color: #a8946a; }
+.coPied { padding: 8px 4px 2px; }
+/* Au pied des coordonnées d'un acheteur : la carte, et son espace (V3.33). */
+.coPiedLigne { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.coEspace {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 30px; padding: 4px 12px 4px 10px; border-radius: 99px; cursor: pointer;
+  border: 1px solid #ecdcae; background: #fff; color: #1a2332; font: 500 12.5px 'DM Sans', sans-serif; white-space: nowrap;
+}
+.coEspace b { font-weight: 800; }
+.coEspace > span:last-child { color: #64748b; }
+.coEspace:hover { border-color: #c9a84c; }
+.coEspace .teteEspaceOff { background: #cbd5e1; }
+
+.ongletsTete { position: relative; z-index: 3; margin: -24px 22px 0; }
+.ongletsTete > nav { box-shadow: 0 14px 30px -16px rgba(26, 35, 50, .45), 0 2px 6px rgba(26, 35, 50, .06); }
+
+/* ── Vue d'ensemble, Son espace, Documents ── */
+.ens { display: flex; flex-direction: column; gap: 16px; }
+.ensCols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.ensCol { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.aVenir { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 8px 12px; border-radius: 16px; background: #fff; border: 1px solid #e3e8f0; }
+.aVenirL { display: inline-flex; align-items: center; gap: 10px; padding: 4px; border: none; background: none; cursor: pointer; text-align: left; font: 500 13.5px 'DM Sans', sans-serif; color: #475569; }
+.aVenirL b { color: #1a2332; }
+.aVenirIc { width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: #fbf6e9; color: #a07c28; }
+.aVenirSep { width: 1px; height: 22px; background: #e3e8f0; }
+.carteEns { background: #fff; border: 1px solid #e3e8f0; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+.carteEnsT { display: flex; align-items: center; gap: 10px; }
+.carteEnsT b { flex: 1; min-width: 0; font: 800 15.5px 'Plus Jakarta Sans', sans-serif; color: var(--emilio); }
+.carteEnsT button { border: none; background: none; padding: 0; cursor: pointer; color: #a07c28; font: 700 13px 'DM Sans', sans-serif; white-space: nowrap; }
+.carteEnsIc { width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: #fbf6e9; border: 1px solid #ecdcb0; color: #a07c28; }
+.situGrille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.situChamp { display: flex; flex-direction: column; gap: 3px; padding: 9px 11px; border-radius: 11px; background: #f8fafc; min-width: 0; }
+.situChamp small { font-size: 10.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: #94a3b8; }
+.situChamp span { font-size: 14px; font-weight: 700; color: var(--emilio); overflow-wrap: anywhere; }
+.situVente { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 10px; background: #fffaf3; color: #b45309; border: 1px solid #f3dcb8; font-size: 12.5px; font-weight: 700; }
+.situNotes { margin: 0; font-size: 13px; line-height: 1.6; color: #64748b; }
+.derniers { display: flex; flex-direction: column; }
+.dernier { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 10px; padding: 8px 2px; border-top: 1px solid #f1f5f9; font-size: 13px; }
+.dernier:first-child { border-top: none; padding-top: 2px; }
+.dernierQuand { font-size: 12px; font-weight: 700; color: #94a3b8; }
+.dernierTxt { color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Le rapprochement (V3.29) : le bandeau de la Vue d'ensemble ── */
+.rappro {
+  display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; gap: 18px; align-items: center; padding: 12px 16px 12px 12px;
+  background: #fff; border: 1px solid #ecdcb0; border-radius: 20px; box-shadow: 0 16px 34px -26px rgba(46, 65, 102, .45);
+}
+.rapproIllu { display: block; }
+.rapproTrait { stroke-dasharray: 3 7; animation: rapproTrait 1.4s linear infinite; }
+@keyframes rapproTrait { to { stroke-dashoffset: -20; } }
+.rapproOnde { transform-box: fill-box; transform-origin: center; animation: rapproOnde 2.4s ease-out infinite; }
+@keyframes rapproOnde { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(1.45); opacity: 0; } }
+.rapproFlotte1, .rapproFlotte2 { animation: rapproFlotte 4.2s ease-in-out infinite; }
+.rapproFlotte2 { animation-delay: -2.1s; }
+@keyframes rapproFlotte { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.rapproTx { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.rapproTitre { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rapproTitre h2 { margin: 0; font: 800 18.5px 'Plus Jakarta Sans', sans-serif; color: #1a2332; }
+.rapproNouveau { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px 3px 8px; border-radius: 99px; background: #fbf6e9; border: 1px solid #ecdcb0; font-size: 12px; font-weight: 700; color: #7a5d1c; }
+.rapproNouveau i { width: 7px; height: 7px; border-radius: 50%; background: #c9a84c; animation: rapproPing 1.8s ease-out infinite; }
+@keyframes rapproPing { 0% { box-shadow: 0 0 0 0 rgba(201, 168, 76, .6); } 80%, 100% { box-shadow: 0 0 0 7px rgba(201, 168, 76, 0); } }
+.rapproTx p { margin: 0; font-size: 13.5px; line-height: 1.5; color: #475569; }
+.rapproTx p b { color: #15803d; }
+.rapproCta {
+  display: inline-flex; align-items: center; gap: 9px; height: 48px; padding: 0 20px; border: none; border-radius: 14px; cursor: pointer; white-space: nowrap;
+  color: #1a2332; font: 800 14.5px 'Plus Jakarta Sans', sans-serif; box-shadow: 0 12px 24px -12px rgba(160, 124, 40, .8);
+  background: linear-gradient(100deg, #c9a84c 0%, #c9a84c 40%, #e8c96a 50%, #c9a84c 60%, #c9a84c 100%); background-size: 420px 100%;
+  animation: rapproBrille 3.2s ease-in-out infinite;
+}
+@keyframes rapproBrille { 0% { background-position: -160px 0; } 100% { background-position: 260px 0; } }
+/* L'onglet Rapprochement (V3.32) : le dernier fait, les mandats qui lui
+   correspondent, ceux déjà faits. */
+.rapproDernier { font-size: 12.5px; font-weight: 600; color: #94a3b8; }
+.rapproMandats { display: flex; flex-direction: column; gap: 6px; }
+.rapproMandat {
+  display: flex; align-items: center; gap: 11px; width: 100%; padding: 9px 11px; border-radius: 13px; border: 1px solid #eef2f7; background: #fbfcfe;
+  text-align: left; cursor: pointer; font: inherit; color: inherit; transition: background .15s, border-color .15s;
+}
+.rapproMandat:hover { background: #fffcf4; border-color: #ecdcb0; }
+.rapproMandatIc { width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: #eef2f8; color: #34496e; }
+.rapproMandatTx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.rapproMandatTx b { font-size: 13.5px; font-weight: 700; color: #1a2332; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rapproMandatTx small { font-size: 12px; color: #94a3b8; }
+.rapproNote { flex-shrink: 0; padding: 3px 9px; border-radius: 99px; background: #ecfdf3; color: #15803d; font-size: 12px; font-weight: 800; }
+.rapproCompte { font-style: normal; font-size: 12px; font-weight: 700; color: #94a3b8; }
+.rapproFait { display: flex; flex-direction: column; gap: 1px; min-width: 0; color: #334155; }
+.rapproFait b { font-weight: 700; color: #1a2332; }
+.rapproFait small { font-size: 12px; color: #94a3b8; }
+/* Le petit rappel après l'enregistrement des critères (V3.128) : dans le bleu
+   Emilio (« un peu en noir » avant), il arrive et repart en bulle. */
+.toastRappro {
+  position: fixed; right: 24px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 250; width: min(420px, calc(100vw - 24px));
+  display: flex; align-items: flex-start; gap: 12px; padding: 14px 12px 14px 14px; border-radius: 20px; color: rgba(255, 255, 255, .86);
+  background: linear-gradient(152deg, #2d5b97 0%, #22497c 55%, #1d3f6c 100%); border: 1px solid rgba(255, 255, 255, .14);
+  box-shadow: 0 24px 44px -20px rgba(18, 42, 80, .75); transform-origin: 85% 100%;
+  animation: toastBulle .52s cubic-bezier(.2, 1.3, .35, 1) both;
+}
+.toastSort { animation: toastBulleSort .26s cubic-bezier(.5, 0, .75, .3) both; pointer-events: none; }
+@keyframes toastBulle {
+  0% { opacity: 0; transform: translateY(18px) scale(.6); border-radius: 40px; }
+  55% { opacity: 1; transform: translateY(-3px) scale(1.03); }
+  100% { opacity: 1; transform: none; border-radius: 20px; }
+}
+@keyframes toastBulleSort { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(10px) scale(.7); border-radius: 40px; } }
+.toastRapproIc { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .14); color: #f2c97a; animation: toastIc 2.6s ease-in-out .5s infinite; }
+@keyframes toastIc { 0%, 70%, 100% { transform: none; } 80% { transform: rotate(-14deg) scale(1.08); } 90% { transform: rotate(10deg) scale(1.04); } }
+.toastRapproTx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; font-size: 13px; line-height: 1.45; }
+.toastRapproTx b { font: 700 14px 'Plus Jakarta Sans', sans-serif; color: #fff; }
+.toastRapproTx button { align-self: flex-start; margin-top: 7px; height: 30px; padding: 0 14px; border-radius: 99px; border: none; background: #fff; color: #22497c; font: 700 12.5px 'DM Sans', sans-serif; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.toastRapproTx button:hover { box-shadow: 0 6px 14px -8px rgba(0, 0, 0, .5); }
+.toastRapproX { width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%; border: none; background: rgba(255, 255, 255, .14); color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.toastRapproX:hover { background: rgba(255, 255, 255, .24); }
+
+@media (max-width: 720px) {
+  .toastRappro { right: 12px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .rappro { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 14px; }
+  .rapproIllu { display: none; }
+  .rapproCta { justify-content: center; width: 100%; }
+  .teteZone { padding: 10px 10px 0; }
+  .archiveBandeau { margin: 10px 10px 0; }
+  .tete { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 16px 14px 44px; border-radius: 18px; }
+  .teteQui { gap: 12px; }
+  .teteAvatar { width: 44px; height: 44px; font-size: 16px; }
+  .ongletsTete { margin: -24px 8px 0; }
+  .ensCols { grid-template-columns: minmax(0, 1fr); }
+  .aVenir { flex-direction: column; align-items: stretch; gap: 4px; }
+  .aVenirSep { display: none; }
+  .coLien { font-size: 13px; }
+  .coDeplie { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .teteEspaceOn, .coDeplie, .rapproTrait, .rapproOnde, .rapproFlotte1, .rapproFlotte2, .rapproNouveau i, .rapproCta, .toastRappro, .toastRapproIc { animation: none; }
+  .toastSort { animation: none; opacity: 0; }
+}
+
+/* ══ V3.128 — La barre à cheval, comme sur la fiche d'un bien ═══════════════
+   Alexandre : « le menu en haut, à cheval, comme pour les biens… pour que ça
+   soit plus joli » (maquette C). Trois blocs de 46 px posés sur le haut du
+   bandeau : qui il est et où en est son dossier (la pastille), sa relance,
+   puis les gestes collés (Envoyer · Action · Ajouter un bien · ⋯). Le
+   bandeau ne garde que le nom. */
+.chevalHaut { container-type: inline-size; position: relative; z-index: 5; display: flex; align-items: center; gap: 10px; margin: 0 20px -23px; min-width: 0; }
+.chevalHaut + .tete { padding-top: 44px; }
+/* La barre a sa place juste sous « ← Contacts » : moins de vide au-dessus. */
+.teteZone:has(> .chevalHaut) { padding-top: 2px; }
+.pastilleQui {
+  --stC: #a78bfa;
+  display: inline-flex; align-items: center; gap: 10px; height: 46px; max-width: min(400px, 46%); min-width: 0; flex: 0 1 auto; padding: 0 15px 0 6px; border-radius: 99px; cursor: pointer;
+  border: 1.5px solid color-mix(in srgb, var(--stC) 55%, #fff); background: #fff; font-family: 'DM Sans', sans-serif; text-align: left;
+  box-shadow: 0 12px 26px -12px rgba(26, 35, 50, .5), 0 2px 6px rgba(26, 35, 50, .08); transition: border-color .2s, background-color .2s;
+}
+.pastilleQui:hover, .pastilleQui[aria-expanded='true'] { border-color: var(--stC); background: color-mix(in srgb, var(--stC) 6%, #fff); }
+.pastilleQuiIc { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--stC) 16%, #fff); color: color-mix(in srgb, var(--stC) 70%, #1a2332); }
+.pastilleQuiTx { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.pastilleQuiTx small { font-size: 10.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: color-mix(in srgb, var(--stC) 62%, #1a2332); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pastilleQuiTx b { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 14.5px; font-weight: 800; color: #1a2332; }
+.pastilleQuiTx b > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pastilleQuiTx b > svg { flex-shrink: 0; color: color-mix(in srgb, var(--stC) 70%, #1a2332); transition: transform .2s; }
+.pastilleQui[aria-expanded='true'] .pastilleQuiTx b > svg { transform: rotate(180deg); }
+
+/* La relance : sa couleur dit l'urgence (en retard, aujourd'hui, plus tard) ;
+   la cloche sonne quand elle est due. Un clic ouvre le Suivi. */
+.relanceCheval {
+  display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 16px 0 14px; border-radius: 99px; cursor: pointer; flex: 0 0 auto; white-space: nowrap;
+  border: 1.5px solid var(--rT, #fde68a); background: var(--rF, #fffbeb); color: var(--rC, #b45309); font: 800 13.5px 'DM Sans', sans-serif;
+  box-shadow: 0 12px 26px -12px rgba(26, 35, 50, .5), 0 2px 6px rgba(26, 35, 50, .08); transition: box-shadow .2s;
+}
+.relanceCheval:hover { box-shadow: 0 14px 28px -12px rgba(26, 35, 50, .55), 0 0 0 3px color-mix(in srgb, var(--rT, #fde68a) 60%, transparent); }
+.relanceCloche { display: inline-flex; transform-origin: 50% 12%; }
+.relanceCheval[data-urgent] .relanceCloche { animation: clocheSonne 3.2s ease-in-out infinite; }
+@keyframes clocheSonne {
+  0%, 72%, 100% { transform: rotate(0); }
+  76% { transform: rotate(16deg); } 80% { transform: rotate(-14deg); } 84% { transform: rotate(10deg); } 88% { transform: rotate(-6deg); } 92% { transform: rotate(0); }
+}
+.relanceCourt { display: none; }
+
+/* Les gestes, collés : un bloc, un trait entre chacun. */
+.gestesZone { margin-left: auto; flex-shrink: 0; min-width: 0; }
+.gestes {
+  display: inline-flex; align-items: stretch; height: 46px; border-radius: 99px; background: #fff; border: 1px solid #e3e8f0; overflow: hidden;
+  box-shadow: 0 12px 26px -12px rgba(26, 35, 50, .5), 0 2px 6px rgba(26, 35, 50, .08);
+}
+.geste {
+  position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 0 16px; border: none; border-radius: 0; background: transparent;
+  color: #1a2332; font: 700 13.5px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; transition: background-color .15s;
+}
+.geste:first-child { padding-left: 19px; }
+.geste + .geste::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 1px; background: #e3e8f0; }
+.geste:hover, .geste[aria-expanded='true'] { background: #f3f6fa; }
+.geste > svg { color: #64748b; }
+.gesteEnv { color: #8a5a00; }
+.gesteEnv > svg { color: #c08a12; }
+.gesteEnv:hover { background: #fffaeb; }
+.gestePlus { padding: 0 17px 0 15px; }
+/* Moins de place : la relance se dit court, puis les gestes en icônes. */
+@container (max-width: 900px) {
+  .relanceLong { display: none; }
+  .relanceCourt { display: inline; }
+}
+@container (max-width: 800px) {
+  .geste:not(.gesteEnv) .gesteTx { display: none; }
+  .geste, .geste:first-child { padding: 0 14px; }
+}
+
+/* Le haut de la page : le retour seul, sur le fond de la page, tant que la
+   barre se voit ; une fois défilé, il se remplit (nom, gestes) et blanchit. */
+.pageHeader { transition: background-color .25s, border-color .25s, box-shadow .25s; }
+.pageHeader:not(.pageHeaderPlie) { background: #f8fafc; border-bottom-color: transparent; }
+.pageHeaderPlie { box-shadow: 0 8px 22px -18px rgba(15, 22, 35, .5); }
+.filPlie { opacity: 0; transition: opacity .2s; }
+.pageHeaderPlie .filPlie { opacity: 1; }
+.gestesHaut { opacity: 0; visibility: hidden; transform: translateY(-4px); transition: opacity .2s, transform .2s, visibility 0s linear .2s; }
+.pageHeaderPlie .gestesHaut { opacity: 1; visibility: visible; transform: none; transition: opacity .2s, transform .2s; }
+.gestesMini { height: 38px; box-shadow: none; }
+.gestesMini .geste { padding: 0 13px; font-size: 13px; }
+.gestesMini .geste:first-child { padding-left: 15px; }
+.gestesMini .geste + .geste::before { top: 9px; bottom: 9px; }
+
+/* « ⋯ » : chaque geste dit ce qu'il fait avant qu'on clique. */
+.menuPlus {
+  position: fixed; z-index: 191; width: 300px; max-width: calc(100vw - 24px); padding: 6px; border-radius: 16px; background: #fff;
+  border: 1px solid #e3e8f0; box-shadow: 0 3px 8px rgba(15, 22, 35, .06), 0 18px 44px rgba(15, 22, 35, .2);
+}
+.menuPlusL {
+  display: flex; align-items: flex-start; gap: 11px; width: 100%; padding: 9px 10px; border: none; border-radius: 11px; background: none; cursor: pointer; text-align: left; font-family: 'DM Sans', sans-serif;
+  transition: background-color .15s;
+}
+.menuPlusL:hover { background: #f5f7fb; }
+.menuPlusL > span:last-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.menuPlusL b { font-size: 13.5px; font-weight: 800; color: #1a2332; }
+.menuPlusL small { font-size: 12px; line-height: 1.4; color: #64748b; }
+.menuPlusIc { width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: #f1f5f9; color: #475569; }
+.menuPlusSep { height: 1px; margin: 4px 8px; background: #eef1f6; }
+.menuPlusDanger b { color: #b91c1c; }
+.menuPlusDanger .menuPlusIc { background: #fef2f2; color: #dc2626; }
+.menuPlusDanger:hover { background: #fff5f5; }
+
+/* « En cours » / « En pause », posée sur le bord de l'onglet « Sa recherche »
+   et qui déborde sur le bleu (Alexandre, aperçu 1 : « le faire bouger
+   légèrement plus »). */
+.etiqRecherche {
+  position: absolute; z-index: 5; top: -12px; left: 0; display: inline-flex; align-items: center; gap: 5px; height: 21px; padding: 0 9px; border-radius: 99px;
+  background: #10b981; color: #fff; font: 800 10.5px 'DM Sans', sans-serif; letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; pointer-events: none;
+  box-shadow: 0 6px 14px -6px rgba(16, 185, 129, .85), 0 0 0 2px #fff;
+  transform: translateX(-50%); animation: etiqFlotte 2.6s ease-in-out infinite;
+}
+.etiqRecherche i { position: relative; width: 6px; height: 6px; border-radius: 50%; background: #fff; flex-shrink: 0; }
+.etiqRecherche i::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #fff; animation: etiqPoint 1.8s ease-out infinite; }
+.etiqRecherche[data-etat='pause'] { background: #f59e0b; box-shadow: 0 6px 14px -6px rgba(245, 158, 11, .85), 0 0 0 2px #fff; }
+@keyframes etiqFlotte {
+  0%, 100% { transform: translateX(-50%) translateY(0) rotate(0); }
+  25% { transform: translateX(-50%) translateY(-5px) rotate(-2.5deg); }
+  50% { transform: translateX(-50%) translateY(-1px) rotate(0); }
+  75% { transform: translateX(-50%) translateY(-5px) rotate(2.5deg); }
+}
+@keyframes etiqPoint { 0% { transform: scale(1); opacity: .8; } 80%, 100% { transform: scale(2.6); opacity: 0; } }
+/* V3.167 — Ses documents signés : un petit numéro sur le bleu Emilio, posé
+   au coin de l'onglet « Documents », qui flotte comme « En cours » (décalé
+   d'une demi-période : les deux ne se balancent pas ensemble) et lance une
+   onde douce. */
+.pastilleDocs {
+  position: absolute; z-index: 5; top: -10px; left: 0; min-width: 23px; height: 23px; padding: 0 7px; box-sizing: border-box; border-radius: 99px;
+  display: inline-flex; align-items: center; justify-content: center; pointer-events: none;
+  background: var(--emilio-fond); color: #fff; font: 800 12px 'Plus Jakarta Sans', sans-serif; font-variant-numeric: tabular-nums;
+  box-shadow: 0 6px 14px -6px rgba(46, 65, 102, .9), 0 0 0 2px #fff;
+  transform: translateX(-50%); animation: etiqFlotte 2.6s ease-in-out -1.3s infinite;
+}
+.pastilleDocs::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  animation: docsOnde 2.4s ease-out infinite;
+}
+@keyframes docsOnde { 0% { box-shadow: 0 0 0 0 rgba(46, 65, 102, .45); } 70%, 100% { box-shadow: 0 0 0 9px rgba(46, 65, 102, 0); } }
+
+@media (max-width: 900px) {
+  .gestesHaut { display: none; }
+}
+@media (max-width: 760px) {
+  /* Au téléphone, deux rangs, comme sur un bien : la pastille et la relance
+     à cheval sur le bord ; dessous, sur le bandeau, les gestes en icônes.
+     42 + 8 + 42 = 92 px, le bord au milieu du premier rang (21 px). */
+  .pageHeader, .pageHeader:not(.pageHeaderPlie) { background: transparent; border-bottom: none; box-shadow: none; padding: 9px 10px 0; }
+  .chevalHaut { flex-wrap: wrap; row-gap: 8px; column-gap: 8px; margin: 0 10px -71px; }
+  .chevalHaut + .tete { padding-top: 86px; }
+  .pastilleQui { height: 42px; max-width: 100%; padding-right: 12px; gap: 8px; }
+  .chevalHaut:has(.relanceCheval) .pastilleQui { max-width: calc(100% - 158px); }
+  .pastilleQuiIc { width: 30px; height: 30px; }
+  .pastilleQuiTx b { font-size: 13.5px; }
+  .relanceCheval { height: 42px; padding: 0 12px 0 11px; gap: 6px; font-size: 13px; }
+  .relanceLong { display: none; }
+  .relanceCourt { display: inline; }
+  .gestesZone { flex: 1 1 100%; display: flex; justify-content: flex-end; margin-left: 0; }
+  .gestes { height: 42px; }
+  .geste, .geste:first-child, .gestePlus { padding: 0 14px; }
+  .gesteTx { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .etiqRecherche, .etiqRecherche i::after, .relanceCheval[data-urgent] .relanceCloche, .pastilleDocs, .pastilleDocs::after { animation: none; }
+}
+
+/* ══ V3.152 — Le téléphone bord à bord ══════════════════════════════════════
+   Alexandre : « le fond bleu est cassé, il ne prend pas tout l'écran à droite
+   et à gauche, il y a du blanc… sur le mobile tout est bridé, condensé ».
+   Au téléphone, la fiche prend toute la largeur : le bandeau bleu va d'un
+   bord à l'autre, les cartes aussi (ni arrondi ni cadre sur les côtés, le
+   gris de la page les sépare), et ce qui est posé sur la page garde 14 px
+   de marge. Les tuiles, pastilles et boutons gardent leurs arrondis. */
+@media (max-width: 900px) {
+  /* La barre des rubriques défile au doigt et s'efface au bord (V3.152,
+     Defilement.tsx) : son cadre blanc et son ombre passent à l'enveloppe,
+     sinon le fondu les effacerait avec les onglets. */
+  .ongletsTete {
+    background: #fff; border: 1px solid #e3e8f0; border-radius: 14px;
+    box-shadow: 0 14px 30px -16px rgba(26, 35, 50, .45), 0 2px 6px rgba(26, 35, 50, .06);
+  }
+  .ongletsTete > nav { background: transparent; border: none; border-radius: 13px; box-shadow: none; }
+}
+@media (max-width: 760px) {
+  .pageHeader, .pageHeader:not(.pageHeaderPlie) { padding: 9px 14px 0; }
+  /* V3.163 — Alexandre : « sur la fiche d'un contact, finalement en arrondi,
+     c'est mieux » : 10 px de chaque côté, le bandeau bleu et les cartes
+     reprennent leurs coins arrondis. */
+  .archiveBandeau { margin: 10px 10px 0; padding: 11px 14px; }
+
+  .teteZone { padding: 10px 10px 0; }
+  .teteZone:has(> .chevalHaut) { padding-top: 2px; }
+  .chevalHaut { margin: 0 14px -71px; }
+  .tete { border-radius: 20px; padding-left: 14px; padding-right: 14px; }
+  .ongletsTete { margin: -24px 10px 0; }
+
+  .contentWrap { padding: 12px 10px 28px; }
+  .carteEns { padding: 14px; }
+  .aVenir { padding: 8px 10px; }
+  .rappro { padding: 14px; }
+  .emptyTab { padding: 36px 14px; }
+}

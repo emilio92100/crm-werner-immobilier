@@ -1,0 +1,350 @@
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  height: 100vh;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  border-right: 1px solid #e3e8f0;
+}
+
+/* LOGO */
+.logo {
+  padding: 22px 20px 18px;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  position: relative; z-index: 1; flex-shrink: 0;
+}
+
+/* V3.29 : le logo de l'agence, en grand, à la place de « EI Emilio
+   Immobilier ». Le « E » seul quand la barre est réduite. */
+.logoGrand { display: block; width: 176px; height: auto; margin: 2px auto 0; }
+.logoMark {
+  display: none; width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(26,35,50,0.2);
+}
+
+/* NAV */
+.nav { flex: 1; overflow-y: auto; padding: 10px 12px; position: relative; z-index: 1; }
+.navGroup { margin-bottom: 4px; }
+
+.navSection {
+  font-size: 10px; font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 16px 10px 6px;
+}
+
+.navSep { height: 1px; background: #f1f5f9; margin: 8px 0; }
+
+.navItem {
+  display: flex; align-items: center; gap: 11px;
+  width: 100%; padding: 10px 14px;
+  border-radius: 10px; border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px; font-weight: 500;
+  text-align: left; cursor: pointer;
+  transition: all 0.15s; margin-bottom: 2px;
+  position: relative; letter-spacing: -0.1px;
+  font-family: 'DM Sans', sans-serif;
+}
+.navItem:hover { background: #f8fafc; color: var(--emilio); }
+.navItem.active { background: #f1f5f9; color: var(--emilio); font-weight: 700; }
+.navItem.active::before {
+  content: ''; position: absolute; left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 20px; background: #c9a84c; border-radius: 0 3px 3px 0;
+}
+.navLabel { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Le pictogramme dessiné de la rubrique (V3.24 : aussi sur ordinateur, à la
+   place des symboles ⊞ ◎ ◇, pour aller avec les icônes des sous-menus). */
+.navPicto { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: #94a3b8; transition: color .15s; }
+.navItem:hover .navPicto, .navItem.active .navPicto, .navParent .navPicto { color: var(--emilio); }
+/* V3.169 — Alexandre : « les couleurs du menu sur téléphone, remets-les sur
+   ordinateur ; les icônes sont toutes grises ». Comme au téléphone (V3.162) :
+   chaque rubrique a son pictogramme sur une pastille de sa teinte (`--nc`,
+   `--nf`, Sidebar.tsx), son nom en bleu nuit ; la rubrique ouverte, sa
+   pastille bleu Emilio et le picto doré. */
+@media (min-width: 901px) {
+  .navItem { padding: 7px 12px 7px 9px; color: #3b4a60; font-weight: 600; }
+  .navPicto { width: 30px; height: 30px; border-radius: 9px; background: var(--nf, #f1f5f9); color: var(--nc, #64748b); transition: background .2s, color .2s; }
+  .navItem:hover .navPicto, .navParent .navPicto { background: var(--nf, #e8edf5); color: var(--nc, var(--emilio)); }
+  .navItem.active .navPicto { background: var(--emilio-fond); color: #c9a84c; }
+  .reduit .navItem { padding: 8px 0; }
+}
+
+/* ── Les sous-menus : Documents (V3.18), Contacts et Biens (V3.24) ──
+   La rubrique garde son geste (elle ouvre la page) ; la petite flèche à
+   droite plie ou déplie le sous-menu. Chaque entrée a sa pastille : l'icône
+   sur un fond à la couleur du type de contact ou de l'étape du bien. */
+.navLigne { position: relative; }
+.navItemBascule { padding-right: 42px; }
+.navParent { color: var(--emilio); font-weight: 600; }
+/* La flèche est centrée par des marges, pas par « transform » : la règle
+   générale « button:active { transform: scale(.985) } » effaçait le
+   translateY(-50%) au moment du clic, la flèche sautait de 14 px sous le
+   doigt, et le clic se perdait une fois sur deux (V3.25). */
+.navBascule {
+  position: absolute; right: 5px; top: 0; bottom: 0; margin: auto 0;
+  width: 32px; height: 32px; border-radius: 9px; border: none; background: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #94a3b8; cursor: pointer; transition: background .15s, color .15s;
+}
+.navBascule:hover { background: #eef2f7; color: var(--emilio); }
+.navBascule svg { transform: rotate(-90deg); transition: transform .28s cubic-bezier(.22,.9,.3,1); }
+.navBasculeOuvert svg { transform: rotate(0deg); }
+.sousMenu { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s cubic-bezier(.22,.9,.3,1); }
+.sousMenuOuvert { grid-template-rows: 1fr; }
+.sousMenuIn { overflow: hidden; min-height: 0; }
+.sousListe {
+  position: relative; margin: 0 0 6px 16px; padding: 3px 0;
+  opacity: 0; transform: translateY(-4px); transition: opacity .22s ease, transform .28s ease;
+}
+.sousMenuOuvert .sousListe { opacity: 1; transform: none; }
+.sousItem {
+  position: relative; display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 4px 10px 4px 5px; margin: 2px 0; border: none; border-radius: 10px;
+  background: transparent; color: #3b4a60; cursor: pointer; text-align: left;
+  font: 600 13px 'DM Sans', sans-serif; letter-spacing: -0.1px; transition: background .15s, color .15s;
+}
+.sousIc {
+  position: relative; width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--sf, #f1f5f9); color: var(--sc, #64748b); transition: background .2s, color .2s;
+}
+.sousMot { position: relative; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sousItem:hover { background: #f5f7fa; color: var(--emilio); }
+
+/* L'entrée ouverte : le mot en gras, et sa pastille qui s'allume — pleine,
+   à sa couleur, avec une onde qui s'en échappe doucement, sans fin. Pas de
+   cadre autour de la ligne : il se coupait contre la barre de défilement.
+   V3.30 : « on ne voit pas sur quel onglet on est » — la ligne entière prend
+   la teinte claire de sa couleur (un fond, pas un cadre), et un petit trait
+   de la même couleur se pose à sa gauche. */
+.sousActif, .sousActif:hover { color: var(--emilio); font-weight: 700; background: var(--sf, #f1f5f9); }
+.sousActif::before {
+  content: ''; position: absolute; left: -8px; top: 7px; bottom: 7px; width: 3px; border-radius: 3px;
+  background: var(--sc); animation: sousTrait .35s cubic-bezier(.22,.9,.3,1) backwards;
+}
+.sousActif .sousMot { color: var(--sc); filter: brightness(.72) saturate(1.2); }
+@keyframes sousTrait { from { transform: scaleY(0); opacity: 0; } }
+.sousActif .sousIc { background: var(--sc); color: #fff; animation: sousAllume 2.4s ease-in-out infinite; }
+.sousActif .sousIc::after {
+  content: ''; position: absolute; inset: -2px; border-radius: 10px;
+  border: 2px solid var(--sc); opacity: 0; pointer-events: none;
+  animation: sousOnde 2.4s cubic-bezier(.22,.9,.3,1) infinite;
+}
+@keyframes sousAllume {
+  0%, 100% { box-shadow: 0 3px 8px -4px var(--sb); }
+  50% { box-shadow: 0 0 12px 1px var(--sb); }
+}
+@keyframes sousOnde {
+  0% { transform: scale(.9); opacity: .75; }
+  75%, 100% { transform: scale(1.38); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sousActif .sousIc, .sousActif .sousIc::after, .sousActif::before { animation: none; }
+}
+
+/* Le chiffre était trop timide pour une alerte : on le pose en Jakarta,
+   plus gros et bien gras. */
+.navBadge {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12.5px; font-weight: 800; letter-spacing: -0.2px;
+  padding: 2px 8px; border-radius: 20px;
+  flex-shrink: 0; min-width: 22px; text-align: center;
+}
+.badge_gold  { background: #fef9c3; color: #854d0e; }
+.badge_slate { background: #f1f5f9; color: #64748b; }
+.badge_red   { background: #ef4444; color: #ffffff; box-shadow: 0 0 0 3px rgba(239,68,68,0.16); }
+.badge_blue  { background: #eff6ff; color: #3b82f6; }
+
+/* USER */
+.userArea { padding: 12px; border-top: 1px solid #f1f5f9; position: relative; z-index: 1; flex-shrink: 0; }
+.userCard {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  background: #f8fafc; cursor: pointer; transition: background 0.15s;
+}
+.userCard:hover { background: #f1f5f9; }
+.userAvatar {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--emilio-fond);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 12px; color: #c9a84c; flex-shrink: 0;
+}
+.userName { font-size: 13px; font-weight: 600; color: var(--emilio); }
+.userRole { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+
+/* « 5 actifs » plutôt qu'un 6 qui ne disait rien : le mot reste discret,
+   le chiffre garde toute l'attention. */
+.navBadgeMot {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0;
+  margin-left: 4px; opacity: 0.7;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LA BARRE RÉDUITE (ordinateur)
+   L'agenda ouvre le menu réduit à ses icônes : la semaine gagne près de
+   170 px. Le bouton de la barre du haut le remet. Les pictogrammes dessinés
+   remplacent les symboles, le nom apparaît au survol, les chiffres restent.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .sidebar { transition: width .28s cubic-bezier(.22,.9,.3,1), min-width .28s cubic-bezier(.22,.9,.3,1); }
+  .reduit { width: 76px; min-width: 76px; }
+  .reduit .logo { padding: 22px 0 18px; justify-content: center; }
+  .reduit .logoGrand { display: none; }
+  .reduit .logoMark { display: block; }
+  .reduit .nav { padding: 10px 11px; }
+  .reduit .navSection { height: 10px; padding: 8px 0 0; overflow: hidden; color: transparent; }
+  .reduit .navItem { justify-content: center; padding: 11px 0; gap: 0; }
+  .reduit .navLabel, .reduit .navBadgeMot { display: none; }
+  .reduit .navPicto { display: inline-flex; }
+  .reduit .navBascule, .reduit .sousMenu { display: none; }
+  .reduit .navItemBascule { padding-right: 0; }
+  .reduit .navBadge {
+    position: absolute; top: 2px; right: 3px;
+    font-size: 10px; padding: 1px 5px; min-width: 17px; line-height: 14px;
+  }
+  .reduit .userArea { padding: 12px 0; }
+  .reduit .userCard { justify-content: center; padding: 6px 0; background: transparent; }
+  .reduit .userCard > div:not(.userAvatar) { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LA VERSION TÉLÉPHONE
+   Sur ordinateur, rien de ce qui suit ne se voit : le pictogramme dessiné,
+   le bouton de fermeture, le voile et la barre du bas sont masqués.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.fermer, .voile, .barreBas { display: none; }
+
+@media (max-width: 900px) {
+  /* Le tiroir : la barre de gauche sort de la page et glisse par-dessus. */
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 160;
+    width: min(84vw, 310px); min-width: 0;
+    height: 100vh; height: 100dvh;
+    border-right: none;
+    box-shadow: 0 0 0 rgba(15,22,35,0);
+    transform: translateX(-104%);
+    transition: transform .32s cubic-bezier(.22,.9,.3,1), box-shadow .32s ease;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .ouvert { transform: none; box-shadow: 18px 0 50px rgba(15,22,35,.22); }
+
+  .voile {
+    display: block; position: fixed; inset: 0; z-index: 150;
+    background: rgba(15,22,35,.42); backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none; transition: opacity .28s ease;
+  }
+  .voileOuvert { opacity: 1; pointer-events: auto; }
+
+  .logo { padding: 16px 16px 14px 20px; }
+  .logoGrand { width: 150px; margin: 0; }
+  .fermer {
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-left: auto; width: 38px; height: 38px; border-radius: 12px;
+    border: 1px solid #e3e8f0; background: #f8fafc; color: #64748b;
+  }
+
+  /* Les rubriques : plus hautes, pour le doigt, avec un vrai pictogramme. */
+  .nav { padding: 6px 12px 12px; }
+  .navSection { padding: 14px 10px 6px; }
+  .navItem { padding: 12px 14px; font-size: 15px; gap: 13px; border-radius: 12px; margin-bottom: 3px; }
+  /* V3.162 : chaque rubrique dans sa couleur (`--nc`, `--nf`, Sidebar.tsx),
+     et son nom en bleu nuit plutôt qu'en gris. */
+  .navItem { color: var(--emilio); font-weight: 600; }
+  .navPicto {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+    background: var(--nf, #f1f5f9); color: var(--nc, #64748b);
+  }
+  .navItem:hover .navPicto { color: var(--nc, var(--emilio)); }
+  .navItem.active .navPicto { background: var(--emilio-fond); color: #c9a84c; }
+  .navParent .navPicto { background: var(--nf, #e8edf5); color: var(--nc, var(--emilio)); }
+  .navItemBascule { padding-right: 50px; }
+  .navBascule { right: 8px; width: 36px; height: 36px; border-radius: 10px; }
+  .sousListe { margin: 0 0 8px 22px; }
+  .sousItem { padding: 6px 10px 6px 6px; font-size: 14.5px; gap: 12px; border-radius: 12px; }
+  .sousIc { width: 32px; height: 32px; border-radius: 9px; }
+  .navItem.active::before { display: none; }
+  .userArea { padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px)); }
+
+  /* ── La barre d'onglets du bas ── */
+  .barreBas {
+    display: flex; align-items: stretch; justify-content: space-around;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding: 0 4px env(safe-area-inset-bottom, 0px);
+    background: rgba(255,255,255,.94);
+    backdrop-filter: saturate(1.6) blur(14px); -webkit-backdrop-filter: saturate(1.6) blur(14px);
+    border-top: 1px solid #e3e8f0;
+    box-shadow: 0 -6px 24px rgba(15,22,35,.06);
+  }
+  .onglet, .ongletPlus {
+    flex: 1 1 0; min-width: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    background: none; border: none; padding: 6px 0 4px; color: #94a3b8;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ongletActif { color: var(--emilio); }
+  .ongletPicto {
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 46px; height: 30px; border-radius: 15px; transition: background .2s ease;
+  }
+  .ongletActif .ongletPicto { background: #fdf6e3; color: #a9822f; }
+  .ongletMot { font-size: 10.5px; font-weight: 700; letter-spacing: .1px; line-height: 1; }
+  .ongletActif .ongletMot { color: var(--emilio); font-weight: 800; }
+
+  .ongletPastille {
+    position: absolute; top: -5px; right: -1px;
+    min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px;
+    background: #3b82f6; color: #fff; border: 2px solid #fff;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 9.5px; font-weight: 800;
+    display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .ongletPastilleRouge { background: #ef4444; }
+
+  /* Le « + » : le geste le plus fréquent, posé au centre et en relief. */
+  .ongletPlus { color: var(--emilio); }
+  .plusRond {
+    width: 48px; height: 48px; margin-top: -20px; border-radius: 16px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--emilio-fond); color: #e8c96a;
+    box-shadow: 0 8px 20px -6px rgba(26,35,50,.55), 0 0 0 4px #fff;
+  }
+  .ongletPlus:active .plusRond { transform: scale(.94); }
+  .plusRond svg { transition: transform .25s cubic-bezier(.3,1.4,.5,1); }
+  .ongletPlusOuvert .plusRond svg { transform: rotate(45deg); }
+
+  /* Le menu du « + » : trois choix qui montent au-dessus de la barre. */
+  .plusVoile { position: fixed; inset: 0; z-index: 58; background: rgba(15,22,35,.38);
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); animation: plusVoile .2s ease both; }
+  .plusMenu {
+    position: fixed; left: 12px; right: 12px; z-index: 59;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 14px);
+    background: #fff; border-radius: 20px; padding: 6px;
+    box-shadow: 0 24px 48px -16px rgba(15,22,35,.45), 0 0 0 1px rgba(15,22,35,.04);
+    animation: plusMonte .26s cubic-bezier(.2,.9,.3,1) both;
+  }
+  .plusChoix { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 12px;
+    background: none; border: none; border-radius: 14px; text-align: left; font-family: inherit; color: var(--emilio);
+    -webkit-tap-highlight-color: transparent; }
+  .plusChoix:active { background: #f4f6fa; }
+  .plusChoix + .plusChoix { border-top: 1px solid #f1f4f8; border-radius: 0 0 14px 14px; }
+  .plusIco { width: 40px; height: 40px; border-radius: 12px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+    background: #f4f6fa; color: var(--emilio); }
+  .plusChoix:nth-child(2) .plusIco { background: #fdf6e3; color: #a9822f; }
+  .plusTexte { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .plusTexte b { font-size: 15px; font-weight: 700; }
+  .plusTexte i { font-style: normal; font-size: 12.5px; color: #8896a8; }
+  .plusFleche { color: #c3cbd7; display: inline-flex; }
+  .plusFleche svg { transform: rotate(-90deg); }
+}
+@keyframes plusVoile { from { opacity: 0; } to { opacity: 1; } }
+@keyframes plusMonte { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }

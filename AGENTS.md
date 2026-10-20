@@ -1,0 +1,379 @@
+<!-- BEGIN:nextjs-agent-rules -->
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+<!-- END:nextjs-agent-rules -->
+
+# Emilio Immo — Chasse immobilière : règles de travail
+
+`context.md` = l'histoire complète du projet (architecture, tables, sessions).
+**Ce fichier-ci = ce qu'il faut savoir avant d'écrire une seule ligne.** Il est
+court exprès. Le lire en entier prend deux minutes et fait gagner des heures.
+
+---
+
+## 1. Comment Alexandre travaille
+
+- **Il colle les fichiers lui-même** dans l'interface web de GitHub.
+  **Ne jamais pousser sur le dépôt.** Livrer le **fichier complet modifié**,
+  jamais un diff, jamais un extrait, et dire où il va : `src/…/Fichier.tsx`.
+- Un fichier livré est un fichier qui compile et qui a été **regardé à l'écran**
+  (§3). Il déploie sur Vercel dans la foulée et teste en prod : une régression
+  se paie comptant.
+- Il parle en vocal, donc ses messages sont parfois décousus. Les relire en
+  entier avant de répondre : il y a souvent trois demandes dans un paragraphe.
+- Quand il dit « c'est moche » ou « je ne comprends pas », c'est un constat
+  d'usage, pas un caprice. Chercher la cause réelle — il y a eu un vrai bug
+  derrière chacune de ces phrases.
+
+---
+
+## 2. Les pièges de ce dépôt
+
+Tous ont été rencontrés en vrai et ont coûté une livraison ratée.
+
+### 2.1 L'espace perdu par SWC — le plus coûteux
+
+Un nœud de texte JSX qui **commence par une espace** et **contient un retour à
+la ligne** perd cette espace chez SWC (le compilateur de Next), alors
+qu'esbuild la garde. Résultat : `annoncesque`, `déposéesici`, `un seulde` en
+production — et rien du tout au banc d'essai.
+
+```jsx
+{/* ✗ CASSÉ en prod : le texte commence par " que" et va à la ligne */}
+<span>Sur les <b>{n} annonces</b> que nous avons lues depuis
+  l'ouverture de votre dossier…</span>
+
+{/* ✓ Toujours juste, quel que soit le compilateur */}
+<span>Sur les <b>{n} annonces</b>{' '}que nous avons lues depuis
+  l'ouverture de votre dossier…</span>
+```
+
+**Règle : après une balise ou une expression, jamais d'espace littérale suivie
+d'un passage à la ligne.** Trois façons d'être tranquille :
+
+1. `{' '}` juste après la balise ou l'accolade ;
+2. tout garder sur **une seule ligne** — sans retour à la ligne, rien n'est rogné ;
+3. écrire la phrase entière dans **une seule chaîne** :
+   ``{`Vous en avez ${n} en cours. Choisissez celle que vous voulez suivre.`}`` —
+   plus aucune règle JSX ne s'applique. C'est la forme la plus sûre quand un
+   chiffre tombe au milieu d'un paragraphe.
+
+⚠️ **Ce piège a resservi le 23 septembre**, dans du code écrit le jour même par
+quelqu'un qui n'avait pas lu ce fichier : `« Vous en avez 2en cours »`, repéré
+par Alexandre en production. Trois autres mots collés dormaient dans le dépôt
+depuis des semaines et sont sortis dans la foulée (« 2.Les alertes »,
+« clientse remplissent », « dessousdisparaissent »). **Lire ce paragraphe avant
+d'écrire du texte, pas après.**
+
+Le détecteur est dans `outils/espaces-jsx.py` (§7). Il dégrossit, il ne tranche
+pas. **Ce qui tranche, c'est le code compilé** — jamais le banc d'essai, qui
+passe par esbuild et ne reproduit pas le bug :
+
+```bash
+npx next build
+# une balise ou une expression collée à une lettre = un mot collé en prod
+grep -rhoP '\}\),"[a-zà-ÿ]' .next/static --include=*.js | sort -u
+# ou, pour une phrase précise qu'on vient d'écrire :
+grep -rhoP '.{16}Vous en avez' .next/static --include=*.js | sort -u
+```
+
+Ce qu'on veut lire : `…})," ","Vous en avez…` — l'espace est un enfant à part.
+Ce qui est cassé : `…}),"Vous en avez…`
+
+### 2.2 `gap` dans un conteneur flex coupe les phrases
+
+Dans un `display:flex`, **chaque nœud de texte devient un élément flex** et le
+`gap` s'insère entre eux. Un `<b>` au milieu d'une phrase la fait exploser en
+morceaux espacés.
+
+```jsx
+{/* ✗ */} <div className="puce"><Ico n="check"/>Nous cherchons <b>chaque jour</b> pour vous.</div>
+{/* ✓ */} <div className="puce"><Ico n="check"/><span>Nous cherchons <b>chaque jour</b> pour vous.</span></div>
+```
+
+Et scoper les règles avec `>` (`.puces > span`), sinon elles descendent dans
+les `<span>` internes.
+
+### 2.3 `text-transform: capitalize` met une majuscule à chaque mot
+
+« Mercredi 23 Septembre À 18 H 00 ». Utiliser JS :
+`t.charAt(0).toUpperCase() + t.slice(1)`.
+
+### 2.4 Un composant défini dans le rendu se remonte à chaque frappe
+
+Un `function Champ()` déclaré à l'intérieur d'un autre composant est recréé à
+chaque rendu : l'`<input>` perd le focus à chaque lettre. **Déclarer au niveau
+du module** (voir `ChampNum` dans `EspaceClient.tsx`).
+
+### 2.5 Centrage et bouton « ? »
+
+Un « ? » posé à côté d'un chiffre centre la paire, pas le chiffre. Il doit être
+`position:absolute; left:100%` dans un parent `position:relative;
+display:inline-block` (classe `.nv`).
+
+### 2.6 Next 16
+
+`middleware.ts` s'appelle **`src/proxy.ts`** et exporte `proxy()`. Il protège
+tout sauf `PUBLIC_PATHS` (`/login`, `/api/login`, les deux crons
+`/api/point-auto/envoi` et `/api/mandat/relances`, et `/api/signer`) et
+`PUBLIC_PREFIXES = ['/bien/','/espace/','/api/espace/','/signer/']`. Toute
+nouvelle route publique doit être ajoutée là, sinon elle redirige vers `/login`.
+Sur `espace.emilio-immo.com`, un chemin inconnu est réécrit en `/espace/…` :
+`/bien/` et `/signer/` sont exemptés à la main, dans le même fichier.
+
+### 2.7 Ne jamais centrer un bouton avec `transform`
+
+`globals.css` pose `button:active:not(:disabled) { transform: scale(.985) }` sur
+tous les boutons, et cette règle l'emporte sur une simple classe. Un bouton
+centré par `top: 50%; transform: translateY(-50%)` perd son centrage au moment
+du clic : il saute de la moitié de sa hauteur sous le curseur, le relâchement
+tombe à côté, et le clic est perdu une fois sur deux. C'est arrivé à la flèche
+qui plie les sous-menus (V3.25). Centrer par `top: 0; bottom: 0; margin: auto 0`
+(avec une hauteur fixe), ou par flex.
+
+### 2.8 Les fenêtres s'animent toutes seules (V3.152)
+
+`src/lib/mouvement.ts` (monté par AppLayout) reconnaît toute fenêtre plein
+écran et tout petit menu qui apparaît après un appui : il les fait sortir du
+bouton touché et y rentrer, **et retarde leur retrait** le temps de la sortie.
+Une nouvelle fenêtre n'a donc **rien à animer elle-même** : la fermer, c'est
+la démonter tout de suite. Une sortie maison (classe `sortie` + `setTimeout`)
+jouerait deux fois — si elle doit rester, la sauter quand `mouvementActif()`
+est vrai (voir OrganiserVisite). Ce qui ne doit ni bouger ni attendre porte
+`data-emi-anim="non"`. Un contenu d'onglet qui change : `<Cascade cle={…}>`.
+Une barre de choix (filtres, onglets, vues) : `<Curseur cle={…} />` en premier
+enfant, boutons en `aria-pressed`, fond transparent hors du choix actif — la
+pastille glisse comme dans « Demandes Internet » (V3.167, `shared/Curseur.tsx`).
+
+### 2.9 Un nom de classe déjà pris dans un `.module.css` (V3.172)
+
+Deux règles `.jour` dans `Biens.module.css` deviennent **une seule classe** : la nouvelle hérite
+de l'ancienne (`flex-direction: column`) et le bouton de date s'affichait en colonne. Avant
+d'ajouter une classe à un module partagé (Biens, OngletsBien, Documents) :
+`grep -n '\.nom\b' fichier.module.css`.
+
+---
+
+## 3. Deux règles de données qui ne se voient pas
+
+### 3.1 Tout se filtre sur `recherche_id`, jamais sur `client_id`
+
+Depuis la V3.0, un bien, une visite, un envoi, une relance appartiennent à une **recherche**,
+pas à un client. Un enregistrement inséré sans `recherche_id` existe en base et **n'apparaît
+nulle part** : la fiche ne le charge jamais.
+
+Et pour un bien, `etape` décide de l'onglet : `'selection'` ou `'presente'`. Sans valeur, il
+n'est dans aucun des deux.
+
+C'est ce qui a tué le bouton Emilio pendant quatre mois — il disait « enregistré », et le bien
+n'existait nulle part à l'écran. Avant d'écrire un `insert` sur `biens`, `visites`, `envois`,
+`relances` ou `transactions` : vérifier qu'il porte `recherche_id`.
+
+⚠️ **Le journal, une exception voulue** (V3.20) : il est chargé sur `client_id`, et l'onglet Suivi
+montre la recherche ouverte **plus les lignes sans `recherche_id`** (le contact, le statut, tout
+l'historique d'avant la V3.20). Une ligne qui parle d'une recherche se note avec elle :
+`addJournal(clientId, type, titre, description, metadata, { rechercheId })`. Ne jamais filtrer le
+journal sur `recherche_id` seul : les anciennes lignes disparaîtraient. Voir `context.md` §6.17.
+
+### 3.2 Une écriture Supabase dont l'erreur n'est pas remontée est un bug en attente
+
+```ts
+// ✗ Le mode par défaut de ce dépôt, et la cause de ses bugs les plus coûteux
+await supabase.from('relances').insert({ … });
+
+// ✓ Depuis la V3.17 : src/lib/ecritures.ts
+if (!(await verifie('La relance', supabase.from('relances').insert({ … })))) return;
+// une modification qui DOIT toucher une ligne (la base fermée refuse sans erreur) :
+await verifie('Le report', supabase.from('relances').update({ … }).eq('id', id).select('id'), { ligne: true });
+// côté serveur (routes /api) :
+await ecritServeur('L’historique du client', sb.from('journal').insert({ … }));
+```
+
+`verifie` affiche le message rouge (« <quoi> : pas enregistré. ») et rend `false` ;
+`verifieTout` enchaîne des écritures liées et s'arrête au premier échec.
+
+Les relances n'ont jamais fonctionné pendant des semaines parce qu'un `insert` écrivait dans des
+colonnes qui n'existaient pas, sans que personne ne voie rien. La V3.17 a vérifié toutes les
+écritures du dépôt (`context.md` §11). **Ne pas en ajouter de nues.**
+
+### 3.3 Le lien de l'espace appartient au CLIENT, pas à la recherche
+
+Depuis le 23 septembre, `clients.token_espace` est **le** lien — un seul par
+client, définitif, quel que soit le nombre de recherches qu'il ouvrira ensuite.
+C'est lui qu'on met dans un mail, dans le bouton « Copier le lien », dans le
+manifeste de l'application.
+
+`recherches.token_espace` existe toujours et reste valable, mais il a changé de
+rôle : c'est **l'adresse interne d'une recherche**. Il sert à deux choses, et à
+rien d'autre :
+
+- les routes `/api/espace/` l'utilisent pour savoir de quelle recherche
+  l'espace parle (c'est ce que `page.tsx` passe à `EspaceClient` en `token`) ;
+- les liens envoyés avant la bascule continuent de fonctionner : `page.tsx`
+  les reconnaît et redirige vers le lien permanent du client.
+
+⚠️ **Ne jamais envoyer un jeton de recherche à un client.** Il marcherait, mais
+il mourrait avec la recherche — et le client aurait une icône morte sur son
+téléphone. Tout passe par `src/lib/espace.ts` : `ouvrirEspace()` accepte les
+deux sortes de jetons et rend toujours le client, toutes ses recherches
+visibles, et celle qu'il faut afficher.
+
+### 3.4 La base est fermée : deux serrures, et elles ne font pas la même chose
+
+Depuis le 23 septembre, le RLS est actif sur les 14 tables (`migration-rls.sql`). Conséquences
+directes pour quiconque écrit du code ici :
+
+| Qui | Ce qu'il peut lire |
+|---|---|
+| `anon` — la clé publique, lisible dans le code de toute page | **rien** |
+| `authenticated` — Alexandre connecté dans son navigateur | tout |
+| `service_role` — le serveur, clé jamais envoyée au navigateur | tout, RLS ignoré |
+
+⚠️ **Toute page publique doit lire la base côté SERVEUR avec `SUPABASE_SERVICE_ROLE_KEY`.**
+C'est déjà le cas de `/espace/[token]`, de `/bien/[id]` et de toutes les routes `/api/espace/`.
+Une nouvelle page publique qui utiliserait `@/lib/supabase` (clé publique) afficherait du vide,
+sans erreur : la requête réussit, elle renvoie `[]`.
+
+⚠️ **Le CRM, lui, lit depuis le navigateur** avec la session de l'utilisateur. Il faut donc une
+session Supabase valide — pas seulement le cookie. Les deux serrures :
+
+- le **cookie** `emilio_acces` (posé par `/api/login`, vérifié par `proxy.ts`) autorise
+  l'**affichage des pages** ;
+- la **session Supabase** (dans le navigateur) autorise la **lecture des données**.
+
+Les écrans lisent avec la session : sans elle, ils s'afficheraient vides. `AppLayout` surveille la
+session et renvoie vers `/login` si elle disparaît — ne pas retirer ce garde-fou.
+
+⚠️ **Mais plusieurs routes `/api` du CRM lisent avec la clé de service sur la seule foi du
+cookie.** Depuis la V3.33, ce cookie est un badge signé et daté (`src/lib/badge.ts`) : ne jamais
+revenir à une valeur fixe. Et les **inscriptions Supabase restent fermées** (Authentication ›
+Sign In / Providers) : le RLS donne tout à tout compte connecté.
+
+---
+
+## 4. La barrière de qualité — obligatoire avant de livrer
+
+```bash
+npx tsc --noEmit          # doit être silencieux
+npx next build            # doit atteindre « ✓ Compiled successfully »
+                          #            puis « Finished TypeScript »
+```
+
+`Failed to collect page data … supabaseUrl is required` **est normal en local**
+(pas de variables d'environnement) : Vercel les a. Ce n'est pas un échec.
+
+**Et surtout : regarder le résultat.** Compiler ne prouve rien sur l'aspect.
+Monter un banc d'essai (esbuild + Playwright headless), rendre le composant
+avec des données factices, prendre une capture en **390 px et 1280 px**, et la
+lire. Quatre bugs silencieux ont été trouvés comme ça, dont aucun n'avait été
+signalé.
+
+```bash
+npx esbuild app.tsx --bundle --outfile=app.js --jsx=automatic \
+  --loader:.tsx=tsx --loader:.css=local-css \
+  --alias:react=./node_modules/react --alias:react-dom=./node_modules/react-dom \
+  --alias:@=./src --define:process.env.NODE_ENV='"development"'
+# Playwright : /opt/node-tools/… · Chromium : /opt/pw-browsers/chromium
+```
+
+⚠️ esbuild et SWC ne traitent pas les espaces JSX pareil (§2.1). Le banc
+d'essai juge la mise en page, **pas** la ponctuation.
+
+---
+
+## 5. Règles d'écriture de l'espace acheteur
+
+`/espace/[token]` est lu par le client, pas par Alexandre. Ce sont des règles
+de fond, pas de style.
+
+- **Aucun mot de métier.** Pas de « chasse », « chasseur », « veille »,
+  « passage », « prospect », « lead ». Le client ne les comprend pas, et
+  certains le placent du mauvais côté de la relation.
+- **Jamais deux nombres qui peuvent se contredire sur la même page.** Un même
+  fait = une seule source. Les « biens retenus » se comptent sur les biens
+  réellement présents dans l'espace, pas sur un compteur interne qui dérive.
+  Quand plusieurs chiffres se suivent, ils doivent **s'additionner**, quitte à
+  en déduire un par soustraction.
+- **Un même mot ne désigne pas deux choses.** « annonces lues » depuis
+  l'ouverture et « annonces lues » de la dernière recherche : préciser sur
+  chaque ligne, pas seulement dans le titre.
+- **Tout chiffre qui n'est pas évident porte un « ? »** → `BtnAide` + une
+  entrée dans `AIDES` → pop-up `Explication`. Y écrire ce que le chiffre **est**
+  et ce qu'il **n'est pas**.
+- **Aucun bloc vide sans explication.** Si un graphique n'a pas de données,
+  dire pourquoi et quand il arrivera (`.vide-doux`).
+- **Ne jamais laisser entendre que le marché lui donne tort** (comparaison de
+  prix agressive, « vous payez 7 % au-dessus »). C'est contre-productif pour
+  Alexandre. Les données de marché brutes ont leur place dans le CRM, pas dans
+  l'espace client.
+- **La note du chasseur est en lecture seule** côté client : c'est un message
+  d'Alexandre, le client demande une modification, il ne l'écrit pas.
+
+### Langage visuel
+
+- **Les couleurs et la police du site emilio-immo.com** (depuis la V3.116, à la
+  demande d'Alexandre — plus de marine, de doré ni de noir) : encre `#13243D`
+  pour le texte, bleu de la marque `#22497D` pour les aplats sombres
+  (`--marque`), orange `#E68B23` pour l'accent (`--or` ; `--or-fonce` `#A95808`
+  pour un texte orange sur fond clair, `--or-clair` `#F2B266` sur fond bleu),
+  fond `#F5F8FC`, Plus Jakarta Sans partout. Les variables ont gardé leurs noms
+  (`--or`, `--encre`) : seules leurs valeurs ont changé. Un seul accent par
+  page : l'orange souligne le chiffre qui compte, rien d'autre. Quatre cartes
+  de quatre couleurs = arc-en-ciel (refusé une fois déjà).
+- **Icônes dessinées, pas d'émoji**, dans les nouvelles interfaces : composant
+  `Ico` + table `T` en haut de `EspaceClient.tsx`. Les émoji ne rendent pas
+  pareil d'un téléphone à l'autre et font amateur. Exception : les émoji déjà
+  en place dans « Mes derniers biens consultés », validés.
+- Motif de carte réutilisable : `.gr-cadre` + `.gr-tete` + `.gr-note`, variante
+  sobre `.c-net`, variantes colorées `.c-or/.c-bleu/.c-vert/.c-prune/.c-brique`
+  **où la couleur porte un sens** (un avis client).
+- Toujours vérifier en 390 px : c'est là qu'il regarde en premier.
+
+---
+
+## 6. Environnement de développement
+
+- **Réseau sortant très limité** depuis le bac à sable : `supabase.co`,
+  `data.gouv.fr`, `geo.api.gouv.fr`, `api.github.com` sont **injoignables**.
+  `raw.githubusercontent.com` répond. Ne pas construire une solution qui
+  suppose un accès direct à Supabase depuis ici.
+- Donc : **impossible de lire la base**. Pour connaître un schéma, demander à
+  Alexandre de lancer la requête SQL dans Supabase et de coller le résultat.
+  Ne jamais deviner un nom de colonne — une table `relances` mal devinée a fait
+  que **pas une seule relance n'a été créée pendant des semaines**, sans erreur
+  visible.
+- Toute écriture Supabase doit **remonter son erreur** (`if (error) { … }`),
+  jamais un `catch` muet : c'est ce qui avait caché le bug ci-dessus.
+- Migrations SQL : toujours `if not exists`, livrées en fichier séparé, et
+  **dire explicitement à Alexandre qu'il doit les exécuter** dans Supabase.
+  Dans l'éditeur SQL, la fenêtre « Unsaved changes » → « Discard changes ».
+
+---
+
+## 7. Outils
+
+| Fichier | Rôle |
+|---|---|
+| `outils/espaces-jsx.py` | Détecte les espaces JSX mangées par SWC (§2.1) |
+
+```bash
+python3 outils/espaces-jsx.py $(find src -name '*.tsx' -o -name '*.ts')
+```
+
+Depuis la V3.20, il **sort en code 0** sur le dépôt : il ne lit que les `.tsx`,
+ignore les commentaires, les fins d'import, les attributs nus et les ternaires.
+**Il doit rester à 0 avant chaque livraison** : un signalement nouveau se règle
+avec `{' '}` (ou en gardant la phrase sur une ligne), même quand le code compilé
+montre l'espace gardée — ça ne coûte rien.
+
+Un signalement n'est un vrai bug que si le code compilé le confirme (§2.1).
+Quatre l'ont été le 23 septembre, tous corrigés le jour même.
+
+---
+
+## 8. Où regarder quand quelque chose ne marche pas
+
+`context.md` §6 tient la liste des **anomalies connues**, classées par gravité. Au 28 septembre
+(V3.20), les vingt-deux relevées sont réglées ou sans objet ; une nouvelle s'y ajoute, datée, avant
+d'être corrigée. Avant de conclure qu'un écran est cassé « sans raison », la regarder.

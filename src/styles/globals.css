@@ -1,0 +1,260 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  /* Brand */
+  --navy:        #1a2332;
+  --navy-mid:    #243044;
+  --navy-light:  #2e3d55;
+  --gold:        #c9a84c;
+  --gold-light:  #e8c96a;
+  --gold-pale:   #fdf6e3;
+  --gold-border: rgba(201,168,76,0.2);
+
+  /* Le bleu Emilio, celui des en-têtes de rubrique : titres, noms, icônes,
+     pastilles et boutons pleins. Le marine #1a2332, presque noir, ne reste
+     que sur les filtres (un noir discret) et dans l'espace client. */
+  --emilio:       #34496e;
+  --emilio-clair: #3a5178;
+  --emilio-fond:  linear-gradient(152deg, #3a5178 0%, #2e4166 100%);
+
+  /* Neutrals */
+  --white:       #ffffff;
+  --bg:          #f7f9fc;
+  --bg-2:        #eef1f6;
+  --border:      #e3e8f0;
+  --border-2:    #d0d7e3;
+  --text:        #1a2332;
+  --text-2:      #4a5568;
+  --text-3:      #8896a8;
+  --text-4:      #b0bec5;
+
+  /* Status */
+  --green:       #10b981;
+  --green-bg:    #ecfdf5;
+  --green-border:#a7f3d0;
+  --red:         #ef4444;
+  --red-bg:      #fef2f2;
+  --red-border:  #fecaca;
+  --amber:       #f59e0b;
+  --amber-bg:    #fffbeb;
+  --amber-border:#fde68a;
+  --blue:        #3b82f6;
+  --blue-bg:     #eff6ff;
+  --blue-border: #bfdbfe;
+  --purple:      #8b5cf6;
+  --purple-bg:   #f5f3ff;
+  --purple-border:#ddd6fe;
+
+  /* Sidebar */
+  --sidebar-w:   240px;
+  --sidebar-bg:  #1a2332;
+  --sidebar-text: rgba(255,255,255,0.6);
+  --sidebar-text-hover: rgba(255,255,255,0.9);
+  --sidebar-active-bg: rgba(201,168,76,0.12);
+  --sidebar-active-text: #e8c96a;
+  --sidebar-section: rgba(255,255,255,0.25);
+  --sidebar-sep: rgba(255,255,255,0.07);
+
+  /* Layout */
+  --topbar-h:    58px;
+  --radius-sm:   8px;
+  --radius:      12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow:      0 4px 12px rgba(0,0,0,0.07);
+  --shadow-md:   0 8px 24px rgba(0,0,0,0.1);
+  --shadow-lg:   0 16px 40px rgba(0,0,0,0.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .headline {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 4px; }
+
+button { cursor: pointer; font-family: 'DM Sans', sans-serif; }
+input, textarea, select { font-family: 'DM Sans', sans-serif; }
+a { text-decoration: none; color: inherit; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+.pulse { animation: pulse 2s infinite; }
+.fade-up { animation: fadeUp 0.25s ease forwards; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LE MOUVEMENT
+   Rien de spectaculaire : de courtes entrées qui disent d'où l'on vient.
+   Aller vers une fiche pousse vers le haut, revenir glisse vers le bas.
+   V3.152 (style « C » choisi par Alexandre) : les fenêtres, menus et onglets
+   sont animés par src/lib/mouvement.ts ; un écran qui change arrive en
+   fondu, de 8 px seulement (avant : 38 px, ça tirait l'œil).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@keyframes ecranAvant   { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes ecranArriere { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* Pas de fill-mode : une fois l'entrée jouée, plus aucune transformation ne
+   reste sur l'écran. Un parent transformé devient sinon le repère de tout ce
+   qui est « position: fixed » — fenêtres et bulles partent hors de l'écran. */
+.ecran-avant   { animation: ecranAvant   .26s cubic-bezier(.16,1,.3,1); }
+.ecran-arriere { animation: ecranArriere .26s cubic-bezier(.16,1,.3,1); }
+
+/* Les lignes d'une liste arrivent l'une après l'autre, très vite. */
+@keyframes ligneEntre { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.ligne-entre { animation: ligneEntre .28s cubic-bezier(.16,1,.3,1) backwards; }
+
+/* Une liste qui change de catégorie (« Mes vendeurs », « Mes estimations ») :
+   ses éléments arrivent l'un après l'autre, en douceur (V3.25). Posé sur le
+   conteneur, avec une « key » qui change avec la catégorie.
+   V3.152 : c'est désormais <Cascade> (src/components/shared/Cascade.tsx)
+   qui fait tomber les blocs, comme les onglets ; ces règles ne servent plus
+   que de secours, quand le mouvement ne tourne pas (pas de classe `emi-mvt`
+   sur <html>). */
+html:not(.emi-mvt) .cascade > * { animation: ligneEntre .34s cubic-bezier(.16,1,.3,1) backwards; }
+html:not(.emi-mvt) .cascade > :nth-child(2) { animation-delay: 30ms; }
+html:not(.emi-mvt) .cascade > :nth-child(3) { animation-delay: 60ms; }
+html:not(.emi-mvt) .cascade > :nth-child(4) { animation-delay: 90ms; }
+html:not(.emi-mvt) .cascade > :nth-child(5) { animation-delay: 120ms; }
+html:not(.emi-mvt) .cascade > :nth-child(6) { animation-delay: 150ms; }
+html:not(.emi-mvt) .cascade > :nth-child(7) { animation-delay: 180ms; }
+html:not(.emi-mvt) .cascade > :nth-child(8) { animation-delay: 210ms; }
+html:not(.emi-mvt) .cascade > :nth-child(9) { animation-delay: 240ms; }
+html:not(.emi-mvt) .cascade > :nth-child(n+10) { animation-delay: 270ms; }
+
+/* La pastille qui glisse (V3.167, src/components/shared/Curseur.tsx) : le
+   fond du choix actif glisse d'un choix à l'autre, comme dans « Demandes
+   Internet ». Elle prend l'allure du bouton actif ; le bouton, lui, perd son
+   propre fond tant qu'elle est là (`pret`) — `!important` l'emporte sur les
+   styles écrits dans les composants. Pas de transition de fond sur les
+   boutons : la pastille seule bouge, le texte change de couleur en douceur. */
+.emi-curseur {
+  position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; box-sizing: border-box;
+  border-style: solid; border-width: 0; opacity: 0;
+  transition: transform .45s cubic-bezier(.2,.8,.2,1), width .45s cubic-bezier(.2,.8,.2,1), height .45s cubic-bezier(.2,.8,.2,1),
+    background-color .35s ease, border-color .35s ease, box-shadow .35s ease, opacity .2s ease;
+}
+[data-glisse] > :is(button, a, label) { position: relative; z-index: 1; transition: color .3s ease, opacity .3s ease !important; }
+[data-glisse="pret"] > :is([aria-pressed="true"], [aria-selected="true"], [data-actif="true"]) {
+  background: transparent !important; border-color: transparent !important; box-shadow: none !important;
+}
+@media (prefers-reduced-motion: reduce) { .emi-curseur { transition: none; } }
+
+/* Pendant qu'une liste se lit : sa silhouette, qui miroite doucement, au lieu
+   d'un « Chargement… » qui laissait place d'un coup à tout le tableau. */
+.squelette { display: flex; flex-direction: column; gap: 8px; }
+.sq-ligne {
+  display: flex; align-items: center; gap: 14px; padding: 14px 18px;
+  background: #fff; border: 1px solid #edf1f6; border-radius: 14px;
+  animation: ligneEntre .3s cubic-bezier(.16,1,.3,1) backwards;
+}
+.sq-carte {
+  display: flex; flex-direction: column; background: #fff; border: 1px solid #edf1f6; border-radius: 18px; overflow: hidden;
+  animation: ligneEntre .3s cubic-bezier(.16,1,.3,1) backwards;
+}
+.sq-rond { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; }
+.sq-photo { display: block; height: 170px; }
+.sq-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 9px; }
+.sq-carte .sq-txt { padding: 16px; }
+.sq-barre { display: block; height: 11px; border-radius: 6px; }
+.sq-fine { height: 8px; }
+.sq-bout { width: 64px; flex-shrink: 0; }
+.sq-rond, .sq-photo, .sq-barre {
+  background: linear-gradient(90deg, #edf1f6 0%, #f7f9fc 45%, #edf1f6 90%);
+  background-size: 240% 100%; animation: sqMiroir 1.4s ease-in-out infinite;
+}
+@keyframes sqMiroir { from { background-position: 110% 0; } to { background-position: -110% 0; } }
+@media (max-width: 760px) { .sq-bout { display: none; } .sq-ligne { padding: 12px 14px; } }
+
+/* La silhouette d'une fiche (V3.80, SqueletteFiche.tsx) : le bandeau marine,
+   la barre des rubriques, deux cartes. */
+.sq-fiche { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 24px; animation: ligneEntre .3s cubic-bezier(.16,1,.3,1) backwards; }
+.sq-fiche-bandeau { display: flex; align-items: center; gap: 18px; padding: 26px 26px 30px; border-radius: 22px; background: var(--emilio-fond, #1a2332); }
+.sq-fiche-av { width: 64px; height: 64px; border-radius: 18px; }
+.sq-fiche-bandeau .sq-rond, .sq-fiche-clair {
+  background: linear-gradient(90deg, rgba(255,255,255,.1) 0%, rgba(255,255,255,.2) 45%, rgba(255,255,255,.1) 90%);
+  background-size: 240% 100%;
+}
+.sq-fiche-onglets { display: flex; gap: 22px; align-items: center; padding: 16px 20px; background: #fff; border: 1px solid #edf1f6; border-radius: 14px; overflow: hidden; }
+.sq-fiche-cartes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.sq-fiche-cartes .sq-carte .sq-txt { padding: 18px; gap: 12px; }
+@media (max-width: 760px) {
+  .sq-fiche-bandeau { padding: 18px; gap: 14px; border-radius: 18px; }
+  .sq-fiche-av { width: 52px; height: 52px; }
+  .sq-fiche-cartes { grid-template-columns: 1fr; }
+}
+/* La fiche qui arrive après sa silhouette : en fondu, sans garder de
+   transform à la fin (les fenêtres « fixed » restent fixes). */
+@keyframes ficheEntre { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.fiche-entre { animation: ficheEntre .42s cubic-bezier(.16,1,.3,1); }
+
+/* Tout ce qui se clique répond au doigt. */
+button, a[role="button"] {
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease,
+              box-shadow .18s ease, opacity .15s ease;
+}
+button:active:not(:disabled) { transform: scale(.985); }
+
+/* Certains préfèrent que rien ne bouge. On les écoute. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* ═══ Les cartes (V3.26, src/components/carte/FondCarte.tsx) ═══
+   Avant les premières rues : un fond doux qui respire, jamais un carré
+   gris. La mention d'OpenFreeMap, due, toute petite et grise, dans un coin. */
+.carte-attente {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(120% 90% at 30% 20%, rgba(255,255,255,.55), transparent 60%),
+    linear-gradient(115deg, #e9eef5 20%, #f4f6fa 38%, #e9eef5 56%);
+  background-size: 100% 100%, 240% 100%;
+  animation: sqMiroir 1.4s ease-in-out infinite;
+}
+.carte-mention {
+  position: absolute; z-index: 2; pointer-events: none;
+  font: 500 8.5px 'DM Sans', sans-serif; letter-spacing: .2px; color: #94a3b8;
+  background: rgba(255,255,255,.6); padding: 1px 5px; border-radius: 5px;
+}
+.carte-mention-bas-gauche { left: 8px; bottom: 6px; }
+.carte-mention-bas-droite { right: 8px; bottom: 6px; }
+.carte-mention-haut-droite { right: 8px; top: 6px; }
+.maplibregl-canvas { outline: none; }
+/* « Voir sur la carte », à côté d'une adresse (BoutonCarte). */
+.bouton-carte {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px 0 9px;
+  border-radius: 99px; border: 1px solid #e3e8f0; background: white; color: #34496e; cursor: pointer;
+  font: 700 12.5px 'DM Sans', sans-serif; white-space: nowrap; vertical-align: middle;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.bouton-carte:hover { background: #f5f7fb; border-color: #c9a84c; }
+.bouton-carte-sombre { background: rgba(255,255,255,.08); border-color: rgba(201,168,76,.45); color: #e3c872; }
+.bouton-carte-sombre:hover { background: rgba(201,168,76,.16); border-color: #c9a84c; color: #f1d98a; }
+/* Sur le téléphone de la rubrique Carte : sous la recherche et les filtres. */
+/* V3.28 : sous « Mes contacts » et « Mes biens ». */
+.carte-mention-sous-filtres { right: 12px; top: calc(114px + env(safe-area-inset-top, 0px)); }

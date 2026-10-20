@@ -1,0 +1,321 @@
+/* ═══ La carte de l'espace acheteur (V3.27) ═══════════════════════════════
+   Le bleu est celui de l'en-tête de l'espace (Emilio, en clair). Sur
+   téléphone, le bandeau tient en une ligne et ses filtres : tout le reste
+   est pour la carte. */
+
+.racine { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #13243D; }
+
+/* ── Téléphone : plein écran, sous la barre du bas ── */
+.tel {
+  position: fixed; inset: 0; z-index: 30;
+  display: flex; flex-direction: column;
+  background: #eef1f5;
+  animation: fondu .35s ease both !important;
+}
+@keyframes fondu { from { opacity: 0; } to { opacity: 1; } }
+.bandeau {
+  position: relative; z-index: 3; flex: 0 0 auto;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 0 10px;
+  background: linear-gradient(152deg, #3A6AA8 0%, #22497D 55%, #3A6AA8 100%);
+  color: #fff;
+  box-shadow: 0 10px 24px -16px rgba(27,61,107, .7);
+}
+.ligne1 { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 14px; }
+.titreT {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 13px; letter-spacing: .1px;
+}
+.titreT b { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; color: #fff; }
+.titreT span { font-weight: 700; color: #F2B266; }
+
+.bascule {
+  flex: 0 0 auto; display: inline-flex; padding: 3px; gap: 2px; border-radius: 99px;
+  background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .2);
+}
+.bascule button {
+  display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 11px; border-radius: 99px;
+  font: 700 12.5px 'Plus Jakarta Sans', sans-serif; color: rgba(255, 255, 255, .86);
+  transition: background .2s, color .2s, transform .15s;
+}
+.bascule button:active { transform: scale(.94); }
+.bascule .basculeOn { background: #fff; color: #1B3D6B; cursor: default; }
+/* Sur téléphone, les mots suffisent : la place va au titre et à la ville. */
+.tel .bascule svg { display: none !important; }
+
+.puces { display: flex; gap: 6px; overflow-x: auto; padding: 9px 14px 0; scrollbar-width: none; }
+.puces::-webkit-scrollbar { display: none; }
+.puce {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
+  height: 32px; padding: 0 12px; border-radius: 99px;
+  font: 700 13px 'Plus Jakarta Sans', sans-serif; white-space: nowrap;
+  background: rgba(255, 255, 255, .12); color: #fff; border: 1px solid rgba(255, 255, 255, .2);
+  transition: background .2s, color .2s, border-color .2s, transform .15s;
+}
+.puce:active { transform: scale(.94); }
+.puce i { width: 8px; height: 8px; border-radius: 50%; background: var(--c, #fff); flex: 0 0 auto; }
+.puce b { font: 800 12px 'Plus Jakarta Sans', sans-serif; opacity: .8; }
+.puceOn { background: #fff; color: #13243D; border-color: #fff; }
+.puceOn b { color: var(--c, #22497D); opacity: 1; }
+
+.corpsCarte { position: relative; }
+.tel .corpsCarte { flex: 1; min-height: 0; }
+.tel .cadre { position: absolute; inset: 0; }
+.fond { position: absolute !important; inset: 0; }
+
+/* ── Les étiquettes de prix, au milieu de chaque zone ── */
+.env { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+.pastille {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 11px 0 9px; border-radius: 99px;
+  background: #fff; color: #13243D; cursor: pointer;
+  font: 800 12.5px 'Plus Jakarta Sans', sans-serif; white-space: nowrap; letter-spacing: -.1px;
+  box-shadow: 0 6px 16px -6px rgba(19,36,61, .55), 0 0 0 1px rgba(19,36,61, .06);
+  transition: transform .2s cubic-bezier(.34, 1.56, .64, 1), background .2s, color .2s, width .2s, height .2s, padding .2s;
+  animation: entre .38s cubic-bezier(.34, 1.56, .64, 1) backwards;
+}
+@keyframes entre { from { opacity: 0; transform: translateY(6px) scale(.8); } to { opacity: 1; transform: none; } }
+.pastille i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: 0 0 auto; }
+.pastille:hover, .envSurvol .pastille { transform: scale(1.07); }
+.envSel { z-index: 5; }
+.envSel .pastille { background: #1B3D6B; color: #fff; transform: scale(1.1); }
+.envSel .pastille i { box-shadow: 0 0 0 2px #fff; }
+.envSurvol { z-index: 4; }
+/* Une visite calée : l'étiquette violette, et le point exact dessous. */
+.pastilleVisite { background: var(--c); color: #fff; }
+.pastilleVisite i { background: #fff; }
+.point {
+  width: 13px; height: 13px; margin-top: 4px; border-radius: 50%;
+  background: #7c3aed; border: 2.5px solid #fff;
+  animation: onde 2.2s ease-out infinite;
+}
+@keyframes onde { 0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, .5); } 80%, 100% { box-shadow: 0 0 0 14px rgba(124, 58, 237, 0); } }
+/* Un filtre écarte le bien (V3.28) : l'étiquette s'allume à sa couleur,
+   tremble, lance ses étincelles et s'éteint. On anime l'étiquette, jamais
+   l'enveloppe, dont MapLibre tient la position par `transform`. */
+.sort { pointer-events: none; z-index: 6; }
+.sort .pastille { animation: sortie .95s cubic-bezier(.36, .07, .19, .97) forwards !important; }
+@keyframes sortie {
+  0% { transform: scale(1); }
+  16% { transform: scale(1.16); background: var(--c); color: #fff; box-shadow: 0 0 0 5px color-mix(in srgb, var(--c) 30%, transparent), 0 0 22px 6px color-mix(in srgb, var(--c) 70%, transparent); }
+  26% { transform: scale(1.14) translateX(-3px) rotate(-4deg); background: var(--c); color: #fff; }
+  36% { transform: scale(1.14) translateX(3px) rotate(4deg); background: var(--c); color: #fff; }
+  46% { transform: scale(1.12) translateX(-2px) rotate(-2deg); background: var(--c); color: #fff; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 25%, transparent), 0 0 16px 4px color-mix(in srgb, var(--c) 55%, transparent); }
+  56% { transform: scale(1.1) translateX(2px) rotate(1deg); background: var(--c); color: #fff; opacity: 1; }
+  100% { transform: scale(.35); background: var(--c); color: #fff; opacity: 0; box-shadow: 0 0 0 0 transparent; }
+}
+.sort .pastille i { background: #fff; }
+.etinc { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.etinc i {
+  position: absolute; left: 0; top: 0; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+  background: var(--c); box-shadow: 0 0 8px var(--c); opacity: 0;
+  animation: etincelle .7s ease-out forwards;
+}
+.etinc .etoile {
+  width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-radius: 0; background: var(--c);
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+}
+@keyframes etincelle {
+  0% { transform: translate(0, 0) scale(.3); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1) rotate(90deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sort .pastille { animation: sortieDouce .3s ease forwards !important; }
+  .etinc { display: none; }
+}
+@keyframes sortieDouce { to { opacity: 0; } }
+
+/* De loin, les prix se replient en points : la carte reste lisible. */
+.loin .env:not(.envSel) .pastille { width: 18px; height: 18px; padding: 0; justify-content: center; background: var(--c); border: 2.5px solid #fff; }
+.loin .env:not(.envSel) .pastille b,
+.loin .env:not(.envSel) .pastille i { display: none; }
+
+/* ── Les biens de la zone ── */
+.photo {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: center; color: #8FA3BF;
+  background: linear-gradient(135deg, #dfe6f0, #c9d5e4 60%, #b7c6d9) center / cover no-repeat;
+}
+.corps { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.etiq {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; max-width: 100%;
+  padding: 2px 8px; border-radius: 99px; font: 800 11px 'Plus Jakarta Sans', sans-serif; white-space: nowrap;
+  color: color-mix(in srgb, var(--c) 76%, black); background: color-mix(in srgb, var(--c) 13%, white);
+}
+.etiq i { width: 6px; height: 6px; border-radius: 50%; background: var(--c); flex: 0 0 auto; }
+.titre { font: 700 13.5px/1.3 'Plus Jakarta Sans', sans-serif; color: #13243D; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.prixL { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 12px; color: #5B6B80; }
+.prixL b { font: 800 14.5px 'Plus Jakarta Sans', sans-serif; color: #A95808; white-space: nowrap; }
+.prixL span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.actions { display: flex; gap: 6px; margin-top: 6px; }
+.voir, .itin {
+  display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 13px; border-radius: 10px;
+  font: 700 12.5px 'Plus Jakarta Sans', sans-serif; white-space: nowrap; text-decoration: none; cursor: pointer;
+}
+.voir { background: #22497D; color: #fff; }
+.voir:hover { background: #2f4a73; }
+.itin { border: 1.5px solid #E8EDF3; background: #fff; color: #13243D; }
+
+/* Téléphone : une bande qu'on fait glisser, au-dessus de la barre du bas. */
+.bas { position: absolute; z-index: 3; left: 0; right: 0; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+.bande {
+  /* Le bas large laisse l'ombre des fiches s'éteindre avant le bord de la
+     bande, qui la coupait net : un liseré gris sous chaque fiche (V3.28).
+     La marge négative garde les fiches à leur place. */
+  display: flex; gap: 10px; overflow-x: auto; padding: 4px 16px 26px; margin-bottom: -18px;
+  scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.bande::-webkit-scrollbar { display: none; }
+.fb {
+  /* Un glissement = une fiche (V3.28) : sans `scroll-snap-stop`, un geste un
+     peu vif sautait deux ou trois biens. */
+  flex: 0 0 min(312px, calc(100vw - 58px)); scroll-snap-align: center; scroll-snap-stop: always;
+  display: flex; background: #fff; border-radius: 18px; overflow: hidden; cursor: pointer;
+  /* Pas de bordure transparente : elle dessinait un cadre blanc autour de la
+     photo. La fiche choisie prend un contour doré, posé par-dessus. */
+  box-shadow: 0 14px 30px -16px rgba(19,36,61, .55);
+  outline: 2px solid transparent; outline-offset: -2px;
+  transition: outline-color .2s, transform .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.fb:active { transform: scale(.985); }
+.fb .photo { width: 92px; align-self: stretch; }
+.fb .corps { padding: 9px 11px 10px 12px; }
+.fb .actions { margin-top: 5px; }
+.fb .voir, .fb .itin { height: 30px; padding: 0 12px; font-size: 12px; }
+.fb.choisi { outline-color: #E68B23; }
+
+.rien {
+  margin: 0 16px; padding: 13px 16px; border-radius: 16px; background: #fff;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  font-size: 13px; color: #5B6B80; text-align: center;
+  box-shadow: 0 14px 30px -16px rgba(19,36,61, .55);
+}
+.rien button { height: 32px; padding: 0 14px; border-radius: 99px; background: #E8EFF8; color: #1B3D6B; font: 700 13px 'Plus Jakarta Sans', sans-serif; }
+
+.outils { position: absolute; z-index: 3; display: flex; flex-direction: column; gap: 6px; right: 14px; bottom: 14px; }
+.tel .outils { right: 12px; bottom: calc(88px + 136px + env(safe-area-inset-bottom, 0px)); }
+.outils button {
+  width: 40px; height: 40px; border-radius: 13px; background: #fff; color: #1B3D6B;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 10px 24px -12px rgba(19,36,61, .55); transition: background .15s, transform .15s;
+}
+.outils button:hover { background: #F5F8FC; }
+.outils button:active { transform: scale(.92); }
+
+/* « N biens ne sont pas sur la carte » (V3.28) : posé en haut de la carte,
+   juste sous les filtres. */
+.hors {
+  position: absolute; z-index: 4; left: 14px; top: 14px; max-width: min(430px, calc(100% - 28px));
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 8px 11px 11px; border-radius: 16px;
+  background: #fff; box-shadow: 0 14px 30px -16px rgba(19,36,61, .55), 0 0 0 1px rgba(230,139,35, .28);
+  font-size: 12.5px; line-height: 1.45; color: #5B6B80;
+  animation: entre .35s cubic-bezier(.16, 1, .3, 1) backwards;
+}
+/* Au téléphone, sous la mention OpenFreeMap (en haut à droite), qui doit rester lisible. */
+.tel .hors { left: 12px; right: 12px; top: 30px; max-width: none; }
+.horsIc {
+  flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; background: #fdf3d8; color: #A95808;
+}
+.horsTxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding-top: 1px; }
+.horsTxt b { font: 800 13.5px/1.3 'Plus Jakarta Sans', sans-serif; color: #13243D; }
+.horsTxt button { padding: 0; font: 700 12.5px 'Plus Jakarta Sans', sans-serif; color: #8a6a1f; text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
+.horsFermer {
+  flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; padding: 0;
+  background: transparent; color: #8FA3BF; font-size: 17px; line-height: 1;
+}
+.horsFermer:hover { background: #F2F5F9; color: #13243D; }
+
+.charge {
+  position: absolute; z-index: 4; top: 14px; left: 0; right: 0; margin: 0 auto; width: fit-content;
+  display: flex; align-items: center; gap: 9px; padding: 8px 14px; border-radius: 99px;
+  background: #22497D; color: #fff; font: 700 12.5px 'Plus Jakarta Sans', sans-serif;
+  box-shadow: 0 12px 26px -14px rgba(19,36,61, .6);
+}
+.charge span { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .3); border-top-color: #F2B266; animation: tourne .8s linear infinite; }
+@keyframes tourne { to { transform: rotate(360deg); } }
+.message {
+  position: absolute; z-index: 5; top: 12px; left: 12px; right: 12px; max-width: 460px;
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 10px 10px 14px; border-radius: 14px;
+  background: rgba(19,36,61, .94); color: #fff; font-size: 13px; line-height: 1.45;
+  box-shadow: 0 16px 34px -16px rgba(19,36,61, .7);
+  animation: entre .35s cubic-bezier(.16, 1, .3, 1);
+}
+.message span { flex: 1; }
+.message button { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #fff; font-size: 15px; line-height: 1; }
+
+/* ── Ordinateur : la carte, et la liste de la zone à côté ── */
+.pc { margin-top: 20px; }
+.tetePc { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.tetePc h2 { margin: 0; font: 800 26px/1.2 'Plus Jakarta Sans', sans-serif; letter-spacing: -.5px; color: #13243D; }
+.tetePc p { margin: 4px 0 0; font-size: 14px; color: #5B6B80; }
+.pc .bascule { background: #E8EFF8; border-color: #E8EDF3; }
+.pc .bascule button { color: #46566B; height: 32px; padding: 0 14px; font-size: 13px; }
+.pc .bascule button:hover { color: #1B3D6B; }
+.pc .bascule .basculeOn { background: #fff; color: #1B3D6B; box-shadow: 0 4px 12px -6px rgba(27,61,107, .45); }
+/* Les filtres, posés sur la carte (V3.28). Avant, une ligne de pastilles
+   entre le titre et la carte. Une seule barre blanche en haut, au milieu :
+   un trait fin entre chaque choix, et le choix actif à sa couleur. Centrée
+   par les marges, pas par `transform` (rien ne saute à l'apparition). */
+.filtresPc {
+  position: absolute; z-index: 4; top: 14px; left: 0; right: 0; margin: 0 auto;
+  width: fit-content; max-width: calc(100% - 28px);
+  display: flex; align-items: center; padding: 4px; border-radius: 16px;
+  background: rgba(255, 255, 255, .95); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 16px 34px -18px rgba(19,36,61, .55), 0 0 0 1px rgba(19,36,61, .07);
+  overflow-x: auto; scrollbar-width: none;
+  animation: entre .35s cubic-bezier(.16, 1, .3, 1) backwards;
+}
+.filtresPc::-webkit-scrollbar { display: none; }
+.fp {
+  position: relative; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
+  height: 36px; padding: 0 14px; border-radius: 12px;
+  font: 700 13px 'Plus Jakarta Sans', sans-serif; color: #13243D; white-space: nowrap;
+  transition: background .22s, color .22s, box-shadow .22s;
+}
+.fp + .fp::before {
+  content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 1px;
+  background: #E8EDF3; transition: opacity .2s;
+}
+/* Pas de trait contre le choix actif : il a déjà sa couleur. */
+.fpOn::before, .fpOn + .fp::before { opacity: 0; }
+.fp i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: 0 0 auto; transition: background .22s; }
+.fp b { font: 800 12px 'Plus Jakarta Sans', sans-serif; color: #8FA3BF; transition: color .22s; }
+.fp:hover { background: color-mix(in srgb, var(--c, #22497D) 9%, transparent); }
+.fpOn, .fpOn:hover { background: var(--c, #22497D); color: #fff; box-shadow: 0 8px 18px -10px var(--c, #22497D); }
+.fpOn i { background: #fff; }
+.fpOn b { color: rgba(255, 255, 255, .85); }
+/* Sous la barre de filtres : le message, le bandeau « pas sur la carte »,
+   le « Placement de vos biens… ». */
+.avecFiltres .hors, .avecFiltres .message, .avecFiltres .charge { top: 66px; }
+@media (max-width: 1279px) {
+  .fp { padding: 0 11px; font-size: 12.5px; gap: 6px; }
+}
+.pc .corpsCarte {
+  display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px;
+  height: clamp(480px, calc(100vh - 150px), 860px);
+}
+.pc .cadre { position: relative; border-radius: 20px; overflow: hidden; border: 1px solid #dbe2ec; box-shadow: 0 18px 40px -30px rgba(27,61,107, .55); }
+.cote {
+  display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+  background: #fff; border: 1px solid #E8EDF3; border-radius: 20px; box-shadow: 0 18px 40px -30px rgba(27,61,107, .55);
+}
+.coteTete { display: flex; align-items: center; gap: 8px; padding: 14px 16px 12px; border-bottom: 1px solid #F2F5F9; }
+.coteTete b { font: 800 15px 'Plus Jakarta Sans', sans-serif; color: #1B3D6B; }
+.coteTete span { min-width: 22px; height: 22px; padding: 0 7px; border-radius: 99px; background: #E8EFF8; color: #22497D; font: 800 12px 'Plus Jakarta Sans', sans-serif; display: inline-flex; align-items: center; justify-content: center; }
+.coteTete button { margin-left: auto; font: 700 12.5px 'Plus Jakarta Sans', sans-serif; color: #A95808; padding: 4px 6px; }
+.coteListe { flex: 1; min-height: 0; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.fl {
+  display: flex; gap: 12px; padding: 8px; border-radius: 16px; cursor: pointer;
+  border: 1.5px solid transparent; background: #F5F8FC;
+  transition: background .18s, border-color .18s, box-shadow .2s;
+  animation: entre .3s cubic-bezier(.16, 1, .3, 1) backwards;
+}
+.fl:hover { background: #F2F5F9; }
+.fl .photo { width: 92px; height: 72px; border-radius: 12px; }
+.fl.choisi { background: #fff; border-color: #E68B23; box-shadow: 0 12px 26px -18px rgba(27,61,107, .6); }
+.pc .rien { box-shadow: none; background: #F5F8FC; margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pastille, .fl, .point, .message { animation: none !important; }
+}

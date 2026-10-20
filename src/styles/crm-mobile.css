@@ -1,0 +1,363 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LE CRM SUR TÉLÉPHONE
+   ───────────────────────────────────────────────────────────────────────────
+   Chargée par AppLayout, donc uniquement sur le CRM (« / »). L'espace client
+   et la fiche publique d'un bien ne la voient jamais.
+
+   Tout est rangé sous « html.crm » (posée par AppLayout) : les fenêtres du
+   CRM sont rendues dans <body>, hors de la page, et doivent en profiter aussi.
+
+   Rien ici ne s'applique au-dessus de 900 px : l'écran d'ordinateur reste
+   exactement tel qu'il était.
+
+   Beaucoup d'écrans du CRM sont stylés « en ligne » (style={{ … }}) : pour
+   les reprendre sur téléphone, les éléments portent un nom de classe et les
+   règles ci-dessous ont besoin de « !important » pour passer devant.
+   Préfixes :  nc- nouveau client · fc- fiche client · pv- page Visites ·
+               emi- onglets Veille / Sélection / Présentés · le- lien de
+               l'espace · tx- transaction · crm- fenêtres génériques
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ LES RANGÉES QUI DÉFILENT DE CÔTÉ (V3.152) ═══════════════════════════
+   Alexandre : « il faut mettre un peu de transparence sur chaque bord, pour
+   montrer qu'on peut défiler à droite et à gauche ». Chaque rangée d'onglets
+   ou de pastilles qui défile au doigt porte `data-defile` ; Defilement.tsx
+   lui pose `data-defile-g` / `data-defile-d` tant qu'il reste de quoi voir
+   à gauche / à droite. Le bord concerné s'efface alors en fondu sur 32 px,
+   et le fondu s'éteint en douceur quand on arrive au bout.
+   Le masque n'est posé que sur une rangée qui déborde vraiment ; il efface
+   aussi son fond, son cadre et son ombre : une rangée encadrée laisse son
+   cadre à son parent (voir FicheClient, FicheContact, EnteteRubrique).
+   Téléphone et tablette seulement : l'ordinateur ne change pas. */
+@property --defile-g { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --defile-d { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@media (max-width: 900px) {
+  html.crm [data-defile] { transition: --defile-g .22s ease, --defile-d .22s ease; }
+  html.crm [data-defile][data-defile-g], html.crm [data-defile][data-defile-d] {
+    -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0) 0, rgba(0,0,0,.45) calc(var(--defile-g) * .4), #000 var(--defile-g), #000 calc(100% - var(--defile-d)), rgba(0,0,0,.45) calc(100% - var(--defile-d) * .4), rgba(0,0,0,0) 100%);
+    mask-image: linear-gradient(90deg, rgba(0,0,0,0) 0, rgba(0,0,0,.45) calc(var(--defile-g) * .4), #000 var(--defile-g), #000 calc(100% - var(--defile-d)), rgba(0,0,0,.45) calc(100% - var(--defile-d) * .4), rgba(0,0,0,0) 100%);
+  }
+  html.crm [data-defile][data-defile-g] { --defile-g: 32px; }
+  html.crm [data-defile][data-defile-d] { --defile-d: 32px; }
+}
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+  html.crm [data-defile] { transition: none; }
+}
+
+/* Le bouton qui déplie les critères n'existe que sur téléphone. */
+html.crm .fc-crit-bascule { display: none; }
+/* « Envoyer à Camille » (V3.87) : le choix survolé se dore (ordinateur et téléphone). */
+html.crm .fc-envoi-choix:not(:disabled):hover { border-color: #e0c77d !important; background: #fffaf0 !important; box-shadow: 0 10px 22px -18px rgba(26, 35, 50, .55); }
+
+@media (max-width: 900px) {
+  /* La hauteur réelle de l'écran : 100vh compte la barre d'adresse de
+     Safari, et la barre d'onglets du bas passait dessous. */
+  html.crm, html.crm body { height: 100dvh; }
+  html.crm body { -webkit-text-size-adjust: 100%; }
+  html.crm button, html.crm a { -webkit-tap-highlight-color: transparent; }
+}
+
+@media (max-width: 760px) {
+
+  /* ── Les champs de saisie en 16 px : en dessous, l'iPhone zoome sur la
+        page à chaque fois qu'on touche un champ, et ne dézoome plus. ── */
+  html.crm input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  html.crm select,
+  html.crm textarea { font-size: 16px !important; }
+
+  /* ═══ FENÊTRES GÉNÉRIQUES ═══════════════════════════════════════════ */
+
+  html.crm .crm-voile { align-items: flex-end !important; padding: 0 !important; }
+  html.crm .crm-feuille {
+    max-width: none !important; border-radius: 22px 22px 0 0 !important;
+    max-height: calc(100dvh - 10px); overflow-y: auto;
+    animation: crmFeuille .34s cubic-bezier(.22,.9,.3,1) !important;
+  }
+  html.crm .crm-pied { padding: 10px 14px calc(12px + env(safe-area-inset-bottom, 0px)) !important; }
+  html.crm .crm-pied > button { flex: 1 1 0; padding: 12px 10px !important; font-size: 14px !important; border-radius: 12px !important; }
+  html.crm .crm-g3 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+  /* ═══ NOUVEAU CLIENT ════════════════════════════════════════════════ */
+
+  html.crm .nc-tete { padding: 16px 16px 0 !important; }
+  html.crm .nc-tete h2 { font-size: 20px !important; }
+  html.crm .nc-tete > div:nth-child(2) { padding-right: 44px !important; row-gap: 10px !important; }
+  html.crm .nc-fermer { top: 12px !important; right: 12px !important; width: 38px !important; height: 38px !important; border-radius: 12px !important; }
+  html.crm .nc-rail { margin-top: 14px; }
+  html.crm .nc-lig b { font-size: 11px; letter-spacing: .3px; }
+  /* Le panneau garde la même hauteur d'une étape à l'autre : il ne saute
+     plus quand on passe de « Surfaces » à « Étage ». */
+  html.crm .nc-fenetre { height: calc(100dvh - 10px); }
+  html.crm .nc-frise { margin: 0 -16px !important; }
+  html.crm .nc-defil { padding: 14px 12px 18px !important; }
+  html.crm .nc-bloc { padding: 14px !important; border-radius: 16px !important; }
+  html.crm .nc-etats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html.crm .nc-etat { padding: 10px; }
+  html.crm .nc-etat span { font-size: 11px; }
+
+  /* Le pied : « Précédent » et « Créer maintenant » côte à côte, et
+     « Continuer » sur toute la largeur, sous le pouce. */
+  html.crm .nc-pied { padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px)) !important; gap: 8px !important; }
+  html.crm .nc-pied > span { display: none; }
+  html.crm .nc-pied > button { flex: 1 1 0; justify-content: center; padding: 12px 8px; font-size: 14px; border-radius: 12px; }
+  html.crm .nc-pied > .nc-suite { flex: 1.35 1 0; padding: 13px 10px; font-size: 15px; }
+
+  /* V3.15 — la fenêtre garde de la place pour les questions : l'en-tête
+     tient en deux lignes (le nom et ses types, puis l'étape), le pied en
+     une seule (« ← », « Créer maintenant », « Continuer »). */
+  html.crm .nc-tete { padding: 12px 14px 0 !important; }
+  html.crm .nc-tete h2 { font-size: 19px !important; }
+  html.crm .nc-titres { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; }
+  html.crm .nc-sous { display: none; }
+  html.crm .nc-types { margin-top: 0 !important; }
+  html.crm .nc-rail { margin-top: 10px; }
+  html.crm .nc-lig { display: none; }
+  html.crm .nc-barre { height: 3px; }
+  html.crm .nc-ou { display: block; margin: 7px 0 2px; font-size: 11.5px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: var(--emilio); }
+  html.crm .nc-fermer { top: 9px !important; width: 34px !important; height: 34px !important; }
+  html.crm .nc-annuler { display: none; }
+  html.crm .nc-pied > .nc-prec { flex: 0 0 48px; padding: 12px 0; font-size: 17px; }
+  html.crm .nc-prec .nc-mot { display: none; }
+  html.crm .nc-pied > .nc-maint { white-space: nowrap; font-size: 13px; padding: 12px 6px; }
+
+  /* ═══ FICHE CLIENT — le bloc identité ═══════════════════════════════ */
+
+  /* Un cran plus petit qu'à l'origine, au niveau du tableau de bord : le
+     bloc bleu prenait presque tout le premier écran. */
+  html.crm .fc-id-zone { padding: 10px 10px 0 !important; }
+  html.crm .fc-id-carte { padding-top: 15px !important; padding-left: 14px !important; padding-right: 14px !important; border-radius: 18px !important; }
+  html.crm .fc-id-rangee { gap: 13px !important; }
+  html.crm .fc-id-gauche { gap: 11px !important; flex-basis: 100% !important; }
+  html.crm .fc-id-avatar { width: 42px !important; height: 42px !important; font-size: 16px !important; }
+  html.crm .fc-id-nom { font-size: 18px !important; letter-spacing: -0.3px !important; }
+
+  /* Les coordonnées : de vraies touches, larges, qui appellent ou écrivent. */
+  /* -53 px : la largeur de l'avatar (42) et de l'écart (11), pour que les
+     coordonnées repartent du bord de la carte. */
+  html.crm .fc-id-contacts { flex-direction: column; align-items: stretch !important; gap: 6px !important; margin-top: 12px !important; margin-left: -53px; }
+  html.crm .fc-id-lien {
+    white-space: normal !important; overflow-wrap: anywhere; line-height: 1.35;
+    gap: 9px !important; padding: 8px 11px; border-radius: 11px;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+    font-size: 13px !important;
+  }
+  html.crm .fc-id-adresse { background: rgba(255,255,255,.035); font-size: 12px !important; }
+  /* Un couple : les coordonnées de chacun, sous son prénom, en colonne aussi. */
+  html.crm .fc-id-groupe { display: flex !important; flex-direction: column; align-items: stretch !important; gap: 6px !important; }
+  html.crm .fc-id-qui { align-self: flex-start; margin-top: 4px; }
+
+  html.crm .fc-kpis { width: 100%; flex-shrink: 1 !important; }
+  html.crm .fc-kpi { flex: 1 1 0; min-width: 0 !important; padding: 8px 3px !important; }
+  html.crm .fc-kpi > div:first-child { font-size: 18px !important; }
+  html.crm .fc-kpi > div:last-child { font-size: 8px !important; letter-spacing: .5px !important; line-height: 1.25; }
+
+  html.crm .fc-situation { margin: -20px 8px 0 !important; padding: 18px 12px 11px !important; border-radius: 15px !important; }
+  html.crm .fc-champs { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+  html.crm .fc-champ { padding: 0 !important; border-left: none !important; min-width: 0; }
+  html.crm .fc-champ > div:last-child { font-size: 13px !important; overflow-wrap: anywhere; }
+  html.crm .fc-vente { grid-column: 1 / -1; margin-left: 0 !important; justify-content: center; }
+
+  /* ═══ FICHE CLIENT — les critères ═══════════════════════════════════ */
+
+  html.crm .fc-bandeau { padding: 13px 14px !important; gap: 8px !important; }
+  html.crm .fc-bandeau > span:nth-last-child(2) { display: none; }
+  html.crm .fc-budget {
+    flex: 1 1 100%; text-align: left !important;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    border-top: 1px solid #efe3c6; padding-top: 10px; margin-top: 2px;
+  }
+  html.crm .fc-budget > span:last-child { font-size: 19px !important; margin-top: 0 !important; }
+  html.crm .fc-familles { grid-template-columns: 1fr !important; gap: 10px !important; }
+
+  /* Le détail des critères, replié par défaut : le suivi du dossier remonte
+     de deux écrans. Le bandeau (type, délai, financement, budget) reste
+     toujours visible. */
+  html.crm .fc-crit-bascule {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 11px 14px; border-radius: 12px;
+    background: #f8fafc; border: 1px solid #e3e8f0; color: #334155;
+    font-family: inherit; font-size: 13.5px; font-weight: 700;
+  }
+  html.crm .fc-crit-chevron { display: inline-flex; transition: transform .28s cubic-bezier(.16,1,.3,1); }
+  html.crm .fc-crit-chevron[data-ouvert="true"] { transform: rotate(180deg); }
+  html.crm .fc-crit-detail[data-ouvert="false"] { display: none !important; }
+  html.crm .fc-crit-detail[data-ouvert="true"] { animation: crmDeplie .3s cubic-bezier(.16,1,.3,1); }
+
+  /* ═══ FICHE CLIENT — les onglets du suivi ═══════════════════════════ */
+
+  html.crm .fiche-suivi { margin-top: 14px; padding: 12px 8px 0; border-radius: 18px 18px 0 0; }
+  html.crm .fiche-suivi-tete { padding: 0 6px 10px; row-gap: 6px; }
+  html.crm .fiche-suivi-tete i { display: none; }
+  html.crm .fiche-suivi-reinit { padding: 6px 11px; }
+  html.crm .fiche-tab { padding: 12px 10px; border-radius: 0 0 18px 18px; }
+
+  /* Six onglets : ils défilent au doigt au lieu de s'empiler sur trois
+     rangées. */
+  html.crm .emi-onglets {
+    flex-wrap: nowrap !important; overflow-x: auto; overflow-y: hidden;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity; padding: 0 2px !important;
+  }
+  html.crm .emi-onglets::-webkit-scrollbar { display: none; }
+  html.crm .emi-onglet { flex-shrink: 0; scroll-snap-align: start; padding: 10px 13px 11px; font-size: 13.5px; }
+  html.crm .emi-onglet[data-actif="true"] { padding-top: 10px; }
+  html.crm .emi-onglets.sombre .emi-onglet[data-actif="true"]::after,
+  html.crm .emi-onglets.sombre .emi-onglet-curseur::after { display: none; }
+
+  /* Onglet Suivi */
+  html.crm .fc-suivi-carte { padding: 14px !important; }
+  html.crm .fc-suivi-barre { flex-direction: column; flex-wrap: nowrap !important; align-items: stretch !important; margin-bottom: 16px !important; }
+  html.crm .fc-suivi-filtres {
+    flex-wrap: nowrap !important; overflow-x: auto; scrollbar-width: none;
+    margin: 0 -12px; padding: 0 12px 2px;
+  }
+  html.crm .fc-suivi-filtres::-webkit-scrollbar { display: none; }
+  html.crm .fc-suivi-filtres > button { flex-shrink: 0; white-space: nowrap; }
+  html.crm .fc-suivi-ajout { justify-content: center; padding: 12px 14px; font-size: 14px; border-radius: 12px; }
+
+  /* Onglet Visites : ses propres règles téléphone (OngletVisites.module.css, V3.169). */
+
+  /* Onglet Transaction */
+  html.crm .tx-bien { flex-wrap: wrap; }
+  html.crm .tx-pied { padding: 12px; }
+  html.crm .tx-pied > button { flex: 1 1 auto; justify-content: center; }
+  html.crm .tx-pied > .tx-abandon { flex: 0 0 100%; order: 5; text-align: center; padding: 6px 0; }
+  html.crm .tx-corps { padding: 14px 12px; }
+  html.crm .tx-tete { padding: 12px; }
+
+  /* ═══ FICHE CLIENT — les formulaires du bien ════════════════════════ */
+
+  html.crm .fc-g4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+  html.crm .fc-g4 > * { grid-column: auto !important; }
+  html.crm .fc-cache-mobile { display: none !important; }
+  html.crm .fc-photos { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important; }
+  html.crm .fc-fb-tete { padding: 16px !important; border-radius: 22px 22px 0 0 !important; align-items: flex-start !important; }
+  html.crm .fc-fb-tete h2 { font-size: 16px !important; line-height: 1.3; }
+
+  /* ═══ LE LIEN DE L'ESPACE CLIENT ════════════════════════════════════ */
+
+  html.crm .le-barre { gap: 8px !important; padding: 12px !important; }
+  html.crm .le-titre { flex: 1 1 100%; }
+  /* Le lien se lit en entier : sur un petit écran, il passe à la ligne plutôt que d'être coupé. */
+  html.crm .le-lien { flex: 1 1 100%; max-width: none !important; padding: 8px 11px !important; font-size: 12px !important; white-space: normal !important; overflow-wrap: anywhere; }
+  html.crm .le-btn { flex: 1 1 0; justify-content: center; padding: 10px 8px !important; font-size: 13px !important; border-radius: 11px !important; }
+  html.crm .le-etat { flex: 1 1 100%; justify-content: center; margin-left: 0 !important; padding: 9px 11px !important; border-radius: 11px !important; }
+  /* V3.152 : le cadre du lien, d'un bord à l'autre de l'écran. */
+  html.crm .le-cadre { border-radius: 0 !important; border-left: none !important; border-right: none !important; }
+  html.crm .le-barre { padding: 12px 14px !important; }
+
+  /* ═══ ONGLETS VEILLE · SÉLECTION · PRÉSENTÉS ═════════════════════════ */
+
+  /* Les photos défilent au doigt au lieu de déborder de la carte. */
+  html.crm .emi-bande {
+    overflow-x: auto; scrollbar-width: none; scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch; margin: 0 -12px; padding: 0 12px;
+  }
+  html.crm .emi-bande::-webkit-scrollbar { display: none; }
+  html.crm .emi-vignette { flex: 0 0 auto; width: 118px; min-width: 0; max-width: none; scroll-snap-align: start; }
+  html.crm .emi-vignette:hover { transform: none; }
+
+  html.crm .emi-tete-carte { padding: 14px 14px 0 !important; gap: 10px !important; }
+  /* Les biens du suivi : titre et prix un cran plus petits sur téléphone. */
+  html.crm .emi-titre-bien { font-size: 15.5px !important; }
+  html.crm .emi-prix-bien { font-size: 20px !important; letter-spacing: -0.5px !important; }
+  html.crm .emi-titre-onglet { font-size: 16.5px !important; }
+  html.crm .emi-tete-carte > div:first-child { min-width: 0 !important; flex-basis: 100% !important; }
+  html.crm .emi-tete-carte > div:last-child {
+    flex: 1 1 100%; flex-direction: row !important; flex-wrap: wrap;
+    align-items: baseline !important; justify-content: space-between; gap: 4px 10px !important;
+  }
+  html.crm .emi-corps-carte { padding: 12px 14px 14px !important; }
+  /* L'adresse reste à côté de son épingle au lieu de passer dessous. */
+  html.crm .emi-tete-carte > div:first-child > div:nth-child(2) { align-items: flex-start !important; }
+  html.crm .emi-tete-carte > div:first-child > div:nth-child(2) > span:first-child { margin-top: 2px; }
+  html.crm .emi-tete-carte > div:first-child > div:nth-child(2) > span:nth-child(2) { flex: 1 1 calc(100% - 28px); min-width: 0; }
+  /* L'avis de la veille : l'étiquette au-dessus, la phrase sur toute la largeur. */
+  html.crm .emi-avis { flex-direction: column; gap: 9px !important; }
+  /* La fenêtre de la note : le bouton « Compris » à la largeur du pouce. */
+  html.crm .emi-score-pied > button { width: 100%; margin-left: 0 !important; padding: 12px 0 !important; }
+  /* Le marché : trois lignes lisibles au lieu de trois cases trop étroites.
+     L'intitulé à gauche, le chiffre et sa précision à droite. */
+  html.crm .emi-marche-grille { grid-template-columns: 1fr !important; column-gap: 6px !important; row-gap: 0 !important; }
+  /* V3.167 : le détail s'ouvre juste sous la case touchée (« Moins d'un
+     mois », « Prix », « Atouts »…), plus sous toute la rangée. */
+  html.crm .emi-volet-grille { order: 0; }
+  html.crm .emi-marche-grille > .emi-case ~ .emi-case, html.crm .emi-bilan > button ~ button { margin-top: 6px; }
+  html.crm .emi-case {
+    display: grid !important; grid-template-columns: minmax(0, 1fr) auto 14px;
+    grid-template-areas: "tete val chev" "tete det chev";
+    column-gap: 10px !important; row-gap: 1px !important; align-items: center !important;
+    padding: 10px 12px !important; width: 100%;
+  }
+  html.crm .emi-case-tete { grid-area: tete; padding-right: 0 !important; gap: 7px !important; }
+  html.crm .emi-case-titre { font-size: 10.5px !important; white-space: normal !important; line-height: 1.25; }
+  html.crm .emi-case-val { grid-area: val; justify-self: end; text-align: right; font-size: 15.5px !important; }
+  html.crm .emi-case-det { grid-area: det; justify-self: end; text-align: right; font-size: 11.5px !important; }
+  html.crm .emi-case-chev { grid-area: chev; position: static !important; }
+  html.crm .emi-case:not(:has(.emi-case-det)) { grid-template-areas: "tete val chev"; }
+  /* Une agence par bloc : le nom et le lien, puis le prix et la date. */
+  html.crm .emi-diff {
+    display: grid !important; grid-template-columns: 8px minmax(0, 1fr) auto;
+    grid-template-areas: "pt nom lien" ". prix date"; column-gap: 10px !important; row-gap: 2px !important;
+  }
+  html.crm .emi-diff-pt { grid-area: pt; }
+  html.crm .emi-diff-nom { grid-area: nom; }
+  html.crm .emi-diff-lien { grid-area: lien; justify-self: end; }
+  html.crm .emi-diff-prix { grid-area: prix; min-width: 0 !important; text-align: left !important; }
+  html.crm .emi-diff-date { grid-area: date; min-width: 0 !important; }
+  html.crm .emi-bilan { grid-template-columns: 1fr !important; row-gap: 0 !important; }
+
+  /* Le pied de carte : les boutons à la largeur du pouce. */
+  html.crm .emi-pied { padding: 12px 14px !important; gap: 10px !important; }
+  html.crm .emi-pied > div, html.crm .emi-pied > span { width: 100%; }
+  html.crm .emi-pied > div > a, html.crm .emi-pied > div > button { flex: 1 1 auto; justify-content: center; padding-top: 10px !important; padding-bottom: 10px !important; }
+
+  /* La ligne compacte : photo et titre en haut, chiffres, prix et
+     boutons en dessous. */
+  html.crm .emi-ligne { flex-wrap: wrap; row-gap: 8px !important; padding: 10px !important; }
+  html.crm .emi-ligne-titre { flex: 1 1 calc(100% - 110px) !important; }
+  html.crm .emi-ligne-specs { order: 5; flex: 1 1 100%; white-space: normal !important; }
+  html.crm .emi-ligne-prix { order: 6; margin-right: auto; text-align: left !important; min-width: 0 !important; }
+  html.crm .emi-ligne-actions { order: 7; }
+  html.crm .emi-ligne-actions > a, html.crm .emi-ligne-actions > button { width: 36px !important; height: 36px !important; }
+  /* Avec la case à cocher, le numéro laisse sa place : le titre garde la sienne. */
+  html.crm .emi-ligne[data-coche] .emi-ligne-num { display: none !important; }
+
+  /* L'envoi groupé : les honoraires d'un bien passent sous son titre. */
+  html.crm .emi-hono-droite { width: 100%; justify-content: space-between; margin-left: 0 !important; }
+
+  /* Les fenêtres des onglets (envoi, retour, score) montent du bas. */
+  html.crm .emi-voile:not([data-nu]) { align-items: flex-end !important; padding: 0 !important; overflow: hidden !important; }
+  html.crm .emi-voile:not([data-nu]) > .emi-fenetre {
+    margin: 0 !important; border-radius: 22px 22px 0 0 !important;
+    max-height: calc(100dvh - 10px); overflow-y: auto !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    animation: crmFeuille .34s cubic-bezier(.22,.9,.3,1) !important;
+  }
+  html.crm .emi-voile[data-nu] { padding: 10px !important; }
+
+  /* ═══ FICHE · fenêtre « Ajouter une action » ═════════════════════════ */
+  /* Trois types par ligne sur ordinateur, deux sur téléphone. */
+  html.crm .fc-types-action { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+  /* PAGE VISITES : les cartes ont leurs propres règles téléphone (CartesVisites.module.css, V3.135). */
+
+  /* ═══ V3.152 — FICHE CLIENT, bord à bord ══════════════════════════════
+     Alexandre : « sur le mobile tout est bridé, condensé ». Le bandeau du
+     suivi (« Où en est la recherche ») et son panneau vont d'un bord à
+     l'autre ; les cartes des biens aussi, sans arrondi ni cadre sur les
+     côtés. Les titres et les textes du panneau gardent 14 px de marge. */
+  /* V3.167 — Alexandre : « où en est la recherche, sur le téléphone, le
+     bloc bleu n'est pas en arrondi » alors que le bandeau du nom l'est
+     (V3.163). Le bloc reprend ses coins arrondis, à 10 px des bords comme
+     le reste de la fiche ; les cartes des biens gardent les leurs, posées
+     dans le panneau. */
+  html.crm .fiche-suivi { margin-top: 14px; padding: 12px 0 0; border-radius: 20px 20px 0 0; }
+  html.crm .fiche-suivi-tete { padding: 0 14px 10px; }
+  html.crm .fiche-suivi-tete > .fiche-suivi-rappro, html.crm .fiche-suivi-tete > .fiche-suivi-reinit { margin-left: 0; }
+  html.crm .fiche-suivi .emi-onglets { padding: 0 12px !important; }
+  html.crm .fiche-tab { padding: 12px 8px; border-radius: 0 0 20px 20px; }
+}
+
+@keyframes crmDeplie { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@keyframes crmFeuille { from { transform: translateY(60px); opacity: .4; } to { transform: none; opacity: 1; } }

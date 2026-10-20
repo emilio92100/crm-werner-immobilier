@@ -1,0 +1,392 @@
+/* Le suivi du dossier, en frise — voir FriseSuivi.tsx. */
+
+.frise { display: flex; flex-direction: column; gap: 14px; font-family: 'DM Sans', sans-serif; }
+
+/* ── L'en-tête : le titre, et les deux boutons ── */
+.tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.teteTitre { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.teteTitre b { font: 800 17px 'Plus Jakarta Sans', sans-serif; color: var(--emilio, #2e4166); letter-spacing: -.2px; }
+.teteTitre span { font-size: 12.5px; color: #94a3b8; font-weight: 600; }
+.teteBoutons { display: flex; gap: 8px; flex-wrap: wrap; }
+.btnAppel, .btnAjout {
+  display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 16px; border-radius: 12px;
+  font: 700 13.5px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; transition: background .15s, border-color .15s, box-shadow .15s;
+}
+.btnAppel { border: 1px solid #c9dcf1; background: #f3f8fd; color: #2d5c8f; }
+.btnAppel:hover { background: #e9f1fb; border-color: #a9c7e8; }
+.btnAjout { border: none; background: var(--emilio-fond, #2e4166); color: white; box-shadow: 0 8px 18px -12px rgba(26, 35, 50, .8); }
+.btnAjout:hover { filter: brightness(1.08); }
+
+/* ── Les filtres ── */
+.filtres { display: flex; gap: 7px; flex-wrap: wrap; }
+.filtre {
+  display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; border-radius: 99px;
+  border: 1px solid #e3e8f0; background: transparent; color: #52607a; cursor: pointer;
+  font: 700 13px 'DM Sans', sans-serif; white-space: nowrap; transition: background .15s, border-color .15s, color .15s;
+}
+.filtre:hover { border-color: #cdd6e3; color: var(--emilio, #2e4166); }
+.filtre i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.filtre b {
+  min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 99px; margin-right: -5px;
+  display: inline-flex; align-items: center; justify-content: center; background: #eef2f7; color: #52607a; font-size: 11.5px; font-weight: 800;
+}
+.filtre[data-vide='oui'] { color: #a3b0c2; }
+.filtre[data-on='oui'] { background: #1a2332; border-color: #1a2332; color: white; }
+.filtre[data-on='oui'] b { background: rgba(255, 255, 255, .16); color: #f0dc9c; }
+
+/* ── Le tiroir des appels (V3.83) : sous « Appels », une rangée par issue ── */
+.tiroir {
+  display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 13px; border-radius: 14px;
+  border: 1px solid #dfe8f3; background: linear-gradient(180deg, #f5f9fd 0, #fbfcfe 100%);
+}
+.tiroirTete { display: flex; align-items: center; justify-content: space-between; gap: 6px 14px; flex-wrap: wrap; }
+.tiroirTitre { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: #2d5c8f; }
+.tiroirTaux { font-size: 12.5px; font-weight: 700; color: #52607a; }
+.tiroirBarre { display: flex; gap: 2px; height: 6px; border-radius: 99px; overflow: hidden; background: #e8eef6; }
+.tiroirBarre i { display: block; min-width: 6px; flex-basis: 0; transition: flex-grow .45s cubic-bezier(.16, 1, .3, 1), opacity .2s; }
+.tiroirPuces { display: flex; gap: 7px; flex-wrap: wrap; }
+.tiroirPuce {
+  display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 99px;
+  border: 1.5px solid #e3e8f0; background: white; color: #52607a; cursor: pointer;
+  font: 700 12.5px 'DM Sans', sans-serif; white-space: nowrap; transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+}
+.tiroirPuce:hover:not(:disabled) { border-color: #cdd6e3; color: var(--emilio, #2e4166); }
+.tiroirPuce:disabled { cursor: default; color: #b3bdcb; }
+.tiroirPuce:disabled i { opacity: .35; }
+.tiroirPuce i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tiroirPuce b {
+  min-width: 19px; height: 19px; padding: 0 6px; box-sizing: border-box; border-radius: 99px; margin-right: -5px;
+  display: inline-flex; align-items: center; justify-content: center; background: #eef2f7; color: inherit; font-size: 11px; font-weight: 800;
+}
+.tiroirPuce[data-on='oui'] b { background: rgba(255, 255, 255, .75); }
+.tiroirPuce:first-child[data-on='oui'] { background: #1a2332; border-color: #1a2332; color: white; }
+.tiroirPuce:first-child[data-on='oui'] b { background: rgba(255, 255, 255, .16); color: #f0dc9c; }
+
+/* La liste qui change (filtre ou issue) arrive en fondu. */
+.listeArrive { animation: listeArrive .3s ease both; }
+@keyframes listeArrive { from { opacity: 0; } }
+/* V3.167 : un autre filtre, et les lignes MONTENT l'une après l'autre,
+   comme les cartes de « Demandes Internet ». */
+.listeArrive > li { animation: ligneMonte .42s cubic-bezier(.2, .8, .2, 1) backwards; }
+.listeArrive > li:nth-child(2) { animation-delay: 35ms; }
+.listeArrive > li:nth-child(3) { animation-delay: 70ms; }
+.listeArrive > li:nth-child(4) { animation-delay: 105ms; }
+.listeArrive > li:nth-child(5) { animation-delay: 140ms; }
+.listeArrive > li:nth-child(6) { animation-delay: 175ms; }
+.listeArrive > li:nth-child(7) { animation-delay: 210ms; }
+.listeArrive > li:nth-child(8) { animation-delay: 245ms; }
+.listeArrive > li:nth-child(n+9) { animation-delay: 280ms; }
+@keyframes ligneMonte { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* ── La frise : un trait continu, du futur vers le passé ── */
+.liste { list-style: none; margin: 4px 0 0; padding: 0; position: relative; display: flex; flex-direction: column; gap: 12px; }
+.liste::before {
+  content: ''; position: absolute; left: 19px; top: 14px; bottom: 14px; width: 2px; border-radius: 2px;
+  background: linear-gradient(to bottom, #dfe6ef, #e7ecf3 85%, rgba(231, 236, 243, 0));
+}
+.ligne { position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 14px; align-items: start; border-radius: 14px; }
+
+/* Le rond sur le trait : l'icône de la famille, dans sa couleur. */
+.noeud {
+  position: relative; z-index: 1; width: 40px; height: 40px; border-radius: 50%; box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 3px solid #fff; box-shadow: 0 0 0 1px #e3e8f0, 0 6px 14px -10px rgba(26, 35, 50, .6);
+}
+.noeud[data-bord='oui'] { border-width: 1.5px; box-shadow: 0 0 0 3px #fff, 0 6px 14px -10px rgba(26, 35, 50, .6); }
+
+/* La carte : ce qu'Alexandre a fait lui-même. */
+.carte {
+  min-width: 0; background: white; border: 1px solid #e6ebf2; border-radius: 14px; padding: 12px 15px 13px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .03), 0 10px 24px -22px rgba(26, 35, 50, .5);
+  transition: border-color .15s, box-shadow .15s;
+}
+.ligne:hover .carte { border-color: #d8e0eb; box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 14px 28px -20px rgba(26, 35, 50, .45); }
+.carteTete { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 26px; }
+.titre { font: 800 14.5px 'Plus Jakarta Sans', sans-serif; color: var(--emilio, #2e4166); letter-spacing: -.1px; min-width: 0; }
+.pastille {
+  display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 99px; border: 1px solid;
+  font-size: 11.5px; font-weight: 800; white-space: nowrap;
+}
+.heure { margin-left: auto; font-size: 12px; font-weight: 600; color: #94a3b8; white-space: nowrap; }
+.texte { margin: 6px 0 0; font-size: 13.5px; line-height: 1.6; color: #3d4a5c; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sous { margin: 4px 0 0; font-size: 12.5px; color: #8593a8; overflow-wrap: anywhere; }
+/* Un message du client : on le lit comme une citation. */
+.citation { background: #f8f5fd; border-left: 3px solid #c3b1e3; border-radius: 0 10px 10px 0; padding: 8px 12px; }
+
+/* Modifier / supprimer : discrets, ils apparaissent au survol. */
+.actions { display: inline-flex; gap: 2px; margin-right: -6px; opacity: 0; transition: opacity .15s; }
+.actions[data-vide='oui'] { width: 58px; height: 28px; }
+@media (max-width: 720px) { .actions[data-vide='oui'] { display: none; } }
+.ligne:hover .actions, .actions:focus-within { opacity: 1; }
+@media (hover: none) { .actions { opacity: 1; } }
+.actions button {
+  width: 28px; height: 28px; border-radius: 8px; border: none; background: none; cursor: pointer; color: #8593a8;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.actions button:hover { background: #f1f4f8; color: var(--emilio, #2e4166); }
+.actions button[data-rouge='oui']:hover { background: #fef2f2; color: #b91c1c; }
+
+/* Les étiquettes sous le texte : le bien, la relance, l'autre recherche. */
+.etiquettes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.etiquettes > span {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 3px 10px; border-radius: 9px; border: 1px solid;
+  font-size: 12px; font-weight: 700; line-height: 1.3; max-width: 100%; box-sizing: border-box;
+}
+.etBien { background: #fbf6ea; border-color: #eadcb8 !important; color: #8a6a1f; }
+.etRelance { background: #fffbeb; border-color: #fde2a4 !important; color: #b45309; }
+.etRelance[data-retard='oui'] { background: #fff1f2; border-color: #fbd0d6 !important; color: #be123c; }
+.etAutre { background: #f1f5f9; border-color: #e2e8f0 !important; color: #475569; }
+
+/* Ce que le CRM a noté tout seul : une ligne, pas une carte. */
+.discrete { align-items: center; }
+.discrete .noeudPetit { justify-self: center; }
+.noeudPetit {
+  position: relative; z-index: 1; width: 26px; height: 26px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 0 0 4px #fff;
+}
+.discreteCorps { min-width: 0; padding: 2px 0; }
+.discreteTete { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.discreteTitre { font-size: 13px; font-weight: 600; color: #64748b; min-width: 0; }
+.discrete[data-famille='visite'] .discreteTitre, .discrete[data-famille='affaire'] .discreteTitre { color: var(--emilio, #2e4166); font-weight: 700; }
+.discreteTexte { margin: 2px 0 0; font-size: 12.5px; line-height: 1.5; color: #8593a8; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.discrete .heure { margin-left: 0; font-weight: 500; }
+.discrete .heure::before { content: '·'; margin-right: 8px; color: #cbd5e1; }
+.discrete .etiquettes { margin-top: 5px; }
+.discrete .actions { margin-left: auto; }
+
+/* Les repères sur le trait : « À venir », « Aujourd'hui », chaque mois. */
+.repere { position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 14px; align-items: center; margin: 4px 0 -2px; }
+.repereRond { justify-self: center; position: relative; z-index: 1; width: 11px; height: 11px; border-radius: 50%; background: #c8d2df; box-shadow: 0 0 0 4px #fff; }
+.repereTexte { font-size: 10.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: #94a3b8; }
+.repere[data-sorte='avenir'] .repereRond { background: #c9a84c; }
+.repere[data-sorte='avenir'] .repereTexte { color: #a07c28; }
+.repere[data-sorte='aujourdhui'] .repereRond { background: var(--emilio-fond, #2e4166); width: 13px; height: 13px; }
+.repere[data-sorte='aujourdhui'] .repereTexte {
+  justify-self: start; color: white; background: var(--emilio-fond, #2e4166); padding: 4px 11px; border-radius: 99px; letter-spacing: 1px;
+}
+
+/* Le futur : le trait se fait pointillé, les cartes dorées. */
+.ligne[data-sorte='avenir']::before {
+  content: ''; position: absolute; left: 19px; top: -12px; bottom: -12px; width: 2px; z-index: 0;
+  background: repeating-linear-gradient(to bottom, #e3cf92 0 5px, #fff 5px 10px);
+}
+.carteRelance { background: #fffcf4; border-color: #f1e3bd; }
+.carteRelance[data-retard='oui'] { background: #fffafa; border-color: #fbd5db; }
+.carteRelance .texte { margin-top: 4px; color: #5b6678; }
+.voir {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 4px; border: none; background: none; padding: 2px 0; cursor: pointer;
+  font: 700 12.5px 'DM Sans', sans-serif; color: #8a6a1f;
+}
+.voir:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Le mail envoyé, replié (V3.85) : « Voir le mail » le déplie, présenté
+   comme un mail (objet, destinataire, texte, biens joints). */
+.voirMail {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 9px; height: 30px; padding: 0 12px; border-radius: 9px; cursor: pointer;
+  border: 1px solid #cfe5df; background: #f2faf8; color: #0f766e; font: 700 12.5px 'DM Sans', sans-serif;
+  transition: background .15s, border-color .15s;
+}
+.voirMail:hover { background: #e5f4f1; border-color: #a9d6cc; }
+.voirMail > svg:last-child { transition: transform .25s cubic-bezier(.16, 1, .3, 1); }
+.voirMail[data-on='oui'] > svg:last-child { transform: rotate(180deg); }
+.mail { margin-top: 10px; border-radius: 12px; border: 1px solid #e3e8f0; background: #fbfcfe; overflow: hidden; }
+.mailTete { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; border-bottom: 1px solid #eef1f6; background: #f6f8fb; }
+.mailTete > div { display: flex; align-items: baseline; gap: 10px; min-width: 0; font-size: 13px; }
+.mailTete span { flex: 0 0 44px; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #94a3b8; }
+.mailTete b { font-weight: 700; color: #1a2332; overflow-wrap: anywhere; }
+.mailTete em { font-style: normal; color: #52607a; overflow-wrap: anywhere; }
+.mailCorps { margin: 0; padding: 13px 16px 15px; font-size: 13.5px; line-height: 1.65; color: #2b3647; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mailBiens { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 16px 14px; }
+.mailBiens > span { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #94a3b8; margin-right: 2px; }
+.mailBiens em { display: inline-flex; align-items: center; gap: 5px; font-style: normal; padding: 3px 9px; border-radius: 8px; border: 1px solid #eadcb8; background: #fbf6ea; color: #8a6a1f; font-size: 12px; font-weight: 700; }
+
+/* V3.150 — un bien envoyé, en pastille : sa photo et son nom ; un clic l'ouvre en grand. */
+.pBien {
+  display: inline-flex; align-items: center; gap: 8px; max-width: 100%; min-height: 34px; padding: 3px 10px 3px 3px; box-sizing: border-box;
+  border-radius: 10px; border: 1px solid #eadcb8; background: #fbf6ea; color: #7a5d1c; font: 700 12.5px 'DM Sans', sans-serif; text-align: left; cursor: pointer;
+  transition: border-color .15s, background-color .15s, box-shadow .15s;
+}
+.pBien:hover { border-color: #d9c088; background: #fff9ec; box-shadow: 0 8px 16px -12px rgba(160, 124, 40, .6); }
+.pBien img { width: 40px; height: 28px; border-radius: 7px; object-fit: cover; flex-shrink: 0; display: block; }
+.pBienIc { width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: #fff; }
+.pBienT { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pBien > svg:last-child { flex-shrink: 0; opacity: .6; }
+.pBien[data-petite='oui'] { min-height: 28px; padding: 2px 9px 2px 2px; border-radius: 9px; font-size: 12px; }
+.pBien[data-petite='oui'] img { width: 32px; height: 22px; border-radius: 6px; }
+.pBien[data-petite='oui'] .pBienIc { width: 22px; height: 22px; }
+.mailBienAbsent { font-style: normal; font-size: 12px; color: #94a3b8; }
+
+/* La carte du bien envoyé, en grand. */
+.bvVoile {
+  position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgba(15, 22, 35, .55); backdrop-filter: blur(3px); animation: bvFondu .2s ease both; font-family: 'DM Sans', sans-serif;
+}
+@keyframes bvFondu { from { opacity: 0; } }
+.bvFen {
+  width: min(520px, 100%); max-height: calc(100dvh - 40px); display: flex; flex-direction: column; background: #fff; border-radius: 20px; overflow: hidden;
+  box-shadow: 0 40px 80px -30px rgba(15, 23, 42, .6); animation: bvMonte .3s cubic-bezier(.16, 1, .3, 1) both;
+}
+@keyframes bvMonte { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+.bvPhoto { position: relative; flex-shrink: 0; aspect-ratio: 16 / 10; background: #e6edf6; }
+.bvPhoto img { width: 100%; height: 100%; object-fit: cover; display: block; animation: bvFondu .25s ease both; }
+.bvSans { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #94a3b8; font-size: 12.5px; font-weight: 700; }
+.bvNav {
+  position: absolute; top: 0; bottom: 0; margin: auto 0; width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .92); color: #1a2332; box-shadow: 0 6px 16px -8px rgba(15, 23, 42, .6);
+}
+.bvNav:hover { background: #fff; }
+.bvNav[data-cote='g'] { left: 12px; }
+.bvNav[data-cote='d'] { right: 12px; }
+.bvCompte { position: absolute; left: 12px; bottom: 12px; display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 99px; background: rgba(15, 22, 35, .62); color: #fff; font: 700 12px 'DM Sans', sans-serif; }
+.bvEtape { position: absolute; left: 12px; top: 12px; padding: 5px 11px; border-radius: 99px; color: #fff; font: 800 12px 'Plus Jakarta Sans', sans-serif; box-shadow: 0 6px 14px -8px rgba(15, 23, 42, .6); }
+.bvFermer {
+  position: absolute; right: 12px; top: 12px; width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .92); color: #1a2332;
+}
+.bvCorps { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 18px; }
+.bvTitre { display: flex; flex-direction: column; gap: 3px; }
+.bvTitre b { font: 800 18px/1.3 'Plus Jakarta Sans', sans-serif; color: #1a2332; }
+.bvTitre span { font-size: 13px; color: #64748b; }
+.bvCarac { display: flex; flex-wrap: wrap; gap: 6px; }
+.bvCarac span { padding: 4px 10px; border-radius: 99px; background: #f1f5f9; color: #334155; font-size: 12.5px; font-weight: 700; }
+.bvPrix { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.bvPrix b { font: 800 22px 'Plus Jakarta Sans', sans-serif; color: #1a2332; }
+.bvPrix .bvSansPrix { font-size: 16px; color: #64748b; }
+.bvPrix small { font-size: 12px; color: #94a3b8; }
+.bvInfos { display: flex; flex-direction: column; gap: 7px; padding: 11px 13px; border-radius: 12px; background: #f8fafc; border: 1px solid #eef1f6; }
+.bvInfos > div { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; line-height: 1.45; color: #334155; }
+.bvInfos svg { margin-top: 2px; color: #94a3b8; }
+.bvRetour { margin: 0; padding: 10px 13px; border-left: 3px solid #86b7f0; border-radius: 0 10px 10px 0; background: #f3f8fe; font-size: 13px; line-height: 1.5; color: #1e3a5f; }
+.bvRetour span { display: block; margin-bottom: 3px; font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: #3b6fd1; }
+.bvPied { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid #eef1f6; background: #fbfcfe; }
+.bvBtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 40px; padding: 0 15px; border-radius: 11px; cursor: pointer; white-space: nowrap;
+  border: 1px solid #e3e8f0; background: #fff; color: #1a2332; font: 700 13.5px 'DM Sans', sans-serif;
+}
+.bvBtn:hover { background: #f8fafc; border-color: #cfd7e3; }
+.bvBtnPrim { background: var(--emilio, #2e4166); border-color: var(--emilio, #2e4166); color: #fff; }
+.bvBtnPrim:hover { background: #22324f; border-color: #22324f; }
+.bvLien { margin-right: auto; font: 700 13px 'DM Sans', sans-serif; color: #a07c28; text-decoration: none; }
+.bvLien:hover { text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 720px) {
+  .bvVoile { padding: 0; align-items: flex-end; }
+  .bvFen { width: 100%; max-height: calc(100dvh - 10px); border-radius: 20px 20px 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .bvCorps { padding: 14px 16px 16px; }
+  .bvPied { padding: 11px 16px; }
+  .bvPied .bvBtn { flex: 1 1 auto; }
+}
+
+/* Reporter une relance « À venir » (V3.85) : un petit bouton à côté de
+   l'échéance, et dessous, les jours en un clic, comme la page Relances. */
+.reporter {
+  display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 10px; border-radius: 99px; cursor: pointer;
+  border: 1px solid #e6d3a0; background: #fff; color: #8a6a1f; font: 700 12px 'DM Sans', sans-serif; white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.reporter:hover { background: #fdf6e3; border-color: #d9bd72; }
+.reporter[data-on='oui'] { background: #1a2332; border-color: #1a2332; color: #f2dfa6; }
+.report {
+  display: flex; flex-direction: column; gap: 9px; margin-top: 10px; padding: 11px 12px 12px; border-radius: 12px;
+  background: #fff; border: 1px solid #f0e2bd;
+}
+.reportT { font-size: 10.5px; font-weight: 800; letter-spacing: .9px; text-transform: uppercase; color: #a07c28; }
+.reportPuces { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.reportPuces > button {
+  height: 32px; padding: 0 12px; border-radius: 99px; cursor: pointer; border: 1px solid #e3d3ab; background: #fff; color: #6b6045;
+  font: 700 12.5px 'DM Sans', sans-serif; transition: background .15s, border-color .15s, color .15s;
+}
+.reportPuces > button:hover { border-color: #cfb877; }
+.reportPuces > button[data-on='oui'] { background: #1a2332; border-color: #1a2332; color: #f2dfa6; }
+.reportPied { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.reportAnnuler { border: none; background: none; padding: 0 4px; cursor: pointer; color: #a08c60; font: 700 12.5px 'DM Sans', sans-serif; }
+.reportOk {
+  height: 34px; padding: 0 15px; border-radius: 10px; border: none; cursor: pointer; background: #1a2332; color: #fff;
+  font: 800 12.5px 'DM Sans', sans-serif; transition: filter .15s, opacity .15s;
+}
+.reportOk:hover:not(:disabled) { filter: brightness(1.15); }
+.reportOk:disabled { opacity: .55; cursor: default; }
+
+/* Rien à afficher */
+.vide { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 34px 16px; text-align: center; color: #94a3b8; font-size: 13px; }
+.vide b { color: var(--emilio, #2e4166); font-size: 14.5px; }
+.videIc { width: 48px; height: 48px; border-radius: 14px; background: #f1f4f8; color: #8593a8; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+
+@media (max-width: 720px) {
+  .tete { flex-direction: column; align-items: stretch; }
+  .teteBoutons { display: grid; grid-template-columns: 1fr 1fr; }
+  .btnAppel, .btnAjout { justify-content: center; padding: 0 10px; height: 44px; }
+  /* V3.152 : 14 px, la marge des fiches bord à bord ; la rangée défile
+     jusqu'au bord de l'écran et s'y efface (Defilement.tsx). */
+  .filtres { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -14px; padding: 0 14px 2px; }
+  .filtres::-webkit-scrollbar { display: none; }
+  .filtre { flex-shrink: 0; }
+  .tiroir { padding: 11px 12px 12px; }
+  /* Sur téléphone, toutes les issues d'un coup d'œil : deux colonnes, la
+     première à la largeur de son plus long libellé, le nombre calé à droite. */
+  .tiroirPuces { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 6px; }
+  .tiroirPuce { min-width: 0; height: 38px; padding: 0 10px 0 11px; gap: 6px; font-size: 12px; }
+  .tiroirLib { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .tiroirPuce b { margin-left: auto; margin-right: -3px; }
+  .liste::before, .ligne[data-sorte='avenir']::before { left: 15px; }
+  .ligne, .repere { grid-template-columns: 32px minmax(0, 1fr); column-gap: 10px; }
+  .noeud { width: 32px; height: 32px; border-width: 2px; }
+  .noeud svg { width: 14px; height: 14px; }
+  .carte { padding: 11px 12px 12px; }
+  .titre { font-size: 14px; }
+  /* L'heure passe sous le titre : le titre garde toute la largeur. */
+  .carteTete .heure { order: 5; flex-basis: 100%; margin-left: 0; font-size: 11.5px; }
+  .carteTete .actions { margin-left: auto; }
+  .voir { order: 6; margin-left: 0; }
+  .reporter { order: 5; }
+  .reportOk { flex: 1 1 auto; height: 40px; }
+  .discrete .heure { font-size: 11.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bvVoile, .bvFen, .bvPhoto img { animation: none; }
+  .carte, .actions { transition: none; }
+  .listeArrive, .listeArrive > li { animation: none; }
+  .tiroirBarre i { transition: none; }
+}
+
+/* Les grandes étapes d'une vente (V3.47) : un liseré et un fond à leur couleur. */
+.carteJalon {
+  border-color: color-mix(in srgb, var(--jc) 28%, #e6ebf2);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--jf) 70%, white) 0, white 70%);
+  box-shadow: inset 3px 0 0 var(--jc), 0 1px 2px rgba(15, 23, 42, .03), 0 10px 24px -22px rgba(26, 35, 50, .5);
+}
+.carteJalon .titre { color: color-mix(in srgb, var(--jc) 70%, #1a2332); }
+.ligne:hover .carteJalon { border-color: color-mix(in srgb, var(--jc) 40%, #d8e0eb); box-shadow: inset 3px 0 0 var(--jc), 0 1px 2px rgba(15, 23, 42, .04), 0 14px 28px -20px rgba(26, 35, 50, .45); }
+
+/* V3.207 — Un bien de l'agence présenté par simple mail : sa photo, un clic
+   ouvre sa fiche ; puis à qui, et si le lien a été ouvert. */
+.bp { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.bpBien {
+  display: flex; align-items: center; gap: 12px; width: 100%; max-width: 480px; padding: 6px 12px 6px 6px; box-sizing: border-box;
+  border-radius: 12px; border: 1px solid #eadcb8; background: #fbf6ea; color: #7a5d1c; font: inherit; text-align: left;
+}
+button.bpBien { cursor: pointer; transition: border-color .15s, background-color .15s, box-shadow .15s; }
+button.bpBien:hover { border-color: #d9c088; background: #fff9ec; box-shadow: 0 8px 16px -12px rgba(160, 124, 40, .6); }
+.bpBien img { width: 84px; height: 60px; border-radius: 8px; object-fit: cover; flex-shrink: 0; display: block; }
+.bpIc { width: 84px; height: 60px; border-radius: 8px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: #fff; }
+.bpTxt { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.bpTxt b {
+  font: 800 13.5px/1.35 'Plus Jakarta Sans', sans-serif; color: var(--emilio, #2e4166);
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.bpTxt > span { font-size: 13px; font-weight: 700; color: #7a5d1c; }
+.bpBien > svg:last-child { flex-shrink: 0; opacity: .6; }
+.bpPied { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 12.5px; color: #8593a8; }
+.bpA { overflow-wrap: anywhere; }
+.bpVu {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 24px; padding: 2px 10px; box-sizing: border-box; border-radius: 99px; border: 1px solid;
+  font-size: 12px; font-weight: 800;
+}
+.bpVu[data-vu='oui'] { color: #0f766e; background: #f0fdfa; border-color: #99f6e4; }
+.bpVu[data-vu='non'] { color: #64748b; background: #f8fafc; border-color: #e2e8f0; }
+.bpLien { color: #3b6ea8; font-weight: 700; text-decoration: none; }
+.bpLien:hover { text-decoration: underline; }
+@media (max-width: 600px) {
+  .bpBien { gap: 10px; }
+  .bpBien img, .bpIc { width: 64px; height: 48px; }
+  .bpTxt b { font-size: 13px; -webkit-line-clamp: 3; }
+}
