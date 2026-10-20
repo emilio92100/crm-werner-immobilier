@@ -235,9 +235,9 @@ function ChoixAcheteur({ options, recherches, choix, onChoix, libre, suggestions
    sauf le prix ; une estimation ajoute la fourchette et le prix conseillé ;
    le mandat, les honoraires et l'annonce. */
 const DEPARTS: { k: EtapeVente; ic: string; t: string; s: string }[] = [
-  { k: 'a_suivre', ic: 'drapeau', t: 'À suivre', s: 'Un propriétaire pense vendre : lui, son bien, ta visite. Pas encore de prix.' },
-  { k: 'estimation', ic: 'regle', t: 'Une estimation', s: 'Le rendez-vous est pris ou fait : tout le bien, puis la fourchette et le prix conseillé.' },
-  { k: 'mandat', ic: 'plume', t: 'Un mandat signé', s: 'Il est en vente : le prix, les honoraires, l’annonce, les visites.' },
+  { k: 'a_suivre', ic: 'drapeau', t: 'À suivre', s: 'Un propriétaire ou un commerçant y pense : lui, son local, ta visite. Pas encore de montant.' },
+  { k: 'estimation', ic: 'regle', t: 'Une estimation', s: 'Le rendez-vous est pris ou fait : tout le local, puis la fourchette et le montant conseillé.' },
+  { k: 'mandat', ic: 'plume', t: 'Un mandat signé', s: 'L’affaire est sur le marché : le loyer ou le prix, les honoraires, l’annonce, les visites.' },
   /* V3.79 : sans mandat ni propriétaire, juste la fiche puis l'annonce. */
   { k: 'annonce_type', ic: 'megaphone', t: 'Une annonce type', s: 'Une annonce proche d’un bien qu’on ne peut pas diffuser, pour faire venir des demandeurs. Sans mandat ni propriétaire.' },
 ];
@@ -249,20 +249,20 @@ export function FenNouveau({ occupe, erreur, pour, existants = [], onOuvrir, onF
   existants?: BienVente[]; onOuvrir?: (id: string) => void;
 }) {
   return (
-    <Fenetre sur={pour ? `Le bien de ${pour}` : undefined} titre="Nouveau bien : où en est-il ?" sous="Le formulaire ne pose que les questions utiles à cette étape. Les autres arrivent quand le bien avance." occupe={occupe} onFermer={onFermer}
+    <Fenetre sur={pour ? `L’affaire de ${pour}` : undefined} titre="Nouvelle affaire : où en est-elle ?" sous="Le formulaire ne pose que les questions utiles à cette étape. Les autres arrivent quand l’affaire avance." occupe={occupe} onFermer={onFermer}
       pied={<button type="button" className={s.btn} disabled={occupe} onClick={onFermer}>Annuler</button>}>
       {existants.length > 0 && (
         <div className={`${b.ventile} ${b.ventileManque}`}>
           <Ic n="info" t={16} />
           <span>
-            <b>{`${pour || 'Ce propriétaire'} a déjà ${existants.length > 1 ? `${existants.length} biens en cours` : 'un bien en cours'}.`}</b>
+            <b>{`${pour || 'Ce mandant'} a déjà ${existants.length > 1 ? `${existants.length} affaires en cours` : 'une affaire en cours'}.`}</b>
             {existants.map(x => (
               <span key={x.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 6 }}>
                 <span>{[x.titre || titreBien(x.donnees || {}), x.adresse || x.ville || '', etapeDe(x.etape).court, x.reference || ''].filter(Boolean).join(' · ')}</span>
                 {onOuvrir && <button type="button" className={b.lien} disabled={occupe} onClick={() => onOuvrir(x.id)}>Ouvrir la fiche existante</button>}
               </span>
             ))}
-            <small className={b.ventileNet} style={{ color: '#92400e' }}>Un autre bien à lui ? Choisis l’étape ci-dessous pour le créer quand même.</small>
+            <small className={b.ventileNet} style={{ color: '#92400e' }}>Une autre affaire à lui ? Choisis l’étape ci-dessous pour la créer quand même.</small>
           </span>
         </div>
       )}
@@ -653,6 +653,121 @@ function ChoixProprio({ choisi, onChoisir }: { choisi: ClientMini | null; onChoi
       }}><Ic n="plus" t={13} e={2.6} />Nouveau contact</button>
       <Erreur t={erreur} />
     </>
+  );
+}
+
+/* ══ « Ajouter le propriétaire » (Werner) ══════════════════════════════════
+   Alexandre : « en haut, “Ajouter le propriétaire”, le petit pop-up, très
+   fluide, très simple, pas beaucoup d'infos à mettre, mais complet ». Une
+   affaire reprise d'une annonce n'a pas de mandant : on le cherche dans les
+   contacts, ou on le crée en quatre champs — une société (son nom, son
+   interlocuteur) ou une personne. Le reste (SIREN, associés, adresse) se
+   complète sur sa fiche. Rend la fiche créée ou choisie ; la fiche de
+   l'affaire la relie. */
+export function FenAjoutProprio({ titre, onFermer, onFait }: { titre?: string; onFermer: () => void; onFait: (c: ClientMini) => Promise<void> }) {
+  const [clients, setClients] = useState<ClientMini[] | null>(null);
+  const [q, setQ] = useState('');
+  const [sorte, setSorte] = useState<'societe' | 'personne'>('societe');
+  const [f, setF] = useState({ societe: '', civilite: '' as '' | 'Monsieur' | 'Madame', prenom: '', nom: '', tel: '', email: '' });
+  const [doublons, setDoublons] = useState<ClientMini[]>([]);
+  const [occupe, setOccupe] = useState(false);
+  const [erreur, setErreur] = useState('');
+  useEffect(() => {
+    let vivant = true;
+    lireClients().then(l => { if (vivant) setClients(l); }).catch(e => { if (vivant) { setClients([]); setErreur((e as Error).message); } });
+    return () => { vivant = false; };
+  }, []);
+  const t = sansAccent(q.trim());
+  const societeDe = (c: ClientMini) => {
+    const p = (c.pro && typeof c.pro === 'object' ? c.pro : {}) as { structure?: { denomination?: string } };
+    return p.structure?.denomination || '';
+  };
+  const trouves = t.length >= 2 ? (clients || []).filter(c => sansAccent(`${c.prenom || ''} ${c.nom || ''} ${societeDe(c)} ${(c.telephones || []).join(' ')} ${(c.emails || []).join(' ')}`).includes(t)).slice(0, 5) : [];
+  const choisir = async (c: ClientMini) => {
+    setOccupe(true); setErreur('');
+    try { await onFait(c); } catch (e) { setErreur((e as Error).message); setOccupe(false); }
+  };
+  const creer = async (quandMeme = false) => {
+    const soc = sorte === 'societe' ? f.societe.trim() : '';
+    if (sorte === 'societe' && !soc) { setErreur('Le nom de la société ?'); return; }
+    if (sorte === 'personne' && !(f.nom.trim() || f.prenom.trim())) { setErreur('Son nom ?'); return; }
+    const p = { ...PERSONNE_VIDE, civilite: f.civilite, prenom: f.prenom.trim(), nom: f.nom.trim(), telephone: f.tel.trim(), email: f.email.trim().toLowerCase() };
+    if (!quandMeme) {
+      const l = doublonsContact(clients || [], p).concat(soc ? (clients || []).filter(c => sansAccent(societeDe(c)) === sansAccent(soc)) : []);
+      const uniques = l.filter((c, i) => l.findIndex(x => x.id === c.id) === i);
+      if (uniques.length) { setDoublons(uniques); return; }
+    }
+    setOccupe(true); setErreur('');
+    try {
+      const c = await creerFicheProprio(p, soc ? { denomination: soc } : null);
+      await onFait(c);
+    } catch (e) { setErreur((e as Error).message); setOccupe(false); }
+  };
+  const champ = (k: 'societe' | 'prenom' | 'nom' | 'tel' | 'email', lib: string, o: { auto?: boolean; mode?: 'tel' | 'email'; large?: boolean } = {}) => (
+    <Ch lib={lib} large={o.large}>
+      <input className={s.input} value={f[k]} autoFocus={o.auto} inputMode={o.mode} autoComplete="off"
+        onChange={e => { setF({ ...f, [k]: e.target.value }); setDoublons([]); setErreur(''); }} />
+    </Ch>
+  );
+  return (
+    <Fenetre titre={titre || 'Ajouter le propriétaire'} sous="Le mandant de cette affaire. Sa fiche se crée dans tes contacts ; le reste se complète plus tard." occupe={occupe} onFermer={onFermer}
+      pied={<>
+        <button type="button" className={s.btn} disabled={occupe} onClick={onFermer}>Annuler</button>
+        <button type="button" className={`${s.btn} ${s.btnNavy}`} disabled={occupe} onClick={() => { void creer(doublons.length > 0); }}>
+          <Ic n="check" t={15} e={2.4} />{occupe ? 'Enregistrement…' : doublons.length ? 'Créer quand même' : 'Ajouter le propriétaire'}
+        </button>
+      </>}>
+      <div className={b.groupe}>
+        <div className={b.groupeT}><Ic n="loupe" t={14} />Déjà dans tes contacts ?</div>
+        <input className={s.cherche} value={q} onChange={e => setQ(e.target.value)} placeholder={clients === null ? 'Chargement des contacts…' : 'Un nom, une société, un téléphone…'} aria-label="Chercher dans les contacts" />
+        {trouves.length > 0 && (
+          <div className={b.qui}>
+            {trouves.map(c => (
+              <button key={c.id} type="button" className={b.quiL} disabled={occupe} onClick={() => { void choisir(c); }}>
+                <AvatarContact c={personneDe(nomClient(c) || societeDe(c))} teinte={{ bg: '', fg: '#f4bc92' }} className={`${b.avatar} ${b.avatarPetit}`} libre />
+                <div><b>{[societeDe(c), nomClient(c)].filter(Boolean).filter((x, i, l) => l.indexOf(x) === i).join(' · ')}</b><small>{[c.telephones?.[0], c.emails?.[0]].filter(Boolean).join(' · ') || 'Fiche du CRM'}</small></div>
+                <Ic n="droite" t={15} e={2.4} />
+              </button>
+            ))}
+          </div>
+        )}
+        {t.length >= 2 && clients && !trouves.length && <div className={b.vide}>{`Personne ne correspond à « ${q.trim()} » : crée-le juste dessous.`}</div>}
+      </div>
+      <div className={b.groupe}>
+        <div className={b.groupeT}><Ic n="plus" t={14} />Ou un nouveau propriétaire</div>
+        <div className={b.bascule} role="group" aria-label="Une société ou une personne">
+          <button type="button" aria-pressed={sorte === 'societe'} onClick={() => { setSorte('societe'); setDoublons([]); }}>Une société</button>
+          <button type="button" aria-pressed={sorte === 'personne'} onClick={() => { setSorte('personne'); setDoublons([]); }}>Une personne</button>
+        </div>
+        <div className={b.g2}>
+          {sorte === 'societe' && champ('societe', 'Nom de la société', { auto: true, large: true })}
+          {sorte === 'personne' && (
+            <ChG lib="Civilité">
+              <Pills options={[{ v: 'Monsieur' as const, l: 'Monsieur' }, { v: 'Madame' as const, l: 'Madame' }]} v={f.civilite} onChange={x => setF({ ...f, civilite: f.civilite === x ? '' : x })} />
+            </ChG>
+          )}
+          {champ('prenom', sorte === 'societe' ? 'Prénom de l’interlocuteur' : 'Prénom', { auto: sorte === 'personne' })}
+          {champ('nom', sorte === 'societe' ? 'Son nom' : 'Nom')}
+          {champ('tel', 'Téléphone', { mode: 'tel' })}
+          {champ('email', 'E-mail', { mode: 'email' })}
+        </div>
+      </div>
+      {doublons.length > 0 && (
+        <div className={`${b.ventile} ${b.ventileManque}`}>
+          <Ic n="info" t={15} />
+          <span>
+            <b>{doublons.length > 1 ? 'Ces contacts existent peut-être déjà :' : 'Ce contact existe peut-être déjà :'}</b>
+            {doublons.map(c => (
+              <span key={c.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                <span>{[societeDe(c), nomClient(c), c.telephones?.[0], c.emails?.[0]].filter(Boolean).join(' · ')}</span>
+                <button type="button" className={b.lien} disabled={occupe} onClick={() => { void choisir(c); }}>Utiliser cette fiche</button>
+              </span>
+            ))}
+          </span>
+        </div>
+      )}
+      <Erreur t={erreur} />
+    </Fenetre>
   );
 }
 

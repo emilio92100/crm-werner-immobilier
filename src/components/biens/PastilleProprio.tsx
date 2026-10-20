@@ -64,7 +64,7 @@ export function PastilleProprio({ nom, pluriel, personne, societe, pour, sous, p
       <div className={b.pProprio}>
         <button type="button" className={`${b.pProprioBtn} ${b.pProprioVide}`} onClick={onRenseigner}>
           <span className={b.pProprioIcVide}><Ic n="personne" t={15} /></span>
-          <span className={b.pProprioTx}><small>Propriétaire</small><b>À renseigner</b></span>
+          <span className={b.pProprioTx}><small>Le mandant</small><b>Ajouter le propriétaire</b></span>
           <Ic n="plus" t={14} e={2.4} />
         </button>
       </div>

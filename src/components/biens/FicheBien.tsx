@@ -19,13 +19,13 @@ import VisiteSurPlace from './VisiteSurPlace';
 import { reformulerAnnonce } from './annonce-ia';
 import { BarreOnglets, CorpsOnglet } from '@/components/shared/OngletsGlissants';
 import {
-  FenAcceptation, FenAnnulerMandat, FenCompromis, FenCompromisTombe, FenDefinirEstimation, FenDeplacerVisite, FenGuide, FenNotaires, FenNouvelleVente, FenEstimation, FenMandat, FenNote, FenOffre, FenPrix, FenRaison, FenVendu, FenVisite, JaugeEstimation, lireEstim,
+  FenAcceptation, FenAjoutProprio, FenAnnulerMandat, FenCompromis, FenCompromisTombe, FenDefinirEstimation, FenDeplacerVisite, FenGuide, FenNotaires, FenNouvelleVente, FenEstimation, FenMandat, FenNote, FenOffre, FenPrix, FenRaison, FenVendu, FenVisite, JaugeEstimation, lireEstim,
   type AccordOffre, type ChoixA, type CycleEstimation, type OptionAcheteur,
 } from './FenetresBien';
 import type { ChoixGuide } from './FenetresBien';
 import {
   SEUIL_CORRESPOND, SEUIL_LISTE, acheteursTries, fiable, recherchesRappro, annulerVisiteCRM, annulerVisiteLibre, chargerFiche, cloreRelanceOffre, creerAvenantVente, creerDocument, enregistrerBien,
-  MESSAGE_VENDU_SUPPR, cloreRelancesEstimation, creerFicheAcheteur, creerFicheProprio, deposerPiece, doublonsContact, ficheClient, personneVide, joindreCompromis, joindreOffreSignee, ligneHono, ligneNotaires, lireHono, lireNotaire, lireNotairesDossier, majBien, majSuivi, marquerVendeur, nomClient, noterAcceptationAnnulee, noterNegociation, noterOffreAcceptee, retirerAutresAcceptees,
+  MESSAGE_VENDU_SUPPR, cloreRelancesEstimation, creerFicheAcheteur, creerFicheProprio, deposerPiece, donneesProprio, doublonsContact, ficheClient, personneVide, joindreCompromis, joindreOffreSignee, ligneHono, ligneNotaires, lireHono, lireNotaire, lireNotairesDossier, majBien, majSuivi, marquerVendeur, nomClient, noterAcceptationAnnulee, noterNegociation, noterOffreAcceptee, retirerAutresAcceptees,
   donneesHono, donneesNotaires, aDesNotaires, notaireAJour, ouvrirPiece, supprimerBien, triBien, supprimerSuivi,
   type Acheteur, type ClientMini, type Copie, type DetailBien, type DocLie, type ListeBiens, type NotaireChoisi, type PourDocument, type VisiteRow,
 } from './outils';
@@ -1209,6 +1209,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
   const [depotSigne, setDepotSigne] = useState<DocumentRow | null>(null);
   const [cr, setCr] = useState<VisiteU | null>(null);
   const [message, setMessage] = useState<{ t: string; ok: boolean } | null>(null);
+  const [ajoutProprio, setAjoutProprio] = useState(false);
   /* V3.131 : la fiche publique du bien, un lien qui ne change jamais. */
   async function copierLienPublic() {
     const lien = lienBienPublic(bien.id);
@@ -1831,6 +1832,25 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
       setMessage({ t: relie ? `La fiche de ${nomClient(c)} est reliée à ce bien.` : `La fiche de ${nomClient(c)} est créée dans tes contacts et reliée à ce bien.`, ok: true });
     } catch (e) { setMessage({ t: (e as Error).message, ok: false }); }
   };
+  /* Werner : « Ajouter le propriétaire », la petite fenêtre (FenAjoutProprio).
+     La fiche choisie ou créée devient le mandant de l'affaire : sa société
+     (s'il en a une) et son interlocuteur. */
+  const lierProprio = async (c: ClientMini) => {
+    const st = lireStructure(lirePro(c.pro).structure);
+    const avantD = bien.donnees || {};
+    const base = donneesProprio(c);
+    const patch: Donnees = st?.denomination
+      ? { ...base, qui: 'sci', sciNom: st.denomination }
+      : { ...base, qui: base.qui === 'couple' ? 'indivision' : 'personne', sciNom: '' };
+    const donnees: Donnees = { ...avantD, ...patch, proprioNouveau: false, proprioSans: false };
+    setBien(prev => ({ ...prev, client_id: c.id, donnees }));
+    enregistrerDansLOrdre(bien.id, donnees, avantD);
+    await file.current;
+    await marquerVendeur(c.id);
+    setAjoutProprio(false);
+    onRecharger();
+    setMessage({ t: `${st?.denomination || nomClient(c)} est le propriétaire de cette affaire. Sa fiche est dans tes contacts.`, ok: true });
+  };
   const faites = visites.filter(v => v.statut !== 'annulee' && passee(v));
   const compte = (x: Issue | null) => faites.filter(v => v.issue === x).length;
   const pl = (n: number, un: string, plusieurs: string) => (n > 1 ? plusieurs : un);
@@ -2191,7 +2211,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
       <div ref={cheval} className={`${b.chevalHaut} ${serre ? b.chevalCourt : ''} ${serre === 2 ? b.chevalSerre : ''}`} data-serre={serre ? 'oui' : undefined}>
       <div className={b.proprioCheval}>
         <PastilleProprio nom={nomP} pluriel={plurielP} personne={proprio} societe={d.qui === 'sci' && !pourP} pour={pourP} sous={sousP} plus={plusP} tel={telP} mail={mailP}
-          onFiche={proprio ? () => ouvrirClient(proprio.id) : undefined} onRenseigner={() => onModifier('proprio')}
+          onFiche={proprio ? () => ouvrirClient(proprio.id) : undefined} onRenseigner={() => setAjoutProprio(true)}
           onCreerFiche={!proprio && p0Saisi ? creerFicheProprioBien : undefined} onRetirer={nomP || proprio ? retirerProprio : undefined} onApres={() => { void apres(); }} />
       </div>
         {/* V3.99 (Alexandre : « Mandat en cours, on le mettrait pas à côté du
@@ -2290,6 +2310,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
       </div>
 
       {message && <div className={`${message.ok ? s.note : s.erreur} ${b.messageFiche}`}>{message.t}</div>}
+      {ajoutProprio && <FenAjoutProprio onFermer={() => setAjoutProprio(false)} onFait={lierProprio} />}
       {bonVisite.enCours && !message && <div className={`${s.note} ${b.messageFiche}`}>Préparation du bon de visite…</div>}
       {bonVisite.fenetre}
       {erreur && <div className={`${s.erreur} ${b.messageFiche}`}>{erreur}</div>}

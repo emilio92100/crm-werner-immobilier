@@ -2214,10 +2214,14 @@ export async function estimationMiseDeCote(b: BienVente, raison: string, reprise
    `marquerVendeur`) — et pas un acheteur « actif » : il ne cherche rien.
    Avant le SQL des types de contact, la colonne `types` manque : on crée
    sans elle. */
-export async function creerFicheProprio(p: Personne): Promise<ClientMini> {
+export async function creerFicheProprio(p: Personne, societe?: { denomination: string; forme?: string } | null): Promise<ClientMini> {
   const reference = await genererReference();
+  /* Werner : un propriétaire est souvent une société (SCI, foncière…) ; elle
+     va dans « Sa société » (clients.pro.structure), lui en interlocuteur. */
+  const denom = societe?.denomination?.trim() || '';
   const ligne = {
-    reference, prenom: p.prenom || '', nom: p.nom || '',
+    reference, prenom: p.prenom || '', nom: p.nom || (denom && !p.prenom ? denom : ''),
+    ...(denom ? { pro: { structure: { denomination: denom, forme: societe?.forme || '', rcs: '', siege: '', qualite: '', associes: [] } } } : {}),
     ...(p.civilite ? { civilite: p.civilite } : {}),
     token_espace: jetonEspace(p.prenom, p.nom),
     adresse: p.adresse || null,
