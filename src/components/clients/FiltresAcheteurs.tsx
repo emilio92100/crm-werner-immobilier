@@ -145,8 +145,8 @@ export default function FiltresAcheteurs({ base, f, onF, n, statut, logement }: 
 
   const boutons: { p: Exclude<Panneau, null>; l: string; ic: string; v: string }[] = [
     { p: 'type', l: 'Type', ic: 'maison', v: plusieurs(f.types, 'types') },
-    { p: 'pieces', l: 'Pièces', ic: 'plan', v: liste(f.pieces, PLUS_PIECES, 'p.') },
-    { p: 'chambres', l: 'Chambres', ic: 'lit', v: liste(f.chambres, PLUS_CHAMBRES, 'ch.') },
+    { p: 'pieces', l: 'Espaces', ic: 'plan', v: liste(f.pieces, PLUS_PIECES, 'esp.') },
+    { p: 'chambres', l: 'Bureaux fermés', ic: 'porte', v: liste(f.chambres, PLUS_CHAMBRES, 'bur.') },
     { p: 'surface', l: 'Surface', ic: 'regle', v: entre(f.surfMin, f.surfMax, 'm²') },
     { p: 'budget', l: 'Budget', ic: 'euro', v: entre(f.budMin, f.budMax, '€', k) },
     { p: 'ville', l: 'Ville', ic: 'lieu', v: plusieurs(f.villes, 'villes') },
@@ -257,22 +257,22 @@ export default function FiltresAcheteurs({ base, f, onF, n, statut, logement }: 
             <>
               <div className={s.pills}>
                 {[1, 2, 3, 4, 5].map(x => (
-                  <Puce key={x} l={x === 1 ? '1 pièce' : x >= PLUS_PIECES ? '5 pièces et plus' : `${x} pièces`} n={combien({ pieces: [x] })}
+                  <Puce key={x} l={x === 1 ? '1 espace' : x >= PLUS_PIECES ? '5 espaces et plus' : `${x} espaces`} n={combien({ pieces: [x] })}
                     on={f.pieces.includes(x)} onClick={() => onF({ ...f, pieces: basculerDans(f.pieces, x) })} />
                 ))}
               </div>
-              <p className={b.affAide}>Le nombre de pièces qu’il demande au minimum. Ceux qui n’ont pas donné de nombre de pièces n’apparaissent pas.</p>
+              <p className={b.affAide}>Le nombre d’espaces qu’il demande au minimum. Ceux qui n’ont pas donné de nombre d’espaces n’apparaissent pas.</p>
             </>
           )}
           {ouvert === 'chambres' && (
             <>
               <div className={s.pills}>
                 {[1, 2, 3, 4].map(x => (
-                  <Puce key={x} l={x === 1 ? '1 chambre' : x >= PLUS_CHAMBRES ? '4 chambres et plus' : `${x} chambres`} n={combien({ chambres: [x] })}
+                  <Puce key={x} l={x === 1 ? '1 bureau fermé' : x >= PLUS_CHAMBRES ? '4 bureaux fermés et plus' : `${x} bureaux fermés`} n={combien({ chambres: [x] })}
                     on={f.chambres.includes(x)} onClick={() => onF({ ...f, chambres: basculerDans(f.chambres, x) })} />
                 ))}
               </div>
-              <p className={b.affAide}>Le nombre de chambres qu’il demande au minimum. Ceux qui n’ont pas donné de nombre de chambres n’apparaissent pas.</p>
+              <p className={b.affAide}>Le nombre de bureaux fermés qu’il demande au minimum. Ceux qui n’ont pas donné ce nombre n’apparaissent pas.</p>
             </>
           )}
           {ouvert === 'surface' && (

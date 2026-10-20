@@ -287,7 +287,7 @@ export function resumeRecherche(r: any): Resume {
   if (r?.nb_pieces_min && r?.nb_pieces_max && r.nb_pieces_min !== r.nb_pieces_max) tete.push(`${r.nb_pieces_min} à ${r.nb_pieces_max} espaces`);
   else if (r?.nb_pieces_min) tete.push(`${r.nb_pieces_min} espace${r.nb_pieces_min > 1 ? 's' : ''}`);
   let bien = tete.join(' · ');
-  if (r?.chambres_min) bien += `${bien ? ' dont ' : ''}${r.chambres_min} chambre${r.chambres_min > 1 ? 's' : ''}${bien ? '' : ' minimum'}`;
+  if (r?.chambres_min) bien += `${bien ? ' dont ' : ''}${r.chambres_min} bureau${r.chambres_min > 1 ? 'x fermés' : ' fermé'}${bien ? '' : ' minimum'}`;
   const sousBien: string[] = [];
   if (r?.surface_min && r?.surface_max) sousBien.push(`${r.surface_min} à ${r.surface_max} m²`);
   else if (r?.surface_min) sousBien.push(`${r.surface_min} m² minimum`);

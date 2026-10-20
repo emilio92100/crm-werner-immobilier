@@ -79,7 +79,7 @@ export function resumePourAgence(r: Record<string, unknown>): ResumeAgence {
   if (pMin && pMax && pMax > pMin) puces.push(`${pMin} à ${pMax} espaces`);
   else if (pMin) puces.push(`${pluriel(pMin, 'espace')} et plus`);
   const ch = Number(r.chambres_min) || 0;
-  if (ch) puces.push(`${pluriel(ch, 'chambre')} au moins`);
+  if (ch) puces.push(`${ch} bureau${ch > 1 ? 'x fermés' : ' fermé'} au moins`);
   const sMin = Number(r.surface_min) || 0;
   if (sMin) puces.push(`${sMin} m² et plus`);
   /* « Quartier (Ville) » : la ville seule, les quartiers sans détail. */
@@ -112,7 +112,7 @@ export function criteresAgence(r: ResumeAgence): CritereAgence[] {
   const p = [...r.puces];
   const prendre = (test: (x: string) => boolean) => { const i = p.findIndex(test); return i >= 0 ? p.splice(i, 1)[0] : null; };
   const pieces = prendre(x => /espace/.test(x));
-  const chambres = prendre(x => /chambre/.test(x));
+  const chambres = prendre(x => /fermés? au moins$/.test(x));
   const surface = prendre(x => /m²/.test(x));
   const type = p.length && !/,/.test(p[0]) && p[0].length < 40 ? p.shift()! : null;
   const secteurs = p.length ? p.join(', ') : null;

@@ -274,7 +274,7 @@ async function traiterPost(req: NextRequest) {
         const x = bienPourSite(b, null);
         const prix = !avantMandat(b.etape) && x.price > 0 ? x.price : null;
         const lien = lienBienPublic(b.id);
-        const carac = [x.surface ? `${x.surface} m²` : '', x.rooms ? `${x.rooms} espace${x.rooms > 1 ? 's' : ''}` : '', x.bedrooms ? `${x.bedrooms} chambre${x.bedrooms > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
+        const carac = [x.surface ? `${x.surface} m²` : '', x.rooms ? `${x.rooms} espace${x.rooms > 1 ? 's' : ''}` : '', x.bedrooms ? `${x.bedrooms} bureau${x.bedrooms > 1 ? 'x fermés' : ' fermé'}` : ''].filter(Boolean).join(' · ');
         const lieu = [b.quartier, x.city].filter(Boolean).join(', ');
         return { b, titre: x.title || 'Le local', photo: x.images[0] || '', prix, lien, carac, lieu };
       });

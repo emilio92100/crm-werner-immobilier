@@ -150,7 +150,7 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
     const cells: { v: string; l: string }[] = [];
     if (b.surface) cells.push({ v: `${b.surface} m²`, l: 'Surface' });
     if (b.nb_pieces) cells.push({ v: `${b.nb_pieces}`, l: b.nb_pieces > 1 ? 'Espaces' : 'Espace' });
-    if (b.nb_chambres) cells.push({ v: `${b.nb_chambres}`, l: b.nb_chambres > 1 ? 'Chambres' : 'Chambre' });
+    if (b.nb_chambres) cells.push({ v: `${b.nb_chambres}`, l: b.nb_chambres > 1 ? 'Bureaux' : 'Bureau' });
     if (etageTxt) cells.push({ v: etageTxt, l: 'Étage' });
     const statsRow = cells.map((c, i) => `${i > 0 ? '<td width="1" style="background:#eeeeed;"></td>' : ''}<td align="center" style="padding:10px 6px;"><div style="font-size:17px;font-weight:700;color:${BLEU};">${c.v}</div><div style="font-size:11px;color:#aba7a3;margin-top:2px;">${c.l}</div></td>`).join('');
     return `
@@ -171,7 +171,7 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
     const prix = prixOf(b);
     const loc = locOf(b);
     const etageTxt = etageOf(b);
-    const carac = [b.surface ? `${b.surface} m²` : '', b.nb_pieces ? `${b.nb_pieces} esp.` : '', b.nb_chambres ? `${b.nb_chambres} ch.` : '', etageTxt ? `${etageTxt} ét.` : ''].filter(Boolean).join(' · ');
+    const carac = [b.surface ? `${b.surface} m²` : '', b.nb_pieces ? `${b.nb_pieces} esp.` : '', b.nb_chambres ? `${b.nb_chambres} bureau${b.nb_chambres > 1 ? 'x' : ''}` : '', etageTxt ? `${etageTxt} ét.` : ''].filter(Boolean).join(' · ');
     return `
       <tr><td class="bord" style="padding:${idx === 0 ? '20' : '18'}px 28px 18px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
