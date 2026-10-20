@@ -21,7 +21,7 @@ const TEL = '01 87 66 06 00';
 const TEL_URL = '+33187660600';
 const MAIL_ALEX = 'contact@wernerimmobilier.com';
 
-export const SUJET_AGENCE = 'Un bien pour mon client ? Voici le lien pour me le proposer';
+export const SUJET_AGENCE = 'Un local pour mon client ? Voici le lien pour me le proposer';
 
 /** « Bonjour Julien, », « Bonjour M. Arnaud, », « Bonjour, ». */
 export function bonjourAgence(interlocuteur?: string | null): string {
@@ -38,7 +38,7 @@ const criteres = (r: ResumeAgence): Critere[] => criteresAgence(r);
 const ETAPES = [
   { ico: 'etape-lien', t: 'Collez votre annonce', s: 'Votre site, SeLoger, Leboncoin… ou sa plaquette PDF, ou des photos.' },
   { ico: 'etape-lue', t: 'Elle est lue toute seule', s: 'Photos, montant, surface : rien à ressaisir.' },
-  { ico: 'etape-tel', t: 'Je vous rappelle', s: 'Si le bien correspond à mon client.' },
+  { ico: 'etape-tel', t: 'Je vous rappelle', s: 'Si le local correspond à mon client.' },
 ];
 
 export function mailLienAgence(o: { lien: string; interlocuteur?: string | null; resume: ResumeAgence }): { sujet: string; html: string; texte: string } {
@@ -69,12 +69,12 @@ export function mailLienAgence(o: { lien: string; interlocuteur?: string | null;
       <td style="vertical-align:middle;"><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="30" style="height:30px;width:auto;display:block;border:0;color:#ffffff;font-weight:800;font-size:15px;" /></td>
       <td align="right" class="ag-badge" style="vertical-align:middle;"><span style="display:inline-block;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:${MAIL.orClair};font-size:10.5px;font-weight:800;letter-spacing:1.2px;white-space:nowrap;">RECHERCHE DE LOCAL</span></td>
     </tr></table>
-    <div class="ag-titre" style="margin-top:16px;font-size:26px;font-weight:800;line-height:1.2;color:#ffffff;">Un bien pour mon client&nbsp;?</div>
+    <div class="ag-titre" style="margin-top:16px;font-size:26px;font-weight:800;line-height:1.2;color:#ffffff;">Un local pour mon client&nbsp;?</div>
     <div style="margin-top:6px;font-size:15px;font-weight:600;line-height:1.5;color:#e9e8e6;">Déposez-le en un clic : il arrive directement chez moi.</div>
   </td></tr>
   <tr><td class="ag-pad" style="background:#ffffff;border:1px solid ${MAIL.trait};border-top:none;border-radius:0 0 18px 18px;padding:26px 28px 28px;">
     <div style="font-size:15px;font-weight:700;color:${MAIL.encre};">${bonjour}</div>
-    <div style="margin-top:10px;font-size:15px;line-height:1.65;font-weight:500;color:${MAIL.texte};">Comme convenu, voici le lien pour me proposer vos biens pour mon client. Ce qu’il cherche est juste en dessous ; si vous avez quelque chose qui correspond, collez simplement le lien de votre annonce : je l’étudie et je reviens vers vous.</div>
+    <div style="margin-top:10px;font-size:15px;line-height:1.65;font-weight:500;color:${MAIL.texte};">Comme convenu, voici le lien pour me proposer vos locaux pour mon client. Ce qu’il cherche est juste en dessous ; si vous avez quelque chose qui correspond, collez simplement le lien de votre annonce : je l’étudie et je reviens vers vous.</div>
 
     ${crit.length || imp.length || prec ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;"><tr><td style="background:${MAIL.fond};border:1px solid ${MAIL.trait};border-radius:16px;padding:18px 18px 8px;">
       <div style="font-size:11.5px;font-weight:800;letter-spacing:1.3px;color:${MAIL.plume};margin-bottom:14px;">CE QUE CHERCHE MON CLIENT</div>
@@ -90,7 +90,7 @@ export function mailLienAgence(o: { lien: string; interlocuteur?: string | null;
     </td></tr></table>` : ''}
 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;"><tr><td align="center" style="border-radius:15px;background:${MAIL.or};">
-      <a href="${lien}" target="_blank" style="display:block;padding:17px 20px;border-radius:15px;background:${MAIL.or};color:${MAIL.encre};font-family:${POLICE_MAIL};font-size:17px;font-weight:800;text-decoration:none;text-align:center;"><img src="${ICO}/fleche.png" width="20" height="20" alt="" style="width:20px;height:20px;border:0;vertical-align:-4px;margin-right:9px;" />Proposer un bien</a>
+      <a href="${lien}" target="_blank" style="display:block;padding:17px 20px;border-radius:15px;background:${MAIL.or};color:${MAIL.encre};font-family:${POLICE_MAIL};font-size:17px;font-weight:800;text-decoration:none;text-align:center;"><img src="${ICO}/fleche.png" width="20" height="20" alt="" style="width:20px;height:20px;border:0;vertical-align:-4px;margin-right:9px;" />Proposer un local</a>
     </td></tr></table>
     <div style="margin-top:10px;text-align:center;font-size:12.5px;font-weight:600;line-height:1.5;color:#8592A6;">Le bouton ne s’ouvre pas&nbsp;? Ce lien&nbsp;: <a href="${lien}" target="_blank" style="color:${MAIL.marque};font-weight:700;text-decoration:underline;">${lienCourt}</a></div>
 
@@ -104,7 +104,7 @@ export function mailLienAgence(o: { lien: string; interlocuteur?: string | null;
 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;border-top:1px solid ${MAIL.trait};"><tr>
       <td style="width:52px;padding-top:18px;vertical-align:middle;">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td width="52" height="52" align="center" style="width:52px;height:52px;border-radius:26px;background:${MAIL.marque};color:#ffffff;font-size:17px;font-weight:800;font-family:${POLICE_MAIL};">AR</td></tr></table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td width="52" height="52" align="center" style="width:52px;height:52px;border-radius:26px;background:${MAIL.marque};color:#ffffff;font-size:17px;font-weight:800;font-family:${POLICE_MAIL};">W</td></tr></table>
       </td>
       <td style="padding:18px 0 0 14px;vertical-align:middle;">
         <div style="font-size:15.5px;font-weight:800;color:${MAIL.encre};">Werner</div>
@@ -122,11 +122,11 @@ export function mailLienAgence(o: { lien: string; interlocuteur?: string | null;
   const texte = [
     bonjourAgence(o.interlocuteur),
     '',
-    'Comme convenu, voici le lien pour me proposer vos biens pour mon client :',
+    'Comme convenu, voici le lien pour me proposer vos locaux pour mon client :',
     o.lien,
     '',
     'Ce qu’il cherche :',
-    ...crit.map(c => `- ${c.titre}${c.sous && !/^(Le type de bien|Le bien|Surface habitable|Les secteurs|Budget maximum)$/.test(c.sous) ? ` (${c.sous})` : ''}`),
+    ...crit.map(c => `- ${c.titre}${c.sous && !/^(Le type de local|Le local|Surface|Les secteurs|Budget maximum)$/.test(c.sous) ? ` (${c.sous})` : ''}`),
     ...(imp.length ? ['Important pour lui :', ...imp.map(x => `- ${x}`)] : []),
     ...(prec ? ['Ses précisions :', prec] : []),
     '',

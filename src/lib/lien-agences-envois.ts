@@ -65,7 +65,7 @@ export function messagePourAgence(message: string, jeton: string | null | undefi
 }
 export const lienSms = (tel: string, message: string) => `sms:${String(tel).replace(/[^\d+]/g, '')}?&body=${encodeURIComponent(message)}`;
 export const lienMail = (email: string, message: string) =>
-  `mailto:${String(email).trim()}?subject=${encodeURIComponent('Un bien pour mon client')}&body=${encodeURIComponent(message)}`;
+  `mailto:${String(email).trim()}?subject=${encodeURIComponent('Un local pour mon client')}&body=${encodeURIComponent(message)}`;
 
 export const quiEst = (d: Destinataire) => [d.nom, d.interlocuteur].map(x => String(x || '').trim()).filter(Boolean).join(' · ') || 'une agence';
 const parCanal = (c: Canal) => (c === 'sms' ? 'par SMS' : c === 'mail' ? 'par mail' : 'message copié');
@@ -97,7 +97,7 @@ export async function noterEnvoi(o: {
     const texte = o.canal === 'copie'
       ? `Message du lien pour ${pour} copié, pour l’envoyer à ${d.interlocuteur || d.nom}.`
       : avant ? `Lien pour ${pour} renvoyé ${parCanal(o.canal)} (${n}e envoi) : le même lien, toujours valable.`
-        : `Envoi du lien pour ${pour}, ${parCanal(o.canal)} : l’agence peut y proposer ses autres biens.`;
+        : `Envoi du lien pour ${pour}, ${parCanal(o.canal)} : l’agence peut y proposer ses autres locaux.`;
     await verifie('L’envoi dans le suivi du bien', supabase.from('suivis_agence').insert({
       bien_id: o.bienId, recherche_id: o.rechercheId, client_id: o.clientId, genre: 'note', avec: 'agence',
       contact: { nom: metadata.agence || undefined, interlocuteur: metadata.interlocuteur || undefined, tel: metadata.tel || undefined, email: metadata.email || undefined },

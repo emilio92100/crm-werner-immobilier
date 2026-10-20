@@ -125,7 +125,7 @@ export function mailInvitation(o: { co: Mandant; premier: Mandant; premierLe: st
   const valable = o.rappel === 2 ? '' : ` et valable jusqu’au ${fin}`;
   return {
     sujet,
-    texte: `Bonjour ${co.prenom},\n\n${introTexte}\n\nVous pourrez le relire en entier, vérifier vos informations et signer, en deux minutes :\n${lien}\n\nCe lien est personnel${valable.replace(/’/g, "'")}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\nVous n'êtes pas ${concerne} par ce projet ? Ouvrez le lien et choisissez « Je ne suis pas ${concerne} » : ${p} et Werner seront prévenus.\n\nWerner Immobilier`,
+    texte: `Bonjour ${co.prenom},\n\n${introTexte}\n\nVous pourrez le relire en entier, vérifier vos informations et signer, en deux minutes :\n${lien}\n\nCe lien est personnel${valable.replace(/’/g, "'")}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\nVous n'êtes pas ${concerne} par ce projet ? Ouvrez le lien et choisissez « Je ne suis pas ${concerne} » : ${p} et Werner seront prévenus.\n\nWerner\nWerner Immobilier`,
     html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(co.prenom)},</p>
       ${intro}
       <p>Vous pourrez le relire en entier, vérifier vos informations et signer, en deux minutes&nbsp;:</p>
@@ -312,8 +312,8 @@ export async function envoyerExemplaire(o: {
   return envoyerMail({
     a: o.a.email, nomA: nomDe(o.a), pj, repondreA: 'contact@wernerimmobilier.com',
     sujet: o.complet ? `Votre mandat de recherche n° ${o.numero}, signé par tous` : `Votre mandat de recherche n° ${o.numero}`,
-    texte: `Bonjour ${o.a.prenom},\n\n${corps.replace(/’/g, "'")}\n\nWerner Immobilier\n\n—\nLe mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours et la façon de l'exercer.${finTexte}`,
-    html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(o.a.prenom)},</p><p>${echappe(corps)}</p><p>Werner Immobilier</p>`,
+    texte: `Bonjour ${o.a.prenom},\n\n${corps.replace(/’/g, "'")}\n\nWerner\nWerner Immobilier\n\n—\nLe mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours et la façon de l'exercer.${finTexte}`,
+    html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(o.a.prenom)},</p><p>${echappe(corps)}</p><p>Werner<br/>Werner Immobilier</p>`,
       `Le mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours et la façon de l’exercer.${fin}`),
   });
 }

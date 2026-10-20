@@ -204,7 +204,7 @@ async function relancerDocuments(sb: SupabaseClient, ko: Echecs): Promise<string
             client_id: doc.client_id, type: 'mandat', metadata: { document_id: doc.id, signataire_id: s.id },
             titre: finOffre ? `⏰ ${qui} n’a pas signé l’offre à temps` : `⏰ ${qui} n’a pas signé dans les 15 jours`,
             description: finOffre
-              ? `${doc.titre || m.titre} : l’offre n’est plus valable depuis le ${quand}, elle ne peut plus être signée. Arrête la signature (Documents, fiche du document) ; une nouvelle offre se prépare si l’demandeur le souhaite.`
+              ? `${doc.titre || m.titre} : l’offre n’est plus valable depuis le ${quand}, elle ne peut plus être signée. Arrête la signature (Documents, fiche du document) ; une nouvelle offre se prépare si le demandeur le souhaite.`
               : `${doc.titre || m.titre} : son lien a expiré. Renvoie-lui un lien, ou arrête la signature (Documents, fiche du document).`,
           })))) ko.noter(`${qui} (${doc.titre || m.titre}) : la ligne « n’a pas signé » n’a pas pu s’écrire dans le suivi`);
           if (!(await ecritServeur('La relance', sb.from('relances').insert({
@@ -218,11 +218,11 @@ async function relancerDocuments(sb: SupabaseClient, ko: Echecs): Promise<string
           a: ALERTES(), deLaPartDe: 'crm',
           sujet: `⏰ ${qui} n'a pas signé ${nd.le}`,
           texte: finOffre
-            ? `${qui} n'a pas signé ${nd.le}, qui n'est plus valable depuis le ${quand} (${doc.titre || m.titre}). Elle ne peut plus être signée.\n\nDans Documents (fiche du document) : arrête la signature. Une nouvelle offre se prépare si l'demandeur le souhaite.\n\n${lienCrm}`
+            ? `${qui} n'a pas signé ${nd.le}, qui n'est plus valable depuis le ${quand} (${doc.titre || m.titre}). Elle ne peut plus être signée.\n\nDans Documents (fiche du document) : arrête la signature. Une nouvelle offre se prépare si le demandeur le souhaite.\n\n${lienCrm}`
             : `Le lien de ${qui} a expiré sans signature (${doc.titre || m.titre}).\n\nÀ toi de choisir, dans Documents (fiche du document) : lui renvoyer un lien, ou arrêter la signature.\n\n${lienCrm}`,
           html: gabarit(`${qui} n’a pas signé`, finOffre
             ? `<p><b>${echappe(qui)}</b> n’a pas signé ${echappe(nd.le)}, qui n’est plus valable depuis le ${echappe(quand)} (${echappe(doc.titre || m.titre)}). Elle ne peut plus être signée.</p>
-            <p>Dans Documents (fiche du document) : arrête la signature. Une nouvelle offre se prépare si l’demandeur le souhaite.</p>
+            <p>Dans Documents (fiche du document) : arrête la signature. Une nouvelle offre se prépare si le demandeur le souhaite.</p>
             <a href="${lienCrm}" style="display:inline-block;margin-top:8px;background:#f08c42;color:#232528;text-decoration:none;padding:11px 16px;border-radius:10px;font-weight:800">Ouvrir le CRM</a>`
             : `<p>Le lien de <b>${echappe(qui)}</b> a expiré sans signature (${echappe(doc.titre || m.titre)}).</p>
             <p>À toi de choisir, dans Documents (fiche du document) : lui renvoyer un lien, ou arrêter la signature.</p>
@@ -314,12 +314,12 @@ async function relancerPropositions(sb: SupabaseClient, ko: Echecs): Promise<str
         : 'Je reviens vers vous au sujet de votre mandat de recherche : c’est lui qui me permet d’organiser vos visites et de vous accompagner jusqu’à la signature. Il vous attend dans votre espace, deux minutes suffisent.';
       const erreur = await envoyerMail({
         a: emails[0], nomA: nom, repondreA: 'contact@wernerimmobilier.com', sujet,
-        texte: `Bonjour ${prenom},\n\n${phrase.replace(/’/g, "'")}\n\nLire et signer mon mandat : ${lien}\n\nUne question avant de signer ? Répondez simplement à ce message.\n\nWerner Immobilier`,
+        texte: `Bonjour ${prenom},\n\n${phrase.replace(/’/g, "'")}\n\nLire et signer mon mandat : ${lien}\n\nUne question avant de signer ? Répondez simplement à ce message.\n\nWerner\nWerner Immobilier`,
         html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(prenom)},</p>
           <p>${echappe(phrase)}</p>
           <p><a href="${lien}" style="display:inline-block;margin:6px 0 4px;background:#f08c42;color:#232528;text-decoration:none;padding:13px 22px;border-radius:12px;font-weight:800;font-size:15px">Lire et signer mon mandat</a></p>
           <p style="font-size:13px;color:#5B6B80">Une question avant de signer&nbsp;? Répondez simplement à ce message.</p>
-          <p>Werner Immobilier</p>`),
+          <p>Werner<br/>Werner Immobilier</p>`),
       });
       bilan.push(`${nom} : rappel du mandat ${rappel}${erreur ? ` (⚠️ ${erreur})` : ''}`);
       /* V3.50 : pas parti, pas noté (il repartira demain). */

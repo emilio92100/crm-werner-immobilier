@@ -178,7 +178,7 @@ async function prevenirVisite(
   const mandatTete = pasDeMandat === 'partiel' ? 'Mandat pas encore complet.'
     : pasDeMandat === 'finalisation' ? 'Mandat signé par tous, en cours de finalisation (Documents).'
     : 'Pas de mandat signé.';
-  const titre = bien.titre || 'un bien';
+  const titre = bien.titre || 'un local';
   const lieu = [bien.quartier, bien.ville].filter(Boolean).join(', ');
   const prix = prixDuBien(bien).demande;
   const photo = Array.isArray(bien.photos) ? bien.photos.filter(Boolean)[0] : null;
@@ -237,7 +237,7 @@ async function prevenirApresVisite(
   const echappe = (t: string) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const crm = process.env.NEXT_PUBLIC_CRM_URL || 'https://crm-werner-immobilier.vercel.app';
   const lien = `${crm}/?page=fiche&client=${encodeURIComponent(clientId)}`;
-  const titre = bien.titre || 'un bien';
+  const titre = bien.titre || 'un local';
   const lieu = [bien.quartier, bien.ville].filter(Boolean).join(', ');
   const prixBien = prixDuBien(bien).demande;
   const photo = Array.isArray(bien.photos) ? bien.photos.filter(Boolean)[0] : null;
@@ -245,7 +245,7 @@ async function prevenirApresVisite(
   const quand = dateVisite ? new Date(`${String(dateVisite).slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
   const phrase = {
     offre: `${nom} veut faire une offre`,
-    revoir: `${nom} veut revoir ce bien`,
+    revoir: `${nom} veut revoir ce local`,
     reflexion: `${nom} réfléchit`,
     non: `${nom} : pas pour lui`,
   }[issue];
@@ -334,9 +334,9 @@ const ETIQ_URGENCE: Record<string, string> = {
   immediate: 'immédiate', '3_mois': 'sous 3 mois', '6_mois': 'sous 6 mois', annee: 'dans l’année',
 };
 const ETIQ_EXIGENCE: Record<string, string> = {
-  parking: 'Parking', cave: 'Cave', balcon: 'Balcon', terrasse: 'Terrasse', jardin: 'Jardin',
+  parking: 'Parking', cave: 'Cave', balcon: 'Espace extérieur', terrasse: 'Terrasse', jardin: 'Cour',
   ascenseur: 'Ascenseur', gardien: 'Gardien', interphone: 'Interphone', digicode: 'Digicode',
-  exterieur: 'Extérieur', cuisine: 'Cuisine',
+  exterieur: 'Extérieur', cuisine: 'Cuisine professionnelle',
 };
 const etage = (v: number) => (v === 0 ? 'rez-de-chaussée' : v === 1 ? '1er étage' : `${v}e étage`);
 
@@ -347,11 +347,11 @@ const VALEURS: [string, string, (v: any) => string][] = [
   ['apport', 'Apport', (v) => EUR_T(Number(v))],
   ['surface_min', 'Surface minimum', (v) => `${v}\u00a0m²`],
   ['surface_max', 'Surface maximum', (v) => `${v}\u00a0m²`],
-  ['surface_sejour_min', 'Séjour minimum', (v) => `${v}\u00a0m²`],
+  ['surface_sejour_min', 'Surface de vente minimum', (v) => `${v}\u00a0m²`],
   ['exterieur_surface_min', 'Extérieur minimum', (v) => `${v}\u00a0m²`],
   ['nb_pieces_min', 'Espaces minimum', (v) => `${v} espace${Number(v) > 1 ? 's' : ''}`],
   ['nb_pieces_max', 'Espaces maximum', (v) => `${v} espace${Number(v) > 1 ? 's' : ''}`],
-  ['chambres_min', 'Chambres minimum', (v) => (Number(v) === 0 ? 'aucune exigence' : `${v} chambre${Number(v) > 1 ? 's' : ''}`)],
+  ['chambres_min', 'Bureaux minimum', (v) => (Number(v) === 0 ? 'aucune exigence' : `${v} bureau${Number(v) > 1 ? 'x' : ''}`)],
   ['etage_min', 'Étage minimum', (v) => etage(Number(v))],
   ['etage_max', 'Étage maximum', (v) => etage(Number(v))],
   ['etage_max_sans_ascenseur', 'Sans ascenseur, pas au-dessus du', (v) => etage(Number(v))],
@@ -361,7 +361,7 @@ const VALEURS: [string, string, (v: any) => string][] = [
   ['dernier_etage', 'Dernier étage', (v) => (v ? 'souhaité' : 'indifférent')],
   ['financement', 'Financement', (v) => ETIQ_FINANCEMENT[v] || String(v)],
   ['urgence', 'Échéance', (v) => ETIQ_URGENCE[v] || String(v)],
-  ['cuisine_type', 'Cuisine', (v) => (v === 'ouverte' ? 'ouverte sur le séjour' : v === 'separee' ? 'séparée' : String(v))],
+  ['cuisine_type', 'Cuisine professionnelle', (v) => (v === 'ouverte' ? 'ouverte sur la salle' : v === 'separee' ? 'séparée' : String(v))],
   ['dpe_max', 'DPE maximum', (v) => String(v)],
 ];
 /* Les oui/non : faux et vide disent la même chose. */
@@ -903,7 +903,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
           /* Ancien format, simples cases à cocher : on garde la nuance déjà posée par le chasseur. */
           const e = c.equip as string[];
           const ex = { ...((recherche.exigences || {}) as Record<string, string>) };
-          ([['terrasse', 'Terrasse'], ['balcon', 'Balcon'], ['jardin', 'Jardin'], ['parking', 'Parking'],
+          ([['terrasse', 'Terrasse'], ['balcon', 'Espace extérieur'], ['jardin', 'Cour'], ['parking', 'Parking'],
             ['ascenseur', 'Ascenseur'], ['cave', 'Cave'], ['gardien', 'Gardien']] as [string, string][])
             .forEach(([cle, lib]) => {
               maj[cle] = e.includes(lib);
@@ -975,11 +975,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
           maj.surface_min ? `${maj.surface_min} m² min` : null,
           maj.surface_max ? `${maj.surface_max} m² max` : null,
           maj.nb_pieces_min ? `${maj.nb_pieces_min} espaces min` : null,
-          maj.chambres_min != null ? `${maj.chambres_min} chambres min` : null,
+          maj.chambres_min != null ? `${maj.chambres_min} bureaux min` : null,
           maj.etage_min || maj.etage_max || maj.etage_max_sans_ascenseur ? 'étage' : null,
           maj.exposition_souhaitee ? `exposition ${maj.exposition_souhaitee}` : null,
           'exigences' in maj ? 'équipements' : null,
-          maj.cuisine_type ? `cuisine ${maj.cuisine_type}` : null,
+          maj.cuisine_type ? `cuisine professionnelle ${maj.cuisine_type}` : null,
           maj.dpe_max ? `DPE ${maj.dpe_max} max` : null,
           Array.isArray(maj.secteurs) ? `${(maj.secteurs as string[]).length} secteurs` : null,
           Array.isArray(maj.transport_arrets)
@@ -1209,7 +1209,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
           client_id: recherche.client_id, recherche_id: recherche.id,
           type: 'rappel_client', statut: 'en_attente',
           date_echeance: new Date().toISOString(),
-          note: `Le client ${quoi}, depuis son espace.${bascule}${annulees} À rappeler pour confirmer${motif === 'pause' ? ' et savoir quand reprendre' : ''}.${revente ? ' 🔑 Revente possible : c\u2019est le moment de lui parler de son local actuel.' : ''}`,
+          note: `Le client ${quoi}, depuis son espace.${bascule}${annulees} À rappeler pour confirmer${motif === 'pause' ? ' et savoir quand reprendre' : ''}.${revente ? ' 🔑 Cession possible : c\u2019est le moment de lui parler de son local actuel.' : ''}`,
         }));
 
         /* Liste de types fermée côté espace_evenements : c'est un message. */
@@ -1245,7 +1245,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
         const prix = prixDuBien(bien).demande;
         const carac = [bien.surface ? bien.surface + ' m²' : null,
           bien.nb_pieces ? bien.nb_pieces + ' espace' + (bien.nb_pieces > 1 ? 's' : '') : null,
-          bien.nb_chambres ? bien.nb_chambres + ' chambre' + (bien.nb_chambres > 1 ? 's' : '') : null,
+          bien.nb_chambres ? bien.nb_chambres + ' bureau' + (bien.nb_chambres > 1 ? 'x' : '') : null,
         ].filter(Boolean).join(' · ');
         const lieuBien = [bien.quartier, bien.ville].filter(Boolean).join(', ');
         /* Un bien se partage avec une photo, sinon ce n'est qu'un lien de plus
@@ -1308,7 +1308,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
         const rep = await mj.json();
         const ok = mj.ok && rep?.Messages?.[0]?.Status === 'success';
 
-        await evt('partage', `${bien.titre || 'bien'} → ${dest}${ok ? '' : ' (échec)'}`, bien.id);
+        await evt('partage', `${bien.titre || 'local'} → ${dest}${ok ? '' : ' (échec)'}`, bien.id);
         if (ok) {
           await ecritServeur('[espace/partage] journal', supabase.from('journal').insert({
             client_id: recherche.client_id, bien_id: bien.id, recherche_id: recherche.id,

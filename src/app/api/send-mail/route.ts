@@ -124,14 +124,14 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
   const single = biens.length === 1;
 
   const photoOf = (b: BienLite) => (Array.isArray(b.photos) && b.photos.length > 0 ? b.photos[0] : null);
-  const titreOf = (b: BienLite) => b.titre || `${b.type_bien || 'Bien'}${b.surface ? ` de ${b.surface} m²` : ''}`;
+  const titreOf = (b: BienLite) => b.titre || `${b.type_bien || 'Local'}${b.surface ? ` de ${b.surface} m²` : ''}`;
   const locOf = (b: BienLite) => [b.code_postal, b.ville].filter(Boolean).join(' ');
   /* V3.145 : le prix de l'annonce, comme dans l'espace ; ses honoraires en
      petit dessous, seulement quand ils s'ajoutent. */
   const prixOf = (b: BienLite) => prixDuBien(b).demande;
   const honoOf = (b: BienLite) => {
     const p = prixDuBien(b);
-    return p.hono && p.total ? `+ ${fmt(p.hono)} € de nos honoraires, soit ${fmt(p.total)} € frais d’agence compris` : '';
+    return p.hono && p.total ? `+ ${fmt(p.hono)} € HT de nos honoraires, soit ${fmt(p.total)} € honoraires compris` : '';
   };
   const etageOf = (b: BienLite) => {
     const e = (b as { etage?: number | null }).etage;
@@ -149,7 +149,7 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
     const etageTxt = etageOf(b);
     const cells: { v: string; l: string }[] = [];
     if (b.surface) cells.push({ v: `${b.surface} m²`, l: 'Surface' });
-    if (b.nb_pieces) cells.push({ v: `${b.nb_pieces}`, l: b.nb_pieces > 1 ? 'Pièces' : 'Pièce' });
+    if (b.nb_pieces) cells.push({ v: `${b.nb_pieces}`, l: b.nb_pieces > 1 ? 'Espaces' : 'Espace' });
     if (b.nb_chambres) cells.push({ v: `${b.nb_chambres}`, l: b.nb_chambres > 1 ? 'Chambres' : 'Chambre' });
     if (etageTxt) cells.push({ v: etageTxt, l: 'Étage' });
     const statsRow = cells.map((c, i) => `${i > 0 ? '<td width="1" style="background:#eeeeed;"></td>' : ''}<td align="center" style="padding:10px 6px;"><div style="font-size:17px;font-weight:700;color:${BLEU};">${c.v}</div><div style="font-size:11px;color:#aba7a3;margin-top:2px;">${c.l}</div></td>`).join('');
@@ -161,8 +161,8 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
       </td></tr>
       ${statsRow ? `<tr><td class="bord" style="padding:14px 28px 4px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #eeeeed;border-bottom:1px solid #eeeeed;"><tr>${statsRow}</tr></table></td></tr>` : ''}
       <tr><td class="bord" style="padding:18px 28px 6px;">
-        ${prix ? `<div style="font-size:26px;font-weight:800;color:${BLEU};line-height:1;">${fmt(prix)} €</div><div style="font-size:11px;color:${DORE_TEXTE};font-weight:600;margin:6px 0 ${honoOf(b) ? '4' : '18'}px;">${b.bien_vente_id && b.prix_acquereur ? 'Prix FAI · honoraires inclus' : 'Prix demandé'}</div>${honoOf(b) ? `<div style="font-size:12px;color:#5B6B80;margin:0 0 18px;">${honoOf(b)}</div>` : ''}` : ''}
-        <a href="${lienBien(b, token, rech)}" style="display:block;background:${BLEU};color:#ffffff;text-decoration:none;text-align:center;padding:15px;border-radius:11px;font-size:15px;font-weight:600;">Consulter le bien &rarr;</a>
+        ${prix ? `<div style="font-size:26px;font-weight:800;color:${BLEU};line-height:1;">${fmt(prix)} €</div><div style="font-size:11px;color:${DORE_TEXTE};font-weight:600;margin:6px 0 ${honoOf(b) ? '4' : '18'}px;">${b.bien_vente_id && b.prix_acquereur ? 'Loyer annuel HT HC, ou prix de cession' : 'Montant de l’annonce'}</div>${honoOf(b) ? `<div style="font-size:12px;color:#5B6B80;margin:0 0 18px;">${honoOf(b)}</div>` : ''}` : ''}
+        <a href="${lienBien(b, token, rech)}" style="display:block;background:${BLEU};color:#ffffff;text-decoration:none;text-align:center;padding:15px;border-radius:11px;font-size:15px;font-weight:600;">Consulter le local &rarr;</a>
       </td></tr>`;
   }
 
@@ -171,7 +171,7 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
     const prix = prixOf(b);
     const loc = locOf(b);
     const etageTxt = etageOf(b);
-    const carac = [b.surface ? `${b.surface} m²` : '', b.nb_pieces ? `${b.nb_pieces} p.` : '', b.nb_chambres ? `${b.nb_chambres} ch.` : '', etageTxt ? `${etageTxt} ét.` : ''].filter(Boolean).join(' · ');
+    const carac = [b.surface ? `${b.surface} m²` : '', b.nb_pieces ? `${b.nb_pieces} esp.` : '', b.nb_chambres ? `${b.nb_chambres} ch.` : '', etageTxt ? `${etageTxt} ét.` : ''].filter(Boolean).join(' · ');
     return `
       <tr><td class="bord" style="padding:${idx === 0 ? '20' : '18'}px 28px 18px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
@@ -182,8 +182,8 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
             <div style="font-size:15px;font-weight:700;color:${BLEU};margin-bottom:3px;">${escapeHtml(titreOf(b))}</div>
             ${loc ? `<div style="font-size:12px;color:#aba7a3;margin-bottom:6px;"><span style="color:${DORE};">&#9679;</span> ${escapeHtml(loc)}</div>` : ''}
             ${carac ? `<div style="font-size:12px;color:#5B6B80;margin-bottom:8px;">${escapeHtml(carac)}</div>` : ''}
-            ${prix ? `<div style="font-size:17px;font-weight:800;color:${BLEU};margin-bottom:${honoOf(b) ? '2' : '8'}px;">${fmt(prix)} €</div>${honoOf(b) ? `<div style="font-size:11.5px;color:#5B6B80;margin-bottom:8px;">+ ${fmt(prixDuBien(b).hono)} € de nos honoraires</div>` : ''}` : ''}
-            <a href="${lienBien(b, token, rech)}" style="color:${DORE_TEXTE};text-decoration:none;font-size:13px;font-weight:700;">Consulter le bien &rarr;</a>
+            ${prix ? `<div style="font-size:17px;font-weight:800;color:${BLEU};margin-bottom:${honoOf(b) ? '2' : '8'}px;">${fmt(prix)} €</div>${honoOf(b) ? `<div style="font-size:11.5px;color:#5B6B80;margin-bottom:8px;">+ ${fmt(prixDuBien(b).hono)} € HT de nos honoraires</div>` : ''}` : ''}
+            <a href="${lienBien(b, token, rech)}" style="color:${DORE_TEXTE};text-decoration:none;font-size:13px;font-weight:700;">Consulter le local &rarr;</a>
           </td>
         </tr></table>
       </td></tr>
@@ -216,11 +216,11 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f6f6f7;border:1px solid #F7D5B0;border-radius:14px;">
           <tr><td style="padding:18px 20px 20px;">
             <div style="font-size:10.5px;letter-spacing:2px;color:${DORE_TEXTE};font-weight:700;">DANS VOTRE ESPACE</div>
-            <div style="font-size:18px;font-weight:800;color:${BLEU};margin-top:6px;line-height:1.3;">${n === 1 ? 'Un autre bien vous attend' : `${n} autres biens vous attendent`}</div>
+            <div style="font-size:18px;font-weight:800;color:${BLEU};margin-top:6px;line-height:1.3;">${n === 1 ? 'Un autre local vous attend' : `${n} autres locaux vous attendent`}</div>
             <div style="font-size:13px;color:#5B6B80;line-height:1.6;margin-top:5px;">Pour que ce message reste agréable à lire, les ${BIENS_PAR_MAIL} premiers sont ci-dessus. ${n === 1 ? 'Le suivant est' : 'Les suivants sont'} dans votre espace, avec toutes leurs photos et leur fiche complète.</div>
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;"><tr>${vignettes}${plus}</tr></table>
             ${lien
-              ? `<a href="${lien}" style="display:block;margin-top:16px;background:${BLEU};color:#ffffff;text-decoration:none;text-align:center;padding:14px;border-radius:11px;font-size:15px;font-weight:700;">${n === 1 ? 'Découvrir l’autre bien' : `Découvrir les ${n} autres biens`} &rarr;</a>`
+              ? `<a href="${lien}" style="display:block;margin-top:16px;background:${BLEU};color:#ffffff;text-decoration:none;text-align:center;padding:14px;border-radius:11px;font-size:15px;font-weight:700;">${n === 1 ? 'Découvrir l’autre local' : `Découvrir les ${n} autres locaux`} &rarr;</a>`
               : sansEspace}
           </td></tr>
         </table>
@@ -300,7 +300,7 @@ ${LIEN_POLICE_MAIL}
             <td class="pied-nom">
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
-              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris &amp; Hauts-de-Seine</div>
             </td>
             <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>
@@ -432,7 +432,7 @@ ${LIEN_POLICE_MAIL}
 
         <tr><td class="bord" style="padding:26px 28px 0;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-            ${puce('&#11088;', 'Les biens retenus pour vous', 'Ils arrivent au fil de l&#39;eau. Vous dites en un geste ce que vous en pensez — et c&#39;est ce qui affine la suite.')}
+            ${puce('&#11088;', 'Les locaux retenus pour vous', 'Ils arrivent au fil de l&#39;eau. Vous dites en un geste ce que vous en pensez — et c&#39;est ce qui affine la suite.')}
             ${puce('&#9999;&#65039;', 'Vos critères, modifiables à tout moment', 'Un budget qui bouge, un secteur à ajouter : vous le changez vous-même, j&#39;en tiens compte dès la recherche suivante.')}
             ${puce('&#128270;', 'L&#39;avancée de votre dossier', 'Ce qui a été parcouru, ce qui a été retenu, vos visites à venir.')}
           </table>
@@ -462,7 +462,7 @@ ${LIEN_POLICE_MAIL}
                 <div style="font-size:13.5px;color:#5B6B80;line-height:1.7;">
                   Ouvrez ce lien depuis votre téléphone, puis ajoutez-le à votre écran d&#39;accueil
                   (le menu du navigateur, «&nbsp;Ajouter à l&#39;écran d&#39;accueil&nbsp;»). Vous serez
-                  prévenu dès qu&#39;un bien vous est proposé, sans avoir à guetter vos mails —
+                  prévenu dès qu&#39;un local vous est proposé, sans avoir à guetter vos mails —
                   et sur ce marché, quelques heures font souvent la différence.
                 </div>
               </td>
@@ -482,7 +482,7 @@ ${LIEN_POLICE_MAIL}
             <td class="pied-nom">
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
-              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris &amp; Hauts-de-Seine</div>
             </td>
             <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>
@@ -518,15 +518,15 @@ Ravi de commencer cette recherche avec vous. Elle est enregistrée : j'ai mainte
 Ouvrir mon espace : ${lien}
 Ce lien est le vôtre, il ne change pas.
 
-- Les biens retenus pour vous. Ils arrivent au fil de l'eau, et vous dites en un geste ce que vous en pensez.
+- Les locaux retenus pour vous. Ils arrivent au fil de l'eau, et vous dites en un geste ce que vous en pensez.
 - Vos critères, modifiables à tout moment. Vous les changez vous-même, j'en tiens compte dès la recherche suivante.
 - L'avancée de votre dossier. Ce qui a été parcouru, ce qui a été retenu, vos visites à venir.
 
-Le conseil qui change tout : ouvrez ce lien depuis votre téléphone, puis ajoutez-le à votre écran d'accueil. Vous serez prévenu dès qu'un bien vous est proposé, sans avoir à guetter vos mails.
+Le conseil qui change tout : ouvrez ce lien depuis votre téléphone, puis ajoutez-le à votre écran d'accueil. Vous serez prévenu dès qu'un local vous est proposé, sans avoir à guetter vos mails.
 
 Une question, une précision à me donner ? Répondez simplement à ce message, ou appelez-moi.
 
-Werner Immobilier
+Werner · Werner Immobilier
 01 87 66 06 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
 }
 
@@ -627,7 +627,7 @@ ${LIEN_POLICE_MAIL}
               deux ? 'Vos deux recherches au même endroit' : 'Toutes vos recherches au même endroit',
               `Tout en haut de votre espace, une ligne indique celle que vous êtes en train de regarder. Appuyez dessus pour ${deux ? 'passer à l&#39;autre' : 'changer'}.`)}
             ${puce('&#11088;',
-              deux ? 'Les biens arrivent dans les deux' : 'Les biens arrivent dans chacune',
+              deux ? 'Les locaux arrivent dans les deux' : 'Les locaux arrivent dans chacune',
               'Vous êtes prévenu de la même façon, quelle que soit la recherche concernée.')}
           </table>
         </td></tr>
@@ -643,7 +643,7 @@ ${LIEN_POLICE_MAIL}
             <td class="pied-nom">
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
-              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris &amp; Hauts-de-Seine</div>
             </td>
             <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>
@@ -679,11 +679,11 @@ ${recherche} est enregistrée. Elle s'ajoute à votre espace, à côté ${deux ?
 Ouvrir mon espace : ${lien}
 
 - ${deux ? 'Vos deux recherches' : 'Toutes vos recherches'} au même endroit. Tout en haut de votre espace, une ligne indique celle que vous êtes en train de regarder. Appuyez dessus pour ${deux ? "passer à l'autre" : 'changer'}.
-- Les biens arrivent dans ${deux ? 'les deux' : 'chacune'}. Vous êtes prévenu de la même façon, quelle que soit la recherche concernée.
+- Les locaux arrivent dans ${deux ? 'les deux' : 'chacune'}. Vous êtes prévenu de la même façon, quelle que soit la recherche concernée.
 
 Une question, une précision à me donner ? Répondez simplement à ce message, ou appelez-moi.
 
-Werner Immobilier
+Werner · Werner Immobilier
 01 87 66 06 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
 }
 
@@ -756,7 +756,7 @@ ${LIEN_POLICE_MAIL}
               <div style="font-size:13.5px;color:#5B6B80;line-height:1.7;margin-top:6px;">
                 Ouvrez ce lien depuis votre téléphone, puis ajoutez-le à votre écran d&#39;accueil
                 (le menu du navigateur, «&nbsp;Ajouter à l&#39;écran d&#39;accueil&nbsp;»). Vous serez
-                prévenu dès qu&#39;un bien vous est proposé.
+                prévenu dès qu&#39;un local vous est proposé.
               </div>
             </td></tr>
           </table>
@@ -773,7 +773,7 @@ ${LIEN_POLICE_MAIL}
             <td class="pied-nom">
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
-              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris &amp; Hauts-de-Seine</div>
             </td>
             <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>
@@ -807,11 +807,11 @@ Voici de nouveau le lien de votre espace personnel. C'est toujours le même : vo
 
 Ouvrir mon espace : ${lien}
 
-Pour être prévenu sur votre téléphone : ouvrez ce lien depuis votre téléphone, puis ajoutez-le à votre écran d'accueil (le menu du navigateur, « Ajouter à l'écran d'accueil »). Vous serez prévenu dès qu'un bien vous est proposé.
+Pour être prévenu sur votre téléphone : ouvrez ce lien depuis votre téléphone, puis ajoutez-le à votre écran d'accueil (le menu du navigateur, « Ajouter à l'écran d'accueil »). Vous serez prévenu dès qu'un local vous est proposé.
 
 Un souci pour l'ouvrir ? Répondez simplement à ce message, ou appelez-moi.
 
-Werner Immobilier
+Werner · Werner Immobilier
 01 87 66 06 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
 }
 
@@ -858,11 +858,11 @@ function buildVisites(o: { corps: string; lignes: LigneVisite[]; token?: string 
   const rows = o.lignes.map((l, i) => {
     const b = l.bien;
     const photo = b && Array.isArray(b.photos) && b.photos.length > 0 ? b.photos[0] : null;
-    const titre = b ? (b.titre || `${b.type_bien || 'Bien'}${b.surface ? ` de ${b.surface} m²` : ''}`) : 'Visite';
+    const titre = b ? (b.titre || `${b.type_bien || 'Local'}${b.surface ? ` de ${b.surface} m²` : ''}`) : 'Visite';
     const adresse = lieuMail(b);
     const itineraire = adresse ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adresse)}` : '';
     const liens = [
-      b ? `<a href="${lienBien(b, o.token, o.recherche)}" style="color:${DORE_TEXTE};text-decoration:none;font-size:13px;font-weight:700;">Revoir le bien &rarr;</a>` : '',
+      b ? `<a href="${lienBien(b, o.token, o.recherche)}" style="color:${DORE_TEXTE};text-decoration:none;font-size:13px;font-weight:700;">Revoir le local &rarr;</a>` : '',
       itineraire ? `<a href="${itineraire}" style="color:${BLEU};text-decoration:none;font-size:13px;font-weight:700;">Itinéraire &rarr;</a>` : '',
     ].filter(Boolean).join('<span style="color:#e5e4e3;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>');
     return `
@@ -905,7 +905,7 @@ function buildMandatPret(o: { prenom: string; hono: Honoraires; token?: string |
   const contenu = `
     <tr><td class="bord" style="padding:18px 28px 6px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-        ${ligne('Honoraires', escapeHtml(honorairesDuPrix(o.hono)).replace(/^./, c => c.toUpperCase()), 'réglés le jour de l’acte, chez le notaire — rien avant')}
+        ${ligne('Honoraires', escapeHtml(honorairesDuPrix(o.hono)).replace(/^./, c => c.toUpperCase()), 'réglés à la signature du bail ou de l’acte — rien avant')}
         ${ligne('Durée', `${DUREE.mois} mois au plus`, `vous pouvez y mettre fin à tout moment, avec ${DUREE.preavis} jours de préavis`)}
         ${ligne('Votre liberté', 'Mandat non exclusif', `vous restez libre de chercher de votre côté · ${RETRACTATION_JOURS} jours de rétractation`)}
       </table>
@@ -922,7 +922,7 @@ function texteMandatPret(prenom: string, hono: Honoraires, token?: string | null
 
 Comme convenu, votre mandat de recherche est prêt dans votre espace. Il se lit et se signe en deux minutes, avec un code reçu par e-mail.
 
-- Honoraires : ${honorairesDuPrix(hono)}, réglés le jour de l'acte chez le notaire
+- Honoraires : ${honorairesDuPrix(hono)}, réglés à la signature du bail ou de l'acte
 - Durée : ${DUREE.mois} mois au plus, fin possible à tout moment avec ${DUREE.preavis} jours de préavis
 - Mandat non exclusif : vous restez libre de chercher de votre côté, ${RETRACTATION_JOURS} jours de rétractation
 ${lien ? `
@@ -1117,7 +1117,7 @@ async function envoyer(req: NextRequest) {
     if (apercu && mode === 'biens') {
       const client = clients[0];
       const ids = [...new Set((Array.isArray(ventes_ids) ? ventes_ids : []).map(String).filter(Boolean))].slice(0, 30);
-      if (!ids.length) return NextResponse.json({ error: 'Aucun bien à montrer' }, { status: 400 });
+      if (!ids.length) return NextResponse.json({ error: 'Aucune affaire à montrer' }, { status: 400 });
       const [{ data: vs, error: eV }, { data: cs, error: eC }] = await Promise.all([
         supabase.from('biens_vente').select('*').in('id', ids),
         recherche_id
@@ -1126,14 +1126,14 @@ async function envoyer(req: NextRequest) {
             .eq('recherche_id', recherche_id).in('bien_vente_id', ids)
           : Promise.resolve({ data: [] as BienLite[], error: null }),
       ]);
-      if (eV || eC) return NextResponse.json({ error: (eV || eC)?.message || 'Les biens n’ont pas pu être lus' }, { status: 500 });
+      if (eV || eC) return NextResponse.json({ error: (eV || eC)?.message || 'Les affaires n’ont pas pu être lues' }, { status: 500 });
       const montres = ids.map(id => {
         const copie = ((cs || []) as BienLite[]).find(c => c.bien_vente_id === id);
         if (copie) return copie;
         const v = ((vs || []) as BienVente[]).find(x => x.id === id);
         return v ? ({ id: v.id, ...versBienAcheteur(v, { clientId: client.id, rechercheId: recherche_id || '', quand: '' }) } as BienLite) : null;
       }).filter((b): b is BienLite => !!b);
-      if (!montres.length) return NextResponse.json({ error: 'Bien introuvable' }, { status: 404 });
+      if (!montres.length) return NextResponse.json({ error: 'Affaire introuvable' }, { status: 404 });
       const emails = (client.emails || []).filter((e: string) => e && e.includes('@'));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const jeton = ((client as any).token_espace as string) || tokenEspace;
@@ -1382,11 +1382,11 @@ async function envoyer(req: NextRequest) {
       const suivants = biensClient.length - enTete.length;
       const lienSuite = suivants > 0 ? lienNeufs(jeton, recherche_id || null) : '';
       const listeTexte = biensClient.length > 0
-        ? `Biens proposés :\n${enTete.map(b => `- ${b.titre || 'Bien'} : ${lienBien(b, jeton, recherche_id || null)}`).join('\n')}${
+        ? `Locaux proposés :\n${enTete.map(b => `- ${b.titre || 'Local'} : ${lienBien(b, jeton, recherche_id || null)}`).join('\n')}${
           suivants > 0
             ? (lienSuite
               ? `\n\nEt ${suivants} autre${suivants > 1 ? 's' : ''} dans votre espace : ${lienSuite}`
-              : `\n${biensClient.slice(BIENS_PAR_MAIL).map(b => `- ${b.titre || 'Bien'} : ${lienBienPublic(b.id)}`).join('\n')}`)
+              : `\n${biensClient.slice(BIENS_PAR_MAIL).map(b => `- ${b.titre || 'Local'} : ${lienBienPublic(b.id)}`).join('\n')}`)
             : ''
         }\n\n`
         : '';

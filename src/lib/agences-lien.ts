@@ -51,7 +51,7 @@ export const lienAvecCode = (jeton: string, code?: string | null) => (code && co
 
 /** Le message à envoyer à l'agence (SMS ou mail), validé par Alexandre. */
 export function messageAgence(jeton: string): string {
-  return `Bonjour, c’est Werner, de Werner Immobilier. Comme convenu, voici le lien pour me proposer vos biens pour mon client :\n${lienAgences(jeton)}\nIl suffit d’y coller le lien de votre annonce : elle arrive directement chez moi, je l’étudie et je reviens vers vous. Merci !`;
+  return `Bonjour, c’est Werner, de Werner Immobilier. Comme convenu, voici le lien pour me proposer vos locaux pour mon client :\n${lienAgences(jeton)}\nIl suffit d’y coller le lien de votre annonce : elle arrive directement chez moi, je l’étudie et je reviens vers vous. Merci !`;
 }
 
 /* ── Ce que l'agence voit de la recherche : rien qui nomme le client ──

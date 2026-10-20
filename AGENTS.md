@@ -6,17 +6,23 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Werner Immobilier — CRM de l'immobilier d'entreprise : règles de travail
 
-Ce dépôt est une **copie** du CRM d'Emilio Immobilier (chasse immobilière, dépôt
-`emilio92100/emilio-immo-chasseimmo`), adaptée en octobre 2026 pour Werner,
-agent en immobilier d'entreprise à Paris (bureaux, boutiques, cessions de droit
-au bail, fonds de commerce, murs). Werner travaille sous la carte T de
-RT CONSEILS (CPI 9201 2020 000 045 344). Base Supabase « CRM Werner
-Immobilier », projet Vercel `crm-werner-immobilier`.
+Le CRM de **Werner Immobilier**, agent en immobilier d'entreprise à Paris :
+bureaux, boutiques et locaux commerciaux, restaurants, locaux d'activité,
+entrepôts ; locations, cessions de droit au bail, fonds de commerce, murs.
+Werner travaille sous la carte T de RT CONSEILS (CPI 9201 2020 000 045 344).
+Base Supabase « CRM Werner Immobilier », projet Vercel `crm-werner-immobilier`,
+dépôt `emilio92100/crm-werner-immobilier`.
 
-**Ne jamais toucher au dépôt ni à la base d'Emilio** : ce sont deux CRM
-séparés. `context.md` raconte l'histoire du CRM d'origine (architecture,
-tables, sessions) ; ce fichier-ci dit ce qu'il faut savoir avant d'écrire une
+Le développement est piloté par **Alexandre** (le propriétaire du code) ;
+l'utilisateur du CRM est **Werner**. `context.md` décrit le produit, le métier
+et les données ; ce fichier-ci dit ce qu'il faut savoir avant d'écrire une
 seule ligne. Le lire en entier prend deux minutes et fait gagner des heures.
+
+Ce code est né d'une copie, en octobre 2026, du CRM de chasse immobilière
+d'Emilio Immobilier (dépôt `emilio92100/emilio-immo-chasseimmo`).
+**Ne jamais toucher au dépôt ni à la base d'Emilio** : ce sont deux CRM
+séparés. Les détails techniques anciens sont dans
+`docs/historique-code-origine.md`.
 
 ---
 
@@ -54,12 +60,11 @@ seule ligne. Le lire en entier prend deux minutes et fait gagner des heures.
 ## 1. Comment on travaille ici
 
 - Le travail se fait dans l'espace de Claude, puis se **pousse sur `main`** :
-  Vercel déploie tout seul. (Le CRM d'Emilio, lui, se livre fichier par
-  fichier : ne pas confondre.)
+  Vercel déploie tout seul.
 - Un fichier livré est un fichier qui compile et qui a été **regardé à l'écran**
   (§3). Il déploie sur Vercel dans la foulée et teste en prod : une régression
   se paie comptant.
-- Il parle en vocal, donc ses messages sont parfois décousus. Les relire en
+- Alexandre parle en vocal, donc ses messages sont parfois décousus. Les relire en
   entier avant de répondre : il y a souvent trois demandes dans un paragraphe.
 - Quand il dit « c'est moche » ou « je ne comprends pas », c'est un constat
   d'usage, pas un caprice. Chercher la cause réelle — il y a eu un vrai bug
@@ -100,7 +105,7 @@ d'un passage à la ligne.** Trois façons d'être tranquille :
 
 ⚠️ **Ce piège a resservi le 23 septembre**, dans du code écrit le jour même par
 quelqu'un qui n'avait pas lu ce fichier : `« Vous en avez 2en cours »`, repéré
-par Alexandre en production. Trois autres mots collés dormaient dans le dépôt
+en production. Trois autres mots collés dormaient dans le dépôt
 depuis des semaines et sont sortis dans la foulée (« 2.Les alertes »,
 « clientse remplissent », « dessousdisparaissent »). **Lire ce paragraphe avant
 d'écrire du texte, pas après.**
@@ -158,8 +163,11 @@ tout sauf `PUBLIC_PATHS` (`/login`, `/api/login`, les deux crons
 `/api/point-auto/envoi` et `/api/mandat/relances`, et `/api/signer`) et
 `PUBLIC_PREFIXES = ['/bien/','/espace/','/api/espace/','/signer/']`. Toute
 nouvelle route publique doit être ajoutée là, sinon elle redirige vers `/login`.
-Sur `espace.emilio-immo.com`, un chemin inconnu est réécrit en `/espace/…` :
-`/bien/` et `/signer/` sont exemptés à la main, dans le même fichier.
+Quand l'espace client aura son sous-domaine (`NEXT_PUBLIC_HOTE_ESPACE`, par
+exemple espace.wernerimmobilier.com, pas encore créé), un chemin inconnu sur ce
+domaine sera réécrit en `/espace/…` : `/bien/`, `/signer/` et `/proposer/` sont
+exemptés à la main, dans le même fichier. En attendant, les liens donnés aux
+clients passent par l'adresse du CRM (`basePublique()` dans `src/lib/jeton.ts`).
 
 ### 2.7 Ne jamais centrer un bouton avec `transform`
 
@@ -205,15 +213,16 @@ nulle part** : la fiche ne le charge jamais.
 Et pour un bien, `etape` décide de l'onglet : `'selection'` ou `'presente'`. Sans valeur, il
 n'est dans aucun des deux.
 
-C'est ce qui a tué le bouton Emilio pendant quatre mois — il disait « enregistré », et le bien
-n'existait nulle part à l'écran. Avant d'écrire un `insert` sur `biens`, `visites`, `envois`,
+C'est ce qui a tué, dans le code d'origine, le bouton d'ajout d'un bien pendant quatre mois — il
+disait « enregistré », et le bien n'existait nulle part à l'écran. Avant d'écrire un `insert` sur `biens`, `visites`, `envois`,
 `relances` ou `transactions` : vérifier qu'il porte `recherche_id`.
 
 ⚠️ **Le journal, une exception voulue** (V3.20) : il est chargé sur `client_id`, et l'onglet Suivi
 montre la recherche ouverte **plus les lignes sans `recherche_id`** (le contact, le statut, tout
 l'historique d'avant la V3.20). Une ligne qui parle d'une recherche se note avec elle :
 `addJournal(clientId, type, titre, description, metadata, { rechercheId })`. Ne jamais filtrer le
-journal sur `recherche_id` seul : les anciennes lignes disparaîtraient. Voir `context.md` §6.17.
+journal sur `recherche_id` seul : les anciennes lignes disparaîtraient. Voir
+`docs/historique-code-origine.md` §6.17.
 
 ### 3.2 Une écriture Supabase dont l'erreur n'est pas remontée est un bug en attente
 
@@ -234,7 +243,7 @@ await ecritServeur('L’historique du client', sb.from('journal').insert({ … }
 
 Les relances n'ont jamais fonctionné pendant des semaines parce qu'un `insert` écrivait dans des
 colonnes qui n'existaient pas, sans que personne ne voie rien. La V3.17 a vérifié toutes les
-écritures du dépôt (`context.md` §11). **Ne pas en ajouter de nues.**
+écritures du dépôt (`docs/historique-code-origine.md` §11). **Ne pas en ajouter de nues.**
 
 ### 3.3 Le lien de l'espace appartient au CLIENT, pas à la recherche
 
@@ -266,7 +275,7 @@ directes pour quiconque écrit du code ici :
 | Qui | Ce qu'il peut lire |
 |---|---|
 | `anon` — la clé publique, lisible dans le code de toute page | **rien** |
-| `authenticated` — Alexandre connecté dans son navigateur | tout |
+| `authenticated` — Werner connecté dans son navigateur | tout |
 | `service_role` — le serveur, clé jamais envoyée au navigateur | tout, RLS ignoré |
 
 ⚠️ **Toute page publique doit lire la base côté SERVEUR avec `SUPABASE_SERVICE_ROLE_KEY`.**
@@ -277,7 +286,7 @@ sans erreur : la requête réussit, elle renvoie `[]`.
 ⚠️ **Le CRM, lui, lit depuis le navigateur** avec la session de l'utilisateur. Il faut donc une
 session Supabase valide — pas seulement le cookie. Les deux serrures :
 
-- le **cookie** `emilio_acces` (posé par `/api/login`, vérifié par `proxy.ts`) autorise
+- le **cookie** d'accès (nom interne `emilio_acces`, posé par `/api/login`, vérifié par `proxy.ts`) autorise
   l'**affichage des pages** ;
 - la **session Supabase** (dans le navigateur) autorise la **lecture des données**.
 
@@ -321,14 +330,17 @@ d'essai juge la mise en page, **pas** la ponctuation.
 
 ---
 
-## 5. Règles d'écriture de l'espace acheteur
+## 5. Règles d'écriture de l'espace client
 
-`/espace/[token]` est lu par le client, pas par Alexandre. Ce sont des règles
-de fond, pas de style.
+`/espace/[token]` est lu par le demandeur (un commerçant, un restaurateur, une
+entreprise qui cherche des bureaux), pas par Werner. Ce sont des règles de
+fond, pas de style.
 
 - **Aucun mot de métier.** Pas de « chasse », « chasseur », « veille »,
   « passage », « prospect », « lead ». Le client ne les comprend pas, et
-  certains le placent du mauvais côté de la relation.
+  certains le placent du mauvais côté de la relation. Et aucun mot du
+  résidentiel (§0) : on parle d'un **local**, d'un **loyer annuel HT HC**,
+  d'un **droit au bail**, d'un **fonds**.
 - **Jamais deux nombres qui peuvent se contredire sur la même page.** Un même
   fait = une seule source. Les « biens retenus » se comptent sur les biens
   réellement présents dans l'espace, pas sur un compteur interne qui dérive.
@@ -344,10 +356,10 @@ de fond, pas de style.
   dire pourquoi et quand il arrivera (`.vide-doux`).
 - **Ne jamais laisser entendre que le marché lui donne tort** (comparaison de
   prix agressive, « vous payez 7 % au-dessus »). C'est contre-productif pour
-  Alexandre. Les données de marché brutes ont leur place dans le CRM, pas dans
+  Werner. Les données de marché brutes ont leur place dans le CRM, pas dans
   l'espace client.
-- **La note du chasseur est en lecture seule** côté client : c'est un message
-  d'Alexandre, le client demande une modification, il ne l'écrit pas.
+- **La note de Werner est en lecture seule** côté client : c'est son message,
+  le client demande une modification, il ne l'écrit pas.
 
 ### Langage visuel
 
@@ -378,8 +390,10 @@ de fond, pas de style.
   `data.gouv.fr`, `geo.api.gouv.fr`, `api.github.com` sont **injoignables**.
   `raw.githubusercontent.com` répond. Ne pas construire une solution qui
   suppose un accès direct à Supabase depuis ici.
-- Donc : **impossible de lire la base**. Pour connaître un schéma, demander à
-  Alexandre de lancer la requête SQL dans Supabase et de coller le résultat.
+- Donc : **pas d'accès direct à la base** depuis le bac à sable. Pour connaître
+  un schéma, passer par l'éditeur SQL de Supabase dans le Chrome d'Alexandre
+  quand il l'a ouvert (projet « CRM Werner Immobilier », lecture seule sauf
+  accord), ou lui demander de lancer la requête et de coller le résultat.
   Ne jamais deviner un nom de colonne — une table `relances` mal devinée a fait
   que **pas une seule relance n'a été créée pendant des semaines**, sans erreur
   visible.
@@ -414,6 +428,7 @@ Quatre l'ont été le 23 septembre, tous corrigés le jour même.
 
 ## 8. Où regarder quand quelque chose ne marche pas
 
-`context.md` §6 tient la liste des **anomalies connues**, classées par gravité. Au 28 septembre
-(V3.20), les vingt-deux relevées sont réglées ou sans objet ; une nouvelle s'y ajoute, datée, avant
-d'être corrigée. Avant de conclure qu'un écran est cassé « sans raison », la regarder.
+`context.md` §7 tient la liste des **anomalies connues** du CRM de Werner ; celles du code
+d'origine, toutes réglées ou sans objet au 28 septembre 2026, sont dans
+`docs/historique-code-origine.md` §6. Une nouvelle anomalie s'ajoute dans `context.md`, datée,
+avant d'être corrigée. Avant de conclure qu'un écran est cassé « sans raison », regarder les deux.

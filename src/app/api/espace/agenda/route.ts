@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
   return new NextResponse(replie, {
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': 'attachment; filename="visite-emilio.ics"',
+      'Content-Disposition': 'attachment; filename="visite-werner.ics"',
       'Cache-Control': 'no-store',
     },
   });

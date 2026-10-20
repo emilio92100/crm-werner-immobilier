@@ -88,7 +88,7 @@ export const CATEGORIES: {
      Vendeur quand son bien passe en mandat (src/lib/contacts.ts). */
   { k: 'estimation', lib: 'Estimation', court: 'Estimation', pluriel: 'Estimations', ic: 'euro', c: '#c2621c', fond: '#fbf0e9', trait: '#f9c8a3', type: 'proprietaire' },
   { k: 'mandat_recherche', lib: 'Accompagnement demandeur', court: 'Demandeur', pluriel: 'Accompagnements', ic: 'loupe', c: '#0f7a4f', fond: '#ecfdf5', trait: '#bfe8d3', type: 'acheteur' },
-  { k: 'rappel_bien', lib: 'Info sur un bien', court: 'Info bien', pluriel: 'Infos sur un bien', ic: 'maison', c: '#76716c', fond: '#f7f6f6', trait: '#e3e0de', type: 'acheteur' },
+  { k: 'rappel_bien', lib: 'Info sur un local', court: 'Info local', pluriel: 'Infos sur un local', ic: 'maison', c: '#76716c', fond: '#f7f6f6', trait: '#e3e0de', type: 'acheteur' },
   { k: 'contact', lib: 'Demande générale', court: 'Message', pluriel: 'Messages', ic: 'bulle', c: '#2e3034', fond: '#f4f3f2', trait: '#e0dedd', type: null },
 ];
 /* Un type inconnu (un futur formulaire) se range avec les demandes générales. */
@@ -254,7 +254,7 @@ export function presenter(d: DemandeSite): Presentation {
       ...garder('Exposition', r.exposition),
       ...garder('État', r.etat),
     ];
-    if (leBien.length || lu.atouts.length) rubriques.push({ titre: 'Le bien', ic: 'maison', champs: leBien, puces: lu.atouts });
+    if (leBien.length || lu.atouts.length) rubriques.push({ titre: 'Le local', ic: 'maison', champs: leBien, puces: lu.atouts });
     const ville = [r.cp, r.ville].filter(Boolean).join(' ') || propre(d.desired_location);
     const ou = [...garder('Adresse', r.adresse), ...garder('Ville', r.adresse ? '' : ville)];
     if (ou.length) rubriques.push({ titre: 'Où', ic: 'lieu', champs: ou });
@@ -265,7 +265,7 @@ export function presenter(d: DemandeSite): Presentation {
 
   if (cat === 'mandat_recherche') {
     const recherche = [
-      ...garder('Type de bien', typeBien(d.property_type)),
+      ...garder('Type de local', typeBien(d.property_type)),
       ...garder('Budget', montant(d.budget)),
       ...garder('Secteur', propre(d.desired_location)),
       ...garder('Surface', surface(d.desired_surface)),
@@ -286,7 +286,7 @@ export function presenter(d: DemandeSite): Presentation {
   if (cat === 'rappel_bien') {
     if (d.property_ref || d.property_title) {
       bien = {
-        titre: d.property_title || 'Bien du site',
+        titre: d.property_title || 'Local du site',
         ref: d.property_ref || '',
         lien: d.property_ref ? `${SITE_PUBLIC}/biens/${encodeURIComponent(d.property_ref)}` : '',
       };
@@ -371,7 +371,7 @@ export function resume(d: DemandeSite): string {
     return [typeBien(d.property_type), montant(d.budget), propre(d.desired_location), delai(d.timeline)].filter(Boolean).join(' · ')
       || extrait(trouver(c, 'message') || lu.libre);
   }
-  if (cat === 'rappel_bien') return d.property_title || 'Un bien du site';
+  if (cat === 'rappel_bien') return d.property_title || 'Un local du site';
   return extrait(String(d.message || ''));
 }
 
@@ -550,7 +550,7 @@ export function preRemplissage(d: DemandeSite): PreRemplissage {
   const lignes = [
     `Demande reçue sur ${pv.portail ? pv.lib : pv.k === 'pub' ? `la page d’estimation des publicités (${PAGE_PUB})` : 'le site'} le ${new Date(d.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} (${cat.lib.toLowerCase()}).`,
     ...p.rubriques.flatMap(r => [...r.champs.map(x => `${x.l} : ${x.v}`), ...(r.puces || []).map((x, i) => (r.numerotees ? `Priorité ${i + 1} : ${x}` : x))]),
-    p.bien ? `Bien : ${p.bien.titre}${p.bien.ref ? ` (réf. ${p.bien.ref})` : ''}` : '',
+    p.bien ? `Local : ${p.bien.titre}${p.bien.ref ? ` (réf. ${p.bien.ref})` : ''}` : '',
     p.dvf?.fourchette ? `Estimation DVF du site : ${p.dvf.fourchette}` : '',
     p.message ? `Son message : ${p.message}` : '',
   ].filter(Boolean);

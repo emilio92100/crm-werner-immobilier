@@ -135,15 +135,15 @@ function libelleReaction(type: string, titre: string): string {
   if (type === 'criteres_modifies') return 'critères modifiés';
   if (type === 'demande_rappel') return 'demande de rappel';
   if (type === 'message_client') return 'message';
-  if (type === 'retour_client') return 'avis sur un bien';
+  if (type === 'retour_client') return 'avis sur un local';
   if (type === 'fin_recherche') {
-    if (/trouvé son bien avec nous/.test(titre)) return '« J’ai trouvé, grâce à vous »';
-    if (/trouvé son bien/.test(titre)) return '« J’ai trouvé par un autre biais »';
+    if (/trouvé son (bien|local) avec nous/.test(titre)) return '« J’ai trouvé, grâce à vous »';
+    if (/trouvé son (bien|local)/.test(titre)) return '« J’ai trouvé par un autre biais »';
     if (/pause/.test(titre)) return '« Je mets ma recherche en pause »';
     if (/arrête/.test(titre)) return '« J’arrête ma recherche »';
     return 'fin de recherche';
   }
-  if (type === 'partage_client') return 'a partagé un bien';
+  if (type === 'partage_client') return 'a partagé un local';
   return 'réaction';
 }
 
@@ -426,7 +426,7 @@ ${LIEN_POLICE_MAIL}
           <table role="presentation" width="100%"><tr>
             <td class="pied-nom">
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
-              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris &amp; Hauts-de-Seine</div>
             </td>
             <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>

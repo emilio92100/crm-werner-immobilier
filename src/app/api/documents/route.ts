@@ -251,7 +251,7 @@ async function traiterPost(req: NextRequest) {
       /* 3. L'historique du bien en vente, s'il y en a un. */
       const bienId = typeof d.bienVenteId === 'string' && UUID.test(d.bienVenteId) ? d.bienVenteId : '';
       if (bienId) {
-        await ecritServeur('L’historique du bien', sb.from('biens_vente_suivi').insert({
+        await ecritServeur('L’historique de l’affaire', sb.from('biens_vente_suivi').insert({
           bien_id: bienId, type: 'envoi', qui: envoyes.map(x => x.nom || x.email).join(', '),
           client_id: envoyes.map(x => contactDe[x.email]).find(Boolean) || null, commentaire: sujet,
           donnees: { a: adresses, pieces: [fichier], mode: 'pj', taille: octets.length, projet: true, document_id: id },
@@ -282,14 +282,14 @@ async function traiterPost(req: NextRequest) {
       if (eDoc) return ko(eDoc.message, 500);
       if (!lu) return ko('Document introuvable', 404);
       const doc = lu as DocProjet;
-      if (doc.modele !== 'offre_achat') return ko('Seule une offre d’achat s’envoie ainsi.');
+      if (doc.modele !== 'offre_achat') return ko('Seule une offre s’envoie ainsi.');
       if (doc.statut !== 'signe') return ko('L’offre n’est pas encore signée par tout le monde : elle part une fois signée.', 409);
       if (!doc.signe_chemin) return ko('L’exemplaire signé n’est pas encore déposé : dépose-le d’abord (scan ou photo), puis envoie.', 409);
       const { data: f, error: eF } = await sb.storage.from(BUCKET).download(doc.signe_chemin);
       if (eF || !f) return ko(`L’exemplaire signé n’a pas pu être lu : ${eF?.message || 'introuvable'}`, 500);
       const octets = new Uint8Array(await f.arrayBuffer());
       const ext = (doc.signe_chemin.split('.').pop() || 'pdf').toLowerCase();
-      const fichier = nomSigne(doc.titre || 'Offre d’achat', ext === 'jpeg' ? 'jpg' : ext);
+      const fichier = nomSigne(doc.titre || 'Offre', ext === 'jpeg' ? 'jpg' : ext);
       const pj: PieceJointe[] = [{ nom: fichier, type: TYPE_EXT[ext] || 'application/octet-stream', base64: Buffer.from(octets).toString('base64') }];
 
       const paras = message.split(/\n{2,}/).map(t => `<p style="margin:0 0 14px">${echappe(t).replace(/\n/g, '<br>')}</p>`).join('');
@@ -325,7 +325,7 @@ async function traiterPost(req: NextRequest) {
         const note = noteOffre(d);
         await ecritServeur('Le Suivi du client', sb.from('journal').insert({
           client_id: doc.client_id, recherche_id: doc.recherche_id, type: 'mail_envoye',
-          titre: `📤 Offre d’achat envoyée${lieu ? ` — ${lieu}` : ''}`, description: `${note ? `💶 ${note}\n\n` : ''}${detail}`,
+          titre: `📤 Offre envoyée${lieu ? ` — ${lieu}` : ''}`, description: `${note ? `💶 ${note}\n\n` : ''}${detail}`,
           metadata: { document_id: id, offre: true },
         }), avertissements);
       }
@@ -338,7 +338,7 @@ async function traiterPost(req: NextRequest) {
         vus.add(c.id);
         await ecritServeur('Le Suivi du contact', sb.from('journal').insert({
           client_id: c.id, recherche_id: null, type: 'mail_envoye',
-          titre: `📤 Offre d’achat transmise${lieu ? ` — ${lieu}` : ''}`, description: detail,
+          titre: `📤 Offre transmise${lieu ? ` — ${lieu}` : ''}`, description: detail,
           metadata: { document_id: id, offre: true },
         }), avertissements);
       }
@@ -367,7 +367,7 @@ async function traiterPost(req: NextRequest) {
       const doc = await lireOffre(sb, id);
       if (!doc) return ko('Offre introuvable', 404);
       if (doc.statut !== 'signe') return ko('L’offre n’est pas signée.', 409);
-      if (!estAgence(doc.donnees) || !doc.bien_id) return ko('Cette offre ne porte pas sur un bien de l’agence.', 409);
+      if (!estAgence(doc.donnees) || !doc.bien_id) return ko('Cette offre ne porte pas sur une affaire de l’agence.', 409);
       if (lienAgence(doc)) return NextResponse.json({ ok: true, avertissements: [] });
       const r = await relierOffreAgence(sb, { id: doc.id, donnees: doc.donnees, client_id: doc.client_id || null, recherche_id: doc.recherche_id || null, bien_id: doc.bien_id || null });
       if (!r.relie) return ko(`Pas ajoutée : ${r.pb || 'erreur inconnue'}`, 500);
@@ -390,9 +390,9 @@ async function traiterPost(req: NextRequest) {
       const etat = etatDeOffre(doc);
       const agence = estAgence(doc.donnees);
       if (etat === 'remplacee' || etat === 'annulee') return ko('Cette offre a été remplacée par une plus récente : réponds sur celle-ci.', 409);
-      if (action === 'reponse' && agence) return ko('Sur un bien de ton mandat, la réponse du mandant se note sur la fiche du bien : l’demandeur est prévenu de la même façon.', 409);
+      if (action === 'reponse' && agence) return ko('Sur une affaire de ton mandat, la réponse du mandant se note sur la fiche de l’affaire : le demandeur est prévenu de la même façon.', 409);
       if (action === 'sans_suite') {
-        if (lireSuivi(doc.donnees).reponse?.statut === 'acceptee') return ko(agence ? 'Cette offre est acceptée : pour l’arrêter, passe par la fiche du bien.' : 'Cette offre est acceptée : pour l’arrêter, passe par l’onglet Transaction.', 409);
+        if (lireSuivi(doc.donnees).reponse?.statut === 'acceptee') return ko(agence ? 'Cette offre est acceptée : pour l’arrêter, passe par la fiche de l’affaire.' : 'Cette offre est acceptée : pour l’arrêter, passe par l’onglet Transaction.', 409);
         if (doc.statut === 'pret' && doc.signature) return ko('Cette offre est en signature : arrête d’abord sa signature dans Documents, puis note-la sans suite.', 409);
         const pb = await fermerSansSuite(sb, doc, 'conseiller');
         if (pb) return ko(`Pas enregistré : ${pb}`, 500);

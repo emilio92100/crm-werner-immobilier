@@ -804,7 +804,7 @@ export default function Decouverte(props: Props) {
 
   const atouts: string[] = [];
   if (courant) {
-    if (courant.chambres) atouts.push(`${courant.chambres} chambre${courant.chambres > 1 ? 's' : ''}`);
+    if (courant.chambres) atouts.push(`${courant.chambres} bureau${courant.chambres > 1 ? 'x' : ''}`);
     if (courant.terrasse) atouts.push('Terrasse');
     if (courant.balcon) atouts.push('Extérieur');
     if (courant.jardin) atouts.push('Espace extérieur');

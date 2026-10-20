@@ -94,11 +94,11 @@ async function traiterPost(req: NextRequest) {
       const eInfo = await envoyerMail({
         a: p.email, nomA: nomDe(p), repondreA: 'contact@wernerimmobilier.com',
         sujet: `Votre mandat de recherche n° ${ligne.numero} continue sans la signature de ${c.personne.prenom}`,
-        texte: `Bonjour ${p.prenom},\n\n${nomDe(c.personne)} n'a pas signé le mandat de recherche n° ${ligne.numero}. Comme le mandat le prévoit, il continue avec vous${signe ? ' : vous en trouverez la version définitive dans un autre message' : ''}.\n\nSi ${c.personne.prenom} souhaite finalement signer, dites-le-moi : je lui enverrai un nouveau lien.\n\nWerner Immobilier`,
+        texte: `Bonjour ${p.prenom},\n\n${nomDe(c.personne)} n'a pas signé le mandat de recherche n° ${ligne.numero}. Comme le mandat le prévoit, il continue avec vous${signe ? ' : vous en trouverez la version définitive dans un autre message' : ''}.\n\nSi ${c.personne.prenom} souhaite finalement signer, dites-le-moi : je lui enverrai un nouveau lien.\n\nWerner\nWerner Immobilier`,
         html: gabarit('Votre mandat continue', `<p>Bonjour ${echappe(p.prenom)},</p>
           <p>${echappe(nomDe(c.personne))} n’a pas signé le <b>mandat de recherche n° ${echappe(ligne.numero)}</b>. Comme le mandat le prévoit, il continue avec vous${signe ? ' : vous en trouverez la version définitive dans un autre message' : ''}.</p>
           <p>Si ${echappe(c.personne.prenom)} souhaite finalement signer, dites-le-moi : je lui enverrai un nouveau lien.</p>
-          <p>Werner Immobilier</p>`),
+          <p>Werner<br/>Werner Immobilier</p>`),
       });
       await journal(`🔒 Invitation de ${nomDe(c.personne)} close`,
         `Mandat n° ${ligne.numero} · le ${dateCourte(le)} à ${heureParis(le)}. Il continue avec ${nomDe(p)}${signe ? ' ; version définitive scellée et envoyée' : ''}.${eMail || eInfo ? `\n⚠️ Mail non parti : ${eMail || eInfo}` : ''}`);

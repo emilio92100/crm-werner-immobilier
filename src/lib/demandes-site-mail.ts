@@ -55,7 +55,7 @@ export function mailDemande(d: DemandeSite): { sujet: string; html: string; text
       ...r.champs.map(c => [c.l, c.v] as [string, string]),
       ...(r.puces && r.puces.length ? [[r.titre, r.puces.map((x, i) => (r.numerotees ? `${i + 1}. ${x}` : x)).join(' · ')] as [string, string]] : []),
     ]),
-    ...(p.bien ? [['Bien', `${p.bien.titre}${p.bien.ref ? ` (réf. ${p.bien.ref})` : ''}`] as [string, string]] : []),
+    ...(p.bien ? [['Local', `${p.bien.titre}${p.bien.ref ? ` (réf. ${p.bien.ref})` : ''}`] as [string, string]] : []),
     ...(p.dvf ? [[pub ? 'Repère de prix montré au client' : 'Estimation DVF du site', p.dvf.fourchette || 'non disponible'] as [string, string]] : []),
   ];
   const sujet = pub

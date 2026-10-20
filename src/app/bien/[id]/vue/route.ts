@@ -68,12 +68,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       const { data: b, error: eB } = await sb.from('biens_vente').select('*').eq('id', id).maybeSingle();
       if (eB) console.error('[bien/vue] le bien', eB.message);
       const bien = b as BienVente | null;
-      const titre = bien ? (bienPourSite(bien, null).title || bien.titre || titreBien(bien.donnees || {})) : 'le bien';
+      const titre = bien ? (bienPourSite(bien, null).title || bien.titre || titreBien(bien.donnees || {})) : 'le local';
       const avant = neuf.avant;
       await ecritServeur('[bien/vue] le Suivi du contact', sb.from('journal').insert({
         client_id: dest.client_id, recherche_id: dest.recherche_id && UUID.test(dest.recherche_id) ? dest.recherche_id : null,
         type: 'statut_change',
-        titre: `👀 A ouvert la fiche du bien — ${titre}`,
+        titre: `👀 A ouvert la fiche du local — ${titre}`,
         description: [
           ligne.le ? `Par le lien du mail du ${jourLong(ligne.le)}` : 'Par le lien du mail',
           avant.length ? `déjà ouverte ${avant.length > 1 ? `${avant.length} autres jours` : `le ${jourLong(avant[0])}`}` : '',

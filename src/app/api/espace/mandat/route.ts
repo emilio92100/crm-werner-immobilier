@@ -567,7 +567,7 @@ export async function POST(req: NextRequest) {
             : 'Coordonnées confirmées par le signataire' });
         }
         if (cosV.length) deroule.push({ t: maintenant, x: `${cosV.length > 1 ? 'Co-signataires indiqués' : 'Co-signataire indiqué'} et informations certifiées exactes par le signataire : ${cosV.map(c => `${nomDe(c)} (${c.email})`).join(', ')}` });
-        if (societe) deroule.push({ t: maintenant, x: `Achat via la société ${societe.denomination} (SIREN ${societe.siren}) ; habilitation à l’engager certifiée par le signataire${kbis ? ', Kbis joint' : ''}` });
+        if (societe) deroule.push({ t: maintenant, x: `Pour le compte de la société ${societe.denomination} (SIREN ${societe.siren}) ; habilitation à l’engager certifiée par le signataire${kbis ? ', Kbis joint' : ''}` });
         deroule.push({ t: maintenant, x: `${reprise ? 'Nouveau code' : 'Code à 6 chiffres'} envoyé à ${mandant.email}` });
 
         /* Le Kbis, s'il en a joint un : rangé avant la ligne, qui garde son chemin. */
@@ -749,7 +749,7 @@ export async function POST(req: NextRequest) {
             const lite = { civilite: conj.civilite, prenom: conj.prenom, nom: conj.nom, email: conj.email, telephone: conj.telephone, naissanceDate: conj.naissanceDate, naissanceLieu: conj.naissanceLieu };
             if (!client.couple) {
               const { error: eC } = await sb.from('clients').update({ couple: true, conjoint: lite, ...(client.civilite ? {} : { civilite: m.civilite }) }).eq('id', client.id);
-              fiche = eC ? `La fiche n'a pas pu passer en couple (${eC.message}).` : `La fiche passe en couple : ${nomDe(conj)} a été ajouté${conj.civilite === 'Madame' ? 'e' : ''} par ${m.prenom}.`;
+              fiche = eC ? `La fiche n'a pas pu passer à deux personnes (${eC.message}).` : `La fiche passe à deux personnes : ${nomDe(conj)} a été ajouté${conj.civilite === 'Madame' ? 'e' : ''} par ${m.prenom}.`;
               ficheSouci = !!eC;
             } else if (netP(client.conjoint?.email) !== netP(conj.email) || netP(client.conjoint?.nom) !== netP(conj.nom)) {
               ficheSouci = true;
@@ -891,11 +891,11 @@ export async function POST(req: NextRequest) {
         const eClient = await envoyerMail({
           a: m.email, nomA: nom, pj, repondreA: 'contact@wernerimmobilier.com',
           sujet: `Votre mandat de recherche n° ${l.numero}`,
-          texte: `Bonjour ${m.prenom},\n\nMerci pour votre confiance. Vous trouverez ci-joint votre mandat de recherche n° ${l.numero}, signé le ${dateLongue(le)}, avec son certificat de signature.\n\nVous le retrouvez aussi à tout moment dans votre espace, rubrique « Ma recherche ».\n\nWerner travaille désormais pour vous : les biens hors marché de son réseau, chaque dossier vérifié avant toute offre, la négociation, et un suivi jusqu'à la signature chez le notaire.\n\nÀ très vite,\nWerner Immobilier\n\n—\nLe mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours (jusqu'au ${dateLongue(limite)} inclus) et la façon de l'exercer.`,
+          texte: `Bonjour ${m.prenom},\n\nMerci pour votre confiance. Vous trouverez ci-joint votre mandat de recherche n° ${l.numero}, signé le ${dateLongue(le)}, avec son certificat de signature.\n\nVous le retrouvez aussi à tout moment dans votre espace, rubrique « Ma recherche ».\n\nWerner travaille désormais pour vous : les locaux hors marché de son réseau, chaque dossier vérifié avant toute offre, la négociation, et un suivi jusqu'à la signature du bail ou de l'acte.\n\nÀ très vite,\nWerner Immobilier\n\n—\nLe mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours (jusqu'au ${dateLongue(limite)} inclus) et la façon de l'exercer.`,
           html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(m.prenom)},</p>
             <p>Merci pour votre confiance. Vous trouverez ci-joint votre <b>mandat de recherche n° ${echappe(l.numero)}</b>, signé le ${dateLongue(le)}, avec son certificat de signature.</p>
             <p>Vous le retrouvez aussi à tout moment dans votre espace, rubrique « Ma recherche ».</p>
-            <p>Werner travaille désormais pour vous&nbsp;: les biens hors marché de son réseau, chaque dossier vérifié avant toute offre, la négociation, et un suivi jusqu’à la signature chez le notaire.</p>
+            <p>Werner travaille désormais pour vous&nbsp;: les locaux hors marché de son réseau, chaque dossier vérifié avant toute offre, la négociation, et un suivi jusqu’à la signature du bail ou de l’acte.</p>
             <p>À très vite,<br>Werner Immobilier</p>`,
             `Le mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours (jusqu’au ${dateLongue(limite)} inclus) et la façon de l’exercer.`),
         });

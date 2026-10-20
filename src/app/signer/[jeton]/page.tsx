@@ -196,11 +196,11 @@ async function pageDocument(sb: SupabaseClient, jeton: string): Promise<DonneesS
    ligne du mandat de recherche. » */
 function nomGenerique(id: string): { le: string; du: string; court: string } {
   switch (id) {
-    case 'mandat_vente': return { le: 'le mandat de vente', du: 'du mandat de vente', court: 'le mandat' };
-    case 'avenant_vente': return { le: 'l’avenant au mandat de vente', du: 'de l’avenant au mandat de vente', court: 'l’avenant' };
+    case 'mandat_vente': return { le: 'le mandat de commercialisation', du: 'du mandat de commercialisation', court: 'le mandat' };
+    case 'avenant_vente': return { le: 'l’avenant au mandat de commercialisation', du: 'de l’avenant au mandat de commercialisation', court: 'l’avenant' };
     case 'mandat_recherche': return { le: 'le mandat de recherche', du: 'du mandat de recherche', court: 'le mandat' };
     case 'avenant_recherche': return { le: 'l’avenant au mandat de recherche', du: 'de l’avenant au mandat de recherche', court: 'l’avenant' };
-    case 'offre_achat': return { le: 'l’offre d’achat', du: 'de l’offre d’achat', court: 'l’offre' };
+    case 'offre_achat': return { le: 'l’offre', du: 'de l’offre', court: 'l’offre' };
     case 'bon_visite': return { le: 'le bon de visite', du: 'du bon de visite', court: 'le bon de visite' };
     case 'delegation': return { le: 'la délégation de mandat', du: 'de la délégation de mandat', court: 'la délégation' };
     default: return { le: 'ce document', du: 'de ce document', court: 'le document' };

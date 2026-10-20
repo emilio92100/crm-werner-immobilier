@@ -275,7 +275,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
   const chiffres: { i: string; v: string; l: string }[] = [];
   if (bien.surface) chiffres.push({ i: 'regle', v: `${nb(bien.surface)} m²`, l: 'Surface' });
   if (bien.nb_pieces) chiffres.push({ i: 'plan', v: String(bien.nb_pieces), l: bien.nb_pieces > 1 ? 'Espaces' : 'Espace' });
-  if (bien.nb_chambres) chiffres.push({ i: 'lit', v: String(bien.nb_chambres), l: bien.nb_chambres > 1 ? 'Chambres' : 'Chambre' });
+  if (bien.nb_chambres) chiffres.push({ i: 'lit', v: String(bien.nb_chambres), l: bien.nb_chambres > 1 ? 'Bureaux' : 'Bureau' });
   if (bien.etage !== null && bien.etage !== undefined) {
     chiffres.push({
       i: 'immeuble',
@@ -284,7 +284,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
     });
   }
   if (bien.exposition) chiffres.push({ i: 'soleil', v: String(bien.exposition), l: 'Exposition' });
-  if (bien.surface_sejour) chiffres.push({ i: 'sejour', v: `${nb(bien.surface_sejour)} m²`, l: 'Séjour' });
+  if (bien.surface_sejour) chiffres.push({ i: 'sejour', v: `${nb(bien.surface_sejour)} m²`, l: 'Surface de vente' });
   if (ext) chiffres.push({ i: 'terrasse', v: `${nb(ext)} m²`, l: 'Extérieur' });
   if (bien.annee_construction) chiffres.push({ i: 'calendrier', v: String(bien.annee_construction), l: 'Construction' });
 
