@@ -198,10 +198,14 @@ const EUR = (n?: number | null) =>
 /* V3.113 : le prix d'un BIEN. Un bien de l'agence présenté avant le mandat
    arrive sans prix (prixCopie) : « Prix à venir », pas un tiret. */
 const PRIX = (n?: number | null) => (n ? EUR(n) : 'Montant à venir');
+/* Werner : un loyer s'écrit « par an » (biens.pro : la nature de l'affaire). */
+const PRIXB = (b: { prix?: number | null; pro?: { nature?: string | null } | null }) => `${PRIX(b.prix ?? null)}${b.prix && b.pro?.nature === 'location' ? ' / an' : ''}`;
 /* V3.145 : sous le prix d'un bien, quand ses honoraires ne sont pas partagés
    (voir src/lib/honoraires-bien.ts, la même phrase partout). */
-const honoDe = (b: { prix: number | null; hono?: number }) =>
-  `+ ${EUR(b.hono || 0)} HT de nos honoraires, soit ${EUR((b.prix || 0) + (b.hono || 0))} honoraires compris`;
+const honoDe = (b: { prix: number | null; hono?: number; pro?: { nature?: string | null } | null }) =>
+  b.pro?.nature === 'location'
+    ? `+ ${EUR(b.hono || 0)} HT d’honoraires, une fois, à la signature du bail`
+    : `+ ${EUR(b.hono || 0)} HT de nos honoraires, soit ${EUR((b.prix || 0) + (b.hono || 0))} honoraires compris`;
 /* Les descriptions d'annonces arrivent souvent d'un bloc, sans le moindre
    saut de ligne. On respire pour le lecteur : on coupe d'abord sur les sauts
    existants, puis on regroupe les phrases par paquets. On ne touche jamais
@@ -2933,8 +2937,8 @@ function CarrouselNeufs({ biens, crit, onOuvrir, aller, onDecouvrir, nbDecouvrir
               </span>
               <span className="cn-c">
                 <span className="cn-p">
-                  <b className="tab">{PRIX(b.prix)}</b>
-                  {b.prix && b.surface ? <i className="tab">{`${nombre(Math.round(b.prix / b.surface))} €/m²`}</i> : null}
+                  <b className="tab">{PRIXB(b)}</b>
+                  {b.prix && b.surface ? <i className="tab">{`${nombre(Math.round(b.prix / b.surface))} €/m²${b.pro?.nature === 'location' ? '/an' : ''}`}</i> : null}
                 </span>
                 {b.prix && b.hono ? <span className="cn-h">{`+ ${EUR(b.hono)} HT de nos honoraires`}</span> : null}
                 <span className="cn-t">{b.titre}</span>
@@ -3053,7 +3057,7 @@ function AvisAttendus({ biens, onOuvrir }: { biens: Bien[]; onOuvrir: (b: Bien) 
                 {quand && <span className="aa-q">{`Ouvert ${quand}`}</span>}
               </span>
               <span className="aa-t">{b.titre}</span>
-              <span className="aa-m">{PRIX(b.prix) + (b.surface ? ` · ${b.surface} m²` : '')}</span>
+              <span className="aa-m">{PRIXB(b) + (b.surface ? ` · ${b.surface} m²` : '')}</span>
               <span className="aa-b">Donner mon avis</span>
             </button>
           );
@@ -3120,7 +3124,7 @@ function DerniersRetours({ biens, onOuvrir, aller, carte }: { biens: Bien[]; onO
               <span className="dr-x">
                 {a && <span className={'etiq ' + a.c}>{`${a.e} ${a.n}`}</span>}
                 <span className="dr-t">{b.titre}</span>
-                <span className="dr-m">{PRIX(b.prix) + (b.commentaire ? ` · « ${b.commentaire} »` : '')}</span>
+                <span className="dr-m">{PRIXB(b) + (b.commentaire ? ` · « ${b.commentaire} »` : '')}</span>
               </span>
             </button>
           );
@@ -3361,7 +3365,7 @@ function Liste({ biens, onOuvrir, vide, sansEtiq, crit }: { biens: Bien[]; onOuv
                 b.surface && b.surface + ' m²', b.pieces && b.pieces + (b.pieces > 1 ? ' espaces' : ' espace'),
                 b.chambres && b.chambres + ' bureaux', b.secteur,
               ].filter(Boolean).join(' · ')}</span>
-              <span className="prix tab">{PRIX(b.prix)}</span>
+              <span className="prix tab">{PRIXB(b)}</span>
               {b.prix && b.hono ? <span className="hono-c">{`+ ${EUR(b.hono)} HT de nos honoraires`}</span> : null}
               {/* V3.184 : né d'une annonce qu'il a envoyée, avec l'avis d'Alexandre. */}
               {b.proposeeLe && <span className="ra-pp"><Ico n="lien" t={12} /><span>{`Vous nous l’aviez envoyée ${dateAnnonce(b.proposeeLe)}`}</span></span>}
@@ -4366,7 +4370,7 @@ function CarteVisite({ b, v, onOuvrir, onCompteRendu, onRepondre, onFaireOffre, 
       </button>
       <div className="vv-corps">
       <button type="button" className="vv-tete" onClick={onOuvrir}>
-        <span className="vv-l1"><b className="vv-prix tab">{PRIX(b.prix)}</b><span className="vv-quand">{quand}</span></span>
+        <span className="vv-l1"><b className="vv-prix tab">{PRIXB(b)}</b><span className="vv-quand">{quand}</span></span>
         <span className="vv-meta">{[b.pieces === 1 ? '1 espace' : b.pieces && `${b.pieces} espaces`, b.surface && `${b.surface} m²`, b.ville || b.secteur].filter(Boolean).join(' · ')}</span>
       </button>
       {o ? <CarteOffre o={o} indispo={indispo(b)} sansEtiquette {...(actionsOffre || {})} />
@@ -4402,7 +4406,7 @@ function CarteAvisAccueil({ b, v, onRepondre, onOuvrir, onVoir, onFaireOffre }: 
         <button type="button" className="vv-haut" onClick={onOuvrir}>
           <span className="vv-ph">{ph ? <img src={ph} alt="" /> : <Ico n="maison" t={20} />}</span>
           <span className="vv-t">
-            <b className="vv-prix tab">{PRIX(b.prix)}</b>
+            <b className="vv-prix tab">{PRIXB(b)}</b>
             <span className="vv-meta">{[b.pieces === 1 ? '1 espace' : b.pieces && `${b.pieces} espaces`, b.surface && `${b.surface} m²`, b.ville || b.secteur].filter(Boolean).join(' · ')}</span>
           </span>
         </button>
@@ -4932,7 +4936,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
           on peut les mettre à côté ». Ils entrent dans le bandeau : à côté du
           prix sur ordinateur, dessous sur téléphone (CSS). */}
       <div className="bandeau-prix">
-        <span className="p tab">{b.prix ? <span className="nv">{PRIX(b.prix)}<BtnAide cle="prix" onAide={() => setAidePrix(true)} /></span> : PRIX(b.prix)}</span>
+        <span className="p tab">{b.prix ? <span className="nv">{PRIXB(b)}<BtnAide cle="prix" onAide={() => setAidePrix(true)} /></span> : PRIXB(b)}</span>
         {/* V3.145 : ses honoraires, seulement quand ils s'ajoutent — en petit. */}
         {/* V3.188 (Alexandre : « quand il y a un prix affiché en plus, une petite
             interrogation ») : un « ? » collé au dernier mot, pour qu'il ne parte
@@ -4947,7 +4951,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
             </span>
           );
         })() : null}
-        {b.prix && b.surface ? <span className="m2 tab">{Math.round(b.prix / b.surface).toLocaleString('fr-FR').replace(/[  ]/g, ' ')} €/m²</span> : null}
+        {b.prix && b.surface ? <span className="m2 tab">{Math.round(b.prix / b.surface).toLocaleString('fr-FR').replace(/[  ]/g, ' ')}{` €/m²${b.pro?.nature === 'location' ? '/an' : ''}`}</span> : null}
       </div>
       <div className="tete-f" style={{ paddingTop: 10 }}>
         <div><h3>{b.titre}</h3>
@@ -5370,7 +5374,7 @@ function ModalePartage({ b, client, onFermer, onEnvoyer }: any) {
                 <div className="ape-c">Bonjour,<br />Voici un local que je suis en train de regarder avec
                   mon conseiller immobilier. Dites-moi ce que vous en pensez.<br /><br />
                   <b>{b.titre}</b><br />
-                  {[b.surface && b.surface + ' m²', PRIX(b.prix)].filter(Boolean).join(' · ')}<br />
+                  {[b.surface && b.surface + ' m²', PRIXB(b)].filter(Boolean).join(' · ')}<br />
                   <span className="lien-ap">{lien}</span><br /><br />{client.prenom}</div>
               </div>
 
