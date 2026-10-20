@@ -10,7 +10,7 @@
    Désormais c'est un badge signé et daté : « v1.<fin>.<signature> ». La
    signature (HMAC-SHA256) mêle le code et la clé de service de Supabase,
    que personne ne peut deviner ; la date de fin (30 jours) fait qu'un badge
-   copié finit par ne plus rien ouvrir. Changer `EMILIO_ACCESS_CODE` sur
+   copié finit par ne plus rien ouvrir. Changer `WERNER_ACCESS_CODE` sur
    Vercel reste le moyen d'invalider d'un coup tous les badges en circulation.
 
    Web Crypto seulement : ce fichier sert aussi au portail (proxy.ts). */
@@ -21,8 +21,18 @@ export const DUREE_BADGE = 60 * 60 * 24 * 30; // 30 jours, en secondes
 const enc = new TextEncoder();
 const hex = (b: ArrayBuffer) => Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('');
 
+/* Le code d'accès du CRM Werner : WERNER_ACCESS_CODE sur Vercel (l'ancien nom
+   EMILIO_ACCESS_CODE reste lu). S'il manque, le badge est signé avec la seule clé
+   de service de Supabase — secrète elle aussi : le CRM démarre sans attendre ce
+   réglage. Changer WERNER_ACCESS_CODE invalide d'un coup tous les badges. */
+export function codeAcces(): string {
+  const code = (process.env.WERNER_ACCESS_CODE || process.env.EMILIO_ACCESS_CODE || '').trim();
+  if (code) return code;
+  return process.env.SUPABASE_SERVICE_ROLE_KEY ? 'werner' : '';
+}
+
 async function cle(): Promise<CryptoKey | null> {
-  const code = process.env.EMILIO_ACCESS_CODE;
+  const code = codeAcces();
   if (!code) return null;
   const secret = `${code}|${process.env.SUPABASE_SERVICE_ROLE_KEY || ''}`;
   return crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { COOKIE_BADGE, DUREE_BADGE, fabriquerBadge } from '@/lib/badge';
+import { COOKIE_BADGE, DUREE_BADGE, codeAcces, fabriquerBadge } from '@/lib/badge';
 
 /**
  * Ouvre la porte du CRM.
@@ -12,7 +12,7 @@ import { COOKIE_BADGE, DUREE_BADGE, fabriquerBadge } from '@/lib/badge';
  * src/proxy.ts attend.
  *
  * Le cookie est un badge signé et daté (src/lib/badge.ts, V3.33) : il ne
- * se devine pas et il expire au bout de 30 jours. `EMILIO_ACCESS_CODE` en
+ * se devine pas et il expire au bout de 30 jours. `WERNER_ACCESS_CODE` en
  * reste l'un des secrets : le changer sur Vercel invalide tous les badges.
  *
  * ⚠️ Ce cookie ne donne accès à AUCUNE donnée. Il ne fait qu'autoriser
@@ -25,10 +25,10 @@ const COOKIE = COOKIE_BADGE;
 const DUREE = DUREE_BADGE; // 30 jours
 
 export async function POST(req: NextRequest) {
-  const secret = process.env.EMILIO_ACCESS_CODE;
+  const secret = codeAcces();
   if (!secret) {
     return NextResponse.json(
-      { ok: false, error: "EMILIO_ACCESS_CODE n'est pas configuré sur le serveur." },
+      { ok: false, error: "La connexion n'est pas encore configurée sur le serveur (clés Supabase sur Vercel)." },
       { status: 500 },
     );
   }
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
      Tant qu'elle est vide, tout compte Supabase valide du projet entre — et
      c'est suffisant : les comptes sont créés à la main, il n'y a pas
      d'inscription ouverte sur ce projet. */
-  const autorises = (process.env.EMILIO_MAILS_AUTORISES || '')
+  const autorises = (process.env.WERNER_MAILS_AUTORISES || process.env.EMILIO_MAILS_AUTORISES || '')
     .split(',')
     .map((m) => m.trim().toLowerCase())
     .filter(Boolean);
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
 
   const badge = await fabriquerBadge();
   if (!badge) {
-    return NextResponse.json({ ok: false, error: "EMILIO_ACCESS_CODE n'est pas configuré sur le serveur." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "La connexion n'est pas encore configurée sur le serveur (clés Supabase sur Vercel)." }, { status: 500 });
   }
   const res = NextResponse.json({ ok: true });
   res.cookies.set({

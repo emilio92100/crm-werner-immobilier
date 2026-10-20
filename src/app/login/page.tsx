@@ -226,7 +226,7 @@ function FormulaireAcces() {
                 fontWeight: 600,
               }}
             >
-              La variable EMILIO_ACCESS_CODE n&apos;est pas définie sur le serveur.
+              La connexion n&apos;est pas encore configurée sur le serveur (clés Supabase sur Vercel).
             </div>
           )}
 

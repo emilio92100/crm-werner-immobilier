@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { COOKIE_BADGE, badgeValide } from '@/lib/badge';
+import { COOKIE_BADGE, badgeValide, codeAcces } from '@/lib/badge';
 
 /**
  * Portail d'accès au CRM.
@@ -94,7 +94,7 @@ export async function proxy(request: NextRequest) {
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) return NextResponse.next();
 
   // 2. Le code doit être configuré côté serveur
-  const code = process.env.EMILIO_ACCESS_CODE;
+  const code = codeAcces();
   if (!code) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
