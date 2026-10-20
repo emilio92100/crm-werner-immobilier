@@ -199,7 +199,7 @@ async function traiterPost(req: NextRequest) {
       for (const dst of dests) {
         const texte = texteDe(dst);
         const paras = texte.split(/\n{2,}/).map(t => `<p style="margin:0 0 14px">${echappe(t).replace(/\n/g, '<br>')}</p>`).join('');
-        /* V3.118 : dans l'enveloppe de la charte, le logo Emilio en tête. */
+        /* V3.118 : dans l’enveloppe de la charte, le logo Werner en tête. */
         const html = enveloppeMail({ corps: paras });
         const err = await envoyerMail({ a: dst.email, nomA: dst.nom || undefined, sujet, texte, html, pj });
         if (err) echecs.push(`${dst.email} (${err})`); else envoyes.push(dst);

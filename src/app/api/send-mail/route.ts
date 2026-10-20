@@ -5,11 +5,12 @@ import { nommerRecherche } from '@/lib/espace';
 import { tauxDe, forfaitDe, honorairesCourt, honorairesDuPrix, DUREE, RETRACTATION_JOURS, type Honoraires } from '@/lib/mandat';
 import { ecritServeur } from '@/lib/ecritures';
 import { personnaliser, conseillerDe } from '@/lib/mail-variables';
-import { LIEN_POLICE_MAIL, LOGO_BLANC_MAIL } from '@/lib/mail-charte';
+import { LIEN_POLICE_MAIL, LOGO_BLANC_MAIL, LOGO_MAIL } from '@/lib/mail-charte';
 import { adresseVente } from '@/lib/adresse-vente';
 import { prixDuBien } from '@/lib/honoraires-bien';
 import { versBienAcheteur, type BienVente } from '@/lib/biens-vente';
 import { avecRemises, noterRemises } from '@/lib/remise-mail';
+import { NATURES, libPrix, unitePrix, type NatureAffaire, type ProBien } from '@/lib/affaires';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,7 +28,8 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobil
    qu'aux anciens jetons de 64 caractères (lienEspace). */
 const ESPACE_URL = basePublique();
 
-/* V3.118 : les couleurs du site emilio-immo.com (src/lib/mail-charte.ts). */
+/* Les couleurs de Werner (src/lib/mail-charte.ts) : BLEU est l'anthracite,
+   DORE l'orange (les noms d'origine sont restés). */
 const BLEU = '#2e3034';
 const DORE = '#f08c42';
 const ENCRE = '#232528';
@@ -50,11 +52,53 @@ interface BienLite {
   bien_vente_id?: string | null;
   photos?: string[] | null;
   score?: number | null;
+  /* Werner : ce que l'affaire dit d'elle-même (biens.pro, src/lib/affaires.ts),
+     vide pour une annonce trouvée ailleurs. */
+  pro?: Partial<ProBien> | null;
 }
+
+/* Les colonnes d'un local lues pour un mail. `pro` vient de
+   outils/sql/werner-commerce.sql : sans elle, on relit sans (lireAvecPro). */
+const COLS_BIEN = 'id, titre, ville, code_postal, type_bien, surface, nb_pieces, nb_chambres, etage, prix_vendeur, prix_acquereur, bien_vente_id, photos, score';
+const sansColonnePro = (e: { message?: string } | null | undefined) => !!e && /\bpro\b/.test(e.message || '') && /column|schema cache/i.test(e.message || '');
 
 function fmt(n?: number | null) {
   if (!n) return null;
   return new Intl.NumberFormat('fr-FR').format(n);
+}
+
+/* ── Le montant d'un local, selon la nature de l'affaire ──
+   Un loyer s'écrit « 48 000 € HT HC / an » ; un droit au bail, un fonds, des
+   murs, leur prix seul, avec son nom dessous. Sans nature connue (une annonce
+   trouvée ailleurs, une copie d'avant `biens.pro`), un libellé neutre. */
+function natureDe(b: BienLite): NatureAffaire | null {
+  const n = b.pro && typeof b.pro === 'object' ? b.pro.nature : null;
+  return n && NATURES.some(x => x.v === n) ? n : null;
+}
+/* « HT HC / an » pour une location, rien sinon. */
+const uniteDe = (b: BienLite) => unitePrix({ nature: natureDe(b) });
+/* Ce que le montant est : « Loyer annuel », « Prix du droit au bail »… */
+function libMontant(b: BienLite): string {
+  const n = natureDe(b);
+  if (!n) return 'Montant de l’annonce';
+  return n === 'location' ? 'Loyer annuel' : libPrix({ nature: n });
+}
+/* Le loyer du bail que reprend le preneur (droit au bail, fonds, murs loués). */
+function loyerEnPlace(b: BienLite): string {
+  const n = natureDe(b);
+  const l = Number(b.pro?.loyerAn);
+  if (!n || n === 'location' || n === 'murs' || !(l > 0)) return '';
+  return `${n === 'murs_occupes' ? 'Loyer en place' : 'Loyer du bail'} : ${fmt(l)} € HT HC / an`;
+}
+/* « 42 000 € HT HC / an » ne se coupe pas en fin de ligne (HTML). */
+const insecable = (h: string) => h.replace(/ € HT HC \/ an/g, '&nbsp;€&nbsp;HT&nbsp;HC&nbsp;/&nbsp;an');
+/* Le montant en une ligne de texte : « 48 000 € HT HC / an », « 180 000 € (droit au bail) ». */
+function montantTexte(b: BienLite): string {
+  const p = prixDuBien(b).demande;
+  if (!p) return '';
+  const u = uniteDe(b);
+  const n = natureDe(b);
+  return u ? `${fmt(p)} € ${u}` : n ? `${fmt(p)} € (${(NATURES.find(x => x.v === n)?.court || '').toLowerCase()})` : `${fmt(p)} €`;
 }
 
 function escapeHtml(s: string) {
@@ -136,8 +180,13 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
   const etageOf = (b: BienLite) => {
     const e = (b as { etage?: number | null }).etage;
     if (e === 0) return 'RDC';
-    if (e) return `${e}ème`;
+    if (e) return `${e}${e === 1 ? 'er' : 'e'}`;
     return '';
+  };
+  /* Le montant en gros, son unité en plus petit à côté (« 48 000 € HT HC / an »). */
+  const montantHtml = (b: BienLite, prix: number, taille: number) => {
+    const u = uniteDe(b);
+    return `${fmt(prix)}&nbsp;€${u ? `<span style="font-size:${Math.max(11, Math.round(taille * 0.55))}px;font-weight:700;color:#5B6B80;">&nbsp;${u}</span>` : ''}`;
   };
 
   const hairline = `<tr><td class="bord" style="padding:0 28px;"><div style="border-top:1px solid #eeeeed;line-height:0;font-size:0;">&nbsp;</div></td></tr>`;
@@ -153,15 +202,19 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
     if (b.nb_chambres) cells.push({ v: `${b.nb_chambres}`, l: b.nb_chambres > 1 ? 'Bureaux' : 'Bureau' });
     if (etageTxt) cells.push({ v: etageTxt, l: 'Étage' });
     const statsRow = cells.map((c, i) => `${i > 0 ? '<td width="1" style="background:#eeeeed;"></td>' : ''}<td align="center" style="padding:10px 6px;"><div style="font-size:17px;font-weight:700;color:${BLEU};">${c.v}</div><div style="font-size:11px;color:#aba7a3;margin-top:2px;">${c.l}</div></td>`).join('');
+    /* Sous le montant : ses honoraires s'ils s'ajoutent, le loyer du bail
+       repris (droit au bail, fonds). La dernière ligne garde l'espace avant
+       le bouton. */
+    const dessous = [honoOf(b), loyerEnPlace(b)].filter(Boolean);
     return `
-      ${photo ? `<tr><td style="padding:0;"><img src="${escapeHtml(photo)}" alt="" width="600" style="width:100%;max-width:600px;height:auto;display:block;border:0;" /></td></tr>` : ''}
+      ${photo ? `<tr><td style="padding:22px 0 0;"><img src="${escapeHtml(photo)}" alt="" width="600" style="width:100%;max-width:600px;height:auto;display:block;border:0;" /></td></tr>` : ''}
       <tr><td class="bord" style="padding:24px 28px 8px;">
         <div style="font-size:20px;font-weight:700;color:${BLEU};line-height:1.3;margin-bottom:6px;">${escapeHtml(titreOf(b))}</div>
         ${loc ? `<div style="font-size:13px;color:#aba7a3;"><span style="color:${DORE};">&#9679;</span> ${escapeHtml(loc)}</div>` : ''}
       </td></tr>
       ${statsRow ? `<tr><td class="bord" style="padding:14px 28px 4px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #eeeeed;border-bottom:1px solid #eeeeed;"><tr>${statsRow}</tr></table></td></tr>` : ''}
-      <tr><td class="bord" style="padding:18px 28px 6px;">
-        ${prix ? `<div style="font-size:26px;font-weight:800;color:${BLEU};line-height:1;">${fmt(prix)} €</div><div style="font-size:11px;color:${DORE_TEXTE};font-weight:600;margin:6px 0 ${honoOf(b) ? '4' : '18'}px;">${b.bien_vente_id && b.prix_acquereur ? 'Loyer annuel HT HC, ou prix de cession' : 'Montant de l’annonce'}</div>${honoOf(b) ? `<div style="font-size:12px;color:#5B6B80;margin:0 0 18px;">${honoOf(b)}</div>` : ''}` : ''}
+      <tr><td class="bord" style="padding:18px 28px 28px;">
+        ${prix ? `<div style="font-size:26px;font-weight:800;color:${BLEU};line-height:1.15;">${montantHtml(b, prix, 26)}</div><div style="font-size:11px;color:${DORE_TEXTE};font-weight:600;margin:6px 0 ${dessous.length ? '4' : '18'}px;">${libMontant(b)}</div>${dessous.map((t, i) => `<div style="font-size:12px;color:#5B6B80;margin:0 0 ${i === dessous.length - 1 ? '18' : '3'}px;">${insecable(escapeHtml(t))}</div>`).join('')}` : ''}
         <a href="${lienBien(b, token, rech)}" style="display:block;background:${BLEU};color:#ffffff;text-decoration:none;text-align:center;padding:15px;border-radius:11px;font-size:15px;font-weight:600;">Consulter le local &rarr;</a>
       </td></tr>`;
   }
@@ -171,7 +224,9 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
     const prix = prixOf(b);
     const loc = locOf(b);
     const etageTxt = etageOf(b);
-    const carac = [b.surface ? `${b.surface} m²` : '', b.nb_pieces ? `${b.nb_pieces} esp.` : '', b.nb_chambres ? `${b.nb_chambres} bureau${b.nb_chambres > 1 ? 'x' : ''}` : '', etageTxt ? `${etageTxt} ét.` : ''].filter(Boolean).join(' · ');
+    const carac = [b.surface ? `${b.surface} m²` : '', b.nb_pieces ? `${b.nb_pieces} esp.` : '', b.nb_chambres ? `${b.nb_chambres} bureau${b.nb_chambres > 1 ? 'x' : ''}` : '', etageTxt === 'RDC' ? 'RDC' : etageTxt ? `${etageTxt} étage` : ''].filter(Boolean).join(' · ');
+    /* Sous le montant : ce qu'il est (sans nature : rien), puis le loyer du bail repris. */
+    const sous = [natureDe(b) ? libMontant(b) : '', loyerEnPlace(b)].filter(Boolean).join(' · ');
     return `
       <tr><td class="bord" style="padding:${idx === 0 ? '20' : '18'}px 28px 18px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
@@ -182,7 +237,7 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
             <div style="font-size:15px;font-weight:700;color:${BLEU};margin-bottom:3px;">${escapeHtml(titreOf(b))}</div>
             ${loc ? `<div style="font-size:12px;color:#aba7a3;margin-bottom:6px;"><span style="color:${DORE};">&#9679;</span> ${escapeHtml(loc)}</div>` : ''}
             ${carac ? `<div style="font-size:12px;color:#5B6B80;margin-bottom:8px;">${escapeHtml(carac)}</div>` : ''}
-            ${prix ? `<div style="font-size:17px;font-weight:800;color:${BLEU};margin-bottom:${honoOf(b) ? '2' : '8'}px;">${fmt(prix)} €</div>${honoOf(b) ? `<div style="font-size:11.5px;color:#5B6B80;margin-bottom:8px;">+ ${fmt(prixDuBien(b).hono)} € HT de nos honoraires</div>` : ''}` : ''}
+            ${prix ? `<div style="font-size:17px;font-weight:800;color:${BLEU};margin-bottom:${honoOf(b) || sous ? '2' : '8'}px;">${montantHtml(b, prix, 17)}</div>${sous ? `<div style="font-size:11.5px;color:#5B6B80;margin-bottom:${honoOf(b) ? '2' : '8'}px;">${insecable(escapeHtml(sous))}</div>` : ''}${honoOf(b) ? `<div style="font-size:11.5px;color:#5B6B80;margin-bottom:8px;">+ ${fmt(prixDuBien(b).hono)} € HT de nos honoraires</div>` : ''}` : ''}
             <a href="${lienBien(b, token, rech)}" style="color:${DORE_TEXTE};text-decoration:none;font-size:13px;font-weight:700;">Consulter le local &rarr;</a>
           </td>
         </tr></table>
@@ -207,8 +262,8 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
     /* Sans lien d'espace (dossier pas encore repris), on liste les suivants
        avec leur fiche publique : le client ne perd aucun bien. */
     const sansEspace = lien ? '' : reste.map(b => {
-      const prix = prixOf(b);
-      return `<div style="font-size:13px;color:#363533;margin-top:8px;"><a href="${lienBienPublic(b.id)}" style="color:${BLEU};font-weight:700;text-decoration:none;">${escapeHtml(titreOf(b))}</a>${prix ? ` · ${fmt(prix)} €` : ''}</div>`;
+      const montant = montantTexte(b);
+      return `<div style="font-size:13px;color:#363533;margin-top:8px;"><a href="${lienBienPublic(b.id)}" style="color:${BLEU};font-weight:700;text-decoration:none;">${escapeHtml(titreOf(b))}</a>${montant ? ` · ${escapeHtml(montant)}` : ''}</div>`;
     }).join('');
     return `
       ${hairline}
@@ -238,8 +293,8 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
   return coque({ etiquette: biens.length > 0 ? 'SÉLECTION PRIVÉE' : '', corpsHtml, contenu: biens.length > 0 ? propertyRows : '', token });
 }
 
-/* La feuille commune à tous les mails illustrés : en-tête marine avec le
-   logo, le message d'Alexandre, le contenu (biens ou visites), le pied, et
+/* La feuille commune à tous les mails illustrés : en-tête anthracite avec le
+   logo, le message de Werner, le contenu (locaux ou visites), le pied, et
    la sortie « Je ne suis plus en recherche » dessous. */
 function coque(o: { etiquette: string; corpsHtml: string; contenu: string; token?: string | null }): string {
   const { etiquette, corpsHtml, contenu, token } = o;
@@ -277,9 +332,9 @@ ${LIEN_POLICE_MAIL}
       <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:18px;overflow:hidden;">
 
         <!-- En-tête -->
-        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
+        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:14px 28px;">
           <table role="presentation" width="100%"><tr>
-            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="${LOGO_MAIL.grand}" style="height:${LOGO_MAIL.grand}px;width:auto;display:block;border:0;color:#ffffff;font-weight:800;font-size:16px;" /></td>
             <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">${etiquette}</td>
           </tr></table>
         </td></tr>
@@ -403,9 +458,9 @@ ${LIEN_POLICE_MAIL}
 
       <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:18px;overflow:hidden;">
 
-        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
+        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:14px 28px;">
           <table role="presentation" width="100%"><tr>
-            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="${LOGO_MAIL.grand}" style="height:${LOGO_MAIL.grand}px;width:auto;display:block;border:0;color:#ffffff;font-weight:800;font-size:16px;" /></td>
             <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">VOTRE ESPACE</td>
           </tr></table>
         </td></tr>
@@ -597,9 +652,9 @@ ${LIEN_POLICE_MAIL}
 
       <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:18px;overflow:hidden;">
 
-        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
+        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:14px 28px;">
           <table role="presentation" width="100%"><tr>
-            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="${LOGO_MAIL.grand}" style="height:${LOGO_MAIL.grand}px;width:auto;display:block;border:0;color:#ffffff;font-weight:800;font-size:16px;" /></td>
             <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">VOTRE ESPACE</td>
           </tr></table>
         </td></tr>
@@ -725,9 +780,9 @@ ${LIEN_POLICE_MAIL}
 
       <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:18px;overflow:hidden;">
 
-        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
+        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:14px 28px;">
           <table role="presentation" width="100%"><tr>
-            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="${LOGO_MAIL.grand}" style="height:${LOGO_MAIL.grand}px;width:auto;display:block;border:0;color:#ffffff;font-weight:800;font-size:16px;" /></td>
             <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">VOTRE ESPACE</td>
           </tr></table>
         </td></tr>
@@ -1118,13 +1173,18 @@ async function envoyer(req: NextRequest) {
       const client = clients[0];
       const ids = [...new Set((Array.isArray(ventes_ids) ? ventes_ids : []).map(String).filter(Boolean))].slice(0, 30);
       if (!ids.length) return NextResponse.json({ error: 'Aucune affaire à montrer' }, { status: 400 });
+      /* Werner : avec `pro` (la nature de l'affaire, pour écrire le loyer
+         « HT HC / an ») ; sans la colonne, on relit sans. */
+      const copies = async () => {
+        if (!recherche_id) return { data: [] as BienLite[], error: null };
+        const lire = (cols: string) => supabase.from('biens').select(cols).eq('recherche_id', recherche_id).in('bien_vente_id', ids);
+        const r = await lire(`${COLS_BIEN}, pro`);
+        const x = sansColonnePro(r.error) ? await lire(COLS_BIEN) : r;
+        return { data: (x.data || []) as unknown as BienLite[], error: x.error };
+      };
       const [{ data: vs, error: eV }, { data: cs, error: eC }] = await Promise.all([
         supabase.from('biens_vente').select('*').in('id', ids),
-        recherche_id
-          ? supabase.from('biens')
-            .select('id, titre, ville, code_postal, type_bien, surface, nb_pieces, nb_chambres, etage, prix_vendeur, prix_acquereur, bien_vente_id, photos, score')
-            .eq('recherche_id', recherche_id).in('bien_vente_id', ids)
-          : Promise.resolve({ data: [] as BienLite[], error: null }),
+        copies(),
       ]);
       if (eV || eC) return NextResponse.json({ error: (eV || eC)?.message || 'Les affaires n’ont pas pu être lues' }, { status: 500 });
       const montres = ids.map(id => {
@@ -1315,22 +1375,23 @@ async function envoyer(req: NextRequest) {
     // Récupère les biens UNIQUEMENT si mode != 'libre'
     let tousBiens: (BienLite & { client_id: string })[] = [];
     if (mode !== 'libre' && !bienvenue && !lienSeul) {
-      let query = supabase
-        .from('biens')
-        .select('id, client_id, titre, ville, code_postal, type_bien, surface, nb_pieces, nb_chambres, etage, prix_vendeur, prix_acquereur, bien_vente_id, photos, badge_retour, score')
-        .in('client_id', client_ids)
-        .order('created_at', { ascending: false });
-
-      // Si biens_ids fourni → on filtre sur ces biens-là seulement
-      if (Array.isArray(biens_ids) && biens_ids.length > 0) {
-        query = query.in('id', biens_ids);
-      } else {
-        // Sinon, on prend tous les biens actifs (non refusés)
-        query = query.neq('badge_retour', 'refuse');
-      }
-
-      const { data } = await query;
-      tousBiens = (data || []) as (BienLite & { client_id: string })[];
+      const lire = (cols: string) => {
+        const query = supabase
+          .from('biens')
+          .select(cols)
+          .in('client_id', client_ids)
+          .order('created_at', { ascending: false });
+        // Si biens_ids fourni → on filtre sur ces biens-là seulement ;
+        // sinon, on prend tous les biens actifs (non refusés)
+        return Array.isArray(biens_ids) && biens_ids.length > 0 ? query.in('id', biens_ids) : query.neq('badge_retour', 'refuse');
+      };
+      /* Werner : avec `pro`, la nature de chaque affaire (le loyer s'écrit
+         « HT HC / an ») ; sans la colonne, on relit sans. */
+      let r = await lire(`${COLS_BIEN}, client_id, badge_retour, pro`);
+      if (sansColonnePro(r.error)) r = await lire(`${COLS_BIEN}, client_id, badge_retour`);
+      /* Illisibles : rien ne part (avant, le mail partait sans ses locaux). */
+      if (r.error) return NextResponse.json({ error: `Les locaux n’ont pas pu être lus : ${r.error.message}` }, { status: 500 });
+      tousBiens = (r.data || []) as unknown as (BienLite & { client_id: string })[];
     }
 
     const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
@@ -1382,11 +1443,11 @@ async function envoyer(req: NextRequest) {
       const suivants = biensClient.length - enTete.length;
       const lienSuite = suivants > 0 ? lienNeufs(jeton, recherche_id || null) : '';
       const listeTexte = biensClient.length > 0
-        ? `Locaux proposés :\n${enTete.map(b => `- ${b.titre || 'Local'} : ${lienBien(b, jeton, recherche_id || null)}`).join('\n')}${
+        ? `Locaux proposés :\n${enTete.map(b => `- ${b.titre || 'Local'}${montantTexte(b) ? ` · ${montantTexte(b)}` : ''} : ${lienBien(b, jeton, recherche_id || null)}`).join('\n')}${
           suivants > 0
             ? (lienSuite
               ? `\n\nEt ${suivants} autre${suivants > 1 ? 's' : ''} dans votre espace : ${lienSuite}`
-              : `\n${biensClient.slice(BIENS_PAR_MAIL).map(b => `- ${b.titre || 'Local'} : ${lienBienPublic(b.id)}`).join('\n')}`)
+              : `\n${biensClient.slice(BIENS_PAR_MAIL).map(b => `- ${b.titre || 'Local'}${montantTexte(b) ? ` · ${montantTexte(b)}` : ''} : ${lienBienPublic(b.id)}`).join('\n')}`)
             : ''
         }\n\n`
         : '';

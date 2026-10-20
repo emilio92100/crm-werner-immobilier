@@ -41,7 +41,8 @@
 
 import { lienEspace } from '@/lib/jeton';
 import { acheteurEnCours, colonneContactAbsente, estAcheteur, estArchive, reventePossible } from '@/lib/contacts';
-import { LIEN_POLICE_MAIL, LOGO_BLANC_MAIL } from '@/lib/mail-charte';
+import { LIEN_POLICE_MAIL, LOGO_BLANC_MAIL, LOGO_MAIL } from '@/lib/mail-charte';
+import { EMPLACEMENTS, nomEquipement } from '@/lib/affaires';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Base = any;
@@ -248,7 +249,8 @@ export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { cl
 
 /* ══ Le mail ════════════════════════════════════════════════════════════ */
 
-/* V3.118 : les couleurs du site emilio-immo.com (src/lib/mail-charte.ts). */
+/* Les couleurs de Werner (src/lib/mail-charte.ts) : BLEU est l'anthracite,
+   DORE l'orange (les noms d'origine sont restés). */
 const BLEU = '#2e3034';
 const DORE = '#f08c42';
 const ENCRE = '#232528';
@@ -263,15 +265,35 @@ const euros = (n: number) => n.toLocaleString('fr-FR').replace(/ /g, ' ') + '
 const ETATS: Record<string, string> = {
   a_renover: 'à rénover', travaux_legers: 'travaux légers', bon_etat: 'bon état', refait_neuf: 'refait à neuf',
 };
-const EQUIPEMENTS: Record<string, string> = {
-  parking: 'Parking', cave: 'Cave', balcon: 'Balcon', terrasse: 'Terrasse', jardin: 'Jardin',
-  gardien: 'Gardien', interphone: 'Interphone', digicode: 'Digicode', ascenseur: 'Ascenseur',
-  exterieur: 'Un extérieur',
+/* Werner : les exigences d'un demandeur ont les clés des équipements d'une
+   affaire (src/lib/affaires.ts, EQUIPEMENTS), plus « rdc ». Les anciennes clés
+   du logement (cave, balcon, jardin, gardien…) ne s'écrivent plus. */
+const exigence = (k: string) => (k === 'rdc' ? 'Rez-de-chaussée' : nomEquipement(k));
+
+/* Ce que le demandeur cherche (recherches.criteres_pro), en mots simples. */
+const PROJETS: Record<string, string> = {
+  location: 'louer un local', cession_bail: 'reprendre un bail', fonds: 'racheter un fonds de commerce',
+  murs: 'acheter des murs', murs_occupes: 'investir dans des murs loués',
 };
-const EXPOS: Record<string, string> = { sud: 'sud', est: 'est', ouest: 'ouest', nord: 'nord', traversant: 'traversant' };
+/* Ce que le prix maximum paie, selon le projet. */
+const PRIX_DE: Record<string, string> = {
+  cession_bail: 'droit au bail', fonds: 'fonds de commerce', murs: 'achat des murs', murs_occupes: 'achat des murs',
+};
+type CriteresPro = { natures: string[]; activite: string; loyerMin: number; loyerMax: number; vitrineMin: number; postesMin: number; emplacements: string[] };
+function criteresPro(x: unknown): CriteresPro {
+  const o = (x && typeof x === 'object' && !Array.isArray(x) ? x : {}) as Record<string, unknown>;
+  const n = (v: unknown) => { const y = Number(String(v ?? '').replace(/\s/g, '').replace(',', '.')); return Number.isFinite(y) && y > 0 ? y : 0; };
+  const l = (v: unknown) => (Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string' && !!s) : []);
+  return {
+    natures: l(o.natures), activite: typeof o.activite === 'string' ? o.activite.trim() : '',
+    loyerMin: n(o.loyerMin), loyerMax: n(o.loyerMax), vitrineMin: n(o.vitrineMin), postesMin: n(o.postesMin), emplacements: l(o.emplacements),
+  };
+}
 
 const joindre = (l: string[], dernier = ' ou ') =>
   l.length <= 1 ? (l[0] || '') : `${l.slice(0, -1).join(', ')}${dernier}${l[l.length - 1]}`;
+/* « Restaurant ou local commercial » : la majuscule au premier seulement. */
+const enPhrase = (l: string[]) => l.map((t, i) => (i ? t.charAt(0).toLowerCase() + t.slice(1) : t));
 
 export type Ligne = { cle: string; valeur: string; sous?: string };
 export type Resume = { lignes: Ligne[]; points: { texte: string; fort: boolean }[]; depuis: string | null };
@@ -279,15 +301,24 @@ export type Resume = { lignes: Ligne[]; points: { texte: string; fort: boolean }
 /** La recherche, en quatre lignes et quelques pastilles : de quoi s'y retrouver, pas tout le dossier. */
 export function resumeRecherche(r: any): Resume {
   const lignes: Ligne[] = [];
+  const pro = criteresPro(r?.criteres_pro);
 
-  // Le bien
+  // Son projet : louer, reprendre un bail, racheter un fonds… et son activité
+  const projets = pro.natures.map((k) => PROJETS[k]).filter(Boolean);
+  if (projets.length) {
+    const p = joindre(projets);
+    lignes.push({ cle: 'Votre projet', valeur: p.charAt(0).toUpperCase() + p.slice(1), sous: pro.activite || undefined });
+  }
+
+  // Le local
   const types = String(r?.type_bien || '').split(',').map((x) => x.trim()).filter(Boolean);
   const tete: string[] = [];
-  if (types.length) tete.push(joindre(types));
+  if (types.length) tete.push(joindre(enPhrase(types)));
   if (r?.nb_pieces_min && r?.nb_pieces_max && r.nb_pieces_min !== r.nb_pieces_max) tete.push(`${r.nb_pieces_min} à ${r.nb_pieces_max} espaces`);
   else if (r?.nb_pieces_min) tete.push(`${r.nb_pieces_min} espace${r.nb_pieces_min > 1 ? 's' : ''}`);
   let bien = tete.join(' · ');
   if (r?.chambres_min) bien += `${bien ? ' dont ' : ''}${r.chambres_min} bureau${r.chambres_min > 1 ? 'x fermés' : ' fermé'}${bien ? '' : ' minimum'}`;
+  if (pro.postesMin) bien += `${bien ? ' · ' : ''}${pro.postesMin} postes de travail${bien ? '' : ' minimum'}`;
   const sousBien: string[] = [];
   if (r?.surface_min && r?.surface_max) sousBien.push(`${r.surface_min} à ${r.surface_max} m²`);
   else if (r?.surface_min) sousBien.push(`${r.surface_min} m² minimum`);
@@ -309,29 +340,40 @@ export function resumeRecherche(r: any): Resume {
     lignes.push({ cle: 'Où', valeur: villes.join(' · '), sous: quartiers.length ? quartiers.join(' · ') : undefined });
   }
 
-  // Budget
-  if (r?.budget_min && r?.budget_max) lignes.push({ cle: 'Budget', valeur: `De ${euros(r.budget_min)} à ${euros(r.budget_max)}` });
-  else if (r?.budget_max) lignes.push({ cle: 'Budget', valeur: `Jusqu'à ${euros(r.budget_max)}` });
-  else if (r?.budget_min) lignes.push({ cle: 'Budget', valeur: `À partir de ${euros(r.budget_min)}` });
+  /* Les montants (Werner) : le loyer annuel HT HC d'une location ou d'un bail
+     repris, et le prix d'une cession ou d'un achat, chacun avec son nom.
+     Comme la fenêtre des critères (CriteresRecherche) : un projet de seule
+     location n'a pas de prix, un achat de murs pas de loyer. Sans projet
+     indiqué, le budget reste « Budget ». */
+  const avecLoyer = !pro.natures.length || pro.natures.some((k) => ['location', 'cession_bail', 'fonds'].includes(k));
+  const avecPrix = !pro.natures.length || pro.natures.some((k) => k !== 'location');
+  const fourchette = (min: number, max: number, unite = '') =>
+    min && max ? `De ${euros(min)} à ${euros(max)}${unite}` : max ? `Jusqu'à ${euros(max)}${unite}` : `À partir de ${euros(min)}${unite}`;
+  if (avecLoyer && (pro.loyerMin || pro.loyerMax)) lignes.push({ cle: 'Loyer', valeur: fourchette(pro.loyerMin, pro.loyerMax, '\u00a0HT\u00a0HC\u00a0/\u00a0an') });
+  const bMin = Number(r?.budget_min) || 0, bMax = Number(r?.budget_max) || 0;
+  if (avecPrix && (bMin || bMax)) {
+    const pour = [...new Set(pro.natures.map((k) => PRIX_DE[k]).filter(Boolean))];
+    lignes.push({ cle: pour.length ? 'Prix' : 'Budget', valeur: fourchette(bMin, bMax), sous: pour.length ? joindre(pour) : undefined });
+  }
 
   // Ce qui compte
   const points: { texte: string; fort: boolean }[] = [];
   const ex: Record<string, string> = (r?.exigences && typeof r.exigences === 'object') ? r.exigences : {};
   Object.entries(ex).filter(([, n]) => n === 'indispensable').forEach(([k]) => {
-    if (k === 'cuisine') { if (r?.cuisine_type) points.push({ texte: `Cuisine ${r.cuisine_type === 'ouverte' ? 'ouverte' : 'séparée'} indispensable`, fort: true }); return; }
-    if (EQUIPEMENTS[k]) points.push({ texte: `${EQUIPEMENTS[k]} indispensable`, fort: true });
+    if (exigence(k)) points.push({ texte: `${exigence(k)} indispensable`, fort: true });
   });
+  if (pro.vitrineMin) points.push({ texte: `Vitrine de ${String(pro.vitrineMin).replace('.', ',')} m au moins`, fort: false });
+  const empl = pro.emplacements.map((k) => EMPLACEMENTS.find((e) => e.v === k)?.l || '').filter(Boolean);
+  /* « n° 1 bis » ne se coupe pas. */
+  if (empl.length) points.push({ texte: `Emplacement : ${joindre(empl.map((e) => (e.charAt(0).toLowerCase() + e.slice(1)).replace(/^(n°) (\d+)( bis)?/, (_, n, c, b) => `${n}\u00a0${c}${b ? `\u00a0bis` : ''}`)))}`, fort: false });
   Object.entries(ex).filter(([, n]) => n === 'souhaite').forEach(([k]) => {
-    if (k === 'cuisine') { if (r?.cuisine_type) points.push({ texte: `Cuisine ${r.cuisine_type === 'ouverte' ? 'ouverte' : 'séparée'}`, fort: false }); return; }
-    if (EQUIPEMENTS[k]) points.push({ texte: EQUIPEMENTS[k], fort: false });
+    /* « Vitrine de 5 m au moins » dit déjà la vitrine. */
+    if (exigence(k) && !(k === 'vitrineEq' && pro.vitrineMin)) points.push({ texte: exigence(k), fort: false });
   });
   if (r?.annee_construction_min) points.push({ texte: `Immeuble après ${r.annee_construction_min}`, fort: false });
   if (r?.rdc_exclu) points.push({ texte: 'Pas de rez-de-chaussée', fort: false });
   if (r?.dernier_etage) points.push({ texte: 'Dernier étage', fort: false });
-  if (r?.surface_sejour_min) points.push({ texte: `Séjour de ${r.surface_sejour_min} m² minimum`, fort: false });
   if (r?.dpe_max) points.push({ texte: `DPE jusqu'à ${r.dpe_max}`, fort: false });
-  const expo = String(r?.exposition_souhaitee || '').split(',').map((x) => EXPOS[x.trim()]).filter(Boolean);
-  if (expo.length) points.push({ texte: `Exposition ${joindre(expo)}`, fort: false });
 
   const depuis = r?.created_at
     ? new Date(r.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' })
@@ -388,9 +430,9 @@ ${LIEN_POLICE_MAIL}
     <tr><td align="center" class="cadre" style="padding:26px 12px;">
       <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:18px;overflow:hidden;">
 
-        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:20px 28px;">
+        <tr><td class="bord" style="background:${BLEU};border-bottom:3px solid ${DORE};padding:14px 28px;">
           <table role="presentation" width="100%"><tr>
-            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="34" style="height:34px;width:auto;display:block;border:0;" /></td>
+            <td><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="${LOGO_MAIL.grand}" style="height:${LOGO_MAIL.grand}px;width:auto;display:block;border:0;color:#ffffff;font-weight:800;font-size:16px;" /></td>
             <td align="right" style="font-size:10px;color:${DORE_CLAIR};letter-spacing:2.5px;font-weight:600;">VOTRE RECHERCHE</td>
           </tr></table>
         </td></tr>

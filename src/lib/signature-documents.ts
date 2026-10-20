@@ -161,6 +161,10 @@ export function nomFichierPdf(m: Modele, d: Donnees): string {
 const bouton = (href: string, texte: string) =>
   `<a href="${href}" style="display:inline-block;margin:6px 0 4px;background:#f08c42;color:#232528;text-decoration:none;padding:13px 22px;border-radius:12px;font-weight:800;font-size:15px">${echappe(texte)}</a>`;
 const sansCourbes = (t: string) => t.replace(/’/g, "'");
+/* « appelez Werner » ne servait à rien sans son numéro. */
+const UNE_QUESTION = 'Une question ? Répondez à ce message, ou appelez Werner au 01 87 66 06 00.';
+/* L'offre est le seul modèle au féminin : « la relire », « signée par tous ». */
+const auFeminin = (m: Pick<Modele, 'id'>) => m.id === 'offre_achat';
 
 /* L'invitation, et ses deux rappels (2 et 7 jours). Le dernier dit combien
    de jours il reste avant que le lien ne marche plus. */
@@ -181,15 +185,16 @@ export function mailInvitation(o: { s: SigDoc; m: Modele; d: Donnees; lien: stri
     : `Werner, de Werner Immobilier, vous adresse ${doc.le} à signer.`;
   const valable = o.rappel === 2 ? '' : ` et valable jusqu’au ${fin}`;
   const prenom = s.personne.prenom || nomSig(s);
+  const le = auFeminin(o.m) ? 'la' : 'le';
   return {
     sujet,
-    texte: `Bonjour ${prenom},\n\n${sansCourbes(intro)}\n\nVous pourrez le relire en entier, puis le signer en ligne :\n${lien}\n\nCe lien est personnel${sansCourbes(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\nUne question ? Répondez à ce message, ou appelez Werner.\n\nWerner Immobilier`,
+    texte: `Bonjour ${prenom},\n\n${sansCourbes(intro)}\n\nVous pourrez ${le} relire en entier, puis ${le} signer en ligne :\n${lien}\n\nCe lien est personnel${sansCourbes(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\n${sansCourbes(UNE_QUESTION)}\n\nWerner Immobilier`,
     html: gabarit('Un document à signer', `<p>Bonjour ${echappe(prenom)},</p>
       <p>${echappe(intro)}</p>
-      <p>Vous pourrez le relire en entier, puis le signer en ligne&nbsp;:</p>
+      <p>Vous pourrez ${le} relire en entier, puis ${le} signer en ligne&nbsp;:</p>
       <p>${bouton(lien, 'Relire et signer')}</p>
       <p style="font-size:13px;color:#5B6B80">Ce lien est personnel${echappe(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.</p>`,
-      'Une question ? Répondez à ce message, ou appelez Werner.'),
+      UNE_QUESTION),
   };
 }
 
@@ -220,12 +225,12 @@ export function mailArret(o: { s: SigDoc; m: Modele; d: Donnees; annulation: boo
   const p3 = o.annulation ? '' : 'Si le document doit être signé à nouveau, vous recevrez un nouveau lien par e-mail.';
   return {
     sujet,
-    texte: `Bonjour ${prenom},\n\n${sansCourbes(p1)}\n\n${sansCourbes(p2)}${p3 ? `\n\n${sansCourbes(p3)}` : ''}\n\nUne question ? Répondez à ce message, ou appelez Werner.\n\nWerner Immobilier`,
+    texte: `Bonjour ${prenom},\n\n${sansCourbes(p1)}\n\n${sansCourbes(p2)}${p3 ? `\n\n${sansCourbes(p3)}` : ''}\n\n${sansCourbes(UNE_QUESTION)}\n\nWerner Immobilier`,
     html: gabarit(o.annulation ? 'Document annulé' : 'Signature interrompue', `<p>Bonjour ${echappe(prenom)},</p>
       <p>${echappe(p1)}</p>
       <p>${echappe(p2)}</p>
       ${p3 ? `<p>${echappe(p3)}</p>` : ''}`,
-      'Une question ? Répondez à ce message, ou appelez Werner.'),
+      UNE_QUESTION),
   };
 }
 
@@ -616,12 +621,15 @@ export async function envoyerExemplaire(o: {
   const pj = [{ nom: nomFichierPdf(o.m, o.d), type: 'application/pdf', base64: Buffer.from(o.signe).toString('base64') }];
   const retr = aRetractation(o.m, o.d);
   const Doc = doc.le.charAt(0).toUpperCase() + doc.le.slice(1);
+  /* « L'offre … est signée par tous. Vous la trouverez » (V3.57 pour le pluriel). */
+  const f = auFeminin(o.m);
+  const e = f ? 'e' : '';
   const corps = o.complet
-    ? `${Doc} est signé par tous. Vous le trouverez ci-joint, avec son certificat de signature.`
-    : `Votre signature est enregistrée. Vous trouverez ci-joint ${doc.le} tel qu’il est signé aujourd’hui, avec son certificat. Vous recevrez la version complète dès que ${o.attendus.length
+    ? `${Doc} est signé${e} par tous. Vous ${f ? 'la' : 'le'} trouverez ci-joint, avec son certificat de signature.`
+    : `Votre signature est enregistrée. Vous trouverez ci-joint ${doc.le} ${f ? 'telle qu’elle' : 'tel qu’il'} est signé${e} aujourd’hui, avec son certificat. Vous recevrez la version complète dès que ${o.attendus.length
       /* V3.57 : « Claire et Marc l’auront signé », jamais « l’aura » au pluriel. */
-      ? `${o.attendus.length > 1 ? `${o.attendus.slice(0, -1).join(', ')} et ${o.attendus[o.attendus.length - 1]}` : o.attendus[0]} l’${o.attendus.length > 1 ? 'auront' : 'aura'} signé`
-      : 'les autres signataires l’auront signé'}.`;
+      ? `${o.attendus.length > 1 ? `${o.attendus.slice(0, -1).join(', ')} et ${o.attendus[o.attendus.length - 1]}` : o.attendus[0]} l’${o.attendus.length > 1 ? 'auront' : 'aura'} signé${e}`
+      : `les autres signataires l’auront signé${e}`}.`;
   const pied = retr ? 'Le document joint rappelle votre délai de rétractation de 14 jours et la façon de l’exercer.' : 'Gardez ce message : c’est votre exemplaire.';
   const prenom = o.s.personne.prenom || nomSig(o.s);
   /* V3.145 : son rappel (une offre d'achat : son total, frais d'agence
@@ -631,10 +639,10 @@ export async function envoyerExemplaire(o: {
   const rappel = r ? `Pour rappel : ${r.titre.charAt(0).toLowerCase() + r.titre.slice(1)}, ${r.valeur}${r.detail ? ` (${r.detail})` : ''}${r.ecart ? `, ${r.ecart}` : ''}.` : '';
   return envoyerMail({
     a: o.s.personne.email, nomA: nomSig(o.s), pj, repondreA: 'contact@wernerimmobilier.com',
-    sujet: o.complet ? `${Doc}, signé par tous` : `${Doc} : votre signature est enregistrée`,
+    sujet: o.complet ? `${Doc}, signé${e} par tous` : `${Doc} : votre signature est enregistrée`,
     texte: `Bonjour ${prenom},\n\n${sansCourbes(corps)}${rappel ? `\n\n${sansCourbes(rappel)}` : ''}\n\nWerner Immobilier\n\n—\n${sansCourbes(pied)}`,
     html: gabarit(o.complet ? 'Votre document signé' : 'Votre signature est enregistrée',
-      `<p>Bonjour ${echappe(prenom)},</p><p>${echappe(corps)}</p>${rappel ? `<p>${echappe(rappel)}</p>` : ''}<p>Werner Immobilier</p>`, pied),
+      `<p>Bonjour ${echappe(prenom)},</p><p>${echappe(corps)}</p>${rappel ? `<p>${echappe(rappel).replace(/(\d) (?=\d{3}\b)/g, '$1&nbsp;').replace(/(\d) €/g, '$1&nbsp;€')}</p>` : ''}<p>Werner Immobilier</p>`, pied),
   });
 }
 

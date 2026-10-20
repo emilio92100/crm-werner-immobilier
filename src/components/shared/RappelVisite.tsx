@@ -170,7 +170,7 @@ export function ModaleRappelVisite({ visiteId, onFerme, onEnvoye }: { visiteId: 
       }
       const l: Ligne[] = liste.map(x => ({
         id: x.id, heure: x.heure ? String(x.heure).slice(0, 5) : null,
-        titre: x.biens?.titre || x.biens?.ville || 'Bien', lieu: adresseVente(ventes[x.biens?.bien_vente_id]) || lieuVisite(x.biens), photo: x.biens?.photos?.[0], rappel: x.rappel_envoye_le || null,
+        titre: x.biens?.titre || x.biens?.ville || 'Local', lieu: adresseVente(ventes[x.biens?.bien_vente_id]) || lieuVisite(x.biens), photo: x.biens?.photos?.[0], rappel: x.rappel_envoye_le || null,
       }));
       setClient({ id: c.id, prenom: c.prenom || '', nom: c.nom || '', emails: (c.emails || []).filter((e: string) => e && e.includes('@')) });
       setRechercheId(v.recherche_id || null);

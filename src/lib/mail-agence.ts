@@ -1,16 +1,16 @@
-import { IMAGES_MAIL, LIEN_POLICE_MAIL, LOGO_BLANC_MAIL, MAIL, POLICE_MAIL } from '@/lib/mail-charte';
+import { IMAGES_MAIL, LIEN_POLICE_MAIL, LOGO_BLANC_MAIL, LOGO_MAIL, MAIL, POLICE_MAIL } from '@/lib/mail-charte';
 import { criteresAgence, type CritereAgence, type ResumeAgence } from '@/lib/agences-lien';
 
 /* ═══ Le mail du lien pour les agences (V3.198) ═══════════════════════════
    Alexandre : « le mail qu'il reçoit, est-ce qu'il est bien joli ? avec de
    beaux icônes ». Maquettes 7 et 8 du canevas « Le lien pour les agences »,
-   validées le 15 octobre : la bande bleue au logo, « Un bien pour mon
+   validées le 15 octobre : la bande anthracite au logo, « Un local pour mon
    client ? », ce qu'il cherche (sans son nom), le gros bouton orange,
    « Comment ça marche », la signature.
 
    Écrit pour les messageries : des tableaux, des styles en ligne, des
-   icônes en PNG (public/mail/agence/, dessinées en 2x) chargées depuis
-   espace.emilio-immo.com (IMAGES_MAIL), pas de texte caché,
+   icônes en PNG (public/mail/agence/, dessinées en 2x, aux couleurs de
+   Werner) chargées depuis IMAGES_MAIL, pas de texte caché,
    jamais de SVG (Gmail les retire). Les critères vont deux par deux sur
    ordinateur et passent l'un sous l'autre sur un téléphone, sans media
    query (des blocs en ligne de 246 px au plus). */
@@ -64,12 +64,12 @@ export function mailLienAgence(o: { lien: string; interlocuteur?: string | null;
 <body style="margin:0;padding:0;background:${MAIL.fondPage};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${MAIL.fondPage};"><tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;font-family:${POLICE_MAIL};">
-  <tr><td class="ag-pad" style="background:${MAIL.marque};border-radius:18px 18px 0 0;border-bottom:3px solid ${MAIL.or};padding:24px 28px 22px;">
+  <tr><td class="ag-pad" style="background:${MAIL.marque};border-radius:18px 18px 0 0;border-bottom:3px solid ${MAIL.or};padding:16px 28px 22px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td style="vertical-align:middle;"><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="30" style="height:30px;width:auto;display:block;border:0;color:#ffffff;font-weight:800;font-size:15px;" /></td>
+      <td style="vertical-align:middle;"><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="${LOGO_MAIL.court}" style="height:${LOGO_MAIL.court}px;width:auto;display:block;border:0;color:#ffffff;font-weight:800;font-size:15px;" /></td>
       <td align="right" class="ag-badge" style="vertical-align:middle;"><span style="display:inline-block;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:${MAIL.orClair};font-size:10.5px;font-weight:800;letter-spacing:1.2px;white-space:nowrap;">RECHERCHE DE LOCAL</span></td>
     </tr></table>
-    <div class="ag-titre" style="margin-top:16px;font-size:26px;font-weight:800;line-height:1.2;color:#ffffff;">Un local pour mon client&nbsp;?</div>
+    <div class="ag-titre" style="margin-top:8px;font-size:26px;font-weight:800;line-height:1.2;color:#ffffff;">Un local pour mon client&nbsp;?</div>
     <div style="margin-top:6px;font-size:15px;font-weight:600;line-height:1.5;color:#e9e8e6;">Déposez-le en un clic : il arrive directement chez moi.</div>
   </td></tr>
   <tr><td class="ag-pad" style="background:#ffffff;border:1px solid ${MAIL.trait};border-top:none;border-radius:0 0 18px 18px;padding:26px 28px 28px;">
@@ -92,7 +92,7 @@ export function mailLienAgence(o: { lien: string; interlocuteur?: string | null;
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;"><tr><td align="center" style="border-radius:15px;background:${MAIL.or};">
       <a href="${lien}" target="_blank" style="display:block;padding:17px 20px;border-radius:15px;background:${MAIL.or};color:${MAIL.encre};font-family:${POLICE_MAIL};font-size:17px;font-weight:800;text-decoration:none;text-align:center;"><img src="${ICO}/fleche.png" width="20" height="20" alt="" style="width:20px;height:20px;border:0;vertical-align:-4px;margin-right:9px;" />Proposer un local</a>
     </td></tr></table>
-    <div style="margin-top:10px;text-align:center;font-size:12.5px;font-weight:600;line-height:1.5;color:#8592A6;">Le bouton ne s’ouvre pas&nbsp;? Ce lien&nbsp;: <a href="${lien}" target="_blank" style="color:${MAIL.marque};font-weight:700;text-decoration:underline;">${lienCourt}</a></div>
+    <div style="margin-top:10px;text-align:center;font-size:12.5px;font-weight:600;line-height:1.5;color:${MAIL.plume};">Le bouton ne s’ouvre pas&nbsp;? Ce lien&nbsp;: <a href="${lien}" target="_blank" style="color:${MAIL.marque};font-weight:700;text-decoration:underline;">${lienCourt}</a></div>
 
     <div style="margin-top:24px;font-size:11.5px;font-weight:800;letter-spacing:1.3px;color:${MAIL.plume};">COMMENT ÇA MARCHE</div>
     ${ETAPES.map(e => `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px;"><tr>
@@ -126,7 +126,7 @@ export function mailLienAgence(o: { lien: string; interlocuteur?: string | null;
     o.lien,
     '',
     'Ce qu’il cherche :',
-    ...crit.map(c => `- ${c.titre}${c.sous && !/^(Le type de local|Le local|Surface|Les secteurs|Budget maximum)$/.test(c.sous) ? ` (${c.sous})` : ''}`),
+    ...crit.map(c => `- ${c.titre}${c.sous && !/^(Le type de local|Le local|Son projet|Surface|Les secteurs|Budget maximum|Loyer maximum, hors taxes et hors charges)$/.test(c.sous) ? ` (${c.sous})` : ''}`),
     ...(imp.length ? ['Important pour lui :', ...imp.map(x => `- ${x}`)] : []),
     ...(prec ? ['Ses précisions :', prec] : []),
     '',

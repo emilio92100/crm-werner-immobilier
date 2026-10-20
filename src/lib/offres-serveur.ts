@@ -691,6 +691,9 @@ export async function transactionDepuisOffre(sb: SupabaseClient, doc: DocOffre):
 /* ── Le mail au client quand le vendeur répond ──
    Un seul mail par réponse (Alexandre : « pas 40 mails »). Au nom
    d'Alexandre, des mots simples ; l'acceptation, en fête. */
+/* « 175 000 € » ne se coupe pas en fin de ligne : EUR écrit des espaces
+   ordinaires (ses montants vont aussi dans les titres du journal). */
+const montantsInsecables = (h: string) => h.replace(/(\d) (?=\d{3}\b)/g, '$1&nbsp;').replace(/(\d) €/g, '$1&nbsp;€');
 function boutonMail(lien: string, texte: string) {
   return `<a href="${echappe(lien)}" style="display:inline-block;margin-top:6px;background:${MAIL.or};color:#232528;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:800">${echappe(texte)}</a>`;
 }
@@ -738,7 +741,7 @@ async function mailClientReponse(sb: SupabaseClient, doc: DocOffre, r: ReponseVe
   }
   const signature = 'Werner Immobilier';
   const texte = `${paras.join('\n\n')}${lien ? `\n\n${bouton} : ${lien}` : ''}\n\n${signature}`;
-  const corps = `${paras.map(p => `<p style="margin:0 0 14px">${echappe(p)}</p>`).join('')}${lien ? boutonMail(lien, bouton) : ''}<p style="margin:18px 0 0">${echappe(signature)}</p>`;
+  const corps = `${paras.map(p => `<p style="margin:0 0 14px">${montantsInsecables(echappe(p))}</p>`).join('')}${lien ? boutonMail(lien, bouton) : ''}<p style="margin:18px 0 0">${echappe(signature)}</p>`;
   const e = await envoyerMail({ a, nomA: prenom || undefined, sujet, texte, html: enveloppeMail({ titre: echappe(titreMail), corps }) });
   return e ? `le mail au client n’est pas parti (${e})` : null;
 }
@@ -756,7 +759,7 @@ export async function alerteOffreARelire(sb: SupabaseClient, doc: { id: string; 
     texte: `${nom} a préparé son offre depuis son espace pour « ${titre} » : ${quoi}. ${il} te la confie pour relecture.\n\nRelis-la dans Documents, puis envoie-la pour signature.\n\nOuvrir sa fiche : ${lien}`,
     html: enveloppeMail({
       titre: `💶 ${echappe(nom)} a préparé une offre à relire`, mention: 'CRM',
-      corps: `<p style="margin:0 0 10px">Depuis son espace, pour « ${echappe(titre)} » :</p><p style="margin:0 0 14px;font-size:17px;font-weight:800;color:#232528">${echappe(quoi)}</p><p style="margin:0 0 14px">Relis-la dans Documents, puis envoie-la pour signature. Une relance t’attend en tête de tes Relances.</p>${boutonMail(lien, 'Ouvrir sa fiche')}`,
+      corps: `<p style="margin:0 0 10px">Depuis son espace, pour « ${echappe(titre)} » :</p><p style="margin:0 0 14px;font-size:17px;font-weight:800;color:#232528">${montantsInsecables(echappe(quoi))}</p><p style="margin:0 0 14px">Relis-la dans Documents, puis envoie-la pour signature. Une relance t’attend en tête de tes Relances.</p>${boutonMail(lien, 'Ouvrir sa fiche')}`,
     }),
   });
   if (e) console.error('[offres] alerte à relire', e);

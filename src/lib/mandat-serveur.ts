@@ -332,8 +332,8 @@ export async function envoyerMailSuivi(o: MailAEnvoyer): Promise<{ erreur: strin
 }
 
 /* Le gabarit commun des mails courts (codes, mandat, signatures, alertes).
-   V3.118 : l'enveloppe de la charte (src/lib/mail-charte.ts) — la bande bleue
-   au logo Emilio, un filet orange, le titre, puis le texte. */
+   V3.118 : l'enveloppe de la charte (src/lib/mail-charte.ts) — la bande anthracite
+   au logo Werner, un filet orange, le titre, puis le texte. */
 export function gabarit(titre: string, corpsHtml: string, pied = '') {
   return enveloppeMail({ titre: echappe(titre), corps: corpsHtml, pied });
 }

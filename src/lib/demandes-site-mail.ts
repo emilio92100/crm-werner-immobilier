@@ -8,7 +8,7 @@ import {
   categorieDe, emailUtile, joliTel, lirePub, presenter, provenanceDe, telUtile, PAGE_PUB,
   type DemandeSite,
 } from '@/lib/demandes-site';
-import { logoMail } from '@/lib/mail-charte';
+import { LIEN_POLICE_MAIL, POLICE_MAIL, logoMail } from '@/lib/mail-charte';
 
 /* L'heure de Paris : le serveur (Vercel) compte en UTC, et un mail qui dit
    « 10:26 » pour une demande arrivée à 12:26 ferait douter du reste. */
@@ -70,11 +70,11 @@ export function mailDemande(d: DemandeSite): { sujet: string; html: string; text
     '',
     `L'ouvrir dans le CRM : ${lien}`,
   ].join('\n');
-  const corps = `<!doctype html><html lang="fr"><body style="margin:0;padding:24px 12px;background:#f6f6f7;font-family:'Plus Jakarta Sans',Arial,Helvetica,sans-serif;color:#2a2927">
+  const corps = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${LIEN_POLICE_MAIL}</head><body style="margin:0;padding:24px 12px;background:#f6f6f7;font-family:${POLICE_MAIL};color:#2a2927">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #eeeeed">
-<tr><td style="background:#2e3034;padding:20px 24px;color:#ffffff;border-bottom:3px solid #f08c42">
+<tr><td style="background:#2e3034;padding:12px 24px 20px;color:#ffffff;border-bottom:3px solid #f08c42">
 ${logoMail('CRM')}
-<div style="margin-top:12px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#f7b07a;font-weight:bold">${pub ? 'Pub estimation' : 'Nouvelle demande du site'} · ${echapper(cat.lib)}</div>
+<div style="margin-top:6px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#f7b07a;font-weight:bold">${pub ? 'Pub estimation' : 'Nouvelle demande du site'} · ${echapper(cat.lib)}</div>
 <div style="font-size:22px;font-weight:bold;margin-top:6px">${echapper(d.name || 'Sans nom')}</div>
 <div style="font-size:13px;color:#d9d8d6;margin-top:4px">Reçue le ${echapper(dateParis(d.created_at))}</div>
 </td></tr>

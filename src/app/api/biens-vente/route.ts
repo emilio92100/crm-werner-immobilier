@@ -7,7 +7,8 @@ import { CLES_MAIL, conseillerDe, personnaliser } from '@/lib/mail-variables';
 import { bienPourSite } from '@/lib/flux-site';
 import { lienBienPublic } from '@/lib/jeton';
 import { codeSuivi, lienBienSuivi, type DestSuivi } from '@/lib/bien-suivi';
-import { avantMandat, type BienVente } from '@/lib/biens-vente';
+import { avantMandat, specsBien, type BienVente } from '@/lib/biens-vente';
+import { libPrix, montantAffaire, natureDe, proDuBien, unitePrix } from '@/lib/affaires';
 import { avecRemises } from '@/lib/remise-mail';
 
 export const runtime = 'nodejs';
@@ -212,7 +213,7 @@ async function traiterPost(req: NextRequest) {
         <div style="font-size:12px;font-weight:700;letter-spacing:.6px;color:#c2621c;margin-bottom:8px">DOCUMENTS À TÉLÉCHARGER · LIENS VALABLES ${LIENS_JOURS} JOURS</div>
         ${liens.map(l => `<div style="margin:6px 0"><a href="${echappe(l.url)}" style="color:#232528;font-weight:700">${echappe(l.nom)}</a> <span style="color:#aba7a3;font-size:12px">· ${tailleFr(l.taille)}</span></div>`).join('')}
       </div>` : '';
-      /* V3.118 : dans l'enveloppe de la charte, le logo Emilio en tête. */
+      /* V3.118 : dans l’enveloppe de la charte, le logo Werner en tête. */
       const html = enveloppeMail({ corps: `${paras}${blocLiens}` });
       const texte = `${message}${liens.length ? `\n\nDocuments à télécharger (liens valables ${LIENS_JOURS} jours) :\n${liens.map(l => `- ${l.nom} : ${l.url}`).join('\n')}` : ''}`;
 
@@ -272,13 +273,25 @@ async function traiterPost(req: NextRequest) {
       /* Ce qu'une annonce peut dire, rien de plus (lib/flux-site.ts). */
       const fiches = biens.map(b => {
         const x = bienPourSite(b, null);
+        const d = b.donnees || {};
         const prix = !avantMandat(b.etape) && x.price > 0 ? x.price : null;
         const lien = lienBienPublic(b.id);
-        const carac = [x.surface ? `${x.surface} m²` : '', x.rooms ? `${x.rooms} espace${x.rooms > 1 ? 's' : ''}` : '', x.bedrooms ? `${x.bedrooms} bureau${x.bedrooms > 1 ? 'x fermés' : ' fermé'}` : ''].filter(Boolean).join(' · ');
+        /* Werner : « Droit au bail · 120 m² · vitrine 8 m · RDC » (la nature
+           d'abord) ; sans nature, la surface seule. */
+        const carac = (natureDe(d) ? specsBien(d) : '') || [x.surface ? `${x.surface} m²` : '', x.rooms ? `${x.rooms} espace${x.rooms > 1 ? 's' : ''}` : '', x.bedrooms ? `${x.bedrooms} bureau${x.bedrooms > 1 ? 'x fermés' : ' fermé'}` : ''].filter(Boolean).join(' · ');
         const lieu = [b.quartier, x.city].filter(Boolean).join(', ');
-        return { b, titre: x.title || 'Le local', photo: x.images[0] || '', prix, lien, carac, lieu };
+        /* Le montant : un loyer s'écrit « 48 000 € HT HC / an » ; sous lui, ce
+           qu'il est, et le loyer du bail repris (droit au bail, fonds). */
+        const loyerAn = proDuBien(d).loyerAn;
+        const sous = !natureDe(d) ? '' : [
+          natureDe(d) === 'location' ? 'Loyer annuel' : libPrix(d),
+          natureDe(d) !== 'location' && loyerAn ? `${natureDe(d) === 'murs_occupes' ? 'loyer en place' : 'loyer du bail'} : ${montantAffaire(loyerAn, { nature: 'location' })}` : '',
+        ].filter(Boolean).join(' · ');
+        return { b, titre: x.title || 'Le local', photo: x.images[0] || '', prix, unite: unitePrix(d), montant: prix ? montantAffaire(prix, d) : '', sous, lien, carac, lieu };
       });
       const eur = (n: number) => `${n.toLocaleString('fr-FR')} €`;
+      /* « 42 000 € HT HC / an » ne se coupe pas en fin de ligne. */
+      const insecable = (h: string) => h.replace(/ € HT HC \/ an/g, '&nbsp;€&nbsp;HT&nbsp;HC&nbsp;/&nbsp;an');
       /* V3.152 : le bouton « Voir le bien » porte le code de CE mail (sans
          code pour l'aperçu, qui ne part pas). */
       const cartesPour = (code: string | null) => fiches.map(f => `<div style="margin:18px 0 0;border:1px solid ${CHARTE.trait};border-radius:14px;background:${CHARTE.fond};overflow:hidden">
@@ -287,11 +300,11 @@ async function traiterPost(req: NextRequest) {
           <div style="font-weight:800;font-size:16px;line-height:1.35;color:${CHARTE.encre}">${echappe(f.titre)}</div>
           ${f.lieu ? `<div style="color:${CHARTE.plume};margin-top:5px;font-size:13px"><span style="color:${CHARTE.or}">&#9679;</span> ${echappe(f.lieu)}</div>` : ''}
           ${f.carac ? `<div style="color:${CHARTE.plume};margin-top:4px;font-size:13px">${echappe(f.carac)}</div>` : ''}
-          ${f.prix ? `<div style="font-weight:800;font-size:20px;color:${CHARTE.encre};margin-top:10px">${eur(f.prix)}</div>` : ''}
+          ${f.prix ? `<div style="font-weight:800;font-size:20px;color:${CHARTE.encre};margin-top:10px">${eur(f.prix)}${f.unite ? `<span style="font-size:13px;font-weight:700;color:${CHARTE.plume}">&nbsp;${f.unite}</span>` : ''}</div>${f.sous ? `<div style="color:${CHARTE.plume};margin-top:3px;font-size:12.5px">${insecable(echappe(f.sous.charAt(0).toUpperCase() + f.sous.slice(1)))}</div>` : ''}` : ''}
           ${f.lien ? `<a href="${echappe(lienBienSuivi(f.b.id, code))}" style="display:inline-block;margin-top:14px;background:${CHARTE.or};color:${CHARTE.encre};text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:700">Voir le local</a>` : ''}
         </div>
       </div>`).join('');
-      const texteBiensPour = (code: string | null) => fiches.map(f => [f.titre, [f.lieu, f.carac, f.prix ? eur(f.prix) : ''].filter(Boolean).join(' · '), f.lien ? lienBienSuivi(f.b.id, code) : ''].filter(Boolean).join('\n')).join('\n\n');
+      const texteBiensPour = (code: string | null) => fiches.map(f => [f.titre, [f.lieu, f.carac, f.montant].filter(Boolean).join(' · '), f.lien ? lienBienSuivi(f.b.id, code) : ''].filter(Boolean).join('\n')).join('\n\n');
 
       /* Le mail d'une personne : son prénom, les cartes, la signature. */
       const mailPour = (dst: Dest, code: string | null) => {
@@ -351,7 +364,7 @@ async function traiterPost(req: NextRequest) {
             client_id: dst.clientId, recherche_id: dst.rechercheId, type: 'envoi_bien',
             titre: 'Affaire de l’agence présentée · mail simple',
             /* Le lien sans code : celui du Suivi ne doit pas compter comme une ouverture. */
-            description: `${f.titre}${f.prix ? ` · ${eur(f.prix)}` : ''}\nÀ : ${dst.email}${f.lien ? `\n${f.lien}` : ''}`,
+            description: `${f.titre}${f.montant ? ` · ${f.montant}` : ''}\nÀ : ${dst.email}${f.lien ? `\n${f.lien}` : ''}`,
             metadata: {
               bien_vente_id: f.b.id, email: dst.email,
               ...(s ? { lien_code: s.code } : {}),
@@ -390,7 +403,7 @@ async function traiterPost(req: NextRequest) {
       if (eBien) return ko(eBien.message, 500);
       if (!bien) return ko('Affaire introuvable', 404);
 
-      /* V3.118 : dans l'enveloppe de la charte, le logo Emilio en tête. */
+      /* V3.118 : dans l’enveloppe de la charte, le logo Werner en tête. */
       const html = enveloppeMail({ corps: message.split(/\n{2,}/).map(t => `<p style="margin:0 0 14px">${echappe(t).replace(/\n/g, '<br>')}</p>`).join('') });
       const envoyes: string[] = [];
       const echecs: string[] = [];

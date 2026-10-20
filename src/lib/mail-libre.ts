@@ -7,7 +7,7 @@
      · « simple »  — le mail tel qu'on l'écrit dans sa messagerie : le texte,
                      et c'est tout. Pour une personne, un notaire, un vendeur :
                      c'est ce qui arrive le mieux en boîte de réception.
-     · « emilio »  — le bandeau marine au logo, le texte, et le pied avec le
+     · « emilio »  — le bandeau anthracite au logo, le texte, et le pied avec le
                      nom et le téléphone du conseiller. Pour une annonce à
                      plusieurs acheteurs. Ni étiquette « Sélection privée », ni
                      lien « Je ne suis plus en recherche » : ce n'est pas une
@@ -20,7 +20,7 @@
 
 import { IDENTITE_DEFAUT, type IdentiteAgence } from './agence';
 import { conseillerDe, personnaliser, type PourMail } from './mail-variables';
-import { LIEN_POLICE_MAIL, LOGO_BLANC_MAIL } from '@/lib/mail-charte';
+import { LIEN_POLICE_MAIL, LOGO_BLANC_MAIL, LOGO_MAIL } from '@/lib/mail-charte';
 
 export type StyleMail = 'simple' | 'emilio';
 
@@ -166,7 +166,7 @@ export function habillageDe(reglages: Record<string, string | undefined>, identi
     telephone: (reglages.conseiller_telephone || '').trim() || '01 87 66 06 00',
     agence: id.nom || 'Werner Immobilier',
     mentions: [`${id.nom} — ${id.societe}${id.forme ? `, ${id.forme}` : ''}`, adresse, id.carte ? `carte professionnelle ${id.carte}` : ''].filter(Boolean).join(' · '),
-    /* V3.198 : le logo depuis espace.emilio-immo.com (src/lib/mail-charte.ts), plus depuis `site`. */
+    /* V3.198 : le logo depuis IMAGES_MAIL (src/lib/mail-charte.ts), plus depuis `site`. */
     logo: LOGO_BLANC_MAIL,
   };
 }
@@ -188,7 +188,9 @@ export const texteLiens = (liens: LienPiece[], jours: number) => (liens.length
 /* ── Le mail entier ── */
 export function mailLibreHtml(o: { style: StyleMail; corps: string; h: Habillage; liens?: LienPiece[]; jours?: number }): string {
   const corps = `${o.corps}${blocLiens(o.liens || [], o.jours || 7)}`;
-  const tete = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title>${LIEN_POLICE_MAIL}</head>`;
+  /* Sur un téléphone, le nom et le numéro du pied passent l'un sous l'autre
+     (comme les mails illustrés de send-mail). */
+  const tete = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title>${LIEN_POLICE_MAIL}<style>@media only screen and (max-width:600px){ .pied-nom, .pied-tel { display:block !important; width:100% !important; text-align:left !important; } .pied-tel { padding-top:10px !important; } }</style></head>`;
   if (o.style === 'simple') {
     return `${tete}<body style="margin:0;padding:0;background:#ffffff;">
 <div style="font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14.5px;line-height:1.6;color:#232528;max-width:640px;padding:6px 4px;">${corps}</div>
@@ -199,16 +201,16 @@ export function mailLibreHtml(o: { style: StyleMail; corps: string; h: Habillage
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#efeeed;">
   <tr><td align="center" style="padding:24px 10px;">
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:16px;overflow:hidden;">
-      <tr><td style="background:#2e3034;border-bottom:3px solid #f08c42;padding:18px 26px;">
-        <img src="${esc(h.logo)}" alt="${esc(h.agence)}" height="30" style="height:30px;width:auto;display:block;border:0;color:#ffffff;font-weight:700;font-size:16px;" />
+      <tr><td style="background:#2e3034;border-bottom:3px solid #f08c42;padding:12px 26px;">
+        <img src="${esc(h.logo)}" alt="${esc(h.agence)}" height="${LOGO_MAIL.court}" style="height:${LOGO_MAIL.court}px;width:auto;display:block;border:0;color:#ffffff;font-weight:700;font-size:16px;" />
       </td></tr>
       <tr><td style="padding:26px 26px 22px;">
         <div style="font-size:14.5px;line-height:1.7;color:#363533;">${corps}</div>
       </td></tr>
       <tr><td style="background:#2e3034;padding:16px 26px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-          <td style="font-size:14px;font-weight:700;color:#ffffff;">${esc(h.conseiller)}<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,.6);margin-top:3px;">${esc(h.agence)} · Paris &amp; Hauts-de-Seine</div></td>
-          <td align="right" style="font-size:15px;font-weight:700;color:#f7b07a;white-space:nowrap;"><a href="tel:${esc(h.telephone.replace(/[^+0-9]/g, ''))}" style="color:#f7b07a;text-decoration:none;">${esc(h.telephone)}</a></td>
+          <td class="pied-nom" style="font-size:14px;font-weight:700;color:#ffffff;">${esc(h.conseiller)}<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,.6);margin-top:3px;">${esc(h.agence)} · Paris &amp; Hauts-de-Seine</div></td>
+          <td align="right" class="pied-tel" style="font-size:15px;font-weight:700;color:#f7b07a;white-space:nowrap;"><a href="tel:${esc(h.telephone.replace(/[^+0-9]/g, ''))}" style="color:#f7b07a;text-decoration:none;">${esc(h.telephone)}</a></td>
         </tr></table>
       </td></tr>
     </table>

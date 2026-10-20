@@ -336,10 +336,10 @@ export async function POST(req: NextRequest) {
         await envoyerMail({
           a: l.mandant.email, nomA: premier, repondreA: 'contact@wernerimmobilier.com',
           sujet: `${co.personne.prenom} ne signera pas le mandat de recherche n° ${l.numero}`,
-          texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a indiqué ne pas être concerné par cette recherche : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.\n\nS'il s'agit d'une erreur, appelez Werner : il lui renverra un lien.\n\nWerner Immobilier`,
+          texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a indiqué ne pas être concerné par cette recherche : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.\n\nS'il s'agit d'une erreur, appelez Werner au 01 87 66 06 00 : il lui renverra un lien.\n\nWerner Immobilier`,
           html: gabarit('Le mandat continue avec vous', `<p>Bonjour ${echappe(l.mandant.prenom)},</p>
             <p>${echappe(moi)} a indiqué ne pas être concerné par cette recherche : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.</p>
-            <p>S’il s’agit d’une erreur, appelez Werner : il lui renverra un lien.</p>
+            <p>S’il s’agit d’une erreur, appelez Werner au 01 87 66 06 00 : il lui renverra un lien.</p>
             <p>Werner Immobilier</p>`),
         });
         await envoyerMail({
