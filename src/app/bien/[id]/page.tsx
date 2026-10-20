@@ -1,3 +1,4 @@
+import { NATURES } from '@/lib/affaires';
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
@@ -207,7 +208,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     b.nb_pieces && !/pi[eè]ce/i.test(titre) ? `${b.nb_pieces} espace${b.nb_pieces > 1 ? 's' : ''}` : '',
     b.surface && !/m²/.test(titre) ? `${nb(b.surface)} m²` : '',
     ville,
-    prix ? `${fmt(prix)} €` : '',
+    prix ? `${fmt(prix)} €${b.pro?.nature === 'location' ? ' HT HC / an' : ''}` : '',
   ].filter(Boolean).join(' · ');
   const description = etat ? `${BANDEAU[etat].titre}. ${details}` : details || 'Un local proposé par Werner Immobilier.';
   const photos: string[] = Array.isArray(b.photos) ? b.photos.filter(Boolean) : [];
@@ -259,7 +260,11 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
      bien de l'agence garde son prix, honoraires de l'agence compris. */
   const pb = prixDuBien(bien);
   const prix = pb.demande;
-  const labelPrix = pb.agence && bien.prix_acquereur ? 'Montant honoraires inclus' : 'Montant demandé';
+  /* Werner : la nature de l'affaire (biens.pro) dit ce qu'est le montant —
+     un loyer annuel HT HC, le prix d'un droit au bail, d'un fonds, des murs. */
+  const nature = NATURES.find(n => n.v === bien.pro?.nature) || null;
+  const loyer = nature?.v === 'location';
+  const labelPrix = loyer ? 'Loyer annuel HT HC' : nature ? nature.prix : pb.agence && bien.prix_acquereur ? 'Montant honoraires inclus' : 'Montant demandé';
   const prixM2 = prix && bien.surface ? Math.round(prix / bien.surface) : null;
   const photos: string[] = Array.isArray(bien.photos) ? bien.photos.filter(Boolean) : [];
   const plans: string[] = Array.isArray(bien.plans) ? bien.plans.filter(Boolean) : [];
@@ -368,17 +373,17 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
         {/* Le prix d'abord : c'est la première question de celui qui reçoit le lien */}
         <div className="fb-prix" style={{ padding: '20px 0 2px' }}>
           <span style={{ fontFamily: JAKARTA, fontSize: 30, fontWeight: 800, color: OR_FONCE, letterSpacing: -.8 }}>
-            {prix ? `${fmt(prix)} €` : 'Montant à venir'}
+            {prix ? `${fmt(prix)} €${loyer ? ' / an' : ''}` : 'Montant à venir'}
           </span>
           {prixM2 ? (
-            <span style={{ fontSize: 13.5, color: PLUME_CLAIR, fontWeight: 700 }}>{fmt(prixM2)} €/m²</span>
+            <span style={{ fontSize: 13.5, color: PLUME_CLAIR, fontWeight: 700 }}>{`${fmt(prixM2)} €/m²${loyer ? '/an' : ''}`}</span>
           ) : null}
         </div>
         {/* V3.113 : sans prix (un bien de l'agence avant le mandat), pas de mention sous « Prix à venir ». */}
         <div style={{ fontSize: 11.5, color: OR, fontWeight: 700, marginBottom: pb.hono && prix ? 4 : 14 }}>{prix ? labelPrix : ''}</div>
         {pb.hono && prix && pb.total ? (
           <div style={{ fontSize: 12, color: PLUME, fontWeight: 600, lineHeight: 1.45, marginBottom: 14 }}>
-            {`+ ${fmt(pb.hono)} € HT de nos honoraires, soit ${fmt(pb.total)} € honoraires compris`}
+            {loyer ? `+ ${fmt(pb.hono)} € HT d’honoraires, une fois, à la signature du bail` : `+ ${fmt(pb.hono)} € HT de nos honoraires, soit ${fmt(pb.total)} € honoraires compris`}
           </div>
         ) : null}
 

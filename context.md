@@ -395,9 +395,10 @@ types TypeScript ne décrivent plus le schéma » (§2), `relances.statut = 'rep
    note lit `criteres_pro` (nature, loyer, vitrine, emplacement) et `biens.pro` ; mais quand le
    client change ses critères depuis l'espace, il écrit toujours `nb_pieces_min` et `chambres_min`
    (`/api/espace/criteres`), rebaptisées « espaces » et « bureaux », et rien dans `criteres_pro`.
-2. **La page publique d'un local ne lit pas `biens.pro`** : elle ne dit ni la nature de l'affaire ni
-   « loyer annuel HT HC », écrit « Montant demandé » et un prix au m² (montant ÷ surface) sans
-   unité de loyer.
+2. **La page publique d'un local** lit `biens.pro` depuis le 21 octobre : « Loyer annuel HT HC »,
+   « / an » et « €/m²/an » pour une location, le libellé de la nature sinon (prix du droit au bail,
+   du fonds, de vente). Un local lu sur une annonce avant cette date n'a pas de `pro` : il garde
+   « Montant demandé ».
 3. **Des colonnes résidentielles encore lues** : `nb_pieces`, `nb_chambres` (« Espaces », « Bureaux »
    sur la page publique), `chambres_min`, `surface_sejour_min`, `balcon`, `jardin`, `cave`
    (`criteresDepuisRecherche()`, `correspondance()`). Pour une affaire, `versCorrespondance()` laisse
