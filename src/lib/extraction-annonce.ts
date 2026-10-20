@@ -207,9 +207,11 @@ function contextePage(html: string, url: string): string {
 async function extractWithClaude(html: string, url: string, portail: string, apiKey: string): Promise<Record<string, unknown> | null> {
   const context = contextePage(html, url).slice(0, 26000);
 
-  const prompt = `Tu es un expert immobilier. Voici une annonce immobilière lue sur ${portail} (${url}) : les données de la page et son texte. Extrais TOUTES les informations du bien, comme le ferait un chasseur qui lit l'annonce en entier (le bloc des caractéristiques ET le texte de l'annonce).
+  const prompt = `Tu es un expert en immobilier d'entreprise (bureaux, boutiques et locaux commerciaux, restaurants, locaux d'activité, entrepôts). Voici une annonce lue sur ${portail} (${url}) : les données de la page et son texte. Extrais TOUTES les informations du local, comme le ferait un agent qui lit l'annonce en entier (le bloc des caractéristiques ET le texte de l'annonce).
 
-Réponds UNIQUEMENT avec un JSON valide, sans markdown ni texte autour. Ne JAMAIS inventer une valeur — mettre null si non trouvée. Les données d'autres annonces (« annonces similaires ») ne comptent pas : seulement CE bien.
+Ce qui compte en immobilier d'entreprise, à chercher partout dans la page : la nature de l'affaire (location d'un local vide, cession de droit au bail, cession de fonds de commerce, vente des murs, libres ou occupés) ; le loyer, en précisant s'il est annuel ou mensuel, HT ou TTC, hors charges ou charges comprises ; le prix du droit au bail, du fonds ou des murs ; les charges, la taxe foncière, le dépôt de garantie ; le type de bail, sa durée, son échéance, la destination autorisée ; la vitrine, l'extraction, la terrasse, la réserve, la licence ; les dates de création et de mise à jour de l'annonce quand les données de la page les donnent. Les surfaces « pondérées » ne remplacent pas la surface réelle.
+
+Réponds UNIQUEMENT avec un JSON valide, sans markdown ni texte autour. Ne JAMAIS inventer une valeur — mettre null si non trouvée. Les données d'autres annonces (« annonces similaires ») ne comptent pas : seulement CE local.
 
 ${context}
 

@@ -37,9 +37,9 @@ export async function pdfDepose(sb: SupabaseClient, rid: string, chemin: string)
   return f && taille > 0 && taille <= PDF_MAX ? taille : null;
 }
 
-const CONSIGNE = `Tu lis la plaquette (ou la fiche) PDF d'un bien immobilier qu'une agence propose à un chasseur immobilier. Extrais TOUTES les informations du bien.
+const CONSIGNE = `Tu lis la plaquette (ou la fiche) PDF d'un local professionnel (bureaux, boutique, local commercial, restaurant, local d'activité, entrepôt) qu'une agence propose à Werner, agent en immobilier d'entreprise, pour l'un de ses clients. Extrais TOUTES les informations du local : la nature de l'affaire (location, cession de droit au bail, fonds de commerce, murs), le loyer (annuel ou mensuel, HT ou TTC, hors charges ou non), le prix du droit au bail, du fonds ou des murs, les charges et la taxe foncière, le bail (type, durée, échéance, destination), la vitrine, l'extraction, les surfaces réelles (une surface pondérée ne la remplace pas).
 
-Réponds UNIQUEMENT avec un JSON valide, sans markdown ni texte autour. Ne JAMAIS inventer une valeur — mettre null si non trouvée. Si le PDF présente plusieurs biens, ne garde que le premier.
+Réponds UNIQUEMENT avec un JSON valide, sans markdown ni texte autour. Ne JAMAIS inventer une valeur — mettre null si non trouvée. Si le PDF présente plusieurs locaux, ne garde que le premier.
 
 Réponds avec ce JSON exact :
 ${CHAMPS_ANNONCE}`;

@@ -45,9 +45,10 @@ const CLES_BIEN = [
   'chauffage', 'source_energie', 'chauffage_emetteurs', 'surface_balcon', 'surface_terrasse', 'etat_general',
   'charges_trimestrielles', 'charges_comprises', 'taxe_fonciere',
 ];
+/* Werner : les cases d'origine, dites avec les mots du commerce. */
 const CASES: Record<string, string> = {
-  parking: 'parking', balcon: 'balcon', terrasse: 'terrasse', jardin: 'jardin', cave: 'cave', ascenseur: 'ascenseur',
-  gardien: 'gardien', cuisine_equipee: 'cuisine équipée', climatisation: 'climatisation', traversant: 'traversant',
+  parking: 'parking', balcon: 'espace extérieur', terrasse: 'terrasse', jardin: 'cour', cave: 'cave ou réserve', ascenseur: 'ascenseur',
+  gardien: 'gardien', cuisine_equipee: 'cuisine professionnelle', climatisation: 'climatisation', traversant: 'traversant',
 };
 function bienPourIA(b: Record<string, unknown>): Record<string, unknown> {
   const x = garder(b, CLES_BIEN);
@@ -58,47 +59,51 @@ function bienPourIA(b: Record<string, unknown>): Record<string, unknown> {
   const eq = Object.keys(CASES).filter(k => b[k] === true).map(k => CASES[k]);
   x.equipements_dits_dans_l_annonce = eq.length ? eq : 'aucun';
   if (b.agence_nom && /particulier/i.test(String(b.agence_nom))) x.vendu_par = 'un particulier';
+  /* Werner : ce que l'affaire dit d'elle-même (biens.pro : nature, loyer annuel HT HC,
+     prix, bail, destination, vitrine, emplacement, extraction, équipements). */
+  if (b.pro && typeof b.pro === 'object' && Object.keys(b.pro as object).length) x.affaire = b.pro;
   const d = court(b.description, 4500);
   if (d) x.description = d;
   return x;
 }
 
-const CONSIGNE_CLIENT = `Tu fais la veille de Werner, chasseur immobilier à Paris et dans les Hauts-de-Seine (Werner Immobilier). Son client a envoyé lui-même cette annonce depuis son espace ; Werner l'a mise en fiche. Juge-la EXACTEMENT comme la veille juge une annonce qu'elle trouve, par rapport à TOUTE la recherche de ce client.
+const CONSIGNE_CLIENT = `Tu fais la veille de Werner, agent en immobilier d'entreprise à Paris (Werner Immobilier) : bureaux, boutiques et locaux commerciaux, restaurants, locaux d'activité, entrepôts ; en location, en cession de droit au bail, en cession de fonds de commerce ou en vente des murs. Son client (le demandeur : un commerçant, un restaurateur, une entreprise, un investisseur) a envoyé lui-même cette annonce depuis son espace ; Werner l'a mise en fiche. Juge-la EXACTEMENT comme la veille juge une annonce qu'elle trouve, par rapport à TOUTE la recherche de ce client.
 
 Ce que tu lis :
-- LA RECHERCHE : ses critères ; ses « exigences » (le niveau « souhaite » ou « indispensable » de parking, cave, balcon, terrasse, jardin, ascenseur, gardien, extérieur, cuisine) ; ses notes (les précisions libres, qui valent souvent plus que les cases, et disent son projet : résidence principale par défaut) ; « son_parcours » ; ce que ses visites ont appris ; ses comptes rendus ; ce qu'il a dit des biens montrés (ses refus d'abord : chaque motif de refus devient un critère) ; les annonces écartées et leur motif. « secteurs » écrit « Quartier (Ville) » veut dire ces quartiers-là seulement ; « arrets » donne la station et le temps à pied qu'il accepte.
-- LE BIEN : la fiche, sa description, et ses photos quand il y en a.
+- LA RECHERCHE : ses critères ; « criteres_pro » dit ce qu'il veut faire (natures : location, cession_bail, fonds, murs, murs_occupes), son activité, son loyer annuel HT HC minimum et maximum, la vitrine minimum (en mètres linéaires), le nombre de postes de travail, les emplacements acceptés (n° 1, n° 1 bis, n° 2, commerce de quartier, centre commercial, zone) ; « budget_max » est un prix (droit au bail, fonds, murs) ; ses « exigences » (le niveau « souhaite » ou « indispensable » de rez-de-chaussée, vitrine, extraction, terrasse, réserve, climatisation, accès PMR, parking, ascenseur, fibre, câblage, plancher technique, quai, cuisine équipée, chambre froide) ; ses notes (les précisions libres, qui valent souvent plus que les cases, et disent son projet) ; « son_parcours » ; ce que ses visites ont appris ; ses comptes rendus ; ce qu'il a dit des locaux montrés (ses refus d'abord : chaque motif de refus devient un critère) ; les annonces écartées et leur motif. « secteurs » écrit « Quartier (Ville) » veut dire ces quartiers-là seulement ; « arrets » donne la station et le temps à pied qu'il accepte.
+- LE BIEN : la fiche, « affaire » quand elle existe (sa nature, son loyer annuel HT HC, le prix du droit au bail, du fonds ou des murs, le bail, la destination, la vitrine, l'emplacement, l'extraction, les équipements), sa description, et ses photos quand il y en a.
 - CE QUE LE CLIENT EN A DIT en l'envoyant : son mot, ce qui lui plaît.
 
 Les règles de la veille :
 1. Les curseurs, un peu au-delà se discute :
-   - Budget : le prix affiché (honoraires d'agence compris) jusqu'à 10 % au-dessus du budget maximum passe, avec l'écart chiffré en point d'attention (« 6 % au-dessus de son budget »). Au-delà de 10 %, ça bloque. Les honoraires de Werner, les frais de notaire et les travaux n'entrent jamais dans la note.
-   - Surface : jusqu'à 5 % sous la surface minimum passe, avec l'écart en point d'attention (« 76 m² pour 80 demandés, −5 % »). Au-delà, ça bloque.
-   - Étage minimum : un de moins se discute.
-   - Le temps à pied jusqu'à SA station : quelques minutes de plus se discutent (pour 5 demandées, 10 au plus ; pour 10, 13 à 15 c'est déjà loin), au-delà ça bloque ; plus c'est près, mieux c'est. Une autre station ne la remplace pas. Tu ne calcules aucune distance : seulement ce qui est écrit (situation, description) ; inconnu, c'est un point à vérifier.
-2. Les seuils durs, qui ne se franchissent pas : le nombre de chambres (on compte en chambres, jamais en pièces ; une pièce close avec fenêtre de 9 m² ou plus compte comme chambre ; une chambre à créer reste un potentiel, jamais comptée ; plus de pièces que de chambres est un atout), la surface du séjour minimum, l'année de construction minimum, l'étage maximum sans ascenseur, le DPE maximum, le rez-de-chaussée exclu, le dernier étage demandé, la surface minimum d'extérieur.
-3. Les choix, sur lesquels on ne transige pas : le type de bien ; le secteur (hors de ses quartiers mais à moins du temps demandé de sa station : recevable, avec le point d'attention « Hors de ses quartiers, retenu parce qu'à X min de sa station ») ; l'exposition dite fermement ; la cuisine ouverte ou fermée posée comme condition ; tout ce qui est « indispensable ».
-4. Un seul « indispensable » qui manque parmi les neuf équipements, sur un bien bon par ailleurs, ne fait pas écarter le bien : verdict « reserve », note de 50 à 69, et le manque en PREMIER point d'attention, qui commence par « ⚠️ » (« ⚠️ Pas de parking : l'annonce n'en parle pas, alors que c'est indispensable pour lui »). Deux indispensables qui manquent : « ecarter ». Même traitement « reserve » pour un doute de travaux (une chambre à créer, une cuisine à refermer) et pour un accès PMR non précisé.
-5. Une information absente n'est ni un bonus ni un malus : c'est un point d'attention écrit comme une vérification (« Exposition non précisée, à vérifier auprès de l'agence »). Mais parking, cave, balcon, terrasse, jardin, ascenseur et gardien sont des arguments de vente : le silence vaut probablement absence. Un extérieur ne compte comme acquis que si une photo le montre ou si sa surface est donnée.
-6. Ses refus, ses comptes rendus de visite et ce qu'il a dit des biens montrés pèsent plus que les cases : un bien qui reproduit exactement ce qu'il a refusé descend fortement.
-7. Pour une résidence principale, un bien vendu occupé (loué), une nue-propriété ou un viager ne passent pas.
-8. Les photos disent l'état quand le texte se tait : papiers peints d'époque, cuisine et salle de bains d'origine, moquette = un rafraîchissement complet (point d'attention, et note en baisse s'il veut du rénové). Un gros ravalement voté ou fait est un atout.
+   - Loyer annuel HT HC : jusqu'à 10 % au-dessus de son maximum passe, avec l'écart chiffré en point d'attention (« 6 % au-dessus de son loyer maximum »). Au-delà de 10 %, ça bloque. Un loyer affiché « HC » se compare tel quel ; s'il est charges comprises ou TTC, dis-le et compare au plus juste.
+   - Prix (droit au bail, fonds, murs) : la même règle de 10 % sur son budget. Les honoraires de Werner, les droits d'enregistrement, le dépôt de garantie et les travaux n'entrent jamais dans la note.
+   - Surface : jusqu'à 5 % sous la surface minimum passe, avec l'écart en point d'attention (« 76 m² pour 80 demandés, −5 % »). Au-delà, ça bloque. Une surface pondérée ne remplace pas la surface réelle : compare la surface réelle quand l'annonce la donne.
+   - Vitrine et postes de travail : un peu moins se discute (un mètre de vitrine, un ou deux postes), au-delà ça bloque.
+   - Le temps à pied jusqu'à SA station : quelques minutes de plus se discutent, au-delà ça bloque ; plus c'est près, mieux c'est. Une autre station ne la remplace pas. Tu ne calcules aucune distance : seulement ce qui est écrit ; inconnu, c'est un point à vérifier.
+2. Les seuils durs, qui ne se franchissent pas : la nature de l'affaire (il veut louer un local vide : un droit au bail à payer n'est pas ce qu'il cherche, sauf si ses notes l'ouvrent ; il veut racheter un fonds : un local vide ne l'est pas) ; la destination du bail ou de la copropriété, qui doit permettre SON activité (un bail « tous commerces sauf restauration » écarte un restaurateur ; « sauf métiers de bouche » écarte un traiteur) ; l'extraction pour une activité de cuisine qui en a besoin ; le rez-de-chaussée pour un commerce qui vit de sa vitrine ; l'emplacement quand il en a exclu ; la surface minimum d'une terrasse demandée.
+3. Les choix, sur lesquels on ne transige pas : le type de local ; le secteur (hors de ses quartiers mais à moins du temps demandé de sa station : recevable, avec le point d'attention « Hors de ses quartiers, retenu parce qu'à X min de sa station ») ; tout ce qui est « indispensable ».
+4. Un seul « indispensable » qui manque, sur un local bon par ailleurs, ne fait pas écarter le local : verdict « reserve », note de 50 à 69, et le manque en PREMIER point d'attention, qui commence par « ⚠️ » (« ⚠️ Pas d'extraction : l'annonce n'en parle pas, alors que c'est indispensable pour son activité »). Deux indispensables qui manquent : « ecarter ». Même traitement « reserve » pour une destination du bail non précisée, pour un accès PMR non précisé quand le public doit entrer (un commerce, un restaurant : établissement recevant du public), et pour des travaux de mise aux normes probables.
+5. Une information absente n'est ni un bonus ni un malus : c'est un point d'attention écrit comme une vérification (« Destination du bail non précisée, à vérifier auprès de l'agence »). Mais extraction, vitrine, terrasse, climatisation, réserve, parking, quai et licence sont des arguments de vente : le silence vaut probablement absence. Une terrasse ne compte comme acquise que si une photo la montre ou si l'annonce la décrit.
+6. Ses refus, ses comptes rendus de visite et ce qu'il a dit des locaux montrés pèsent plus que les cases : un local qui reproduit exactement ce qu'il a refusé descend fortement.
+7. Pour une cession de droit au bail ou de fonds : la durée qui reste au bail et la date de sa prochaine échéance comptent (un bail qui finit dans moins de deux ans est un point d'attention) ; un loyer en cours très au-dessus de ce qu'il paierait ailleurs aussi. Pour un fonds : le chiffre d'affaires et le résultat ne se jugent que s'ils sont écrits, jamais devinés. Pour des murs occupés achetés pour s'y installer : un locataire en place ne part pas (point qui bloque), sauf pour un investisseur.
+8. Les photos disent l'état quand le texte se tait : un local brut (dalle, murs nus, réseaux en attente) demande des travaux d'aménagement ; un local aménagé dans une autre activité aussi (point d'attention, et note en baisse s'il veut un local prêt à exploiter). Une belle façade, une vitrine d'angle, une bonne hauteur sous plafond sont des atouts.
 9. N'invente rien : ne t'appuie que sur ce qui est écrit ou visible.
 
 La note sur 100 :
 - 85 à 100 : aucun écart (tous les seuils, choix et indispensables ; pas un curseur dépassé). On monte avec les « souhaite » présents et les atouts ; 95 et plus : rien à redire.
 - 70 à 84 : un accroc qui se dit en une phrase (un curseur dépassé, un « souhaite » absent) ; plus l'écart approche la borne, plus la note est basse.
-- 50 à 69 : deux accrocs ou plus, ou un seul à la borne sur un critère qu'il a répété ; et les biens « reserve » du point 4.
-- Sous 50 : le bien ne passe pas (un seuil dur ou un choix franchi, le budget au-delà de 10 %, deux indispensables absents, un refus récent reproduit).
+- 50 à 69 : deux accrocs ou plus, ou un seul à la borne sur un critère qu'il a répété ; et les locaux « reserve » du point 4.
+- Sous 50 : le local ne passe pas (un seuil dur ou un choix franchi, le loyer ou le prix au-delà de 10 %, deux indispensables absents, un refus récent reproduit).
 Le verdict suit la note : « priorite » (85+), « appeler » (70 à 84), « reserve » (50 à 69), « ecarter » (sous 50).
 
 Ce que tu écris :
-- « appreciation » : UNE phrase qui tranche, écrite pour Werner (le client ne la lit jamais) : pourquoi ce bien colle ou non à CE client, puis ce qui coince, avec le chiffre. Elle ne recopie pas les points.
-- « points_forts » : de 0 à 4, une idée par ligne, le plus décisif d'abord, chacun se suffit à lui-même (« Trois chambres pour trois demandées, plus un bureau », « À 4 min à pied de Jean-Jaurès, sa station »). Le jugement, pas la fiche recopiée.
+- « appreciation » : UNE phrase qui tranche, écrite pour Werner (le client ne la lit jamais) : pourquoi ce local colle ou non à CE client, puis ce qui coince, avec le chiffre. Elle ne recopie pas les points.
+- « points_forts » : de 0 à 4, une idée par ligne, le plus décisif d'abord, chacun se suffit à lui-même (« 6 m de vitrine en angle pour 4 demandés », « Extraction en place, bail tous commerces »). Le jugement, pas la fiche recopiée.
 - « points_attention » : de 0 à 4, le plus décisif d'abord. Ce qui bloque ou doit être tranché avant d'appeler commence par « ⚠️ » ; les simples vérifications, sans préfixe.
 - Le test de cohérence : la note, le verdict et les points racontent la même chose. Un 78 sans point d'attention est faux, un 92 avec trois aussi, une « priorite » avec un « ⚠️ » aussi.
 
-Il l'a envoyée lui-même : c'est un signal (elle lui plaît), à dire dans un atout quand elle colle à sa recherche, en citant ce qu'il en a dit. Ça ne change aucune règle. Si elle contredit franchement ses critères (un seuil dur, son secteur, son budget au-delà de 10 %), ne la sauve pas : note basse, et dis dans l'appréciation que sa recherche bouge peut-être (« Il l'a envoyée alors qu'elle n'a que 2 chambres pour 3 demandées : à lui demander si sa recherche a changé »).
+Il l'a envoyée lui-même : c'est un signal (elle lui plaît), à dire dans un atout quand elle colle à sa recherche, en citant ce qu'il en a dit. Ça ne change aucune règle. Si elle contredit franchement ses critères (un seuil dur, son secteur, son loyer ou son prix au-delà de 10 %), ne la sauve pas : note basse, et dis dans l'appréciation que sa recherche bouge peut-être (« Il l'a envoyée alors que le bail exclut la restauration : à lui demander si son projet a changé »).
 
 Écris en français simple, sans abréviation. Réponds avec l'outil « rendre_analyse ».`;
 
@@ -131,12 +136,12 @@ const remplacer = (t: string, a: string, b: string) => {
   return t.replace(a, b);
 };
 const CONSIGNE_AGENCE = [
-  ['Son client a envoyé lui-même cette annonce depuis son espace ; Werner l\'a mise en fiche. Juge-la EXACTEMENT',
-    'Une agence (un confrère) propose ce bien pour ce client, par le lien qu\'Werner lui a donné ; la fiche a été lue sur son annonce. Juge-le EXACTEMENT'],
+  ['Son client (le demandeur : un commerçant, un restaurateur, une entreprise, un investisseur) a envoyé lui-même cette annonce depuis son espace ; Werner l\'a mise en fiche. Juge-la EXACTEMENT',
+    'Une agence (un confrère) propose ce local pour ce client, par le lien que Werner lui a donné ; la fiche a été lue sur son annonce. Juge-le EXACTEMENT'],
   ['- CE QUE LE CLIENT EN A DIT en l\'envoyant : son mot, ce qui lui plaît.',
     '- CE QUE L\'AGENCE EN A DIT en le proposant : son mot (exclusivité, disponibilité, visite possible…), et l\'adresse quand elle la donne.'],
-  ['Il l\'a envoyée lui-même : c\'est un signal (elle lui plaît), à dire dans un atout quand elle colle à sa recherche, en citant ce qu\'il en a dit. Ça ne change aucune règle. Si elle contredit franchement ses critères (un seuil dur, son secteur, son budget au-delà de 10 %), ne la sauve pas : note basse, et dis dans l\'appréciation que sa recherche bouge peut-être (« Il l\'a envoyée alors qu\'elle n\'a que 2 chambres pour 3 demandées : à lui demander si sa recherche a changé »).',
-    'C\'est une agence qui le propose, pas le client : ce n\'est pas un signal de sa part. Ne crois pas l\'agence sur parole quand elle vante le bien : seuls les faits de l\'annonce comptent. Ce qu\'elle dit dans son mot (exclusivité, pas encore en ligne, visite possible, prix discutable) peut devenir un atout ou un point à vérifier.'],
+  ['Il l\'a envoyée lui-même : c\'est un signal (elle lui plaît), à dire dans un atout quand elle colle à sa recherche, en citant ce qu\'il en a dit. Ça ne change aucune règle. Si elle contredit franchement ses critères (un seuil dur, son secteur, son loyer ou son prix au-delà de 10 %), ne la sauve pas : note basse, et dis dans l\'appréciation que sa recherche bouge peut-être (« Il l\'a envoyée alors que le bail exclut la restauration : à lui demander si son projet a changé »).',
+    'C\'est une agence qui le propose, pas le client : ce n\'est pas un signal de sa part. Ne crois pas l\'agence sur parole quand elle vante le local : seuls les faits de l\'annonce comptent. Ce qu\'elle dit dans son mot (exclusivité, pas encore en ligne, visite possible, prix discutable) peut devenir un atout ou un point à vérifier.'],
 ].reduce((t, [a, b]) => remplacer(t, a, b), CONSIGNE_CLIENT);
 
 /** L'analyse du bien pour la recherche `rid`. `dit` : ce que le client (ou
