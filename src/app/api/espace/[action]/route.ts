@@ -1298,7 +1298,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
               From: { Email: FROM_EMAIL, Name: cl?.prenom ? `${cl.prenom} via Werner Immobilier` : 'Werner Immobilier' },
               To: [{ Email: dest }],
               Subject: `${prenom} vous partage un local`,
-              TextPart: `Bonjour,\n\nVoici un local que je suis en train de regarder. Dites-moi ce que vous en pensez.\n\n${bien.titre || ''}\n${[carac, prix ? Number(prix).toLocaleString('fr-FR') + ' \u20ac' : null].filter(Boolean).join(' \u00b7 ')}\n${lien}\n\n${prenom}\n\n---\nFiche transmise par ${prenom}.\nCe local est présenté par Werner, conseiller en immobilier d’entreprise · 01 87 66 06 00\nWerner Immobilier — RT Conseils · CPI 9201 2020 000 045 344`,
+              TextPart: `Bonjour,\n\nVoici un local que je suis en train de regarder. Dites-moi ce que vous en pensez.\n\n${bien.titre || ''}\n${[carac, prix ? Number(prix).toLocaleString('fr-FR') + ' \u20ac' + ((bien.pro as { nature?: string } | null)?.nature === 'location' ? ' HT HC / an' : '') : null].filter(Boolean).join(' \u00b7 ')}\n${lien}\n\n${prenom}\n\n---\nFiche transmise par ${prenom}.\nCe local est présenté par Werner, conseiller en immobilier d’entreprise · 01 87 66 06 00\nWerner Immobilier — RT Conseils · CPI 9201 2020 000 045 344`,
               HTMLPart: html,
               CustomID: `partage-${bien.id}-${Date.now()}`,
               TrackOpens: 'disabled', TrackClicks: 'disabled',
