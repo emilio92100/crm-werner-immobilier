@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { COOKIE_BADGE, badgeValide, codeAcces } from '@/lib/badge';
+import { COOKIE_APERCU, apercuOuvert } from '@/lib/apercu-site';
 
 /**
  * Portail d'accès au CRM.
@@ -38,12 +39,14 @@ const COOKIE = COOKIE_BADGE;
 /* /api/ringover/contact : Ringover demande qui est le numéro d'un appel
    (V3.141) ; /api/ringover/recherche : il cherche un contact du CRM (V3.143).
    Leur serrure : la signature de Ringover (lib/ringover-serveur.ts). */
-const PUBLIC_PATHS = ['/login', '/api/login', '/api/point-auto/envoi', '/api/mandat/relances', '/api/signer', '/api/demandes-site/notifier', '/api/flux-site', '/api/flux-site/sitemap', '/api/diffusion/portails', '/api/seloger/contacts', '/api/ringover/contact', '/api/ringover/recherche'];
-const PUBLIC_PREFIXES = ['/bien/', '/espace/', '/api/espace/', '/signer/', '/proposer/', '/api/agences/'];
+const PUBLIC_PATHS = ['/login', '/api/login', '/api/point-auto/envoi', '/api/mandat/relances', '/api/signer', '/api/demandes-site/notifier', '/api/flux-site', '/api/flux-site/sitemap', '/api/diffusion/portails', '/api/seloger/contacts', '/api/ringover/contact', '/api/ringover/recherche', '/api/site/apercu'];
+const PUBLIC_PREFIXES = ['/bien/', '/espace/', '/api/espace/', '/signer/', '/proposer/', '/api/agences/', '/site'];
 
 /* Le sous-domaine de l'espace acheteur. Tout le monde vit sur le même projet
    Vercel : c'est le nom d'hôte qui décide de ce qu'on sert. */
 const HOTE_ESPACE = (process.env.NEXT_PUBLIC_HOTE_ESPACE || '').trim().toLowerCase(); // vide tant que Werner n'a pas de sous-domaine
+/* Le site public de Werner : son domaine nu et www. */
+const HOTES_SITE = ['wernerimmobilier.com', 'www.wernerimmobilier.com'];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -60,6 +63,26 @@ export async function proxy(request: NextRequest) {
    *    adresse dans la barre, et c'est précisément ce qu'on veut lui épargner.
    */
   const hote = (request.headers.get('host') || '').toLowerCase().split(':')[0];
+  /* Werner (21 octobre 2026) : wernerimmobilier.com et www pointent sur ce
+     projet ; ils servent le site public (src/app/site/, la page d'attente
+     tant que le nouveau site n'est pas prêt), jamais le CRM. */
+  const apercu = await apercuOuvert(request.cookies.get(COOKIE_APERCU)?.value);
+  /* Le nouveau site (src/app/site/v2/) ne s'ouvre qu'avec le code
+     d'avant-première, sur toutes les adresses. */
+  if (pathname.startsWith('/site/v2') && !apercu) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/site';
+    return NextResponse.rewrite(url);
+  }
+  if (HOTES_SITE.includes(hote)) {
+    const fichier = pathname.startsWith('/_next/') || /\.[a-z0-9]+$/i.test(pathname);
+    if (fichier || pathname.startsWith('/site') || pathname.startsWith('/api/site/')) return NextResponse.next();
+    const url = request.nextUrl.clone();
+    /* Avec le code : le nouveau site, page pour page ; sans : la page d'attente. */
+    url.pathname = apercu ? `/site/v2${pathname === '/' ? '' : pathname}` : '/site';
+    if (!apercu) url.search = '';
+    return NextResponse.rewrite(url);
+  }
   if (HOTE_ESPACE && hote === HOTE_ESPACE) {
     /* Une adresse sans jeton ne mène nulle part : la page « lien introuvable »
        de l'espace, avec les coordonnées de Werner. Pas de renvoi vers
