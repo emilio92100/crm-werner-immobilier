@@ -414,8 +414,10 @@ types TypeScript ne décrivent plus le schéma » (§2), `relances.statut = 'rep
    21 octobre : elle mène à la page « lien introuvable ».
 7. **Le barème des honoraires est celui d'Emilio** (`src/lib/mandat.ts` : 2,5 % et 5 %), désormais
    écrit « HT » ; les commentaires disent encore TTC. Celui de Werner reste à poser.
-8. **La transaction d'un demandeur et l'agenda suivent une vente de logement** : compromis, délai SRU
-   (« Fin du délai SRU » dans `PageAgenda.tsx`), prêt, acte.
+8. **La transaction d'un demandeur et l'agenda suivent une vente de logement** : compromis, prêt,
+   acte. Depuis le 21 octobre, plus de délai SRU posé ni affiché (fiche du demandeur, fenêtre
+   « L'accord est signé ») et plus de financement ni de condition de prêt pour une location ;
+   reste « Fin du délai SRU » dans `PageAgenda.tsx`, pour les anciennes dates seulement.
 9. **La diffusion SeLoger n'est pas vérifiée pour Werner.** `src/lib/seloger.ts` parle à l'API d'AVIV
    de l'origine. Avant de la brancher : vérifier que SeLoger Bureaux & Commerces passe par elle, et
    comment raccrocher les 63 annonces déjà en ligne sans les doubler (l'origine a perdu des annonces

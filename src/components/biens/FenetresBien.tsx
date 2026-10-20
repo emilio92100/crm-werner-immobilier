@@ -1,4 +1,5 @@
 'use client';
+import { estLocation } from '@/lib/affaires';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import AvatarContact, { personneDe } from '@/components/contacts/AvatarContact';
 import { createPortal } from 'react-dom';
@@ -1013,9 +1014,12 @@ export function FenOffre({ bien, pour, existante, options, recherches, proprio, 
             {netSi !== null && <>{' '}Net mandant si les honoraires ne bougent pas : <b>{euros(netSi)}</b>.</>}
           </div>
         )}
+        {/* Werner : pas de financement à dire pour une location (un loyer, pas un achat). */}
+        {!estLocation(d) && <>
         <ChG lib="Financement"><Pills options={[{ v: 'comptant', l: 'Comptant' }, { v: 'pret', l: 'Prêt' }, { v: 'relais', l: 'Prêt relais' }]} v={fin} onChange={x => setFin(fin === x ? '' : x)} /></ChG>
         {!fin && <div className={b.calc}>Pas encore dit ? Laisse vide : rien ne s’affichera sur l’offre.</div>}
         {fin === 'comptant' && <div className={b.calc}>Achat comptant : la promesse n’aura pas de condition suspensive de prêt.</div>}
+        </>}
         <div className={b.g3}>
           <Ch lib="Apport"><SaisieNombre v={apport} euros unite="€" off={false} onChange={setApport} /></Ch>
           {avecPret && <Ch lib="Prêt demandé"><SaisieNombre v={pret} euros unite="€" off={false} onChange={setPret} /></Ch>}
@@ -1450,8 +1454,13 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
   const odDe = (o: SuiviVente | null) => (o?.donnees || {}) as Record<string, unknown>;
   const [prix, setPrix] = useState<number | null>(typeof ex.prix === 'number' ? ex.prix : prixRetenu(offre) || a.prix);
   const [signe, setSigne] = useState(tx('signe') || aujourdhui());
-  const [sru, setSru] = useState(existant ? tx('sru') : plusJours(aujourdhui(), 11));
-  const [pretL, setPretL] = useState(existant ? tx('pretLimite') : plusJours(aujourdhui(), 45));
+  /* Werner : pas de délai de rétractation SRU (il ne vaut que pour l'achat
+     d'un logement) : la date ne reste que sur un accord d'avant qui l'avait.
+     Pas de condition de prêt pour une location. */
+  const avecSru = existant && !!tx('sru');
+  const location = estLocation(d);
+  const [sru, setSru] = useState(avecSru ? tx('sru') : '');
+  const [pretL, setPretL] = useState(existant ? tx('pretLimite') : location ? '' : plusJours(aujourdhui(), 45));
   const [acte, setActe] = useState(existant ? tx('acte') : rMois(aujourdhui(), 3));
   const hDefaut = (p: number | null) => honorairesPour(d, p) ?? a.hono;
   /* Les honoraires : ceux du compromis ; sinon ceux négociés à l'acceptation
@@ -1490,14 +1499,14 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
   const rappelsAvant = (ex.rappels && typeof ex.rappels === 'object' ? ex.rappels : {}) as Record<string, string>;
   const rappelsLe = (ex.rappelsLe && typeof ex.rappelsLe === 'object' ? ex.rappelsLe : {}) as Record<string, string>;
   type Def = { cle: CleRappel; ic: string; c: string; f: string; t: string; base: string; ecart: number; client: string | null; note: (le: string) => string };
-  const defs: Def[] = [
+  const defs: Def[] = ([
     { cle: 'sru', ic: 'bouclier', c: '#c05d12', f: '#fff7ed', t: 'Vérifier la fin de la rétractation', base: sru, ecart: 1, client: pourProprio || pourAcq,
       note: () => `${titre}, en signature : le délai de rétractation de ${acquereur} est terminé (${dateLongue(sru)}). Vérifier qu’il ne s’est pas rétracté.` },
     { cle: 'pret', ic: 'banque', c: '#1d4ed8', f: '#eff6ff', t: 'Demander l’accord de prêt', base: pretL, ecart: -7, client: pourAcq || pourProprio,
       note: () => `${titre}, en signature : la condition de prêt de ${acquereur} expire le ${dateLongue(pretL)}. Demander l’accord de prêt.` },
     { cle: 'acte', ic: 'plume', c: '#6d28d9', f: '#f5f3ff', t: 'Confirmer le rendez-vous de signature', base: acte, ecart: -7, client: pourProprio || pourAcq,
       note: () => `${titre}, en signature : signature du bail ou de l’acte prévue le ${dateLongue(acte)}. Confirmer le rendez-vous chez le notaire ou l’avocat.` },
-  ];
+  ] as Def[]).filter(x => (x.cle !== 'sru' || avecSru) && (x.cle !== 'pret' || !location));
   const [choixR, setChoixR] = useState<Record<string, { on?: boolean; le?: string }>>(() => {
     const o: Record<string, { on?: boolean; le?: string }> = {};
     /* Un compromis qui a déjà ses rappels : on reprend ses choix. Sinon (un
@@ -1545,7 +1554,7 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
     if (!finDe(ex.financement)) setFin(finDe(odDe(o).financement));
     if (!aDesNotaires(lireNotairesDossier(ex))) setNotaires(notairesInit(o));
   };
-  const majSigne = (x: string) => { setSigne(x); if (!x) return; setSru(plusJours(x, 11)); setPretL(plusJours(x, 45)); setActe(rMois(x, 3)); };
+  const majSigne = (x: string) => { setSigne(x); if (!x) return; if (avecSru) setSru(plusJours(x, 11)); if (!location) setPretL(plusJours(x, 45)); setActe(rMois(x, 3)); };
   const majPrix = (x: number | null) => { setPrix(x); if (!honoFixe) setHono(hDefaut(x)); };
   const net = prix && hono !== null ? prix - hono : null;
   async function valider() {
@@ -1598,14 +1607,14 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
     } catch (e) { setErreur((e as Error).message); setOccupe(false); }
   }
   const nomDe = (id: string | null) => (id && clientsNoms?.[id]) || '';
-  const DATES = [
+  const DATES = ([
     { cle: 'sru', ic: 'bouclier', c: '#c05d12', f: '#fff7ed', lib: 'Fin de la rétractation', aide: '10 jours après la remise de l’acte', v: sru, set: setSru,
       raccourcis: rApres(signe, [['10 jours après', 10], ['11 jours après', 11], ['15 jours après', 15]]) },
     { cle: 'pret', ic: 'banque', c: '#1d4ed8', f: '#eff6ff', lib: 'Condition de prêt jusqu’au', aide: 'En général 45 à 60 jours', v: pretL, set: setPretL,
       raccourcis: rApres(signe, [['30 jours après', 30], ['45 jours après', 45], ['60 jours après', 60]]) },
     { cle: 'acte', ic: 'plume', c: '#6d28d9', f: '#f5f3ff', lib: 'Signature prévue le', aide: 'Environ trois mois après', v: acte, set: setActe,
       raccourcis: signe ? [{ lib: '2 mois après', k: rMois(signe, 2) }, { lib: '3 mois après', k: rMois(signe, 3) }, { lib: '4 mois après', k: rMois(signe, 4) }] : [] },
-  ];
+  ]).filter(x => (x.cle !== 'sru' || avecSru) && (x.cle !== 'pret' || !location));
   const dateOffre = (o: SuiviVente | null) => { const r = odDe(o).reponse_le; return typeof r === 'string' && r ? ` du ${dateLongue(r)}` : ''; };
   return (
     <Fenetre sur={existant ? `L’accord · ${acquereur}` : 'L’affaire passe « En signature »'} couleur={etapeDe('compromis').c}
@@ -1635,13 +1644,13 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
           origine={honoSrc === 'offre' ? `Notés à l’acceptation de l’offre${dateOffre(offre)}` : undefined}
           onHono={x => { setHono(x); setHonoFixe(true); }} onCharge={setCharge} onMandat={() => { setHono(hDefaut(prix)); setHonoFixe(false); setHonoSrc('mandat'); }} />
       </Section>
-      <Section ic="banque" c="#1d4ed8" f="#eff6ff" titre="Le financement">
+      {!location && <Section ic="banque" c="#1d4ed8" f="#eff6ff" titre="Le financement">
         <Pills options={[{ v: 'comptant', l: 'Comptant' }, { v: 'pret', l: 'Avec un prêt' }, { v: 'relais', l: 'Prêt relais' }]} v={fin} onChange={x => setFin(fin === x ? '' : x)} />
         <div className={b.calc}>
           {comptant ? 'Achat comptant : pas de condition suspensive de prêt, ni de date pour elle.' : fin ? 'Avec une condition suspensive de prêt : sa date est juste dessous.' : 'Pas encore dit : la condition de prêt reste proposée.'}
           {finVientDeLOffre ? ' Repris de l’offre.' : ''}
         </div>
-      </Section>
+      </Section>}
       <Section ic="calendrier" c="#15803d" f="#f0fdf4" titre="Les dates">
         <div className={b.datesC}>
           {DATES.map(x => (x.cle === 'pret' && comptant ? (
@@ -1662,8 +1671,8 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
           )))}
         </div>
         {!existant ? <div className={b.calc}>Calculées depuis la signature : ajuste-les à ce qui est écrit dans l’accord.</div>
-          : (!sru || (!pretL && !comptant) || !acte) && signe ? (
-            <button type="button" className={b.notaireAjout} onClick={() => { if (!sru) setSru(plusJours(signe, 11)); if (!pretL && !comptant) setPretL(plusJours(signe, 45)); if (!acte) setActe(rMois(signe, 3)); }}>
+          : ((!pretL && !comptant && !location) || !acte) && signe ? (
+            <button type="button" className={b.notaireAjout} onClick={() => { if (!pretL && !comptant && !location) setPretL(plusJours(signe, 45)); if (!acte) setActe(rMois(signe, 3)); }}>
               <Ic n="calendrier" t={13} />{`Calculer depuis la signature du ${dateLongue(signe)}`}
             </button>
           ) : null}

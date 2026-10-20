@@ -5367,7 +5367,7 @@ ${signatureMail()}`,
                                     onChange={e => {
                                       const j = e.target.value;
                                       saveTxField('compromis_date', j || null);
-                                      saveTxField('sru_date_fin', j ? finSRU(j) : null);
+                                      /* Werner : pas de délai SRU (achat d'un logement seulement). */
                                     }} />
                                 </div>
                                 <div>
@@ -5388,12 +5388,7 @@ ${signatureMail()}`,
                                     onChange={e => saveTxField('pret_apport', lireMontant(e.target.value))} />
                                 </div>
                               </div>
-                              {tx.sru_date_fin && (
-                                <div className="tx-alerte" data-ton={sruJ !== null && sruJ > 0 ? 'ambre' : 'calme'}>
-                                  ⏰ Rétractation SRU possible jusqu'au <b>{jourFr(tx.sru_date_fin)}</b>
-                                  {sruJ !== null && (sruJ > 0 ? ` — encore ${sruJ} jour${sruJ > 1 ? 's' : ''}.` : ' — le délai est passé.')}
-                                </div>
-                              )}
+                              {/* Werner : plus d'alerte de rétractation SRU (achat d'un logement seulement). */}
                               {enCours && rechercheActive?.active === false && (
                                 <div className="tx-alerte" data-ton="veille">
                                   ⏸️ La veille est en pause sur cette recherche depuis l’accord. Elle reprendra si vous revenez à l'étape précédente.
