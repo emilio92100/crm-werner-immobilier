@@ -37,7 +37,7 @@ export function messageOffre(d: Donnees, signature: string) {
     ? `${jourLong(txt(d, 'validite'))}${txt(d, 'validiteHeure') ? ` à ${txt(d, 'validiteHeure').replace(':', ' h ')}` : ''}`
     : '';
   const prixTxt = prix ? `, au prix de ${euros(prix)}${d.forme === 'fai' ? ', frais d’agence inclus' : ''}` : '';
-  return `Bonjour,\n\nJe vous transmets ci-joint l’offre d’achat signée de ${pl ? 'mes clients' : 'mon client'} pour le bien${lieu ? ` situé ${lieu}` : ''}${prixTxt}.\n\n${jusquau ? `Elle est valable jusqu’au ${jusquau}. ` : ''}Merci de la présenter au vendeur et de me faire part de sa réponse${jusquau ? ' avant cette date' : ''}.\n\n${signature}`;
+  return `Bonjour,\n\nJe vous transmets ci-joint l’offre d’achat signée de ${pl ? 'mes clients' : 'mon client'} pour le bien${lieu ? ` situé ${lieu}` : ''}${prixTxt}.\n\n${jusquau ? `Elle est valable jusqu’au ${jusquau}. ` : ''}Merci de la présenter au mandant et de me faire part de sa réponse${jusquau ? ' avant cette date' : ''}.\n\n${signature}`;
 }
 
 /* Les offres déjà envoyées de ce document. */
@@ -99,7 +99,7 @@ export function FenetreOffre({ doc, adresse, onFermer, onEnvoye }: {
   }
 
   async function envoyer() {
-    if (!valables.length) { setErreur('Tape l’adresse e-mail de l’agence du vendeur (ou du vendeur).'); return; }
+    if (!valables.length) { setErreur('Tape l’adresse e-mail de l’agence du mandant (ou du mandant).'); return; }
     if (valables.length < adresses.length) { setErreur(`Cette adresse ne semble pas complète : ${adresses.filter(x => !MAIL.test(x)).join(', ')}`); return; }
     if (!objet.trim() || !message.trim()) { setErreur('L’objet et le message ne peuvent pas être vides.'); return; }
     setEn('envoi'); setErreur('');
@@ -133,7 +133,7 @@ export function FenetreOffre({ doc, adresse, onFermer, onEnvoye }: {
             <label htmlFor="of-a">À</label>
             <input id="of-a" type="text" inputMode="email" autoComplete="off" autoFocus className={s.input} placeholder="agence@exemple.fr"
               value={a} onChange={e => { setA(e.target.value); setErreur(''); }} />
-            <i className={s.chAide}>{`L’agence du vendeur${txt(d, 'agenceVendeur') ? ` (${txt(d, 'agenceVendeur')})` : ''}, ou le vendeur s’il vend seul. Plusieurs ? Sépare-les par une virgule.`}</i>
+            <i className={s.chAide}>{`L’agence du mandant${txt(d, 'agenceVendeur') ? ` (${txt(d, 'agenceVendeur')})` : ''}, ou le mandant s’il vend seul. Plusieurs ? Sépare-les par une virgule.`}</i>
           </div>
 
           <div className={s.pj}>

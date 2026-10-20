@@ -66,7 +66,7 @@ const PRINCIPAUX: TypeContact[] = ['acheteur', 'vendeur', 'proprietaire'];
 const CATEGORIES: { cle: Categorie; lib: string; couleur?: string }[] = [
   { cle: 'tous', lib: 'Tous' },
   ...PRINCIPAUX.map(k => ({ cle: k as Categorie, lib: typeDe(k).pluriel, couleur: TEINTE_BANDEAU[k] })),
-  { cle: 'non_filtre', lib: 'Acheteurs non filtrés', couleur: '#94a3b8' },
+  { cle: 'non_filtre', lib: 'Demandeurs non filtrés', couleur: '#94a3b8' },
   ...TYPES_CONTACT.filter(t => !PRINCIPAUX.includes(t.k)).map(t => ({ cle: t.k as Categorie, lib: t.pluriel, couleur: TEINTE_BANDEAU[t.k] })),
 ];
 /* V3.77 (Alexandre : « qu'on voie direct au début, en lisant de gauche à
@@ -172,7 +172,7 @@ const ETATS_NOUVEAU: { cle: string; nom: string; quand: string; point: string }[
   { cle: 'prospect',    nom: 'Prospect',    quand: 'Premier contact, rien de signé', point: '#8b5cf6' },
   { cle: 'actif',       nom: 'Actif',       quand: 'Recherche en cours',             point: '#10b981' },
   { cle: 'suspendu',    nom: 'Suspendu',    quand: 'En pause, à reprendre plus tard', point: '#f59e0b' },
-  { cle: 'bien_trouve', nom: 'Bien trouvé', quand: 'Acquisition faite, dossier clos', point: '#3b82f6' },
+  { cle: 'bien_trouve', nom: 'Local trouvé', quand: 'Bail ou acte signé, dossier clos', point: '#3b82f6' },
   { cle: 'perdu',       nom: 'Perdu',       quand: 'Ne cherche plus avec nous',       point: '#ef4444' },
 ];
 
@@ -204,7 +204,8 @@ const initForm = {
   notes: '',
   /* V3.14 : qui est ce contact, ce qui est propre à son métier, et la suite. */
   types: [] as TypeContact[],
-  pro: {} as InfosPro,
+  /* Werner : « Pour une société » d'emblée (vide, elle n'est pas gardée). */
+  pro: { structure: { denomination: '', forme: 'SAS', rcs: '', siege: '', qualite: '', associes: [] } } as InfosPro,
   /* Un acheteur dont on n'a pas encore pris les critères : « non filtré ». */
   critPlusTard: false,
   /* Un vendeur, un propriétaire : ouvrir tout de suite « Nouveau bien ». */
@@ -1059,7 +1060,7 @@ export default function Clients({ onNavigate, fenetre }: {
     e.preventDefault();
     /* Un double clic ne crée pas deux fiches (V3.50). */
     if (saving) return;
-    if (!form.types.length) { setError('Choisissez qui est ce contact : acheteur, vendeur, notaire…'); setStep(0); return; }
+    if (!form.types.length) { setError('Choisissez qui est ce contact : demandeur, mandant, notaire…'); setStep(0); return; }
     if (!form.prenom.trim() && !form.nom.trim()) { setError('Renseignez au moins un prénom ou un nom'); setStep(1); return; }
     const acheteur = form.types.includes('acheteur');
     setSaving(true); setError('');
@@ -1128,7 +1129,7 @@ export default function Clients({ onNavigate, fenetre }: {
         /* Le SQL des types de contact n'est pas encore passé : un acheteur
            se crée comme avant ; les autres attendent le SQL. */
         if (form.types.length === 1 && acheteur && !Object.keys(pro).length) r = await supabase.from('clients').insert(ligne).select().single();
-        else throw new Error('Pour enregistrer un vendeur, un notaire, un confrère…, lance d’abord outils/sql/types-contact.sql dans Supabase.');
+        else throw new Error('Pour enregistrer un mandant, un notaire, un confrère…, lance d’abord outils/sql/types-contact.sql dans Supabase.');
       }
       const { data, error: err } = r;
 
@@ -1346,7 +1347,7 @@ export default function Clients({ onNavigate, fenetre }: {
      trouvé, perdu) se rouvre depuis sa fiche. */
   const bloqueStatut = (c: Client, statut: StatutLot): string | null => {
     const st = String(c.statut || '');
-    if (!estAcheteur(c)) return 'Pas acheteur : le statut suit la recherche d’un acheteur.';
+    if (!estAcheteur(c)) return 'Pas demandeur : le statut suit la recherche d’un demandeur.';
     if (estArchive(c)) return 'Archivé : sors-le des archives d’abord.';
     if (st === statut) return `Déjà « ${STATUTS_LOT.find(x => x.k === statut)?.lib} ».`;
     if (st === 'bien_trouve' || st === 'perdu') return `Dossier clos (« ${st === 'perdu' ? 'Perdu' : 'Bien trouvé'} ») : rouvre-le depuis sa fiche.`;
@@ -1425,7 +1426,7 @@ export default function Clients({ onNavigate, fenetre }: {
             cls={{ row: styles.formRow, group: styles.formGroup, label: styles.label, input: styles.input, bloc: (titre, enfants) => <Bloc key={titre} ic={IC_PRO[titre] || 'dossier'} titre={titre} petit={`ce qui est propre à un ${typeDe(form.types.find(k => k !== 'acheteur') || form.types[0]).lib.toLowerCase()}`} teinte={teinte}>{enfants}</Bloc> }} />
         );
         const GRANDES: { cle: 'type' | 'contact' | 'recherche' | 'mandat'; ico: string; nom: string; sous: string }[] = [
-          { cle: 'type', ico: '🏷️', nom: 'Qui est-ce', sous: 'Acheteur, vendeur, notaire, confrère… plusieurs à la fois si besoin' },
+          { cle: 'type', ico: '🏷️', nom: 'Qui est-ce', sous: 'Demandeur, mandant, notaire, confrère… plusieurs à la fois si besoin' },
           { cle: 'contact', ico: '👤', nom: pro ? 'Ses coordonnées' : 'Le contact', sous: pro ? 'Qui il est, où il travaille, comment le joindre' : 'Qui il est, comment le joindre' },
           ...(acheteur ? [
             { cle: 'recherche' as const, ico: '🎯', nom: 'Sa recherche', sous: 'Ce qu\'il cherche, et où' },
@@ -1611,9 +1612,9 @@ export default function Clients({ onNavigate, fenetre }: {
                       <Bloc ic="personne" titre="Ce contact est…" petit="un ou plusieurs types">
                         <ChoixTypes v={form.types} onChange={x => { setError(''); setForm({ ...form, types: x }); }} />
                         <div className="nc-note">
-                          {form.types.length === 0 ? 'Coche un ou plusieurs types : un propriétaire qui vend et rachète est « vendeur » et « acheteur ».'
-                            : form.types.includes('acheteur') ? 'Acheteur : sa recherche et son mandat viennent ensuite. S’il n’a pas encore donné ses critères, il sera « acheteur non filtré ».'
-                              : form.types.includes('vendeur') || form.types.includes('proprietaire') ? (form.creerBien ? 'Vendeur ou propriétaire : après ses coordonnées, « Nouveau bien » s’ouvre, lui déjà propriétaire.' : 'Vendeur ou propriétaire : ses coordonnées d’abord. Son bien pourra se créer juste après si vous cochez « Créer son bien ».')
+                          {form.types.length === 0 ? 'Coche un ou plusieurs types : un propriétaire qui vend et rachète est « mandant » et « demandeur ».'
+                            : form.types.includes('acheteur') ? 'Demandeur : sa recherche et son mandat viennent ensuite. S’il n’a pas encore donné ses critères, il sera « demandeur non filtré ».'
+                              : form.types.includes('vendeur') || form.types.includes('proprietaire') ? (form.creerBien ? 'Mandant ou propriétaire : après ses coordonnées, « Nouveau bien » s’ouvre, lui déjà propriétaire.' : 'Mandant ou propriétaire : ses coordonnées d’abord. Son bien pourra se créer juste après si vous cochez « Créer son bien ».')
                                 : 'Un professionnel : ses coordonnées et son métier, rien de plus. Il se retrouve dans sa catégorie, en haut de la page.'}
                         </div>
                       </Bloc>
@@ -1639,10 +1640,10 @@ export default function Clients({ onNavigate, fenetre }: {
                       {form.types.includes('notaire') && champsPro}
                       <Bloc ic="personne" titre="Qui est-ce" teinte={teinte}>
                         {!pro && <div className="nc-qui">
-                          {([['Monsieur', 'Monsieur'], ['Madame', 'Madame'], ['couple', 'Un couple']] as const).map(([k, lib]) => (
+                          {([['Monsieur', 'Monsieur'], ['Madame', 'Madame']] as const).map(([k, lib]) => (
                             <button type="button" key={k} className="nc-etat nc-qui-b"
-                              data-on={k === 'couple' ? form.couple : !form.couple && form.civilite === k}
-                              onClick={() => setForm(k === 'couple' ? { ...form, couple: true } : { ...form, couple: false, civilite: k })}>
+                              data-on={!form.couple && form.civilite === k}
+                              onClick={() => setForm({ ...form, couple: false, civilite: k })}>
                               <b>{lib}</b>
                             </button>
                           ))}
@@ -1742,11 +1743,11 @@ export default function Clients({ onNavigate, fenetre }: {
                       {!pro && !form.types.includes('notaire') && champsPro}
 
                       {!acheteur && (form.types.includes('vendeur') || form.types.includes('proprietaire')) && (
-                        <Bloc ic="maison" titre="Son bien" teinte={teinte}>
+                        <Bloc ic="agence" titre="Son affaire" teinte={teinte}>
                           <button type="button" onClick={() => setForm({ ...form, creerBien: !form.creerBien })} style={{ ...pill(form.creerBien, '#f08c42', '#fbf0e9', '#a85515'), alignSelf: 'flex-start' }}>
-                            {form.creerBien ? '✓ ' : ''}Créer son bien juste après (rubrique Biens)
+                            {form.creerBien ? '✓ ' : ''}Créer son affaire juste après (rubrique Affaires)
                           </button>
-                          <div className="nc-aide">« Nouveau bien » s’ouvre, lui déjà propriétaire : à suivre, estimation ou mandat signé.</div>
+                          <div className="nc-aide">« Nouvelle affaire » s’ouvre, lui déjà mandant : à suivre, estimation ou mandat signé.</div>
                         </Bloc>
                       )}
 
@@ -1773,38 +1774,8 @@ export default function Clients({ onNavigate, fenetre }: {
                         </div>
                       </Bloc>}
 
-                      {acheteur && <Bloc ic="maison" titre="Sa situation aujourd’hui" teinte={teinte}>
-                        <div className={styles.formGroup}>
-                          <label className={styles.label}>Statut d&apos;occupation</label>
-                          <select className={`${styles.input} crm-select`} value={form.statut_occupation} onChange={e => setForm({ ...form, statut_occupation: e.target.value })}>
-                            <option value="">Non précisé</option>
-                            <option value="proprietaire">Propriétaire</option>
-                            <option value="locataire">Locataire</option>
-                            <option value="heberge">Hébergé</option>
-                            <option value="autre">Autre</option>
-                          </select>
-                        </div>
-                        <button type="button" onClick={() => setForm({ ...form, bien_actuel_a_vendre: !form.bien_actuel_a_vendre, ...(!form.bien_actuel_a_vendre && !form.statut_occupation ? { statut_occupation: 'proprietaire' } : {}) })} style={{ ...pill(form.bien_actuel_a_vendre, '#ea580c', '#fff7ed', '#ea580c'), alignSelf: 'flex-start' }}>
-                          {form.bien_actuel_a_vendre ? '✓ ' : ''}Revente possible après l&apos;achat (mandat vendeur potentiel)
-                        </button>
-                        {form.bien_actuel_a_vendre && !form.types.includes('vendeur') && <div className="nc-aide">Il est aussi classé Propriétaire : un vendeur de demain.</div>}
-                        {form.bien_actuel_a_vendre && (
-                          <>
-                            <div className={styles.formRow}>
-                              <div className={styles.formGroup}><label className={styles.label}>Type de bien</label><input className={styles.input} value={form.bien_actuel_type} onChange={e => setForm({ ...form, bien_actuel_type: e.target.value })} /></div>
-                              <div className={styles.formGroup}><label className={styles.label}>Surface (m²)</label><input className={styles.input} type="number" value={form.bien_actuel_surface} onChange={e => setForm({ ...form, bien_actuel_surface: e.target.value })} /></div>
-                            </div>
-                            <div className={styles.formGroup}><label className={styles.label}>Valeur estimée (€)</label><input className={styles.input} type="number" value={form.bien_actuel_valeur} onChange={e => setForm({ ...form, bien_actuel_valeur: e.target.value })} /></div>
-                            <button type="button" onClick={() => setForm({ ...form, bien_actuel_meme_adresse: !form.bien_actuel_meme_adresse })} style={{ ...pill(form.bien_actuel_meme_adresse, '#0ea5e9', '#f0f9ff', '#0ea5e9'), alignSelf: 'flex-start' }}>
-                              {form.bien_actuel_meme_adresse ? '✓ ' : ''}À la même adresse que le contact
-                            </button>
-                            {!form.bien_actuel_meme_adresse && (
-                              <div className={styles.formGroup}><label className={styles.label}>Adresse du bien à revendre</label><input className={styles.input} value={form.bien_actuel_adresse} onChange={e => setForm({ ...form, bien_actuel_adresse: e.target.value })} /></div>
-                            )}
-                            <div className={styles.formGroup}><label className={styles.label}>{'Précisions · facultatif'}</label><textarea className={styles.textarea} value={form.bien_actuel_notes} onChange={e => setForm({ ...form, bien_actuel_notes: e.target.value })} rows={2} /></div>
-                          </>
-                        )}
-                      </Bloc>}
+                      {/* Werner : pas de « Sa situation aujourd’hui » (logement actuel,
+                          revente) : c'est l'achat d'un particulier. */}
 
                       <Bloc ic="crayon" titre={`À savoir sur ${quiC}`} petit="pour vous seul" teinte={OR}>
                         <textarea className={styles.textarea} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={3} />
@@ -1820,10 +1791,10 @@ export default function Clients({ onNavigate, fenetre }: {
                   {pas === 'recherche' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                       <button type="button" onClick={() => setForm({ ...form, critPlusTard: !form.critPlusTard })} style={{ ...pill(form.critPlusTard, '#64748b', '#f1f5f9', '#2e3034'), alignSelf: 'flex-start' }}>
-                        {form.critPlusTard ? '✓ ' : ''}Ses critères plus tard : acheteur non filtré
+                        {form.critPlusTard ? '✓ ' : ''}Ses critères plus tard : demandeur non filtré
                       </button>
                       {form.critPlusTard ? (
-                        <div className="nc-note">Il sera dans « Acheteurs non filtrés » jusqu’à ce que sa recherche ait ses critères : tu les saisiras depuis sa fiche.</div>
+                        <div className="nc-note">Il sera dans « Demandeurs non filtrés » jusqu’à ce que sa recherche ait ses critères : tu les saisiras depuis sa fiche.</div>
                       ) : (
                         <div className={modeCrit === 'etapes' ? classesCrit.critCorps : undefined}
                           style={modeCrit === 'tout' ? { display: 'flex', flexDirection: 'column', gap: 14 } : undefined}>
@@ -1940,9 +1911,9 @@ export default function Clients({ onNavigate, fenetre }: {
           logement={{
             v: filtreSit, tout: 'toutes', onChange: setFiltreSit,
             options: SITUATIONS.map(x => ({
-              k: x.key, l: x.key === 'toutes' ? 'Tous les logements' : x.label, n: nbParSituation(x.key), dans: x.key === 'vendeur',
-              aide: x.key === 'vendeur' ? 'Des propriétaires qui revendront après leur achat : un mandat vendeur possible. Ils sont aussi comptés dans « Propriétaires ».'
-                : x.key === 'proprietaire' ? 'Propriétaires de leur logement, revente possible comprise.'
+              k: x.key, l: x.key === 'toutes' ? 'Tous les locaux' : x.label, n: nbParSituation(x.key), dans: x.key === 'vendeur',
+              aide: x.key === 'vendeur' ? 'Des propriétaires qui revendront après leur achat : un mandat mandant possible. Ils sont aussi comptés dans « Propriétaires ».'
+                : x.key === 'proprietaire' ? 'Propriétaires de leur local, revente possible comprise.'
                   : x.key === 'inconnue' ? 'Leur situation n’est pas renseignée : à compléter sur leur fiche.' : undefined,
             })),
           }} />
@@ -1979,8 +1950,8 @@ export default function Clients({ onNavigate, fenetre }: {
               {filtered.length === 0 ? (
                 <div className={styles.empty}>
                   <div className={styles.emptyIcon}>👥</div>
-                  <div className={styles.emptyTitle}>{nbFiltresA(fa) ? 'Aucun acheteur ne demande cela' : search || statuts.length > 0 || filtreSit !== 'toutes' || seulsNonFiltres ? 'Aucun acheteur ici' : 'Aucun acheteur pour l\'instant'}</div>
-                  <div className={styles.emptySub}>{nbFiltresA(fa) ? `Parmi les ${avantCriteres.length} acheteurs ${statuts.length > 1 ? 'de ces statuts' : 'de ce statut'}, aucun ne correspond à « Ce qu’il cherche ».` : seulsNonFiltres ? 'Tous tes acheteurs ont leurs critères.' : statuts.length > 0 ? 'Change de statut, juste au-dessus.' : 'Clique sur « + Nouveau contact » pour commencer.'}</div>
+                  <div className={styles.emptyTitle}>{nbFiltresA(fa) ? 'Aucun demandeur ne demande cela' : search || statuts.length > 0 || filtreSit !== 'toutes' || seulsNonFiltres ? 'Aucun demandeur ici' : 'Aucun demandeur pour l\'instant'}</div>
+                  <div className={styles.emptySub}>{nbFiltresA(fa) ? `Parmi les ${avantCriteres.length} demandeurs ${statuts.length > 1 ? 'de ces statuts' : 'de ce statut'}, aucun ne correspond à « Ce qu’il cherche ».` : seulsNonFiltres ? 'Tous tes demandeurs ont leurs critères.' : statuts.length > 0 ? 'Change de statut, juste au-dessus.' : 'Clique sur « + Nouveau contact » pour commencer.'}</div>
                   {nbFiltresA(fa) > 0 && <button type="button" className={styles.btnSecondary} style={{ marginTop: 12 }} onClick={() => setFa(FILTRES_A_VIDES)}>Effacer « Ce qu’il cherche »</button>}
                 </div>
               ) : (
@@ -2081,13 +2052,13 @@ export default function Clients({ onNavigate, fenetre }: {
                               /* Il vend aussi un bien (rubrique Biens) : on le dit. */
                               if (typesDe(client).includes('vendeur')) return (
                                 <span className={styles.proprio} title="Il vend aussi un bien : voir sa fiche ou la rubrique Biens">
-                                  <Ico t={10} d={D_CLE} c="#c46318" />Vendeur aussi
+                                  <Ico t={10} d={D_CLE} c="#c46318" />Mandant aussi
                                 </span>
                               );
                               const sit = situationDe(client);
                               if (sit === 'vendeur' || sit === 'proprietaire') return (
                                 <span className={`${styles.proprio} ${sit === 'vendeur' ? styles.proprioVend : ''}`}
-                                  title={sit === 'vendeur' ? 'Propriétaire, il revendra sans doute son bien après l\u2019achat : mandat vendeur possible' : 'Propriétaire de son logement actuel'}>
+                                  title={sit === 'vendeur' ? 'Propriétaire, il revendra sans doute son bien après l\u2019achat : mandat mandant possible' : 'Propriétaire de son local actuel'}>
                                   <Ico t={10} d={D_CLE} c={sit === 'vendeur' ? '#25272b' : '#c46318'} />
                                   {sit === 'vendeur' ? 'Revente possible' : 'Propriétaire'}
                                 </span>
@@ -2302,7 +2273,7 @@ export default function Clients({ onNavigate, fenetre }: {
                         </div>
 
                         <div className={styles.ficheTrait} />
-                        <div className={styles.ficheRub}>Son espace acheteur</div>
+                        <div className={styles.ficheRub}>Son espace demandeur</div>
                         <div className={styles.ficheTxt}>
                           {(client as any)._espaceOuvertLe
                             ? <><span className={styles.pastilleVerte} />Ouvert {ilYA((client as any)._espaceOuvertLe)}{det && det.espaceOuvertures > 0 ? ` · ${det.espaceOuvertures} passage${det.espaceOuvertures > 1 ? 's' : ''}` : ''}</>
@@ -2373,7 +2344,7 @@ export default function Clients({ onNavigate, fenetre }: {
       )}
       {statutLot && (
         <ConfirmerLot ic="drapeau"
-          titre={`Passer ${statutLot.cibles.length > 1 ? `${statutLot.cibles.length} acheteurs` : statutLot.cibles.length ? '1 acheteur' : 'ces contacts'} « ${STATUTS_LOT.find(x => x.k === statutLot.statut)?.lib} » ?`}
+          titre={`Passer ${statutLot.cibles.length > 1 ? `${statutLot.cibles.length} demandeurs` : statutLot.cibles.length ? '1 demandeur' : 'ces contacts'} « ${STATUTS_LOT.find(x => x.k === statutLot.statut)?.lib} » ?`}
           phrase={statutLot.statut === 'actif' ? 'La veille cherche à nouveau pour eux, sur leur recherche la plus récente (ou celles d’avant leur pause). Une ligne dans leur suivi.'
             : statutLot.statut === 'suspendu' ? 'Leur dossier se met en pause, sans date de reprise (elle se met depuis leur fiche). La veille s’arrête. Une ligne dans leur suivi.'
               : 'Ils repassent « Prospect ». La veille s’arrête. Une ligne dans leur suivi.'}

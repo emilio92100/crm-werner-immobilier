@@ -82,7 +82,7 @@ const pluriel = (n: number, un: string, des: string) => `${n} ${n > 1 ? des : un
 
 function Role({ r, on, onClick }: { r: 'proprietaire' | 'acheteur'; on?: boolean; onClick?: () => void }) {
   const ic = r === 'proprietaire' ? 'maison' : 'cible';
-  const lib = r === 'proprietaire' ? 'Propriétaire' : 'Acheteur';
+  const lib = r === 'proprietaire' ? 'Propriétaire' : 'Demandeur';
   const cls = `${st.role} ${r === 'proprietaire' ? st.proprio : st.acheteur}`;
   if (onClick) return <button type="button" className={cls} aria-pressed={!!on} onClick={onClick}><Ic n={ic} t={12} />{lib}</button>;
   return <span className={cls}><Ic n={ic} t={12} />{lib}</span>;
@@ -183,7 +183,7 @@ function Etiquettes({ r }: { r: Rangee }) {
     <>
       {p.tiree && <em className={st.tagOr}><Ic n="bulle" t={11} /><span>Tirée de son commentaire</span></em>}
       {p.aSuivre && <em className={p.aSuivre.retard ? st.tagOr : st.tagBleu}><Ic n="maison" t={11} /><span>{`Fiche bien « À suivre » : ${p.aSuivre.resume} · ${p.aSuivre.rappelTexte}`}</span></em>}
-      {!p.aSuivre && p.projetVente && <em className={p.rappel?.retard ? st.tagOr : st.tagBleu}><Ic n="etiquette" t={11} /><span>{`${p.bienActuel.aVendre ? 'Mandat vendeur potentiel' : 'Projet de vente'}${p.rappel ? ` · ${p.rappel.rappelTexte}` : ''}`}</span></em>}
+      {!p.aSuivre && p.projetVente && <em className={p.rappel?.retard ? st.tagOr : st.tagBleu}><Ic n="etiquette" t={11} /><span>{`${p.bienActuel.aVendre ? 'Mandat mandant potentiel' : 'Projet de vente'}${p.rappel ? ` · ${p.rappel.rappelTexte}` : ''}`}</span></em>}
       {/* V3.70 : son prochain contact (s'il n'est pas déjà dit plus haut) et son historique. */}
       {((p.rappel?.immofacile || !!p.rappel?.tri) || p.historique.length > 0) && (() => {
         const t = [(p.rappel?.immofacile || !!p.rappel?.tri) && !p.projetVente ? `${p.rappel.rappelTexte.charAt(0).toUpperCase()}${p.rappel.rappelTexte.slice(1)}` : '', p.historique.length ? `historique : ${nbLignes(p.historique.length)}` : ''].filter(Boolean).join(' · ');
@@ -192,7 +192,7 @@ function Etiquettes({ r }: { r: Rangee }) {
       {p.location && !p.locationSeule && <em className={st.tagBleu}><Ic n="cle" t={11} /><span>Cherche aussi à louer : noté dans « À savoir »</span></em>}
       {/* V3.77 : les vendeurs triés. */}
       {p.archiver && <em className={st.tagBleu}><Ic n="archive" t={11} /><span>{`Rangé dans « Archivés »${p.tri?.motif ? ` : ${p.tri.motif.charAt(0).toLowerCase()}${p.tri.motif.slice(1)}` : ''}`}</span></em>}
-      {p.tri?.sorte === 'signe' && <em className={st.tagBleu}><Ic n="check" t={11} /><span>{`Vendeur signé${p.tri.motif ? ` : ${p.tri.motif.charAt(0).toLowerCase()}${p.tri.motif.slice(1)}` : ''}`}</span></em>}
+      {p.tri?.sorte === 'signe' && <em className={st.tagBleu}><Ic n="check" t={11} /><span>{`Mandant signé${p.tri.motif ? ` : ${p.tri.motif.charAt(0).toLowerCase()}${p.tri.motif.slice(1)}` : ''}`}</span></em>}
       {r.etat === 'echec' && <em className={st.tagRouge}><Ic n="info" t={11} /><span>Lecture du texte impossible : vérifie</span></em>}
       {r.etat === 'passee' && <em className={st.tagRouge}><Ic n="info" t={11} /><span>Commentaire pas lu : colonnes seulement</span></em>}
       {r.etat === 'attente' && <em className={st.tagBleu}><Rond petit /><span>Lecture du commentaire…</span></em>}
@@ -271,7 +271,7 @@ function Detail({ r, edition, mode, aujourdhui, onEdition, onChoix }: { r: Range
   /* Ce qui est recopié tel quel dans « À savoir », en plus des lignes lues. */
   const bruts = [precisions.length ? 'la précision de sa recherche' : '', commentaire ? 'son commentaire' : ''].filter(Boolean).join(' et ');
   const statut = p.archiver ? 'Rangé dans « Archivés » : hors de la liste, retrouvable quand tu veux, sans relance'
-    : !p.roles.acheteur ? (p.tri?.sorte === 'signe' ? `Vendeur signé : un ancien client${p.rappel ? '' : ', sans relance'}` : 'Prospect')
+    : !p.roles.acheteur ? (p.tri?.sorte === 'signe' ? `Mandant signé : un ancien client${p.rappel ? '' : ', sans relance'}` : 'Prospect')
     : r.actif ? 'Actif : veille et point automatique'
       : p.tri?.sorte === 'dernier' ? 'Prospect : dernier appel pour faire le tri, rien ne part tout seul'
       : mode !== 'actifs' ? 'Prospect : à qualifier, rien ne part tout seul'
@@ -342,9 +342,9 @@ function Detail({ r, edition, mode, aujourdhui, onEdition, onChoix }: { r: Range
               {p.roles.proprietaire && p.tri?.sorte !== 'signe' && !p.archiver && <><dt>Son bien</dt><dd>{p.aSuivre
                 ? `Fiche bien « À suivre » dans Biens : ${p.aSuivre.resume} · ${p.aSuivre.rappelTexte}`
                 : p.bienActuel.aVendre
-                  ? `Case « Revente possible après l’achat (mandat vendeur potentiel) » cochée${p.bienActuel.notes ? ` : ${p.bienActuel.notes.replace(/[.\s]+$/, '')}` : ''} · ${p.rappel ? p.rappel.rappelTexte : 'sans date de rappel'}. Pas de fiche bien.`
+                  ? `Case « Revente possible après l’achat (mandat mandant potentiel) » cochée${p.bienActuel.notes ? ` : ${p.bienActuel.notes.replace(/[.\s]+$/, '')}` : ''} · ${p.rappel ? p.rappel.rappelTexte : 'sans date de rappel'}. Pas de fiche bien.`
                   : p.projetVente
-                    ? `Projet de vente : son logement et son projet notés dans « À savoir » · ${p.rappel ? p.rappel.rappelTexte : 'sans date de rappel'}. Pas de fiche bien : tu la crées quand tu as vu le logement.`
+                    ? `Projet de vente : son local et son projet notés dans « À savoir » · ${p.rappel ? p.rappel.rappelTexte : 'sans date de rappel'}. Pas de fiche bien : tu la crées quand tu as vu le local.`
                     : <span className={st.pale}>Pas de projet de vente</span>}</dd></>}
               {(p.rappel?.immofacile || !!p.rappel?.tri) && <><dt>Relance</dt><dd className={st.texte}>{texteRelance(p, aujourdhui)}</dd></>}
               <dt>À savoir</dt><dd className={st.texte}>{`${aSavoir}${bruts ? `\n+ ${bruts} d’ImmoFacile, en entier` : ''}`}</dd>
@@ -403,7 +403,7 @@ function Edition({ r, aujourdhui, onChoix }: { r: Rangee; aujourdhui: string; on
       {!r.choix.exclu && p.aSuivrePossible && r.bienPossible && (
         <div className={st.edLigne}>
           <span>Son bien</span>
-          <Bascule on={!!p.aSuivre} onClick={() => onChoix({ aSuivre: !p.aSuivre })}>Créer aussi sa fiche bien « À suivre » (tu as vu le logement)</Bascule>
+          <Bascule on={!!p.aSuivre} onClick={() => onChoix({ aSuivre: !p.aSuivre })}>Créer aussi sa fiche bien « À suivre » (tu as vu le local)</Bascule>
         </div>
       )}
       {!r.choix.exclu && (p.aSuivre || p.projetVente || p.rappel) && (
@@ -516,9 +516,9 @@ export default function ImportImmoFacile({ onFermer, onVoir, onImporte }: {
 
   const ONGLETS: { k: Onglet; l: string; n: number; cls?: string; toujours?: boolean }[] = [
     { k: 'tous', l: 'Tous', n: rangees.length, toujours: true },
-    { k: 'ach', l: 'Acheteurs', n: actives.filter(r => !r.doublon && r.plan.roles.acheteur).length, toujours: true },
+    { k: 'ach', l: 'Demandeurs', n: actives.filter(r => !r.doublon && r.plan.roles.acheteur).length, toujours: true },
     { k: 'pro', l: 'Propriétaires', n: actives.filter(r => !r.doublon && proprioSeul(r.plan)).length, toujours: true },
-    { k: 'sig', l: 'Vendeurs signés', n: actives.filter(r => !r.doublon && r.plan.tri?.sorte === 'signe').length },
+    { k: 'sig', l: 'Anciens mandants', n: actives.filter(r => !r.doublon && r.plan.tri?.sorte === 'signe').length },
     { k: 'arc', l: 'Rangés dans Archivés', n: actives.filter(r => !r.doublon && r.plan.archiver).length },
     { k: 'com', l: 'Tirées d’un commentaire', n: actives.filter(r => !r.doublon && r.plan.tiree).length, cls: st.oOr, toujours: true },
     { k: 'dbl', l: 'Déjà dans le CRM', n: nbDeja, toujours: true },
@@ -746,11 +746,11 @@ export default function ImportImmoFacile({ onFermer, onVoir, onImporte }: {
         <div className={st.regles}>
           <div className={st.colT}>Ce que fera l’import</div>
           <ul>
-            <li><Ic n="check" t={13} e={2.6} /><span>{'Une recherche remplie, ou décrite dans le commentaire → '}<b>acheteur</b>{', même si ImmoFacile dit seulement « Propriétaire ».'}</span></li>
-            <li><Ic n="check" t={13} e={2.6} /><span>{'« Propriétaire » → '}<b>propriétaire</b>{' ; un projet de vente → un rappel si une date est notée, et s’il achète aussi, la case « mandat vendeur potentiel ». Pas de fiche bien : tu la crées quand tu as vu le logement.'}</span></li>
+            <li><Ic n="check" t={13} e={2.6} /><span>{'Une recherche remplie, ou décrite dans le commentaire → '}<b>demandeur</b>{', même si ImmoFacile dit seulement « Propriétaire ».'}</span></li>
+            <li><Ic n="check" t={13} e={2.6} /><span>{'« Propriétaire » → '}<b>propriétaire</b>{' ; un projet de vente → un rappel si une date est notée, et s’il achète aussi, la case « mandat mandant potentiel ». Pas de fiche bien : tu la crées quand tu as vu le local.'}</span></li>
             <li><Ic n="check" t={13} e={2.6} /><span>Précisions et commentaires lus : balcon, terrasse, étage, ascenseur, travaux… cochés dans sa recherche.</span></li>
             <li><Ic n="check" t={13} e={2.6} /><span>Déjà dans ton CRM (même e-mail, téléphone ou nom) → pas recréé ; ce qui manque sur sa fiche est complété.</span></li>
-            <li><Ic n="check" t={13} e={2.6} /><span>{'Les acheteurs arrivent '}<b>à qualifier</b>{' : aucun mail ne part tout seul (veille, point automatique, alertes), sauf si tu choisis « Actifs ».'}</span></li>
+            <li><Ic n="check" t={13} e={2.6} /><span>{'Les demandeurs arrivent '}<b>à qualifier</b>{' : aucun mail ne part tout seul (veille, point automatique, alertes), sauf si tu choisis « Actifs ».'}</span></li>
             <li><Ic n="check" t={13} e={2.6} /><span>{'Si le fichier a les colonnes « Prochain contact » et « Historique des relances » : '}<b>une relance</b>{' à cette date, et chaque action dans son Suivi, à sa date.'}</span></li>
           </ul>
         </div>
@@ -776,11 +776,11 @@ export default function ImportImmoFacile({ onFermer, onVoir, onImporte }: {
       <div className={st.resume}>
         <div><b>{aCreer.length}</b><span>{aCreer.length > 1 ? 'contacts à créer' : 'contact à créer'}</span></div>
         <div><b>{nbRecherches}</b><span>{nbRecherches > 1 ? 'recherches' : 'recherche'}</span></div>
-        <div><b>{nbVendeurs}</b><span>{nbVendeurs > 1 ? 'vendeurs potentiels' : 'vendeur potentiel'}</span></div>
+        <div><b>{nbVendeurs}</b><span>{nbVendeurs > 1 ? 'mandants potentiels' : 'mandant potentiel'}</span></div>
         <div className={st.rGris}><b>{nbDeja}</b><span>déjà dans ton CRM</span></div>
       </div>
       <div className={st.mode}>
-        <span className={st.modeT}>Les acheteurs importés arrivent en</span>
+        <span className={st.modeT}>Les demandeurs importés arrivent en</span>
         <div className={st.modeBtns}>
           <button type="button" aria-pressed={mode === 'qualifier'} onClick={() => setMode('qualifier')}><b>À qualifier</b><small>rien ne part tout seul</small></button>
           <button type="button" aria-pressed={mode === 'actifs'} onClick={() => setMode('actifs')}><b>Actifs</b><small>veille, point automatique, alertes</small></button>
@@ -871,7 +871,7 @@ export default function ImportImmoFacile({ onFermer, onVoir, onImporte }: {
           {relancesIF > 0 && <div><Ic n="horloge" t={15} /><span><b>{relancesIF}</b>{relancesIF > 1 ? ' relances posées à leur prochain contact' : ' relance posée à son prochain contact'}</span></div>}
           {lignesHisto > 0 && <div><Ic n="bulle" t={15} /><span><b>{lignesHisto}</b>{lignesHisto > 1 ? ' lignes d’historique ImmoFacile dans leur Suivi, chacune à sa date' : ' ligne d’historique ImmoFacile dans le Suivi'}</span></div>}
           {completes.length > 0 && <div><Ic n="personne" t={15} /><span><b>{completes.length}</b>{completes.length > 1 ? ' contacts déjà présents, complétés' : ' contact déjà présent, complété'}</span></div>}
-          {crees.length > 0 && <div><Ic n="info" t={15} /><span>{mode === 'actifs' ? 'Les acheteurs sont « Actifs » : veille, point automatique et alertes. Ceux « à vérifier » sont restés à qualifier.' : 'Les acheteurs sont « Prospect », à qualifier : rien ne part tout seul.'}</span></div>}
+          {crees.length > 0 && <div><Ic n="info" t={15} /><span>{mode === 'actifs' ? 'Les demandeurs sont « Actifs » : veille, point automatique et alertes. Ceux « à vérifier » sont restés à qualifier.' : 'Les demandeurs sont « Prospect », à qualifier : rien ne part tout seul.'}</span></div>}
         </div>
         {avecSoucis.length > 0 && (
           <div className={st.soucis}>

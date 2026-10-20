@@ -633,7 +633,7 @@ export function GuideRapprochement({ client, recherche, illu, dernier, onLancer 
             <span className={s.sourceIc}><Icone nom="maison" taille={18} epaisseur={2} /></span>
             <span className={s.sourceTx}>
               <span className={s.sourceL1}><b>{'Mes biens en vente'}</b><strong>{comptes ? comptes.mandats : '…'}</strong></span>
-              <small>{'Tes mandats à l’étape « En vente ». Ni les estimations, ni les biens déjà sous offre ou sous compromis.'}</small>
+              <small>{'Tes mandats à l’étape « En vente ». Ni les estimations, ni les biens déjà sous offre ou en signature.'}</small>
             </span>
           </label>
           <label className={`${s.source} ${veilles ? s.sourceOn : ''}`}>

@@ -369,7 +369,7 @@ export const ETATS_CRM: Record<EtatOffre, { l: string; ton: Ton }> = {
     elle rejoint les offres de la fiche du bien. */
 export function etatCrmDe(d: Donnees | null | undefined, e: EtatOffre): { l: string; ton: Ton } {
   if (!estAgence(d)) return ETATS_CRM[e];
-  if (e === 'envoyee') return { l: 'Chez le vendeur', ton: 'bleu' };
+  if (e === 'envoyee') return { l: 'Chez le mandant', ton: 'bleu' };
   if (e === 'signee') return { l: 'Signée, à ajouter au bien', ton: 'or' };
   return ETATS_CRM[e];
 }
@@ -381,7 +381,7 @@ export const ETATS_CLIENT: Record<EtatOffre, { l: string; ton: Ton }> = {
   en_signature: { l: 'À signer', ton: 'or' },
   signee: { l: 'Offre signée', ton: 'bleu' },
   envoyee: { l: 'Offre envoyée', ton: 'bleu' },
-  contre: { l: 'Réponse du vendeur', ton: 'violet' },
+  contre: { l: 'Réponse du mandant', ton: 'violet' },
   acceptee: { l: 'Offre acceptée', ton: 'vert' },
   refusee: { l: 'Offre non retenue', ton: 'rouge' },
   echue: { l: 'Offre arrivée à échéance', ton: 'gris' },
@@ -417,19 +417,19 @@ export function historiqueFil(fil: DocOffre[], o: { client?: boolean; maintenant
       out.push({
         le: x.created_at, ton: 'or', offre: x.id,
         t: o.client
-          ? `${rang.charAt(0).toUpperCase() + rang.slice(1)} : ${EUR(total)}, frais d’agence compris${s.depuisContre ? ' (vous acceptez la proposition du vendeur)' : ''}`
-          : `${rang.charAt(0).toUpperCase() + rang.slice(1)}${qui ? ` ${qui}` : ''} : ${EUR(total)} frais d’agence compris${prix && prix !== total ? ` · ${EUR(prix)} pour le vendeur` : ''}${s.depuisContre ? ` · ${pr.accepte} la contre-proposition` : ''}${s.choix === 'relire' ? ' · à relire' : ''}`,
+          ? `${rang.charAt(0).toUpperCase() + rang.slice(1)} : ${EUR(total)}, frais d’agence compris${s.depuisContre ? ' (vous acceptez la proposition du mandant)' : ''}`
+          : `${rang.charAt(0).toUpperCase() + rang.slice(1)}${qui ? ` ${qui}` : ''} : ${EUR(total)} frais d’agence compris${prix && prix !== total ? ` · ${EUR(prix)} pour le mandant` : ''}${s.depuisContre ? ` · ${pr.accepte} la contre-proposition` : ''}${s.choix === 'relire' ? ' · à relire' : ''}`,
       });
     }
     if (x.statut === 'signe' && x.signe_le) out.push({ le: x.signe_le, ton: 'bleu', offre: x.id, t: o.client ? 'Offre signée' : 'Signée par tous' });
     for (const e of envoisOffre(x)) {
-      out.push({ le: e.le, ton: 'bleu', offre: x.id, t: o.client ? 'Transmise au vendeur' : e.vendeur ? 'Ajoutée aux offres de la fiche du bien' : `Envoyée à ${e.a.join(', ') || 'l’agence'}` });
+      out.push({ le: e.le, ton: 'bleu', offre: x.id, t: o.client ? 'Transmise au mandant' : e.vendeur ? 'Ajoutée aux offres de la fiche du bien' : `Envoyée à ${e.a.join(', ') || 'l’agence'}` });
     }
     const r = s.reponse;
     for (const a of s.avant || []) {
       if (a.statut !== 'contre' || !a.montant) continue;
       const tc = totalContre(d, a.montant);
-      out.push({ le: a.le, ton: 'violet', offre: x.id, t: o.client ? `Le vendeur propose ${EUR(tc)}, frais d’agence compris` : `Contre-proposition du vendeur : ${EUR(a.montant)}` });
+      out.push({ le: a.le, ton: 'violet', offre: x.id, t: o.client ? `Le mandant propose ${EUR(tc)}, frais d’agence compris` : `Contre-proposition du mandant : ${EUR(a.montant)}` });
     }
     if (r) {
       if (r.statut === 'contre' && r.montant) {
@@ -437,21 +437,21 @@ export function historiqueFil(fil: DocOffre[], o: { client?: boolean; maintenant
         out.push({
           le: r.le, ton: 'violet', offre: x.id,
           t: o.client
-            ? `Le vendeur propose ${EUR(tc)}, frais d’agence compris${r.limite ? ` (jusqu’au ${JOUR(r.limite)})` : ''}`
-            : `${tc === r.montant ? `Contre-proposition du vendeur : ${EUR(r.montant)}` : `Contre-proposition : ${EUR(r.montant)} pour le vendeur, soit ${EUR(tc)} pour ${pr.pour} frais d’agence compris`}${r.limite ? ` · jusqu’au ${JOUR(r.limite)}` : ''}${r.note ? ` · ${r.note}` : ''}`,
+            ? `Le mandant propose ${EUR(tc)}, frais d’agence compris${r.limite ? ` (jusqu’au ${JOUR(r.limite)})` : ''}`
+            : `${tc === r.montant ? `Contre-proposition du mandant : ${EUR(r.montant)}` : `Contre-proposition : ${EUR(r.montant)} pour le mandant, soit ${EUR(tc)} pour ${pr.pour} frais d’agence compris`}${r.limite ? ` · jusqu’au ${JOUR(r.limite)}` : ''}${r.note ? ` · ${r.note}` : ''}`,
         });
       } else if (r.statut === 'acceptee') {
         /* V3.190 : un accord à un autre prix que l'offre (noté sur la fiche du bien). */
         const autre = r.montant && total && r.montant !== total ? ` à ${EUR(r.montant)}` : '';
-        out.push({ le: r.le, ton: 'vert', offre: x.id, t: o.client ? `Le vendeur accepte votre offre${autre}` : `Acceptée par le vendeur${autre}${r.note ? ` · ${r.note}` : ''}` });
+        out.push({ le: r.le, ton: 'vert', offre: x.id, t: o.client ? `Le mandant accepte votre offre${autre}` : `Acceptée par le mandant${autre}${r.note ? ` · ${r.note}` : ''}` });
       } else if (r.statut === 'refusee') {
-        out.push({ le: r.le, ton: 'rouge', offre: x.id, t: o.client ? 'Le vendeur n’a pas retenu l’offre' : `Refusée par le vendeur${r.note ? ` · ${r.note}` : ''}` });
+        out.push({ le: r.le, ton: 'rouge', offre: x.id, t: o.client ? 'Le mandant n’a pas retenu l’offre' : `Refusée par le mandant${r.note ? ` · ${r.note}` : ''}` });
       }
     }
     if (s.close) out.push({ le: s.close.le, ton: 'gris', offre: x.id, t: o.client ? (s.close.par === 'client' ? 'Vous n’avez pas donné suite' : 'Sans suite') : `Sans suite${s.close.par === 'client' ? ', dit depuis son espace' : ''}` });
     const fin = finOffre(d);
     if (!r && !s.close && !s.remplacee_le && fin && fin.getTime() <= maintenant && (x.statut === 'signe' || !!x.signature)) {
-      out.push({ le: fin.toISOString(), ton: 'gris', offre: x.id, t: o.client ? 'Arrivée à échéance, sans réponse du vendeur' : 'Arrivée à échéance sans réponse' });
+      out.push({ le: fin.toISOString(), ton: 'gris', offre: x.id, t: o.client ? 'Arrivée à échéance, sans réponse du mandant' : 'Arrivée à échéance sans réponse' });
     }
   });
   return out.sort((a, b) => a.le.localeCompare(b.le));
@@ -473,13 +473,13 @@ export function resumeCrm(doc: DocOffre, maintenant = Date.now(), pr: PronomsCrm
     case 'en_signature': return `${total ? `${EUR(total)} frais d’agence compris · ` : ''}en signature${fin ? `, valable jusqu’au ${JOUR(fin.toISOString())}` : ''}`;
     case 'signee': return `${total ? `${EUR(total)} frais d’agence compris · ` : ''}${agence ? 'signée : ajoute-la aux offres de la fiche du bien' : 'signée : envoie-la à l’agence'}`;
     case 'envoyee': return agence
-      ? `${total ? `${EUR(total)} · ` : ''}dans les offres du bien depuis le ${JOUR(env[env.length - 1].le)}${fin ? ` · réponse du vendeur avant le ${JOUR(fin.toISOString())}` : ''}`
+      ? `${total ? `${EUR(total)} · ` : ''}dans les offres du bien depuis le ${JOUR(env[env.length - 1].le)}${fin ? ` · réponse du mandant avant le ${JOUR(fin.toISOString())}` : ''}`
       : `${total ? `${EUR(total)} · ` : ''}envoyée le ${JOUR(env[env.length - 1].le)}${fin ? ` · réponse attendue avant le ${JOUR(fin.toISOString())}` : ''}`;
     case 'contre': {
       const r = s.reponse;
       if (!r?.montant) return 'Contre-proposition';
       const tc = totalContre(d, r.montant);
-      return `Le vendeur propose ${EUR(r.montant)}${tc !== r.montant ? ` (${EUR(tc)} pour ${pr.pour})` : ''} · ${contreDepassee(r, maintenant) ? 'proposition expirée' : 'en attente de sa réponse'}`;
+      return `Le mandant propose ${EUR(r.montant)}${tc !== r.montant ? ` (${EUR(tc)} pour ${pr.pour})` : ''} · ${contreDepassee(r, maintenant) ? 'proposition expirée' : 'en attente de sa réponse'}`;
     }
     case 'acceptee': return `${s.reponse?.montant || total ? `${EUR(s.reponse?.montant || total || 0)}${agence ? '' : ' frais d’agence compris'} · ` : ''}acceptée le ${JOUR(s.reponse!.le)}`;
     case 'refusee': return `Refusée le ${JOUR(s.reponse!.le)}`;

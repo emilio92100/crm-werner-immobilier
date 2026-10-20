@@ -162,7 +162,7 @@ export default function CarteBien({ bien, suivi, nbVisites, nbPrevues = 0, nbCR 
   const conclu = bien.etape === 'compromis' || bien.etape === 'vendu';
   const hono = conclu ? honorairesVente(bien, suivi) : null;
   /* Vendu sans honoraires de l'acte : on le dit, plutôt qu'un chiffre qui n'est pas compté. */
-  const motHono = hono ? `Honoraires : ${euros(hono)} TTC` : bien.etape === 'vendu' ? (venteSansHono(suivi) ? 'Vente sans honoraires' : 'Honoraires non renseignés') : '';
+  const motHono = hono ? `Honoraires : ${euros(hono)} HT` : bien.etape === 'vendu' ? (venteSansHono(suivi) ? 'Vente sans honoraires' : 'Honoraires non renseignés') : '';
   const Tag = onClick ? 'button' : 'div';
 
   return (

@@ -485,7 +485,7 @@ function FormPersonne({ p, meme, champs, nouveau, onP, onMeme, onEnregistrer, on
   return (
     <div className="mdt-perso">
       <div className="mdt-perso-t">
-        <span className="n">Votre co-acquéreur</span>
+        <span className="n">Votre co-demandeur</span>
         {!nouveau && <button type="button" className="mdt-qui-a" onClick={onRetirer}>Retirer</button>}
       </div>
       <div className={'mdt-civ' + (champs.civilite ? ' err' : '')}>
@@ -808,12 +808,12 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
     const manque: Record<string, string> = manquesAdresse(adr);
     if (!certifie) manque.certifie = 'Cochez cette case pour recevoir votre code.';
     if (!v.ok || Object.keys(manque).length) { setChamps({ ...(v.ok ? {} : v.champs), ...manque, ...(Object.keys(manque).length ? { adresse: '' } : {}) }); return; }
-    if (edite !== null) { setErreur(`Enregistrez d’abord les informations de ${brouillon.prenom.trim() || 'votre co-acquéreur'} (ou annulez).`); return; }
+    if (edite !== null) { setErreur(`Enregistrez d’abord les informations de ${brouillon.prenom.trim() || 'votre co-demandeur'} (ou annulez).`); return; }
     const c0 = corps(v.mandant);
     if (achat === 'nom') {
       for (let i = 0; i < c0.cosignataires.length; i++) {
         const vc = validerPersonne(c0.cosignataires[i], [v.mandant.email, ...c0.cosignataires.filter((_, j) => j !== i).map(c => c.email)]);
-        if (!vc.ok) { ouvrirCo(i, vc.champs); setErreur(`Complétez les informations de ${c0.cosignataires[i].prenom || 'votre co-acquéreur'}.`); return; }
+        if (!vc.ok) { ouvrirCo(i, vc.champs); setErreur(`Complétez les informations de ${c0.cosignataires[i].prenom || 'votre co-demandeur'}.`); return; }
       }
     } else {
       const vs = validerSociete(soc);
@@ -830,7 +830,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
     } else if (r?.error === 'document') {
       refuser(r);
     } else if (r?.error === 'coordonnees' && r.champs) {
-      if (typeof r.co === 'number') { ouvrirCo(r.co, r.champs); setErreur('Vérifiez les informations de votre co-acquéreur.'); }
+      if (typeof r.co === 'number') { ouvrirCo(r.co, r.champs); setErreur('Vérifiez les informations de votre co-demandeur.'); }
       else if (r.societe) { setChampsSoc(r.champs); setErreur('Vérifiez les informations de votre société.'); }
       else setChamps(r.champs);
     } else {
@@ -942,7 +942,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
             : 'Werner vous propose de confirmer votre recherche avec lui. C’est votre mandat de recherche : il l’engage à vos côtés, jusqu’au bout.'}</p>
           <div className="mdt-puces">
             <span><span className="k"><Ic n="check" t={14} /></span><span><b>Une seule signature</b>, valable pour tous les biens qu’il vous présentera&nbsp;: ensuite, plus rien à signer pour visiter.</span></span>
-            <span><span className="k"><Ic n="check" t={14} /></span><span>Il travaille pour vous, pas pour le vendeur.</span></span>
+            <span><span className="k"><Ic n="check" t={14} /></span><span>Il travaille pour vous, pas pour le mandant.</span></span>
             <span><span className="k"><Ic n="check" t={14} /></span><span>Avant toute offre, il vérifie le dossier&nbsp;: copropriété, charges, travaux à venir.</span></span>
             <span><span className="k"><Ic n="check" t={14} /></span><span>Il vous ouvre aussi les biens qui ne sont pas sur les portails.</span></span>
             <span><span className="k"><Ic n="check" t={14} /></span><span>Il reste à vos côtés jusqu’à la signature chez le notaire.</span></span>

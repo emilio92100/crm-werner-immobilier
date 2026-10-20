@@ -51,16 +51,16 @@ const aujourdhui = () => {
 export function phraseAppel(l: AppelVisible): { t: string; sous: string } | null {
   if (l.dispo === 'vendu') return null;
   const creneaux = (l.creneaux || []).filter(c => c && c.date >= aujourdhui());
-  if (l.reponse === 'message') return { t: 'Werner a laissé un message au vendeur', sous: 'Il attend son retour.' };
-  if (l.reponse === 'sans_reponse') return { t: 'Werner a appelé le vendeur', sous: 'Pas de réponse pour l’instant : il le rappelle.' };
-  if (creneaux.length) return { t: 'Le vendeur a proposé des créneaux', sous: 'Werner organise la visite.' };
+  if (l.reponse === 'message') return { t: 'Werner a laissé un message au mandant', sous: 'Il attend son retour.' };
+  if (l.reponse === 'sans_reponse') return { t: 'Werner a appelé le mandant', sous: 'Pas de réponse pour l’instant : il le rappelle.' };
+  if (creneaux.length) return { t: 'Le mandant a proposé des créneaux', sous: 'Werner organise la visite.' };
   if (l.ensuite === 'rappeler' && l.rappel_le) {
     const j = jour(l.rappel_le);
-    return { t: 'Werner a parlé au vendeur', sous: j ? `Il le rappelle ${j.replace(/\.$/, '')}.` : 'Il le rappelle.' };
+    return { t: 'Werner a parlé au mandant', sous: j ? `Il le rappelle ${j.replace(/\.$/, '')}.` : 'Il le rappelle.' };
   }
-  if (l.ensuite === 'attente') return { t: 'Werner a parlé au vendeur', sous: 'Il attend son retour.' };
-  if (l.dispo === 'disponible') return { t: 'Werner a parlé au vendeur', sous: 'Le bien est toujours disponible.' };
-  return { t: 'Werner a parlé au vendeur', sous: '' };
+  if (l.ensuite === 'attente') return { t: 'Werner a parlé au mandant', sous: 'Il attend son retour.' };
+  if (l.dispo === 'disponible') return { t: 'Werner a parlé au mandant', sous: 'Le bien est toujours disponible.' };
+  return { t: 'Werner a parlé au mandant', sous: '' };
 }
 
 /** Les appels que le client voit : montrés et avec une phrase, du plus

@@ -358,7 +358,7 @@ export function ChampPhotos({ d, maj, off, bienId, grand = false }: { d: Donnees
 /* ══ Le dossier : diagnostics et pièces à réunir ════════════════════════ */
 const VIDE: PieceDossier = { etat: '', date: '', chemin: '', nom: '' };
 const GROUPES: { k: 'diag' | 'copro' | 'vendeur'; l: string }[] = [
-  { k: 'diag', l: 'Les diagnostics' }, { k: 'copro', l: 'La copropriété' }, { k: 'vendeur', l: 'Du vendeur' },
+  { k: 'diag', l: 'Les diagnostics' }, { k: 'copro', l: 'La copropriété' }, { k: 'vendeur', l: 'Du mandant' },
 ];
 
 export function ChampDossier({ d, maj, off, bienId }: { d: Donnees; maj: Maj; off: boolean; bienId: string }) {
@@ -495,7 +495,7 @@ function FormNouveauProprio({ depart, occupe, erreur, onCreer, onAnnuler }: {
     <div className={`${b.question} ${b.questionNouveau}`}>
       <div className={b.questionT}>
         <span className={b.questionIc}><Ic n="plus" t={18} e={2.4} /></span>
-        <div><b>Nouveau contact : le propriétaire</b><small>Sa fiche se crée dans tes contacts (type « vendeur ») et se relie à ce bien. Seul le nom est obligatoire.</small></div>
+        <div><b>Nouveau contact : le propriétaire</b><small>Sa fiche se crée dans tes contacts (type « mandant ») et se relie à ce bien. Seul le nom est obligatoire.</small></div>
       </div>
       <div className={b.npCivilite} role="group" aria-label="Civilité">
         {(['Madame', 'Monsieur'] as const).map(v => (
@@ -802,7 +802,7 @@ function ChampAnnonce({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
             <span>{x.l}{x.aide && !x.ok && <small>{x.aide}</small>}</span>
           </li>
         ))}
-        {passoire(d) && <li><span className={`${s.k} ${s.kOr}`} style={{ width: 20, height: 20, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n="info" t={12} /></span><span>Classe F ou G : l’annonce doit porter « Logement à consommation énergétique excessive ». Le brouillon l’écrit.</span></li>}
+        {passoire(d) && <li><span className={`${s.k} ${s.kOr}`} style={{ width: 20, height: 20, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n="info" t={12} /></span><span>Classe F ou G : l’annonce doit porter « Local à consommation énergétique excessive ». Le brouillon l’écrit.</span></li>}
       </ul>
     </div>
   );

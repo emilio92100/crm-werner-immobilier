@@ -36,7 +36,7 @@ export async function lireCRMBiens(): Promise<EtatCRMBiens> {
     toutLire<ClientCRM>((de, a) => supabase.from('clients').select('*').order('id').range(de, a)),
     toutLire<BienCRM>((de, a) => supabase.from('biens_vente').select('id, reference, etape, archive, client_id, titre, donnees').order('id').range(de, a)),
   ]);
-  if (cl.erreur) throw new Error(`Les contacts du CRM n’ont pas pu être lus (${cl.erreur}) : sans eux, impossible de relier les vendeurs. Recharge la page, puis réessaie.`);
+  if (cl.erreur) throw new Error(`Les contacts du CRM n’ont pas pu être lus (${cl.erreur}) : sans eux, impossible de relier les mandants. Recharge la page, puis réessaie.`);
   if (bv.erreur) throw new Error(`Les biens du CRM n’ont pas pu être lus (${bv.erreur}) : sans eux, impossible d’éviter les doublons. Recharge la page, puis réessaie.`);
   return { clients: cl.data, biens: bv.data, references: bv.data.map(x => x.reference) };
 }
@@ -63,7 +63,7 @@ async function creerVendeur(p: PlanBien, etape: EtapeVente, crm: EtatCRMBiens): 
   const ligne: Record<string, unknown> = {
     reference, prenom: v.prenom || '', nom: v.nom || '', token_espace: jetonEspace(v.prenom, v.nom),
     adresse: v.adresse || null, emails: v.emails, telephones: v.telephones, statut: 'prospect', est_vendeur: false,
-    notes: `Repris d’ImmoFacile : vendeur du bien n° ${p.ref}.${v.commentaires ? `\n${v.commentaires}` : ''}`,
+    notes: `Repris d’ImmoFacile : mandant du bien n° ${p.ref}.${v.commentaires ? `\n${v.commentaires}` : ''}`,
     types, pro: {},
     /* Un bien retiré : son vendeur va dans « Archivés », comme au tri des vendeurs. */
     ...(etape === 'retire' ? { archive: true } : {}),
@@ -104,7 +104,7 @@ export async function importerBien(p: PlanBien, c: ChoixBien, crm: EtatCRMBiens,
   if (client) res.vendeur = 'relie';
   else if (!annonceType && c.creerVendeur && p.vendeur) {
     try { client = await creerVendeur(p, c.etape, crm); res.vendeur = 'cree'; }
-    catch (e) { res.soucis.push(`le contact du vendeur n’a pas été créé (${msg(e)}) : le bien est importé sans propriétaire`); }
+    catch (e) { res.soucis.push(`le contact du mandant n’a pas été créé (${msg(e)}) : le bien est importé sans propriétaire`); }
   }
 
   /* 2. La fiche. */
@@ -177,7 +177,7 @@ export async function importerBien(p: PlanBien, c: ChoixBien, crm: EtatCRMBiens,
      Propriétaire sinon) ; une ligne dans son Suivi. */
   if (client && EN_COURS.includes(c.etape)) {
     if (!(await marquerVendeur(client.id))) res.soucis.push('son type de contact n’a pas été mis à jour');
-    try { await noterProprioRelie(bien, client.id, false); } catch (e) { res.soucis.push(`la ligne dans le Suivi du vendeur n’a pas été écrite (${msg(e)})`); }
+    try { await noterProprioRelie(bien, client.id, false); } catch (e) { res.soucis.push(`la ligne dans le Suivi du mandant n’a pas été écrite (${msg(e)})`); }
   }
   return res;
 }

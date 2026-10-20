@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Werner Immobilier//Espace acheteur//FR',
+    'PRODID:-//Werner Immobilier//Espace demandeur//FR',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',

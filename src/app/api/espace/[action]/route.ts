@@ -1209,7 +1209,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
           client_id: recherche.client_id, recherche_id: recherche.id,
           type: 'rappel_client', statut: 'en_attente',
           date_echeance: new Date().toISOString(),
-          note: `Le client ${quoi}, depuis son espace.${bascule}${annulees} À rappeler pour confirmer${motif === 'pause' ? ' et savoir quand reprendre' : ''}.${revente ? ' 🔑 Revente possible : c\u2019est le moment de lui parler de son logement actuel.' : ''}`,
+          note: `Le client ${quoi}, depuis son espace.${bascule}${annulees} À rappeler pour confirmer${motif === 'pause' ? ' et savoir quand reprendre' : ''}.${revente ? ' 🔑 Revente possible : c\u2019est le moment de lui parler de son local actuel.' : ''}`,
         }));
 
         /* Liste de types fermée côté espace_evenements : c'est un message. */

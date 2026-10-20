@@ -869,7 +869,7 @@ const QUI_AUTRE: Record<string, { un: string; pour: string }> = {
   avenant_vente: { un: 'Un autre avenant', pour: 'à ce mandat' },
   mandat_recherche: { un: 'Un autre mandat de recherche', pour: 'pour cette recherche' },
   avenant_recherche: { un: 'Un autre avenant', pour: 'à ce mandat' },
-  offre_achat: { un: 'Une autre offre d’achat', pour: 'du même acquéreur pour ce bien' },
+  offre_achat: { un: 'Une autre offre d’achat', pour: 'du même demandeur pour ce bien' },
   bon_visite: { un: 'Un autre bon de visite', pour: 'pour la même visite' },
   delegation: { un: 'Une autre délégation', pour: 'de ce mandat au même confrère' },
 };

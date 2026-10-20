@@ -76,7 +76,7 @@ export async function controlerTypes(clientId: string, avant: TypeContact[], apr
     const b = ((data || []) as { titre: string | null; etape: string; archive?: boolean | null }[]).find(x => !x.archive && EN_VENTE.includes(x.etape));
     if (b) {
       return {
-        erreur: `${prenom || 'Ce contact'} reste « Vendeur » : son bien ${b.titre ? `« ${b.titre} » ` : ''}est encore en vente (${etapeDe(b.etape).lib.toLowerCase()}). Quand la vente sera signée ou le bien retiré, tu pourras changer son type.`,
+        erreur: `${prenom || 'Ce contact'} reste « Mandant » : son bien ${b.titre ? `« ${b.titre} » ` : ''}est encore en vente (${etapeDe(b.etape).lib.toLowerCase()}). Quand la vente sera signée ou le bien retiré, tu pourras changer son type.`,
         arreter: false,
       };
     }
@@ -183,11 +183,12 @@ function ChampAdresse({ cls, lib, v, onV }: { cls: Cls; lib: string; v?: string;
 }
 /* « Il achète lui-même », « Il vend lui-même »… selon ses types (V3.31). */
 const enSonNom = (t: TypeContact[]) => {
-  const verbes = [t.includes('acheteur') && 'achète', t.includes('vendeur') && 'vend', t.includes('proprietaire') && !t.includes('vendeur') && 'possède son bien'].filter(Boolean) as string[];
-  return `Il ${verbes.length > 1 ? `${verbes.slice(0, -1).join(', ')} et ${verbes[verbes.length - 1]}` : verbes[0] || 'agit'} lui-même`;
+  const verbes = [t.includes('acheteur') && 'cherche', t.includes('vendeur') && 'confie son local', t.includes('proprietaire') && !t.includes('vendeur') && 'possède son local'].filter(Boolean) as string[];
+  return `Il ${verbes.length > 1 ? `${verbes.slice(0, -1).join(', ')} et ${verbes[verbes.length - 1]}` : verbes[0] || 'agit'} en son nom`;
 };
-/* Une société cochée « Pour une société », encore vide (V3.31). */
-const SOCIETE_VIDE = { denomination: '', forme: 'SCI', rcs: '', siege: '', qualite: '' };
+/* Une société cochée « Pour une société », encore vide (V3.31). Werner :
+   une SAS d'abord, c'est le cas le plus courant. */
+const SOCIETE_VIDE = { denomination: '', forme: 'SAS', rcs: '', siege: '', qualite: '' };
 
 export function ChampsPro({ types, pro, onChange, cls }: { types: TypeContact[]; pro: InfosPro; onChange: (p: InfosPro) => void; cls: Cls }) {
   const set = (k: keyof InfosPro) => (x: string) => onChange({ ...pro, [k]: x });
@@ -237,23 +238,31 @@ export function ChampsPro({ types, pro, onChange, cls }: { types: TypeContact[];
           agir pour une SCI, une SARL… On la note dès la création ; les
           associés, le RCS et le siège se complètent ensuite sur sa fiche
           (« Sa société »). */}
+      {/* Sa société (V3.31) : Werner — en immobilier d'entreprise, presque
+          tout contact parle pour une société. Elle passe en premier, avec
+          l'enseigne et l'activité ; les associés, le RCS et le siège se
+          complètent ensuite sur sa fiche (« Sa société »). */}
       {(types.includes('acheteur') || aUnBien(types)) && bloc('Sa société', (
         <div className={c.pro}>
-          <div className={c.pills} role="radiogroup" aria-label="Il agit en son nom ou pour une société">
+          <div className={c.pills} role="radiogroup" aria-label="Il agit pour une société ou en son nom">
+            <button type="button" role="radio" aria-checked={!!pro.structure} className={`${c.pill} ${pro.structure ? c.pillOn : ''}`}
+              onClick={() => onChange({ ...pro, structure: pro.structure || { ...SOCIETE_VIDE, associes: [] } })}>
+              Pour une société<small>Une entreprise, une enseigne, une SCI</small>
+            </button>
             <button type="button" role="radio" aria-checked={!pro.structure} className={`${c.pill} ${!pro.structure ? c.pillOn : ''}`}
               onClick={() => onChange({ ...pro, structure: undefined })}>
               En son nom<small>{enSonNom(types)}</small>
-            </button>
-            <button type="button" role="radio" aria-checked={!!pro.structure} className={`${c.pill} ${pro.structure ? c.pillOn : ''}`}
-              onClick={() => onChange({ ...pro, structure: pro.structure || { ...SOCIETE_VIDE, associes: [] } })}>
-              Pour une société<small>Une SCI, une SARL… dont il est gérant ou associé</small>
             </button>
           </div>
           {pro.structure && (
             <>
               <div className={cls.row}>
-                <Champ cls={cls} lib="Nom de la société" ph="SCI AVIENA" v={pro.structure.denomination} onV={x => onChange({ ...pro, structure: { ...pro.structure!, denomination: x } })} />
-                <Champ cls={cls} lib="Son rôle · facultatif" ph="Gérant, associée…" v={pro.structure.qualite} onV={x => onChange({ ...pro, structure: { ...pro.structure!, qualite: x } })} />
+                <Champ cls={cls} lib="Nom de la société" ph="SAS Maison Léa" v={pro.structure.denomination} onV={x => onChange({ ...pro, structure: { ...pro.structure!, denomination: x } })} />
+                <Champ cls={cls} lib="Enseigne · facultatif" ph="Maison Léa" v={pro.structure.enseigne || ''} onV={x => onChange({ ...pro, structure: { ...pro.structure!, enseigne: x } })} />
+              </div>
+              <div className={cls.row}>
+                <Champ cls={cls} lib="Activité" ph="Boulangerie, cabinet d’avocats…" v={pro.structure.activite || ''} onV={x => onChange({ ...pro, structure: { ...pro.structure!, activite: x } })} />
+                <Champ cls={cls} lib="Sa fonction · facultatif" ph="Président, directeur immobilier…" v={pro.structure.qualite} onV={x => onChange({ ...pro, structure: { ...pro.structure!, qualite: x } })} />
               </div>
               <div className={c.pills} role="radiogroup" aria-label="La forme de la société">
                 {FORMES_SOCIETE.map(f => (
@@ -261,6 +270,7 @@ export function ChampsPro({ types, pro, onChange, cls }: { types: TypeContact[];
                     onClick={() => onChange({ ...pro, structure: { ...pro.structure!, forme: pro.structure?.forme === f ? '' : f } })}>{f}</button>
                 ))}
               </div>
+              <Champ cls={cls} lib="SIREN · facultatif" ph="123 456 789" v={pro.structure.siren || ''} onV={x => onChange({ ...pro, structure: { ...pro.structure!, siren: x } })} />
               <div className={c.socAide}>Les associés, le RCS et le siège : sur sa fiche, dans « Sa société ».</div>
             </>
           )}

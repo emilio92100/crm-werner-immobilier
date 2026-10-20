@@ -109,7 +109,7 @@ export function honorairesPour(prix: number | null | undefined, taux: number = H
 export const euros = (n: number) =>
   Math.round(n).toLocaleString('fr-FR').replace(/[  ]/g, ' ') + ' €';
 export const tauxCourt = (taux: number = HONORAIRES_TAUX) => String(tauxDe(taux)).replace('.', ',') + ' %';
-export const tauxTexte = (taux: number = HONORAIRES_TAUX) => tauxCourt(taux) + ' TTC';
+export const tauxTexte = (taux: number = HONORAIRES_TAUX) => tauxCourt(taux) + ' HT';
 
 /* ── Ou un forfait ──────────────────────────────────────────────────────
    Alexandre peut aussi proposer un montant fixe, en euros TTC. Son barème
@@ -144,12 +144,12 @@ export function prixEtHonoraires(budget: number | null | undefined, h: Honoraire
 /* « 2,5 % TTC » ou « forfait de 20 000 € TTC » : pour les mails et le CRM. */
 export function honorairesCourt(h: Honoraires): string {
   const f = forfaitDe(h.forfait);
-  return f ? `forfait de ${euros(f)} TTC` : tauxTexte(tauxDe(h.taux));
+  return f ? `forfait de ${euros(f)} HT` : tauxTexte(tauxDe(h.taux));
 }
 /* « 2,5 % TTC du prix d’achat » ou « forfait de 20 000 € TTC ». */
 export function honorairesDuPrix(h: Honoraires): string {
   const f = forfaitDe(h.forfait);
-  return f ? `forfait de ${euros(f)} TTC` : `${tauxTexte(tauxDe(h.taux))} du prix d’achat`;
+  return f ? `forfait de ${euros(f)} HT` : `${tauxTexte(tauxDe(h.taux))} du prix d’achat`;
 }
 /* « 2,27 % » : ce que représente un forfait au prix donné. */
 export const pourcentDe = (montant: number, prix: number) =>
@@ -410,7 +410,7 @@ export function decrireCourt(r: Recherche): { valeur: string; detail: string } {
 export type Resume = { titre: string; valeur: string; detail: string }[];
 /* Les deux cas de l'article « Honoraires », en une ligne (V3.144). Le
    mandat de Documents dit la même chose. */
-export const HONO_DETAIL = 'rien si l’agence du vendeur partage ses honoraires · sinon à l’acte';
+export const HONO_DETAIL = 'rien si l’agence du mandant partage ses honoraires · sinon à l’acte';
 export function resumeMandat(r: Recherche): Resume {
   const c = figerContenu(r);
   return [
@@ -419,7 +419,7 @@ export function resumeMandat(r: Recherche): Resume {
       ? { titre: 'Prix maximum', valeur: `${euros(c.prixMax)} hors honoraires`, detail: `soit ${euros(r.budget || 0)} honoraires compris` }
       : { titre: 'Prix maximum', valeur: 'Votre budget', detail: 'tel qu’indiqué dans votre espace' },
     c.forfait
-      ? { titre: 'Honoraires', valeur: `${euros(c.forfait)} TTC, au forfait`, detail: HONO_DETAIL }
+      ? { titre: 'Honoraires', valeur: `${euros(c.forfait)} HT, au forfait`, detail: HONO_DETAIL }
       : { titre: 'Honoraires', valeur: `${tauxTexte(c.taux)} du prix`, detail: HONO_DETAIL },
     { titre: 'Durée', valeur: `${DUREE.mois} mois au plus`, detail: `vous l’arrêtez quand vous voulez · ${DUREE.preavis} jours de préavis` },
   ];
@@ -561,7 +561,7 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
 
   const honoraires: Bloc[] = forfait
     ? [
-      P(`Honoraires de l’Agence : forfait de ${euros(forfait)} TTC (${enLettres(forfait)} euros).`, true),
+      P(`Honoraires de l’Agence : forfait de ${euros(forfait)} HT (${enLettres(forfait)} euros).`, true),
       P(`Conformément au barème de l’Agence (${tauxTexte(BAREME)} du prix), ils ne peuvent dépasser ${tauxCourt(BAREME)} du prix d’achat : si ce prix est inférieur à ${euros(seuilForfait(forfait))}, ils sont ramenés à ${tauxCourt(BAREME)} de ce prix.`),
     ]
     : [P(`Honoraires de l’Agence : ${tauxTexte(c.taux)} du prix d’achat${prix && hono ? `, soit ${euros(hono)} pour un prix de ${euros(prix)}` : ''}.`, true)];
@@ -600,14 +600,14 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
            second cas. */
         P('Ils ne sont dus que si l’achat se réalise grâce à l’Agence, et selon l’un des deux cas suivants :'),
         { t: 'l', items: [
-          'Le bien est en vente chez une autre agence, qui partage avec l’Agence les honoraires prévus à son mandat de vente : le MANDANT ne doit alors aucun honoraire au titre du présent mandat. Il paie le prix convenu avec le vendeur, et l’Agence est rémunérée par cette autre agence.',
+          'Le bien est en vente chez une autre agence, qui partage avec l’Agence les honoraires prévus à son mandat de vente : le MANDANT ne doit alors aucun honoraire au titre du présent mandat. Il paie le prix convenu avec le mandant, et l’Agence est rémunérée par cette autre agence.',
           'Dans tous les autres cas (bien vendu par son propriétaire, agence qui ne partage pas ses honoraires, bien trouvé hors des annonces…) : les honoraires ci-dessus sont à la charge du MANDANT, en plus du prix.',
         ] },
         P('L’Agence indique au MANDANT par écrit, avant toute offre d’achat, dans lequel de ces deux cas se trouve le bien, notamment dans son espace personnel.', true),
         /* V3.145 : les prix de l'espace sont ceux des annonces ; ses honoraires y
            sont dits sur le bien, quand ils s'ajoutent (src/lib/honoraires-bien.ts). */
         P('Dans l’espace personnel du MANDANT, le prix affiché pour chaque bien est celui de son annonce. Si des honoraires de l’Agence s’y ajoutent (second cas ci-dessus), l’espace le précise sur le bien concerné, avec leur montant.'),
-        P('Lorsqu’ils sont dus, les honoraires sont payés le jour de la signature de l’acte authentique, par l’intermédiaire du notaire : aucune somme n’est due avant. En cas de préemption, le titulaire du droit de préemption les doit à la place de l’acquéreur.'),
+        P('Lorsqu’ils sont dus, les honoraires sont payés le jour de la signature de l’acte authentique, par l’intermédiaire du notaire : aucune somme n’est due avant. En cas de préemption, le titulaire du droit de préemption les doit à la place du demandeur.'),
       ] },
       { titre: 'Durée', ic: 'calendrier', blocs: plusieurs
         ? [
@@ -620,7 +620,7 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
         ] },
       { titre: 'Engagements du mandant', ic: 'personne', blocs: [
         P('Le MANDANT déclare avoir la capacité d’acheter et n’avoir confié aucun mandat exclusif de recherche portant sur les mêmes biens. Il autorise le MANDATAIRE à se faire assister ou substituer par un autre professionnel habilité.'),
-        P('S’il achète un bien, avec ou sans le MANDATAIRE, il l’en informe sans délai et lui indique, à sa demande, le vendeur, le prix et le notaire chargé de la vente.'),
+        P('S’il achète un bien, avec ou sans le MANDATAIRE, il l’en informe sans délai et lui indique, à sa demande, le mandant, le prix et le notaire chargé de la vente.'),
         soc
           ? P('Pendant le mandat et les douze mois qui suivent sa fin, le MANDANT s’interdit d’acheter sans le MANDATAIRE, directement ou par personne interposée, un bien que celui-ci lui a présenté. Il s’en porte fort pour les associés et dirigeants de la société, et pour toute société qu’ils contrôlent.', true)
           : P('Pendant le mandat et les douze mois qui suivent sa fin, le MANDANT s’interdit d’acheter sans le MANDATAIRE, directement ou par personne interposée, un bien que celui-ci lui a présenté. Il s’en porte fort pour son conjoint, son partenaire de PACS, son concubin et toute personne avec qui il achèterait.', true),
@@ -629,7 +629,7 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
         P('Le MANDATAIRE s’engage, à chaque étape :'),
         { t: 'etapes', items: [
           { titre: 'Rechercher', x: 'Suivre chaque jour les annonces correspondant aux critères du MANDANT, y compris celles des particuliers ; chercher des biens hors marché auprès de son réseau de confrères et de son carnet d’adresses.' },
-          { titre: 'Visiter et sélectionner', x: 'Visiter les biens susceptibles de convenir avant de les proposer, et obtenir des vendeurs les renseignements et documents imposés par la réglementation.' },
+          { titre: 'Visiter et sélectionner', x: 'Visiter les biens susceptibles de convenir avant de les proposer, et obtenir des mandants les renseignements et documents imposés par la réglementation.' },
           { titre: 'Vérifier', x: 'Étudier le dossier de chaque bien avant toute offre : diagnostics, documents de copropriété, charges et travaux votés.' },
           { titre: 'Négocier', x: 'Accompagner le MANDANT dans la négociation du prix.' },
           { titre: 'Accompagner jusqu’à l’acte', x: 'L’accompagner jusqu’à la signature de l’acte authentique chez le notaire.' },

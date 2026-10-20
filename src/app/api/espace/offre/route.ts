@@ -327,7 +327,7 @@ export async function POST(req: NextRequest) {
       await ecritServeur('[espace/offre] journal', sb.from('journal').insert({
         client_id: client.id, recherche_id: recherche.id, bien_id: bien.id, type: 'offre_faite',
         titre: `✍️ Offre préparée dans son espace, en signature — ${titreBien}`,
-        description: `${note ? `💶 ${note}\n` : ''}Il la signe seul, avec son code.${acquereurs.length > 1 ? ` Les autres acquéreurs ont reçu leur lien : ${acquereurs.slice(1).map(p => p.email).join(', ')}.` : ''}${r.echecs.length ? `\n⚠️ Non envoyé : ${r.echecs.join(' ; ')}` : ''}`,
+        description: `${note ? `💶 ${note}\n` : ''}Il la signe seul, avec son code.${acquereurs.length > 1 ? ` Les autres demandeurs ont reçu leur lien : ${acquereurs.slice(1).map(p => p.email).join(', ')}.` : ''}${r.echecs.length ? `\n⚠️ Non envoyé : ${r.echecs.join(' ; ')}` : ''}`,
         metadata: { document_id: docId, offre: true },
       }));
       await evt(`Offre en signature${total ? ` · ${total.toLocaleString('fr-FR')} €` : ''}`, bien.id);

@@ -871,7 +871,7 @@ function FenetreAppel({ b, lignes, ligne, clientId, rechercheId, prenom, clientP
                 <div className={s.clientMot}>
                   <label htmlFor="appel-mot-vendu">{'Ton mot pour '}{prenom}<i>{' (facultatif)'}</i></label>
                   <textarea id="appel-mot-vendu" className={s.zoneClient} rows={2} value={motVendu} onChange={e => setMotVendu(e.target.value)} maxLength={600}
-                    placeholder="Vendu à un autre acquéreur. Je continue de chercher dans le même secteur." />
+                    placeholder="Vendu à un autre demandeur. Je continue de chercher dans le même secteur." />
                 </div>
               )}
               {!direVendu && <div className={s.aide}>{`Rien ne change chez ${prenom}. Tu pourras le classer plus tard depuis ton suivi (« Le classer Plus disponible »).`}</div>}

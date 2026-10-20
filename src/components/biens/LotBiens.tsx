@@ -947,12 +947,12 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
                 <div className={l.vide}>
                   <span className={l.videIc}><Ic n="groupe" t={24} /></span>
                   <b>{'Aucun de ces biens n’est à envoyer.'}</b>
-                  <span>{'Un bien en pause, vendu ou retiré ne part plus chez les acheteurs.'}</span>
+                  <span>{'Un bien en pause, vendu ou retiré ne part plus chez les demandeurs.'}</span>
                 </div>
               ) : (
                 <>
                   {avantMandat.length > 0 && (
-                    <p className={l.aide}><Ic n="info" t={14} /><span>{`${avantMandat.map(bienCourt).join(', ')} : pas encore sous mandat. ${avantMandat.length > 1 ? 'Ils partent' : 'Il part'} quand même, comme les autres, sans prix : il arrivera chez l’acheteur à la signature du mandat.`}</span></p>
+                    <p className={l.aide}><Ic n="info" t={14} /><span>{`${avantMandat.map(bienCourt).join(', ')} : pas encore sous mandat. ${avantMandat.length > 1 ? 'Ils partent' : 'Il part'} quand même, comme les autres, sans prix : il arrivera chez l’demandeur à la signature du mandat.`}</span></p>
                   )}
 
                   {/* À qui : un client par son nom, ou une adresse e-mail (V3.121). */}
@@ -1048,7 +1048,7 @@ export function FenEnvoiLot({ biens, liste, nomBien, onFermer, onFait, onFiche }
                   {rappro === 'tri' || rappro === 'relecture' ? (
                     <Progression etapes={[
                       { t: 'Le premier tri', etat: rappro === 'tri' ? 'en' : 'fait',
-                        d: rappro === 'tri' ? `Budget, secteur, type, surface : je compare ${plusieursBiens ? 'ces biens' : 'ce bien'} à tes ${nbRecherches} recherche${nbRecherches > 1 ? 's' : ''} ouverte${nbRecherches > 1 ? 's' : ''}.` : `${lignes.length} acheteur${lignes.length > 1 ? 's passent' : ' passe'} le premier tri, sur ${nbRecherches} recherche${nbRecherches > 1 ? 's' : ''} ouverte${nbRecherches > 1 ? 's' : ''}.` },
+                        d: rappro === 'tri' ? `Budget, secteur, type, surface : je compare ${plusieursBiens ? 'ces biens' : 'ce bien'} à tes ${nbRecherches} recherche${nbRecherches > 1 ? 's' : ''} ouverte${nbRecherches > 1 ? 's' : ''}.` : `${lignes.length} demandeur${lignes.length > 1 ? 's passent' : ' passe'} le premier tri, sur ${nbRecherches} recherche${nbRecherches > 1 ? 's' : ''} ouverte${nbRecherches > 1 ? 's' : ''}.` },
                       { t: 'La relecture de chaque dossier', etat: rappro === 'tri' ? 'attente' : 'en', fait: iaEtat.fait, total: iaEtat.total,
                         d: rappro === 'tri' ? 'Indispensables, parcours, comptes rendus de visite, face à la fiche du bien.' : `${Math.min(iaEtat.fait, iaEtat.total)} sur ${iaEtat.total} relu${iaEtat.total > 1 ? 's' : ''}…` },
                       { t: 'Le classement', etat: 'attente', d: 'Oui, à voir, non : les meilleures chances d’abord.' },
@@ -1168,7 +1168,7 @@ export const CIBLES_ETAPE: { k: CibleEtape; lib: string; sous: string }[] = [
   { k: 'a_suivre', lib: 'À suivre', sous: 'Une estimation mise en attente' },
   { k: 'estimation', lib: 'Estimation', sous: 'Un bien à suivre passe à l’estimation' },
   { k: 'suspendu', lib: 'En pause', sous: 'Une vente mise en pause' },
-  { k: 'retire', lib: 'Retiré', sous: 'Le vendeur renonce, le mandat est terminé' },
+  { k: 'retire', lib: 'Retiré', sous: 'Le mandant renonce, le mandat est terminé' },
 ];
 /* D'où chaque étape se rejoint, comme dans le menu d'étape de la fiche. */
 const DEPUIS: Record<CibleEtape, EtapeVente[]> = {
@@ -1186,7 +1186,7 @@ export function bloqueEtape(b: BienVente, cible: CibleEtape, liste: ListeBiens):
   const d = b.donnees || {};
   const jamaisEnVente = !b.en_vente_le && !String(d.mandatDate || '').trim();
   if (!DEPUIS[cible].includes(b.etape) || (cible === 'estimation' && b.etape === 'retire' && !jamaisEnVente)) {
-    if (b.etape === 'compromis' && cible === 'retire') return 'Sous compromis : « Le compromis est tombé », depuis sa fiche.';
+    if (b.etape === 'compromis' && cible === 'retire') return 'En signature : « Le compromis est tombé », depuis sa fiche.';
     if (cible === 'estimation' && (b.etape === 'mandat' || b.etape === 'suspendu')) return 'Un mandat noté : « Le mandat n’est pas encore signé » ou « Annuler ce mandat », depuis sa fiche.';
     if (cible === 'estimation' && b.etape === 'retire') return 'Retiré après une mise en vente : « Remettre en vente », depuis sa fiche.';
     return `« ${etapeDe(b.etape).court} » ne passe pas « ${court} ».`;

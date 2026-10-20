@@ -353,7 +353,7 @@ const ORDRE_ETAPES = ['offre','negociation','offre_acceptee','compromis','acte']
    où on en est. Avant, ces informations étaient éparpillées dans le JSX —
    une icône ici, un libellé là — et rien ne disait à quoi servait l'étape. */
 const ETAPES_TX: { cle: string; nom: string; quoi: string; icone: string }[] = [
-  { cle: 'offre',          nom: 'Offre',          icone: '✍️', quoi: "L'offre est écrite et transmise au vendeur" },
+  { cle: 'offre',          nom: 'Offre',          icone: '✍️', quoi: "L'offre est écrite et transmise au mandant" },
   { cle: 'negociation',    nom: 'Négociation',    icone: '⚖️', quoi: 'Les contre-offres vont et viennent' },
   { cle: 'offre_acceptee', nom: 'Offre acceptée', icone: '🤝', quoi: 'Le prix est arrêté — place au notaire' },
   { cle: 'compromis',      nom: 'Compromis',      icone: '📋', quoi: 'Signé, les délais courent' },
@@ -716,7 +716,7 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
       <div style={sectionTitle}>💰 Prix & Charges</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
         <div>
-          <label className={styles.lbl}>Prix vendeur €</label>
+          <label className={styles.lbl}>Prix mandant €</label>
           <input className={styles.inp} type="number" value={bienForm.prix_vendeur||''} onChange={e => set('prix_vendeur', e.target.value)} />
         </div>
         <div>
@@ -730,7 +730,7 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
           </div>
         </div>
         <div>
-          <label className={styles.lbl}>Prix acquéreur (FAI)</label>
+          <label className={styles.lbl}>Prix demandeur (FAI)</label>
           <div className={styles.inp} style={{ background: '#fef9c3', color: '#854d0e', fontWeight: 700 }}>
             {prixAcq ? `${prixAcq.toLocaleString('fr-FR')}€` : '—'}
           </div>
@@ -756,10 +756,10 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
       </div>
 
       {/* ===== AGENCE / VENDEUR ===== */}
-      <div style={sectionTitle}>🏢 Agence / Vendeur</div>
+      <div style={sectionTitle}>🏢 Agence / Mandant</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
-          <label className={styles.lbl}>Nom agence ou vendeur</label>
+          <label className={styles.lbl}>Nom agence ou mandant</label>
           <input className={styles.inp} value={bienForm.agence_nom||''} onChange={e => set('agence_nom', e.target.value)} />
         </div>
         <div>
@@ -1324,7 +1324,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
 
   const [cf, setCf] = useState(() => cfDe(client));
   const [crit, setCrit] = useState<CritForm>(CRIT_VIDE);
-  const [mandat, setMandat] = useState({ date_signature: '', duree: '3', honoraires: '2,5% TTC', date_expiration: '' });
+  const [mandat, setMandat] = useState({ date_signature: '', duree: '3', honoraires: '2,5% HT', date_expiration: '' });
   const [actionF, setActionF] = useState({ type: 'note', titre: '', description: '', bien_id: '', relance: '' });
   /* Modifier une ligne du suivi : on rouvre le même formulaire, en mémorisant
      laquelle. Vide = on en crée une nouvelle. */
@@ -1549,7 +1549,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     });
     setMandat({
       date_signature: r.mandat_date_signature || '', duree: r.mandat_duree?.toString() || '3',
-      honoraires: r.mandat_honoraires || '2,5% TTC', date_expiration: r.mandat_date_expiration || '',
+      honoraires: r.mandat_honoraires || '2,5% HT', date_expiration: r.mandat_date_expiration || '',
     });
   }, [rechercheId, recherches]);
 
@@ -2355,7 +2355,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     if (error || !data) { signalerEchec('La suppression du mandat', error?.message || 'aucune ligne n’a été modifiée. La session a peut-être expiré : recharge la page, puis recommence.'); setSaving(false); return; }
     if (data) {
       setRecherches(rs => rs.map(r => r.id === rechercheId ? (data as Recherche) : r));
-      setMandat({ date_signature: '', duree: '3', honoraires: '2,5% TTC', date_expiration: '' });
+      setMandat({ date_signature: '', duree: '3', honoraires: '2,5% HT', date_expiration: '' });
       await addJournal(client.id, 'mandat', '📋 Mandat supprimé', undefined, undefined, { rechercheId });
       load();
     }
@@ -4318,8 +4318,8 @@ ${signatureMail()}`,
 
         .tx-co { display: flex; align-items: center; gap: 10px; padding: 8px 12px;
           border-radius: 11px; border: 1px solid #efeeee; background: #fff; font-size: 13.5px; }
-        .tx-co[data-partie="acheteur"] { border-color: #eceae9; background: #fbfbfb; }
-        .tx-co[data-partie="vendeur"] { border-color: #fbe0e0; background: #fffafa; }
+        .tx-co[data-partie="demandeur"] { border-color: #eceae9; background: #fbfbfb; }
+        .tx-co[data-partie="mandant"] { border-color: #fbe0e0; background: #fffafa; }
         .tx-co-qui { font-size: 12px; font-weight: 700; color: #55647a; flex-shrink: 0; }
         .tx-co b { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 14.5px; color: var(--emilio); }
         .tx-co-x { background: none; border: none; cursor: pointer; color: #cbd5e1;
@@ -4762,7 +4762,7 @@ ${signatureMail()}`,
                     const PUCE: React.CSSProperties = { background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', padding: '4px 12px', borderRadius: 20, fontSize: 13.5, fontWeight: 600 };
 
                     const familles: React.ReactNode[] = [];
-                    if (logement.length) familles.push(<FamilleCrit key="logement" titre="Le logement" couleur="#393836" fond="#f6f5f4" trait="#e7e6e4" lignes={logement}
+                    if (logement.length) familles.push(<FamilleCrit key="logement" titre="Le local" couleur="#393836" fond="#f6f5f4" trait="#e7e6e4" lignes={logement}
                       ico={ICO(<><path d="M3 21h18" /><path d="M5 21V9.5L12 4l7 5.5V21" /><path d="M10 21v-6h4v6" /></>, '#393836')} />);
                     if (immeuble.length) familles.push(<FamilleCrit key="immeuble" titre="L'immeuble" couleur="#6d28d9" fond="#f5f3ff" trait="#ddd6fe" lignes={immeuble}
                       ico={ICO(<><path d="M4 21V4h9v17" /><path d="M13 10h7v11" /><path d="M7 8h2" /><path d="M7 12h2" /><path d="M7 16h2" /></>, '#6d28d9')} />);
@@ -5106,10 +5106,10 @@ ${signatureMail()}`,
                 if (offre !== null) chiffres.push({ k: 'Offre initiale', v: eur(offre), d: tx.offre_date ? jourFr(tx.offre_date) : null, c: '#d36a1a' });
                 if (derniere) {
                   const m = lireMontant(derniere.montant);
-                  chiffres.push({ k: 'Dernière contre-offre', v: m !== null ? eur(m) : '—', d: derniere.partie === 'acheteur' ? 'de votre client' : 'du vendeur', c: '#393836' });
+                  chiffres.push({ k: 'Dernière contre-offre', v: m !== null ? eur(m) : '—', d: derniere.partie === 'acheteur' ? 'de votre client' : 'du mandant', c: '#393836' });
                 }
                 if (prixFinal !== null) chiffres.push({ k: 'Prix retenu', v: eur(prixFinal), d: ecart !== null ? `${ecart > 0 ? '+' : ''}${eur(ecart)} vs offre` : null, c: '#15803d' });
-                if (hono !== null) chiffres.push({ k: 'Honoraires', v: `${eur(hono)} HT`, d: `${eur(Math.round(hono * 1.2 * 100) / 100)} TTC`, c: 'var(--emilio)' });
+                if (hono !== null) chiffres.push({ k: 'Honoraires', v: `${eur(hono)} HT`, d: `${eur(Math.round(hono * 1.2 * 100) / 100)} HT`, c: 'var(--emilio)' });
 
                 const SUIVANT: Record<string, { label: string; vers: string }> = {
                   offre:          { label: '→ Passer en négociation', vers: 'negociation' },
@@ -5267,7 +5267,7 @@ ${signatureMail()}`,
                                     const acheteur = c.partie === 'acheteur';
                                     return (
                                       <div key={i} className="tx-co" data-partie={c.partie}>
-                                        <span className="tx-co-qui">{acheteur ? '🏠 Votre client' : '🏢 Le vendeur'}</span>
+                                        <span className="tx-co-qui">{acheteur ? '🏠 Votre client' : '🏢 Le mandant'}</span>
                                         <b>{m !== null ? eur(m) : '—'}</b>
                                         <span style={{ color: '#94a3b8', fontSize: 12.5 }}>{c.date ? jourFr(c.date) : ''}</span>
                                         <span style={{ flexGrow: 1 }} />
@@ -5287,7 +5287,7 @@ ${signatureMail()}`,
                                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                     <select className={styles.inp} style={{ width: 150, flexShrink: 0 }}
                                       value={coForm.partie} onChange={e => setCoForm(f => ({ ...f, partie: e.target.value }))}>
-                                      <option value="vendeur">🏢 Le vendeur</option>
+                                      <option value="vendeur">🏢 Le mandant</option>
                                       <option value="acheteur">🏠 Votre client</option>
                                     </select>
                                     <input className={styles.inp} type="text" inputMode="decimal" placeholder="Montant €" style={{ flex: '1 1 130px' }}
@@ -5394,7 +5394,7 @@ ${signatureMail()}`,
                               </div>
                               {hono !== null && (
                                 <div className="tx-alerte" data-ton="vert">
-                                  💰 Honoraires TTC : <b>{eur(Math.round(hono * 1.2 * 100) / 100)}</b>
+                                  💰 Honoraires HT : <b>{eur(Math.round(hono * 1.2 * 100) / 100)}</b>
                                 </div>
                               )}
                               {enCours && (
@@ -5603,7 +5603,7 @@ ${signatureMail()}`,
                 </select>
               </div>
               {/* Revente possible après l'achat — interrupteur indépendant du statut */}
-              <button type="button" onClick={() => setCf(f => ({ ...f, bien_actuel_a_vendre: !f.bien_actuel_a_vendre, ...(!f.bien_actuel_a_vendre && !f.statut_occupation ? { statut_occupation: 'proprietaire' } : {}) }))} style={{ marginTop: 10, padding: '8px 14px', borderRadius: 20, border: `1px solid ${cf.bien_actuel_a_vendre ? '#ea580c' : '#e2e8f0'}`, background: cf.bien_actuel_a_vendre ? '#fff7ed' : 'white', color: cf.bien_actuel_a_vendre ? '#ea580c' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{cf.bien_actuel_a_vendre ? '✓ ' : ''}🏷️ Revente possible après l&apos;achat (mandat vendeur potentiel)</button>
+              <button type="button" onClick={() => setCf(f => ({ ...f, bien_actuel_a_vendre: !f.bien_actuel_a_vendre, ...(!f.bien_actuel_a_vendre && !f.statut_occupation ? { statut_occupation: 'proprietaire' } : {}) }))} style={{ marginTop: 10, padding: '8px 14px', borderRadius: 20, border: `1px solid ${cf.bien_actuel_a_vendre ? '#ea580c' : '#e2e8f0'}`, background: cf.bien_actuel_a_vendre ? '#fff7ed' : 'white', color: cf.bien_actuel_a_vendre ? '#ea580c' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{cf.bien_actuel_a_vendre ? '✓ ' : ''}🏷️ Revente possible après l&apos;achat (mandat mandant potentiel)</button>
               {cf.bien_actuel_a_vendre && (
                 <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: 14, marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div className={styles.formRow}>
@@ -5825,7 +5825,7 @@ ${signatureMail()}`,
             <div className={styles.modalHeader}><h2 className={styles.modalTitle}>🏁 Clôturer la recherche</h2><button className={styles.modalClose} onClick={() => setShowCloture(false)}>✕</button></div>
             <div className={styles.modalBody}>
               <div style={{ background: '#f8fafc', border: '1px solid #f3f2f2', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
-                {'La veille s’arrête sur ce dossier, ses relances d’acheteur sont soldées, ses visites à venir annulées, et le motif reste au journal. Tout est réversible : « Rouvrir le dossier » dans le menu d’état.'}
+                {'La veille s’arrête sur ce dossier, ses relances d’demandeur sont soldées, ses visites à venir annulées, et le motif reste au journal. Tout est réversible : « Rouvrir le dossier » dans le menu d’état.'}
               </div>
               {/* V3.50 : trouvé avec nous et une transaction ouverte = un acte signé. */}
               {cloture.motif === 'trouve_avec_moi' && transaction && transaction.etape_actuelle !== 'finalise' && (
@@ -6001,7 +6001,7 @@ ${signatureMail()}`,
                 <div><label className={styles.lbl}>Durée</label><select className={styles.inp} value={mandat.duree} onChange={e => setMandat(f => ({ ...f, duree: e.target.value }))}><option value="1">1 mois</option><option value="2">2 mois</option><option value="3">3 mois</option><option value="6">6 mois</option><option value="12">12 mois</option></select></div>
                 <div><label className={styles.lbl}>Date expiration (auto ou manuelle)</label><input className={styles.inp} type="date" value={mandat.date_expiration} onChange={e => setMandat(f => ({ ...f, date_expiration: e.target.value }))} /></div>
               </div>
-              <div><label className={styles.lbl}>Honoraires convenus</label><input className={styles.inp} value={mandat.honoraires} onChange={e => setMandat(f => ({ ...f, honoraires: e.target.value }))} placeholder="2,5% TTC ou 5 000€ TTC" /></div>
+              <div><label className={styles.lbl}>Honoraires convenus</label><input className={styles.inp} value={mandat.honoraires} onChange={e => setMandat(f => ({ ...f, honoraires: e.target.value }))} placeholder="2,5% HT ou 5 000€ HT" /></div>
               {mandat.date_signature && mandat.duree && !mandat.date_expiration && <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#1d4ed8' }}>💡 Expiration calculée : {ajouterMois(String(mandat.date_signature).slice(0, 10), parseInt(mandat.duree)).split('-').reverse().join('/')}</div>}
             </div>
             <div className={styles.modalFooter} style={{ justifyContent: 'space-between' }}>
@@ -6043,7 +6043,7 @@ ${signatureMail()}`,
                   <div style={{ fontSize: 12.5, color: '#64748b', lineHeight: 1.5 }}>{'Enregistrée, la fiche reste dans Veille, avec son annonce, et elle y est analysée par rapport à sa recherche, comme la veille : la note, l’avis, les atouts, ce qu’il faut vérifier. Tu choisis ensuite « Retenir » (elle part en Sélection) ou « Écarter ».'}</div>
                   <label className={styles.lbl} style={{ marginTop: 2 }}>{'Ton avis pour lui '}<span style={{ fontWeight: 400, color: '#94a3b8' }}>{'(facultatif — il le lira avec le bien, dans « Ça me plaît »)'}</span></label>
                   <textarea className={styles.inp} rows={2} value={avisAnnonce} onChange={e => setAvisAnnonce(e.target.value)} maxLength={600}
-                    placeholder="Ex. : très bon choix. Toujours disponible, toiture refaite en 2021, le vendeur a déjà baissé une fois." style={{ fontFamily: 'inherit', fontSize: 13 }} />
+                    placeholder="Ex. : très bon choix. Toujours disponible, toiture refaite en 2021, le mandant a déjà baissé une fois." style={{ fontFamily: 'inherit', fontSize: 13 }} />
                 </div>
               )}
 
@@ -6600,7 +6600,7 @@ ${signatureMail()}`,
               <ChoixQuand date={planVisteForm.date} heure={planVisteForm.heure} duree={planVisteForm.duree}
                 onDate={k => setPlanVisiteForm(f => ({ ...f, date: k }))} onHeure={h => setPlanVisiteForm(f => ({ ...f, heure: h }))}
                 onDuree={n => setPlanVisiteForm(f => ({ ...f, duree: n }))} durees={DUREES_VISITE} />
-              <div><label className={styles.lbl}>Contact agence / vendeur</label><input className={styles.inp} value={planVisteForm.contact} onChange={e => setPlanVisiteForm(f => ({ ...f, contact: e.target.value }))} placeholder="Nom, téléphone, email..." /></div>
+              <div><label className={styles.lbl}>Contact agence / mandant</label><input className={styles.inp} value={planVisteForm.contact} onChange={e => setPlanVisiteForm(f => ({ ...f, contact: e.target.value }))} placeholder="Nom, téléphone, email..." /></div>
               <div><label className={styles.lbl}>Notes préparatoires</label><textarea className={styles.inp} rows={2} value={planVisteForm.notes} onChange={e => setPlanVisiteForm(f => ({ ...f, notes: e.target.value }))} placeholder="Points à vérifier, documents à apporter..." /></div>
             </div>
             <div className={styles.modalFooter} style={{ flexWrap: 'wrap' }}>

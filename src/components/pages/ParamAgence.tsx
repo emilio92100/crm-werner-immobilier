@@ -300,7 +300,7 @@ export default function ParamAgence() {
           ))}
         </div>
         <div style={{ fontSize: 12.5, color: GRIS, lineHeight: 1.55, marginTop: 10 }}>
-          {'Pour un acheteur, tu choisis le taux ou un forfait depuis sa fiche (bouton Mandat). Ces valeurs deviendront modifiables ici avec les mandats de vente : elles entrent dans le calcul du prix maximum de chaque mandat.'}
+          {'Pour un demandeur, tu choisis le taux ou un forfait depuis sa fiche (bouton Mandat). Ces valeurs deviendront modifiables ici avec les mandats de vente : elles entrent dans le calcul du prix maximum de chaque mandat.'}
         </div>
       </div>
 

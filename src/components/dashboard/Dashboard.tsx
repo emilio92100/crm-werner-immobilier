@@ -447,7 +447,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
             <div style={{ background: 'var(--emilio-fond)', borderRadius: 16, padding: 16 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#f08c42', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>🚀 Pour commencer</div>
               <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 13, color: 'white', marginBottom: 4 }}>Créez votre premier contact</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Ajoutez vos acheteurs et commencez la chasse !</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Ajoutez vos demandeurs et commencez la chasse !</div>
               <button
                 onClick={() => onNavigate('clients')}
                 style={{ width: '100%', background: '#f08c42', color: 'var(--emilio)', border: 'none', borderRadius: 8, padding: '8px 0', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}

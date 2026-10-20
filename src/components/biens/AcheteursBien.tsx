@@ -119,7 +119,7 @@ export function CarteAcheteurs({ acheteurs, mode, onVoir }: { acheteurs: Acheteu
   const reste = n - tete.length;
   return (
     <div className={`${a.kpi} ${a.kpiOr}`}>
-      <div className={a.kpiT}><span className={a.kpiIc}><Ic n="groupe" t={17} /></span>{avant ? 'Acheteurs potentiels' : 'Les acheteurs'}</div>
+      <div className={a.kpiT}><span className={a.kpiIc}><Ic n="groupe" t={17} /></span>{avant ? 'Demandeurs potentiels' : 'Les demandeurs'}</div>
       <div className={a.kpiN}><b>{n}</b><span>{avant ? (n > 1 ? 'pourraient l’acheter' : 'pourrait l’acheter') : n > 1 ? 'correspondent' : 'correspond'}</span></div>
       {n > 0 ? (
         <div className={a.pile}>
@@ -131,7 +131,7 @@ export function CarteAcheteurs({ acheteurs, mode, onVoir }: { acheteurs: Acheteu
       {avant && n > 0
         ? <span className={a.kpiSous}>{`${bons.length} correspond${bons.length > 1 ? 'ent' : ''} · ${liste.length - bons.length} en partie`}</span>
         : null}
-      <button type="button" className={a.kpiLien} onClick={onVoir}>Voir les acheteurs</button>
+      <button type="button" className={a.kpiLien} onClick={onVoir}>Voir les demandeurs</button>
     </div>
   );
 }
@@ -159,7 +159,7 @@ export function FenEnvoiAcheteurs({ bien, choisis, onFermer, onFait, onFiche }: 
     if (r.erreurs.length && !r.n) { setErreur(r.erreurs.join('\n')); return; }
     onFait(r.erreurs.length
       ? { t: `${r.n} mis en sélection. Erreurs : ${r.erreurs.join(' ; ')}`, ok: false }
-      : { t: r.n > 1 ? `Dans la sélection de ${r.n} acheteurs. Rien n’est parti : envoyez-le depuis leur fiche, ou d’ici.` : `Dans la sélection de ${nomClient(pourSelection[0].client)}. Rien n’est parti.`, ok: true });
+      : { t: r.n > 1 ? `Dans la sélection de ${r.n} demandeurs. Rien n’est parti : envoyez-le depuis leur fiche, ou d’ici.` : `Dans la sélection de ${nomClient(pourSelection[0].client)}. Rien n’est parti.`, ok: true });
   }
   async function espace() {
     setEn('espace'); setErreur('');
@@ -168,7 +168,7 @@ export function FenEnvoiAcheteurs({ bien, choisis, onFermer, onFait, onFiche }: 
     if (r.erreurs.length && !r.n) { setErreur(r.erreurs.join('\n')); return; }
     onFait(r.erreurs.length
       ? { t: `${r.n} envoi${r.n > 1 ? 's' : ''} fait${r.n > 1 ? 's' : ''}. Erreurs : ${r.erreurs.join(' ; ')}`, ok: false }
-      : { t: r.n > 1 ? `Envoyé dans l’espace de ${r.n} acheteurs.` : r.n === 1 ? 'Envoyé dans son espace.' : 'Ils l’avaient déjà.', ok: true });
+      : { t: r.n > 1 ? `Envoyé dans l’espace de ${r.n} demandeurs.` : r.n === 1 ? 'Envoyé dans son espace.' : 'Ils l’avaient déjà.', ok: true });
   }
   /* Le mail habituel part de sa fiche, sur les biens de son dossier : le bien
      y entre d'abord (à l'étape Sélection s'il n'y était pas), puis sa fiche
@@ -222,7 +222,7 @@ export function FenEnvoiAcheteurs({ bien, choisis, onFermer, onFait, onFiche }: 
             {choisis.length > 3 && <span className={a.pourPlus}>{`+${choisis.length - 3}`}</span>}
           </span>
           <span className={a.pourTx}>
-            <b>{seul ? `Pour ${nom}` : `Pour ${choisis.length} acheteurs`}</b>
+            <b>{seul ? `Pour ${nom}` : `Pour ${choisis.length} demandeurs`}</b>
             <small>{seul ? pourQui : choisis.map(x => nomClient(x.client)).join(', ')}</small>
           </span>
         </div>
@@ -255,7 +255,7 @@ export function FenEnvoiAcheteurs({ bien, choisis, onFermer, onFait, onFiche }: 
               </span>
             </button>
           )}
-          {!seul && <p className={a.aide}>{'Pour un mail, un acheteur à la fois : « Envoyer… » sur sa ligne.'}</p>}
+          {!seul && <p className={a.aide}>{'Pour un mail, un demandeur à la fois : « Envoyer… » sur sa ligne.'}</p>}
           {erreur && <p className={a.erreur}>{erreur}</p>}
         </div>
       </div>

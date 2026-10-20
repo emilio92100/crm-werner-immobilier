@@ -33,15 +33,15 @@ const PAR_APPEL = 8;
 
 const CONSIGNES = `Tu aides Werner, agent immobilier et chasseur d'appartements à Paris et dans les Hauts-de-Seine, à reprendre les fiches clients de son ancien logiciel (ImmoFacile) dans son nouveau CRM.
 
-Pour chaque contact tu reçois : son statut dans ImmoFacile (« Propriétaire » = il possède un logement ; « Demandeur » = il cherche à acheter), les critères déjà remplis dans les colonnes, les « précisions » de sa recherche, et le commentaire libre d'Werner (notes datées, prises au téléphone, très abrégées ; parfois suivies du message que le contact a laissé sur un portail).
+Pour chaque contact tu reçois : son statut dans ImmoFacile (« Propriétaire » = il possède un local ; « Demandeur » = il cherche à acheter), les critères déjà remplis dans les colonnes, les « précisions » de sa recherche, et le commentaire libre de Werner (notes datées, prises au téléphone, très abrégées ; parfois suivies du message que le contact a laissé sur un portail).
 
 Tu lis ces textes et tu rends ce qu'ils disent. Tu n'inventes rien : une information absente reste null, false ou une liste vide.
 
-Abréviations d'Werner : « 3P » = 3 pièces ; « 2ch » = 2 chambres ; « K » = milliers d'euros (« 1 100K » = 1 100 000, « 950K » = 950 000) ; « HFN » = hors frais de notaire (c'est le budget) ; « RDC » = rez-de-chaussée ; « asc » = ascenseur ; « ext » = extérieur ; « SDB » = salle de bains ; « MB » = Marcel Sembat (quartier de Boulogne) ; « Vente après avoir trouvé » = il vendra son logement après avoir acheté ; « AC3 OK » = consentement enregistré dans ImmoFacile (à ignorer) ; « DVF » = prix de vente publics.
+Abréviations de Werner : « 3P » = 3 pièces ; « 2ch » = 2 chambres ; « K » = milliers d'euros (« 1 100K » = 1 100 000, « 950K » = 950 000) ; « HFN » = hors frais de notaire (c'est le budget) ; « RDC » = rez-de-chaussée ; « asc » = ascenseur ; « ext » = extérieur ; « SDB » = salle de bains ; « MB » = Marcel Sembat (quartier de Boulogne) ; « Vente après avoir trouvé » = il vendra son local après avoir acheté ; « AC3 OK » = consentement enregistré dans ImmoFacile (à ignorer) ; « DVF » = prix de vente publics.
 
 Sépare toujours trois choses :
 - CE QU'IL CHERCHE (son achat) → "recherche" ;
-- CE QU'IL POSSÈDE (son logement actuel : « Propriétaire d'un 3P 75 m² ») → "bien", jamais dans "recherche" ;
+- CE QU'IL POSSÈDE (son local actuel : « Propriétaire d'un 3P 75 m² ») → "bien", jamais dans "recherche" ;
 - l'annonce sur laquelle il a appelé (« Demande info sur … », « ref: 241799031 depuis Belles Demeures ») : ni sa recherche ni son bien → une phrase de "aSavoir".
 
 Réponds UNIQUEMENT par un objet JSON valide, sans texte ni balise autour :
@@ -67,11 +67,11 @@ Chaque objet :
   "sejourMin": m² du séjour ou null, "exterieurMin": m² d'extérieur minimum ou null, "anneeMin": année de construction minimum ou null,
   "financement": "cash"|"pret_valide"|"pret_en_cours"|"a_monter"|"pret_relais"|"mixte_cash_pret"|"mixte_cash_relais"|"mixte_pret_relais"|null,
   "urgence": "immediate"|"3_mois"|"6_mois"|"annee"|null,
-  "precisions": un tableau de phrases courtes sur ce qu'il cherche et qui n'ont pas de case ci-dessus : quartier, rues à éviter, vue, calme, vis-à-vis, proximité d'une école, du métro ou des commerces, « pas au dernier étage », « RDC accepté s'il y a un extérieur », « deux salles d'eau idéalement ». Une nuance sur un chiffre s'écrit toujours en phrase, même si le chiffre est déjà dans les colonnes : « 3ch (3ème peut être petite) » → « Trois chambres, la troisième peut être petite. » Écrites proprement, sans abréviation, sans « il » ni « vous » : le client pourra les lire. Exemple : « Box fermé pour trois voitures, ou places de stationnement équivalentes. » Jamais rien sur son logement actuel, sa vente, son financement ni sa vie privée.
+  "precisions": un tableau de phrases courtes sur ce qu'il cherche et qui n'ont pas de case ci-dessus : quartier, rues à éviter, vue, calme, vis-à-vis, proximité d'une école, du métro ou des commerces, « pas au dernier étage », « RDC accepté s'il y a un extérieur », « deux salles d'eau idéalement ». Une nuance sur un chiffre s'écrit toujours en phrase, même si le chiffre est déjà dans les colonnes : « 3ch (3ème peut être petite) » → « Trois chambres, la troisième peut être petite. » Écrites proprement, sans abréviation, sans « il » ni « vous » : le client pourra les lire. Exemple : « Box fermé pour trois voitures, ou places de stationnement équivalentes. » Jamais rien sur son local actuel, sa vente, son financement ni sa vie privée.
 },
 "location": une phrase s'il cherche aussi (ou seulement) à louer, sinon null,
-"proprietaire": true si le texte dit qu'il possède un logement,
-"bien": null, ou son logement actuel {
+"proprietaire": true si le texte dit qu'il possède un local,
+"bien": null, ou son local actuel {
   "type": "appartement"|"maison"|"duplex"|"studio"|"loft"|"terrain"|"local"|"parking"|"immeuble"|"autre"|null,
   "surface": m² ou null, "pieces": nombre ou null, "chambres": nombre ou null, "etage": nombre ou null (RDC = 0),
   "adresse": numéro et rue s'ils sont écrits, sinon null, "codePostal": 5 chiffres ou null, "ville": ou null,
@@ -80,7 +80,7 @@ Chaque objet :
   "notes": ce qui sert pour le vendre : état, travaux faits, année et prix d'achat, en une ou deux phrases
 },
 "vente": {
-  "projet": "aucun" | "apres_achat" (il vendra son logement après avoir acheté) | "projet" (un vrai projet de vente : estimation demandée ou prévue, « projet de vente à venir », « rappeler pour estimation ») | "ailleurs" (déjà en vente avec une autre agence) | "vendu" (déjà vendu, ou sous compromis),
+  "projet": "aucun" | "apres_achat" (il vendra son local après avoir acheté) | "projet" (un vrai projet de vente : estimation demandée ou prévue, « projet de vente à venir », « rappeler pour estimation ») | "ailleurs" (déjà en vente avec une autre agence) | "vendu" (déjà vendu, ou en signature),
   "aSuivre": true seulement si Werner doit suivre ce projet de vente (cas "projet", ou "apres_achat" avec une estimation à faire),
   "rappel": {"date": "AAAA-MM-JJ" si une date précise de rappel est écrite, sinon null, "mois": 1 à 12 si un mois est cité (« rappeler en septembre » = 9 ; deux mois, « septembre/octobre » = le dernier, 10), sinon null, "annee": l'année si elle est écrite ou se déduit de la date de la note, sinon null, "texte": la consigne, courte, ou null}
 },

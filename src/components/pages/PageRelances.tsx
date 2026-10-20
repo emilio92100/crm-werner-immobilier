@@ -838,17 +838,17 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
           </div>
           {alertes.slice(0, toutesAlertes ? alertes.length : 3).map((a, i) => {
             const acheteur = a.k === 'acheteur';
-            const nomC = acheteur ? [a.client?.prenom, a.client?.nom].filter(Boolean).join(' ') || 'Un acheteur' : '';
+            const nomC = acheteur ? [a.client?.prenom, a.client?.nom].filter(Boolean).join(' ') || 'Un demandeur' : '';
             const m0 = acheteur ? a.mandats[0] : null;
             const titre = acheteur
               ? (a.mandats.length > 1 ? `${nomC} correspond à ${a.mandats.length} de vos mandats, jusqu’à ${m0!.note}\u00a0%` : `${nomC} correspond à votre « ${m0!.titre} »${m0!.ville ? ` à ${m0!.ville}` : ''} · ${m0!.note}\u00a0%`)
-              : `Votre mandat « ${a.titre} »${a.bien.ville ? ` à ${a.bien.ville}` : ''} intéresse ${a.n > 1 ? `${a.n} de vos acheteurs` : 'un de vos acheteurs'}`;
+              : `Votre mandat « ${a.titre} »${a.bien.ville ? ` à ${a.bien.ville}` : ''} intéresse ${a.n > 1 ? `${a.n} de vos demandeurs` : 'un de vos demandeurs'}`;
             const j = Math.max(0, Math.floor((Date.now() - Date.parse(a.le)) / 86400000));
             const quand = j === 0 ? 'aujourd’hui' : j === 1 ? 'hier' : `il y a ${j} jours`;
             const autres = acheteur ? 0 : a.n - a.noms.length;
             const sous = acheteur
               ? `Sa recherche a été ouverte ${quand}. « Voir » ouvre sa fiche sur les biens trouvés, ${a.mandats.length > 1 ? 'ces mandats déjà cochés' : 'ce mandat déjà coché'}.`
-              : `${j === 0 ? 'Passé en vente aujourd’hui' : j === 1 ? 'Passé en vente hier' : `En vente depuis ${j} jours`}${a.noms.length ? ` · ${a.noms.join(', ')}${autres > 0 ? ` et ${autres > 1 ? `${autres} autres` : 'un autre'}` : ''}` : ''}. « Voir les acheteurs » ouvre sa fiche sur l’onglet Acheteurs.`;
+              : `${j === 0 ? 'Passé en vente aujourd’hui' : j === 1 ? 'Passé en vente hier' : `En vente depuis ${j} jours`}${a.noms.length ? ` · ${a.noms.join(', ')}${autres > 0 ? ` et ${autres > 1 ? `${autres} autres` : 'un autre'}` : ''}` : ''}. « Voir les demandeurs » ouvre sa fiche sur l’onglet Demandeurs.`;
             const occupe = alerteEnCours === a.cle;
             return (
               <div key={a.cle} className={`rl-al rl-entre${acheteur ? '' : ' rl-al-m'}`} style={{ animationDelay: `${i * 80}ms` }}>
@@ -856,7 +856,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
                   <Ic n={acheteur ? 'groupe' : 'drapeau'} t={22} ep={2} />
                 </span>
                 <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: acheteur ? '#c2621c' : NAVY }}>{acheteur ? 'Un acheteur arrive' : 'Un mandat arrive'}</span>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: acheteur ? '#c2621c' : NAVY }}>{acheteur ? 'Un demandeur arrive' : 'Un mandat arrive'}</span>
                   <b style={{ fontFamily: JAK, fontSize: 15.5, fontWeight: 800, color: '#25272b', lineHeight: 1.35 }}>{titre}</b>
                   <span style={{ fontSize: 13.5, color: DOUX, lineHeight: 1.5 }}>{sous}</span>
                 </span>
@@ -864,7 +864,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
                   <button type="button" className="rl-appui" disabled={occupe} onClick={() => alertePlusTard(a)}
                     style={{ height: 40, padding: '0 15px', borderRadius: 12, border: `1px solid ${BORD}`, background: 'white', color: NAVY, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Plus tard</button>
                   <button type="button" className="rl-appui" disabled={occupe} onClick={() => alerteVoir(a)}
-                    style={{ height: 40, padding: '0 16px', borderRadius: 12, border: 'none', background: NAVY, color: 'white', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{occupe ? 'Un instant…' : acheteur ? 'Voir' : 'Voir les acheteurs'}</button>
+                    style={{ height: 40, padding: '0 16px', borderRadius: 12, border: 'none', background: NAVY, color: 'white', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{occupe ? 'Un instant…' : acheteur ? 'Voir' : 'Voir les demandeurs'}</button>
                 </span>
               </div>
             );

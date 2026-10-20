@@ -236,7 +236,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
           {prixAcq > 0 && (
             <div className={s.tetePrix}>
               <b>{euros(prixAcq)}</b>
-              <span>{f.bien_vente_id ? 'prix affiché' : 'prix acquéreur'}</span>
+              <span>{f.bien_vente_id ? 'prix affiché' : 'prix demandeur'}</span>
             </div>
           )}
           <button type="button" className={s.fermer} onClick={onFermer} aria-label="Fermer sans enregistrer">
@@ -407,7 +407,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
                   </div>
                 ) : (
                   <>
-                    <Champ etiquette="Prix vendeur" manque={manque('prix_vendeur')}>
+                    <Champ etiquette="Prix mandant" manque={manque('prix_vendeur')}>
                       <Saisie valeur={f.prix_vendeur} onChange={v => set('prix_vendeur', v)} vide={vide(f.prix_vendeur)} unite="€" mode="numeric" />
                     </Champ>
                     <Champ etiquette="Tes honoraires" groupe>
@@ -419,7 +419,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
                         <input inputMode="decimal" value={val(f.commission_val)} onChange={e => set('commission_val', e.target.value)} aria-label="Montant des honoraires" />
                       </span>
                     </Champ>
-                    <Champ etiquette="Prix acquéreur" className={s.g2} groupe>
+                    <Champ etiquette="Prix demandeur" className={s.g2} groupe>
                       <span className={s.prixAcq}>
                         <span>Ce que le client verra</span>
                         <b>{prixAcq ? euros(prixAcq) : '—'}</b>

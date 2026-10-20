@@ -204,7 +204,7 @@ async function relancerDocuments(sb: SupabaseClient, ko: Echecs): Promise<string
             client_id: doc.client_id, type: 'mandat', metadata: { document_id: doc.id, signataire_id: s.id },
             titre: finOffre ? `⏰ ${qui} n’a pas signé l’offre à temps` : `⏰ ${qui} n’a pas signé dans les 15 jours`,
             description: finOffre
-              ? `${doc.titre || m.titre} : l’offre n’est plus valable depuis le ${quand}, elle ne peut plus être signée. Arrête la signature (Documents, fiche du document) ; une nouvelle offre se prépare si l’acheteur le souhaite.`
+              ? `${doc.titre || m.titre} : l’offre n’est plus valable depuis le ${quand}, elle ne peut plus être signée. Arrête la signature (Documents, fiche du document) ; une nouvelle offre se prépare si l’demandeur le souhaite.`
               : `${doc.titre || m.titre} : son lien a expiré. Renvoie-lui un lien, ou arrête la signature (Documents, fiche du document).`,
           })))) ko.noter(`${qui} (${doc.titre || m.titre}) : la ligne « n’a pas signé » n’a pas pu s’écrire dans le suivi`);
           if (!(await ecritServeur('La relance', sb.from('relances').insert({
@@ -218,11 +218,11 @@ async function relancerDocuments(sb: SupabaseClient, ko: Echecs): Promise<string
           a: ALERTES(), deLaPartDe: 'crm',
           sujet: `⏰ ${qui} n'a pas signé ${nd.le}`,
           texte: finOffre
-            ? `${qui} n'a pas signé ${nd.le}, qui n'est plus valable depuis le ${quand} (${doc.titre || m.titre}). Elle ne peut plus être signée.\n\nDans Documents (fiche du document) : arrête la signature. Une nouvelle offre se prépare si l'acheteur le souhaite.\n\n${lienCrm}`
+            ? `${qui} n'a pas signé ${nd.le}, qui n'est plus valable depuis le ${quand} (${doc.titre || m.titre}). Elle ne peut plus être signée.\n\nDans Documents (fiche du document) : arrête la signature. Une nouvelle offre se prépare si l'demandeur le souhaite.\n\n${lienCrm}`
             : `Le lien de ${qui} a expiré sans signature (${doc.titre || m.titre}).\n\nÀ toi de choisir, dans Documents (fiche du document) : lui renvoyer un lien, ou arrêter la signature.\n\n${lienCrm}`,
           html: gabarit(`${qui} n’a pas signé`, finOffre
             ? `<p><b>${echappe(qui)}</b> n’a pas signé ${echappe(nd.le)}, qui n’est plus valable depuis le ${echappe(quand)} (${echappe(doc.titre || m.titre)}). Elle ne peut plus être signée.</p>
-            <p>Dans Documents (fiche du document) : arrête la signature. Une nouvelle offre se prépare si l’acheteur le souhaite.</p>
+            <p>Dans Documents (fiche du document) : arrête la signature. Une nouvelle offre se prépare si l’demandeur le souhaite.</p>
             <a href="${lienCrm}" style="display:inline-block;margin-top:8px;background:#f08c42;color:#232528;text-decoration:none;padding:11px 16px;border-radius:10px;font-weight:800">Ouvrir le CRM</a>`
             : `<p>Le lien de <b>${echappe(qui)}</b> a expiré sans signature (${echappe(doc.titre || m.titre)}).</p>
             <p>À toi de choisir, dans Documents (fiche du document) : lui renvoyer un lien, ou arrêter la signature.</p>

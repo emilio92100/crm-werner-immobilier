@@ -32,7 +32,7 @@ export type VisitePoint = {
    « Couple N. ») : ce qu'on a noté entre parenthèses reste chez nous. */
 const discret = (nom: string) => {
   const m = nom.replace(/\([^)]*\)/g, ' ').trim().split(/\s+/).filter(Boolean);
-  return m.length > 1 ? `${m[0]} ${m[m.length - 1].charAt(0).toUpperCase()}.` : (m[0] || 'Un acheteur');
+  return m.length > 1 ? `${m[0]} ${m[m.length - 1].charAt(0).toUpperCase()}.` : (m[0] || 'Un demandeur');
 };
 const minus = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
 const etListe = (l: string[]) => (l.length > 1 ? `${l.slice(0, -1).join(', ')} et ${l[l.length - 1]}` : l[0] || '');
@@ -76,7 +76,7 @@ export function textePointVendeur(o: {
     for (const v of faites) lignes.push(`- le ${dateLongue(v.ymd)}, ${discret(v.qui)} : ${retourDe(v)}.`);
   } else lignes.push('Il n’y a pas eu de visite sur cette période.');
   if (aVenir.length) lignes.push(aVenir.length > 1 ? `${aVenir.length}${faites.length ? ' autres' : ''} visites sont prévues, la prochaine le ${dateLongue(aVenir[0].ymd)}.` : `Une visite est prévue le ${dateLongue(aVenir[0].ymd)}.`);
-  if (o.presentes) lignes.push(`Le bien a aussi été présenté à ${o.presentes > 1 ? `${o.presentes} acheteurs` : 'un acheteur'} que nous accompagnons.`);
+  if (o.presentes) lignes.push(`Le bien a aussi été présenté à ${o.presentes > 1 ? `${o.presentes} demandeurs` : 'un demandeur'} que nous accompagnons.`);
   lignes.push('');
 
   const offres = o.offres.filter(x => !o.depuis || x.le.slice(0, 10) >= o.depuis || x.statut === 'en_attente' || x.statut === 'contre' || x.statut === 'acceptee');
@@ -116,16 +116,16 @@ export function FenPointVendeur({ bien, proprio, visites, offres, suivi, present
     const jour = jourParis();
     try {
       if (bien.client_id) {
-        const ok = await addJournal(bien.client_id, 'mail_envoye', `📣 Point vendeur — ${titre}`, texte, { bien_vente_id: bien.id, pointVendeur: true });
+        const ok = await addJournal(bien.client_id, 'mail_envoye', `📣 Point mandant — ${titre}`, texte, { bien_vente_id: bien.id, pointVendeur: true });
         if (!ok) throw new Error('Le point n’a pas pu être noté dans son suivi.');
       }
       const nbV = visites.filter(v => v.statut !== 'annulee' && v.passee && (!depuis || v.ymd >= depuis)).length;
       await ajouterSuivi({ bien_id: bien.id, type: 'note', commentaire: `Envoyé à ${proprio ? nomClient(proprio) : 'le propriétaire'}${depuis ? ` · depuis le ${dateLongue(depuis)}` : ''} · ${nbV} visite${nbV > 1 ? 's' : ''}`, donnees: { pointVendeur: true, depuis, texte } });
       onFait(await poserDansBien(bien.id, { dernierPointVendeur: jour }));
-    } catch (e) { signalerEchec('Le point vendeur', (e as Error).message); setErreur((e as Error).message); setOccupe(false); }
+    } catch (e) { signalerEchec('Le point mandant', (e as Error).message); setErreur((e as Error).message); setOccupe(false); }
   }
   return (
-    <Fenetre sur={proprio ? `Pour ${nomClient(proprio)}` : 'Pour le propriétaire'} couleur="#f08c42" titre="Le point vendeur" large
+    <Fenetre sur={proprio ? `Pour ${nomClient(proprio)}` : 'Pour le propriétaire'} couleur="#f08c42" titre="Le point mandant" large
       sous={dernier ? `Depuis le dernier point, le ${dateLongue(dernier)}` : depuis ? `Depuis la mise en vente, le ${dateLongue(depuis)}` : 'Depuis la mise en vente'}
       occupe={occupe} onFermer={onFermer}
       pied={<>
@@ -133,8 +133,8 @@ export function FenPointVendeur({ bien, proprio, visites, offres, suivi, present
         <button type="button" className={s.btn} disabled={occupe} onClick={copier}><Ic n={copie ? 'check' : 'copier'} t={15} />{copie ? 'Copié' : 'Copier le texte'}</button>
         <button type="button" className={`${s.btn} ${s.btnNavy}`} disabled={occupe} onClick={() => { void noter(); }}><Ic n="check" t={15} e={2.4} />{occupe ? 'Enregistrement…' : 'Noter comme envoyé'}</button>
       </>}>
-      <div className={b.calc}>Les visites et ce qu’en ont dit les acheteurs, les offres, le prix. Relis, retouche, puis copie-le dans ton mail ou ton message.</div>
-      <textarea className={s.input} rows={16} value={texte} onChange={e => setTexte(e.target.value)} aria-label="Le texte du point vendeur" />
+      <div className={b.calc}>Les visites et ce qu’en ont dit les demandeurs, les offres, le prix. Relis, retouche, puis copie-le dans ton mail ou ton message.</div>
+      <textarea className={s.input} rows={16} value={texte} onChange={e => setTexte(e.target.value)} aria-label="Le texte du point mandant" />
       <div className={b.calc}>{bien.client_id
         ? '« Noter comme envoyé » le garde dans son suivi et dans l’historique du bien ; le prochain point partira de là.'
         : 'Le propriétaire n’a pas de fiche reliée : le point se garde dans l’historique du bien seulement.'}</div>

@@ -400,7 +400,7 @@ export default function Topbar({ onNavigate, onMenu, menuReduit = false, onBascu
                         return (
                           <span className={styles.searchEtiqT} style={{ background: `${coul}14`, color: `color-mix(in srgb, ${coul} 78%, #25272b)`, borderColor: `${coul}33` }}>
                             <i style={{ background: coul }} />
-                            {lib ? `Acheteur – ${lib}` : 'Acheteur'}
+                            {lib ? `Demandeur – ${lib}` : 'Demandeur'}
                           </span>
                         );
                       })()}

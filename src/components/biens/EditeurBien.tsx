@@ -57,14 +57,15 @@ function groupes(champs: TChamp[], d: Donnees): Groupe[] {
    verte (remplie, rien d'obligatoire ne manque), le nombre de choses à
    compléter, ou « à faire » (pas encore commencée). */
 const GROUPES_SOMMAIRE = [
-  { titre: 'Le vendeur', ids: ['proprio'] },
-  { titre: 'Le bien', ids: ['bien', 'interieur', 'exterieur', 'pieces', 'energie', 'copro'] },
+  { titre: 'Le mandant', ids: ['proprio'] },
+  { titre: 'Le local', ids: ['bien', 'interieur', 'exterieur', 'pieces', 'energie', 'copro'] },
+  { titre: 'Le bail et le fonds', ids: ['bail', 'fonds'] },
   { titre: 'Pour toi seul', ids: ['observations'] },
-  { titre: 'La vente', ids: ['prix', 'pratique', 'annonce', 'photos'] },
+  { titre: 'La commercialisation', ids: ['prix', 'pratique', 'annonce', 'photos'] },
 ];
 const NOMS_PARTIES: Record<string, string> = {
-  proprio: 'Le propriétaire', bien: 'Le bien', interieur: 'L’intérieur', exterieur: 'Extérieur et annexes', pieces: 'Les pièces',
-  energie: 'L’énergie', copro: 'Copro et charges', observations: 'Les observations', prix: 'Prix et mandat',
+  proprio: 'Le mandant', bien: 'L’affaire et le local', interieur: 'L’aménagement', exterieur: 'Annexes et stationnement', pieces: 'Les espaces',
+  energie: 'L’énergie', copro: 'Charges et taxes', bail: 'Le bail', fonds: 'Le fonds de commerce', observations: 'Les observations', prix: 'Prix et mandat',
   pratique: 'Indications de visite', annonce: 'L’annonce', photos: 'Photos et dossier',
 };
 /* Avant le mandat, « Prix et mandat » s'appelle « Estimation » (etapesDuBien). */
@@ -73,6 +74,7 @@ const COULEURS_PARTIES: Record<string, [string, string]> = {
   proprio: ['#2e3034', '#f4f3f2'], bien: ['#c2621c', '#fbf0e9'], interieur: ['#393836', '#f3f2f1'], exterieur: ['#15803d', '#ecf8f0'],
   pieces: ['#475569', '#f1f5f9'], energie: ['#c05d12', '#fff4e5'], copro: ['#0f766e', '#e8f7f5'], observations: ['#6d28d9', '#f3effd'],
   prix: ['#a85515', '#fbece1'], pratique: ['#0e7490', '#e7f6fa'], annonce: ['#9d174d', '#fcebf3'], photos: ['#4338ca', '#f6f6f5'],
+  bail: ['#1d4ed8', '#eef3fd'], fonds: ['#b45309', '#fdf3e7'],
 };
 
 /* Ce qui compte pour « rempli à x % » : une réponse qu'on attend. Les textes
@@ -297,7 +299,7 @@ function Apercu({ bien, d, ids, nbPhotos, onAller, onMasquer }: { bien: BienVent
               <div>
                 <span className={b.directPrixL}>{avant ? 'Prix conseillé' : 'Prix affiché'}</span>
                 <div className={b.directPrix}>{euros(a.prix)}</div>
-                {a.hono !== null && <div className={b.directHono}>{`Honoraires ${a.taux ? `${pourcent(a.taux)} ` : ''}TTC à la charge ${a.acq ? 'de l’acquéreur' : 'du vendeur'}${a.net ? ` · net vendeur ${euros(a.net)}` : ''}`}</div>}
+                {a.hono !== null && <div className={b.directHono}>{`Honoraires ${a.taux ? `${pourcent(a.taux)} ` : ''}HT à la charge ${a.acq ? 'du demandeur' : 'du mandant'}${a.net ? ` · net vendeur ${euros(a.net)}` : ''}`}</div>}
               </div>
             )
             : <div className={b.directSans}>Pas encore de prix.</div>}
@@ -392,7 +394,9 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
   const [row, setRow] = useState<BienVente>(bien);
   const [d, setD] = useState<Donnees>(() => ({ ...(bien.donnees || {}) }));
   /* Les étapes du formulaire pour cette étape de vente. */
-  const ETAPES = useMemo(() => etapesDuBien(row.etape), [row.etape]);
+  /* Werner : la nature de l'affaire ajoute ou retire des parties (le bail,
+     le fonds) ; on les recalcule à chaque réponse, c'est un simple filtre. */
+  const ETAPES = etapesDuBien(row.etape, d);
   /* « bien:t-surf » (V3.45) : l'étape « Le bien », ouverte sur « Les surfaces ».
      Alexandre : « Modifier » des surfaces renvoyait au début du formulaire.
      « interieur:@vitrage » (V3.107) : droit sur un champ, depuis une ligne
@@ -401,13 +405,13 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
      partie est une chaîne vide, pas `undefined` — en « tout sur une page »,
      le `startsWith` plus bas cassait, et la page restait en haut. */
   const [etapeDepart = '', sectDepart = ''] = (depart || '').split(':');
-  const [etape, setEtape] = useState(() => Math.max(0, etapesDuBien(bien.etape).findIndex(e => e.id === etapeDepart)));
+  const [etape, setEtape] = useState(() => Math.max(0, etapesDuBien(bien.etape, bien.donnees || {}).findIndex(e => e.id === etapeDepart)));
   /* Le sens du dernier pas (V3.80) : l'étape arrive de la droite ou de la gauche. */
   const [sens, setSens] = useState<1 | -1>(1);
   /* « Modifier » d'un bloc qui n'est pas encore ouvert à cette étape de
      vente (le prix d'un bien à suivre) : on le dit, au lieu d'ouvrir
      ailleurs sans un mot. */
-  const [notice, setNotice] = useState<string | null>(() => (etapeDepart && !etapesDuBien(bien.etape).some(e => e.id === etapeDepart) ? etapeDepart : null));
+  const [notice, setNotice] = useState<string | null>(() => (etapeDepart && !etapesDuBien(bien.etape, bien.donnees || {}).some(e => e.id === etapeDepart) ? etapeDepart : null));
   const [vue, setVue] = useState<'form' | 'apercu'>('form');
   const [mode, setMode] = useState<'etapes' | 'tout'>(() => {
     try { return localStorage.getItem('biens.mode') === 'tout' ? 'tout' : 'etapes'; } catch { return 'etapes'; }

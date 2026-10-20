@@ -39,17 +39,17 @@ function resumeBien(p: PlanBien): string {
 const nomVendeur = (p: PlanBien) => (p.trouve ? [p.trouve.client.prenom, p.trouve.client.nom].filter(Boolean).join(' ') : p.vendeur ? [p.vendeur.prenom, p.vendeur.nom].filter(Boolean).join(' ') : '');
 
 function Vendeur({ p, c, onChoix }: { p: PlanBien; c: ChoixBien; onChoix: (y: Partial<ChoixBien>) => void }) {
-  if (c.etape === 'annonce_type') return <span className={x.vMuet}><Ic n="megaphone" t={13} />Annonce type, sans vendeur</span>;
+  if (c.etape === 'annonce_type') return <span className={x.vMuet}><Ic n="megaphone" t={13} />Annonce type, sans mandant</span>;
   if (p.trouve) return <span className={x.vOk}><Ic n="check" t={13} e={2.6} /><span><b>{nomVendeur(p)}</b><small>{`retrouvé par ${p.trouve.par}${p.trouve.client.archive ? ' · archivé' : ''}`}</small></span></span>;
   if (p.vendeur) {
     return (
       <label className={x.vNeuf}>
         <input type="checkbox" checked={c.creerVendeur} onChange={e => onChoix({ creerVendeur: e.target.checked })} />
-        <span><b>{nomVendeur(p) || 'Vendeur sans nom'}</b><small>{c.creerVendeur ? 'pas dans le CRM : sera créé' : 'pas dans le CRM : ne pas le créer'}</small></span>
+        <span><b>{nomVendeur(p) || 'Mandant sans nom'}</b><small>{c.creerVendeur ? 'pas dans le CRM : sera créé' : 'pas dans le CRM : ne pas le créer'}</small></span>
       </label>
     );
   }
-  return <span className={x.vMuet}><Ic n="personne" t={13} />Sans vendeur</span>;
+  return <span className={x.vMuet}><Ic n="personne" t={13} />Sans mandant</span>;
 }
 
 function LigneBien({ l, c, onChoix }: { l: Ligne; c: ChoixBien; onChoix: (y: Partial<ChoixBien>) => void }) {
@@ -169,14 +169,14 @@ export default function ImportBiensIF({ onFermer, onImporte }: { onFermer: () =>
           <span className={x.icTete}><Ic n="maison" t={20} /></span>
           <div style={{ flex: '1 1 auto', minWidth: 0 }}>
             <h3>Importer les biens d’ImmoFacile</h3>
-            <p>Le fichier des biens lus dans ImmoFacile : leur fiche, leurs pièces, leurs photos, leur vendeur et leur historique.</p>
+            <p>Le fichier des biens lus dans ImmoFacile : leur fiche, leurs pièces, leurs photos, leur mandant et leur historique.</p>
           </div>
           <button type="button" className={x.x} aria-label="Fermer" disabled={phase === 'lecture'} onClick={onFermer}><Croix /></button>
         </div>
         <div className={x.corps}>
           <ul className={x.regles}>
             <li><Ic n="check" t={14} e={2.6} /><span>Rien n’est écrit avant ton clic sur « Importer » : tu vois d’abord chaque bien, et tu choisis.</span></li>
-            <li><Ic n="check" t={14} e={2.6} /><span>Chaque bien est relié au vendeur déjà dans ton CRM (téléphone, puis e-mail, puis nom).</span></li>
+            <li><Ic n="check" t={14} e={2.6} /><span>Chaque bien est relié au mandant déjà dans ton CRM (téléphone, puis e-mail, puis nom).</span></li>
             <li><Ic n="check" t={14} e={2.6} /><span>Un bien déjà importé n’est jamais recréé : tu peux relancer l’import sans risque.</span></li>
             <li><Ic n="check" t={14} e={2.6} /><span>Ce qui n’a pas de case dans le CRM est recopié dans les notes du bien : rien n’est perdu.</span></li>
           </ul>
@@ -194,7 +194,7 @@ export default function ImportBiensIF({ onFermer, onImporte }: { onFermer: () =>
     const tous: { k: Onglet; l: string }[] = [
       { k: 'tous', l: 'Tous' },
       ...ETAPES_VENTE.map(e => ({ k: e.k as Onglet, l: e.pluriel })),
-      { k: 'sansVendeur', l: 'Vendeur à voir' },
+      { k: 'sansVendeur', l: 'Mandant à voir' },
       { k: 'deja', l: 'Déjà dans le CRM' },
     ];
     const onglets = tous.filter(o => o.k === 'tous' || compte(o.k) > 0);
@@ -210,9 +210,9 @@ export default function ImportBiensIF({ onFermer, onImporte }: { onFermer: () =>
           <button type="button" className={x.x} aria-label="Fermer" onClick={onFermer}><Croix /></button>
         </div>
         <div className={x.tuiles}>
-          <Tuile n={res.vendeurTrouve} l="vendeurs retrouvés dans le CRM" ton="vert" />
-          <Tuile n={res.vendeurInconnu} l="vendeurs pas dans le CRM" ton={res.vendeurInconnu ? 'or' : 'gris'} />
-          <Tuile n={res.vendeurAbsent} l="biens sans vendeur" ton="gris" />
+          <Tuile n={res.vendeurTrouve} l="mandants retrouvés dans le CRM" ton="vert" />
+          <Tuile n={res.vendeurInconnu} l="mandants pas dans le CRM" ton={res.vendeurInconnu ? 'or' : 'gris'} />
+          <Tuile n={res.vendeurAbsent} l="biens sans mandant" ton="gris" />
           <Tuile n={res.photos} l="photos à copier" />
         </div>
         {cases.length > 0 && (
@@ -236,7 +236,7 @@ export default function ImportBiensIF({ onFermer, onImporte }: { onFermer: () =>
           </div>
           <div className={x.chercher}>
             <Ic n="loupe" t={14} />
-            <input value={cherche} onChange={e => setCherche(e.target.value)} placeholder="N°, ville, vendeur…" aria-label="Chercher un bien" />
+            <input value={cherche} onChange={e => setCherche(e.target.value)} placeholder="N°, ville, mandant…" aria-label="Chercher un bien" />
           </div>
         </div>
         <div className={x.tout}>
@@ -280,7 +280,7 @@ export default function ImportBiensIF({ onFermer, onImporte }: { onFermer: () =>
           <div className={x.faitL}>
             <div><Ic n="plus" t={15} /><span>{`${pl(crees, 'fiche créée', 'fiches créées')}${completes ? ` · ${pl(completes, 'fiche complétée', 'fiches complétées')}` : ''}`}</span></div>
             <div><Ic n="photo" t={15} /><span>{`${pl(photos, 'photo copiée', 'photos copiées')}`}</span></div>
-            {vendCrees > 0 && <div><Ic n="personne" t={15} /><span>{`${pl(vendCrees, 'contact vendeur créé', 'contacts vendeurs créés')}`}</span></div>}
+            {vendCrees > 0 && <div><Ic n="personne" t={15} /><span>{`${pl(vendCrees, 'contact mandant créé', 'contacts mandants créés')}`}</span></div>}
           </div>
           {echecs.length > 0 && (
             <div className={`${x.soucis} ${x.rouge}`}>

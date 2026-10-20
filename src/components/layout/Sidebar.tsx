@@ -173,7 +173,7 @@ export default function Sidebar({ activePage, onNavigate, ouvert = false, onFerm
         /* « Contacts » : acheteurs, vendeurs, notaires, confrères… (V3.14). La
            pastille « actifs » ne voulait plus rien dire ici : partie. */
         { id: 'clients', label: 'Contacts', picto: 'clients', badge: null },
-        { id: 'biens', label: 'Biens', picto: 'maison', badge: counts.enVente > 0 ? { count: counts.enVente, type: 'gold', titre: `${counts.enVente} bien${counts.enVente > 1 ? 's' : ''} en vente, sous offre ou sous compromis` } : null },
+        { id: 'biens', label: 'Affaires', picto: 'mallette', badge: counts.enVente > 0 ? { count: counts.enVente, type: 'gold', titre: `${counts.enVente} affaire${counts.enVente > 1 ? 's' : ''} en cours, sous offre ou en signature` } : null },
       ]
     },
     {
@@ -236,7 +236,7 @@ export default function Sidebar({ activePage, onNavigate, ouvert = false, onFerm
     /* V3.131 (Alexandre : « mes estimations au début, ensuite mes mandats en
        cours, ensuite mes ventes en cours… sous offre et sous compromis ») :
        « Mes biens à suivre » laisse sa place ; il reste dans « Autres étapes ». */
-    biens: ([['estimation', 'Mes estimations', 'euro', 'estimation'], ['mandat', 'Mes mandats en cours', 'panneau', 'mandat'], ['ventes', 'Mes ventes en cours', 'cle', 'compromis']] as const).map(([k, label, ic, couleur]) => {
+    biens: ([['mandat', 'Mes affaires en cours', 'panneau', 'mandat'], ['ventes', 'Sous offre, en signature', 'cle', 'compromis'], ['estimation', 'Mes estimations', 'euro', 'estimation']] as const).map(([k, label, ic, couleur]) => {
       const e = etapeDe(couleur);
       return { cle: k, label, ic, c: e.c, fond: `${e.c}17`,
         go: () => allerVue('biens', k), actif: activePage === 'biens' && vues.biens === k };
@@ -396,8 +396,8 @@ export default function Sidebar({ activePage, onNavigate, ouvert = false, onFerm
           <div className={styles.plusVoile} onClick={() => setPlusOuvert(false)} aria-hidden="true" />
           <div className={styles.plusMenu} role="menu" aria-label="Créer">
             {([
-              { cle: 'client', ico: 'clients', t: 'Nouveau contact', s: 'Acheteur, vendeur, notaire…', go: () => demanderNouveauClient() },
-              { cle: 'bien', ico: 'maison', t: 'Nouveau bien', s: 'À suivre, estimation, mandat…', go: () => { demanderNouveauBien(); onNavigate('biens'); } },
+              { cle: 'client', ico: 'clients', t: 'Nouveau contact', s: 'Demandeur, bailleur, cédant, notaire…', go: () => demanderNouveauClient() },
+              { cle: 'bien', ico: 'mallette', t: 'Nouvelle affaire', s: 'Location, cession, fonds, murs…', go: () => { demanderNouveauBien(); onNavigate('biens'); } },
               { cle: 'rdv', ico: 'calendrier', t: 'Nouveau rendez-vous', s: 'Visite, appel, signature…', go: () => demanderNouveauRdv() },
               { cle: 'mail', ico: 'mail', t: 'Envoyer un mail', s: 'À un ou plusieurs contacts', go: () => demanderNouveauMail() },
             ]).map(x => (

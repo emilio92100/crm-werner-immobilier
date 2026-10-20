@@ -81,7 +81,7 @@ export default function PageActivite() {
           <div className={styles.statCard}>
             <div style={{ fontSize: 28 }}>👥</div>
             <div className={styles.statVal}>{stats.clients}</div>
-            <div className={styles.statLabel}>Clients acheteurs</div>
+            <div className={styles.statLabel}>Clients demandeurs</div>
           </div>
           <div className={styles.statCard}>
             <div style={{ fontSize: 28 }}>🟢</div>

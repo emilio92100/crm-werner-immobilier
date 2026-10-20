@@ -1774,7 +1774,7 @@ export function AvisLien({ p }: { p: any }) {
         <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, flex: '1 1 220px' }}>
           <span style={{ fontSize: 14, fontWeight: 800, color: '#92400e', letterSpacing: -.1 }}>{`Annonce retirée le ${jour(e.le)}`}</span>
           <span style={{ fontSize: 12.5, color: '#92400e', lineHeight: 1.5, opacity: .9 }}>
-            {`L’annonce de ${ou} n’est plus en ligne, et le bien n’a été retrouvé chez aucune autre agence : vendu, sous offre ou retiré par le vendeur. À confirmer avec l’agence.`}
+            {`L’annonce de ${ou} n’est plus en ligne, et le bien n’a été retrouvé chez aucune autre agence : vendu, sous offre ou retiré par le mandant. À confirmer avec l’agence.`}
           </span>
         </span>
         {a.tel && (
@@ -3393,7 +3393,7 @@ export function LienEspace({ recherche, client }: { recherche: any; client: any 
   if (!token) {
     return (
       <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '10px 14px', fontSize: 12.5, color: '#92400e', fontWeight: 600 }}>
-        Cette recherche n&apos;a pas encore de lien d&apos;espace — lance la migration SQL de l&apos;espace acheteur.
+        Cette recherche n&apos;a pas encore de lien d&apos;espace — lance la migration SQL de l&apos;espace demandeur.
       </div>
     );
   }

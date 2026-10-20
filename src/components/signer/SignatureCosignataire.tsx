@@ -258,7 +258,7 @@ export default function SignatureCosignataire({ d }: { d: DonneesSigner }) {
         <div className="mdt-sceau"><Ic n="plume" t={28} /></div>
         <div className="mdt-invite"><span className="de">{`Bonjour ${m.prenom}`}</span><span className="att">Votre signature est attendue</span></div>
         <h3>{`${p} vous invite à signer votre mandat de recherche`}</h3>
-        <p className="mdt-p">{`${nomP} a signé le ${dateLongue(d.premierLe)} le mandat de recherche confié à Werner, d’Werner Immobilier, pour votre projet d’achat. ${d.premier.civilite === 'Madame' ? 'Elle' : 'Il'} vous a ${f ? 'indiquée' : 'indiqué'} comme co-acquéreur : le mandat sera complet avec votre signature.`}</p>
+        <p className="mdt-p">{`${nomP} a signé le ${dateLongue(d.premierLe)} le mandat de recherche confié à Werner, d’Werner Immobilier, pour votre projet d’achat. ${d.premier.civilite === 'Madame' ? 'Elle' : 'Il'} vous a ${f ? 'indiquée' : 'indiqué'} comme co-demandeur : le mandat sera complet avec votre signature.`}</p>
         <div className="mdt-puces">
           <span><span className="k"><Ic n="check" t={14} /></span><span><b>Relisez le mandat</b>{` en entier, tel que ${p} l’a signé.`}</span></span>
           <span><span className="k"><Ic n="check" t={14} /></span><span>Vérifiez vos informations, corrigez-les si besoin.</span></span>

@@ -32,7 +32,7 @@ export type AlerteRappro =
   | { k: 'mandat'; cle: string; le: string; bien: BienVente; titre: string; n: number; meilleure: number; noms: string[] };
 
 const recent = (iso: unknown, ms: number) => typeof iso === 'string' && Date.now() - Date.parse(iso) < ms;
-const nom = (c: Ligne | undefined) => [c?.prenom, c?.nom].filter(Boolean).join(' ') || 'Un acheteur';
+const nom = (c: Ligne | undefined) => [c?.prenom, c?.nom].filter(Boolean).join(' ') || 'Un demandeur';
 
 export async function chargerAlertesRappro(): Promise<AlerteRappro[]> {
   const depuis = new Date(Date.now() - FENETRE).toISOString();

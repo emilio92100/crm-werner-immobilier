@@ -22,7 +22,7 @@ export async function lireOffresAgence(clientId: string, rechercheId: string | n
 type Copie = { id: string; bien_vente_id?: string | null; titre?: string | null; ville?: string | null; photos?: string[] | null };
 
 const PUCE: Record<string, { l: string; c: string; f: string }> = {
-  en_attente: { l: 'En attente du vendeur', c: '#8b3e0b', f: '#fbf0e9' },
+  en_attente: { l: 'En attente du mandant', c: '#8b3e0b', f: '#fbf0e9' },
   contre: { l: 'À lui de répondre', c: '#1d4ed8', f: '#eff6ff' },
   acceptee: { l: 'Acceptée', c: '#15803d', f: '#dcfce7' },
   refusee: { l: 'Refusée', c: '#475569', f: '#f1f5f9' },
@@ -39,7 +39,7 @@ export default function OffresAgence({ offres, biens, onBien }: { offres: SuiviV
     <div className={s.liste}>
       <div className={s.tete}>
         <b>{offres.length > 1 ? 'Ses offres sur les biens de l’agence' : 'Son offre sur un bien de l’agence'}</b>
-        <span>Elle se suit sur la fiche du bien : la réponse du vendeur, le compromis, l’acte.</span>
+        <span>Elle se suit sur la fiche du bien : la réponse du mandant, le compromis, l’acte.</span>
       </div>
       {offres.map(o => {
         const copie = biens.find(b => b.bien_vente_id === o.bien_id);
@@ -71,7 +71,7 @@ export default function OffresAgence({ offres, biens, onBien }: { offres: SuiviV
                 <li key={i} data-par={e.par}>
                   <span className={s.point} aria-hidden="true" />
                   <span className={s.date}>{jour(e.le)}</span>
-                  <span className={s.quoi}>{i === 0 ? 'Son offre' : e.par === 'vendeur' ? 'Contre-offre du vendeur' : 'Sa nouvelle proposition'}</span>
+                  <span className={s.quoi}>{i === 0 ? 'Son offre' : e.par === 'vendeur' ? 'Contre-offre du mandant' : 'Sa nouvelle proposition'}</span>
                   <b>{euros(e.montant)}</b>
                 </li>
               ))}
@@ -79,7 +79,7 @@ export default function OffresAgence({ offres, biens, onBien }: { offres: SuiviV
                 <li data-par={st === 'acceptee' ? 'accord' : 'fin'}>
                   <span className={s.point} aria-hidden="true" />
                   <span className={s.date}>{jour(reponse)}</span>
-                  <span className={s.quoi}>{st === 'acceptee' ? 'Accord du vendeur' : st === 'refusee' ? 'Refusée par le vendeur' : d.compromisTombe ? 'Compromis tombé' : renonce ? 'Il n’a pas donné suite' : 'Offre retirée'}</span>
+                  <span className={s.quoi}>{st === 'acceptee' ? 'Accord du mandant' : st === 'refusee' ? 'Refusée par le mandant' : d.compromisTombe ? 'Compromis tombé' : renonce ? 'Il n’a pas donné suite' : 'Offre retirée'}</span>
                   <b>{st === 'acceptee' ? euros(actuel) : ''}</b>
                 </li>
               )}

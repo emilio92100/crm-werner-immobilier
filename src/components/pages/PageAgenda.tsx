@@ -1398,7 +1398,7 @@ function Detail({ ev, etroit, onFerme, onModifier, onAnnuler, onCR, onDossier, o
     </button>
   );
   const ficheDuNom = !!(ev.qui && ev.clientId);
-  const libFiche = ev.source === 'visite' ? 'Sa fiche acheteur' : ev.type === 'estimation' ? 'Sa fiche propriétaire' : 'Sa fiche';
+  const libFiche = ev.source === 'visite' ? 'Sa fiche demandeur' : ev.type === 'estimation' ? 'Sa fiche propriétaire' : 'Sa fiche';
   const avecIndications = ev.biens.filter(b => b.visite);
   const bouton: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 42, padding: '0 14px', borderRadius: 12, border: `1px solid ${BORD}`, background: 'white', color: NAVY, fontSize: 13, fontWeight: 700, cursor: 'pointer', textDecoration: 'none', fontFamily: 'inherit' };
   const itineraire = ev.lieu && !/^(visio|téléphone)/i.test(ev.lieu) ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.lieu)}` : '';
@@ -1809,7 +1809,7 @@ function ChoixDossier({ dossiers, valeur, fige, onChange, libre = '', onLibre, o
         <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: PALE, display: 'flex', pointerEvents: 'none' }}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="7" /><path d="m20.5 20.5-4.7-4.7" /></svg>
         </span>
-        <input className="ag-champ" value={q} autoComplete="off" placeholder={onLibre ? 'Tape le nom du client…' : 'Tape le nom de l’acheteur…'} aria-label="Chercher un client"
+        <input className="ag-champ" value={q} autoComplete="off" placeholder={onLibre ? 'Tape le nom du client…' : 'Tape le nom de l’demandeur…'} aria-label="Chercher un client"
           onChange={e => taper(e.target.value)}
           onKeyDown={e => {
             if (e.key === 'ArrowDown') { e.preventDefault(); setActif(i => Math.min(nbOptions - 1, i + 1)); }
@@ -1823,13 +1823,13 @@ function ChoixDossier({ dossiers, valeur, fige, onChange, libre = '', onLibre, o
       </div>
       {!t && (
         <span style={{ fontSize: 12, color: PALE, lineHeight: 1.45 }}>
-          {onLibre ? 'Choisis un client de ton fichier, ou garde un nom qui n’y est pas : il sera noté sur ce rendez-vous, sans créer de contact.' : 'Une visite se range dans le dossier d’un acheteur de ton fichier.'}
+          {onLibre ? 'Choisis un client de ton fichier, ou garde un nom qui n’y est pas : il sera noté sur ce rendez-vous, sans créer de contact.' : 'Une visite se range dans le dossier d’un demandeur de ton fichier.'}
         </span>
       )}
       {t && (
       <div role="listbox" aria-label="Dossiers" style={{ display: 'flex', flexDirection: 'column', border: `1px solid ${BORD}`, borderRadius: 14, background: 'white', overflow: 'hidden' }}>
         <span style={{ padding: '8px 12px 4px', fontSize: 10.5, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: PALE }}>{liste.length ? `Dans ton fichier · ${liste.length === 8 ? '8 premiers' : liste.length}` : 'Personne dans ton fichier'}</span>
-        {liste.length === 0 && <span style={{ padding: '2px 12px 10px', fontSize: 12.5, color: DOUX }}>{onLibre ? `Aucun client ne s’appelle « ${q.trim()} ». Tu peux garder ce nom juste pour ce rendez-vous.` : `Aucun acheteur ne correspond à « ${q.trim()} ».`}</span>}
+        {liste.length === 0 && <span style={{ padding: '2px 12px 10px', fontSize: 12.5, color: DOUX }}>{onLibre ? `Aucun client ne s’appelle « ${q.trim()} ». Tu peux garder ce nom juste pour ce rendez-vous.` : `Aucun demandeur ne correspond à « ${q.trim()} ».`}</span>}
         {liste.map((d, i) => (
           <button key={d.rechercheId} type="button" role="option" aria-selected={i === actif} onClick={() => choisir(d)} onMouseEnter={() => setActif(i)}
             style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '8px 12px', border: 'none', borderTop: i ? `1px solid ${LIGNE}` : 'none', background: i === actif ? '#f9f9f9' : 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: NAVY }}>
@@ -2513,7 +2513,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
         setEnvoi(false); alert(`${etat.bloque.join('\n')}\n\nLa visite n'est pas planifiée.${reste}`); return;
       }
       if (etat.secours.length) {
-        const qui = etat.secours.length > 1 ? `« ${etat.secours.join(' », « ')} » sont sous compromis` : `« ${etat.secours[0]} » est sous compromis`;
+        const qui = etat.secours.length > 1 ? `« ${etat.secours.join(' », « ')} » sont en signature` : `« ${etat.secours[0]} » est en signature`;
         if (!window.confirm(`${qui}.\n\nLa visite ne peut servir qu'à une offre de secours. La planifier quand même ?`)) { setEnvoi(false); return; }
       }
     }
@@ -2876,7 +2876,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
               })()}
               {f.type === 'visite' && (dossier || ev) && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <Libelle texte="Contact sur place" aide="l’agence ou le vendeur" />
+                  <Libelle texte="Contact sur place" aide="l’agence ou le mandant" />
                   <ChampIcone ico="tel">
                     <input className="ag-champ" value={contact} onChange={e => maj_({ contact: e.target.value })} placeholder="Agence du Parc · M. Lambert, 06 …" style={{ ...CHAMP, paddingLeft: 42 }} aria-label="Contact sur place" />
                   </ChampIcone>

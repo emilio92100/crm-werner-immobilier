@@ -151,14 +151,14 @@ async function creerASuivre(proprio: ClientMini, p: Plan, crm: EtatCRM, soucis: 
   } catch (e) { soucis.push(`l’historique de son bien n’a pas été écrit (${(e as Error).message})`); }
   /* Un bien dans la rubrique Biens : son propriétaire est « vendeur », comme
      quand on le crée depuis Biens (PageBiens). Seulement maintenant. */
-  if (!(await marquerVendeur(proprio.id))) soucis.push('son type « Vendeur » n’a pas été posé');
+  if (!(await marquerVendeur(proprio.id))) soucis.push('son type « Mandant » n’a pas été posé');
   else {
     let m = '';
     try {
       const rep = await supabase.from('clients').update({ est_vendeur: true }).eq('id', proprio.id).select('id');
       m = rep.error ? rep.error.message : (rep.data || []).length ? '' : 'aucune ligne modifiée';
     } catch (e) { m = (e as Error)?.message || 'erreur inconnue'; }
-    if (m) soucis.push(`la case « vendeur » de sa fiche n’a pas été cochée (${m})`);
+    if (m) soucis.push(`la case « mandant » de sa fiche n’a pas été cochée (${m})`);
   }
   return { bien: true, rappel };
 }
@@ -308,7 +308,7 @@ export async function importerNouveau(id: Identite, p: Plan, o: { actif: boolean
   const libSrc = p.source ? libelleSource(p.source.k, p.source.detail) : '';
   const ok = await addJournal(cree.id, 'creation', p.suivi, `Référence : ${reference}${libSrc ? ` · source : ${libSrc}` : ''}`, { source: 'import_immofacile', lot: o.lot });
   if (!ok) res.soucis.push('la ligne « Fiche reprise d’ImmoFacile » de son Suivi n’a pas été écrite');
-  if (p.archiver && !(await addJournal(cree.id, 'statut_change', 'Contact archivé', `Vendeur archivé à l’import d’ImmoFacile${p.tri?.motif ? ` : ${p.tri.motif.charAt(0).toLowerCase()}${p.tri.motif.slice(1)}` : ''}.`, { archive: true, source: 'import_immofacile', lot: o.lot }))) {
+  if (p.archiver && !(await addJournal(cree.id, 'statut_change', 'Contact archivé', `Mandant archivé à l’import d’ImmoFacile${p.tri?.motif ? ` : ${p.tri.motif.charAt(0).toLowerCase()}${p.tri.motif.slice(1)}` : ''}.`, { archive: true, source: 'import_immofacile', lot: o.lot }))) {
     res.soucis.push('il est bien dans « Archivés », mais la ligne « Contact archivé » de son Suivi n’a pas été écrite');
   }
   /* Son historique d'ImmoFacile, chaque action à sa date (V3.70). */

@@ -27,18 +27,21 @@ export type { Donnees };
    colonne `etape` est un texte libre (pas de contrainte en base). */
 export type EtapeVente = 'a_suivre' | 'estimation' | 'mandat' | 'suspendu' | 'offre' | 'compromis' | 'vendu' | 'retire' | 'annonce_type';
 export const ETAPES_VENTE: { k: EtapeVente; lib: string; court: string; pluriel: string; c: string }[] = [
+  /* Werner : les clés restent (la base et ses déclencheurs les lisent), les
+     mots sont ceux d'une affaire : un local à louer, un droit au bail, un
+     fonds ou des murs à céder. « compromis » couvre la signature du bail,
+     de la promesse ou de l'acte de cession ; « vendu », l'affaire conclue. */
   { k: 'a_suivre', lib: 'À suivre', court: 'À suivre', pluriel: 'À suivre', c: '#0ea5a4' },
   { k: 'estimation', lib: 'Estimation', court: 'Estimation', pluriel: 'Estimations', c: '#8b5cf6' },
-  { k: 'mandat', lib: 'Mandat en cours', court: 'En vente', pluriel: 'Mandats en cours', c: '#10b981' },
+  { k: 'mandat', lib: 'Mandat en cours', court: 'Disponible', pluriel: 'Affaires en cours', c: '#10b981' },
   { k: 'suspendu', lib: 'En pause', court: 'En pause', pluriel: 'En pause', c: '#94a3b8' },
   { k: 'offre', lib: 'Sous offre', court: 'Sous offre', pluriel: 'Sous offre', c: '#f59e0b' },
-  { k: 'compromis', lib: 'Sous compromis', court: 'Sous compromis', pluriel: 'Sous compromis', c: '#3b82f6' },
-  { k: 'vendu', lib: 'Vendu', court: 'Vendu', pluriel: 'Vendus', c: '#2e3034' },
-  { k: 'retire', lib: 'Retiré de la vente', court: 'Retiré', pluriel: 'Retirés', c: '#b4532a' },
-  /* V3.79 (Alexandre : « une annonce un peu similaire au bien d'un client qui
-     ne veut pas que le sien soit diffusé, pour capter des acheteurs ; pas
-     besoin de mandat, juste créer la fiche et la publier ») : hors du
-     parcours d'une vente, sans propriétaire, sans visite ni offre. */
+  { k: 'compromis', lib: 'En signature', court: 'En signature', pluriel: 'En signature', c: '#3b82f6' },
+  { k: 'vendu', lib: 'Affaire conclue', court: 'Conclue', pluriel: 'Conclues', c: '#2e3034' },
+  { k: 'retire', lib: 'Retirée du marché', court: 'Retirée', pluriel: 'Retirées', c: '#b4532a' },
+  /* Une annonce pour faire venir des demandeurs, sans vraie affaire derrière
+     (un local proche d'un autre qu'on ne peut pas diffuser) : hors du
+     parcours, sans propriétaire, sans visite ni offre. */
   { k: 'annonce_type', lib: 'Annonce type', court: 'Annonce type', pluriel: 'Annonces type', c: '#c026d3' },
 ];
 /* « Paris 16e » plutôt que « Paris » (V3.80, Alexandre : « pour Paris, on
@@ -100,7 +103,7 @@ export function permisBien(b: { etape: EtapeVente; archive?: boolean | null }): 
   const ouvert = !ferme && !avantMandat(e) && !annonceType;
   return {
     visite: ouvert, offre: ouvert, prix: ouvert || (annonceType && !ferme), repondreOffre: !ferme && !annonceType, presenter: ouvert,
-    attention: e === 'compromis' ? 'Le bien est sous compromis. Continuer quand même ?'
+    attention: e === 'compromis' ? 'Le bien est en signature. Continuer quand même ?'
       : e === 'suspendu' ? 'La vente est en pause. Continuer quand même ?' : null,
     passerSousOffre: e === 'mandat' || e === 'suspendu',
     archiver: e === 'vendu' || e === 'retire' || annonceType || !!b.archive,
@@ -395,6 +398,10 @@ export const lireObservations = (x: unknown): Observation[] => (Array.isArray(x)
 export type EtapeBien = {
   id: string; titre: string; court: string; sous: string; ic: string; champs: ChampBien[];
   pour?: (e: EtapeVente) => boolean;
+  /* Werner : une partie qui ne vaut que pour certaines affaires (« Le fonds
+     de commerce » pour une cession de fonds). Sans les données (la fiche,
+     l'annonce), elle se montre. */
+  si?: (d: Donnees) => boolean;
   avant?: { titre: string; court: string; sous: string };
 };
 export const estChampActe = (c: ChampBien): c is Champ => !['lettres', 'pieces', 'photos', 'dossier', 'proprio', 'annonce', 'eurosAn', 'compteur', 'adresse', 'journal'].includes(c.t);
@@ -620,7 +627,7 @@ export const ETAPES_BIEN: EtapeBien[] = [
       { t: 'date', cle: 'dpeDate', lib: 'Date du DPE', ic: 'calendrier', si: d => d.dpeStatut !== 'vierge' && d.dpeStatut !== 'non' },
       { t: 'texte', cle: 'dpeNumero', lib: 'N° ADEME du DPE', ic: 'doc', exemple: '2392E0123456K', si: d => d.dpeStatut !== 'vierge' && d.dpeStatut !== 'non' },
       { t: 'titre', cle: 't-cout', lib: 'Les dépenses d’énergie écrites sur le DPE', ic: 'euro', si: d => d.dpeStatut !== 'vierge' && d.dpeStatut !== 'non',
-        aide: 'Ce n’est pas la copropriété : c’est l’estimation du DPE pour chauffer et éclairer le logement. Le DPE la donne en fourchette, l’annonce la reprend telle quelle.' },
+        aide: 'Ce n’est pas la copropriété : c’est l’estimation du DPE pour chauffer et éclairer le local. Le DPE la donne en fourchette, l’annonce la reprend telle quelle.' },
       { t: 'euros', cle: 'coutMin', lib: 'Montant bas', ic: 'bas', unite: '€/an', si: d => d.dpeStatut !== 'vierge' && d.dpeStatut !== 'non' },
       { t: 'euros', cle: 'coutMax', lib: 'Montant haut', ic: 'haut', unite: '€/an', si: d => d.dpeStatut !== 'vierge' && d.dpeStatut !== 'non' },
       { t: 'nombre', cle: 'coutAnnee', lib: 'Prix de l’énergie de l’année', ic: 'calendrier', exemple: '2023', si: d => d.dpeStatut !== 'vierge' && d.dpeStatut !== 'non', aide: 'Écrite sur le DPE, à côté des montants' },
@@ -652,7 +659,7 @@ export const ETAPES_BIEN: EtapeBien[] = [
        dans une annonce ni dans un espace client. */
     id: 'observations', titre: 'Les observations', court: 'Observations', sous: 'Pour toi seul : les travaux, les sinistres, ce que disent les PV d’AG, tes notes.', ic: 'loupe',
     champs: [
-      { t: 'titre', cle: 't-obs-log', lib: 'Le logement : travaux et sinistres', ic: 'outil', aide: 'Jamais dans l’annonce ni dans un espace client.' },
+      { t: 'titre', cle: 't-obs-log', lib: 'Le local : travaux et sinistres', ic: 'outil', aide: 'Jamais dans l’annonce ni dans un espace client.' },
       { t: 'journal', cle: 'travauxFaits', lib: 'Travaux réalisés', ic: 'outil', un: 'des travaux',
         idees: ['Cuisine', 'Salle de bains', 'Électricité', 'Plomberie', 'Fenêtres', 'Chaudière', 'Peintures', 'Sols', 'Toiture', 'Isolation'] },
       { t: 'choix', cle: 'sinistre', lib: 'Un sinistre, un dégât des eaux ?', ic: 'eau', options: [
@@ -668,7 +675,7 @@ export const ETAPES_BIEN: EtapeBien[] = [
         idees: ['Ravalement', 'Toiture', 'Ascenseur', 'Chaufferie', 'Colonnes d’eau', 'Canalisations', 'Cage d’escalier', 'Mise aux normes'] },
       { t: 'journal', cle: 'coproAVenir', lib: 'Gros travaux à venir', ic: 'horloge', un: 'des travaux à venir', si: d => d.copro === 'oui', aide: 'Évoqués dans les derniers PV d’AG, pas encore votés.',
         idees: ['Ravalement', 'Toiture', 'Ascenseur', 'Chaufferie', 'Colonnes d’eau', 'Canalisations', 'Cage d’escalier', 'Mise aux normes'] },
-      { t: 'zone', cle: 'travauxVotes', lib: 'Autres remarques sur la copropriété', ic: 'crayon', si: d => d.copro === 'oui', exemple: 'Ravalement voté en AG 2025 : 4 800 € de quote-part, à la charge du vendeur' },
+      { t: 'zone', cle: 'travauxVotes', lib: 'Autres remarques sur la copropriété', ic: 'crayon', si: d => d.copro === 'oui', exemple: 'Ravalement voté en AG 2025 : 4 800 € de quote-part, à la charge du mandant' },
       { t: 'titre', cle: 't-obs-notes', lib: 'Tes notes', ic: 'cadenas' },
       { t: 'zone', cle: 'notes', lib: 'Notes internes', ic: 'cadenas', aide: 'Visibles par toi seul, jamais dans un espace client ni une annonce.', exemple: 'Ne pas descendre sous 870 000 € sans l’appeler' },
     ],
@@ -687,11 +694,11 @@ export const ETAPES_BIEN: EtapeBien[] = [
       { t: 'euros', cle: 'estimHaute', lib: 'Fourchette haute', ic: 'haut' },
       { t: 'euros', cle: 'prixSouhaite', lib: 'Prix espéré par le propriétaire', ic: 'personne', si: d => !sousMandat(d) },
       { t: 'titre', cle: 't-prix', lib: 'Le prix', ic: 'etiquette' },
-      { t: 'euros', cle: 'prix', lib: 'Prix affiché', ic: 'etiquette', aide: 'Honoraires compris quand ils sont à la charge de l’acquéreur. À l’estimation : le prix conseillé.' },
-      { t: 'choix', cle: 'charge', lib: 'Honoraires à la charge de', ic: 'personne', options: [{ v: 'acquereur', l: 'L’acquéreur', ic: 'cle' }, { v: 'vendeur', l: 'Le vendeur', ic: 'maison' }] },
+      { t: 'euros', cle: 'prix', lib: 'Prix affiché', ic: 'etiquette', aide: 'Honoraires compris quand ils sont à la charge du demandeur. À l’estimation : le prix conseillé.' },
+      { t: 'choix', cle: 'charge', lib: 'Honoraires à la charge de', ic: 'personne', options: [{ v: 'acquereur', l: 'Le demandeur', ic: 'cle' }, { v: 'vendeur', l: 'Le mandant', ic: 'maison' }] },
       { t: 'choix', cle: 'honoMode', lib: 'Honoraires', ic: 'euro', options: [{ v: 'taux', l: 'En pourcentage', ic: 'pourcent' }, { v: 'forfait', l: 'Forfait', ic: 'euro' }] },
-      { t: 'nombre', cle: 'taux', lib: 'Taux', ic: 'pourcent', unite: '% TTC', si: d => d.honoMode !== 'forfait', aide: 'Du prix net vendeur' },
-      { t: 'euros', cle: 'forfait', lib: 'Forfait', ic: 'euro', unite: '€ TTC', si: d => d.honoMode === 'forfait' },
+      { t: 'nombre', cle: 'taux', lib: 'Taux', ic: 'pourcent', unite: '% HT', si: d => d.honoMode !== 'forfait', aide: 'Du prix net vendeur' },
+      { t: 'euros', cle: 'forfait', lib: 'Forfait', ic: 'euro', unite: '€ HT', si: d => d.honoMode === 'forfait' },
       { t: 'titre', cle: 't-mandat', lib: 'Le mandat', ic: 'plume', si: sousMandat },
       { t: 'choix', cle: 'mandatType', lib: 'Type de mandat', ic: 'plume', si: sousMandat, options: [{ v: 'simple', l: 'Simple', ic: 'doc' }, { v: 'semi', l: 'Semi-exclusif', ic: 'accord' }, { v: 'exclusif', l: 'Exclusif', ic: 'etoile' }] },
       { t: 'texte', cle: 'mandatNumero', lib: 'N° du registre', ic: 'liste', exemple: '4331', si: sousMandat },
@@ -714,7 +721,7 @@ export const ETAPES_BIEN: EtapeBien[] = [
       { t: 'texte', cle: 'disponible', lib: 'Disponible', ic: 'calendrier', exemple: 'à la signature, ou à partir du 1er mars' },
       { t: 'titre', cle: 't-cles', lib: 'Les clés', ic: 'cle' },
       { t: 'choix', cle: 'cles', lib: 'Où sont-elles ?', ic: 'cle', options: [
-        { v: 'agence', l: 'À l’agence', ic: 'agence' }, { v: 'vendeur', l: 'Chez le vendeur', ic: 'personne' }, { v: 'gardien', l: 'Chez le gardien', ic: 'immeuble' }, { v: 'autre', l: 'Ailleurs', ic: 'lieu' },
+        { v: 'agence', l: 'À l’agence', ic: 'agence' }, { v: 'vendeur', l: 'Chez le mandant', ic: 'personne' }, { v: 'gardien', l: 'Chez le gardien', ic: 'immeuble' }, { v: 'autre', l: 'Ailleurs', ic: 'lieu' },
       ] },
       { t: 'texte', cle: 'trousseau', lib: 'Trousseau', ic: 'cle', exemple: 'N° 12', si: d => d.cles === 'agence' },
       /* V3.16 : les consignes d'accès, de la rue jusqu'à la porte. */
@@ -760,9 +767,9 @@ export const ETAPES_BIEN: EtapeBien[] = [
 
 /* Les étapes du formulaire pour un bien à cette étape de vente, avec le
    titre qui lui va (« L'estimation et le prix » tant que rien n'est signé). */
-export function etapesDuBien(e: EtapeVente): EtapeBien[] {
+export function etapesDuBien(e: EtapeVente, d?: Donnees): EtapeBien[] {
   const avant = avantMandat(e);
-  return ETAPES_BIEN.filter(x => !x.pour || x.pour(e)).map(x => (avant && x.avant ? { ...x, ...x.avant } : x));
+  return ETAPES_BIEN.filter(x => (!x.pour || x.pour(e)) && (!d || !x.si || x.si(d))).map(x => (avant && x.avant ? { ...x, ...x.avant } : x));
 }
 
 /* ══ Les calculs ═══════════════════════════════════════════════════════ */
@@ -922,7 +929,7 @@ function ligneEtatBrute(b: BienVente, suivi: SuiviVente[], mandat: EtatMandatDoc
   }
   if (b.etape === 'retire') return { t: `Retiré de la vente${ed.raison ? ` · ${ed.raison}` : ''}`, ton: 'neutre', ic: 'archive' };
   /* V3.130 : une annonce type tombait dans l'estimation (« Avis de valeur à envoyer »). */
-  if (b.etape === 'annonce_type') return { t: 'Une annonce, pour faire venir des acheteurs', ton: 'neutre', ic: 'megaphone' };
+  if (b.etape === 'annonce_type') return { t: 'Une annonce, pour faire venir des demandeurs', ton: 'neutre', ic: 'megaphone' };
   if (b.etape === 'suspendu') return { t: [ed.raison || 'Vente en pause', ed.reprise ? `reprise le ${dateCourte(ed.reprise)}` : ''].filter(Boolean).join(' · '), ton: 'neutre', ic: 'pause' };
   if (b.etape === 'compromis') {
     const pret = ed.pretLimite ? `fin du délai de prêt le ${dateCourte(ed.pretLimite)}` : '';
@@ -1005,7 +1012,7 @@ export function controleAnnonce(d: Donnees): { ok: boolean; l: string; aide?: st
   const dpeFait = d.dpeStatut !== 'vierge' && d.dpeStatut !== 'non';
   const out: { ok: boolean; l: string; aide?: string; ou?: string }[] = [
     { ok: !!a.prix, l: 'Le prix affiché', ou: 'prix' },
-    { ok: !a.acq || (a.prix !== null && a.net !== null), l: 'Les honoraires et le prix hors honoraires', aide: 'À la charge de l’acquéreur : le % du prix net vendeur et le prix hors honoraires', ou: 'prix' },
+    { ok: !a.acq || (a.prix !== null && a.net !== null), l: 'Les honoraires et le prix hors honoraires', aide: 'À la charge du demandeur : le % du prix net vendeur et le prix hors honoraires', ou: 'prix' },
     { ok: !!num(d, 'surface') || estTerrain(d), l: 'La surface habitable', ou: 'bien' },
     ...(copro && enImmeuble(d) ? [{ ok: !!num(d, 'carrez'), l: 'La surface loi Carrez', ou: 'bien' }] : []),
     { ok: !dpeFait || (!!d.dpe && !!d.ges), l: 'Les classes DPE et GES', ou: 'energie' },
@@ -1081,18 +1088,18 @@ export function mentionsAnnonce(d: Donnees): string {
   const a = argentBien(d);
   const legal: string[] = [];
   if (a.prix) {
-    if (a.acq && a.net && a.hono !== null && a.taux !== null) legal.push(`Prix : ${euros(a.prix)} honoraires inclus, dont ${pourcent(a.taux)} TTC à la charge de l’acquéreur (${euros(a.net)} hors honoraires).`);
+    if (a.acq && a.net && a.hono !== null && a.taux !== null) legal.push(`Prix : ${euros(a.prix)} honoraires inclus, dont ${pourcent(a.taux)} HT à la charge du demandeur (${euros(a.net)} hors honoraires).`);
     /* V3.48 : « à la charge du vendeur » seulement quand c'est vrai — à la
        charge de l'acquéreur sans taux saisi, on ne l'invente pas. */
-    else if (d.charge === 'vendeur') legal.push(`Prix : ${euros(a.prix)}, honoraires à la charge du vendeur.`);
-    else legal.push(`Prix : ${euros(a.prix)} honoraires inclus (le pourcentage à la charge de l’acquéreur est à compléter).`);
+    else if (d.charge === 'vendeur') legal.push(`Prix : ${euros(a.prix)}, honoraires à la charge du mandant.`);
+    else legal.push(`Prix : ${euros(a.prix)} honoraires inclus (le pourcentage à la charge du demandeur est à compléter).`);
   }
   if (d.copro === 'oui') {
     legal.push(`Copropriété de ${nb(d, 'lots') || '…'} lots${nb(d, 'chargesAn') ? `, charges annuelles de ${euros(nb(d, 'chargesAn') as number)}` : ''}. ${d.procedure === 'oui' ? `Procédure en cours${txt(d, 'procedureNature') ? ` : ${txt(d, 'procedureNature')}` : ''}.` : 'Aucune procédure en cours.'}`);
   }
   if (d.dpeStatut === 'vierge') legal.push('DPE vierge.');
   else if (d.dpe) {
-    legal.push(`DPE : classe ${d.dpe}${nb(d, 'dpeValeur') ? ` (${nb(d, 'dpeValeur')} kWh/m²/an)` : ''}, GES : classe ${d.ges || '…'}${nb(d, 'gesValeur') ? ` (${nb(d, 'gesValeur')} kg CO₂/m²/an)` : ''}.${passoire(d) ? ' Logement à consommation énergétique excessive.' : ''}`);
+    legal.push(`DPE : classe ${d.dpe}${nb(d, 'dpeValeur') ? ` (${nb(d, 'dpeValeur')} kWh/m²/an)` : ''}, GES : classe ${d.ges || '…'}${nb(d, 'gesValeur') ? ` (${nb(d, 'gesValeur')} kg CO₂/m²/an)` : ''}.${passoire(d) ? ' Local à consommation énergétique excessive.' : ''}`);
     if (nb(d, 'coutMin') && nb(d, 'coutMax')) legal.push(`Montant estimé des dépenses annuelles d’énergie pour un usage standard : entre ${euros(nb(d, 'coutMin') as number)} et ${euros(nb(d, 'coutMax') as number)}${nb(d, 'coutAnnee') ? ` (prix de l’énergie de ${nb(d, 'coutAnnee')})` : ''}.`);
   }
   legal.push('Les informations sur les risques auxquels ce bien est exposé sont disponibles sur le site Géorisques : www.georisques.gouv.fr.');

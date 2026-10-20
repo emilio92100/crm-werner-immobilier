@@ -1,0 +1,119 @@
+/* ═══ Les affaires de Werner : ce qu'on loue, ce qu'on cède, ce qu'on vend ═══
+   Une affaire (une ligne de `biens_vente`) a une NATURE et un TYPE DE LOCAL.
+
+   La nature dit ce qui change de main, et donc ce que veut dire le prix :
+     · location        un local vide, un bail neuf : le prix est le loyer
+                       annuel HT HC ;
+     · cession_bail    le locataire cède son droit au bail : le prix est celui
+                       du droit au bail, le loyer du bail en cours à côté ;
+     · fonds           une affaire en activité (clientèle, bail, matériel) :
+                       le prix du fonds, le loyer du bail à côté ;
+     · murs            le local lui-même, libre : un prix de vente ;
+     · murs_occupes    le local loué, pour un investisseur : un prix de vente,
+                       le loyer en place et la rentabilité.
+
+   La colonne `prix` de la base garde toujours LE montant de l'affaire (le
+   loyer annuel pour une location) : les listes, la carte et le rapprochement
+   la lisent sans rien savoir de plus. Ce fichier dit comment l'écrire.
+
+   Isomorphe : le CRM, l'espace client et les bancs d'essai le lisent. */
+
+import type { Donnees, Option } from '@/lib/actes';
+
+export type NatureAffaire = 'location' | 'cession_bail' | 'fonds' | 'murs' | 'murs_occupes';
+
+export const NATURES: (Option & { v: NatureAffaire; court: string; prix: string; prixCourt: string; ic: string })[] = [
+  { v: 'location', l: 'Location', court: 'À louer', aide: 'Un local vide, un bail neuf', ic: 'cle', prix: 'Loyer annuel HT HC', prixCourt: 'Loyer' },
+  { v: 'cession_bail', l: 'Cession de droit au bail', court: 'Droit au bail', aide: 'Le locataire cède son bail en cours', ic: 'bail', prix: 'Prix du droit au bail', prixCourt: 'Droit au bail' },
+  { v: 'fonds', l: 'Cession de fonds de commerce', court: 'Fonds de commerce', aide: 'Une affaire en activité, avec sa clientèle', ic: 'sac', prix: 'Prix du fonds', prixCourt: 'Prix du fonds' },
+  { v: 'murs', l: 'Vente des murs', court: 'Murs à vendre', aide: 'Le local lui-même, libre de toute occupation', ic: 'immeuble', prix: 'Prix de vente', prixCourt: 'Prix' },
+  { v: 'murs_occupes', l: 'Murs occupés', court: 'Murs occupés', aide: 'Un local loué, pour un investisseur', ic: 'courbe', prix: 'Prix de vente', prixCourt: 'Prix' },
+];
+export const natureDe = (d: Donnees | null | undefined): NatureAffaire | null => {
+  const v = d?.nature;
+  return NATURES.some(n => n.v === v) ? (v as NatureAffaire) : null;
+};
+export const nomNature = (v: unknown) => NATURES.find(n => n.v === v)?.l || '';
+export const natureCourte = (v: unknown) => NATURES.find(n => n.v === v)?.court || '';
+
+/* Les familles de nature : ce qui décide des questions et des mots. */
+export const estLocation = (d: Donnees) => natureDe(d) === 'location';
+export const estCessionBail = (d: Donnees) => natureDe(d) === 'cession_bail';
+export const estFonds = (d: Donnees) => natureDe(d) === 'fonds';
+export const estMurs = (d: Donnees) => natureDe(d) === 'murs' || natureDe(d) === 'murs_occupes';
+export const estMursOccupes = (d: Donnees) => natureDe(d) === 'murs_occupes';
+/* Un bail existe déjà, et l'affaire le transmet (cession, fonds, murs loués). */
+export const bailEnCours = (d: Donnees) => estCessionBail(d) || estFonds(d) || estMursOccupes(d);
+/* Le preneur paiera un loyer : une location, ou un bail repris. */
+export const avecLoyer = (d: Donnees) => estLocation(d) || bailEnCours(d);
+/* Une vente au sens strict (un prix, un acte) : tout sauf la location. */
+export const estCession = (d: Donnees) => !!natureDe(d) && !estLocation(d);
+
+/* Le nom du montant principal, selon la nature (« Loyer annuel HT HC »). */
+export const libPrix = (d: Donnees) => NATURES.find(n => n.v === natureDe(d))?.prix || 'Prix';
+export const libPrixCourt = (d: Donnees) => NATURES.find(n => n.v === natureDe(d))?.prixCourt || 'Prix';
+/* L'unité qu'on écrit après le montant : un loyer est annuel et hors taxes. */
+export const unitePrix = (d: Donnees) => (estLocation(d) ? 'HT HC / an' : '');
+
+/* ── Les types de local ───────────────────────────────────────────────────
+   La clé est enregistrée dans `donnees.typeBien` et la colonne `type_bien` ;
+   le libellé court est celui qu'une recherche écrit dans `recherches.type_bien`
+   (« Bureaux, Local commercial »). `local` garde sa clé d'origine. */
+export const TYPES_LOCAL: (Option & { court: string; ic: string })[] = [
+  { v: 'bureaux', l: 'Bureaux', court: 'Bureaux', ic: 'bureau' },
+  { v: 'local', l: 'Boutique, local commercial', court: 'Local commercial', ic: 'vitrine' },
+  { v: 'restaurant', l: 'Restaurant, café, bar', court: 'Restaurant', ic: 'table' },
+  { v: 'activite', l: 'Local d’activité', court: 'Local d’activité', ic: 'outil' },
+  { v: 'entrepot', l: 'Entrepôt, stockage', court: 'Entrepôt', ic: 'cube' },
+  { v: 'immeuble', l: 'Immeuble', court: 'Immeuble', ic: 'immeuble' },
+  { v: 'terrain', l: 'Terrain', court: 'Terrain', ic: 'terrain' },
+  { v: 'parking', l: 'Parking, box', court: 'Parking', ic: 'parking' },
+  { v: 'autre', l: 'Autre', court: 'Autre', ic: 'plus' },
+];
+export const nomLocal = (v: unknown) => TYPES_LOCAL.find(t => t.v === v)?.l || '';
+export const localCourt = (v: unknown) => TYPES_LOCAL.find(t => t.v === v)?.court || '';
+/* Ceux qu'on décrit avec une vitrine, un emplacement, une extraction. */
+export const estCommerce = (d: Donnees) => d.typeBien === 'local' || d.typeBien === 'restaurant';
+export const estBureaux = (d: Donnees) => d.typeBien === 'bureaux';
+export const estActivite = (d: Donnees) => d.typeBien === 'activite' || d.typeBien === 'entrepot';
+/* Un local qui se décrit en surfaces et en aménagement (pas un terrain, pas un parking). */
+export const estLocal = (d: Donnees) => !['terrain', 'parking'].includes(String(d.typeBien || ''));
+
+/* Les types qu'un demandeur peut chercher, dans l'ordre des tuiles. */
+export const TYPES_RECHERCHE = TYPES_LOCAL.filter(t => t.v !== 'autre').map(t => t.court);
+/* Le libellé de recherche d'un type de local (« Local commercial »). */
+export const typePourRecherche = (v: unknown) => localCourt(v) || 'Autre';
+
+/* ── Les montants ─────────────────────────────────────────────────────── */
+const fmt = (n: number) => `${Math.round(n).toLocaleString('fr-FR').replace(/ | /g, ' ')} €`;
+/* « 48 000 € HT HC / an » pour un loyer, « 180 000 € » pour un prix. */
+export function montantAffaire(n: number | null | undefined, d: Donnees): string {
+  if (!n) return '';
+  const u = unitePrix(d);
+  return u ? `${fmt(n)} ${u}` : fmt(n);
+}
+/* Le loyer au mètre carré, à l'année (ce que lit un preneur). */
+export function loyerM2(loyerAn: number | null | undefined, surface: number | null | undefined): string {
+  if (!loyerAn || !surface) return '';
+  return `${Math.round(loyerAn / surface).toLocaleString('fr-FR').replace(/ | /g, ' ')} € HT HC / m² / an`;
+}
+/* La rentabilité brute des murs occupés : loyer annuel ÷ prix. */
+export function rentabilite(loyerAn: number | null | undefined, prix: number | null | undefined): string {
+  if (!loyerAn || !prix) return '';
+  return `${String(Math.round((loyerAn / prix) * 1000) / 10).replace('.', ',')} %`;
+}
+
+/* ── Les baux ─────────────────────────────────────────────────────────── */
+export const TYPES_BAIL: Option[] = [
+  { v: 'commercial', l: 'Bail commercial 3/6/9', aide: 'Neuf ans, résiliable tous les trois ans', ic: 'bail' },
+  { v: 'professionnel', l: 'Bail professionnel', aide: 'Six ans, pour une profession libérale', ic: 'mallette' },
+  { v: 'derogatoire', l: 'Bail dérogatoire', aide: 'Trois ans au plus, hors statut', ic: 'chrono' },
+  { v: 'precaire', l: 'Convention d’occupation précaire', ic: 'horloge' },
+  { v: 'civil', l: 'Bail civil', aide: 'Un parking, un entrepôt, une SCI', ic: 'doc' },
+];
+export const INDICES: Option[] = [
+  { v: 'ilc', l: 'ILC', aide: 'Loyers commerciaux', ic: 'courbe' },
+  { v: 'ilat', l: 'ILAT', aide: 'Activités tertiaires, bureaux', ic: 'courbe' },
+  { v: 'icc', l: 'ICC', aide: 'Coût de la construction', ic: 'courbe' },
+  { v: 'aucun', l: 'Pas d’indexation', ic: 'croix' },
+];

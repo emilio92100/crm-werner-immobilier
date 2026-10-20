@@ -26,7 +26,7 @@ export type StyleMail = 'simple' | 'emilio';
 
 export const STYLES_MAIL: { k: StyleMail; lib: string; aide: string }[] = [
   { k: 'simple', lib: 'Simple', aide: 'Comme un mail écrit dans ta messagerie. Le plus naturel, et celui qui arrive le mieux en boîte de réception.' },
-  { k: 'emilio', lib: 'Avec l’en-tête Werner', aide: 'Le bandeau au logo et ton nom en pied. Pour une annonce ou un message à plusieurs acheteurs.' },
+  { k: 'emilio', lib: 'Avec l’en-tête Werner', aide: 'Le bandeau au logo et ton nom en pied. Pour une annonce ou un message à plusieurs demandeurs.' },
 ];
 
 const esc = (t: string) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

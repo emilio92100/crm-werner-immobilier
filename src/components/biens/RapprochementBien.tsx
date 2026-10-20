@@ -376,8 +376,8 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
           <div className={r.heroTx}>
             <h3>{`Qui, dans ta base, pourrait acheter ${ce} ?`}</h3>
             <p>{fr(tri.total > 1
-              ? `Le rapprochement passe en revue les ${tri.total} recherches ouvertes de tes acheteurs, puis relit en détail celles qui peuvent aller : leurs indispensables, leur parcours, leurs comptes rendus de visite, face à toute la fiche du bien. Pour chacun : un avis, une note de potentiel sur 100, ses plus et ses moins.`
-              : `Le rapprochement passe en revue les recherches ouvertes de tes acheteurs, puis relit en détail celles qui peuvent aller : leurs indispensables, leur parcours, leurs comptes rendus de visite, face à toute la fiche du bien. Pour chacun : un avis, une note de potentiel sur 100, ses plus et ses moins.`)}</p>
+              ? `Le rapprochement passe en revue les ${tri.total} recherches ouvertes de tes demandeurs, puis relit en détail celles qui peuvent aller : leurs indispensables, leur parcours, leurs comptes rendus de visite, face à toute la fiche du bien. Pour chacun : un avis, une note de potentiel sur 100, ses plus et ses moins.`
+              : `Le rapprochement passe en revue les recherches ouvertes de tes demandeurs, puis relit en détail celles qui peuvent aller : leurs indispensables, leur parcours, leurs comptes rendus de visite, face à toute la fiche du bien. Pour chacun : un avis, une note de potentiel sur 100, ses plus et ses moins.`)}</p>
           </div>
         </div>
 
@@ -400,7 +400,7 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
             <span className={r.indice}>{fr(tri.vide
               ? 'Renseigne au moins le type de bien ou son prix : sans eux, rien à comparer.'
               : !tri.total
-                ? 'Aucune recherche ouverte dans ta base pour l’instant : dès qu’un acheteur sera suivi, tu pourras le lancer.'
+                ? 'Aucune recherche ouverte dans ta base pour l’instant : dès qu’un demandeur sera suivi, tu pourras le lancer.'
                 : derniere
                   ? (nouveaux > 0
                     ? `Le dernier date du ${dateRappro(derniere.le)}. Depuis, ${nouveaux} ${pl(nouveaux, 'recherche de plus passe', 'recherches de plus passent')} le premier tri.`
@@ -412,10 +412,10 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
         {aide && !en && (
           <div className={r.aide}>
             <ol className={r.aideEtapes}>
-              <li><b>{'Le premier tri'}</b><span>{'Les recherches ouvertes de tes acheteurs (actifs, prospects, en pause), du même type de bien. Écartées d’office : budget dépassé de plus de 10 %, ville hors de leurs secteurs, surface sous 90 % de leur minimum, pas assez de chambres, un indispensable qui manque.'}</span></li>
+              <li><b>{'Le premier tri'}</b><span>{'Les recherches ouvertes de tes demandeurs (actifs, prospects, en pause), du même type de bien. Écartées d’office : budget dépassé de plus de 10 %, ville hors de leurs secteurs, surface sous 90 % de leur minimum, pas assez de chambres, un indispensable qui manque.'}</span></li>
               <li><b>{'La relecture'}</b><span>{'Chaque dossier qui passe est relu comme tu le ferais : ses indispensables, ses précisions, son parcours, ses comptes rendus de visite, ce qu’il a dit des biens montrés, face à toute la fiche du bien et ta visite sur place. Ni nom, ni téléphone, ni adresse ne sont lus.'}</span></li>
               <li><b>{'Le résultat'}</b><span>{'Pour chacun, un avis : Oui, À voir ou Non, et une note de potentiel sur 100 : ses chances d’être intéressé. Puis une phrase, ses plus et ses moins. Jusqu’à 7 % au-dessus de son budget, ça se négocie : ce n’est pas un non.'}</span></li>
-              <li><b>{'Gardé, daté'}</b><span>{'Chaque rapprochement reste ici, avec sa date, et dans l’historique du bien. Relancé, il ne relit que ce qui a changé : un nouvel acheteur, une recherche modifiée, le bien ou son prix.'}</span></li>
+              <li><b>{'Gardé, daté'}</b><span>{'Chaque rapprochement reste ici, avec sa date, et dans l’historique du bien. Relancé, il ne relit que ce qui a changé : un nouvel demandeur, une recherche modifiée, le bien ou son prix.'}</span></li>
             </ol>
           </div>
         )}
@@ -425,7 +425,7 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
           <p className={r.verrou}><Ic n="cadenas" t={14} />{mode === 'pause' ? 'Vente en pause : le rapprochement reste possible, l’envoi reprend avec elle.' : mode === 'fini' ? 'Ce bien n’est plus en vente : les rapprochements restent, en lecture.' : 'L’envoi n’est pas possible d’ici.'}</p>
         )}
         {mode === 'avant' && peutEnvoyer && (
-          <p className={r.info}><Ic n="info" t={14} /><span>{'Pas encore sous mandat : tu peux déjà le présenter. Il partira sans prix ; le prix arrivera chez l’acheteur à la signature du mandat.'}</span></p>
+          <p className={r.info}><Ic n="info" t={14} /><span>{'Pas encore sous mandat : tu peux déjà le présenter. Il partira sans prix ; le prix arrivera chez l’demandeur à la signature du mandat.'}</span></p>
         )}
         {!toutes.length && onAutre && peutEnvoyer && !en && (
           <button type="button" className={r.autreLien} onClick={onAutre}><Ic n="plus" t={14} e={2.4} />{'Ou choisis toi-même un client'}</button>
@@ -499,7 +499,7 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
           </div>
           {ecartes.map(y => (
             <div key={y.id} className={r.ecarte}>
-              <button type="button" className={r.gensNom} onClick={() => y.client_id && onFiche(y.client_id)}>{y.qui || 'Un acheteur'}</button>
+              <button type="button" className={r.gensNom} onClick={() => y.client_id && onFiche(y.client_id)}>{y.qui || 'Un demandeur'}</button>
               <small>{`écarté le ${dateRappro(y.le)}`}</small>
               <button type="button" className={r.pasPour} disabled={!!ecartEn} onClick={() => { void remettre(y.id); }}>{'Le remettre'}</button>
             </div>
@@ -509,7 +509,7 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
 
       {peutEnvoyer && toutes.length > 0 && (
         <div className={r.pied}>
-          <span className={r.piedN}><b>{coches.length}</b>{pl(coches.length, 'acheteur coché', 'acheteurs cochés')}</span>
+          <span className={r.piedN}><b>{coches.length}</b>{pl(coches.length, 'demandeur coché', 'demandeurs cochés')}</span>
           <span className={r.piedAide}>{'« Envoyer… » te laisse choisir : dans leur sélection (rien ne part), dans leur espace, ou par mail.'}</span>
           {onAutre && (
             <button type="button" className={r.autre} onClick={onAutre}><Ic n="plus" t={15} e={2.4} />Un autre client…</button>

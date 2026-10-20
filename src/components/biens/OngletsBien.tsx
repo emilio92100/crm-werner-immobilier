@@ -121,7 +121,7 @@ const IC_KV: Record<string, string> = {
   'Balcon': 'balcon', 'Terrasse': 'parasol', 'Jardin': 'fleur', 'Cave': 'cave', 'Parking': 'parking', 'Loggia': 'loggia',
   'Exposition': 'boussole', 'Vue': 'horizon', 'Vis-à-vis': 'oeil',
   'Charges': 'euro', 'Elles comprennent': 'liste', 'Taxe foncière': 'fiscal', 'Loyer (bien loué)': 'bail', 'Fin du bail': 'calendrier',
-  'Estimation': 'regle', 'Fourchette': 'regle', 'Prix conseillé': 'etiquette', 'Prix affiché': 'etiquette', 'Net vendeur': 'banque',
+  'Estimation': 'regle', 'Fourchette': 'regle', 'Prix conseillé': 'etiquette', 'Prix affiché': 'etiquette', 'Net mandant': 'banque',
   'Honoraires': 'pourcent', 'Prix au m²': 'regle', 'Le propriétaire espère': 'personne', 'Le propriétaire espérait': 'personne',
   'Diagnostic fait le': 'calendrier', 'Coût estimé': 'euro',
   'Fenêtres': 'fenetre', 'Volets': 'volet', 'Standing': 'etoile', 'Parties communes': 'escalier', 'Stationnement': 'parking',
@@ -678,7 +678,7 @@ export function CarteVisiteB({ v, prochaine, onCR, onAnnuler, onDoc, onFiche, on
           <b className={o.visNom}>{v.qui}</b>
           {!v.passee && !annulee && (
             <span className={o.puce} style={v.source === 'crm' ? { background: '#fbf0e9', color: '#8b3e0b' } : { background: '#f1f5f9', color: '#475569' }}>
-              {v.source === 'crm' ? `Acheteur suivi${v.note ? ` · ${v.note}${NBSP}%` : ''}` : 'Hors CRM'}
+              {v.source === 'crm' ? `Demandeur suivi${v.note ? ` · ${v.note}${NBSP}%` : ''}` : 'Hors CRM'}
             </span>
           )}
           {annulee && <span className={o.puce} style={{ background: '#f1f5f9', color: '#64748b' }}>Annulée</span>}
@@ -796,18 +796,18 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
      proposition de l'acquéreur. */
   const [saisie, setSaisie] = useState<{ k: 'contre' | 'propose'; v: string } | null>(null);
   const PUCE: Record<string, { l: string; fond: string; c: string }> = {
-    attente: { l: negocie ? 'Au vendeur de répondre' : 'En attente de la réponse du vendeur', fond: '#fbf0e9', c: '#8b3e0b' },
-    contre: { l: 'À l’acquéreur de répondre', fond: '#eff6ff', c: '#1d4ed8' },
+    attente: { l: negocie ? 'Au mandant de répondre' : 'En attente de la réponse du mandant', fond: '#fbf0e9', c: '#8b3e0b' },
+    contre: { l: 'À le demandeur de répondre', fond: '#eff6ff', c: '#1d4ed8' },
     acceptee: { l: 'Acceptée', fond: '#dcfce7', c: '#15803d' },
     compromis: { l: 'Compromis signé', fond: '#dcfce7', c: '#15803d' },
     vendu: { l: 'Vendu', fond: '#dcfce7', c: '#15803d' },
     /* V3.47 : l'offre d'un compromis tombé (compromisTombe). */
-    fermee: { l: st === 'retiree' ? (d.compromisTombe ? 'Compromis tombé' : 'Retirée par l’acquéreur') : 'Refusée', fond: '#f1f5f9', c: '#475569' },
+    fermee: { l: st === 'retiree' ? (d.compromisTombe ? 'Compromis tombé' : 'Retirée par le demandeur') : 'Refusée', fond: '#f1f5f9', c: '#475569' },
   };
   const p = PUCE[sorte];
   /* Les quatre étapes : reçue, réponse (ou négociation), acceptée, compromis. */
   const rang = { attente: 1, contre: 1, acceptee: 3, compromis: 4, vendu: 4, fermee: 0 }[sorte];
-  const pas = ['Reçue', negocie || sorte === 'contre' ? 'Négociation' : 'Réponse du vendeur', 'Acceptée', 'Compromis signé'];
+  const pas = ['Reçue', negocie || sorte === 'contre' ? 'Négociation' : 'Réponse du mandant', 'Acceptée', 'Compromis signé'];
   function valider() {
     if (!saisie) return;
     const n = lireMontant(saisie.v);
@@ -826,7 +826,7 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
     return (
       <button type="button" className={`${o.offre} ${o.offreLigne}`} data-ouverte={ouverte ? 'oui' : 'non'} data-sorte={sorte} aria-expanded={false} onClick={onPli}>
         <span className={`${o.puce} ${sorte === 'attente' ? o.pulse : ''}`} style={{ background: p.fond, color: p.c }}>{p.l}</span>
-        <b className={o.offreLigneQui}>{x.qui || 'Un acquéreur'}</b>
+        <b className={o.offreLigneQui}>{x.qui || 'Un demandeur'}</b>
         <b className={o.offreLigneM}>{euros(actuel)}</b>
         {puceEcart}
         {negocie && <span className={o.offreLigneN}>{`${echanges.length - 1} contre-proposition${echanges.length > 2 ? 's' : ''}`}</span>}
@@ -852,8 +852,8 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
           </div>
           <span className={o.qui}>
             {a.onAcquereur
-              ? <button type="button" className={o.quiLien} onClick={a.onAcquereur} title="Ouvrir sa fiche">{x.qui || 'Un acquéreur'}<Ic n="droite" t={12} e={2.6} /></button>
-              : <b>{x.qui || 'Un acquéreur'}</b>}
+              ? <button type="button" className={o.quiLien} onClick={a.onAcquereur} title="Ouvrir sa fiche">{x.qui || 'Un demandeur'}<Ic n="droite" t={12} e={2.6} /></button>
+              : <b>{x.qui || 'Un demandeur'}</b>}
             {fin ? ` · ${fin}` : ''}{typeof d.conditions === 'string' && d.conditions ? ` · ${d.conditions}` : ''}
           </span>
           {x.commentaire && <span className={o.qui}>{x.commentaire}</span>}
@@ -862,7 +862,7 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
               {echanges.map((e, i) => (
                 <li key={i} data-par={e.par}>
                   <span className={o.echD}>{dateAnCourt(e.le)}</span>
-                  <span className={o.echL}>{i === 0 ? 'Offre de l’acquéreur' : e.par === 'vendeur' ? 'Contre-offre du vendeur' : 'Nouvelle proposition de l’acquéreur'}</span>
+                  <span className={o.echL}>{i === 0 ? 'Offre du demandeur' : e.par === 'vendeur' ? 'Contre-offre du mandant' : 'Nouvelle proposition du demandeur'}</span>
                   <b>{euros(e.montant)}</b>
                 </li>
               ))}
@@ -882,8 +882,8 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
             ) : null;
             return (
               <div className={o.accordH}>
-                <div><small>{`Honoraires${ch ? ` · charge ${ch === 'vendeur' ? 'vendeur' : 'acquéreur'}` : ''}`}</small><b>{`${euros(h)} TTC`}</b></div>
-                <div className={o.accordNet}><small>Net vendeur</small><b>{actuel ? euros(actuel - h) : '—'}</b></div>
+                <div><small>{`Honoraires${ch ? ` · charge ${ch === 'vendeur' ? 'vendeur' : 'demandeur'}` : ''}`}</small><b>{`${euros(h)} HT`}</b></div>
+                <div className={o.accordNet}><small>Net mandant</small><b>{actuel ? euros(actuel - h) : '—'}</b></div>
                 {modifier && !fige && <button type="button" className={o.offreModif} onClick={modifier} aria-label="Modifier les honoraires" title="Modifier les honoraires"><Ic n="crayon" t={14} /></button>}
               </div>
             );
@@ -922,7 +922,7 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
             <div className={o.suite} data-sorte={sorte}>
               {sorte === 'attente' && (
                 <>
-                  <b className={o.suiteQ}>{negocie ? `Le vendeur accepte ${euros(dernier.montant)} ?` : 'Le vendeur a répondu ?'}</b>
+                  <b className={o.suiteQ}>{negocie ? `Le mandant accepte ${euros(dernier.montant)} ?` : 'Le mandant a répondu ?'}</b>
                   {jusquau && j !== null && !negocie && (
                     <span className={o.delai} data-retard={j < 0 ? 'oui' : 'non'}>
                       <Ic n="horloge" t={15} />
@@ -938,13 +938,13 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
                     </div>
                   )}
                   <div className={o.petits}>
-                    <button type="button" className={o.petit} onClick={() => rep({ k: 'retire' })}>L’acquéreur retire son offre</button>
+                    <button type="button" className={o.petit} onClick={() => rep({ k: 'retire' })}>Le demandeur retire son offre</button>
                   </div>
                 </>
               )}
               {sorte === 'contre' && (
                 <>
-                  <b className={o.suiteQ}>{`L’acquéreur accepte ${euros(dernier.montant)} ?`}</b>
+                  <b className={o.suiteQ}>{`Le demandeur accepte ${euros(dernier.montant)} ?`}</b>
                   {saisie ? <SaisieMontant k={saisie.k} v={saisie.v} onChange={v => setSaisie({ ...saisie, v })} onValider={valider} onAnnuler={() => setSaisie(null)} /> : (
                     <div className={o.offreBtns}>
                       <button type="button" className={`${o.act} ${o.actVert}`} onClick={() => rep({ k: 'accepte' })}><Ic n="check" t={13} e={2.6} />Il accepte</button>
@@ -957,7 +957,7 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
               {sorte === 'acceptee' && (
                 <>
                   <b className={o.suiteQ}>Prochaine étape : le compromis, chez le notaire</b>
-                  <span className={o.suiteTx}>Une fois signé, le bien passe « Sous compromis » et le CRM calcule les dates : rétractation, prêt, acte.</span>
+                  <span className={o.suiteTx}>Une fois signé, le bien passe « En signature » et le CRM calcule les dates : rétractation, prêt, acte.</span>
                   {a.onCompromis && <button type="button" className={`${o.act} ${o.actOr} ${o.suiteBtn}`} onClick={a.onCompromis}>Le compromis est signé<Ic n="fleche" t={14} e={2.4} /></button>}
                   <div className={o.petits}>
                     <button type="button" className={o.petit} onClick={() => rep({ k: 'rouvrir' })}>Annuler l’acceptation</button>
@@ -1023,8 +1023,8 @@ function NotairesListe({ notaires, commun, onModifier, onRenseigner, toujours, c
   toujours?: boolean; children?: ReactNode;
 }) {
   const ROLES: { role: NotaireCarte['role']; l: string; col: string }[] = commun
-    ? [{ role: 'vendeur', l: 'Notaire commun · vendeur et acquéreur', col: '#2e3034' }]
-    : [{ role: 'vendeur', l: 'Notaire du vendeur', col: '#c2621c' }, { role: 'acquereur', l: 'Notaire de l’acquéreur', col: '#1d4ed8' }];
+    ? [{ role: 'vendeur', l: 'Notaire commun · mandant et demandeur', col: '#2e3034' }]
+    : [{ role: 'vendeur', l: 'Notaire du mandant', col: '#c2621c' }, { role: 'acquereur', l: 'Notaire du demandeur', col: '#1d4ed8' }];
   const lignes = ROLES.map(r => ({ r, n: notaires.find(x => x.role === r.role) || (commun ? notaires[0] : undefined) })).filter(x => toujours || x.n);
   return (
     <div className={o.notairesC}>
@@ -1093,7 +1093,7 @@ function SaisieMontant({ k, v, onChange, onValider, onAnnuler }: { k: 'contre' |
   return (
     <div className={o.contre}>
       <label>
-        <span>{k === 'contre' ? 'La contre-offre du vendeur' : 'La nouvelle proposition de l’acquéreur'}</span>
+        <span>{k === 'contre' ? 'La contre-offre du mandant' : 'La nouvelle proposition du demandeur'}</span>
         <span className={o.contreCh}>
           <input inputMode="numeric" autoFocus value={v} placeholder="Ex : 495 000" onChange={e => onChange(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') onValider(); if (e.key === 'Escape') onAnnuler(); }} />
@@ -1115,7 +1115,7 @@ function DocDeLOffre({ a, piece }: { a: ActionsOffre; piece: string }) {
       <div className={o.docOffreT}>
         <Ic n="plume" t={15} />
         <b>L’offre écrite</b>
-        <small>{piece || doc?.etat === 'signe' ? 'signée par l’acquéreur' : doc ? 'à faire signer par l’acquéreur' : 'à faire signer par l’acquéreur · facultatif'}</small>
+        <small>{piece || doc?.etat === 'signe' ? 'signée par le demandeur' : doc ? 'à faire signer par le demandeur' : 'à faire signer par le demandeur · facultatif'}</small>
       </div>
       {piece && (
         <div className={o.docOffreL}>

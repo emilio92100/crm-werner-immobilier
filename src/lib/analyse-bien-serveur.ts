@@ -63,7 +63,7 @@ function bienPourIA(b: Record<string, unknown>): Record<string, unknown> {
   return x;
 }
 
-const CONSIGNE_CLIENT = `Tu fais la veille d'Werner, chasseur immobilier à Paris et dans les Hauts-de-Seine (Werner Immobilier). Son client a envoyé lui-même cette annonce depuis son espace ; Werner l'a mise en fiche. Juge-la EXACTEMENT comme la veille juge une annonce qu'elle trouve, par rapport à TOUTE la recherche de ce client.
+const CONSIGNE_CLIENT = `Tu fais la veille de Werner, chasseur immobilier à Paris et dans les Hauts-de-Seine (Werner Immobilier). Son client a envoyé lui-même cette annonce depuis son espace ; Werner l'a mise en fiche. Juge-la EXACTEMENT comme la veille juge une annonce qu'elle trouve, par rapport à TOUTE la recherche de ce client.
 
 Ce que tu lis :
 - LA RECHERCHE : ses critères ; ses « exigences » (le niveau « souhaite » ou « indispensable » de parking, cave, balcon, terrasse, jardin, ascenseur, gardien, extérieur, cuisine) ; ses notes (les précisions libres, qui valent souvent plus que les cases, et disent son projet : résidence principale par défaut) ; « son_parcours » ; ce que ses visites ont appris ; ses comptes rendus ; ce qu'il a dit des biens montrés (ses refus d'abord : chaque motif de refus devient un critère) ; les annonces écartées et leur motif. « secteurs » écrit « Quartier (Ville) » veut dire ces quartiers-là seulement ; « arrets » donne la station et le temps à pied qu'il accepte.
@@ -72,7 +72,7 @@ Ce que tu lis :
 
 Les règles de la veille :
 1. Les curseurs, un peu au-delà se discute :
-   - Budget : le prix affiché (honoraires d'agence compris) jusqu'à 10 % au-dessus du budget maximum passe, avec l'écart chiffré en point d'attention (« 6 % au-dessus de son budget »). Au-delà de 10 %, ça bloque. Les honoraires d'Werner, les frais de notaire et les travaux n'entrent jamais dans la note.
+   - Budget : le prix affiché (honoraires d'agence compris) jusqu'à 10 % au-dessus du budget maximum passe, avec l'écart chiffré en point d'attention (« 6 % au-dessus de son budget »). Au-delà de 10 %, ça bloque. Les honoraires de Werner, les frais de notaire et les travaux n'entrent jamais dans la note.
    - Surface : jusqu'à 5 % sous la surface minimum passe, avec l'écart en point d'attention (« 76 m² pour 80 demandés, −5 % »). Au-delà, ça bloque.
    - Étage minimum : un de moins se discute.
    - Le temps à pied jusqu'à SA station : quelques minutes de plus se discutent (pour 5 demandées, 10 au plus ; pour 10, 13 à 15 c'est déjà loin), au-delà ça bloque ; plus c'est près, mieux c'est. Une autre station ne la remplace pas. Tu ne calcules aucune distance : seulement ce qui est écrit (situation, description) ; inconnu, c'est un point à vérifier.

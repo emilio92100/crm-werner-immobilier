@@ -49,16 +49,18 @@ const ORDRE: EtapeVente[] = ['mandat', 'offre', 'compromis', 'estimation', 'a_su
    « Autres étapes ▾ », les estimations d'abord, puis « Ventes en cours » (sous
    offre et sous compromis, réunis : « dans mes ventes en cours, on retrouve
    sous offre et sous compromis »), puis le reste. */
-const AUTRES: (EtapeVente | 'ventes')[] = ['estimation', 'ventes', 'a_suivre', 'suspendu', 'vendu', 'retire', 'annonce_type'];
+/* Werner (Alexandre : « En cours, Sous offre, Conclues ») : ces trois-là sur
+   la ligne ; les autres étapes dans le menu, la diffusion en tête. */
+const AUTRES: (EtapeVente | 'diffusion')[] = ['estimation', 'diffusion', 'a_suivre', 'suspendu', 'retire', 'annonce_type'];
 const dansEtape = (x: BienVente, f: EtapeVente) => (f === 'mandat' ? EN_COURS.includes(x.etape) : x.etape === f);
 /* « Ventes en cours » : une offre est là, ou le compromis est signé. */
 const enVente = (x: BienVente) => x.etape === 'offre' || x.etape === 'compromis';
 type SousVente = 'toutes' | 'offre' | 'compromis';
 const dansSousVente = (x: BienVente, k: SousVente) => k === 'toutes' || x.etape === k;
 const AIDE_VENTE: Record<SousVente, string> = {
-  toutes: 'Les biens sous offre et sous compromis : le mandat court toujours, la vente avance.',
-  offre: 'Une offre est arrivée : en attente, en négociation ou acceptée, avant le compromis.',
-  compromis: 'Le compromis est signé : on attend l’acte chez le notaire.',
+  toutes: 'Les affaires sous offre et en signature : le mandat court toujours, l’affaire avance.',
+  offre: 'Une offre est arrivée : en attente, en négociation ou acceptée, avant la signature.',
+  compromis: 'L’accord est trouvé : on prépare la signature du bail, de la cession ou de la vente.',
 };
 /* V3.96 (Alexandre : « dans les onglets, diffusion en cours ») : tout ce qui
    est en ligne, quelle que soit l'étape. */
@@ -70,7 +72,7 @@ type SousDiff = 'tous' | 'mandats' | 'annonces';
 const dansSousDiff = (x: BienVente, k: SousDiff) => k === 'tous' || (k === 'annonces') === (x.etape === 'annonce_type');
 const AIDE_DIFF: Record<Exclude<SousDiff, 'annonces'>, string> = {
   tous: 'Tout ce qui est en ligne, quelle que soit l’étape.',
-  mandats: 'Les vrais biens à vendre, en ligne : en vente, sous offre, sous compromis, ou diffusés à une autre étape.',
+  mandats: 'Les vraies affaires, en ligne : disponibles, sous offre, en signature, ou diffusées à une autre étape.',
 };
 /* « Annonces type », ce que c'est (Alexandre : « une petite précision de à
    quoi correspond ce filtre »), sous la catégorie et sous la pastille. */
@@ -80,7 +82,7 @@ function ExpliAnnonceType() {
       <span className={b.expliAnnonceIc}><Ic n="megaphone" t={16} /></span>
       <span>
         <b>{'Les annonces type'}</b>
-        {' : des annonces pour faire venir des acheteurs, sans vrai bien à vendre derrière. Un bien proche de celui qu’on ne peut pas diffuser, ou un ancien mandat gardé en ligne. Ni visite ni offre dessus : un acheteur intéressé se suit sur sa propre fiche.'}
+        {' : des annonces pour faire venir des demandeurs, sans vraie affaire derrière. Un local proche de celui qu’on ne peut pas diffuser, ou un ancien mandat gardé en ligne. Ni visite ni offre dessus : un demandeur intéressé se suit sur sa propre fiche.'}
       </span>
     </div>
   );
@@ -133,12 +135,12 @@ export function BandeauVendu({ titre, texte, onFiche, onVendus, onFermer }: { ti
     <div className={b.annonceVente} role="status">
       <span className={b.annonceVenteIc}><Ic n="cle" t={20} /></span>
       <div className={b.annonceVenteTx}>
-        <b>{`Vendu ! ${titre}`}</b>
-        <span>{texte || 'Le bien est rangé dans « Vendus ».'}</span>
+        <b>{`Conclue ! ${titre}`}</b>
+        <span>{texte || 'L’affaire est rangée dans « Conclues ».'}</span>
       </div>
       <div className={b.annonceVenteBtns}>
         <button type="button" className={`${s.btn} ${s.btnOr}`} onClick={onFiche}>Voir la fiche</button>
-        <button type="button" className={s.btn} onClick={onVendus}>Voir les vendus</button>
+        <button type="button" className={s.btn} onClick={onVendus}>Voir les affaires conclues</button>
         <button type="button" className={b.annonceVenteX} aria-label="Fermer" onClick={onFermer}><Ic n="croix" t={14} /></button>
       </div>
     </div>
@@ -291,7 +293,7 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
     const x = mandatNeuf;
     setMandatNeuf(null);
     if (!x) return;
-    try { await supprimerBien(x.bien); } catch (e) { setErreur(`Le bien commencé n’a pas pu être retiré : ${(e as Error).message}`); void charger(); }
+    try { await supprimerBien(x.bien); } catch (e) { setErreur(`L’affaire commencée n’a pas pu être retirée : ${(e as Error).message}`); void charger(); }
   }
   /* Les brouillons vides (V3.50) : « Nouveau bien » ouvert puis laissé, l'onglet
      fermé. Ils ne s'effacent pas tout seuls : on les montre à part, avec
@@ -392,9 +394,9 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
   const nomBien = (x: BienVente) => [x.titre || titreBien(x.donnees || {}), villeAffichee(x.ville, x.code_postal), x.reference].filter(Boolean).join(' · ');
   function preparerLot(quoi: 'supprimer' | 'archiver' | 'desarchiver') {
     const ok = (x: BienVente) => (quoi === 'supprimer' ? x.etape !== 'vendu' : quoi === 'archiver' ? ARCHIVABLES.includes(x.etape) && !x.archive : x.archive);
-    const pourquoi = (x: BienVente) => (quoi === 'supprimer' ? 'Vendu : ses honoraires comptent dans ton chiffre d’affaires. Archive-le plutôt.'
-      : quoi === 'archiver' ? (x.archive ? 'Déjà archivé.' : `En cours (« ${etapeDe(x.etape).lib} ») : on archive un bien terminé. Passe-le « Retiré » d’abord s’il ne se vendra pas.`)
-        : 'Pas archivé.');
+    const pourquoi = (x: BienVente) => (quoi === 'supprimer' ? 'Conclue : ses honoraires comptent dans ton chiffre d’affaires. Archive-la plutôt.'
+      : quoi === 'archiver' ? (x.archive ? 'Déjà archivée.' : `En cours (« ${etapeDe(x.etape).lib} ») : on archive une affaire terminée. Passe-la « Retirée » d’abord si elle ne se fera pas.`)
+        : 'Pas archivée.');
     setLot({ quoi, cibles: coches.filter(ok), ignores: coches.filter(x => !ok(x)).map(x => ({ nom: nomBien(x), pourquoi: pourquoi(x) })), avancement: null });
   }
   async function faireLot() {
@@ -410,7 +412,7 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
         av.fait += 1; partis.push(x.id);
       } catch (e) {
         const m = (e as Error).message;
-        av.erreurs.push(`${nomBien(x)} : ${m === MESSAGE_VENDU_SUPPR ? 'vendu, archive-le plutôt' : m}`);
+        av.erreurs.push(`${nomBien(x)} : ${m === MESSAGE_VENDU_SUPPR ? 'conclue, archive-la plutôt' : m}`);
       }
       setLot(l => (l ? { ...l, avancement: { ...av, erreurs: [...av.erreurs] } } : l));
     }
@@ -450,8 +452,8 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
      tomberont à l'acte. */
   const phrase = [
     exclus ? `${exclus} mandat${exclus > 1 ? 's' : ''} exclusif${exclus > 1 ? 's' : ''} en cours` : '',
-    honoCompromis ? `${euros(honoCompromis)} TTC d’honoraires à toucher à l’acte (biens sous compromis)` : '',
-  ].filter(Boolean).join(' · ') || 'Tes biens, du premier contact avec le propriétaire à la signature chez le notaire.';
+    honoCompromis ? `${euros(honoCompromis)} HT d’honoraires à toucher à la signature (affaires en signature)` : '',
+  ].filter(Boolean).join(' · ') || 'Tes affaires : les locaux à louer, les droits au bail, les fonds et les murs, du premier contact à la signature.';
 
   const bienOuvert = ouvert && liste ? tousBiens.find(x => x.id === ouvert) || null : null;
 
@@ -490,14 +492,13 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
     );
   }
 
-  if (!liste && attendu) return <SqueletteFiche label="Chargement du bien" />;
+  if (!liste && attendu) return <SqueletteFiche label="Chargement de l’affaire" />;
   const installer = erreur === MESSAGE_SQL;
   return (
     <div className={`${s.page} ${retour ? 'ecran-arriere' : ''}`}>
-      <EnteteRubrique titre="Biens" icone={<Ic n="maison" t={22} />} phrase={phrase} arrondi
-        recherche={biens.length > 0 ? { valeur: cherche, onChange: setCherche, placeholder: 'Adresse, ville, propriétaire, n° de mandat…', label: 'Chercher un bien' } : undefined}
-        bouton={installer ? undefined : { lib: 'Nouveau bien', onClick: () => { setErreurDepart(''); setPour(null); setChoixDepart(true); } }}
-        bouton2={installer ? undefined : { lib: 'Importer depuis ImmoFacile', court: 'Importer', ic: <Ic n="telecharger" t={15} />, onClick: () => setImportIF(true) }}
+      <EnteteRubrique titre="Affaires" icone={<Ic n="agence" t={22} />} phrase={phrase} arrondi
+        recherche={biens.length > 0 ? { valeur: cherche, onChange: setCherche, placeholder: 'Adresse, ville, mandant, enseigne, n° de mandat…', label: 'Chercher une affaire' } : undefined}
+        bouton={installer ? undefined : { lib: 'Nouvelle affaire', onClick: () => { setErreurDepart(''); setPour(null); setChoixDepart(true); } }}
         label="Filtrer par catégorie" actif={filtre} onChoisir={k => setFiltre(k as Filtre)} aCheval
         libMenu="Autres étapes"
         tuiles={biens.length === 0 ? [] : [
@@ -505,17 +506,18 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
              les autres dans le menu (les estimations toujours, en tête ; les
              autres quand elles ont des biens, ou quand on les regarde). */
           { cle: 'mandat', lib: etapeDe('mandat').pluriel, n: filtre === 'archives' ? actifs.filter(x => dansEtape(x, 'mandat')).length : n('mandat'), couleur: etapeDe('mandat').c },
-          /* V3.96 : ce qui est en ligne. */
-          { cle: 'diffusion', lib: 'Diffusion en cours', n: filtre === 'archives' ? actifs.filter(enLigne).length : cherches.filter(enLigne).length, couleur: '#0f7a4f' },
+          { cle: 'ventes', lib: 'Sous offre, en signature', n: (filtre === 'archives' ? actifs : cherches).filter(enVente).length, couleur: etapeDe('offre').c },
+          { cle: 'vendu', lib: etapeDe('vendu').pluriel, n: (filtre === 'archives' ? actifs : cherches).filter(x => x.etape === 'vendu').length, couleur: etapeDe('vendu').c },
           ...AUTRES.map(k => {
             const base = filtre === 'archives' ? actifs : cherches;
-            const nb = k === 'ventes' ? base.filter(enVente).length : base.filter(x => dansEtape(x, k)).length;
-            const e = k === 'ventes' ? null : etapeDe(k);
-            return { cle: k, lib: e ? e.pluriel : 'Ventes en cours', n: nb, couleur: e ? e.c : etapeDe('compromis').c, menu: true };
-          }).filter(x => x.n > 0 || x.cle === filtre || x.cle === 'estimation'),
-          { cle: 'tout', lib: 'Tous', n: filtre === 'archives' ? actifs.length : cherches.length, tete: true, fin: true, ic: <Ic n="maison" t={14} e={2.1} /> },
+            /* V3.96 : « Diffusion en cours », ce qui est en ligne. */
+            const nb = k === 'diffusion' ? base.filter(enLigne).length : base.filter(x => dansEtape(x, k)).length;
+            const e = k === 'diffusion' ? null : etapeDe(k);
+            return { cle: k, lib: e ? e.pluriel : 'Diffusion en cours', n: nb, couleur: e ? e.c : '#0f7a4f', menu: true };
+          }).filter(x => x.n > 0 || x.cle === filtre || x.cle === 'estimation' || x.cle === 'diffusion'),
+          { cle: 'tout', lib: 'Toutes', n: filtre === 'archives' ? actifs.length : cherches.length, tete: true, fin: true, ic: <Ic n="agence" t={14} e={2.1} /> },
           /* « Archivés » toujours là, même vide : sa place ne bouge pas. */
-          { cle: 'archives', lib: 'Archivés', n: archives.length, archive: true },
+          { cle: 'archives', lib: 'Archivées', n: archives.length, archive: true },
         ]} />
 
       {annonce && (
@@ -531,7 +533,7 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
         <div className={b.brouillons}>
           <div className={b.brouillonsT}>
             <Ic n="info" t={16} />
-            <span>{`${brouillons.length > 1 ? `${brouillons.length} brouillons vides` : 'Un brouillon vide'} : « Nouveau bien » ouvert puis laissé, sans rien dedans.`}</span>
+            <span>{`${brouillons.length > 1 ? `${brouillons.length} brouillons vides` : 'Un brouillon vide'} : « Nouvelle affaire » ouverte puis laissée, sans rien dedans.`}</span>
             <button type="button" className={b.lien} onClick={() => setBrouillonsOuverts(v => !v)}>{brouillonsOuverts ? 'Replier' : 'Voir'}</button>
             <button type="button" className={`${s.btn} ${b.brouillonsBtn}`} onClick={() => { if (brouillons.length === 1 || confirm(`Supprimer les ${brouillons.length} brouillons vides ?`)) void supprimerBrouillons(brouillons); }}><Ic n="corbeille" t={14} />{brouillons.length > 1 ? 'Tout supprimer' : 'Supprimer'}</button>
           </div>
@@ -566,14 +568,14 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
       {liste && !installer && ailleurs > 0 && (
         <div className={b.ailleurs} role="status">
           <Ic n="loupe" t={15} />
-          <span>{ailleurs > 1 ? `${ailleurs} autres biens correspondent à « ${cherche.trim()} » dans d’autres étapes.` : `Un autre bien correspond à « ${cherche.trim()} » dans une autre étape.`}</span>
-          <button type="button" className={b.lien} onClick={() => setFiltre('tout')}>Voir dans « Tous »</button>
+          <span>{ailleurs > 1 ? `${ailleurs} autres affaires correspondent à « ${cherche.trim()} » dans d’autres étapes.` : `Une autre affaire correspond à « ${cherche.trim()} » dans une autre étape.`}</span>
+          <button type="button" className={b.lien} onClick={() => setFiltre('tout')}>Voir dans « Toutes »</button>
         </div>
       )}
       {liste && !installer && biens.length > 0 && filtre === 'diffusion' && (() => {
         const enL = cherches.filter(enLigne);
         return (
-          <Pastilles<SousDiff> label="Classer les biens en ligne" v={sousDiff} onChange={setSousDiff}
+          <Pastilles<SousDiff> label="Classer les affaires en ligne" v={sousDiff} onChange={setSousDiff}
             aide={sousDiff !== 'annonces' ? { ic: 'megaphone', t: AIDE_DIFF[sousDiff] } : null}
             choix={[
               { k: 'tous', l: 'Tous', n: enL.length },
@@ -586,12 +588,12 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
       {liste && !installer && biens.length > 0 && filtre === 'ventes' && (() => {
         const v = cherches.filter(enVente);
         return (
-          <Pastilles<SousVente> label="Classer les ventes en cours" v={sousVente} onChange={setSousVente}
+          <Pastilles<SousVente> label="Classer les affaires sous offre et en signature" v={sousVente} onChange={setSousVente}
             aide={{ ic: 'cle', t: AIDE_VENTE[sousVente] }}
             choix={[
               { k: 'toutes', l: 'Toutes', n: v.length },
               { k: 'offre', l: 'Sous offre', n: v.filter(x => x.etape === 'offre').length, c: etapeDe('offre').c },
-              { k: 'compromis', l: 'Sous compromis', n: v.filter(x => x.etape === 'compromis').length, c: etapeDe('compromis').c },
+              { k: 'compromis', l: 'En signature', n: v.filter(x => x.etape === 'compromis').length, c: etapeDe('compromis').c },
             ]} />
         );
       })()}
@@ -603,7 +605,7 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
 
       {!liste ? (
         /* Pendant la lecture : la silhouette des cartes (ou des lignes). */
-        <div className={`${vue === 'lignes' ? b.lignesBiens : b.grille} squelette`} aria-busy="true" aria-label="Chargement des biens">
+        <div className={`${vue === 'lignes' ? b.lignesBiens : b.grille} squelette`} aria-busy="true" aria-label="Chargement des affaires">
           {[0, 1, 2].map(i => vue === 'lignes'
             ? <div key={i} className="sq-ligne" style={{ animationDelay: `${i * 45}ms` }}><span className="sq-rond" /><span className="sq-txt"><span className="sq-barre" style={{ width: '46%' }} /><span className="sq-barre sq-fine" style={{ width: '30%' }} /></span></div>
             : <div key={i} className="sq-carte" style={{ animationDelay: `${i * 60}ms` }}><span className="sq-photo" /><span className="sq-txt"><span className="sq-barre" style={{ width: '52%' }} /><span className="sq-barre sq-fine" style={{ width: '70%' }} /><span className="sq-barre sq-fine" style={{ width: '40%' }} /></span></div>)}
@@ -611,8 +613,8 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
       ) : !installer && (visibles.length === 0 ? (
         <div className={s.liste}>
           <div className={s.vide}>
-            <b>{biens.length === 0 ? 'Aucun bien pour l’instant' : 'Rien ici'}</b>
-            {biens.length === 0 ? 'Crée ton premier bien : un projet à suivre, une estimation ou un mandat signé. Il s’enregistre au fil de la saisie.' : avantFiltres > 0 ? 'Aucun bien ne correspond à ces filtres : « Effacer » les retire tous.' : 'Aucun bien dans cette catégorie.'}
+            <b>{biens.length === 0 ? 'Aucune affaire pour l’instant' : 'Rien ici'}</b>
+            {biens.length === 0 ? 'Crée ta première affaire : un local à louer, un droit au bail, un fonds ou des murs à céder. Elle s’enregistre au fil de la saisie.' : avantFiltres > 0 ? 'Aucune affaire ne correspond à ces filtres : « Effacer » les retire tous.' : 'Aucune affaire dans cette catégorie.'}
           </div>
         </div>
       ) : (
@@ -628,7 +630,7 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
                 <Rendu bien={x} suivi={liste.suivi.filter(s2 => s2.bien_id === x.id)} proprio={proprioDe(x)}
                   nbAcheteurs={parBien[x.id]?.acheteurs || 0} nbVisites={parBien[x.id]?.visites || 0} nbPrevues={parBien[x.id]?.prevues || 0} nbCR={parBien[x.id]?.cr || 0} nbOffres={parBien[x.id]?.offres || 0}
                   mandat={mandats[x.id] || null} onClick={() => ouvrir(x.id)} />
-                <CaseSelection coin on={on} mode={modeChoix} onBasculer={() => basculerChoix(x.id)} titre={on ? 'Décocher ce bien' : 'Cocher ce bien'} className={vue === 'lignes' ? b.caseLigne : undefined} />
+                <CaseSelection coin on={on} mode={modeChoix} onBasculer={() => basculerChoix(x.id)} titre={on ? 'Décocher cette affaire' : 'Cocher cette affaire'} className={vue === 'lignes' ? b.caseLigne : undefined} />
               </div>
             );
           })}
@@ -639,43 +641,43 @@ export default function PageBiens({ onNavigate }: { onNavigate: (page: string, d
       {editeur}
       {/* V3.88 — Les biens cochés : la barre, et ses gestes. */}
       {!lot && !etapeLot && !envoiLot && (
-        <BarreSelection n={coches.length} un="bien sélectionné" plusieurs="biens sélectionnés" onVider={viderChoix}
+        <BarreSelection n={coches.length} un="affaire sélectionnée" plusieurs="affaires sélectionnées" onVider={viderChoix}
           toutes={visibles.length ? { n: visibles.length + coches.filter(x => !visibles.includes(x)).length, onClick: () => setChoisis(l => new Set([...l, ...visibles.map(x => x.id)])) } : null}
           gestes={[
             /* V3.89 : trois gestes ; l'étape et le reste dans de petits menus. */
-            { k: 'envoyer', lib: 'Envoyer à des acheteurs', court: 'Envoyer', ic: 'envoyer', principal: true, onClick: () => setEnvoiLot(coches) },
+            { k: 'envoyer', lib: 'Envoyer à des demandeurs', court: 'Envoyer', ic: 'envoyer', principal: true, onClick: () => setEnvoiLot(coches) },
             { k: 'etape', lib: 'Changer d’étape', court: 'Étape', ic: 'drapeau', menu: CIBLES_ETAPE.map(c => {
               const ok = liste ? coches.filter(x => !bloqueEtape(x, c.k, liste)).length : 0;
               return { k: c.k, lib: c.lib, couleur: etapeDe(c.k).c, onClick: () => preparerEtape(c.k),
-                sous: ok === coches.length ? c.sous : ok ? `${ok} sur ${coches.length} peuvent y passer d’ici` : `${coches.length > 1 ? 'Aucun ne peut' : 'Il ne peut pas'} y passer d’ici` };
+                sous: ok === coches.length ? c.sous : ok ? `${ok} sur ${coches.length} peuvent y passer d’ici` : `${coches.length > 1 ? 'Aucune ne peut' : 'Elle ne peut pas'} y passer d’ici` };
             }) },
             { k: 'plus', lib: 'Autres actions', ic: 'points', icone: true, menu: [
               coches.every(x => x.archive)
-                ? { k: 'desarchiver', lib: 'Sortir des archives', sous: 'Ils reviennent dans la liste', ic: 'archive', onClick: () => preparerLot('desarchiver') }
-                : { k: 'archiver', lib: 'Archiver', sous: 'Les biens terminés (vendus, retirés) quittent la liste', ic: 'archive', onClick: () => preparerLot('archiver') },
+                ? { k: 'desarchiver', lib: 'Sortir des archives', sous: 'Elles reviennent dans la liste', ic: 'archive', onClick: () => preparerLot('desarchiver') }
+                : { k: 'archiver', lib: 'Archiver', sous: 'Les affaires terminées (conclues, retirées) quittent la liste', ic: 'archive', onClick: () => preparerLot('archiver') },
               { k: 'supprimer', lib: 'Supprimer', sous: 'Définitif : la fiche, ses photos, son suivi', ic: 'corbeille', danger: true, onClick: () => preparerLot('supprimer') },
             ] },
           ]} />
       )}
       {lot && (
         <ConfirmerLot danger={lot.quoi === 'supprimer'}
-          titre={lot.quoi === 'supprimer' ? `Supprimer ${lot.cibles.length > 1 ? `${lot.cibles.length} biens` : lot.cibles.length ? '1 bien' : 'ces biens'} ?`
-            : lot.quoi === 'archiver' ? `Archiver ${lot.cibles.length > 1 ? `${lot.cibles.length} biens` : lot.cibles.length ? '1 bien' : 'ces biens'} ?`
-              : `Sortir ${lot.cibles.length > 1 ? `${lot.cibles.length} biens` : '1 bien'} des archives ?`}
-          phrase={lot.quoi === 'supprimer' ? 'C’est définitif : la fiche, ses photos, son suivi et les pièces de son dossier partent avec. Pour le garder sans le voir, archive-le plutôt (une fois vendu ou retiré).'
-            : lot.quoi === 'archiver' ? 'Ils quittent la liste et se rangent dans « Archivés », sans rien perdre. Une vente reste comptée.'
-              : 'Ils reviennent dans la liste, à leur étape.'}
+          titre={lot.quoi === 'supprimer' ? `Supprimer ${lot.cibles.length > 1 ? `${lot.cibles.length} affaires` : lot.cibles.length ? '1 affaire' : 'ces affaires'} ?`
+            : lot.quoi === 'archiver' ? `Archiver ${lot.cibles.length > 1 ? `${lot.cibles.length} affaires` : lot.cibles.length ? '1 affaire' : 'ces affaires'} ?`
+              : `Sortir ${lot.cibles.length > 1 ? `${lot.cibles.length} affaires` : '1 affaire'} des archives ?`}
+          phrase={lot.quoi === 'supprimer' ? 'C’est définitif : la fiche, ses photos, son suivi et les pièces de son dossier partent avec. Pour la garder sans la voir, archive-la plutôt (une fois conclue ou retirée).'
+            : lot.quoi === 'archiver' ? 'Elles quittent la liste et se rangent dans « Archivées », sans rien perdre. Une affaire conclue reste comptée.'
+              : 'Elles reviennent dans la liste, à leur étape.'}
           liste={lot.cibles.map(nomBien)} ignores={lot.ignores}
           libValider={lot.quoi === 'supprimer' ? `Supprimer définitivement (${lot.cibles.length})` : lot.quoi === 'archiver' ? `Archiver (${lot.cibles.length})` : `Sortir des archives (${lot.cibles.length})`}
           avancement={lot.avancement} onValider={() => { void faireLot(); }} onFermer={() => setLot(null)} />
       )}
       {etapeLot && (
         <ConfirmerLot ic="drapeau"
-          titre={`Passer ${etapeLot.cibles.length > 1 ? `${etapeLot.cibles.length} biens` : etapeLot.cibles.length ? '1 bien' : 'ces biens'} « ${etapeDe(etapeLot.cible).court} » ?`}
-          phrase={etapeLot.cible === 'retire' ? 'Ils passent « Retiré », gardés dans l’historique. Les demandes des acheteurs sur ces biens se closent.'
-            : etapeLot.cible === 'suspendu' ? 'La vente se met en pause. L’envoi aux acheteurs reprendra avec elle.'
-              : etapeLot.cible === 'a_suivre' ? 'L’estimation est mise en attente : le bien repasse « À suivre », ce qui a été fait reste gardé.'
-                : 'Le bien passe « Estimation ». Le rendez-vous et le montant se posent ensuite depuis sa fiche.'}
+          titre={`Passer ${etapeLot.cibles.length > 1 ? `${etapeLot.cibles.length} affaires` : etapeLot.cibles.length ? '1 affaire' : 'ces affaires'} « ${etapeDe(etapeLot.cible).court} » ?`}
+          phrase={etapeLot.cible === 'retire' ? 'Elles passent « Retirée », gardées dans l’historique. Les demandes en cours sur ces affaires se closent.'
+            : etapeLot.cible === 'suspendu' ? 'La commercialisation se met en pause. L’envoi aux demandeurs reprendra avec elle.'
+              : etapeLot.cible === 'a_suivre' ? 'L’estimation est mise en attente : l’affaire repasse « À suivre », ce qui a été fait reste gardé.'
+                : 'L’affaire passe « Estimation ». Le rendez-vous et le montant se posent ensuite depuis sa fiche.'}
           liste={etapeLot.cibles.map(nomBien)} ignores={etapeLot.ignores}
           libValider={`Passer « ${etapeDe(etapeLot.cible).court} » (${etapeLot.cibles.length})`}
           enPlus={etapeLot.cibles.length > 0 && !etapeLot.avancement ? <RaisonEtape cible={etapeLot.cible} v={etapeLot.raison} off={false} onChange={r => setEtapeLot(x => (x ? { ...x, raison: r } : x))} /> : null}

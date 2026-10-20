@@ -17,7 +17,7 @@ export default function FenetreIndispo({ bien, clientId, rechercheId, prenom, on
   const [motif, setMotif] = useState<MotifIndispo>('vendu');
   const [note, setNote] = useState('');
   const [envoi, setEnvoi] = useState(false);
-  const qui = (prenom || '').trim() || 'l’acheteur';
+  const qui = (prenom || '').trim() || 'l’demandeur';
   useEffect(() => {
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape' && !envoi) onFermer(); };
     window.addEventListener('keydown', esc);

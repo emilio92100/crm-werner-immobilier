@@ -829,7 +829,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
             <span style={{ ...btn, borderColor: '#f08c42', background: '#fdf6f1', cursor: 'default' }}>✓ Simple</span>
             <span style={{ ...btn, color: '#94a3b8', cursor: 'not-allowed' }} title="Bientôt : il faut d’abord reprendre ton modèle exclusif">Exclusif · bientôt</span>
           </div>
-          <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>Honoraires (TTC, à la charge de l’acquéreur)</label>
+          <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>Honoraires (HT, à la charge du demandeur)</label>
           <div style={{ display: 'flex', width: 'fit-content', marginTop: 5, border: '1px solid #e2e8f0', borderRadius: 10, padding: 3, gap: 3, background: '#f8fafc' }}>
             {([['taux', 'Pourcentage'], ['forfait', 'Forfait']] as const).map(([m, l]) => (
               <button key={m} type="button" onClick={() => setMode(m)}
@@ -868,12 +868,12 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
                 <div style={{ position: 'relative', width: 150 }}>
                   <input style={{ ...champ, boxSizing: 'border-box', paddingRight: 52, border: `1px solid ${forfaitOk || !forfait.trim() ? '#e2e8f0' : '#fca5a5'}` }} value={forfait} inputMode="numeric"
                     placeholder="ex. 20 000" onChange={e => setForfait(e.target.value)} onBlur={() => setForfait(ecrireEuros(forfaitDe(forfait)))} aria-label="Forfait des honoraires" />
-                  <span style={{ position: 'absolute', right: 10, top: 9, color: '#94a3b8', fontWeight: 700 }}>€ TTC</span>
+                  <span style={{ position: 'absolute', right: 10, top: 9, color: '#94a3b8', fontWeight: 700 }}>€ HT</span>
                 </div>
               </div>
               <div style={{ fontSize: 12.5, color: forfaitOk || !forfait.trim() ? '#475569' : '#b91c1c', marginTop: 6, lineHeight: 1.5 }}>
                 {!forfaitN
-                  ? `Un montant fixe, en euros TTC.${forfaitMax ? ` Au plus ${euros(forfaitMax)} pour ce budget (ton barème, ${ecrireTaux(BAREME)} % du prix maximum).` : ''}`
+                  ? `Un montant fixe, en euros HT.${forfaitMax ? ` Au plus ${euros(forfaitMax)} pour ce budget (ton barème, ${ecrireTaux(BAREME)} % du prix maximum).` : ''}`
                   : !forfaitOk
                     ? `Au-dessus de ton barème : pour ce budget, le forfait ne peut pas dépasser ${forfaitMax ? euros(forfaitMax) : `${ecrireTaux(BAREME)} % du prix`}.`
                     : pmaxF

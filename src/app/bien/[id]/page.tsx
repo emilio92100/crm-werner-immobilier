@@ -108,7 +108,7 @@ const T: Record<string, string[]> = {
 type Etat = 'vendu' | 'compromis' | 'retire';
 const BANDEAU: Record<Etat, { titre: string; sous: string; ic: string; c: string; fond: string; trait: string }> = {
   vendu: { titre: 'Ce bien a été vendu', sous: 'Il n’est plus disponible.', ic: 'cle', c: ENCRE, fond: '#f1f0ef', trait: '#d9d8d6' },
-  compromis: { titre: 'Sous compromis', sous: 'Une promesse de vente est signée : il n’est plus disponible pour l’instant.', ic: 'cle', c: OR_FONCE, fond: OR_FOND, trait: OR_TRAIT },
+  compromis: { titre: 'En signature', sous: 'Une promesse de vente est signée : il n’est plus disponible pour l’instant.', ic: 'cle', c: OR_FONCE, fond: OR_FOND, trait: OR_TRAIT },
   retire: { titre: 'Ce bien n’est plus en vente', sous: 'Il n’est plus proposé pour l’instant.', ic: 'maison', c: PLUME, fond: FOND, trait: TRAIT },
 };
 function etatDeVente(v: { etape?: string | null; archive?: boolean | null } | null): Etat | null {
@@ -517,7 +517,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
           </h2>
           <div style={{ fontSize: 14, opacity: .72, marginBottom: 22, lineHeight: 1.6 }}>
             {etat === 'vendu' || etat === 'retire' ? 'Appelez-moi : je vous aide à trouver le vôtre.'
-              : etat === 'compromis' ? 'Il est sous compromis. Appelez-moi : je vous préviens s’il redevient disponible.'
+              : etat === 'compromis' ? 'Il est en signature. Appelez-moi : je vous préviens s’il redevient disponible.'
               : 'Appelez-moi pour organiser une visite, je reste à votre disposition.'}
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>

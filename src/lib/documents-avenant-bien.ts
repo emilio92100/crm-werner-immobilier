@@ -90,11 +90,11 @@ const jourFr = (ymd: string) => ymd.split('-').reverse().join('/');
 async function prixDansAnnonces(sb: SupabaseClient, bienId: string, vieux: string, neuf: string): Promise<string | null> {
   if (!vieux || vieux === neuf) return null;
   const { data, error } = await sb.from('biens').select('id, description').eq('bien_vente_id', bienId);
-  if (error) return /bien_vente_id/.test(error.message) ? null : 'le prix dans l’annonce des acheteurs : ' + error.message;
+  if (error) return /bien_vente_id/.test(error.message) ? null : 'le prix dans l’annonce des demandeurs : ' + error.message;
   for (const c of (data || []) as { id: string; description: string | null }[]) {
     if (!c.description || !c.description.includes(vieux)) continue;
     const r = await sb.from('biens').update({ description: c.description.split(vieux).join(neuf) }).eq('id', c.id);
-    if (r.error) return 'le prix dans l’annonce des acheteurs : ' + r.error.message;
+    if (r.error) return 'le prix dans l’annonce des demandeurs : ' + r.error.message;
   }
   return null;
 }

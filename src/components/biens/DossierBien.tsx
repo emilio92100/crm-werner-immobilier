@@ -46,16 +46,16 @@ import Curseur from '@/components/shared/Curseur';
      Suivi du contact. */
 
 const GROUPES: { k: LigneDossier['groupe'] | 'autres'; l: string; ic: string }[] = [
-  { k: 'diag', l: 'Le logement · diagnostics', ic: 'eclair' },
+  { k: 'diag', l: 'Le local · diagnostics', ic: 'eclair' },
   { k: 'copro', l: 'L’immeuble · copropriété', ic: 'immeuble' },
-  { k: 'vendeur', l: 'Le vendeur', ic: 'personne' },
+  { k: 'vendeur', l: 'Le mandant', ic: 'personne' },
   { k: 'autres', l: 'Autres documents', ic: 'dossier' },
 ];
 /* Des idées de pièces à ajouter, par groupe : un clic les pose. */
 const IDEES: Record<LigneDossier['groupe'], string[]> = {
   diag: ['Diagnostic radon', 'Attestation de surface (loi Boutin)', 'Rapport de repérage avant travaux'],
   copro: ['Relevés de charges (4 derniers trimestres)', 'Convocation à la prochaine AG', 'État daté', 'Attestation du syndic'],
-  vendeur: ['Pièces d’identité des vendeurs', 'Livret de famille, contrat de mariage ou de PACS', 'Plans du bien', 'Garanties décennales et dommages-ouvrage', 'Prêt en cours (pour la mainlevée)', 'Attestation d’entretien de la chaudière', 'Attestation d’assurance habitation', 'Contrat de gestion locative'],
+  vendeur: ['Pièces d’identité des mandants', 'Livret de famille, contrat de mariage ou de PACS', 'Plans du bien', 'Garanties décennales et dommages-ouvrage', 'Prêt en cours (pour la mainlevée)', 'Attestation d’entretien de la chaudière', 'Attestation d’assurance habitation', 'Contrat de gestion locative'],
 };
 const IDEES_SCI = ['Kbis de la SCI', 'Statuts de la SCI', 'PV d’AG de la SCI autorisant la vente'];
 const VIDE: PieceDossier = { etat: '', date: '', chemin: '', nom: '' };
@@ -250,7 +250,7 @@ function Guide({ d, lignes, st, onNc, onDemander }: {
           <div className={x.et}>
             <small>Pour signer le compromis</small>
             <b>{manquent.length ? `Il en manque ${manquent.length}` : 'C’est complet'}</b>
-            <p>{manquent.length ? 'Les diagnostics, les pièces de copropriété et celles du vendeur que le notaire demandera.' : 'Tout ce que le notaire demandera est dans le dossier.'}</p>
+            <p>{manquent.length ? 'Les diagnostics, les pièces de copropriété et celles du mandant que le notaire demandera.' : 'Tout ce que le notaire demandera est dans le dossier.'}</p>
             {manquent.length > 0 && (
               <div className={x.chips}>
                 {manquent.slice(0, 6).map(l => <span key={l.k} className={x.chip} data-ton={st(l.k) === 'expire' ? 'expire' : 'manque'}>{`${court(l.l)}${st(l.k) === 'expire' ? ' expiré' : ''}`}</span>)}
@@ -970,7 +970,7 @@ export function FenEnvoiDocuments({ bienId, pieces, depart, destinataires, lieu,
               <span>{destinataires.length ? 'Ou une autre adresse' : 'Adresse e-mail'}</span>
               <input type="email" value={autre} placeholder="notaire@etude.fr" onChange={e => setAutre(e.target.value)} />
             </label>
-            {!destinataires.length && <small className={x.aide}>Aucune adresse sur la fiche du propriétaire ni des acheteurs du bien : tape-la ici.</small>}
+            {!destinataires.length && <small className={x.aide}>Aucune adresse sur la fiche du propriétaire ni des demandeurs du bien : tape-la ici.</small>}
           </div>
 
           <div className={x.bloc}>
@@ -1054,7 +1054,7 @@ export function FenDemandeDocuments({ bienId, d, doss, lignes, destinataires, li
   /* Ce qui manque : ni reçu, ni non concerné, ni couvert par un dossier de
      diagnostics ; plus ce qui est à refaire (expiré). */
   const manquent = lignes.filter(l => refaire.includes(l.k) || (doss[l.k]?.etat !== 'recu' && doss[l.k]?.etat !== 'nc' && !doss[l.k]?.chemin && !doss[l.k]?.dans));
-  const proprios = destinataires.filter(y => !y.role.startsWith('Acheteur'));
+  const proprios = destinataires.filter(y => !y.role.startsWith('Demandeur'));
   const [motif, setMotif] = useState<Motif>(() => motifDe(etape));
   const [choix, setChoix] = useState<string[]>(() => depart.filter(k => manquent.some(l => l.k === k)));
   const [extras, setExtras] = useState<Extra[]>([]);

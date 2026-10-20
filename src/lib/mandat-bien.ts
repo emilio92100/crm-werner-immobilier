@@ -68,7 +68,7 @@ export async function prixChezAcheteurs(sb: SupabaseClient, bienId: string, avan
   const p = prixCopie(apres, etapes.apres);
   if (JSON.stringify(prixCopie(avant, etapes.avant)) === JSON.stringify(p)) return null;
   const { error } = await sb.from('biens').update(p).eq('bien_vente_id', bienId);
-  return error && !/bien_vente_id/.test(error.message) ? 'le nouveau prix chez les acheteurs qui ont reçu le bien : ' + error.message : null;
+  return error && !/bien_vente_id/.test(error.message) ? 'le nouveau prix chez les demandeurs qui ont reçu le bien : ' + error.message : null;
 }
 
 /* ── Signé dans Documents ────────────────────────────────────────────────

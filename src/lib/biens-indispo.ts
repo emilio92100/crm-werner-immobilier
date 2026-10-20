@@ -21,7 +21,7 @@ export type Indispo = { le: string; motif: MotifIndispo; note: string | null };
 
 export const MOTIFS_INDISPO: { k: MotifIndispo; l: string; client: string }[] = [
   { k: 'vendu', l: 'Vendu', client: 'Ce bien a été vendu.' },
-  { k: 'compromis', l: 'Sous compromis', client: 'Ce bien est sous compromis de vente.' },
+  { k: 'compromis', l: 'En signature', client: 'Ce bien est en signature de vente.' },
   { k: 'retire', l: 'Retiré de la vente', client: 'Ce bien n’est plus proposé à la vente.' },
   { k: 'autre', l: 'Autre raison', client: 'Ce bien n’est plus disponible.' },
 ];

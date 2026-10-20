@@ -106,7 +106,7 @@ const REFUS: Record<string, string> = {
   en_preparation: 'Votre conseiller prépare déjà votre nouvelle offre : vous la recevez très vite pour signature.',
   en_cours: 'Une offre est déjà en cours sur ce bien : vous la retrouvez dans « Vos visites ».',
   depasse: 'Votre offre a avancé entre-temps : rechargez la page pour voir où elle en est.',
-  contre_depassee: 'La proposition du vendeur a expiré. Vous pouvez faire une autre offre, ou en parler avec votre conseiller.',
+  contre_depassee: 'La proposition du mandant a expiré. Vous pouvez faire une autre offre, ou en parler avec votre conseiller.',
   mandat: 'Votre conseiller doit d’abord finaliser votre dossier : appelez-le, il prépare l’offre avec vous.',
   total: 'Indiquez le montant de votre offre.',
   acquereurs: 'Indiquez qui achète.',
@@ -141,21 +141,21 @@ export function Explique({ titre, children, texte }: { titre: string; children: 
 }
 /* Ce que valent nos honoraires sur ce bien, dit simplement. */
 const motHono = (h: HonoOffre) => (h.mode === 'taux'
-  ? `${String(h.val).replace('.', ',')} % du prix proposé au vendeur`
+  ? `${String(h.val).replace('.', ',')} % du prix proposé au mandant`
   : h.mode === 'forfait' ? `un forfait de ${EUR(h.val)}` : '');
-export const AIDE_CONTRE = 'C’est le prix que demande le vendeur (les honoraires de son agence compris, s’il en a une), plus nos honoraires, comptés une seule fois sur ce prix. Rien d’autre ne s’ajoute, hors frais de notaire.';
+export const AIDE_CONTRE = 'C’est le prix que demande le mandant (les honoraires de son agence compris, s’il en a une), plus nos honoraires, comptés une seule fois sur ce prix. Rien d’autre ne s’ajoute, hors frais de notaire.';
 /* V3.190 : sans honoraires qui s'ajoutent (un bien de l'agence, ou partagés
    avec l'agence du vendeur), « plus nos honoraires » serait faux. */
 export function aideContre(agence: boolean, avecHono: boolean): string {
   if (avecHono) return AIDE_CONTRE;
   return agence
-    ? 'C’est le prix que demande le vendeur. Les honoraires de l’agence y sont déjà compris : rien d’autre ne s’ajoute, hors frais de notaire.'
-    : 'C’est le prix que demande le vendeur, les honoraires de son agence compris s’il en a une. Rien d’autre ne s’ajoute, hors frais de notaire.';
+    ? 'C’est le prix que demande le mandant. Les honoraires de l’agence y sont déjà compris : rien d’autre ne s’ajoute, hors frais de notaire.'
+    : 'C’est le prix que demande le mandant, les honoraires de son agence compris s’il en a une. Rien d’autre ne s’ajoute, hors frais de notaire.';
 }
 /* V3.190 : sur un bien qu'il vend lui-même, son conseiller présente l'offre au vendeur. */
 const RASSURE = (agence: boolean) => (agence
-  ? 'Votre conseiller présente votre offre au vendeur, et vous prévient dès sa réponse.'
-  : 'Votre conseiller défend votre offre auprès du vendeur, et vous prévient dès sa réponse.');
+  ? 'Votre conseiller présente votre offre au mandant, et vous prévient dès sa réponse.'
+  : 'Votre conseiller défend votre offre auprès du mandant, et vous prévient dès sa réponse.');
 
 /* ═══ La saisie d'un acquéreur (au niveau du module : AGENTS.md §2.4) ═══ */
 function FormAcq({ p, i, err, emailFige, meme, onP, onMeme, onFermer, onRetirer }: {
@@ -169,7 +169,7 @@ function FormAcq({ p, i, err, emailFige, meme, onP, onMeme, onFermer, onRetirer 
   return (
     <div className="mdt-perso">
       <div className="mdt-perso-t">
-        <span className="n">{lui ? `Acquéreur ${i + 1}` : 'Vous'}</span>
+        <span className="n">{lui ? `Demandeur ${i + 1}` : 'Vous'}</span>
         {lui && <button type="button" className="mdt-qui-a" onClick={onRetirer}>Retirer</button>}
       </div>
       <div className={'mdt-civ' + (err.civilite ? ' err' : '')}>
@@ -397,7 +397,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
         <div className="mdt-corps mdt-fini">
           <div className="mdt-sceau"><Ic n="plume" t={30} /></div>
           <h3>Votre offre est prête</h3>
-          <p className="mdt-p">{`Il ne reste qu’à la signer : vous recevez un code par e-mail, puis vous signez du doigt. Votre offre de ${EUR(total)} part au vendeur dès qu’elle est signée.`}</p>
+          <p className="mdt-p">{`Il ne reste qu’à la signer : vous recevez un code par e-mail, puis vous signez du doigt. Votre offre de ${EUR(total)} part au mandant dès qu’elle est signée.`}</p>
           {autres.length > 0 && (
             <div className="mdt-info"><Ic n="mail" t={16} /><span>{`${autres.join(' et ')} ${autres.length > 1 ? 'reçoivent leur' : 'reçoit son'} propre lien par e-mail, pour signer à ${autres.length > 1 ? 'leur' : 'son'} tour.`}</span></div>
           )}
@@ -421,7 +421,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
             : fait.force
               ? `Werner relit votre offre de ${EUR(total)} et finalise votre dossier avec vous. Il vous l’envoie ensuite pour signature : vous recevrez un e-mail.`
               : `Werner relit votre offre de ${EUR(total)}. Il vous l’envoie ensuite pour signature : vous recevrez un e-mail, et elle vous attendra dans votre espace.`}</p>
-          <div className="ofr-rassure"><Ic n="bouclier" t={18} /><span>{bien.agence ? 'Il la présente ensuite au vendeur, et vous prévient dès sa réponse.' : 'Il défend ensuite votre offre auprès du vendeur, et vous prévient dès sa réponse.'}</span></div>
+          <div className="ofr-rassure"><Ic n="bouclier" t={18} /><span>{bien.agence ? 'Il la présente ensuite au mandant, et vous prévient dès sa réponse.' : 'Il défend ensuite votre offre auprès du mandant, et vous prévient dès sa réponse.'}</span></div>
           <button type="button" className="btn or mdt-plein" onClick={onFermer}>Revenir à mon espace</button>
         </div>
       </div>
@@ -438,17 +438,17 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
           {leBien}
           {accepter && contre ? (
             <>
-              <h3>La proposition du vendeur</h3>
+              <h3>La proposition du mandant</h3>
               <div className="mdt-total">
-                <div className="t"><Explique titre="La proposition du vendeur" texte={aideContre(!!bien.agence, calc.hono > 0)}>{'Le vendeur propose, frais d’agence compris'}</Explique></div>
+                <div className="t"><Explique titre="La proposition du mandant" texte={aideContre(!!bien.agence, calc.hono > 0)}>{'Le mandant propose, frais d’agence compris'}</Explique></div>
                 <div className="v">{EUR(contre.total)}</div>
                 <div className="d">{calc.hono > 0
-                  ? `dont ${EUR(contre.prix)} pour le vendeur et ${EUR(calc.hono)} de nos honoraires · hors frais de notaire`
+                  ? `dont ${EUR(contre.prix)} pour le mandant et ${EUR(calc.hono)} de nos honoraires · hors frais de notaire`
                   : 'rien de plus à payer, hors frais de notaire'}</div>
                 {gain?.gain && <div className="g">{gain.t}</div>}
               </div>
               {mode.derniere ? <p className="mdt-p petit">{`Votre dernière offre : ${EUR(mode.derniere)}${contre.limite ? ` · sa proposition vaut jusqu’au ${jourLong(contre.limite)}` : ''}.`}</p> : null}
-              <p className="mdt-p">{'Pour l’accepter, vous signez une nouvelle offre à ce prix. Votre conseiller la transmet aussitôt au vendeur.'}</p>
+              <p className="mdt-p">{'Pour l’accepter, vous signez une nouvelle offre à ce prix. Votre conseiller la transmet aussitôt au mandant.'}</p>
               <button type="button" className="btn or mdt-plein" onClick={suitePrix}>{`J’accepte ${EUR(contre.total)}`}</button>
             </>
           ) : (
@@ -458,7 +458,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
               {(contre || mode.derniere) && (
                 <div className="ofr-avant">
                   {mode.derniere ? <span><i className="pt or" />{`Votre dernière offre : ${EUR(mode.derniere)}`}</span> : null}
-                  {contre ? <span><i className="pt violet" />{`Le vendeur propose : ${EUR(contre.total)}`}</span> : null}
+                  {contre ? <span><i className="pt violet" />{`Le mandant propose : ${EUR(contre.total)}`}</span> : null}
                 </div>
               )}
               <label className={'ofr-saisie' + (errPrix ? ' rouge' : '')}>
@@ -476,18 +476,18 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
                 </button>
               ) : null}
               <div className="ofr-calc" id="ofr-calc" aria-live="polite" data-vide={total >= 10_000 ? undefined : '1'}>
-                <LigneCalc l="Proposé au vendeur" v={total >= 10_000 ? EUR(calc.prix) : '—'}
-                  aide={bien.agence ? 'C’est le prix écrit sur votre offre, celui que le vendeur lit. Les honoraires de l’agence y sont déjà compris.'
-                    : `C’est le prix écrit sur votre offre, celui que le vendeur lit. Il comprend déjà les honoraires de son agence, s’il en a une.${h.mode !== 'aucun' ? ' Il est arrondi au millier au-dessus, pour un chiffre rond.' : ''}`} />
+                <LigneCalc l="Proposé au mandant" v={total >= 10_000 ? EUR(calc.prix) : '—'}
+                  aide={bien.agence ? 'C’est le prix écrit sur votre offre, celui que le mandant lit. Les honoraires de l’agence y sont déjà compris.'
+                    : `C’est le prix écrit sur votre offre, celui que le mandant lit. Il comprend déjà les honoraires de son agence, s’il en a une.${h.mode !== 'aucun' ? ' Il est arrondi au millier au-dessus, pour un chiffre rond.' : ''}`} />
                 {h.mode !== 'aucun' && (
                   <LigneCalc l="Nos honoraires" v={total >= 10_000 ? EUR(calc.hono) : '—'}
-                    aide={`Ceux de votre conseiller sur ce bien : ${motHono(h)}, comptés une seule fois. Avec l’arrondi du prix au millier, ils sont un peu en dessous, jamais au-dessus. Ils ne figurent pas sur l’offre que lit le vendeur.`} />
+                    aide={`Ceux de votre conseiller sur ce bien : ${motHono(h)}, comptés une seule fois. Avec l’arrondi du prix au millier, ils sont un peu en dessous, jamais au-dessus. Ils ne figurent pas sur l’offre que lit le mandant.`} />
                 )}
                 <LigneCalc l="Vous payez, frais d’agence compris" v={total >= 10_000 ? EUR(total) : '—'} tot
                   aide="C’est exactement le montant que vous avez indiqué. Seuls les frais de notaire s’y ajouteront, comme pour tout achat." />
                 {total >= 10_000 && gain ? <div className={'ofr-gain' + (gain.gain ? '' : ' neutre')}>{gain.gain && <Ic n="check" t={14} />}<span>{gain.t}</span></div> : null}
               </div>
-              <div className="ofr-rassure"><Ic n="bouclier" t={18} /><span>{bien.agence ? RASSURE(true) : 'Votre conseiller défend votre offre auprès du vendeur, pour l’obtenir au meilleur prix, et vous prévient dès sa réponse.'}</span></div>
+              <div className="ofr-rassure"><Ic n="bouclier" t={18} /><span>{bien.agence ? RASSURE(true) : 'Votre conseiller défend votre offre auprès du mandant, pour l’obtenir au meilleur prix, et vous prévient dès sa réponse.'}</span></div>
               <button type="button" className="btn or mdt-plein" onClick={suitePrix}>Continuer</button>
             </>
           )}
@@ -517,7 +517,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
                   <div className="mdt-qui-l">
                     <span className={'mdt-av' + (i ? ' b' : '')}>{initiales(p)}</span>
                     <span className="mdt-qui-tx">
-                      <b>{nomDe(p) || (i ? `Acquéreur ${i + 1}` : 'Vous')}</b>
+                      <b>{nomDe(p) || (i ? `Demandeur ${i + 1}` : 'Vous')}</b>
                       <span className={ok ? '' : 'ofr-manque'}>{ok
                         ? [p.naissanceDate ? `${p.civilite === 'Madame' ? 'née' : p.civilite === 'Monsieur' ? 'né' : 'né(e)'} le ${p.naissanceDate.split('-').reverse().join('/')}` : '', p.email].filter(Boolean).join(' · ')
                         : Object.keys(e).length ? 'À compléter' : 'Quelques informations à compléter'}</span>
@@ -537,11 +537,11 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
           </div>
           {pers.length < 4 && (
             <button type="button" className="mdt-ajout" onClick={() => { setPers(l => [...l, { ...VIDE }]); setMemes(l => [...l, true]); setOuvert(pers.length); }}>
-              <Ic n="plus" t={17} /><span>{pers.length > 1 ? 'Ajouter un autre acquéreur' : 'J’achète à deux : ajouter un co-acquéreur'}</span>
+              <Ic n="plus" t={17} /><span>{pers.length > 1 ? 'Ajouter un autre demandeur' : 'J’achète à deux : ajouter un co-demandeur'}</span>
             </button>
           )}
           {pers.length > 1 && (
-            <div className="mdt-info"><Ic n="groupe" t={16} /><span>{'Chacun signe avec son propre code : les autres acquéreurs reçoivent leur lien par e-mail dès que l’offre est prête.'}</span></div>
+            <div className="mdt-info"><Ic n="groupe" t={16} /><span>{'Chacun signe avec son propre code : les autres demandeurs reçoivent leur lien par e-mail dès que l’offre est prête.'}</span></div>
           )}
 
           <div className="mdt-q2">Votre financement</div>
@@ -593,7 +593,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
           <div className="t">{'Votre offre, frais d’agence compris'}</div>
           <div className="v">{EUR(total)}</div>
           <div className="d">{calc.hono > 0
-            ? `dont ${EUR(calc.prix)} proposés au vendeur et ${EUR(calc.hono)} de nos honoraires · hors frais de notaire`
+            ? `dont ${EUR(calc.prix)} proposés au mandant et ${EUR(calc.hono)} de nos honoraires · hors frais de notaire`
             : 'rien de plus à payer, hors frais de notaire'}</div>
           {gain?.gain && <div className="g">{gain.t}</div>}
         </div>
@@ -604,7 +604,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
             <div className="d">{bien.meta}</div>
           </div>
           <div className="mdt-ligne">
-            <div className="t">{liste.length > 1 ? 'Les acquéreurs' : 'L’acquéreur'}</div>
+            <div className="t">{liste.length > 1 ? 'Les demandeurs' : 'Le demandeur'}</div>
             <div className="v">{liste.map(nomDe).join(', ')}</div>
             <div className="d"><button type="button" className="ofr-mod" onClick={() => setEtape('vous')}>Modifier</button></div>
           </div>
@@ -614,7 +614,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
             <div className="d">{[chiffres(apport) ? `${pret === 'oui' ? 'apport' : 'fonds propres'} : ${EUR(chiffres(apport))}` : '', conds.length ? `sous réserve de ${conds.join(' et de ')}` : ''].filter(Boolean).join(' · ') || 'aucune condition particulière'}</div>
           </div>
           <div className="mdt-ligne">
-            <div className="t"><Explique titre="La date de validité" texte={`Le vendeur a jusqu’à cette date pour répondre. Sans réponse de sa part, votre offre tombe d’elle-même : vous n’avez rien à faire. ${VALIDITE_JOURS} jours, c’est l’usage ; vous pouvez choisir une date entre demain et dans trente jours.`}>{'Valable jusqu’au'}</Explique></div>
+            <div className="t"><Explique titre="La date de validité" texte={`Le mandant a jusqu’à cette date pour répondre. Sans réponse de sa part, votre offre tombe d’elle-même : vous n’avez rien à faire. ${VALIDITE_JOURS} jours, c’est l’usage ; vous pouvez choisir une date entre demain et dans trente jours.`}>{'Valable jusqu’au'}</Explique></div>
             <div className="v">{majuscule(finCalc)}</div>
             <div className="d">
               {changerDate ? (
@@ -637,7 +637,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
               <span className="ic"><Ic n="plume" t={20} /></span>
               <span className="tx">
                 <b>{envoi === 'signer' ? 'Préparation de votre offre…' : 'Signer mon offre'}</b>
-                <span>{'Un code par e-mail, puis votre signature du doigt. Elle part au vendeur dès qu’elle est signée.'}</span>
+                <span>{'Un code par e-mail, puis votre signature du doigt. Elle part au mandant dès qu’elle est signée.'}</span>
               </span>
               {envoi === 'signer' ? <span className="tourne" aria-hidden="true" /> : <span className="ofr-fl"><Ic n="chevron" t={16} /></span>}
             </button>
@@ -680,17 +680,17 @@ export function phraseOffre(o: OffreEspace): string {
     case 'a_relire': case 'brouillon': case 'a_finaliser':
       return 'Votre conseiller relit votre offre. Il vous l’envoie ensuite pour signature : vous recevrez un e-mail.';
     case 'en_signature':
-      if (o.lien) return 'Votre offre est prête : signez-la pour qu’elle parte au vendeur.';
+      if (o.lien) return 'Votre offre est prête : signez-la pour qu’elle parte au mandant.';
       if (o.vousSigne && o.attendus.length) return `Vous avez signé. On attend la signature de ${o.attendus.join(' et ')}, qui ${o.attendus.length > 1 ? 'ont reçu leur' : 'a reçu son'} lien par e-mail.`;
       return 'Votre offre est en signature.';
-    case 'signee': return 'Votre offre est signée : votre conseiller la transmet au vendeur.';
-    case 'envoyee': return `Votre offre est entre les mains du vendeur${o.envoyeLe ? ` depuis le ${jourCourt(o.envoyeLe)}` : ''}.${o.fin ? ` Il a jusqu’au ${jourCourt(o.fin)} pour répondre.` : ''}`;
+    case 'signee': return 'Votre offre est signée : votre conseiller la transmet au mandant.';
+    case 'envoyee': return `Votre offre est entre les mains du mandant${o.envoyeLe ? ` depuis le ${jourCourt(o.envoyeLe)}` : ''}.${o.fin ? ` Il a jusqu’au ${jourCourt(o.fin)} pour répondre.` : ''}`;
     case 'contre': return o.contre?.depassee
-      ? `La proposition du vendeur a expiré${o.contre.limite ? ` le ${jourCourt(o.contre.limite)}` : ''}. Vous pouvez faire une autre offre.`
-      : 'Le vendeur a répondu à votre offre par une proposition.';
-    case 'acceptee': return 'Le vendeur a accepté votre offre. Votre conseiller vous appelle pour organiser la suite : le compromis chez le notaire.';
-    case 'refusee': return 'Le vendeur n’a pas retenu votre offre. La recherche continue, et vous pouvez en faire une nouvelle si vous le souhaitez.';
-    case 'echue': return `Votre offre est arrivée à échéance${o.fin ? ` le ${jourCourt(o.fin)}` : ''}, sans réponse du vendeur. Vous pouvez en faire une nouvelle.`;
+      ? `La proposition du mandant a expiré${o.contre.limite ? ` le ${jourCourt(o.contre.limite)}` : ''}. Vous pouvez faire une autre offre.`
+      : 'Le mandant a répondu à votre offre par une proposition.';
+    case 'acceptee': return 'Le mandant a accepté votre offre. Votre conseiller vous appelle pour organiser la suite : le compromis chez le notaire.';
+    case 'refusee': return 'Le mandant n’a pas retenu votre offre. La recherche continue, et vous pouvez en faire une nouvelle si vous le souhaitez.';
+    case 'echue': return `Votre offre est arrivée à échéance${o.fin ? ` le ${jourCourt(o.fin)}` : ''}, sans réponse du mandant. Vous pouvez en faire une nouvelle.`;
     case 'sans_suite': return 'Cette offre n’a pas eu de suite. La recherche continue, et vous pouvez en faire une nouvelle si vous le souhaitez.';
     default: return '';
   }
@@ -761,7 +761,7 @@ export function CarteOffre({ o, indispo = false, historique: histOuvert = false,
       ) : contreActive && o.contre ? (
         <>
           <div className="ofr-contre">
-            <div className="t"><Explique titre="La proposition du vendeur" texte={aideContre(o.agence, o.contre.total > o.contre.prix)}>{'Le vendeur propose, frais d’agence compris'}</Explique></div>
+            <div className="t"><Explique titre="La proposition du mandant" texte={aideContre(o.agence, o.contre.total > o.contre.prix)}>{'Le mandant propose, frais d’agence compris'}</Explique></div>
             <div className="v tab">{EUR(o.contre.total)}</div>
             <div className="d">{[plusQue > 0 ? `soit ${EUR(plusQue)} de plus que votre offre` : '', o.contre.limite ? `${o.contre.depassee ? 'proposition expirée le' : 'valable jusqu’au'} ${jourCourt(o.contre.limite)}` : ''].filter(Boolean).join(' · ')}</div>
           </div>

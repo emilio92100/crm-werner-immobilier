@@ -169,9 +169,9 @@ export async function POST(req: NextRequest) {
 
     let modele = '';
     if (aLire.length) {
-      const consigne = `Tu aides Werner, chasseur immobilier à Paris et dans les Hauts-de-Seine, à décider à quels acheteurs de sa base proposer ses biens.
+      const consigne = `Tu aides Werner, chasseur immobilier à Paris et dans les Hauts-de-Seine, à décider à quels demandeurs de sa base proposer ses biens.
 
-Un premier tri en chiffres a déjà retenu ces couples bien × acheteur (budget, secteur, type, surface, chambres). Ton rôle : tout relire, comme le ferait Werner, et repérer ce que les chiffres ne voient pas.
+Un premier tri en chiffres a déjà retenu ces couples bien × demandeur (budget, secteur, type, surface, chambres). Ton rôle : tout relire, comme le ferait Werner, et repérer ce que les chiffres ne voient pas.
 
 Lis pour chaque recherche : ses critères et ses « exigences » (indispensable = bloquant), ses notes, « son_parcours » (ce qui ne lui a pas convenu, surtout ce qui « revient souvent », et ce qui lui a plu), ce que ses visites ont appris, ses comptes rendus, ce qu'il a dit des biens montrés, les annonces écartées et leur motif. Et pour chaque bien : toute la fiche, sa description, sa visite sur place (visiteAtouts, visiteDefauts), l'immeuble, l'étage et l'ascenseur, l'exposition, la vue, le vis-à-vis, l'état, les travaux.
 
@@ -186,7 +186,7 @@ Règles :
 
 Pour chaque couple, Werner lit d'un coup d'œil :
 - « raison » : une phrase (140 caractères au plus), en français simple, qui résume ton avis et cite le fait précis. Exemples : « Cherche un accès PMR : immeuble de 1932 au petit ascenseur. », « Lumineux et traversant, ce qu'il a aimé ; le budget passe. », « Exposition non renseignée : il a refusé deux biens trop sombres. »
-- « plus » : de 0 à 3 points forts POUR CET ACHETEUR, 6 mots au plus chacun, du plus fort au moins fort. Ce qui colle à ce qu'il cherche ou à ce qui lui a plu : « Traversant et lumineux », « 3e étage avec ascenseur », « Dans son secteur », « Budget respecté ».
+- « plus » : de 0 à 3 points forts POUR CET DEMANDEUR, 6 mots au plus chacun, du plus fort au moins fort. Ce qui colle à ce qu'il cherche ou à ce qui lui a plu : « Traversant et lumineux », « 3e étage avec ascenseur », « Dans son secteur », « Budget respecté ».
 - « moins » : de 0 à 3 points faibles ou à vérifier, 6 mots au plus chacun, le plus gênant d'abord : « Pas de balcon », « 6 % au-dessus du budget », « Exposition non renseignée ». Rien de gênant : une liste vide.
 - « score » : ses chances d'être intéressé, sur 100, selon tout ce que tu as lu. Cohérent avec le verdict : « oui » de 70 à 100, « a_voir » de 40 à 69, « non » de 0 à 39. Deux « oui » ne se valent pas : départage-les.
 

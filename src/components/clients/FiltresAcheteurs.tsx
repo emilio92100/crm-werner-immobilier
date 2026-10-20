@@ -152,14 +152,14 @@ export default function FiltresAcheteurs({ base, f, onF, n, statut, logement }: 
     { p: 'ville', l: 'Ville', ic: 'lieu', v: plusieurs(f.villes, 'villes') },
   ];
   const effacer = <button type="button" className={b.lien} onClick={() => { onF(FILTRES_A_VIDES); logement.onChange(logement.tout); setOuvert(null); }}>Effacer</button>;
-  const resultat = <span className={b.affN}>{`${n} acheteur${n > 1 ? 's' : ''}`}{effacer}</span>;
+  const resultat = <span className={b.affN}>{`${n} demandeur${n > 1 ? 's' : ''}`}{effacer}</span>;
   const basculerDans = <T,>(l: T[], x: T) => (l.includes(x) ? l.filter(y => y !== x) : [...l, x]);
 
   return (
     <div className={`${b.aff} ${s.saisieVive}`} style={{ margin: '-4px 0 0' }}>
-      <div className={`${b.affL} ${l.ligne}`} role="toolbar" aria-label="Affiner la liste des acheteurs" data-defile="fondu">
+      <div className={`${b.affL} ${l.ligne}`} role="toolbar" aria-label="Affiner la liste des demandeurs" data-defile="fondu">
         <span className={b.affT}><Ic n="cible" t={15} />Affiner</span>
-        {([['statut', 'Statut', 'drapeau', libStatut], ['logement', 'Logement', 'cle', libDe(logement)]] as const).map(([p, l, ic, v]) => {
+        {([['statut', 'Statut', 'drapeau', libStatut], ['logement', 'Local', 'cle', libDe(logement)]] as const).map(([p, l, ic, v]) => {
           return (
             <button key={p} type="button" className={`${b.affB} ${v ? b.affOn : ''} ${ouvert === p ? b.affOuvert : ''}`}
               aria-expanded={ouvert === p} onClick={() => basculer(p)}>

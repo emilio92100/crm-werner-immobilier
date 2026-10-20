@@ -193,7 +193,7 @@ function FenetreVisite({ d, revu, onFermer, onFait }: { d: DemandeVisite; revu: 
               <ChoixQuand date={date} heure={heure} duree={duree} onDate={setDate} onHeure={setHeure} onDuree={setDuree}
                 durees={[{ v: 30, lib: '30 min' }, { v: 45, lib: '45 min' }, { v: 60, lib: '1 h' }, { v: 90, lib: '1 h 30' }]} />
             </div>
-            <div className={`${dv.champ} ${dv.plein}`}><label htmlFor="pv-contact">Contact agence ou vendeur</label><input id="pv-contact" value={contact} onChange={e => setContact(e.target.value)} placeholder="Nom, téléphone, e-mail…" /></div>
+            <div className={`${dv.champ} ${dv.plein}`}><label htmlFor="pv-contact">Contact agence ou mandant</label><input id="pv-contact" value={contact} onChange={e => setContact(e.target.value)} placeholder="Nom, téléphone, e-mail…" /></div>
             <div className={`${dv.champ} ${dv.plein}`}><label htmlFor="pv-notes">Notes préparatoires</label><textarea id="pv-notes" rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Points à vérifier, documents à apporter…" /></div>
           </div>
           <div className={dv.aide}>{'La visite va dans l’agenda et dans son espace. La demande quitte « Demandes » et passe dans « À venir ».'}</div>
@@ -340,7 +340,7 @@ function CarteVisite({ v, groupe, auj, rang, onClient, onBien, onCR, onAnnuler, 
             {v.clients && <AvatarContact c={v.clients} teinte={{ bg: '#f4f3f2', fg: '#2e3034' }} taille={34} />}
             <b>{nom}</b>
           </button>
-          {v.libre && <span className={cv.hors} title="Noté sur la fiche du bien, sans fiche acheteur">Hors CRM</span>}
+          {v.libre && <span className={cv.hors} title="Noté sur la fiche du bien, sans fiche demandeur">Hors CRM</span>}
           {iso && <span className={`${cv.past} ${ton.past}`}><i />{quandRelatif(ecartJours(iso, auj))}</span>}
         </div>
 
@@ -452,7 +452,7 @@ function CarteJournee({ visites, groupe, auj, rang, onClient, onBien, onCR, onAn
             {v0.clients && <AvatarContact c={v0.clients} teinte={{ bg: '#f4f3f2', fg: '#2e3034' }} taille={34} />}
             <b>{nom}</b>
           </button>
-          {horsCrm && <span className={cv.hors} title="Noté sur la fiche du bien, sans fiche acheteur">Hors CRM</span>}
+          {horsCrm && <span className={cv.hors} title="Noté sur la fiche du bien, sans fiche demandeur">Hors CRM</span>}
           <span className={`${cv.past} ${ton.past}`}><i />{quandRelatif(ecartJours(iso, auj))}</span>
         </div>
 

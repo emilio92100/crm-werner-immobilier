@@ -626,7 +626,7 @@ export async function apresSignature(row: DocumentRow, m: Modele, jour: string):
       description: [row.titre || m.titre, row.numero ? `n° ${row.numero}` : '', row.badge || ''].filter(Boolean).join(' · '),
       metadata: { document_id: row.id, jalon: 'mandat', cote: 'vendeur' },
     });
-    if (eV) return [pbRegistre, 'La ligne du suivi du vendeur n’a pas pu être ajoutée : ' + eV.message].filter(Boolean).join(' ');
+    if (eV) return [pbRegistre, 'La ligne du suivi du mandant n’a pas pu être ajoutée : ' + eV.message].filter(Boolean).join(' ');
   }
   /* V3.189 : une offre d'achat signée à la main : la même suite qu'en ligne
      (relance « Offre signée, à envoyer », bien « Offre faite »). */

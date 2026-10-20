@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     /* La longueur suit ce que l'annonce apprend, pas le nombre de lignes du
        confrère : court quand il y a peu, une synthèse plus ample quand
        l'annonce est riche. Et jamais sa voix ni son plan. */
-    const prompt = `Tu es un chasseur immobilier professionnel. Présente ce bien à un acquéreur à partir de la description d'annonce ci-dessous. Tu n'es pas l'auteur de l'annonce : ton texte ne doit jamais donner l'impression de la relire.
+    const prompt = `Tu es un chasseur immobilier professionnel. Présente ce bien à un demandeur à partir de la description d'annonce ci-dessous. Tu n'es pas l'auteur de l'annonce : ton texte ne doit jamais donner l'impression de la relire.
 
 RÈGLES STRICTES :
 - Supprime TOUTE mention d'agence, de confrère, de cabinet, de mandataire et leur nom (ex. "Hosman vous propose", "L'agence X", "Votre conseiller Y", "Coldwell...", "Century 21..."). Aucun nom de société ne doit rester.
@@ -25,7 +25,7 @@ RÈGLES STRICTES :
 - Rattache CHAQUE statut à l'élément EXACT concerné. Ne transfère JAMAIS le statut d'un élément à un autre et ne le déduis jamais : si seul le parking est indiqué "en sus", n'écris RIEN sur le statut de la cave (ni "comprise", ni "en sus").
 - Si l'annonce ne précise pas si un élément est compris ou en sus, n'en dis rien.
 - Supprime les formules commerciales creuses ("coup de cœur assuré", "à visiter sans tarder", "ne tardez pas", "rare sur le secteur"...).
-- Ton sobre, valorisant, factuel, orienté acquéreur. Pas de superlatifs excessifs.
+- Ton sobre, valorisant, factuel, orienté demandeur. Pas de superlatifs excessifs.
 - Reste strictement fidèle aux informations données : n'invente rien, ne déduis rien. Si une information n'est pas explicitement écrite, ne l'écris pas.
 - Ne répète pas inutilement les chiffres (surface, nombre de pièces) déjà affichés ailleurs dans la fiche.
 
@@ -33,7 +33,7 @@ LA LONGUEUR SUIT L'INFORMATION, PAS L'ANNONCE :
 - Compte ce que l'annonce apprend vraiment sur le bien, pas son nombre de lignes : une annonce longue peut ne dire que peu de choses.
 - Annonce pauvre (quelques faits) : 2 à 4 phrases, en un ou deux paragraphes. Ne gonfle jamais : aucune phrase pour meubler, aucune généralité que l'annonce ne donne pas.
 - Annonce moyenne : deux ou trois paragraphes courts.
-- Annonce riche (distribution pièce par pièce, état, travaux, immeuble, environnement) : trois ou quatre paragraphes, 250 mots au plus. Synthétise : regroupe, garde ce qui aide l'acquéreur à se projeter ou à décider, laisse le reste. Ne reprends jamais tout.
+- Annonce riche (distribution pièce par pièce, état, travaux, immeuble, environnement) : trois ou quatre paragraphes, 250 mots au plus. Synthétise : regroupe, garde ce qui aide le demandeur à se projeter ou à décider, laisse le reste. Ne reprends jamais tout.
 
 UN AUTRE AUTEUR, UN AUTRE PLAN :
 - Range les faits dans cet ordre, en ne gardant que les paragraphes qui ont de la matière : 1) l'essentiel : ce qu'est le bien, sa place dans l'immeuble (étage, ascenseur, exposition, vue), ce qui le distingue ; 2) la vie dedans : pièce de vie, cuisine, chambres, salle d'eau, rangements ; 3) l'état et le reste : état, travaux, chauffage, extérieur, cave, parking ; 4) autour : l'immeuble, la copropriété, les transports, les commerces, les écoles, seulement si l'annonce en parle.

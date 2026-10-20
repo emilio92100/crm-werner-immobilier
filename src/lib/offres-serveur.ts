@@ -204,7 +204,7 @@ export async function offreSigneeParTous(sb: SupabaseClient, doc: { id: string; 
       clientId: doc.client_id, rechercheId: doc.recherche_id, tete: TETES_OFFRE.envoyer, titre,
       detail: lie
         ? `${total ? `${EUR(total)} · ` : ''}à ajouter aux offres de la fiche du bien, depuis « Son offre » (${lie.pb})`
-        : total ? `${EUR(total)} frais d’agence compris${prixOffre(d) !== total ? ` (${EUR(prixOffre(d) || 0)} pour le vendeur)` : ''}` : undefined,
+        : total ? `${EUR(total)} frais d’agence compris${prixOffre(d) !== total ? ` (${EUR(prixOffre(d) || 0)} pour le mandant)` : ''}` : undefined,
     });
     if (pb2) pbs.push('relance « à envoyer » : ' + pb2);
   }
@@ -396,7 +396,7 @@ export async function relierOffreAgence(sb: SupabaseClient, doc: { id: string; d
   if (pbR0) pbs.push('l’ancienne relance du propriétaire : ' + pbR0);
   if (bv.client_id && (s.depuisContre || (jusquau && jusquau >= jour))) {
     const note = s.depuisContre
-      ? `Offre de ${qui} à ${fr(prix)} € sur ${bv.titre || 'son bien'} : la contre-proposition du vendeur est acceptée — note l’accord sur la fiche du bien.`
+      ? `Offre de ${qui} à ${fr(prix)} € sur ${bv.titre || 'son bien'} : la contre-proposition du mandant est acceptée — note l’accord sur la fiche du bien.`
       : `Offre de ${qui} à ${fr(prix)} € sur ${bv.titre || 'son bien'} : réponse à donner aujourd’hui.`;
     const { data: rel, error: eR } = await sb.from('relances').insert({
       client_id: bv.client_id, type: 'manuelle', statut: 'en_attente',
@@ -442,7 +442,7 @@ export async function relierOffreAgence(sb: SupabaseClient, doc: { id: string; d
     client_id: doc.client_id, recherche_id: doc.recherche_id, bien_id: doc.bien_id, type: nouvelle ? 'offre' : 'etape_transaction',
     titre: nouvelle ? `💶 Offre à ${EUR(prix)} — ${titreV}` : `💶 Nouvelle proposition — ${EUR(prix)}`,
     description: [
-      nouvelle ? `Signée le ${JOURA(jour)}` : `${titreV} · ${repond ? `en réponse à la contre-offre du vendeur à ${EUR(sur)}` : 'une nouvelle offre'}`,
+      nouvelle ? `Signée le ${JOURA(jour)}` : `${titreV} · ${repond ? `en réponse à la contre-offre du mandant à ${EUR(sur)}` : 'une nouvelle offre'}`,
       jusquau ? `Valable jusqu’au ${JOURA(jusquau)}` : '',
     ].filter(Boolean).join(' · '),
     metadata: { bien_vente_id: bv.id, suivi_id: ligneId, jalon: nouvelle ? 'offre_faite' : 'negociation', cote: 'acquereur', document_id: doc.id },
@@ -503,8 +503,8 @@ async function fermerLigneAgence(sb: SupabaseClient, doc: DocOffre, par: 'client
     const sur = montantActuel(l);
     await journal(sb, {
       client_id: bv.client_id, type: 'etape_transaction',
-      titre: `↩️ ${k === 'renonce' ? 'L’acquéreur renonce' : 'Offre retirée'} — ${EUR(sur)}`,
-      description: `${titreV} · ${l.qui || 'l’acquéreur'} ${k === 'renonce' ? 'ne donne pas suite à la contre-offre' : 'retire son offre'}${par === 'client' ? ', depuis son espace' : ''}`,
+      titre: `↩️ ${k === 'renonce' ? 'Le demandeur renonce' : 'Offre retirée'} — ${EUR(sur)}`,
+      description: `${titreV} · ${l.qui || 'le demandeur'} ${k === 'renonce' ? 'ne donne pas suite à la contre-offre' : 'retire son offre'}${par === 'client' ? ', depuis son espace' : ''}`,
       metadata: { jalon: 'offre_close', cote: 'vendeur', bien_vente_id: bv.id },
     });
   }
@@ -542,7 +542,7 @@ export async function reponseAgence(sb: SupabaseClient, suiviId: string): Promis
       const dans2 = new Date(Date.now() + 2 * 86_400_000); dans2.setUTCHours(7, 0, 0, 0);
       const pbC = await poserRelanceOffre(sb, {
         clientId: doc.client_id, rechercheId: doc.recherche_id || null, tete: TETES_OFFRE.contre, titre,
-        detail: `le vendeur propose ${EUR(r.montant)} : sa réponse ?`, echeance: dans2,
+        detail: `le mandant propose ${EUR(r.montant)} : sa réponse ?`, echeance: dans2,
       });
       if (pbC) avertissements.push('relance : ' + pbC);
     }
@@ -576,16 +576,16 @@ export async function noterReponse(sb: SupabaseClient, doc: DocOffre, r: Reponse
       const limite = r.limite ? new Date(`${r.limite}T07:00:00Z`) : null;
       const pbC = await poserRelanceOffre(sb, {
         clientId: doc.client_id, rechercheId: doc.recherche_id || null, tete: TETES_OFFRE.contre, titre,
-        detail: `le vendeur propose ${EUR(r.montant)}, soit ${EUR(totalContre(d, r.montant))} pour elle : sa réponse ?`,
+        detail: `le mandant propose ${EUR(r.montant)}, soit ${EUR(totalContre(d, r.montant))} pour elle : sa réponse ?`,
         echeance: limite && limite.getTime() < dans2.getTime() ? (limite.getTime() > Date.now() ? limite : new Date()) : dans2,
       });
       if (pbC) avertissements.push('relance : ' + pbC);
     }
     const ligne = r.statut === 'contre' && r.montant
-      ? { titre: `↩️ Contre-proposition du vendeur — ${titre}`, description: `${EUR(r.montant)} pour le vendeur, soit ${EUR(totalContre(d, r.montant))} pour le client, frais d’agence compris${r.limite ? ` · valable jusqu’au ${JOUR(r.limite)}` : ''}${r.note ? `\n${r.note}` : ''}` }
+      ? { titre: `↩️ Contre-proposition du mandant — ${titre}`, description: `${EUR(r.montant)} pour le mandant, soit ${EUR(totalContre(d, r.montant))} pour le client, frais d’agence compris${r.limite ? ` · valable jusqu’au ${JOUR(r.limite)}` : ''}${r.note ? `\n${r.note}` : ''}` }
       : r.statut === 'acceptee'
-        ? { titre: `🤝 Offre acceptée — ${titre}`, description: `${total ? `${EUR(total)} frais d’agence compris` : ''}${prix && prix !== total ? ` · ${EUR(prix)} pour le vendeur` : ''}${r.note ? `\n${r.note}` : ''}` }
-        : { titre: `✕ Offre refusée par le vendeur — ${titre}`, description: r.note || null };
+        ? { titre: `🤝 Offre acceptée — ${titre}`, description: `${total ? `${EUR(total)} frais d’agence compris` : ''}${prix && prix !== total ? ` · ${EUR(prix)} pour le mandant` : ''}${r.note ? `\n${r.note}` : ''}` }
+        : { titre: `✕ Offre refusée par le mandant — ${titre}`, description: r.note || null };
     await journal(sb, { client_id: doc.client_id, recherche_id: doc.recherche_id, bien_id: doc.bien_id, type: 'offre_faite', ...ligne, metadata: { document_id: doc.id, reponse: r.statut } });
   }
   if (r.statut === 'refusee') await badgeBien(sb, doc.bien_id, 'visite');
@@ -709,14 +709,14 @@ async function mailClientReponse(sb: SupabaseClient, doc: DocOffre, r: ReponseVe
   let sujet = '', titreMail = '', paras: string[] = [], bouton = 'Ouvrir mon espace';
   if (r.statut === 'contre' && r.montant) {
     const tc = totalContre(d, r.montant);
-    sujet = 'Le vendeur a répondu à votre offre';
-    titreMail = 'Le vendeur a répondu à votre offre';
+    sujet = 'Le mandant a répondu à votre offre';
+    titreMail = 'Le mandant a répondu à votre offre';
     paras = [
       bonjour,
-      `Le vendeur a répondu à votre offre pour « ${titre} » : il propose ${EUR(tc)}, frais d’agence compris${r.limite ? `, jusqu’au ${JOUR(r.limite)}` : ''}.`,
+      `Le mandant a répondu à votre offre pour « ${titre} » : il propose ${EUR(tc)}, frais d’agence compris${r.limite ? `, jusqu’au ${JOUR(r.limite)}` : ''}.`,
       'Depuis votre espace, vous pouvez accepter, faire une nouvelle offre ou ne pas donner suite. Je reste disponible si vous voulez en parler.',
     ];
-    bouton = 'Voir la réponse du vendeur';
+    bouton = 'Voir la réponse du mandant';
   } else if (r.statut === 'acceptee') {
     /* V3.190 : un accord noté sur la fiche du bien à un autre prix que l'offre. */
     const accord = r.montant || total;
@@ -724,15 +724,15 @@ async function mailClientReponse(sb: SupabaseClient, doc: DocOffre, r: ReponseVe
     titreMail = '🎉 Félicitations, votre offre est acceptée !';
     paras = [
       `${bonjour.replace(/,$/, '')}, félicitations !`,
-      `Le vendeur a accepté votre offre${accord ? ` de ${EUR(accord)}, frais d’agence compris,` : ''} pour « ${titre} ». C’est une très belle nouvelle.`,
+      `Le mandant a accepté votre offre${accord ? ` de ${EUR(accord)}, frais d’agence compris,` : ''} pour « ${titre} ». C’est une très belle nouvelle.`,
       'Je vous appelle très vite pour organiser la suite, à commencer par le compromis chez le notaire.',
     ];
   } else {
-    sujet = 'Réponse du vendeur à votre offre';
-    titreMail = 'Réponse du vendeur à votre offre';
+    sujet = 'Réponse du mandant à votre offre';
+    titreMail = 'Réponse du mandant à votre offre';
     paras = [
       bonjour,
-      `Le vendeur n’a pas retenu votre offre pour « ${titre} ».`,
+      `Le mandant n’a pas retenu votre offre pour « ${titre} ».`,
       'Si vous le souhaitez, vous pouvez en faire une nouvelle depuis votre espace, ou on en parle ensemble. La recherche continue de toute façon.',
     ];
   }

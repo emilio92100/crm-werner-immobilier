@@ -137,7 +137,7 @@ export async function chargerListe(): Promise<ListeBiens> {
   ]);
   if (b.erreur) lever('Les biens n’ont pas pu être lus', b.erreur);
   if (s.erreur) lever('Le suivi des biens n’a pas pu être lu', s.erreur);
-  if (c.erreur) lever('Les acheteurs des biens n’ont pas pu être lus', /bien_vente_id/.test(c.erreur) ? 'biens_vente' : c.erreur);
+  if (c.erreur) lever('Les demandeurs des biens n’ont pas pu être lus', /bien_vente_id/.test(c.erreur) ? 'biens_vente' : c.erreur);
   const copies = c.data;
   /* Les visites des copies, par paquets de 100 identifiants : une liste plus
      longue ne tient plus dans l'adresse de la requête. */
@@ -247,7 +247,7 @@ export async function chargerFiche(b: BienVente): Promise<DetailBien> {
     supabase.from('biens').select('*').eq('bien_vente_id', b.id).limit(300),
   ]);
   if (s.error) lever('Le suivi du bien n’a pas pu être lu', s.error.message);
-  if (c.error) lever('Les acheteurs du bien n’ont pas pu être lus', c.error.message);
+  if (c.error) lever('Les demandeurs du bien n’ont pas pu être lus', c.error.message);
   const copies = (c.data || []) as Copie[];
   let visites: VisiteRow[] = [];
   if (copies.length) {
@@ -270,7 +270,7 @@ async function journalDuBien(b: BienVente, copies: Copie[]): Promise<LigneJourna
       ? supabase.from('journal').select(COLS_JOURNAL).eq('client_id', b.client_id).is('bien_id', null).is('recherche_id', null).in('type', TYPES_JOURNAL_BIEN).order('created_at', { ascending: false }).limit(200)
       : Promise.resolve({ data: [], error: null }),
   ]);
-  if (a.error) throw new Error('Le suivi des acheteurs n’a pas pu être lu : ' + a.error.message);
+  if (a.error) throw new Error('Le suivi des demandeurs n’a pas pu être lu : ' + a.error.message);
   if (p.error) throw new Error('Le suivi du propriétaire n’a pas pu être lu : ' + p.error.message);
   const ids = new Set(copies.map(x => x.id));
   const chezAcheteurs = ((a.data || []) as LigneJournal[]).filter(j => j.bien_id && ids.has(j.bien_id));
@@ -316,11 +316,11 @@ export async function annulerVisitesPrevues(b: BienVente, pourquoi: string): Pro
       try { await annulerVisiteLibre(v); n++; } catch (e) { signalerEchec('Une visite prévue', (e as Error).message); }
     }
     const { data: copies, error: e1 } = await supabase.from('biens').select('id').eq('bien_vente_id', b.id);
-    if (e1) signalerEchec('Les visites des acheteurs', e1.message);
+    if (e1) signalerEchec('Les visites des demandeurs', e1.message);
     const ids = ((copies || []) as { id: string }[]).map(x => x.id);
     if (ids.length) {
       const { data: vis, error: e2 } = await supabase.from('visites').select('id, date_visite, heure').in('bien_id', ids).eq('statut', 'a_venir');
-      if (e2) signalerEchec('Les visites des acheteurs', e2.message);
+      if (e2) signalerEchec('Les visites des demandeurs', e2.message);
       const aVenir = ((vis || []) as { id: string; date_visite: string | null; heure: string | null }[])
         .filter(v => !v.date_visite || !visitePasseeParis(v));
       if (aVenir.length) n += await annulerVisites(aVenir.map(v => v.id), { pourquoi });
@@ -337,14 +337,14 @@ export async function annulerVisitesPrevues(b: BienVente, pourquoi: string): Pro
 export async function solderDemandesDuBien(b: BienVente): Promise<void> {
   try {
     const { data, error } = await supabase.from('biens').select('client_id, titre').eq('bien_vente_id', b.id);
-    if (error) { signalerEchec('Les demandes des acheteurs sur ce bien', error.message); return; }
+    if (error) { signalerEchec('Les demandes des demandeurs sur ce bien', error.message); return; }
     for (const c of (data || []) as { client_id: string | null; titre: string | null }[]) {
       if (!c.client_id) continue;
       const e1 = await solderRelancesVisite(c.client_id, [c.titre]);
       const e2 = await solderRelancesRetourVisite(c.client_id, [c.titre]);
-      if (e1 || e2) signalerEchec('Les demandes des acheteurs sur ce bien', (e1 || e2) as string);
+      if (e1 || e2) signalerEchec('Les demandes des demandeurs sur ce bien', (e1 || e2) as string);
     }
-  } catch (e) { signalerEchec('Les demandes des acheteurs sur ce bien', (e as Error).message); }
+  } catch (e) { signalerEchec('Les demandes des demandeurs sur ce bien', (e as Error).message); }
 }
 
 /* Un horodatage déjà passé (une visite hors CRM : `le` porte son jour et son heure). */
@@ -807,7 +807,7 @@ export async function repercuterPrix(id: string, d: Donnees, etape?: string | nu
   const differe = (['prix_acquereur', 'prix_vendeur', 'commission_val'] as const)
     .map(c => (p[c] === null || p[c] === undefined ? `${c}.not.is.null` : `${c}.is.null,${c}.neq.${p[c]}`)).join(',');
   const { error } = await supabase.from('biens').update(p).eq('bien_vente_id', id).or(differe);
-  if (error && !/bien_vente_id/.test(error.message)) signalerEchec('Le nouveau prix chez les acheteurs qui ont reçu le bien', error.message);
+  if (error && !/bien_vente_id/.test(error.message)) signalerEchec('Le nouveau prix chez les demandeurs qui ont reçu le bien', error.message);
 }
 
 /* Le prix a changé (V3.48) : le texte de l'annonce chez les acheteurs qui
@@ -815,11 +815,11 @@ export async function repercuterPrix(id: string, d: Donnees, etape?: string | nu
 export async function majPrixDansAnnonces(bienId: string, vieux: string, neuf: string): Promise<void> {
   if (!vieux || vieux === neuf) return;
   const { data, error } = await supabase.from('biens').select('id, description').eq('bien_vente_id', bienId);
-  if (error) { if (!/bien_vente_id/.test(error.message)) signalerEchec('Le prix dans l’annonce des acheteurs', error.message); return; }
+  if (error) { if (!/bien_vente_id/.test(error.message)) signalerEchec('Le prix dans l’annonce des demandeurs', error.message); return; }
   for (const c of (data || []) as { id: string; description: string | null }[]) {
     if (!c.description || !c.description.includes(vieux)) continue;
     const r = await supabase.from('biens').update({ description: c.description.split(vieux).join(neuf) }).eq('id', c.id);
-    if (r.error) signalerEchec('Le prix dans l’annonce des acheteurs', r.error.message);
+    if (r.error) signalerEchec('Le prix dans l’annonce des demandeurs', r.error.message);
   }
 }
 
@@ -955,7 +955,7 @@ export async function annulerMandatNote(b: BienVente, o: RetraitMandat): Promise
    de l'agence qui n'est pas encore dans le dossier de l'acheteur. */
 export async function copieDe(b: BienVente, clientId: string, rechercheId: string, badge?: string): Promise<{ copie: Copie; neuve: boolean }> {
   const { data: deja, error: e1 } = await supabase.from('biens').select('*').eq('bien_vente_id', b.id).eq('recherche_id', rechercheId).limit(1);
-  if (e1) lever('Le dossier de l’acheteur n’a pas pu être lu', e1.message);
+  if (e1) lever('Le dossier de l’demandeur n’a pas pu être lu', e1.message);
   if (deja?.length) {
     const c = deja[0] as Copie;
     if (c.etape !== 'selection') return { copie: c, neuve: false };
@@ -969,7 +969,7 @@ export async function copieDe(b: BienVente, clientId: string, rechercheId: strin
   }
   const ligne = { ...versBienAcheteur(b, { clientId, rechercheId, quand: new Date().toISOString() }), ...(badge ? { badge_retour: badge } : {}) };
   const { data, error } = await supabase.from('biens').insert(ligne).select().single();
-  if (error) lever('Le bien n’a pas pu être ajouté au dossier de l’acheteur', error.message);
+  if (error) lever('Le bien n’a pas pu être ajouté au dossier de l’demandeur', error.message);
   return { copie: data as Copie, neuve: true };
 }
 
@@ -1209,17 +1209,17 @@ export async function enregistrerOffre(b: BienVente, o: SaisieOffre, proprio: Cl
     const copieId = cop?.[0]?.id as string | undefined;
     if (copieId) {
       const r = await supabase.from('biens').update({ badge_retour: 'offre_faite' }).eq('id', copieId);
-      if (r.error) signalerEchec('L’offre est notée, mais le bien « offre faite » chez l’acheteur', r.error.message);
+      if (r.error) signalerEchec('L’offre est notée, mais le bien « offre faite » chez l’demandeur', r.error.message);
     }
     /* V3.47 : une carte « offre » dans son Suivi (metadata.jalon), datée du
        jour où elle a été faite ; acceptée d'emblée, elle le dit. */
     const { error: eJ } = await supabase.from('journal').insert({
       client_id: o.clientId, recherche_id: o.rechercheId, ...(copieId ? { bien_id: copieId } : {}), type: 'offre',
       titre: `${o.dejaAcceptee ? '🤝 Offre acceptée' : '💶 Offre'} à ${eurosSuivi(o.montant)} — ${b.titre || titreBien(b.donnees)}`,
-      description: [`Faite le ${dateLongue(o.recue)}`, o.dejaAcceptee ? 'Acceptée par le vendeur' : o.jusquau ? `Valable jusqu’au ${dateLongue(o.jusquau)}` : ''].filter(Boolean).join(' · '),
+      description: [`Faite le ${dateLongue(o.recue)}`, o.dejaAcceptee ? 'Acceptée par le mandant' : o.jusquau ? `Valable jusqu’au ${dateLongue(o.jusquau)}` : ''].filter(Boolean).join(' · '),
       metadata: { bien_vente_id: b.id, suivi_id: ligne.id, jalon: o.dejaAcceptee ? 'offre_acceptee' : 'offre_faite', cote: 'acquereur' },
     });
-    if (eJ) signalerEchec('L’offre est notée, mais l’historique de l’acheteur', eJ.message);
+    if (eJ) signalerEchec('L’offre est notée, mais l’historique de l’demandeur', eJ.message);
   }
   /* Le vendeur : l'offre reçue, dans son Suivi (V3.47). */
   if (b.client_id) {
@@ -1433,7 +1433,7 @@ export function lireHono(d: Record<string, unknown> | null | undefined, prix: nu
 export function ligneHono(a: AccordHono): string | null {
   if (a.hono === null) return null;
   const net = netVendeur(a);
-  return `Honoraires : ${eurosSuivi(a.hono)} TTC, à la charge ${a.charge === 'vendeur' ? 'du vendeur' : 'de l’acquéreur'}${net !== null ? ` · net vendeur : ${eurosSuivi(net)}` : ''}`;
+  return `Honoraires : ${eurosSuivi(a.hono)} HT, à la charge ${a.charge === 'vendeur' ? 'du mandant' : 'du demandeur'}${net !== null ? ` · net vendeur : ${eurosSuivi(net)}` : ''}`;
 }
 
 export async function lireNotaires(): Promise<ContactNotaire[]> {
@@ -1535,7 +1535,7 @@ export const nomNotaire = (n: NotaireChoisi | null) => (n ? `${n.nom}${n.etude ?
 /* « Notaires : Me Dupont pour le vendeur, Me Martin pour l'acquéreur ». */
 export function ligneNotaires(v: NotaireChoisi | null, a: NotaireChoisi | null): string | null {
   if (v && a && v.nom === a.nom) return `Notaire : ${nomNotaire(v)}, pour les deux parties`;
-  const l = [v ? `${nomNotaire(v)} pour le vendeur` : '', a ? `${nomNotaire(a)} pour l’acquéreur` : ''].filter(Boolean);
+  const l = [v ? `${nomNotaire(v)} pour le mandant` : '', a ? `${nomNotaire(a)} pour le demandeur` : ''].filter(Boolean);
   return l.length ? `${l.length > 1 ? 'Notaires' : 'Notaire'} : ${l.join(', ')}` : null;
 }
 async function copieChez(bienId: string, rechercheId: string): Promise<string | null> {
@@ -1560,7 +1560,7 @@ export async function noterJalon(b: BienVente, jalon: Jalon, l: { vendeur?: Lign
 export async function noterAcceptationAnnulee(b: BienVente, o: SuiviVente): Promise<void> {
   const m = montantActuel(o);
   const titre = b.titre || titreBien(b.donnees || {});
-  const ligne = (clientId: string, rechercheId?: string | null) => ({ clientId, rechercheId, titre: `↩️ Acceptation annulée — ${eurosSuivi(m)}`, texte: [`${titre} · l’offre de ${o.qui || 'l’acquéreur'} est de nouveau en discussion`] });
+  const ligne = (clientId: string, rechercheId?: string | null) => ({ clientId, rechercheId, titre: `↩️ Acceptation annulée — ${eurosSuivi(m)}`, texte: [`${titre} · l’offre de ${o.qui || 'le demandeur'} est de nouveau en discussion`] });
   /* Pas de `jalon` connu de la frise : une ligne discrète. */
   const cotes: [string | null, string | null | undefined][] = [[b.client_id, null], [o.client_id, o.recherche_id]];
   for (const [id, rech] of cotes) {
@@ -1580,7 +1580,7 @@ export async function noterOffreAcceptee(b: BienVente, o: SuiviVente): Promise<v
   const n = lireNotairesDossier(o.donnees);
   const not = ligneNotaires(n.vendeur, n.acquereur);
   await noterJalon(b, 'offre_acceptee', {
-    vendeur: b.client_id ? { clientId: b.client_id, titre: `🤝 Offre acceptée — ${eurosSuivi(m)}`, texte: [`${titre} · offre de ${o.qui || 'l’acquéreur'}`, depart, h ? ligneHono(h) : null, not] } : null,
+    vendeur: b.client_id ? { clientId: b.client_id, titre: `🤝 Offre acceptée — ${eurosSuivi(m)}`, texte: [`${titre} · offre de ${o.qui || 'le demandeur'}`, depart, h ? ligneHono(h) : null, not] } : null,
     acquereur: o.client_id ? { clientId: o.client_id, rechercheId: o.recherche_id, titre: `🤝 Offre acceptée — ${eurosSuivi(m)}`, texte: [titre, depart, not] } : null,
   });
 }
@@ -1593,13 +1593,13 @@ export async function noterOffreAcceptee(b: BienVente, o: SuiviVente): Promise<v
 export async function noterNegociation(b: BienVente, avant: SuiviVente, r: Reponse): Promise<void> {
   if (r.k === 'accepte' || r.k === 'rouvrir') return;
   const titre = b.titre || titreBien(b.donnees || {});
-  const qui = avant.qui || 'l’acquéreur';
+  const qui = avant.qui || 'le demandeur';
   const sur = montantActuel(avant);
   const l = (t: string, v: string[], a: string[] = v, jalon: Jalon = 'negociation') => ({ t, v, a, jalon });
-  const x = r.k === 'contre' ? l(`↔️ Contre-offre du vendeur — ${eurosSuivi(r.montant)}`, [`${titre} · en réponse à l’offre de ${qui} à ${eurosSuivi(sur)}`], [`${titre} · en réponse à son offre de ${eurosSuivi(sur)}`])
-    : r.k === 'propose' ? l(`💶 Nouvelle proposition — ${eurosSuivi(r.montant)}`, [`${titre} · ${qui} répond à la contre-offre de ${eurosSuivi(sur)}`], [`${titre} · en réponse à la contre-offre du vendeur à ${eurosSuivi(sur)}`])
-      : r.k === 'refuse' ? l(`✖️ Offre refusée — ${eurosSuivi(sur)}`, [`${titre} · l’offre de ${qui} est refusée`], [`${titre} · le vendeur a refusé l’offre`], 'offre_close')
-        : r.k === 'renonce' ? l(`↩️ L’acquéreur renonce — ${eurosSuivi(sur)}`, [`${titre} · ${qui} ne donne pas suite à la contre-offre`], [`${titre} · pas de suite à la contre-offre du vendeur`], 'offre_close')
+  const x = r.k === 'contre' ? l(`↔️ Contre-offre du mandant — ${eurosSuivi(r.montant)}`, [`${titre} · en réponse à l’offre de ${qui} à ${eurosSuivi(sur)}`], [`${titre} · en réponse à son offre de ${eurosSuivi(sur)}`])
+    : r.k === 'propose' ? l(`💶 Nouvelle proposition — ${eurosSuivi(r.montant)}`, [`${titre} · ${qui} répond à la contre-offre de ${eurosSuivi(sur)}`], [`${titre} · en réponse à la contre-offre du mandant à ${eurosSuivi(sur)}`])
+      : r.k === 'refuse' ? l(`✖️ Offre refusée — ${eurosSuivi(sur)}`, [`${titre} · l’offre de ${qui} est refusée`], [`${titre} · le mandant a refusé l’offre`], 'offre_close')
+        : r.k === 'renonce' ? l(`↩️ Le demandeur renonce — ${eurosSuivi(sur)}`, [`${titre} · ${qui} ne donne pas suite à la contre-offre`], [`${titre} · pas de suite à la contre-offre du mandant`], 'offre_close')
           : l(`↩️ Offre retirée — ${eurosSuivi(sur)}`, [`${titre} · ${qui} retire son offre`], [`${titre} · offre retirée`], 'offre_close');
   await noterJalon(b, x.jalon, {
     vendeur: b.client_id ? { clientId: b.client_id, titre: x.t, texte: x.v } : null,
@@ -1621,11 +1621,11 @@ export async function pauseAcquereur(o: SuiviVente): Promise<PauseAcquereur | nu
   if (!o.client_id) return null;
   try {
     const { data, error } = await supabase.from('clients').select('statut').eq('id', o.client_id).maybeSingle();
-    if (error) { signalerEchec('La recherche de l’acquéreur', error.message); return null; }
+    if (error) { signalerEchec('La recherche du demandeur', error.message); return null; }
     const statutAvant = (data as { statut?: string | null } | null)?.statut || null;
     if (statutAvant !== 'bien_trouve' && statutAvant !== 'perdu') {
       const r = await supabase.from('clients').update({ statut: 'suspendu' }).eq('id', o.client_id);
-      if (r.error) signalerEchec('Le statut « Suspendu » de l’acquéreur', r.error.message);
+      if (r.error) signalerEchec('Le statut « Suspendu » du demandeur', r.error.message);
     }
     /* Ce qu'était sa recherche avant (V3.47) : si le compromis tombe, elle
        revient exactement comme avant — déjà en pause, elle y reste. */
@@ -1634,11 +1634,11 @@ export async function pauseAcquereur(o: SuiviVente): Promise<PauseAcquereur | nu
       const r0 = await supabase.from('recherches').select('active').eq('id', o.recherche_id).maybeSingle();
       if (!r0.error) activeAvant = (r0.data as { active?: boolean | null } | null)?.active ?? null;
       const r = await supabase.from('recherches').update({ active: false, updated_at: new Date().toISOString() }).eq('id', o.recherche_id);
-      if (r.error) signalerEchec('La pause de la recherche de l’acquéreur', r.error.message);
+      if (r.error) signalerEchec('La pause de la recherche du demandeur', r.error.message);
     }
     /* Pas de ligne à part au Suivi : la ligne « Compromis signé » le dit (noterJalon). */
     return { clientId: o.client_id, rechercheId: o.recherche_id || null, statutAvant, activeAvant };
-  } catch (e) { signalerEchec('La recherche de l’acquéreur', (e as Error).message); return null; }
+  } catch (e) { signalerEchec('La recherche du demandeur', (e as Error).message); return null; }
 }
 /* Le compromis est tombé (V3.47). Alexandre : « soit reprendre la recherche
    de l'acheteur — peut-être qu'il n'est plus en recherche —, soit le vendeur
@@ -1686,29 +1686,29 @@ export async function compromisTombe(b: BienVente, titre: string, raison: string
            recherche déjà arrêtée ne repart pas (V3.47). */
         if (p.statutAvant !== 'suspendu') {
           const r = await supabase.from('clients').update({ statut: p.statutAvant || 'actif' }).eq('id', p.clientId).eq('statut', 'suspendu');
-          if (r.error) signalerEchec('Le statut de l’acquéreur', r.error.message);
+          if (r.error) signalerEchec('Le statut du demandeur', r.error.message);
         }
         if (p.rechercheId && p.activeAvant !== false) {
           const r2 = await supabase.from('recherches').update({ active: true, updated_at: new Date().toISOString() }).eq('id', p.rechercheId);
-          if (r2.error) signalerEchec('La reprise de la recherche de l’acquéreur', r2.error.message);
+          if (r2.error) signalerEchec('La reprise de la recherche du demandeur', r2.error.message);
         }
         phraseAcq = p.statutAvant === 'suspendu' || p.activeAvant === false ? 'Il revient comme avant le compromis (sa recherche était déjà en pause).' : 'Sa recherche reprend : la veille repart.';
       } else if (suite.acq === 'pause') {
         const r = await supabase.from('clients').update({ statut: 'suspendu' }).eq('id', acq.clientId).in('statut', ['actif', 'prospect', 'suspendu']);
-        if (r.error) signalerEchec('Le statut « Suspendu » de l’acquéreur', r.error.message);
+        if (r.error) signalerEchec('Le statut « Suspendu » du demandeur', r.error.message);
         if (acq.rechercheId) {
           const r2 = await supabase.from('recherches').update({ active: false, updated_at: new Date().toISOString() }).eq('id', acq.rechercheId);
-          if (r2.error) signalerEchec('La pause de la recherche de l’acquéreur', r2.error.message);
+          if (r2.error) signalerEchec('La pause de la recherche du demandeur', r2.error.message);
         }
         phraseAcq = 'Sa recherche reste en pause (« Suspendu ») : elle reprend depuis sa fiche.';
       } else if (suite.acq === 'arrete') {
         /* Comme « Clôturer le dossier » (FicheClient), motif « A renoncé ». */
         const a = await supabase.from('clients').update({ statut: 'perdu', raison_perte: `A renoncé — compromis tombé${raison.trim() ? ` (${raison.trim()})` : ''}` }).eq('id', acq.clientId);
-        if (a.error) signalerEchec('La clôture du dossier de l’acquéreur', a.error.message);
+        if (a.error) signalerEchec('La clôture du dossier du demandeur', a.error.message);
         else {
           finalise = true;
           const r2 = await supabase.from('recherches').update({ active: false }).eq('client_id', acq.clientId);
-          if (r2.error) signalerEchec('L’arrêt de la veille de l’acquéreur', r2.error.message);
+          if (r2.error) signalerEchec('L’arrêt de la veille du demandeur', r2.error.message);
           await solderRelancesAcheteur(acq.clientId);
           phraseAcq = 'Il arrête sa recherche : dossier clos (« A renoncé »), la veille s’arrête, ses relances en attente sont soldées.';
         }
@@ -1740,17 +1740,17 @@ export async function finaliserAcquereur(clientId: string, o: { rechercheId?: st
     /* L'offre ne dit pas sa recherche : celle de sa copie du bien, si elle est seule. */
     if (!rechercheId && o.bienVenteId) {
       const c = await supabase.from('biens').select('recherche_id').eq('bien_vente_id', o.bienVenteId).eq('client_id', clientId);
-      if (c.error) signalerEchec('La recherche de l’acquéreur', c.error.message);
+      if (c.error) signalerEchec('La recherche du demandeur', c.error.message);
       const ids = Array.from(new Set(((c.data || []) as { recherche_id: string | null }[]).map(x => x.recherche_id).filter((x): x is string => !!x)));
       if (ids.length === 1) rechercheId = ids[0];
     }
     if (rechercheId) {
       const r = await supabase.from('recherches').update({ active: false, updated_at: new Date().toISOString() }).eq('id', rechercheId);
-      if (r.error) signalerEchec('L’arrêt de la recherche de l’acquéreur', r.error.message);
+      if (r.error) signalerEchec('L’arrêt de la recherche du demandeur', r.error.message);
       const autres = await supabase.from('recherches').select('id').eq('client_id', clientId).eq('active', true).neq('id', rechercheId);
       if (autres.error) {
         /* Dans le doute, on ne le dit pas « Bien trouvé » : ses autres recherches continuent. */
-        signalerEchec('Les autres recherches de l’acquéreur', autres.error.message);
+        signalerEchec('Les autres recherches du demandeur', autres.error.message);
         await solderRelancesAcheteur(clientId, rechercheId);
         return { ok: true, bienTrouve: false, autres: 1 };
       }
@@ -1761,20 +1761,20 @@ export async function finaliserAcquereur(clientId: string, o: { rechercheId?: st
            continuent, il redevient ce qu'il était. */
         if (o.statutAvant && o.statutAvant !== 'suspendu') {
           const s = await supabase.from('clients').update({ statut: o.statutAvant }).eq('id', clientId).eq('statut', 'suspendu');
-          if (s.error) signalerEchec('Le statut de l’acquéreur', s.error.message);
+          if (s.error) signalerEchec('Le statut du demandeur', s.error.message);
         }
         return { ok: true, bienTrouve: false, autres: n };
       }
     }
     const a = await supabase.from('clients').update({ statut: 'bien_trouve', raison_perte: null }).eq('id', clientId);
-    if (a.error) { signalerEchec('Le statut « Bien trouvé » de l’acquéreur', a.error.message); return { ok: false, bienTrouve: false, autres: 0 }; }
+    if (a.error) { signalerEchec('Le statut « Bien trouvé » du demandeur', a.error.message); return { ok: false, bienTrouve: false, autres: 0 }; }
     if (!rechercheId) {
       const b = await supabase.from('recherches').update({ active: false }).eq('client_id', clientId);
-      if (b.error) signalerEchec('L’arrêt de la veille de l’acquéreur', b.error.message);
+      if (b.error) signalerEchec('L’arrêt de la veille du demandeur', b.error.message);
     }
     await solderRelancesAcheteur(clientId);
     return { ok: true, bienTrouve: true, autres: 0 };
-  } catch (e) { signalerEchec('Le dossier de l’acquéreur', (e as Error).message); return { ok: false, bienTrouve: false, autres: 0 }; }
+  } catch (e) { signalerEchec('Le dossier du demandeur', (e as Error).message); return { ok: false, bienTrouve: false, autres: 0 }; }
 }
 
 /* V3.50 : la vente signée clôt aussi la transaction que l'acquéreur avait
@@ -1785,14 +1785,14 @@ export async function finaliserAcquereur(clientId: string, o: { rechercheId?: st
 export async function finaliserTransactionsAcquereur(bienId: string, clientId: string, acte: string): Promise<number> {
   try {
     const { data: cop, error } = await supabase.from('biens').select('id').eq('bien_vente_id', bienId).eq('client_id', clientId);
-    if (error) { signalerEchec('La transaction de l’acquéreur', error.message); return 0; }
+    if (error) { signalerEchec('La transaction du demandeur', error.message); return 0; }
     const ids = ((cop || []) as { id: string }[]).map(x => x.id);
     if (!ids.length) return 0;
     const r = await supabase.from('transactions').update({ etape_actuelle: 'finalise', acte_date_prevue: acte })
       .in('bien_id', ids).eq('client_id', clientId).neq('etape_actuelle', 'finalise').select('id');
-    if (r.error) { signalerEchec('La transaction de l’acquéreur', r.error.message); return 0; }
+    if (r.error) { signalerEchec('La transaction du demandeur', r.error.message); return 0; }
     return (r.data || []).length;
-  } catch (e) { signalerEchec('La transaction de l’acquéreur', (e as Error).message); return 0; }
+  } catch (e) { signalerEchec('La transaction du demandeur', (e as Error).message); return 0; }
 }
 
 /* « Corriger l'acte » (V3.50) : sur un bien vendu, la date de l'acte, le prix
@@ -1817,7 +1817,7 @@ export async function corrigerActe(b: BienVente, ligne: SuiviVente | null, x: Co
   const changes = [
     acteAvant !== x.acte ? `date ${acteAvant ? dateLongue(acteAvant) : 'non renseignée'} → ${dateLongue(x.acte)}` : '',
     prixAvant !== x.prix ? `prix ${eu(prixAvant)} → ${eu(x.prix)}` : '',
-    honoAvant !== apres.hono ? `honoraires ${eu(honoAvant)} → ${eu(apres.hono)}${apres.hono ? ' TTC' : ''}` : '',
+    honoAvant !== apres.hono ? `honoraires ${eu(honoAvant)} → ${eu(apres.hono)}${apres.hono ? ' HT' : ''}` : '',
   ].filter(Boolean);
   if (changes.length) {
     try {
@@ -1834,25 +1834,25 @@ const TYPES_CONTACT_ORDRE = TYPES_CONTACT.map(t => t.k);
 export async function vendeurSigne(clientId: string, bienId: string): Promise<boolean> {
   try {
     const { data, error } = await supabase.from('clients').select('types').eq('id', clientId).maybeSingle();
-    if (error || !data) { signalerEchec('Le type « Vendeur signé »', error?.message || 'contact introuvable'); return false; }
+    if (error || !data) { signalerEchec('Le type « Mandant signé »', error?.message || 'contact introuvable'); return false; }
     /* Un autre de ses biens encore en vente : il reste aussi « Vendeur ».
        V3.137 : « en vente » = mandat, sous offre ou sous compromis. */
     const autres = await supabase.from('biens_vente').select('id').eq('client_id', clientId).neq('id', bienId).in('etape', ETAPES_EN_VENTE).eq('archive', false).limit(1);
-    if (autres.error) signalerEchec('Les autres biens du vendeur', autres.error.message);
+    if (autres.error) signalerEchec('Les autres biens du mandant', autres.error.message);
     const encore = !!autres.data?.length;
     const t: string[] = typesDe(data).filter(x => encore || x !== 'vendeur');
     const types = TYPES_CONTACT_ORDRE.filter(k => k === 'vendeur_signe' || t.includes(k));
     const r = await supabase.from('clients').update({ types }).eq('id', clientId);
-    if (r.error) { signalerEchec('Le type « Vendeur signé »', r.error.message); return false; }
+    if (r.error) { signalerEchec('Le type « Mandant signé »', r.error.message); return false; }
     /* V3.50 : « son bien actuel est à vendre » (fiche contact) ne l'est plus —
        sauf s'il a encore un bien en vente avec nous. Sans ça, il restait
        « vendeur » sur la carte et dans la liste des contacts. */
     if (!encore) {
       const v = await supabase.from('clients').update({ bien_actuel_a_vendre: false }).eq('id', clientId).eq('bien_actuel_a_vendre', true);
-      if (v.error) signalerEchec('« Son bien est à vendre » sur la fiche du vendeur', v.error.message);
+      if (v.error) signalerEchec('« Son bien est à vendre » sur la fiche du mandant', v.error.message);
     }
     return true;
-  } catch (e) { signalerEchec('Le type « Vendeur signé »', (e as Error).message); return false; }
+  } catch (e) { signalerEchec('Le type « Mandant signé »', (e as Error).message); return false; }
 }
 /* Au compromis : une autre offre restée « acceptée » (une offre tombée, ou
    le compromis signé avec un autre) passe « retirée » — deux offres
@@ -1864,7 +1864,7 @@ export async function retirerAutresAcceptees(b: BienVente, offres: SuiviVente[],
       const { statut, donnees } = apresReponse(o, { k: 'retire' }, aujourdhui());
       await majSuivi(o.id, { statut, donnees });
       await suiteEspace(o);
-    } catch (e) { signalerEchec(`L’offre de ${o.qui || 'un acquéreur'}`, (e as Error).message); }
+    } catch (e) { signalerEchec(`L’offre de ${o.qui || 'un demandeur'}`, (e as Error).message); }
   }
 }
 /* V3.190 — Une offre faite depuis l'espace de l'acheteur (`documentId`) :
@@ -1874,8 +1874,8 @@ async function suiteEspace(o: SuiviVente): Promise<void> {
   if (typeof o.donnees?.documentId !== 'string' || !o.donnees.documentId) return;
   try {
     const r = await avertirAcheteurOffre(o.id);
-    if (r.avertissements.length) signalerEchec(`L’espace de ${o.qui || 'l’acheteur'}`, r.avertissements.join(' · '));
-  } catch (e) { signalerEchec(`L’espace de ${o.qui || 'l’acheteur'}`, (e as Error).message); }
+    if (r.avertissements.length) signalerEchec(`L’espace de ${o.qui || 'l’demandeur'}`, r.avertissements.join(' · '));
+  } catch (e) { signalerEchec(`L’espace de ${o.qui || 'l’demandeur'}`, (e as Error).message); }
 }
 /* « L'offre est tombée » (V3.47) : les offres encore en jeu passent
    « retirées », leurs relances « réponse à donner » se closent. */
@@ -1888,7 +1888,7 @@ export async function offresTombees(b: BienVente, offres: SuiviVente[]): Promise
       await cloreRelanceOffre(b, o);
       await noterOffreFermee(b, o, '↩️ Offre tombée', 'Le bien repasse en vente.');
       await suiteEspace(o);
-    } catch (e) { signalerEchec(`L’offre de ${o.qui || 'un acquéreur'}`, (e as Error).message); }
+    } catch (e) { signalerEchec(`L’offre de ${o.qui || 'un demandeur'}`, (e as Error).message); }
   }
 }
 /* Au compromis : les autres offres encore ouvertes passent « refusées ». */
@@ -1901,8 +1901,8 @@ export async function refuserAutresOffres(b: BienVente, offres: SuiviVente[], ga
       await cloreRelanceOffre(b, o);
       await suiteEspace(o);
       /* V3.48 : l'acquéreur suivi le lit dans son Suivi. */
-      await noterOffreFermee(b, o, '✕ Offre non retenue', 'Le vendeur s’est engagé avec un autre acquéreur.');
-    } catch (e) { signalerEchec(`L’offre de ${o.qui || 'un acquéreur'}`, (e as Error).message); }
+      await noterOffreFermee(b, o, '✕ Offre non retenue', 'Le mandant s’est engagé avec un autre demandeur.');
+    } catch (e) { signalerEchec(`L’offre de ${o.qui || 'un demandeur'}`, (e as Error).message); }
   }
 }
 /* Une ligne dans le Suivi de l'acquéreur suivi dont l'offre se ferme (V3.48). */
@@ -2321,18 +2321,18 @@ export async function marquerVendeur(clientId: string): Promise<boolean> {
   const { data, error } = await supabase.from('clients').select('types, archive').eq('id', clientId).maybeSingle();
   if (error) {
     if (colonneContactAbsente(error.message)) return true;
-    signalerEchec('Le type « vendeur » du contact', error.message);
+    signalerEchec('Le type « mandant » du contact', error.message);
     return false;
   }
-  if (!data) { signalerEchec('Le type « vendeur » du contact', 'contact introuvable'); return false; }
+  if (!data) { signalerEchec('Le type « mandant » du contact', 'contact introuvable'); return false; }
   /* Un archivé garde ses types (on le retrouve par type parmi les archivés). */
   if ((data as { archive?: boolean | null }).archive === true) return true;
   const { data: biens, error: eB } = await supabase.from('biens_vente').select('etape, archive').eq('client_id', clientId);
-  if (eB) { signalerEchec('Le type « vendeur » du contact', `ses biens n’ont pas pu être lus (${eB.message})`); return false; }
+  if (eB) { signalerEchec('Le type « mandant » du contact', `ses biens n’ont pas pu être lus (${eB.message})`); return false; }
   const n = typesSelonBiens(typesDe(data), (biens || []) as { etape: string | null; archive: boolean | null }[]);
   if (!n) return true;
   const { error: e2 } = await supabase.from('clients').update({ types: n }).eq('id', clientId);
-  if (e2 && !colonneContactAbsente(e2.message)) { signalerEchec('Le type « vendeur » du contact', e2.message); return false; }
+  if (e2 && !colonneContactAbsente(e2.message)) { signalerEchec('Le type « mandant » du contact', e2.message); return false; }
   return true;
 }
 

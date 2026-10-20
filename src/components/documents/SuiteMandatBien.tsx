@@ -49,7 +49,7 @@ export default function SuiteMandatBien({ bien, doc, etaitSigne, supprime, onFer
   const options: { v: Choix; ic: string; t: string; x: string }[] = [
     etaitSigne
       ? { v: 'termine', ic: 'archive', t: 'Le mandat est terminé', x: 'Rétractation, fin du mandat, vendu par un autre : le bien passe « Retiré ». Son historique garde le mandat.' }
-      : { v: 'termine', ic: 'archive', t: 'Le vendeur renonce', x: 'Le bien passe « Retiré », gardé dans l’historique.' },
+      : { v: 'termine', ic: 'archive', t: 'Le mandant renonce', x: 'Le bien passe « Retiré », gardé dans l’historique.' },
     noteSigne
       ? { v: 'erreur', ic: 'retour', t: 'Il avait été fait par erreur', x: `Un test, le mauvais bien : ${numero ? `le n° ${numero}` : 'le numéro'}, le type et les dates quittent la fiche, et le bien revient à l’estimation.` }
       : { v: 'erreur', ic: 'retour', t: 'Le bien n’est pas encore en vente', x: 'Aucun mandat signé n’y est noté : il revient à l’estimation, et repassera « En vente » tout seul à la signature du prochain mandat.' },
@@ -61,7 +61,7 @@ export default function SuiteMandatBien({ bien, doc, etaitSigne, supprime, onFer
     setTravail(true); setErreur('');
     try {
       if (choix === 'termine') {
-        await terminerMandatDuBien(supabase, bien, etaitSigne ? quoi : 'Le vendeur renonce');
+        await terminerMandatDuBien(supabase, bien, etaitSigne ? quoi : 'Le mandant renonce');
         setFait('Le bien est passé « Retiré ». Son historique garde le mandat.');
       } else {
         const vers = await lireEtapeAvantMandat(supabase, bien.id);

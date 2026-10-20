@@ -211,7 +211,7 @@ export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { cl
 
     let empechement: string | null = null;
     if (c.statut !== 'actif') empechement = 'Le mail ne part que pour les dossiers actifs.';
-    else if (!estAcheteur(c)) empechement = 'Ce contact n’est plus acheteur : le mail ne part pas.';
+    else if (!estAcheteur(c)) empechement = 'Ce contact n’est plus demandeur : le mail ne part pas.';
     else if (estArchive(c)) empechement = 'Ce contact est archivé : le mail ne part pas.';
     else if (reglages.exclus.includes(c.id)) empechement = 'Tu as choisi de ne jamais lui envoyer ce mail.';
     else if (!email) empechement = 'Pas d’adresse mail sur sa fiche.';

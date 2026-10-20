@@ -175,7 +175,7 @@ export default function SonOffre({ fil, bienId, client, seul, onChange, onDocume
     if (!m || en) return;
     const totalC = accepte && r?.montant ? totalContre(d, r.montant) : 0;
     if (!window.confirm(accepte && r?.montant
-      ? `Préparer son offre au prix du vendeur : ${EUR(r.montant)} pour le vendeur, soit ${EUR(totalC)} pour ${p.pour}, frais d’agence compris ?\n\nElle s’ouvre dans l’éditeur ; tu l’envoies ensuite pour signature. Dans son espace, ${p.il} voit « Nouvelle offre en préparation ».`
+      ? `Préparer son offre au prix du mandant : ${EUR(r.montant)} pour le mandant, soit ${EUR(totalC)} pour ${p.pour}, frais d’agence compris ?\n\nElle s’ouvre dans l’éditeur ; tu l’envoies ensuite pour signature. Dans son espace, ${p.il} voit « Nouvelle offre en préparation ».`
       : `Préparer une nouvelle offre, reprise de celle-ci (sans le prix) ?\n\nElle s’ouvre dans l’éditeur ; tu l’envoies ensuite pour signature.`)) return;
     setEn(accepte ? 'accepte' : 'nouvelle'); setMessage(null);
     try {
@@ -242,7 +242,7 @@ export default function SonOffre({ fil, bienId, client, seul, onChange, onDocume
       case 'signee': return agence ? { l: 'L’ajouter aux offres du bien', ic: 'plus', go: () => { void lier(); } }
         : doc.signe_chemin ? { l: 'Envoyer à l’agence', ic: 'envoyer', go: () => setFen('envoi') } : { l: 'Ouvrir l’offre', ic: 'doc', go: () => onDocument(doc.id) };
       case 'envoyee': return agence ? (allerBien ? { l: 'Répondre sur la fiche du bien', ic: 'maison', go: allerBien } : null)
-        : { l: 'Réponse du vendeur', ic: 'coche', go: () => setFen('reponse') };
+        : { l: 'Réponse du mandant', ic: 'coche', go: () => setFen('reponse') };
       case 'contre': return expiree
         ? { l: 'Nouvelle offre', ic: 'plus', go: () => { void nouvelle(false); } }
         : { l: p.accepte, ic: 'coche', go: () => { void nouvelle(true); } };
@@ -280,14 +280,14 @@ export default function SonOffre({ fil, bienId, client, seul, onChange, onDocume
             /* Ton mandat : pas d'honoraires de recherche ; ceux du mandat de vente, au prix offert. */
             <div className={o.montants}>
               <div><span>Son offre</span><b>{EUR(total)}</b></div>
-              <div><span>Net vendeur</span><b>{honoV ? EUR(total - honoV) : d.forme === 'net' ? EUR(total) : '—'}</b></div>
+              <div><span>Net mandant</span><b>{honoV ? EUR(total - honoV) : d.forme === 'net' ? EUR(total) : '—'}</b></div>
               <div><span>Tes honoraires (mandat)</span><b>{honoV ? EUR(honoV) : '—'}</b></div>
               {fin && <div><span>{'Valable jusqu’au'}</span><b>{JOUR(fin.toISOString())}</b></div>}
             </div>
           ) : total ? (
             <div className={o.montants}>
               <div><span>{`Son total, frais d’agence compris`}</span><b>{EUR(total)}</b></div>
-              <div><span>Proposé au vendeur</span><b>{prix ? EUR(prix) : '—'}</b></div>
+              <div><span>Proposé au mandant</span><b>{prix ? EUR(prix) : '—'}</b></div>
               <div><span>Tes honoraires</span><b>{EUR(Math.max(0, total - (prix || 0)))}</b></div>
               {fin && <div><span>{'Valable jusqu’au'}</span><b>{JOUR(fin.toISOString())}</b></div>}
             </div>
@@ -297,7 +297,7 @@ export default function SonOffre({ fil, bienId, client, seul, onChange, onDocume
             <div className={o.contre}>
               <div className={o.contreT}>{`Contre-proposition du ${JOUR(r.le)}${r.limite ? ` · valable jusqu’au ${JOUR(r.limite)}` : ''}`}</div>
               <div className={o.contreV}>
-                <span><b>{EUR(r.montant)}</b>{agence ? ' demandés par le vendeur' : ' pour le vendeur'}</span>
+                <span><b>{EUR(r.montant)}</b>{agence ? ' demandés par le mandant' : ' pour le mandant'}</span>
                 {totalContre(d, r.montant) !== r.montant && <span>{`soit ${EUR(totalContre(d, r.montant))} pour ${p.pour}, dont ${EUR(totalContre(d, r.montant) - r.montant)} de tes honoraires`}</span>}
               </div>
               {expiree && <div className={o.alerte}>{'Sa date limite est passée : la proposition ne tient plus. Une nouvelle offre, ou « Sans suite ».'}</div>}
@@ -312,7 +312,7 @@ export default function SonOffre({ fil, bienId, client, seul, onChange, onDocume
             <div className={o.aide}>{`${prenom} l’a préparée dans son espace et te la confie. Relis-la, puis envoie-la pour signature : ${p.il} signe avec son code.`}</div>
           )}
           {agence && etat === 'envoyee' && env.length > 0 && (
-            <div className={o.aide}>{`Dans les offres de la fiche du bien depuis le ${JOURL(env[env.length - 1].le)}. Note la réponse du vendeur là-bas (« Il accepte », contre-offre, refus) : ${prenom} reçoit un e-mail, et son espace suit. Une relance « réponse à donner » t’attend le jour où l’offre expire.`}</div>
+            <div className={o.aide}>{`Dans les offres de la fiche du bien depuis le ${JOURL(env[env.length - 1].le)}. Note la réponse du mandant là-bas (« Il accepte », contre-offre, refus) : ${prenom} reçoit un e-mail, et son espace suit. Une relance « réponse à donner » t’attend le jour où l’offre expire.`}</div>
           )}
           {agence && etat === 'signee' && (
             <div className={o.alerte}>{'Signée, mais pas encore dans les offres de la fiche du bien (l’ajout automatique n’a pas pu se faire). « L’ajouter aux offres du bien » le refait.'}</div>
@@ -398,7 +398,7 @@ function Circuit({ p, agence }: { p: ReturnType<typeof pronoms>; agence?: boolea
   const seul = p.il === 'elle' ? 'seule' : pl ? 'seuls' : 'seul';
   /* V3.190 : un bien de ton mandat. */
   const etapes: [string, string][] = agence ? [
-    ['Son offre', `${p.Il} ${v('la prépare', 'la préparent')} dans son espace, sur un bien de ton mandat qu’${p.il} a visité : le prix et le vendeur viennent de la fiche du bien, sans honoraires de recherche. ${p.Il} ${v('la signe', 'la signent')} ${seul} avec un code par e-mail, ou ${v('te la confie', 'te la confient')} pour relecture.`],
+    ['Son offre', `${p.Il} ${v('la prépare', 'la préparent')} dans son espace, sur un bien de ton mandat qu’${p.il} a visité : le prix et le mandant viennent de la fiche du bien, sans honoraires de recherche. ${p.Il} ${v('la signe', 'la signent')} ${seul} avec un code par e-mail, ou ${v('te la confie', 'te la confient')} pour relecture.`],
     ['Signée', 'Elle rejoint toute seule les offres de la fiche du bien, comme « Une offre est arrivée » : le bien passe « Sous offre », la relance « réponse à donner » du propriétaire est posée, et le Suivi des deux côtés le dit.'],
     ['La réponse', `Tu la notes sur la fiche du bien, comme d’habitude : « Il accepte », contre-offre, refus. ${p.Il} ${v('reçoit', 'reçoivent')} un seul e-mail par réponse, et sa carte « Votre offre » se met à jour.`],
     ['Contre-offre', `${p.Il} ${v('l’accepte', 'l’acceptent')} (une nouvelle offre à ce prix, à signer : elle s’ajoute à la même offre sur la fiche du bien, et une relance te demande de noter l’accord), ${v('en refait une', 'en refont une')}, ou ${v('ne donne', 'ne donnent')} pas suite — l’offre passe alors « retirée » sur la fiche du bien.`],
@@ -407,7 +407,7 @@ function Circuit({ p, agence }: { p: ReturnType<typeof pronoms>; agence?: boolea
     ['Son offre', `${p.Il} ${v('la prépare', 'la préparent')} dans son espace, sur un bien visité (ou toi, dans Documents). ${p.Il} ${v('la signe', 'la signent')} ${seul} avec un code par e-mail, ou ${v('te la confie', 'te la confient')} : relance « Offre à relire », tu la relis dans l’éditeur, puis tu l’envoies pour signature.`],
     ['Signée', 'Le mail « Signé par tous » arrive, et la relance « Offre signée, à envoyer ». « Envoyer à l’agence » joint l’offre signée — tes honoraires n’y figurent pas — avec une copie cachée pour toi. « Renvoyer » si l’agence ne l’a pas reçue.'],
     ['En attente', 'Une relance t’attend la veille de la fin de validité, pour relancer l’agence. Sans réponse à la date : « Arrivée à échéance », le bien redevient « Visité ».'],
-    ['La réponse', `« Réponse du vendeur » : acceptée, refusée ou contre-proposition (son prix pour le vendeur ; tes honoraires s’ajoutent une fois). ${p.Il} ${v('reçoit', 'reçoivent')} un seul e-mail par réponse, et la carte « Votre offre » de son espace se met à jour.`],
+    ['La réponse', `« Réponse du mandant » : acceptée, refusée ou contre-proposition (son prix pour le mandant ; tes honoraires s’ajoutent une fois). ${p.Il} ${v('reçoit', 'reçoivent')} un seul e-mail par réponse, et la carte « Votre offre » de son espace se met à jour.`],
     ['Contre-proposition', `${p.Il} ${v('l’accepte', 'l’acceptent')} (une nouvelle offre à ce prix, à signer), ${v('en refait une', 'en refont une')}, ou ${v('ne donne', 'ne donnent')} pas suite — depuis son espace, ou toi pour ${p.pour} : « ${p.accepte} », « Nouvelle offre », « Sans suite ».`],
     ['La fin', 'Acceptée : l’onglet Transaction s’ouvre à « Offre acceptée », avec toute la négociation. Refusée ou sans suite : le bien redevient « Visité », la recherche continue, une nouvelle offre reste possible.'],
   ];
@@ -454,12 +454,12 @@ function FenetreReponse({ doc, client, onFermer, onFait }: {
   const hono = m ? honorairesSurPrix(d, m) : 0;
   const titre = [d.adresse, d.ville].filter(x => typeof x === 'string' && x).join(', ');
   const mail = statut === 'acceptee' ? '« 🎉 Félicitations, votre offre est acceptée ! »'
-    : statut === 'contre' ? '« Le vendeur a répondu à votre offre », avec sa proposition et les trois choix'
-      : '« Réponse du vendeur à votre offre » : non retenue, la recherche continue';
+    : statut === 'contre' ? '« Le mandant a répondu à votre offre », avec sa proposition et les trois choix'
+      : '« Réponse du mandant à votre offre » : non retenue, la recherche continue';
 
   async function enregistrer() {
     if (envoi) return;
-    if (statut === 'contre' && m < 10_000) { setErreur('Le prix de la contre-proposition, pour le vendeur.'); return; }
+    if (statut === 'contre' && m < 10_000) { setErreur('Le prix de la contre-proposition, pour le mandant.'); return; }
     setEnvoi(true); setErreur('');
     try {
       const r = await repondreOffre({ id: doc.id, statut, montant: statut === 'contre' ? m : null, limite: statut === 'contre' && avecLimite ? limite : null, note: note.trim() || null });
@@ -474,18 +474,18 @@ function FenetreReponse({ doc, client, onFermer, onFait }: {
   if (typeof document === 'undefined') return null;
   return createPortal(
     <div className={s.voile} onClick={e => { if (e.target === e.currentTarget && !envoi) onFermer(); }}>
-      <div className={s.fenetre} role="dialog" aria-modal="true" aria-label="Réponse du vendeur">
+      <div className={s.fenetre} role="dialog" aria-modal="true" aria-label="Réponse du mandant">
         <div className={s.fTete}>
           <span className={s.fIc} aria-hidden="true"><Icone nom="euro" taille={19} epaisseur={2} /></span>
           <div style={{ minWidth: 0 }}>
-            <h2>Réponse du vendeur</h2>
+            <h2>Réponse du mandant</h2>
             <p>{[titre, total ? `son offre : ${EUR(total)}` : ''].filter(Boolean).join(' · ')}</p>
           </div>
           <button type="button" className={s.fFermer} onClick={onFermer} aria-label="Fermer" disabled={envoi}><Icone nom="fermer" taille={16} epaisseur={2.4} /></button>
         </div>
         <div className={s.fCorps}>
           <section className={s.section}>
-            <div className={s.lib}><Icone nom="coche" taille={14} epaisseur={2.2} />Le vendeur</div>
+            <div className={s.lib}><Icone nom="coche" taille={14} epaisseur={2.2} />Le mandant</div>
             <div className={s.pastilles}>
               {REPONSES_V.map(x => (
                 <button key={x.k} type="button" className={s.pastille} aria-pressed={statut === x.k} data-ton={x.k === 'acceptee' ? 'disponible' : x.k === 'refusee' ? 'vendu' : undefined}
@@ -500,7 +500,7 @@ function FenetreReponse({ doc, client, onFermer, onFait }: {
             <section className={s.section}>
               <div className={s.lib}><Icone nom="euro" taille={14} epaisseur={2.2} />Son prix</div>
               <div className={s.grille}>
-                <label className={s.champ}><span>Pour le vendeur</span>
+                <label className={s.champ}><span>Pour le mandant</span>
                   <input inputMode="numeric" autoFocus value={montant ? Number(montant.replace(/[^\d]/g, '')).toLocaleString('fr-FR') : ''}
                     onChange={e => { setMontant(e.target.value.replace(/[^\d]/g, '').slice(0, 9)); setErreur(''); }} placeholder="Ex. : 488 000" /></label>
                 <div className={o.calc}>
@@ -509,7 +509,7 @@ function FenetreReponse({ doc, client, onFermer, onFait }: {
                   <small>{m >= 10_000 ? (hono ? `dont ${EUR(hono)} de tes honoraires, une seule fois` : 'sans honoraires de recherche') : 'tape son prix'}</small>
                 </div>
               </div>
-              <div className={s.aide}>{`Le prix que l’agence annonce, ses honoraires à elle compris (net vendeur si le propriétaire vend seul). Tes honoraires s’ajoutent une fois, sur ce prix.${prix ? ` Son offre partait à ${EUR(prix)} pour le vendeur.` : ''}`}</div>
+              <div className={s.aide}>{`Le prix que l’agence annonce, ses honoraires à elle compris (net vendeur si le propriétaire vend seul). Tes honoraires s’ajoutent une fois, sur ce prix.${prix ? ` Son offre partait à ${EUR(prix)} pour le mandant.` : ''}`}</div>
               <label className={s.coche}><input type="checkbox" checked={avecLimite} onChange={e => setAvecLimite(e.target.checked)} />{'Sa proposition a une date limite'}</label>
               {avecLimite && <ChoixJour date={limite} onDate={setLimite} min={cleDuJour()} etiquette="Valable jusqu’au" />}
             </section>

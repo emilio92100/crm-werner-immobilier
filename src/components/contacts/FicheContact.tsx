@@ -412,7 +412,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
     }
     if (nb.recherches) {
       setOccupe(false);
-      alert(`${x.prenom || 'Ce contact'} a encore ${nb.recherches > 1 ? `${nb.recherches} recherches` : 'une recherche'} d’achat. Pour tout effacer proprement, redonne-lui le type « Acheteur » et supprime-le depuis sa fiche d’acheteur. Ou archive-le.`);
+      alert(`${x.prenom || 'Ce contact'} a encore ${nb.recherches > 1 ? `${nb.recherches} recherches` : 'une recherche'} d’achat. Pour tout effacer proprement, redonne-lui le type « Demandeur » et supprime-le depuis sa fiche d’demandeur. Ou archive-le.`);
       return;
     }
     if (!confirm(`Supprimer ${nomFoyer(x)} de tes contacts ?\n\nC’est définitif : son historique et ses relances partent avec lui. Pour le garder sans le voir, archive-le plutôt.`)) { setOccupe(false); return; }
@@ -622,7 +622,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
                     {!estPro(types) || aUnBien(types) ? (
                       <div className={c.aussi}>
                         <span className={c.blocIc} style={{ width: 36, height: 36 }}><Ic n="cible" t={17} /></span>
-                        <div><b>Il cherche aussi à acheter ?</b>Ouvre-lui une recherche : il passe sur la fiche d’acheteur, avec son espace et la veille.</div>
+                        <div><b>Il cherche aussi à acheter ?</b>Ouvre-lui une recherche : il passe sur la fiche d’demandeur, avec son espace et la veille.</div>
                         <button type="button" className={`${c.btn} ${c.btnOr}`} disabled={occupe} onClick={ouvrirRecherche}>Ouvrir une recherche</button>
                       </div>
                     ) : null}
@@ -679,7 +679,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
               <div className={c.groupe}>
                 <div className={c.groupeT}>Ce contact est…</div>
                 <ChoixTypes v={edit.types} onChange={t => setEdit({ ...edit, types: t })} />
-                {edit.types.includes('acheteur') && <div className={c.typesNote}>Acheteur : en enregistrant, sa fiche d’acheteur s’ouvre. Pense à lui ouvrir une recherche (« Il cherche aussi à acheter »).</div>}
+                {edit.types.includes('acheteur') && <div className={c.typesNote}>Demandeur : en enregistrant, sa fiche d’demandeur s’ouvre. Pense à lui ouvrir une recherche (« Il cherche aussi à acheter »).</div>}
               </div>
               {/* V3.174 (Alexandre) : un notaire se présente par son étude — « Son
                   étude » d'abord, puis qui le joindre ; et pas de « D'où vient ce

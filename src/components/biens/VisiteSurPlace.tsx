@@ -589,7 +589,7 @@ export default function VisiteSurPlace({ bien, onFermer }: { bien: BienVente; on
               <Questions cles={CHAMPS.cles} d={d} maj={maj} bienId={row.id} titre="Les clés" ic="cle" />
               <Questions cles={CHAMPS.acces} d={d} maj={maj} bienId={row.id} titre="Pour arriver jusqu’à la porte" ic="carte" />
               <Questions cles={CHAMPS.surPlace} d={d} maj={maj} bienId={row.id} titre="Sur place" ic="telephone" />
-              <p className={b.vAide}>Pour tes prochaines visites, puis celles des acheteurs. Tout se retrouve sur la fiche, dans « Les indications de visite ».</p>
+              <p className={b.vAide}>Pour tes prochaines visites, puis celles des demandeurs. Tout se retrouve sur la fiche, dans « Les indications de visite ».</p>
             </>
           )}
 

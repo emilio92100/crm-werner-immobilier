@@ -1016,7 +1016,7 @@ function resumeRecherche(c: CritForm): { titre: string; ligne: string; base: Puc
     ...(bud ? [{ id: 'budget', lib: bud, ic: 'euro' }] : []),
   ];
   const vide = !types.length && !c.secteurs.length && !pc && !sf && !bud;
-  if (vide) return { titre: 'Sans critères pour l’instant', ligne: 'Acheteur non filtré : ses critères se prennent plus tard.', base };
+  if (vide) return { titre: 'Sans critères pour l’instant', ligne: 'Demandeur non filtré : ses critères se prennent plus tard.', base };
   return { titre: `${type} · ${villes}`, ligne: [pc, sf, bud].filter(Boolean).join(' · ') || 'Critères à préciser', base };
 }
 
@@ -1143,7 +1143,7 @@ export function planifier(c: Contact, lec: Lecture | null, etat: EtatLecture, ch
     roles.acheteur = true;
     force = true;
     const qui = c.statuts.length ? `Statut « ${c.statuts.join(' », « ')} » dans ImmoFacile` : 'Sans statut dans ImmoFacile';
-    aVerifier.push(locationSeule ? 'Cherche à louer : arrive en acheteur sans critères, à qualifier.' : `${qui}, sans recherche : arrive en acheteur sans critères, à qualifier.`);
+    aVerifier.push(locationSeule ? 'Cherche à louer : arrive en demandeur sans critères, à qualifier.' : `${qui}, sans recherche : arrive en demandeur sans critères, à qualifier.`);
   } else if (roles.acheteur && locationSeule && !roles.proprietaire) aVerifier.push('Cherche à louer : pas de critères d’achat à reprendre.');
   if (etat === 'echec') aVerifier.push('Lecture du texte impossible : vérifie.');
   if (etat === 'passee') aVerifier.push('Lecture du commentaire passée : seules les colonnes sont reprises, vérifie.');

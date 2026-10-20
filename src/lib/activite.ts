@@ -117,7 +117,7 @@ export async function honorairesPrevus(): Promise<Encaisse[]> {
   ]);
   const lignes: Encaisse[] = [];
   const enCompromis = new Set<string>();
-  if (verif('Les biens sous compromis', bv.error) && verif('L’historique des ventes', sv.error)) {
+  if (verif('Les biens en signature', bv.error) && verif('L’historique des ventes', sv.error)) {
     for (const b of (bv.data || []) as { id: string; titre: string | null; client_id: string | null }[]) {
       const l = ((sv.data || []) as LigneVente[]).find(x => x.bien_id === b.id);
       const ttc = nombre(l?.donnees?.hono);

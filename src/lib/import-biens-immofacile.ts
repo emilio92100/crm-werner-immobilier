@@ -320,20 +320,20 @@ export type Proposition = { etape: EtapeVente; archive: boolean; raison: string 
 export function etapeProposee(o: {
   statut: number; annonceType: boolean; mandat: boolean; echeance: string; vendeurArchive: boolean; aujourdhui: string;
 }): Proposition {
-  if (o.annonceType) return { etape: 'annonce_type', archive: false, raison: 'Fiche au nom de ROGELET : une annonce type, sans vendeur ni mandat.' };
+  if (o.annonceType) return { etape: 'annonce_type', archive: false, raison: 'Fiche au nom de ROGELET : une annonce type, sans mandant ni mandat.' };
   const echu = !!o.echeance && o.echeance < o.aujourdhui;
   switch (o.statut) {
     case 1: return { etape: 'a_suivre', archive: false, raison: 'En prospection dans ImmoFacile.' };
     case 2: return { etape: 'estimation', archive: false, raison: 'En estimation dans ImmoFacile.' };
     case 3:
-      if (o.vendeurArchive) return { etape: 'retire', archive: false, raison: 'En mandat dans ImmoFacile, mais le vendeur est archivé dans le CRM : il ne vend plus avec toi.' };
+      if (o.vendeurArchive) return { etape: 'retire', archive: false, raison: 'En mandat dans ImmoFacile, mais le mandant est archivé dans le CRM : il ne vend plus avec toi.' };
       return { etape: 'mandat', archive: false, raison: echu ? 'En mandat dans ImmoFacile. Attention : l’échéance du mandat est passée.' : 'En mandat dans ImmoFacile.' };
     case 4:
       if (!o.mandat) return { etape: 'estimation', archive: false, raison: 'Suspendu dans ImmoFacile, sans mandat : il revient en estimation.' };
-      if (echu || o.vendeurArchive) return { etape: 'retire', archive: false, raison: `Suspendu dans ImmoFacile, ${echu ? 'mandat échu' : 'vendeur archivé dans le CRM'} : retiré de la vente.` };
+      if (echu || o.vendeurArchive) return { etape: 'retire', archive: false, raison: `Suspendu dans ImmoFacile, ${echu ? 'mandat échu' : 'mandant archivé dans le CRM'} : retiré de la vente.` };
       return { etape: 'suspendu', archive: false, raison: 'Suspendu dans ImmoFacile, mandat encore valable : en pause.' };
     case 5: return { etape: 'offre', archive: false, raison: 'Sous offre dans ImmoFacile.' };
-    case 7: return { etape: 'compromis', archive: false, raison: 'Sous compromis dans ImmoFacile.' };
+    case 7: return { etape: 'compromis', archive: false, raison: 'En signature dans ImmoFacile.' };
     case 8: return { etape: 'vendu', archive: false, raison: 'Vendu dans ImmoFacile.' };
     case 10: return { etape: 'retire', archive: true, raison: 'Archivé dans ImmoFacile : retiré de la vente, et rangé dans les archives.' };
     default: return { etape: 'estimation', archive: false, raison: 'Statut d’ImmoFacile inconnu.' };
@@ -651,7 +651,7 @@ export function planifierBien(b: BienIF, o: { idx: IndexCRM; aujourdhui: string 
   const annonceType = estAnnonceType(vendeur);
   const trouve = annonceType ? null : trouverVendeur(vendeur, o.idx);
   if (vendeur && !annonceType) {
-    if (vendeur.commentaires) garde('Commentaires sur le vendeur', vendeur.commentaires);
+    if (vendeur.commentaires) garde('Commentaires sur le mandant', vendeur.commentaires);
   }
   const proposition = etapeProposee({
     statut, annonceType, mandat: !!(num || mDate), echeance: mFin, vendeurArchive: trouve?.client.archive === true, aujourdhui: o.aujourdhui,

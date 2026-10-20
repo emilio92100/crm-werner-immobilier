@@ -84,7 +84,7 @@ function Demarrage({ onDemarre }: { onDemarre: () => void }) {
         <h2>Ton registre, tenu par le CRM</h2>
         <p>{'Le même registre qu’aujourd’hui, sans rien à recopier : c’est toi qui choisis quand il démarre.'}</p>
         <div className={r.points}>
-          <div className={r.point}><span className={r.pointIc}><Ic n="livre" t={17} /></span><span>{'Chaque mandat prend son numéro ici, dans l’ordre, au moment où il est figé : en finalisant un mandat dans Documents, ou quand un acheteur demande son code pour signer seul dans son espace. Le numéro est sur le mandat avant la signature.'}</span></div>
+          <div className={r.point}><span className={r.pointIc}><Ic n="livre" t={17} /></span><span>{'Chaque mandat prend son numéro ici, dans l’ordre, au moment où il est figé : en finalisant un mandat dans Documents, ou quand un demandeur demande son code pour signer seul dans son espace. Le numéro est sur le mandat avant la signature.'}</span></div>
           <div className={r.point}><span className={r.pointIc}><Ic n="cadenas" t={17} /></span><span>{'Une ligne inscrite ne se modifie plus et ne s’efface plus, même par la base. Ce qui arrive ensuite (signé, sans suite, avenant, fin) s’ajoute en observation.'}</span></div>
           <div className={r.point}><span className={r.pointIc}><Ic n="bouclier" t={17} /></span><span>{'Chaque ligne porte une empreinte liée à la précédente : la moindre retouche se voit. Le 1er de chaque mois, une archive PDF datée part dans ta boîte mail.'}</span></div>
         </div>
@@ -184,7 +184,7 @@ function Prochain({ n }: { n: number }) {
   return (
     <div className={`${r.jalon} ${r.jalonBout}`}>
       <div className={r.jalonG}><span className={`${r.puce} ${r.puceProchain}`}><small>N°</small>{n}</span></div>
-      <div className={r.bout}><b>Prochain numéro</b><span>{'Pris par le prochain mandat finalisé dans Documents, ou signé par un acheteur dans son espace.'}</span></div>
+      <div className={r.bout}><b>Prochain numéro</b><span>{'Pris par le prochain mandat finalisé dans Documents, ou signé par un demandeur dans son espace.'}</span></div>
     </div>
   );
 }
@@ -281,7 +281,7 @@ function FenObserver({ l, onFermer, onFait }: { l: LigneRegistre; onFermer: () =
     onFait();
   }
   const aide: Partial<Record<TypeObs, string>> = {
-    signe: 'Ex : signé à l’agence le 2 octobre 2026.', sans_suite: 'Ex : le vendeur a renoncé avant de signer.',
+    signe: 'Ex : signé à l’agence le 2 octobre 2026.', sans_suite: 'Ex : le mandant a renoncé avant de signer.',
     retracte: 'Ex : rétractation reçue par lettre recommandée le 9 octobre 2026, dans le délai de 14 jours.',
     fin: 'Ex : résilié par lettre recommandée du 5 novembre 2026, fin le 20 novembre.', vente: 'Ex : acte authentique signé le 12 janvier 2027 chez Me Durand.',
     annule: 'Ex : mandat annulé d’un commun accord le …', delegation: 'Ex : délégué à l’Agence du Parc (SARL Parc Immobilier) le 3 octobre 2026, jusqu’au 3 janvier 2027.',

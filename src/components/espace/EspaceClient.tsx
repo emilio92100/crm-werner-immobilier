@@ -79,7 +79,7 @@ type Bien = {
   suivi?: SuiviClient | null;
 };
 const motVente = (v: NonNullable<Bien['vente']>) => (v.vous ? (v.etat === 'vendu' ? 'Votre achat' : 'Votre compromis')
-  : v.etat === 'vendu' ? 'Vendu' : v.etat === 'retire' ? 'Plus en vente' : v.etat === 'pause' ? 'En pause' : 'Sous compromis');
+  : v.etat === 'vendu' ? 'Vendu' : v.etat === 'retire' ? 'Plus en vente' : v.etat === 'pause' ? 'En pause' : 'En signature');
 /* La phrase de la fiche pour un bien de l'agence qui n'est plus disponible
    (V3.48 : « l'acte » devient la signature chez le notaire ; « retiré » ne
    dit plus qui l'a décidé). */
@@ -88,7 +88,7 @@ const phraseVente = (v: NonNullable<Bien['vente']>) => (v.vous
   : v.etat === 'vendu' ? 'Ce bien a été vendu.'
     : v.etat === 'retire' ? 'Ce bien n’est plus proposé à la vente.'
       : v.etat === 'pause' ? 'La vente de ce bien est en pause pour le moment. Nous vous dirons s’il revient.'
-        : 'Ce bien est sous compromis de vente. Si la vente ne se fait pas, il redeviendra disponible ici.');
+        : 'Ce bien est en signature de vente. Si la vente ne se fait pas, il redeviendra disponible ici.');
 /* Où en est son offre (V3.48). Avant, la fiche disait « Offre envoyée » pour
    toujours, même acceptée, refusée ou après le compromis. */
 /* V3.189 : son offre faite d'ici (ou préparée par Alexandre) a son propre
@@ -111,14 +111,14 @@ function etatOffre(b: Bien): { etiq: string; ton: string; ligne: string; fini?: 
   const o = b.offre;
   if (!o && b.avis !== 'offre_faite') return null;
   const st = o?.statut || 'en_attente';
-  if (st === 'acceptee') return { etiq: 'Offre acceptée', ton: 'fait', ligne: 'Le vendeur a accepté votre offre. Prochaine étape : le compromis chez le notaire ; votre conseiller organise la suite avec vous.' };
+  if (st === 'acceptee') return { etiq: 'Offre acceptée', ton: 'fait', ligne: 'Le mandant a accepté votre offre. Prochaine étape : le compromis chez le notaire ; votre conseiller organise la suite avec vous.' };
   /* V3.190 : une contre-proposition notée par son conseiller (offre faite avec lui, hors de son espace). */
-  if (st === 'contre') return { etiq: 'Réponse du vendeur', ton: 'visite', ligne: 'Le vendeur a répondu à votre offre par une proposition. Votre conseiller en parle avec vous.' };
-  if (st === 'refusee') return { etiq: 'Offre non retenue', ton: 'non', fini: true, ligne: 'Le vendeur n’a pas retenu votre offre. Votre conseiller en parle avec vous.' };
+  if (st === 'contre') return { etiq: 'Réponse du mandant', ton: 'visite', ligne: 'Le mandant a répondu à votre offre par une proposition. Votre conseiller en parle avec vous.' };
+  if (st === 'refusee') return { etiq: 'Offre non retenue', ton: 'non', fini: true, ligne: 'Le mandant n’a pas retenu votre offre. Votre conseiller en parle avec vous.' };
   if (st === 'retiree') return o?.tombe
     ? { etiq: 'Vente non conclue', ton: 'non', fini: true, ligne: 'La vente ne s’est finalement pas faite. Votre conseiller fait le point avec vous.' }
     : { etiq: 'Offre retirée', ton: 'non', fini: true, ligne: 'Votre offre a été retirée.' };
-  return { etiq: 'Offre envoyée', ton: 'fait', ligne: 'Votre offre est chez le vendeur. Votre conseiller vous prévient dès sa réponse.' };
+  return { etiq: 'Offre envoyée', ton: 'fait', ligne: 'Votre offre est chez le mandant. Votre conseiller vous prévient dès sa réponse.' };
 }
 /* Un bien de l'agence qu'il ne peut plus visiter ni acheter (vendu à un
    autre, retiré, sous compromis, en pause). */
@@ -502,7 +502,7 @@ const GROUPES: { id: string; e: string; court: string; titre: string; ton: strin
   /* V3.47 : les biens de l'agence vendus ou sous compromis. Celui qu'il
      achète passe en tête, les autres à la fin : ils ne demandent plus rien. */
   { id: 'plus_dispo', e: '🔒', court: 'Plus disponibles', titre: 'Plus disponibles', ton: 'c-net',
-    note: 'Sous compromis, vendus, retirés de la vente ou en pause. Vos retours comptent toujours : ils affinent la suite de la recherche.' },
+    note: 'En signature, vendus, retirés de la vente ou en pause. Vos retours comptent toujours : ils affinent la suite de la recherche.' },
 ];
 GROUPES.unshift({ id: 'votre_achat', e: '🔑', court: 'Votre achat', titre: 'Votre achat', ton: 'c-or',
   note: 'Le bien que vous achetez. Votre conseiller vous accompagne jusqu’à la signature définitive chez le notaire.' });
@@ -3707,7 +3707,7 @@ function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
 
   return (
     <Vue icone="cible" titre="Rappel de ma recherche" aller={aller}
-      sous="Ce qu'Werner a noté de votre projet, catégorie par catégorie. Vous pouvez le faire évoluer vous-même à tout moment.">
+      sous="Ce que Werner a noté de votre projet, catégorie par catégorie. Vous pouvez le faire évoluer vous-même à tout moment.">
 
       {/* 0 — Le rappel en une phrase, avant le détail catégorie par catégorie. */}
       <div className="resume-r">
@@ -3778,7 +3778,7 @@ function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
           <div className="dpe-r">{LETTRES_DPE.map((d, i) => (
             <span key={d} className={'dpe-l' + (i <= iDpe ? ' ok' : '') + (d === crit.dpeMax ? ' pt' : '')}>{d}</span>
           ))}</div>
-          <div className="note-cat">Vous gardez <b>{LETTRES_DPE.slice(0, iDpe + 1).join(' ')}</b>{iDpe < 6 ? <> — les logements classés {LETTRES_DPE.slice(iDpe + 1).join(' ')} sont écartés.</> : '.'}</div>
+          <div className="note-cat">Vous gardez <b>{LETTRES_DPE.slice(0, iDpe + 1).join(' ')}</b>{iDpe < 6 ? <> — les locaux classés {LETTRES_DPE.slice(iDpe + 1).join(' ')} sont écartés.</> : '.'}</div>
         </CatE>
       ) : null}
 
@@ -4159,7 +4159,7 @@ const QUESTION_VISITE: Record<Issue, { t: string; p: string; ph: string; btn: st
   reflexion: {
     t: 'Qu’est-ce qui vous fait hésiter ?',
     p: 'Une ou plusieurs raisons. Votre conseiller fait le point avec vous dans les prochains jours.',
-    ph: 'Ex : j’aimerais savoir si le vendeur accepterait une négociation…',
+    ph: 'Ex : j’aimerais savoir si le mandant accepterait une négociation…',
     btn: 'Envoyer',
     ok: 'Votre conseiller fait le point avec vous dans les prochains jours.',
   },
@@ -4450,7 +4450,7 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir
   type Onglet = 'tout' | 'offres' | 'avis' | 'encours' | 'non';
   const [onglet, setOnglet] = useState<Onglet>('tout');
   const RANGS: { k: Onglet; l: string; l2: L; ton: string; note: string }[] = [
-    { k: 'offres', l: 'Vos offres', l2: offres, ton: 'vert', note: 'Où en est chacune, et ce que le vendeur a répondu.' },
+    { k: 'offres', l: 'Vos offres', l2: offres, ton: 'vert', note: 'Où en est chacune, et ce que le mandant a répondu.' },
     { k: 'avis', l: 'Votre avis', l2: avis, ton: 'or', note: 'Un geste suffit : c’est ce qui décide de la suite.' },
     { k: 'encours', l: 'En cours', l2: retenus, ton: 'bleu', note: 'Ceux que vous gardez en tête, et où on en est.' },
     { k: 'non', l: 'Pas pour moi', l2: non, ton: 'brique', note: noteNon },
@@ -7224,7 +7224,7 @@ input, textarea, select{font-family:inherit}
   font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:14px; color:#232528}
 .dpe .t{font-size:10.5px; letter-spacing:.9px; text-transform:uppercase; color:var(--plume-clair); font-weight:800}
 /* Ce que le bien comprend : une carte par équipement, avec son icône. C'est
-   ce que l'acquéreur cherche des yeux en premier — ça mérite de la place. */
+   ce que le demandeur cherche des yeux en premier — ça mérite de la place. */
 .incl{display:grid; grid-template-columns:repeat(auto-fit,minmax(152px,1fr)); gap:9px; margin-top:10px}
 .incl .ic{display:flex; align-items:center; gap:11px; background:var(--carte);
   border:1px solid var(--trait); border-radius:15px; padding:11px 13px}
@@ -7334,7 +7334,7 @@ input, textarea, select{font-family:inherit}
    Ces deux-là n'ont pas d'etat « selectionne » sur lequel accrocher une
    animation : un onglet filtre une liste, un bouton de la barre ouvre
    aussitot le panneau. Le retour se joue donc a l'appui, et il doit etre
-   plus marque que le discret scale(.95) d'origine — c'est ce qu'Werner
+   plus marque que le discret scale(.95) d'origine — c'est ce que Werner
    ne voyait pas. */
 .fc{transition:background .18s, color .18s, transform .16s cubic-bezier(.34,1.56,.64,1)}
 .fc:active{transform:scale(.9)}

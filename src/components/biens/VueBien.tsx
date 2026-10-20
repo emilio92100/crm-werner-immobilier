@@ -136,7 +136,7 @@ export function CartePourLaVisite({ occupation, dispo, codes, contact, infos, en
         Pour la visite
         <button type="button" className={v.kpiModif} onClick={onModifier}>{vide ? 'Les noter' : 'Modifier'}</button>
       </div>
-      {vide ? <span className={v.kpiSousGris}>Occupé ou libre, clés, codes, contact sur place : à noter dès maintenant, pour ta visite puis celles des acheteurs.</span> : (
+      {vide ? <span className={v.kpiSousGris}>Occupé ou libre, clés, codes, contact sur place : à noter dès maintenant, pour ta visite puis celles des demandeurs.</span> : (
         <>
           {(occupation || dispo) && (
             <div className={v.pvEtat}>
@@ -233,7 +233,7 @@ export function BlocProchaines({ items, onVoir, onAjouter, onFiche }: {
         <h3>Les prochaines visites</h3>
         {onAjouter && <button type="button" className={v.lien} onClick={onAjouter}>+ Visite</button>}
       </div>
-      {items.length === 0 ? <div className={v.vide}>Aucune visite prévue. « + Visite » : un acheteur suivi, ou quelqu’un hors du CRM.</div> : items.map((x, i) => {
+      {items.length === 0 ? <div className={v.vide}>Aucune visite prévue. « + Visite » : un demandeur suivi, ou quelqu’un hors du CRM.</div> : items.map((x, i) => {
         const d = new Date(`${x.ymd}T12:00:00`);
         const jour = isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '').toUpperCase();
         return (

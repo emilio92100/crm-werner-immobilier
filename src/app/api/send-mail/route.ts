@@ -311,7 +311,7 @@ ${LIEN_POLICE_MAIL}
       <!-- Sous la feuille, en gris sur gris : la sortie.
            Elle a sa place dans chaque envoi — un client qui a trouvé ailleurs
            et qui continue de recevoir des biens finit par ne plus ouvrir du
-           tout. Mieux vaut qu'il le dise, et qu'Werner l'apprenne. -->
+           tout. Mieux vaut qu'il le dise, et que Werner l'apprenne. -->
       <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
         <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
           <div style="font-size:11.5px;color:#aba7a3;line-height:1.7;">

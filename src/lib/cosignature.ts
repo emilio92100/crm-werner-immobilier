@@ -114,13 +114,13 @@ export function mailInvitation(o: { co: Mandant; premier: Mandant; premierLe: st
     ? `${pn} a signé votre mandat de recherche${signeLe}, et il ne manque plus que votre signature. C'est notre dernier rappel : votre lien de signature est valable ${encore.replace(/’/g, "'")}. Passé cette date, il ne fonctionnera plus.`
     : o.rappel
     ? `${pn} a signé votre mandat de recherche${signeLe}. Il ne manque plus que votre signature pour qu'il soit complet.`
-    : `${pn} a signé aujourd'hui le mandat de recherche qu'${il} confie à Werner, d'Werner Immobilier, pour votre projet d'achat. ${Il} vous a ${indiquee} comme co-acquéreur : le mandat sera complet avec votre signature.`;
+    : `${pn} a signé aujourd'hui le mandat de recherche qu'${il} confie à Werner Immobilier, pour votre projet d'achat. ${Il} vous a ${indiquee} comme co-demandeur : le mandat sera complet avec votre signature.`;
   const intro = o.rappel === 2
     ? `<p>${echappe(pn)} a signé votre mandat de recherche${echappe(signeLe)}, et il ne manque plus que votre signature.</p>
       <p>C’est notre <b>dernier rappel</b> : votre lien de signature est valable <b>${echappe(encore)}</b>. Passé cette date, il ne fonctionnera plus.</p>`
     : o.rappel
     ? `<p>${echappe(pn)} a signé votre mandat de recherche${echappe(signeLe)}. Il ne manque plus que votre signature pour qu’il soit complet.</p>`
-    : `<p><b>${echappe(pn)}</b> a signé aujourd’hui le mandat de recherche qu’${il} confie à Werner, d’Werner Immobilier, pour votre projet d’achat. ${Il} vous a ${indiquee} comme co-acquéreur : le mandat sera complet avec votre signature.</p>`;
+    : `<p><b>${echappe(pn)}</b> a signé aujourd’hui le mandat de recherche qu’${il} confie à Werner, d’Werner Immobilier, pour votre projet d’achat. ${Il} vous a ${indiquee} comme co-demandeur : le mandat sera complet avec votre signature.</p>`;
   /* Au dernier rappel, la date est déjà dite plus haut. */
   const valable = o.rappel === 2 ? '' : ` et valable jusqu’au ${fin}`;
   return {

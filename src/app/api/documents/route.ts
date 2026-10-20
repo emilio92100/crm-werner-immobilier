@@ -390,7 +390,7 @@ async function traiterPost(req: NextRequest) {
       const etat = etatDeOffre(doc);
       const agence = estAgence(doc.donnees);
       if (etat === 'remplacee' || etat === 'annulee') return ko('Cette offre a été remplacée par une plus récente : réponds sur celle-ci.', 409);
-      if (action === 'reponse' && agence) return ko('Sur un bien de ton mandat, la réponse du vendeur se note sur la fiche du bien : l’acheteur est prévenu de la même façon.', 409);
+      if (action === 'reponse' && agence) return ko('Sur un bien de ton mandat, la réponse du mandant se note sur la fiche du bien : l’demandeur est prévenu de la même façon.', 409);
       if (action === 'sans_suite') {
         if (lireSuivi(doc.donnees).reponse?.statut === 'acceptee') return ko(agence ? 'Cette offre est acceptée : pour l’arrêter, passe par la fiche du bien.' : 'Cette offre est acceptée : pour l’arrêter, passe par l’onglet Transaction.', 409);
         if (doc.statut === 'pret' && doc.signature) return ko('Cette offre est en signature : arrête d’abord sa signature dans Documents, puis note-la sans suite.', 409);
@@ -398,12 +398,12 @@ async function traiterPost(req: NextRequest) {
         if (pb) return ko(`Pas enregistré : ${pb}`, 500);
         return NextResponse.json({ ok: true, row: await lireOffre(sb, id) });
       }
-      if (doc.statut !== 'signe') return ko('L’offre n’est pas encore signée : la réponse du vendeur se note une fois l’offre signée et envoyée.', 409);
+      if (doc.statut !== 'signe') return ko('L’offre n’est pas encore signée : la réponse du mandant se note une fois l’offre signée et envoyée.', 409);
       if (lireSuivi(doc.donnees).close?.par === 'client') return ko('Le client n’a pas donné suite à cette offre, depuis son espace : appelle-le avant de noter une réponse.', 409);
       const statut = body.statut === 'acceptee' || body.statut === 'refusee' || body.statut === 'contre' ? body.statut : null;
       if (!statut) return ko('Réponse inconnue');
       const montant = Math.round(Number(body.montant));
-      if (statut === 'contre' && !(Number.isFinite(montant) && montant >= 10_000 && montant <= 100_000_000)) return ko('Le prix de la contre-proposition, pour le vendeur.');
+      if (statut === 'contre' && !(Number.isFinite(montant) && montant >= 10_000 && montant <= 100_000_000)) return ko('Le prix de la contre-proposition, pour le mandant.');
       const limite = typeof body.limite === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.limite) ? body.limite : null;
       const note = typeof body.note === 'string' ? body.note.replace(/\s+/g, ' ').trim().slice(0, 500) || null : null;
       let r;

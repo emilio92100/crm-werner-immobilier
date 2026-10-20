@@ -307,7 +307,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
     if (!pret || !choisis.length) return;
     if (mode === 'crm' && client && !rechercheId) { setErreur(`${nomClient(client)} n’a pas de recherche : note la visite « hors du CRM », ou ouvre-lui une recherche depuis sa fiche.`); return; }
     const secours = choisis.filter(c => c.genre === 'agence' && c.b.etape === 'compromis');
-    if (secours.length && !window.confirm(`${secours.length > 1 ? `${secours.length} de ces biens sont` : `« ${titreBien(secours[0])} » est`} sous compromis : la visite ne sert qu’à une offre de secours.\n\nLa planifier quand même ?`)) return;
+    if (secours.length && !window.confirm(`${secours.length > 1 ? `${secours.length} de ces biens sont` : `« ${titreBien(secours[0])} » est`} en signature : la visite ne sert qu’à une offre de secours.\n\nLa planifier quand même ?`)) return;
     setEnvoi(true); setErreur('');
     /* Une à une, dans l'ordre du programme. Si l'une échoue, celles déjà
        faites sont dites et quittent la liste : « Planifier » ne les
@@ -389,7 +389,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
           <span className={o.teteIc}><Ico n="cal" t={21} /></span>
           <div className={o.teteTx}>
             <h2>Organiser une visite</h2>
-            <p>{'Un acheteur suivi ou quelqu’un hors du CRM, sur un bien de l’agence ou de son dossier.'}</p>
+            <p>{'Un demandeur suivi ou quelqu’un hors du CRM, sur un bien de l’agence ou de son dossier.'}</p>
           </div>
           <button type="button" className={o.fermer} onClick={fermer} aria-label="Fermer" disabled={envoi && !fini}><Ico n="croix" t={16} /></button>
         </header>
@@ -409,7 +409,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
             <Etape n={1} titre="Qui visite ?" fait={quiOk}>
               <div className={o.bascule} role="radiogroup" aria-label="Qui visite">
                 <span className={o.curseur} data-cote={mode} aria-hidden="true" />
-                <button type="button" role="radio" aria-checked={mode === 'crm'} onClick={() => changerMode('crm')}>Un acheteur suivi</button>
+                <button type="button" role="radio" aria-checked={mode === 'crm'} onClick={() => changerMode('crm')}>Un demandeur suivi</button>
                 <button type="button" role="radio" aria-checked={mode === 'libre'} onClick={() => changerMode('libre')}>Hors du CRM</button>
               </div>
 
@@ -494,7 +494,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
                     <div className={o.info}><Ico n="info" t={15} /><span>{`${avant.length > 1 ? `${avant.length} de ces biens ne sont` : `« ${titreBien(avant[0])} » n’est`} pas encore sous mandat : la visite se planifie quand même.${mode === 'crm' ? ' Dans son espace, le bien apparaît sans prix.' : ''}`}</span></div>
                   )}
                   {secours.length > 0 && (
-                    <div className={`${o.info} ${o.infoOr}`}><Ico n="info" t={15} /><span>{`${secours.length > 1 ? `${secours.length} de ces biens sont` : `« ${titreBien(secours[0])} » est`} sous compromis : une visite ne sert plus qu’à une offre de secours.`}</span></div>
+                    <div className={`${o.info} ${o.infoOr}`}><Ico n="info" t={15} /><span>{`${secours.length > 1 ? `${secours.length} de ces biens sont` : `« ${titreBien(secours[0])} » est`} en signature : une visite ne sert plus qu’à une offre de secours.`}</span></div>
                   )}
                 </>;
               })()}

@@ -137,7 +137,7 @@ export function OngletVisitesOffres({ visites, offres, prix, compromis, onVisite
         <div className={x.teteHaut}>
           <div className={x.teteTx}>
             <h2>Visites et offres</h2>
-            <p>Chaque visite, son compte rendu, puis les offres et la réponse du vendeur : tout ce qui mène au compromis.</p>
+            <p>Chaque visite, son compte rendu, puis les offres et la réponse du mandant : tout ce qui mène au compromis.</p>
           </div>
           {(onVisite || onOffre) && (
             <div className={x.gestes}>
@@ -165,9 +165,9 @@ export function OngletVisitesOffres({ visites, offres, prix, compromis, onVisite
           <div className={x.blocT}><h3>Comment ça se passe</h3></div>
           <div className={x.chemin}>
             {[
-              { ic: 'calendrier', t: 'Organiser une visite', p: 'Avec un acheteur suivi : elle va dans son dossier et dans l’agenda. Ou avec quelqu’un hors du CRM.' },
+              { ic: 'calendrier', t: 'Organiser une visite', p: 'Avec un demandeur suivi : elle va dans son dossier et dans l’agenda. Ou avec quelqu’un hors du CRM.' },
               { ic: 'bulle', t: 'Le compte rendu', p: 'Après la visite : ce qu’il en a pensé, ses étoiles, et la suite — il veut faire une offre, revoir le bien, il réfléchit.' },
-              { ic: 'euro', t: 'L’offre, puis la réponse', p: 'Le montant, le financement, le délai. Le vendeur accepte, refuse ou fait une contre-offre ; acceptée, on va vers le compromis.' },
+              { ic: 'euro', t: 'L’offre, puis la réponse', p: 'Le montant, le financement, le délai. Le mandant accepte, refuse ou fait une contre-offre ; acceptée, on va vers le compromis.' },
             ].map((e, i) => (
               <div key={e.t} className={x.etape}>
                 <span className={x.etapeN}>{i + 1}</span>
@@ -225,7 +225,7 @@ export function OngletVisitesOffres({ visites, offres, prix, compromis, onVisite
         <section className={x.bloc}>
           <Rubrique titre={vente.length && !aFaireO.length ? 'La vente' : vente.length ? 'La vente et les offres' : aFaireO.length > 1 ? 'Les offres en cours' : 'L’offre en cours'}
             n={vente.length + aFaireO.length} ouvert={ouvert('offres')} onClick={() => basculer('offres')}
-            resume={[enCours.length ? `${enCours.length} en attente de réponse` : '', meilleure ? `la meilleure : ${euros(meilleure)}` : '', accepteeSansCompromis.length ? 'une offre acceptée' : '', vente.length ? (vente.some(o => actions.get(o.id)?.compromis?.venduLe) ? 'vendu' : 'sous compromis') : ''].filter(Boolean).join(' · ')} />
+            resume={[enCours.length ? `${enCours.length} en attente de réponse` : '', meilleure ? `la meilleure : ${euros(meilleure)}` : '', accepteeSansCompromis.length ? 'une offre acceptée' : '', vente.length ? (vente.some(o => actions.get(o.id)?.compromis?.venduLe) ? 'vendu' : 'en signature') : ''].filter(Boolean).join(' · ')} />
           <Depliant ouvert={ouvert('offres')} ecart={10}>
             <div className={x.offres}>
               {[...vente, ...aFaireO].map(o => (
@@ -278,7 +278,7 @@ function LigneVisite({ v, a }: { v: VisiteCarte; a: ActionsVisite | null }) {
           {v.heure && !annulee && <span className={x.heure}>{v.heure.slice(0, 5).replace(':', ' h ')}</span>}
           {iss && <span className={x.puce} style={{ background: iss.fond, color: iss.couleur }}>{iss.crm}</span>}
           {!!v.etoiles && <span className={x.etoiles} aria-label={`${v.etoiles} étoiles sur 5`}>{'★'.repeat(v.etoiles)}{'☆'.repeat(Math.max(0, 5 - v.etoiles))}</span>}
-          <span className={x.source}>{v.source === 'crm' ? 'Acheteur suivi' : 'Hors CRM'}</span>
+          <span className={x.source}>{v.source === 'crm' ? 'Demandeur suivi' : 'Hors CRM'}</span>
         </div>
         {v.commentaire && <p className={x.citation}>{`« ${v.commentaire} »`}</p>}
         {a && !annulee && (
@@ -318,7 +318,7 @@ function LigneOffre({ o, prix, a }: { o: SuiviVente; prix: number | null; a: Act
           <span className={x.puce} style={{ background: p.fond, color: p.c }}>{p.l}</span>
           {ecart !== null && <span className={x.ecart}>{Math.abs(ecart) < 0.05 ? 'au prix' : ecart < 0 ? `${pct(ecart).replace('-', '−')} du prix` : `+${pct(ecart)}`}</span>}
         </div>
-        <p className={x.qui}>{[o.qui || 'Un acquéreur', fin, typeof d.conditions === 'string' ? d.conditions : '', `reçue le ${dateAn(o.le)}`, reponse && st !== 'en_attente' ? `réponse le ${reponse}` : ''].filter(Boolean).join(' · ')}</p>
+        <p className={x.qui}>{[o.qui || 'Un demandeur', fin, typeof d.conditions === 'string' ? d.conditions : '', `reçue le ${dateAn(o.le)}`, reponse && st !== 'en_attente' ? `réponse le ${reponse}` : ''].filter(Boolean).join(' · ')}</p>
         {negociation && <p className={x.qui}>{negociation}</p>}
         {o.commentaire && <p className={x.citation}>{o.commentaire}</p>}
         {(a.doc || a.onPiece || st !== 'acceptee') && (

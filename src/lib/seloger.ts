@@ -352,7 +352,7 @@ export function lotSeLoger(biens: BienVente[], gps?: Map<string, { lat: number; 
       if (trous.length) out.avertissements.push(`${nom} : DPE incomplet (il manque ${trous.join(', ')}) : envoyé à SeLoger comme « non communiqué »`);
     }
     const fee = ((dt.prices as Json)?.brokerageFee || {}) as Json;
-    if (fee.feeFor === 'BUYER_OR_TENANT' && !fee.feePercentage) out.avertissements.push(`${nom} : honoraires à la charge de l’acquéreur, sans taux ni montant (à préciser dans la fiche)`);
+    if (fee.feeFor === 'BUYER_OR_TENANT' && !fee.feePercentage) out.avertissements.push(`${nom} : honoraires à la charge du demandeur, sans taux ni montant (à préciser dans la fiche)`);
     vus.add(id);
     out.annonces.push({ bienId: b.id, reference: b.reference, id, portails, annonce });
   }

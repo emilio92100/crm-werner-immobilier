@@ -13,17 +13,18 @@
 export type TypeContact = 'acheteur' | 'vendeur' | 'vendeur_signe' | 'proprietaire' | 'notaire' | 'confrere' | 'gardien' | 'partenaire';
 
 export const TYPES_CONTACT: { k: TypeContact; lib: string; pluriel: string; ic: string; c: string; fond: string; aide: string }[] = [
-  { k: 'acheteur', lib: 'Acheteur', pluriel: 'Acheteurs', ic: 'cible', c: '#0f7a4f', fond: '#ecfdf5', aide: 'Il cherche à acheter : sa recherche, son espace, la veille.' },
-  { k: 'vendeur', lib: 'Vendeur', pluriel: 'Vendeurs', ic: 'etiquette', c: '#c2621c', fond: '#fbf0e9', aide: 'Son bien est en vente avec nous : mandat, sous offre ou sous compromis.' },
-  /* V3.47 : sa vente est signée chez le notaire. Il quitte les vendeurs en
-     cours, sans être archivé : un ancien client, une recommandation, un
-     prochain projet. Proposé dans « La vente est signée ». */
-  { k: 'vendeur_signe', lib: 'Vendeur signé', pluriel: 'Vendeurs signés', ic: 'check', c: '#15803d', fond: '#f0fdf4', aide: 'Sa vente est signée : un ancien client, pour une recommandation ou un prochain projet.' },
-  { k: 'proprietaire', lib: 'Propriétaire', pluriel: 'Propriétaires', ic: 'cle', c: '#c05d12', fond: '#fff7ed', aide: 'Il possède un bien qui n’est pas en vente : à suivre, en estimation, ou rien encore. Un vendeur de demain.' },
-  { k: 'notaire', lib: 'Notaire', pluriel: 'Notaires', ic: 'balance', c: '#2e3034', fond: '#f4f3f2', aide: 'Son étude, son clerc : pour les compromis et les actes.' },
-  { k: 'confrere', lib: 'Confrère ou agence', pluriel: 'Confrères', ic: 'agence', c: '#7c3aed', fond: '#f5f3ff', aide: 'Un agent, un mandataire, une agence : pour les biens partagés.' },
-  { k: 'gardien', lib: 'Gardien', pluriel: 'Gardiens', ic: 'immeuble', c: '#0e7490', fond: '#ecfeff', aide: 'Le gardien d’un immeuble : ses horaires, les clés, les infos.' },
-  { k: 'partenaire', lib: 'Partenaire', pluriel: 'Partenaires', ic: 'outil', c: '#475569', fond: '#f1f5f9', aide: 'Courtier, diagnostiqueur, artisan, syndic, avocat…' },
+  /* Werner : les clés internes restent celles du CRM d'origine (la base et
+     ses déclencheurs les connaissent) ; seuls les mots changent. */
+  { k: 'acheteur', lib: 'Demandeur', pluriel: 'Demandeurs', ic: 'cible', c: '#0f7a4f', fond: '#ecfdf5', aide: 'Il cherche un local : à louer, un droit au bail, un fonds ou des murs à acheter. Sa recherche, son espace, la veille.' },
+  { k: 'vendeur', lib: 'Bailleur, cédant', pluriel: 'Bailleurs et cédants', ic: 'etiquette', c: '#c2621c', fond: '#fbf0e9', aide: 'Son local, son fonds ou ses murs sont confiés à l’agence : mandat en cours, sous offre ou en signature.' },
+  /* Son affaire est signée (bail, cession, vente) : il quitte les mandants
+     en cours, sans être archivé. Proposé quand l'affaire est conclue. */
+  { k: 'vendeur_signe', lib: 'Ancien mandant', pluriel: 'Anciens mandants', ic: 'check', c: '#15803d', fond: '#f0fdf4', aide: 'Son affaire est signée : un ancien client, pour une recommandation ou une prochaine affaire.' },
+  { k: 'proprietaire', lib: 'Propriétaire', pluriel: 'Propriétaires', ic: 'cle', c: '#c05d12', fond: '#fff7ed', aide: 'Il possède un local, des murs ou un fonds qui ne sont pas encore confiés : à suivre, en estimation. Un mandant de demain.' },
+  { k: 'notaire', lib: 'Notaire, avocat', pluriel: 'Notaires et avocats', ic: 'balance', c: '#2e3034', fond: '#f4f3f2', aide: 'Son étude, son cabinet : pour les baux, les cessions et les actes.' },
+  { k: 'confrere', lib: 'Confrère ou agence', pluriel: 'Confrères', ic: 'agence', c: '#7c3aed', fond: '#f5f3ff', aide: 'Un agent, un cabinet, un réseau : pour les affaires partagées.' },
+  { k: 'gardien', lib: 'Gardien, gestionnaire', pluriel: 'Gardiens et gestionnaires', ic: 'immeuble', c: '#0e7490', fond: '#ecfeff', aide: 'Le gardien ou le gestionnaire d’un immeuble : ses horaires, les clés, les accès.' },
+  { k: 'partenaire', lib: 'Partenaire', pluriel: 'Partenaires', ic: 'outil', c: '#475569', fond: '#f1f5f9', aide: 'Expert-comptable, banquier, architecte, diagnostiqueur, apporteur d’affaires…' },
 ];
 export const typeDe = (k: string) => TYPES_CONTACT.find(t => t.k === k) || TYPES_CONTACT[0];
 
@@ -124,11 +125,15 @@ export type Juridique = {
 export type Associe = { id: string; nom: string; role: string; tel: string; email: string };
 export type Structure = {
   denomination: string; forme: string; rcs: string; siege: string;
-  /* Son rôle à lui : gérant, associé, interlocuteur pour la vente… */
+  /* Son rôle à lui : gérant, associé, directeur immobilier… */
   qualite: string; associes: Associe[];
+  /* Werner : ce qu'un contact d'entreprise porte d'abord. L'enseigne (le nom
+     sur la vitrine, pas toujours celui de la société), l'activité (ce qui
+     décide où elle peut s'installer), le SIREN. */
+  enseigne?: string; activite?: string; siren?: string;
 };
-export const FORMES_SOCIETE = ['SCI', 'SARL', 'SAS', 'SA', 'SNC', 'Autre'];
-export const ROLES_SOCIETE = ['Gérant', 'Gérante', 'Associé', 'Associée', 'Président', 'Mandataire'];
+export const FORMES_SOCIETE = ['SAS', 'SASU', 'SARL', 'EURL', 'SCI', 'SA', 'Entreprise individuelle', 'Association', 'Autre'];
+export const ROLES_SOCIETE = ['Gérant', 'Gérante', 'Président', 'Présidente', 'Directeur général', 'Directeur immobilier', 'Associé', 'Associée', 'Mandataire'];
 export function lireStructure(x: unknown): Structure | null {
   if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
   const o = x as Record<string, unknown>;
@@ -138,8 +143,9 @@ export function lireStructure(x: unknown): Structure | null {
     const u = (k: string) => (typeof y[k] === 'string' ? String(y[k]) : '');
     return { id: u('id') || `a${i}`, nom: u('nom'), role: u('role'), tel: u('tel'), email: u('email') };
   }).filter(a => a.nom || a.tel || a.email);
-  const s = { denomination: t('denomination'), forme: t('forme'), rcs: t('rcs'), siege: t('siege'), qualite: t('qualite'), associes };
-  return s.denomination || s.associes.length ? s : null;
+  const s = { denomination: t('denomination'), forme: t('forme'), rcs: t('rcs'), siege: t('siege'), qualite: t('qualite'), associes,
+    ...(t('enseigne') ? { enseigne: t('enseigne') } : {}), ...(t('activite') ? { activite: t('activite') } : {}), ...(t('siren') ? { siren: t('siren') } : {}) };
+  return s.denomination || s.enseigne || s.associes.length ? s : null;
 }
 export type InfosPro = {
   agence?: string; statutPro?: 'salarie' | 'mandataire' | 'independant' | ''; reseau?: string; adresseAgence?: string; siteWeb?: string;
@@ -158,14 +164,15 @@ export function structurePropre(p: InfosPro): InfosPro {
   const st = lireStructure(p.structure);
   const { structure: _, ...reste } = p;
   void _;
-  return st ? { ...reste, structure: { ...st, denomination: st.denomination.trim(), qualite: st.qualite.trim() } } : reste;
+  return st ? { ...reste, structure: { ...st, denomination: st.denomination.trim(), qualite: st.qualite.trim(),
+    ...(st.enseigne ? { enseigne: st.enseigne.trim() } : {}), ...(st.activite ? { activite: st.activite.trim() } : {}), ...(st.siren ? { siren: st.siren.replace(/\s+/g, ' ').trim() } : {}) } } : reste;
 }
 export const STATUTS_PRO: { v: 'salarie' | 'mandataire' | 'independant'; l: string; aide: string }[] = [
-  { v: 'salarie', l: 'Salarié d’une agence', aide: 'Il travaille pour une agence' },
-  { v: 'mandataire', l: 'Mandataire', aide: 'Réseau : IAD, SAFTI, Capifrance…' },
+  { v: 'salarie', l: 'Salarié d’un cabinet', aide: 'Un conseil, une agence, un réseau d’entreprise' },
+  { v: 'mandataire', l: 'Agent commercial', aide: 'Sous la carte d’une agence' },
   { v: 'independant', l: 'À son compte', aide: 'Son agence, sa carte' },
 ];
-export const METIERS = ['Courtier', 'Diagnostiqueur', 'Artisan', 'Architecte', 'Syndic', 'Avocat', 'Banquier', 'Déménageur'];
+export const METIERS = ['Expert-comptable', 'Avocat', 'Banquier', 'Architecte', 'Diagnostiqueur', 'Géomètre', 'Entreprise de travaux', 'Apporteur d’affaires', 'Syndic, gestionnaire', 'Assureur'];
 
 /* La ligne qui dit qui c'est, sous le nom : « Mandataire IAD · Agence du
    Parc », « Étude Durand · Boulogne », « Gardien · 12 rue de Silly ». */
@@ -179,9 +186,12 @@ export function ligneContact(c: AvecTypes & { adresse?: string | null }): string
   if (t.includes('notaire')) return [p.etude || 'Notaire', villeDe(p.adresseEtude)].filter(Boolean).join(' · ');
   if (t.includes('gardien')) return [`Gardien${p.immeuble ? ` · ${p.immeuble}` : ''}`, p.horaires].filter(Boolean).join(' · ');
   if (t.includes('partenaire')) return [p.metier || 'Partenaire', p.societe].filter(Boolean).join(' · ');
-  /* Un vendeur qui représente une société : « Associée · SCI AVIENA » (V3.30). */
+  /* Un contact qui représente une société : « Présidente · Maison Léa (boulangerie) ». */
   const st = lireStructure(p.structure);
-  if (st?.denomination) return [st.qualite, st.denomination].filter(Boolean).join(' · ');
+  if (st?.denomination || st?.enseigne) {
+    const nom = st.enseigne && st.denomination && st.enseigne.toLowerCase() !== st.denomination.toLowerCase() ? `${st.enseigne} (${st.denomination})` : st.enseigne || st.denomination;
+    return [st.qualite, nom, st.activite].filter(Boolean).join(' · ');
+  }
   return '';
 }
 function villeDe(adr?: string) {
