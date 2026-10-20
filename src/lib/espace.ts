@@ -269,7 +269,7 @@ export function nommerRecherche(r: RechercheEspace, rang: number): string {
 /** « 3 pièces · jusqu'à 720 000 € » — la ligne sous le nom, dans le sélecteur. */
 export function resumerRecherche(r: RechercheEspace): string {
   const bouts: string[] = [];
-  if (r.nb_pieces_min) bouts.push(`${r.nb_pieces_min} pièce${r.nb_pieces_min > 1 ? 's' : ''} et plus`);
+  if (r.nb_pieces_min) bouts.push(`${r.nb_pieces_min} espace${r.nb_pieces_min > 1 ? 's' : ''} et plus`);
   else if (r.surface_min) bouts.push(`à partir de ${r.surface_min} m²`);
   if (r.budget_max) bouts.push(`jusqu'à ${Number(r.budget_max).toLocaleString('fr-FR').replace(/[  ]/g, ' ')} €`);
   const secteurs = (r.secteurs || []) as string[];

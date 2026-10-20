@@ -622,7 +622,7 @@ export async function apresSignature(row: DocumentRow, m: Modele, jour: string):
      Suivi du vendeur (comme la signature en ligne et « Le mandat est signé »). */
   if (row.modele === 'mandat_vente' && row.client_id) {
     const { error: eV } = await supabase.from('journal').insert({
-      client_id: row.client_id, type: 'mandat', titre: `📋 Mandat de vente signé le ${jour.split('-').reverse().join('/')} (papier)`,
+      client_id: row.client_id, type: 'mandat', titre: `📋 Mandat signé le ${jour.split('-').reverse().join('/')} (papier)`,
       description: [row.titre || m.titre, row.numero ? `n° ${row.numero}` : '', row.badge || ''].filter(Boolean).join(' · '),
       metadata: { document_id: row.id, jalon: 'mandat', cote: 'vendeur' },
     });

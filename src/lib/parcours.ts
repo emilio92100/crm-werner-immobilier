@@ -85,18 +85,18 @@ export const ICONES_PARCOURS: Record<string, string> = {
 /* Ce qui n'a pas convenu, rangé par thème (lumière, calme, agencement,
    immeuble, état, autour, prix) : l'icône dit le thème. */
 export const DEFAUTS_PARCOURS: { l: string; ic: string }[] = [
-  { l: 'Trop sombre', ic: 'lune' }, { l: 'Vis-à-vis', ic: 'visavis' }, { l: 'Vue bouchée', ic: 'oeilBarre' }, { l: 'Mauvaise exposition', ic: 'boussole' },
-  { l: 'Bruit de la rue', ic: 'voiture' }, { l: 'Bruit des voisins', ic: 'son' }, { l: 'Rez-de-chaussée', ic: 'rdc' },
-  { l: 'Mauvais agencement', ic: 'plan' }, { l: 'Pièces trop petites', ic: 'reduit' }, { l: 'Petite cuisine', ic: 'casserole' }, { l: 'Peu de rangements', ic: 'boite' },
-  { l: 'Sans ascenseur', ic: 'ascenseur' }, { l: 'Parties communes vétustes', ic: 'escalier' }, { l: 'Charges élevées', ic: 'ticket' },
-  { l: 'Travaux à prévoir', ic: 'marteau' }, { l: 'Salle de bain à refaire', ic: 'bain' }, { l: 'Électricité à revoir', ic: 'eclair' }, { l: 'DPE F ou G', ic: 'thermo' },
-  { l: 'Quartier', ic: 'lieu' }, { l: 'Transports trop loin', ic: 'train' }, { l: 'Écoles trop loin', ic: 'ecole' }, { l: 'Pas de parking', ic: 'parking' }, { l: 'Pas d’extérieur', ic: 'arbre' },
+  { l: 'Trop sombre', ic: 'lune' }, { l: 'Vis-à-vis', ic: 'visavis' }, { l: 'Peu de visibilité', ic: 'oeilBarre' }, { l: 'Mauvais emplacement', ic: 'boussole' },
+  { l: 'Rue peu passante', ic: 'voiture' }, { l: 'Nuisances, voisinage', ic: 'son' }, { l: 'Pas en rez-de-chaussée', ic: 'rdc' },
+  { l: 'Mauvais agencement', ic: 'plan' }, { l: 'Surface trop petite', ic: 'reduit' }, { l: 'Pas d’extraction', ic: 'casserole' }, { l: 'Pas de réserve', ic: 'boite' },
+  { l: 'Sans ascenseur', ic: 'ascenseur' }, { l: 'Immeuble vétuste', ic: 'escalier' }, { l: 'Charges élevées', ic: 'ticket' },
+  { l: 'Travaux à prévoir', ic: 'marteau' }, { l: 'Sanitaires à refaire', ic: 'bain' }, { l: 'Électricité à revoir', ic: 'eclair' }, { l: 'DPE F ou G', ic: 'thermo' },
+  { l: 'Quartier', ic: 'lieu' }, { l: 'Transports trop loin', ic: 'train' }, { l: 'Peu de commerces autour', ic: 'boutique' }, { l: 'Pas de parking', ic: 'parking' }, { l: 'Pas d’extérieur', ic: 'arbre' },
   { l: 'Trop cher pour ce que c’est', ic: 'euro' },
 ];
 export const PLU_PARCOURS: { l: string; ic: string }[] = [
-  { l: 'Lumineux', ic: 'soleil' }, { l: 'Calme', ic: 'feuille' }, { l: 'Traversant', ic: 'traversant' }, { l: 'Vue dégagée', ic: 'oeil' },
-  { l: 'Beaux volumes', ic: 'volume' }, { l: 'Cachet de l’ancien', ic: 'colonnes' }, { l: 'Rénové', ic: 'neuf' }, { l: 'Un extérieur', ic: 'arbre' },
-  { l: 'Étage élevé', ic: 'haut' }, { l: 'Cuisine ouverte', ic: 'casserole' }, { l: 'Proche des transports', ic: 'train' }, { l: 'Quartier vivant', ic: 'boutique' },
+  { l: 'Lumineux', ic: 'soleil' }, { l: 'Calme', ic: 'feuille' }, { l: 'Angle de rue', ic: 'traversant' }, { l: 'Bonne visibilité', ic: 'oeil' },
+  { l: 'Beaux volumes', ic: 'volume' }, { l: 'Cachet de l’ancien', ic: 'colonnes' }, { l: 'Rénové', ic: 'neuf' }, { l: 'Une terrasse', ic: 'arbre' },
+  { l: 'Étage élevé', ic: 'haut' }, { l: 'Extraction en place', ic: 'casserole' }, { l: 'Proche des transports', ic: 'train' }, { l: 'Quartier vivant', ic: 'boutique' },
 ];
 
 /* L'icône d'un libellé (une pastille ajoutée à la main : l'étoile). */

@@ -234,7 +234,7 @@ export default function CompteRenduVisite({ visite, titre, sous, prenom, onFerme
               })}
             </div>
             {issue === 'offre' && visite?.prix_envisage ? (
-              <div style={{ marginTop: 9, fontSize: 13, color: '#a85515', background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 10, padding: '8px 11px' }}>{`Son prix en tête : ${euros(visite.prix_envisage)}. L’offre elle-même se saisit dans l’onglet Transaction.`}</div>
+              <div style={{ marginTop: 9, fontSize: 13, color: '#a85515', background: '#fdf6f1', border: '1px solid #f9caa7', borderRadius: 10, padding: '8px 11px' }}>{`Le montant qu’il a en tête : ${euros(visite.prix_envisage)}. L’offre elle-même se saisit dans l’onglet Transaction.`}</div>
             ) : null}
           </div>
 

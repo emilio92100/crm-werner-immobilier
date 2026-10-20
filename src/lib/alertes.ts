@@ -37,20 +37,20 @@ export type Alerte = {
 export const ALERTES_MAIL: Alerte[] = [
   {
     cle: 'visite', groupe: 'clients', titre: 'Un client veut visiter',
-    objet: '👀 Paul Martin veut visiter · 4 pièces 106 m²…',
+    objet: '👀 Paul Martin veut visiter · Boutique 60 m²…',
     quand: 'Il clique sur « Je veux visiter » depuis son espace. Une seule fois par bien.',
     crm: 'Une relance du jour dans Relances et sur le tableau de bord, et une ligne dans son suivi.',
   },
   {
     cle: 'visite_offre', groupe: 'clients', titre: 'Un client veut faire une offre',
-    objet: '💶 Paul Martin veut faire une offre · 4 pièces 106 m²…',
-    quand: 'Après une visite, il répond « Je veux faire une offre » depuis son espace, avec son prix s’il en a un en tête.',
+    objet: '💶 Paul Martin veut faire une offre · Boutique 60 m²…',
+    quand: 'Après une visite, il répond « Je veux faire une offre » depuis son espace, avec son montant s’il en a un en tête.',
     crm: 'Une relance à l’heure même, en tête de Relances, et l’issue sur la visite (onglet Visites de sa fiche).',
   },
   {
     cle: 'visite_avis', groupe: 'clients', titre: 'Son avis après une visite',
-    objet: '🤔 Paul Martin réfléchit · 4 pièces 106 m²…',
-    quand: 'Après une visite, il répond depuis son espace : il veut revoir le bien, il hésite, ou ce n’est pas pour lui.',
+    objet: '🤔 Paul Martin réfléchit · Boutique 60 m²…',
+    quand: 'Après une visite, il répond depuis son espace : il veut revoir le local, il hésite, ou ce n’est pas pour lui.',
     crm: 'L’issue et ses raisons sur la visite (onglet Visites de sa fiche). Revoir : une relance du jour. Il hésite : une relance à J+3.',
   },
   {
@@ -75,7 +75,7 @@ export const ALERTES_MAIL: Alerte[] = [
   {
     cle: 'mandat_signe', groupe: 'mandats', titre: 'Un mandat signé',
     objet: '✍️ Paul Martin a signé son mandat (n° 4322)',
-    quand: 'Son mandat est signé en ligne. À plusieurs (un couple, des associés), un seul mail, quand le dernier a signé. Le PDF signé est joint au mail.',
+    quand: 'Son mandat est signé en ligne. À plusieurs (des associés), un seul mail, quand le dernier a signé. Le PDF signé est joint au mail.',
     crm: 'Le mandat signé sur sa fiche, avec son PDF, qui a signé et qui on attend, et une ligne dans son suivi.',
     sauf: 'sa copie n’a pas pu lui être envoyée, la fiche n’a pas pu être mise à jour, ou sa recherche dépasse déjà le mandat.',
   },
@@ -95,7 +95,7 @@ export const ALERTES_MAIL: Alerte[] = [
   {
     cle: 'document_signe', groupe: 'mandats', titre: 'Un document signé en ligne par tous',
     objet: '✅ Signé par tous : Mandat simple · SCI Martin (n° 4330)',
-    quand: 'Tout le monde a signé avec son lien un document de la rubrique Documents (mandat de vente, avenant, offre d’achat…) : un seul mail, à la dernière signature, pas un par signataire. Le PDF signé est joint. Rien ne part pour une signature sur place : tu y étais.',
+    quand: 'Tout le monde a signé avec son lien un document de la rubrique Documents (mandat, avenant, offre…) : un seul mail, à la dernière signature, pas un par signataire. Le PDF signé est joint. Rien ne part pour une signature sur place : tu y étais.',
     crm: 'Le document dans Documents, avec qui a signé et qui on attend, et une ligne dans le suivi du client.',
     sauf: 'un signataire n’a pas reçu son exemplaire, ou le document n’a pas pu être mis à jour (même avant la dernière signature).',
   },

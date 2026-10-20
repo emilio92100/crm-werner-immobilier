@@ -48,12 +48,12 @@ export default function SuiteMandatBien({ bien, doc, etaitSigne, supprime, onFer
 
   const options: { v: Choix; ic: string; t: string; x: string }[] = [
     etaitSigne
-      ? { v: 'termine', ic: 'archive', t: 'Le mandat est terminé', x: 'Rétractation, fin du mandat, vendu par un autre : le bien passe « Retiré ». Son historique garde le mandat.' }
-      : { v: 'termine', ic: 'archive', t: 'Le mandant renonce', x: 'Le bien passe « Retiré », gardé dans l’historique.' },
+      ? { v: 'termine', ic: 'archive', t: 'Le mandat est terminé', x: 'Rétractation, fin du mandat, conclue par un autre : l’affaire passe « Retirée ». Son historique garde le mandat.' }
+      : { v: 'termine', ic: 'archive', t: 'Le mandant renonce', x: 'L’affaire passe « Retirée », gardée dans l’historique.' },
     noteSigne
-      ? { v: 'erreur', ic: 'retour', t: 'Il avait été fait par erreur', x: `Un test, le mauvais bien : ${numero ? `le n° ${numero}` : 'le numéro'}, le type et les dates quittent la fiche, et le bien revient à l’estimation.` }
-      : { v: 'erreur', ic: 'retour', t: 'Le bien n’est pas encore en vente', x: 'Aucun mandat signé n’y est noté : il revient à l’estimation, et repassera « En vente » tout seul à la signature du prochain mandat.' },
-    { v: 'rien', ic: 'check', t: 'Ne rien changer', x: `La fiche reste « ${etape} », telle quelle. Tu pourras la changer depuis le bien.` },
+      ? { v: 'erreur', ic: 'retour', t: 'Il avait été fait par erreur', x: `Un test, la mauvaise affaire : ${numero ? `le n° ${numero}` : 'le numéro'}, le type et les dates quittent la fiche, et l’affaire revient à l’estimation.` }
+      : { v: 'erreur', ic: 'retour', t: 'L’affaire n’est pas encore disponible', x: 'Aucun mandat signé n’y est noté : elle revient à l’estimation, et repassera « Disponible » toute seule à la signature du prochain mandat.' },
+    { v: 'rien', ic: 'check', t: 'Ne rien changer', x: `La fiche reste « ${etape} », telle quelle. Tu pourras la changer depuis l’affaire.` },
   ];
 
   async function valider() {
@@ -62,11 +62,11 @@ export default function SuiteMandatBien({ bien, doc, etaitSigne, supprime, onFer
     try {
       if (choix === 'termine') {
         await terminerMandatDuBien(supabase, bien, etaitSigne ? quoi : 'Le mandant renonce');
-        setFait('Le bien est passé « Retiré ». Son historique garde le mandat.');
+        setFait('L’affaire est passée « Retirée ». Son historique garde le mandat.');
       } else {
         const vers = await lireEtapeAvantMandat(supabase, bien.id);
         const r = await retirerMandatDuBien(supabase, bien, { vers: vers === 'retire' ? 'estimation' : vers, prix: 'conseille', hono: 'garder', raison: quoi, document: doc.id });
-        setFait(r.avertissement || `Le mandat a quitté la fiche : le bien est revenu « ${vers === 'a_suivre' ? 'À suivre' : 'Estimation'} ».`);
+        setFait(r.avertissement || `Le mandat a quitté la fiche : l’affaire est revenue « ${vers === 'a_suivre' ? 'À suivre' : 'Estimation'} ».`);
       }
     } catch (e) { setErreur((e as Error).message); }
     setTravail(false);
@@ -74,11 +74,11 @@ export default function SuiteMandatBien({ bien, doc, etaitSigne, supprime, onFer
 
   return (
     <div className={s.fenetre} style={{ zIndex: 1000 }} onClick={e => { if (e.target === e.currentTarget && !travail) onFermer(); }}>
-      <div className={s.fenetreIn} role="dialog" aria-modal="true" aria-label="Et la fiche du bien ?">
+      <div className={s.fenetreIn} role="dialog" aria-modal="true" aria-label="Et la fiche de l’affaire ?">
         <div className={s.fenTete}>
           <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-            <h3>{fait ? 'La fiche du bien est à jour' : 'Et la fiche du bien ?'}</h3>
-            <p>{fait ? lieu : `${lieu} est encore « ${etape} »${numero && noteSigne ? `, avec le mandat n° ${numero}` : ''}. Que devient-il ?`}</p>
+            <h3>{fait ? 'La fiche de l’affaire est à jour' : 'Et la fiche de l’affaire ?'}</h3>
+            <p>{fait ? lieu : `${lieu} est encore « ${etape} »${numero && noteSigne ? `, avec le mandat n° ${numero}` : ''}. Que devient l’affaire ?`}</p>
           </div>
           <button type="button" className={s.panFermer} aria-label="Fermer" disabled={travail} onClick={onFermer}><Croix /></button>
         </div>
@@ -95,7 +95,7 @@ export default function SuiteMandatBien({ bien, doc, etaitSigne, supprime, onFer
           {fait ? (
             <>
               <button type="button" className={s.btn} onClick={onFermer}>Fermer</button>
-              <button type="button" className={`${s.btn} ${s.btnNavy}`} onClick={() => onFicheBien(bien.id)}><Ic n="maison" t={15} />Voir le bien</button>
+              <button type="button" className={`${s.btn} ${s.btnNavy}`} onClick={() => onFicheBien(bien.id)}><Ic n="maison" t={15} />Voir l’affaire</button>
             </>
           ) : (
             <>

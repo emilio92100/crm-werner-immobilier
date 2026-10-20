@@ -41,9 +41,11 @@ seule ligne. Le lire en entier prend deux minutes et fait gagner des heures.
 - `outils/vocabulaire-werner.mjs` et `outils/identite-werner.mjs` ont fait le
   gros du changement de mots : les relancer est sans danger (une clé en
   minuscules n'est jamais touchée).
-- Les coordonnées de Werner encore inconnues sont des repères :
-  « 01 00 00 00 00 », contact@wernerimmobilier.com, « Werner » seul. Son vrai
-  logo remplacera ceux de `outils/logos-werner.py` (mêmes noms, mêmes tailles).
+- Les coordonnées de Werner (celles de ses annonces SeLoger, validées par
+  Alexandre le 21 octobre) : « 01 87 66 06 00 », contact@wernerimmobilier.com.
+  Son prénom seul, « Werner », tant que son nom complet n'est pas donné. Son
+  vrai logo remplacera ceux de `outils/logos-werner.py` (mêmes noms, mêmes
+  tailles).
 - Ne jamais ouvrir wernerimmobilier.com : le site est piraté (fausse
   vérification Cloudflare, octobre 2026).
 

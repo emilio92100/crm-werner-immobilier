@@ -153,7 +153,7 @@ export default function FenetrePenseBete({ onFermer, onCree }: {
             <span className={s.titre}><span className={s.titreIc}><Icone nom="note" taille={15} epaisseur={2} /></span>Quoi ?</span>
             <textarea className={s.texte} value={texte} onChange={e => setTexte(e.target.value)} autoFocus
               aria-label="Ce qu’il faut faire"
-              placeholder="Ex : rappeler l’agence pour les diagnostics, lui demander s’il a vu le 4 pièces…" />
+              placeholder="Ex : rappeler l’agence pour les diagnostics, lui demander s’il a vu la boutique…" />
           </div>
 
           <div className={s.bloc}>

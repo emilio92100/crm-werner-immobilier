@@ -157,7 +157,7 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
     if (!client || !pourVendre) return;
     supabase.from('biens_vente').select('*').eq('client_id', client.id).order('updated_at', { ascending: false }).limit(30)
       .then(({ data, error }) => {
-        if (error) { setErreur('Ses biens en vente n’ont pas pu être lus : ' + error.message); setEnVente([]); return; }
+        if (error) { setErreur('Ses affaires n’ont pas pu être lues : ' + error.message); setEnVente([]); return; }
         const l = ((data || []) as BienVente[]).filter(x => !x.archive);
         setEnVente(l);
         setBienVente(l[0] || null);
@@ -270,7 +270,7 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
          l'espace du client). */
       if (!avecMandat && m.id === 'offre_achat' && bien?.bien_vente_id) {
         const { data: v, error: eV } = await supabase.from('biens_vente').select('id, ville, adresse, donnees').eq('id', bien.bien_vente_id).maybeSingle();
-        if (eV) throw new Error('Le bien en vente n’a pas pu être lu : ' + eV.message);
+        if (eV) throw new Error('L’affaire n’a pas pu être lue : ' + eV.message);
         if (v) donnees = { ...donnees, ...champsOffreAgence(v as { id: string; ville: string | null; adresse: string | null; donnees: Donnees | null }, identite.nom || '') };
       }
       const { data, error } = await supabase.from('documents').insert({
@@ -304,7 +304,7 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
             <p>{etape === 1
               ? 'Choisis le modèle. Tout reste modifiable ensuite, et l’aperçu suit chaque réponse.'
               : m?.lien === 'recherche'
-                ? 'Choisis le client puis sa recherche : son nom, son adresse, le bien recherché et ton taux se remplissent tout seuls.'
+                ? 'Choisis le client puis sa recherche : son nom, son adresse, le local recherché et ton taux se remplissent tout seuls.'
                 : m?.lien === 'mandat'
                   ? 'Cherche le mandat par un nom, un numéro ou une adresse : les signataires, le numéro, les dates et le client sont repris tels quels.'
                   : 'Choisis un client pour que son nom, son adresse et le bien se remplissent tout seuls. Sinon, pars d’un document vierge.'}</p>
@@ -442,7 +442,7 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
               <div className={s.champLigne}>
                 <label>Sa recherche</label>
                 {recherches === null ? <div className={s.chAide}>Chargement de ses recherches…</div>
-                  : recherches.length === 0 ? <div className={s.chAide}>Aucune recherche sur sa fiche : tu décriras le bien recherché dans le document.</div>
+                  : recherches.length === 0 ? <div className={s.chAide}>Aucune recherche sur sa fiche : tu décriras le local recherché dans le document.</div>
                     : (
                       <div className={s.resultats}>
                         {recherches.map(r => {
@@ -462,28 +462,28 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
 
             {client && pourVendre && (
               <div className={s.champLigne}>
-                <label>Le bien qu’il vend</label>
-                {enVente === null ? <div className={s.chAide}>Chargement de ses biens en vente…</div>
+                <label>L’affaire qu’il confie</label>
+                {enVente === null ? <div className={s.chAide}>Chargement de ses affaires…</div>
                   : (
                     <div className={s.resultats}>
                       {enVente.map(x => (
                         <button key={x.id} type="button" className={`${s.resultat} ${bienVente?.id === x.id ? s.resultatOn : ''}`} onClick={() => setBienVente(x)}>
                           <Ic n="maison" t={16} />
                           <span className={s.resDeux}>
-                            <b>{x.titre || [x.adresse, x.ville].filter(Boolean).join(', ') || 'Bien sans titre'}</b>
+                            <b>{x.titre || [x.adresse, x.ville].filter(Boolean).join(', ') || 'Affaire sans titre'}</b>
                             <i>{[x.adresse, x.ville].filter(Boolean).join(', ') || etapeDe(x.etape).lib}</i>
                           </span>
                           <small>{etapeDe(x.etape).court}</small>
                         </button>
                       ))}
                       <button type="button" className={`${s.resultat} ${!bienVente ? s.resultatOn : ''}`} onClick={() => setBienVente(null)}>
-                        <Ic n="doc" t={16} /><span>{enVente.length ? 'Aucun de ceux-là, je saisirai le bien' : 'Aucun bien en vente sur sa fiche : je saisirai le bien'}</span>
+                        <Ic n="doc" t={16} /><span>{enVente.length ? 'Aucune de celles-là, je saisirai le local' : 'Aucune affaire sur sa fiche : je saisirai le local'}</span>
                       </button>
                     </div>
                   )}
                 <div className={s.chAide}>{enVente && enVente.length
-                  ? 'Ses biens de la rubrique « Biens » : le mandat reprend les propriétaires, l’adresse, le prix et les honoraires.'
-                  : 'Astuce : crée d’abord le bien dans « Biens » ; son mandat se prépare alors tout seul, depuis sa fiche.'}</div>
+                  ? 'Ses affaires de la rubrique « Affaires » : le mandat reprend les mandants, l’adresse, le montant et les honoraires.'
+                  : 'Astuce : crée d’abord l’affaire dans « Affaires » ; son mandat se prépare alors tout seul, depuis sa fiche.'}</div>
               </div>
             )}
 
@@ -499,7 +499,7 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
                     : (
                       <>
                         {biens.length > 4 && (
-                          <input id="nd-bien" className={s.cherche} placeholder="Une surface, un nombre de pièces, une rue, un prix…" value={chercheB}
+                          <input id="nd-bien" className={s.cherche} placeholder="Une surface, une rue, un montant…" value={chercheB}
                             onChange={e => setChercheB(e.target.value)} autoComplete="off" />
                         )}
                         <div className={`${s.resultats} ${s.ndBiens}`}>

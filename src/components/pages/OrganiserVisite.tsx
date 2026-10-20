@@ -199,7 +199,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
         .select('id, titre, adresse, code_postal, ville, prix, reference, etape, photo, client_id, archive, proprietaires:donnees->proprietaires')
         .in('etape', ETAPES_VISITABLES).eq('archive', false).order('updated_at', { ascending: false }).limit(1000);
       if (!vivant) return;
-      if (error) { setAgence([]); setErreur('Les biens de l’agence n’ont pas pu être lus : ' + error.message); return; }
+      if (error) { setAgence([]); setErreur('Les affaires de l’agence n’ont pas pu être lues : ' + error.message); return; }
       setAgence((data || []) as unknown as BienAgence[]);
     })();
     return () => { vivant = false; };
@@ -307,7 +307,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
     if (!pret || !choisis.length) return;
     if (mode === 'crm' && client && !rechercheId) { setErreur(`${nomClient(client)} n’a pas de recherche : note la visite « hors du CRM », ou ouvre-lui une recherche depuis sa fiche.`); return; }
     const secours = choisis.filter(c => c.genre === 'agence' && c.b.etape === 'compromis');
-    if (secours.length && !window.confirm(`${secours.length > 1 ? `${secours.length} de ces biens sont` : `« ${titreBien(secours[0])} » est`} en signature : la visite ne sert qu’à une offre de secours.\n\nLa planifier quand même ?`)) return;
+    if (secours.length && !window.confirm(`${secours.length > 1 ? `${secours.length} de ces affaires sont` : `« ${titreBien(secours[0])} » est`} en signature : la visite ne sert qu’à une offre de secours.\n\nLa planifier quand même ?`)) return;
     setEnvoi(true); setErreur('');
     /* Une à une, dans l'ordre du programme. Si l'une échoue, celles déjà
        faites sont dites et quittent la liste : « Planifier » ne les
@@ -344,7 +344,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
       if (faites.length) {
         signalerMaj();
         setChoisis(l => l.filter(c => !faites.includes(c.cle)));
-        setErreur(`${faites.length > 1 ? `${faites.length} visites sont enregistrées` : 'Une visite est enregistrée'}, puis ça s’est arrêté : ${m} Les biens qui restent sont toujours là : « Planifier » reprend avec eux.`);
+        setErreur(`${faites.length > 1 ? `${faites.length} visites sont enregistrées` : 'Une visite est enregistrée'}, puis ça s’est arrêté : ${m} Les locaux qui restent sont toujours là : « Planifier » reprend avec eux.`);
       } else setErreur(m);
       setEnvoi(false);
       return;
@@ -364,8 +364,8 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
   const sousBien = (c: Choix) => {
     if (c.genre === 'agence') {
       const p = proprioDe(c.b);
-      const prix = c.b.prix ? `${avantMandat(c.b.etape) ? 'prix conseillé ' : ''}${prixEnEntier(c.b.prix)}` : '';
-      return [prix, p ? `Propriétaire : ${p}` : '', adresseVente(c.b)].filter(Boolean).join(' · ');
+      const prix = c.b.prix ? `${avantMandat(c.b.etape) ? 'montant conseillé ' : ''}${prixEnEntier(c.b.prix)}` : '';
+      return [prix, p ? `${avantMandat(c.b.etape) ? 'Propriétaire' : 'Mandant'} : ${p}` : '', adresseVente(c.b)].filter(Boolean).join(' · ');
     }
     return [prixEnEntier(c.b.prix_acquereur || c.b.prix_vendeur), [c.b.quartier, c.b.ville].filter(Boolean).join(', '), c.b.agence_nom || ''].filter(Boolean).join(' · ');
   };
@@ -389,7 +389,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
           <span className={o.teteIc}><Ico n="cal" t={21} /></span>
           <div className={o.teteTx}>
             <h2>Organiser une visite</h2>
-            <p>{'Un demandeur suivi ou quelqu’un hors du CRM, sur un bien de l’agence ou de son dossier.'}</p>
+            <p>{'Un demandeur suivi ou quelqu’un hors du CRM, sur une affaire de l’agence ou un local de son dossier.'}</p>
           </div>
           <button type="button" className={o.fermer} onClick={fermer} aria-label="Fermer" disabled={envoi && !fini}><Ico n="croix" t={16} /></button>
         </header>
@@ -451,7 +451,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
                 )
               ) : (
                 <div className={o.deux}>
-                  <label className={o.champ}><span>Son nom</span><input autoFocus value={libreNom} onChange={e => setLibreNom(e.target.value)} placeholder="Ex : Couple Nguyen (SeLoger)" /></label>
+                  <label className={o.champ}><span>Son nom</span><input autoFocus value={libreNom} onChange={e => setLibreNom(e.target.value)} placeholder="Ex : M. Nguyen, restaurateur (SeLoger)" /></label>
                   <label className={o.champ}><span>Son téléphone</span><input value={libreTel} onChange={e => setLibreTel(e.target.value)} inputMode="tel" placeholder="Facultatif" /></label>
                 </div>
               )}
@@ -471,7 +471,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
             </Etape>
 
             {/* 2. Quels biens — un ou plusieurs (V3.147) */}
-            <Etape n={2} titre={choisis.length > 1 ? `Quels biens ? · ${choisis.length}` : 'Quels biens ?'} fait={choisis.length > 0}>
+            <Etape n={2} titre={choisis.length > 1 ? `Quels locaux ? · ${choisis.length}` : 'Quels locaux ?'} fait={choisis.length > 0}>
               {choisis.length > 0 && (
                 <div className={o.choisis}>
                   {choisis.map(c => (
@@ -481,7 +481,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
                         <b>{titreBien(c)}</b>
                         <small>{sousBien(c)}</small>
                       </span>
-                      <button type="button" className={o.retirer} onClick={() => retirer(c)} aria-label={`Retirer ${titreBien(c)}`} title="Retirer ce bien"><Ico n="croix" t={14} /></button>
+                      <button type="button" className={o.retirer} onClick={() => retirer(c)} aria-label={`Retirer ${titreBien(c)}`} title="Retirer ce local"><Ico n="croix" t={14} /></button>
                     </div>
                   ))}
                 </div>
@@ -491,23 +491,23 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
                 const secours = choisis.filter(c => c.genre === 'agence' && c.b.etape === 'compromis');
                 return <>
                   {avant.length > 0 && (
-                    <div className={o.info}><Ico n="info" t={15} /><span>{`${avant.length > 1 ? `${avant.length} de ces biens ne sont` : `« ${titreBien(avant[0])} » n’est`} pas encore sous mandat : la visite se planifie quand même.${mode === 'crm' ? ' Dans son espace, le bien apparaît sans prix.' : ''}`}</span></div>
+                    <div className={o.info}><Ico n="info" t={15} /><span>{`${avant.length > 1 ? `${avant.length} de ces affaires ne sont` : `« ${titreBien(avant[0])} » n’est`} pas encore sous mandat : la visite se planifie quand même.${mode === 'crm' ? ' Dans son espace, le local apparaît sans montant.' : ''}`}</span></div>
                   )}
                   {secours.length > 0 && (
-                    <div className={`${o.info} ${o.infoOr}`}><Ico n="info" t={15} /><span>{`${secours.length > 1 ? `${secours.length} de ces biens sont` : `« ${titreBien(secours[0])} » est`} en signature : une visite ne sert plus qu’à une offre de secours.`}</span></div>
+                    <div className={`${o.info} ${o.infoOr}`}><Ico n="info" t={15} /><span>{`${secours.length > 1 ? `${secours.length} de ces affaires sont` : `« ${titreBien(secours[0])} » est`} en signature : une visite ne sert plus qu’à une offre de secours.`}</span></div>
                   )}
                 </>;
               })()}
               <label className={o.cherche}>
                 <Ico n="loupe" />
-                <input value={qBien} onChange={e => setQBien(e.target.value)} placeholder={choisis.length ? 'Ajouter un autre bien : propriétaire, prix, adresse…' : 'Propriétaire, prix, adresse, référence…'} aria-label="Chercher un bien" />
+                <input value={qBien} onChange={e => setQBien(e.target.value)} placeholder={choisis.length ? 'Ajouter un autre local : mandant, montant, adresse…' : 'Mandant, montant, adresse, référence…'} aria-label="Chercher un local" />
               </label>
               <div className={o.liste}>
-                {agence === null && <div className={o.vide}>Chargement des biens…</div>}
+                {agence === null && <div className={o.vide}>Chargement des locaux…</div>}
                 {agence !== null && biensTrouves.length === 0 && (
-                  <div className={o.vide}>{qBien.trim().length >= 2 ? 'Aucun bien ne correspond. Essaie le nom du propriétaire, le prix ou la rue.' : 'Tape le nom du propriétaire, le prix ou l’adresse.'}</div>
+                  <div className={o.vide}>{qBien.trim().length >= 2 ? 'Aucun local ne correspond. Essaie le nom du mandant, le montant ou la rue.' : 'Tape le nom du mandant, le montant ou l’adresse.'}</div>
                 )}
-                {qBien.trim().length < 2 && biensTrouves.length > 0 && <div className={o.sur}>{dossier.length ? 'Son dossier, puis tes biens en vente' : 'Tes biens en vente'}{choisis.length ? ' · touche pour ajouter ou retirer' : ''}</div>}
+                {qBien.trim().length < 2 && biensTrouves.length > 0 && <div className={o.sur}>{dossier.length ? 'Son dossier, puis tes affaires' : 'Tes affaires'}{choisis.length ? ' · touche pour ajouter ou retirer' : ''}</div>}
                 {biensTrouves.map((c, i) => {
                   const p = pastille(c);
                   const on = estChoisi(c);
@@ -556,7 +556,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
                   </span>
                 </div>
               )}
-              <label className={o.champ}><span>Note (facultatif)</span><input value={note} onChange={e => setNote(e.target.value)} placeholder="Ex : vient avec son père ; deuxième visite" /></label>
+              <label className={o.champ}><span>Note (facultatif)</span><input value={note} onChange={e => setNote(e.target.value)} placeholder="Ex : vient avec son associé ; deuxième visite" /></label>
             </Etape>
 
             {erreur && <div className={o.erreur} role="alert">{erreur}</div>}
@@ -566,7 +566,7 @@ export default function OrganiserVisite({ onFermer, onFait }: { onFermer: () => 
         {!fini && (
           <footer className={o.pied}>
             <span className={o.resume}>
-              {nomVisiteur && choisis.length ? `${nomVisiteur} · ${choisis.length > 1 ? `${choisis.length} biens` : titreBien(choisis[0])}` : 'Choisis qui visite et les biens.'}
+              {nomVisiteur && choisis.length ? `${nomVisiteur} · ${choisis.length > 1 ? `${choisis.length} locaux` : titreBien(choisis[0])}` : 'Choisis qui visite et les locaux.'}
             </span>
             <button type="button" className={o.btn} onClick={fermer} disabled={envoi}>Annuler</button>
             <button type="button" className={`${o.btn} ${o.btnOr}`} onClick={() => { void enregistrer(); }} disabled={!pret}>

@@ -443,7 +443,7 @@ export function Panneau({ it, noms, docs, onFermer, onEditer, onMaj, onSupprime,
               )}
               {d.statut === 'signe' && d.modele === 'mandat_vente' && (
                 <button type="button" className={s.btn} onClick={() => onDeriver('d-' + d.id, 'avenant_vente')}>
-                  <Ic n="plume" t={16} /><span>Préparer un avenant</span><small>prix, honoraires, durée</small>
+                  <Ic n="plume" t={16} /><span>Préparer un avenant</span><small>montant, honoraires, durée</small>
                 </button>
               )}
               {d.statut === 'signe' && d.modele === 'mandat_recherche' && (
@@ -591,9 +591,9 @@ export function Panneau({ it, noms, docs, onFermer, onEditer, onMaj, onSupprime,
           ...(m?.registre && !signeDeja && d.numero ? [{ ic: 'liste', t: `Le registre des mandats note « Jamais signé : document annulé ». Le n° ${d.numero} reste attaché à ce mandat et ne resservira pas.` }] : []),
           ...(signeDeja ? [{ ic: 'mail', ton: 'alerte' as const, t: 'Personne n’est prévenu automatiquement : ce document était signé, préviens toi-même ceux qu’il engageait.' }] : []),
           ...(signeDeja && d.modele === 'avenant_recherche' && d.recherche_id ? [{ ic: 'retour', ton: 'alerte' as const, t: 'La fin du mandat et les honoraires que cet avenant avait changés sur la recherche ne reviennent pas tout seuls : remets-les à la main dans le bloc Mandat de la fiche client.' }] : []),
-          ...(signeDeja && d.modele === 'avenant_vente' ? [{ ic: 'retour', ton: 'alerte' as const, t: 'Le prix, les honoraires et la fin du mandat que cet avenant avait reportés sur la fiche du bien ne reviennent pas tout seuls : remets-les à la main depuis la fiche du bien.' }] : []),
+          ...(signeDeja && d.modele === 'avenant_vente' ? [{ ic: 'retour', ton: 'alerte' as const, t: 'Le montant, les honoraires et la fin du mandat que cet avenant avait reportés sur la fiche de l’affaire ne reviennent pas tout seuls : remets-les à la main depuis la fiche de l’affaire.' }] : []),
           ...(signeDeja && m?.surRecherche && m.numero && d.recherche_id ? [{ ic: 'loupe', t: 'Le bloc Mandat de sa recherche sera vidé.' }] : []),
-          ...(d.modele === 'mandat_vente' ? [{ ic: 'maison', t: 'Si la fiche du bien dépend de ce mandat, on te demandera juste après ce qu’elle devient.' }] : []),
+          ...(d.modele === 'mandat_vente' ? [{ ic: 'maison', t: 'Si la fiche de l’affaire dépend de ce mandat, on te demandera juste après ce qu’elle devient.' }] : []),
         ];
         return (
           <FenetreConfirmer ic="croix" ton="danger" titre={signeDeja ? 'Marquer ce document annulé ?' : 'Annuler ce document ?'}
@@ -616,7 +616,7 @@ export function Panneau({ it, noms, docs, onFermer, onEditer, onMaj, onSupprime,
           points={[
             { ic: 'croix', ton: 'alerte', t: 'Le brouillon disparaît pour de bon, avec toutes ses réponses. Ça ne se rattrape pas.' },
             ...(fenSuppr.ligne ? [{ ic: 'liste', t: `Il a déjà le n° ${fenSuppr.ligne} au registre des mandats : cette ligne reste, notée « sans suite ».` }] : []),
-            ...(d.modele === 'mandat_vente' ? [{ ic: 'maison', t: 'Si la fiche du bien était passée « En vente » avec lui, on te demandera juste après ce qu’elle devient.' }] : []),
+            ...(d.modele === 'mandat_vente' ? [{ ic: 'maison', t: 'Si l’affaire était passée « Disponible » avec lui, on te demandera juste après ce qu’elle devient.' }] : []),
           ]}
           conseil="Tu hésites ? Garde-le : un brouillon n’engage à rien et ne compte nulle part tant qu’il n’est pas finalisé."
           onFermer={() => setFenSuppr(null)} onConfirmer={() => supprimer(fenSuppr.ligne)} />
@@ -1006,7 +1006,7 @@ export default function PageDocuments({ onNavigate, intention, onIntention }: {
           ? [aSigner ? `${aSigner} document${aSigner > 1 ? 's' : ''} à faire signer` : '', enSignature ? `${enSignature} en signature` : '',
             aEnvoyer ? `${aEnvoyer} courrier${aEnvoyer > 1 ? 's' : ''} à envoyer` : '',
             aDeposer ? `${aDeposer} exemplaire${aDeposer > 1 ? 's' : ''} signé${aDeposer > 1 ? 's' : ''} à déposer` : ''].filter(Boolean).join(' · ')
-          : 'Mandats, avenants, offres d’achat, bons de visite : prêts à imprimer et à signer.'}
+          : 'Mandats, avenants, offres, bons de visite : prêts à imprimer et à signer.'}
         bouton={absente ? undefined : { lib: 'Nouveau document', onClick: () => setNouveau({}) }}
         label="Filtrer par état" actif="" onChoisir={() => {}} tuiles={[]} />
 

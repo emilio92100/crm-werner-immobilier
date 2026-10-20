@@ -394,7 +394,7 @@ export function BlocSignature({ doc, onMaj, onSurPlace }: {
             intro={`${doc.titre || modele(doc.modele)?.titre || 'Ce document'}${doc.numero ? ` · n° ${doc.numero}` : ''}`}
             option={aPrevenir.length ? { libelle: `Prévenir ${aPrevenir.length > 1 ? `les ${aPrevenir.length} signataires` : nomSignataire(aPrevenir[0])} par e-mail`, aide: 'Ceux qui ont reçu leur lien ou qui ont déjà signé.', defaut: true } : undefined}
             points={coche => [
-              ...(invites.length || signes.length ? [{ ic: 'croix', t: `${invites.length + signes.length > 1 ? 'Les liens envoyés ne fonctionnent plus' : 'Le lien envoyé ne fonctionne plus'} : qui ouvre le sien lit qu’Werner a arrêté la signature, et ne voit plus le document.` }] : []),
+              ...(invites.length || signes.length ? [{ ic: 'croix', t: `${invites.length + signes.length > 1 ? 'Les liens envoyés ne fonctionnent plus' : 'Le lien envoyé ne fonctionne plus'} : qui ouvre le sien lit que Werner a arrêté la signature, et ne voit plus le document.` }] : []),
               ...(surPlace.length ? [{ ic: 'tablette', t: `Plus personne ne peut signer sur ton écran (${surPlace.map(nomSignataire).join(', ')}).` }] : []),
               ...(signes.length ? [{ ic: 'retour', ton: 'alerte' as const, t: `${noms} ${pl(signes.length, 'a', 'ont')} déjà signé : ${pl(signes.length, 'cette signature ne compte plus', 'ces signatures ne comptent plus')}. Il faudra re-signer à la relance.` }] : []),
               ...(aPrevenir.length

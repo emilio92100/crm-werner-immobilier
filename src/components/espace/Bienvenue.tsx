@@ -15,18 +15,18 @@ type Ecran = { sur: string; titre: string; texte: string; fort?: string; astuce?
 
 const ecransPour = (prenom: string): Ecran[] => [
   { sur: 'Votre espace personnel', titre: prenom ? `Bienvenue, ${prenom}` : 'Bienvenue',
-    texte: 'Ici, tout votre projet d’achat au même endroit. Votre espace est privé et sans mot de passe\u00a0: ce lien vous suffit.' },
+    texte: 'Ici, tout votre projet au même endroit. Votre espace est privé et sans mot de passe\u00a0: ce lien vous suffit.' },
   { sur: 'Chaque jour', titre: 'Nous analysons tout le marché pour vous',
-    texte: 'Les nouvelles annonces, nos biens en avant-première, ceux de nos partenaires, même ceux qui ne sont pas en ligne\u00a0: tout passe au crible de vos critères.' },
-  { sur: 'Vos biens', titre: 'Les biens retenus arrivent ici',
-    texte: 'Chacun avec notre avis et sa correspondance avec votre recherche, parfois avant même d’être en ligne. Votre téléphone peut vous prévenir dès qu’un bien arrive.' },
+    texte: 'Les nouvelles annonces, nos locaux en avant-première, ceux de nos partenaires, même ceux qui ne sont pas en ligne\u00a0: tout passe au crible de vos critères.' },
+  { sur: 'Vos locaux', titre: 'Les locaux retenus arrivent ici',
+    texte: 'Chacun avec notre avis et sa correspondance avec votre recherche, parfois avant même d’être en ligne. Votre téléphone peut vous prévenir dès qu’un local arrive.' },
   { sur: 'Votre avis', titre: 'Votre avis affine la recherche',
     texte: 'Au début, les propositions sont assez larges. «\u00a0Ça me plaît\u00a0», «\u00a0Pas pour moi\u00a0», un commentaire\u00a0: tout est lu et pris en compte.',
-    fort: 'Plus vous répondez, plus les biens vous ressemblent.' },
+    fort: 'Plus vous répondez, plus les locaux vous ressemblent.' },
   { sur: 'Vos critères', titre: 'Vos critères, en direct',
-    texte: 'Un budget qui bouge, une envie de balcon\u00a0? Modifiez vos critères vous-même, à tout moment. Votre conseiller est prévenu aussitôt, et la recherche repart sur vos nouveaux critères.' },
+    texte: 'Un budget qui bouge, une envie de terrasse ? Modifiez vos critères vous-même, à tout moment. Votre conseiller est prévenu aussitôt, et la recherche repart sur vos nouveaux critères.' },
   { sur: 'Vos visites', titre: 'Visites et carte, en un geste',
-    texte: 'Proposez vos créneaux depuis la fiche d’un bien\u00a0: votre conseiller confirme, et le rendez-vous s’ajoute à votre agenda. Tous vos biens vous attendent aussi sur une carte.',
+    texte: 'Proposez vos créneaux depuis la fiche d’un local : votre conseiller confirme, et le rendez-vous s’ajoute à votre agenda. Tous vos locaux vous attendent aussi sur une carte.',
     astuce: 'Astuce\u00a0: ajoutez l’espace à l’écran d’accueil de votre téléphone.' },
 ];
 const NB = 6;
@@ -108,7 +108,7 @@ function Scene1() {
     { x: '80%', y: '70%', c: '#f08c42', r: '1.8s' }, { x: '24%', y: '74%', c: '#2e3034', r: '2.7s' },
     { x: '58%', y: '82%', c: '#f08c42', r: '3.6s' }, { x: '44%', y: '24%', c: '#2e3034', r: '4.5s' },
   ];
-  const sources = [{ l: 'Nouvelles annonces', r: '.2s' }, { l: 'Biens en avant-première', r: '.45s' }, { l: 'Nos partenaires', r: '.7s' }];
+  const sources = [{ l: 'Nouvelles annonces', r: '.2s' }, { l: 'Locaux en avant-première', r: '.45s' }, { l: 'Nos partenaires', r: '.7s' }];
   return (
     <div className={s.s1}>
       <svg width="342" height="230" viewBox="0 0 342 230" aria-hidden="true" style={{ position: 'absolute', inset: 0 }}>
@@ -146,14 +146,14 @@ function Scene2() {
         </div>
         <div style={{ padding: '9px 11px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           <b className={s.prixL}>895 000 €</b>
-          <span className={s.petit}>5 pièces · 118 m² · Clamart</span>
+          <span className={s.petit}>Boutique · 118 m² · Paris 11e</span>
         </div>
       </div>
       <div className={s.notif}>
         <span className={s.cloche}><Svg d={D.cloche} t={17} /></span>
         <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          <b style={{ fontSize: 12.5, fontWeight: 800 }}>Un nouveau bien pour vous</b>
-          <span className={s.petit}>Clamart · à l’instant</span>
+          <b style={{ fontSize: 12.5, fontWeight: 800 }}>Un nouveau local pour vous</b>
+          <span className={s.petit}>Paris 11e · à l’instant</span>
         </span>
       </div>
     </div>
@@ -166,7 +166,7 @@ function Scene3() {
     <div className={s.s3}>
       <div className={`${s.ligneBien} ${s.monte}`} style={{ animationDelay: '.05s' }}>
         <span className={s.vignette}><img src={PHOTO_1} alt="" className={`${s.photoImg} ${s.zoom}`} /></span>
-        <span style={{ display: 'flex', flexDirection: 'column' }}><b style={{ fontSize: 13.5, fontWeight: 800 }}>895 000 €</b><span className={s.petit}>5 pièces · Clamart</span></span>
+        <span style={{ display: 'flex', flexDirection: 'column' }}><b style={{ fontSize: 13.5, fontWeight: 800 }}>895 000 €</b><span className={s.petit}>Boutique · Paris 11e</span></span>
         <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 800, color: '#c2621c' }}>{'Qu’en pensez-vous\u00a0?'}</span>
       </div>
       <div className={`${s.avis3} ${s.monte}`} style={{ animationDelay: '.2s' }}>
@@ -178,7 +178,7 @@ function Scene3() {
       </div>
       <div className={`${s.justesse} ${s.monte}`} style={{ animationDelay: '.35s' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#363533' }}>Vos prochains biens vous ressemblent</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#363533' }}>Vos prochains locaux vous ressemblent</span>
           <span className={s.chiffres}><b className={s.avant46}>46 %</b><b className={s.apres93}>93 %</b></span>
         </div>
         <span className={s.jauge}><i /></span>
@@ -187,7 +187,7 @@ function Scene3() {
   );
 }
 
-/* ── 4 · Vos critères en direct : le budget glisse, « Balcon » s'allume ── */
+/* ── 4 · Vos critères en direct : le budget glisse, « Terrasse » s'allume ── */
 function Scene4() {
   return (
     <div className={s.s4}>
@@ -202,9 +202,9 @@ function Scene4() {
         </div>
         <span className={s.glissiere}><i /><span className={s.curseur} /></span>
         <div className={s.puces}>
-          <span className={s.puce}>Jardin</span>
-          <span className={`${s.puce} ${s.puceVive}`}>+ Balcon</span>
-          <span className={s.puce}>Calme</span>
+          <span className={s.puce}>Vitrine</span>
+          <span className={`${s.puce} ${s.puceVive}`}>+ Terrasse</span>
+          <span className={s.puce}>Extraction</span>
         </div>
       </div>
       <div className={s.prevenu}>
@@ -232,7 +232,7 @@ function Scene5() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '6px 8px' }}>
           <b style={{ fontSize: 34, lineHeight: 1, fontWeight: 800 }}>18</b>
           <span style={{ fontSize: 11, fontWeight: 700, color: '#363533' }}>octobre · 10 h 30</span>
-          <span style={{ fontSize: 10.5, color: '#5B6B80' }}>Visite · 5 pièces, Clamart</span>
+          <span style={{ fontSize: 10.5, color: '#5B6B80' }}>Visite · Boutique, Paris 11e</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 8, borderTop: '1px solid #eeeeed', fontSize: 10.5, fontWeight: 800, color: '#15803d' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path className={s.coche} d={D.check} /></svg>
@@ -249,7 +249,7 @@ function Scene5() {
             <span style={{ background: p.f, color: p.t }}>{p.l}</span><i style={{ background: p.f }} />
           </span>
         ))}
-        <span className={s.etiquette}>Vos biens sur la carte</span>
+        <span className={s.etiquette}>Vos locaux sur la carte</span>
       </div>
     </div>
   );
@@ -396,7 +396,7 @@ export default function Bienvenue({ prenom, conseiller, auto, onVu, onFini }: {
         <div ref={corps} className={s.corps} key={i}>
           <div className={s.illuCol}>
             <div className={`${s.illuAnim} ${sens}`}><Illustration n={i} /></div>
-            <span className={s.conseiller}><span>{(conseiller || 'A').charAt(0).toUpperCase()}</span>{`${conseiller || 'Werner'}, votre conseiller`}</span>
+            <span className={s.conseiller}><span>{(conseiller || 'W').charAt(0).toUpperCase()}</span>{`${conseiller || 'Werner'}, votre conseiller`}</span>
           </div>
           <div className={`${s.textes} ${sens}`}>
             <span className={s.sur}>{e.sur}</span>

@@ -31,7 +31,7 @@ export async function generateMetadata(
 
   return {
     title: 'Ma recherche — Werner Immobilier',
-    description: 'Les biens retenus pour vous, vos critères et vos visites.',
+    description: 'Les locaux retenus pour vous, vos critères et vos visites.',
     manifest: `${racine}/manifeste`,
     appleWebApp: {
       capable: true,

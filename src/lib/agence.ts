@@ -73,7 +73,7 @@ export const IDENTITE_DEFAUT: IdentiteAgence = {
   adresse: '10 avenue Kléber',
   cp: '75016',
   ville: 'Paris',
-  tel: '01 00 00 00 00',
+  tel: '01 87 66 06 00',
   mail: 'contact@wernerimmobilier.com',
   site: 'www.wernerimmobilier.com',
   orias: '', banque: '', reseau: '',
@@ -99,7 +99,7 @@ export const BLOCS: { id: Bloc; titre: string; e: string; sert: string }[] = [
   { id: 'mediateur', titre: 'Médiateur', e: '⚖️', sert: 'Obligatoire avec un client particulier. Tu dois y avoir adhéré.' },
   { id: 'signataire', titre: 'Signataire', e: '✍️', sert: 'Qui signe pour l’agence, et sa signature manuscrite.' },
   { id: 'coordonnees', titre: 'Coordonnées', e: '📍', sert: 'Le pied des documents, le formulaire de rétractation et la ville de signature.' },
-  { id: 'autres', titre: 'Autres mentions', e: '📎', sert: 'Ce que certains modèles de mandat de vente demandent. Rien ne s’imprime s’ils sont vides.' },
+  { id: 'autres', titre: 'Autres mentions', e: '📎', sert: 'Ce que certains modèles de mandat de location ou de vente demandent. Rien ne s’imprime s’ils sont vides.' },
 ];
 
 export const CHAMPS: Champ[] = [

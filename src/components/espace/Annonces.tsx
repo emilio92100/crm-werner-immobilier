@@ -52,7 +52,7 @@ export function CarteAnnonce({ annonces, peutEnvoyer, onEnvoyer, onAide, onToute
         <span className="ra-ic"><Ico n="lien" t={20} /></span>
         <div className="ra-tx">
           <b className="ra-t">{'Une annonce repérée ?'}</b>
-          <span className="ra-s">{peutEnvoyer ? 'Envoyez-la à Werner, il vous dit ce qu’il en pense' : 'Ce qu’Werner a pensé de celles que vous lui avez envoyées'}</span>
+          <span className="ra-s">{peutEnvoyer ? 'Envoyez-la à Werner, il vous dit ce qu’il en pense' : 'Ce que Werner a pensé de celles que vous lui avez envoyées'}</span>
           {peutEnvoyer && (
             <button type="button" className="ra-env" onClick={onEnvoyer}>
               <Ico n="plus" t={15} /><span>Envoyer une annonce</span>
@@ -193,7 +193,7 @@ export function EnvoiAnnonce({ onFermer, onEnvoyer, Ico }: {
         <div className="ra-f-sep"><i /><span>et, si vous voulez</span><i /></div>
 
         <div className="ra-f-l">Une photo <em>· facultatif</em></div>
-        <p className="ra-f-aide">{'Vous avez vu une affiche en vitrine, un panneau « À vendre », une annonce sur Instagram ? Prenez-la en photo.'}</p>
+        <p className="ra-f-aide">{'Vous avez vu une affiche en vitrine, un panneau « À louer » ou « À céder », une annonce sur Instagram ? Prenez-la en photo.'}</p>
         {reste > 0 && (
           <div className={'ra-f-ph' + (tactile ? '' : ' un')}>
             {tactile && (
@@ -237,7 +237,7 @@ export function EnvoiAnnonce({ onFermer, onEnvoyer, Ico }: {
 
         <label className="ra-f-l" htmlFor="ra-mot">Un mot pour Werner <em>· facultatif</em></label>
         <textarea id="ra-mot" rows={3} value={mot} onChange={ev => setMot(ev.target.value)} maxLength={800}
-          placeholder="Ex. : un peu au-dessus du budget, mais l’extérieur est superbe. Qu’en pensez-vous ?" />
+          placeholder="Ex. : un peu au-dessus du budget, mais l’emplacement est superbe. Qu’en pensez-vous ?" />
 
         <button type="button" className="btn or ra-f-go" onClick={partir} disabled={envoi || lecture}>
           {envoi ? <><span className="tourne" />Envoi en cours…</> : 'Envoyer à Werner'}
@@ -261,7 +261,7 @@ export function ListeAnnonces({ annonces, peutEnvoyer, onEnvoyer, onBien, Ico }:
         </button>
       )}
       {annonces.length === 0 ? (
-        <div className="vide-sec">{'Vous n’avez pas encore envoyé d’annonce.'}<br />{'Un bien vu ailleurs vous plaît ? Envoyez-le à Werner : il vous dit ce qu’il en pense.'}</div>
+        <div className="vide-sec">{'Vous n’avez pas encore envoyé d’annonce.'}<br />{'Un local vu ailleurs vous plaît ? Envoyez-le à Werner : il vous dit ce qu’il en pense.'}</div>
       ) : (
         <div className="ra-liste">
           {annonces.map(a => {
@@ -296,7 +296,7 @@ export function ListeAnnonces({ annonces, peutEnvoyer, onEnvoyer, onBien, Ico }:
                   <div className="ra-l-b">
                     {a.bienId && (
                       <button type="button" className="ra-voir-b" onClick={() => onBien(a.bienId as string)}>
-                        <span>Voir le bien</span><Ico n="fleche" t={15} />
+                        <span>Voir le local</span><Ico n="fleche" t={15} />
                       </button>
                     )}
                     {a.url && !a.bienId && (

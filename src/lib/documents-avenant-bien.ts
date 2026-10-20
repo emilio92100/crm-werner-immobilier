@@ -40,7 +40,7 @@ export function changementsAvenant(a: Donnees): Changements {
   let prix: number | null = null;
   if (objets.includes('prix')) {
     const p = lireMontant(a.nouveauPrix);
-    if (p && p > 0) prix = p; else illisible.push('le nouveau prix');
+    if (p && p > 0) prix = p; else illisible.push('le nouveau montant');
   }
   let hono: Donnees | null = null;
   if (objets.includes('honoraires')) {
@@ -90,11 +90,11 @@ const jourFr = (ymd: string) => ymd.split('-').reverse().join('/');
 async function prixDansAnnonces(sb: SupabaseClient, bienId: string, vieux: string, neuf: string): Promise<string | null> {
   if (!vieux || vieux === neuf) return null;
   const { data, error } = await sb.from('biens').select('id, description').eq('bien_vente_id', bienId);
-  if (error) return /bien_vente_id/.test(error.message) ? null : 'le prix dans l’annonce des demandeurs : ' + error.message;
+  if (error) return /bien_vente_id/.test(error.message) ? null : 'le montant dans l’annonce des demandeurs : ' + error.message;
   for (const c of (data || []) as { id: string; description: string | null }[]) {
     if (!c.description || !c.description.includes(vieux)) continue;
     const r = await sb.from('biens').update({ description: c.description.split(vieux).join(neuf) }).eq('id', c.id);
-    if (r.error) return 'le prix dans l’annonce des demandeurs : ' + r.error.message;
+    if (r.error) return 'le montant dans l’annonce des demandeurs : ' + r.error.message;
   }
   return null;
 }
@@ -105,7 +105,7 @@ export async function avenantSigneSurBien(sb: SupabaseClient, doc: DocAvenant, j
   const a = doc.donnees || {};
   const c = changementsAvenant(a);
   const illisible = c.illisible.length
-    ? `L’avenant est signé, mais ${c.illisible.join(' et ')} ${c.illisible.length > 1 ? 'n’ont' : 'n’a'} pas pu être lu${c.illisible.length > 1 ? 's' : ''} : ${c.fin ? 'seule la fin du mandat a été reportée sur la fiche du bien' : 'la fiche du bien n’a pas été changée'}. Change le prix et les honoraires à la main, depuis sa fiche.`
+    ? `L’avenant est signé, mais ${c.illisible.join(' et ')} ${c.illisible.length > 1 ? 'n’ont' : 'n’a'} pas pu être lu${c.illisible.length > 1 ? 's' : ''} : ${c.fin ? 'seule la fin du mandat a été reportée sur la fiche de l’affaire' : 'la fiche de l’affaire n’a pas été changée'}. Change le montant et les honoraires à la main, depuis sa fiche.`
     : null;
   if (!c.prix && !c.hono && !c.fin) return illisible;
   const numero = txt(a, 'mandatNumero');
@@ -120,7 +120,7 @@ export async function avenantSigneSurBien(sb: SupabaseClient, doc: DocAvenant, j
     let b: BienVente | null = b0;
     if (essai > 0) {
       const { data, error } = await sb.from('biens_vente').select('*').eq('id', b0.id).maybeSingle();
-      if (error) return [`L’avenant est signé, mais la fiche du bien n’a pas pu être relue : ${error.message}.`, illisible].filter(Boolean).join(' ');
+      if (error) return [`L’avenant est signé, mais la fiche de l’affaire n’a pas pu être relue : ${error.message}.`, illisible].filter(Boolean).join(' ');
       b = data as BienVente | null;
     }
     if (!b || !EN_COURS.includes(b.etape)) return illisible;
@@ -144,7 +144,7 @@ export async function avenantSigneSurBien(sb: SupabaseClient, doc: DocAvenant, j
     let q = sb.from('biens_vente').update({ donnees: d, ...colonnesBien(d), updated_at: maintenant }).eq('id', b.id);
     if (b.updated_at) q = q.eq('updated_at', b.updated_at);
     const { data: ecrit, error } = await q.select('id');
-    if (error) return [`L’avenant est signé, mais la fiche du bien n’a pas pu suivre : ${error.message}. Change le prix, les honoraires ou la fin du mandat depuis sa fiche.`, illisible].filter(Boolean).join(' ');
+    if (error) return [`L’avenant est signé, mais la fiche de l’affaire n’a pas pu suivre : ${error.message}. Change le montant, les honoraires ou la fin du mandat depuis sa fiche.`, illisible].filter(Boolean).join(' ');
     if (!ecrit?.length) continue;
     /* L'historique du bien : « Prix changé » (ou « Honoraires changés »),
        comme « Changer le prix » ; une prolongation seule, une note. */
@@ -163,7 +163,7 @@ export async function avenantSigneSurBien(sb: SupabaseClient, doc: DocAvenant, j
       await prixChezAcheteurs(sb, b.id, bd, d),
       prixChange ? await prixDansAnnonces(sb, b.id, vieux, neuf) : null,
     ].filter(Boolean);
-    return [pbs.length ? `L’avenant est signé et noté sur la fiche du bien, mais ${pbs.join(' ; ')}.` : null, illisible].filter(Boolean).join(' ') || null;
+    return [pbs.length ? `L’avenant est signé et noté sur la fiche de l’affaire, mais ${pbs.join(' ; ')}.` : null, illisible].filter(Boolean).join(' ') || null;
   }
-  return [`L’avenant est signé, mais la fiche du bien changeait au même moment : vérifie son prix, ses honoraires et la fin du mandat.`, illisible].filter(Boolean).join(' ');
+  return [`L’avenant est signé, mais la fiche de l’affaire changeait au même moment : vérifie son montant, ses honoraires et la fin du mandat.`, illisible].filter(Boolean).join(' ');
 }

@@ -59,7 +59,7 @@ export async function GET(
        c'est le sélecteur, à l'intérieur, qui dit laquelle il regarde. */
     name: 'Ma recherche',
     short_name: 'Ma recherche',
-    description: 'Les biens retenus pour vous, vos critères et vos visites.',
+    description: 'Les locaux retenus pour vous, vos critères et vos visites.',
     lang: 'fr',
     dir: 'ltr',
     /* Le client retombe sur SON espace, déjà identifié : le lien est le mot de

@@ -11,7 +11,7 @@
        node outils/identite-werner.mjs --essai    # compte seulement
 
    Les coordonnées de Werner encore inconnues (téléphone, nom complet) sont
-   des repères faciles à retrouver : « 01 00 00 00 00 », « Werner ». */
+   des repères faciles à retrouver : « 01 87 66 06 00 », « Werner ». */
 import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
@@ -27,10 +27,10 @@ const REMPLACEMENTS = [
   [/arogelet@emilio-immo\.com/g, 'contact@wernerimmobilier.com'],
   [/agence@emilio-immo\.com/g, 'contact@wernerimmobilier.com'],
   // téléphone (repère à remplacer par le vrai numéro de Werner)
-  [/06 58 95 76 32/g, '01 00 00 00 00'],
-  [/\+33658957632/g, '+33100000000'],
+  [/06 58 95 76 32/g, '01 87 66 06 00'],
+  [/\+33658957632/g, '+33187660600'],
   [/33658957632/g, '33100000000'],
-  [/0658957632/g, '0100000000'],
+  [/0658957632/g, '0187660600'],
   // adresses web
   [/emilio-immo-chasseimmo\.vercel\.app/g, 'crm-werner-immobilier.vercel.app'],
   [/crm\.emilio-immo\.com/g, 'crm-werner-immobilier.vercel.app'],

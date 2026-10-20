@@ -320,7 +320,7 @@ export default async function PageEspace({ params, searchParams }: {
 
   const biens = (biensRes.data || []).map((b) => ({
     id: b.id,
-    titre: b.titre || `${b.type_bien || 'Bien'} — ${b.ville || ''}`,
+    titre: b.titre || `${b.type_bien || 'Local'} — ${b.ville || ''}`,
     secteur: [b.quartier || b.adresse_probable, b.ville].filter(Boolean).join(', ') || b.ville || '',
     /* Pour la note de correspondance : la ville et le quartier du bien, et
        son temps à pied jusqu'à la station (voir trajetDe). */
@@ -385,11 +385,12 @@ export default async function PageEspace({ params, searchParams }: {
   /* Les rendez-vous à venir, et eux seuls. Une visite passée n'est plus « votre
      prochaine visite » : son bien est rangé dans « Visités » (voir faiteParBien),
      et la section « Déjà visités » de l'onglet Visites le montre. */
-  /* « Studio 30 m² · Vanves », « 2 pièces 38 m² · Vanves », « Maison 130 m² · Meudon » */
+  /* « Boutique 60 m² · Paris », « Bureaux 120 m² · Paris », « 3 espaces 80 m² · Paris » :
+     le type du local d'abord, le nombre d'espaces quand il n'est pas connu. */
   const courtDuBien = (b: any): string | null => {
     if (!b) return null;
     const n = Number(b.nb_pieces) || 0, s = Number(b.surface) || 0;
-    const quoi = /maison/i.test(String(b.type_bien || '')) ? 'Maison' : n === 1 ? 'Studio' : n > 1 ? `${n} pièces` : String(b.type_bien || '').trim();
+    const quoi = String(b.type_bien || '').trim() || (n > 1 ? `${n} espaces` : n === 1 ? '1 espace' : '');
     const bien = [quoi ? quoi.charAt(0).toUpperCase() + quoi.slice(1) : '', s ? `${String(s).replace('.', ',')} m²` : ''].filter(Boolean).join(' ');
     return [bien, b.ville].filter(Boolean).join(' · ') || null;
   };
@@ -401,7 +402,7 @@ export default async function PageEspace({ params, searchParams }: {
         id: v.id,
         date: v.date_visite as string,
         heure: (v.heure as string) || null,
-        titre: b?.titre || `${b?.type_bien || 'Bien'} — ${b?.ville || ''}`,
+        titre: b?.titre || `${b?.type_bien || 'Local'} — ${b?.ville || ''}`,
         adresse: [b?.adresse || b?.adresse_probable || b?.quartier, b?.ville].filter(Boolean).join(', '),
         /* La photo du bien : un rappel de visite sans image ne dit pas lequel. */
         photo: (b?.photos || [])[0] || null,

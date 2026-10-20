@@ -312,7 +312,7 @@ export function FenetreProjet({ doc, donnees, avant, onFermer, onEnvoye }: {
             )}
             <div className={s.champLigne}>
               <label htmlFor="pj-autre">{liste.length ? 'Ou une autre adresse' : 'Adresse e-mail'}</label>
-              <input id="pj-autre" type="text" inputMode="email" autoComplete="off" className={s.input} placeholder="notaire@etude.fr"
+              <input id="pj-autre" type="text" inputMode="email" autoComplete="off" className={s.input} placeholder="avocat@cabinet.fr"
                 value={autre} onChange={e => { setAutre(e.target.value); setErreur(''); }} />
               <i className={s.chAide}>{liste.length ? 'Plusieurs ? Sépare-les par une virgule.' : 'Aucune adresse dans le document : tape-la ici. Plusieurs ? Sépare-les par une virgule.'}</i>
             </div>

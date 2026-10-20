@@ -35,7 +35,7 @@ export const SELOGER_VERSION_LOGICIEL = '3.98';
 const BAREME = 'https://www.wernerimmobilier.com/honoraires';
 /* Le contact que SeLoger affichait avec les annonces d'ImmoFacile (relevé
    dans leur comparaison du 6 octobre). */
-const CONTACT = { companyName: 'Werner Immobilier', phoneNumber: '01 00 00 00 00', email: 'contact@wernerimmobilier.com' };
+const CONTACT = { companyName: 'Werner Immobilier', phoneNumber: '01 87 66 06 00', email: 'contact@wernerimmobilier.com' };
 
 /* « 12 bis Rue Edouard Detaille, 92100 Boulogne » → numéro et rue. */
 export function rueEtNumero(adresse: string): { houseNumber: string; street: string } {

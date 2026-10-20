@@ -103,7 +103,7 @@ export default function FenetreSigne({ doc, onFermer, onFait, onRelu }: {
                 : m?.surRecherche && doc.recherche_id
                   ? 'Dépose le scan ou une photo de l’exemplaire signé par tout le monde. S’il change la fin du mandat ou les honoraires, sa recherche se met à jour toute seule.'
                   : doc.modele === 'avenant_vente'
-                    ? 'Dépose le scan ou une photo de l’exemplaire signé par tout le monde. S’il change le prix, les honoraires ou la fin du mandat, la fiche du bien se met à jour toute seule.'
+                    ? 'Dépose le scan ou une photo de l’exemplaire signé par tout le monde. S’il change le montant, les honoraires ou la fin du mandat, la fiche de l’affaire se met à jour toute seule.'
                     : 'Dépose le scan ou une photo de l’exemplaire signé par tout le monde : il reste ici, rangé avec le document.'}</p>
           </div>
           <button type="button" className={s.panFermer} aria-label="Fermer" onClick={onFermer} disabled={travail}><Croix /></button>

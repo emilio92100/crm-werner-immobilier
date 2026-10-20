@@ -30,7 +30,7 @@ export const maxDuration = 30;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const TEL = '01 00 00 00 00';
+const TEL = '01 87 66 06 00';
 const ko = (erreur: string, status = 400) => NextResponse.json({ ok: false, erreur }, { status });
 
 /* Le mail, au nom d'Alexandre : court, simple, rien à faire. */

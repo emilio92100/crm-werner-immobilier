@@ -141,11 +141,11 @@ export function nomDocument(m: Modele, d: Donnees): { le: string; du: string; co
   const n = txt(d, 'numero'), mn = txt(d, 'mandatNumero'), no = num(d, 'avenantNo') || 1;
   const adresse = [txt(d, 'adresse'), txt(d, 'ville')].filter(Boolean).join(', ');
   switch (m.id) {
-    case 'mandat_vente': return { le: `le mandat de vente${n ? ` n° ${n}` : ''}`, du: `du mandat de vente${n ? ` n° ${n}` : ''}`, court: 'le mandat' };
-    case 'avenant_vente': return { le: `l’avenant n° ${no} au mandat de vente${mn ? ` n° ${mn}` : ''}`, du: `de l’avenant n° ${no} au mandat de vente${mn ? ` n° ${mn}` : ''}`, court: 'l’avenant' };
+    case 'mandat_vente': return { le: `le mandat${n ? ` n° ${n}` : ''}`, du: `du mandat${n ? ` n° ${n}` : ''}`, court: 'le mandat' };
+    case 'avenant_vente': return { le: `l’avenant n° ${no} au mandat${mn ? ` n° ${mn}` : ''}`, du: `de l’avenant n° ${no} au mandat${mn ? ` n° ${mn}` : ''}`, court: 'l’avenant' };
     case 'mandat_recherche': return { le: `le mandat de recherche${n ? ` n° ${n}` : ''}`, du: `du mandat de recherche${n ? ` n° ${n}` : ''}`, court: 'le mandat' };
     case 'avenant_recherche': return { le: `l’avenant n° ${no} au mandat de recherche${mn ? ` n° ${mn}` : ''}`, du: `de l’avenant n° ${no} au mandat de recherche${mn ? ` n° ${mn}` : ''}`, court: 'l’avenant' };
-    case 'offre_achat': return { le: `l’offre d’achat${adresse ? ` pour le ${adresse}` : ''}`, du: `de l’offre d’achat${adresse ? ` pour le ${adresse}` : ''}`, court: 'l’offre' };
+    case 'offre_achat': return { le: `l’offre${adresse ? ` pour le ${adresse}` : ''}`, du: `de l’offre${adresse ? ` pour le ${adresse}` : ''}`, court: 'l’offre' };
     case 'bon_visite': return { le: `le bon de visite${adresse ? ` du ${adresse}` : ''}`, du: `du bon de visite${adresse ? ` du ${adresse}` : ''}`, court: 'le bon de visite' };
     default: return { le: `le document « ${m.entete(d)} »`, du: `du document « ${m.entete(d)} »`, court: 'le document' };
   }
@@ -178,7 +178,7 @@ export function mailInvitation(o: { s: SigDoc; m: Modele; d: Donnees; lien: stri
     ? `${Doc} attend toujours votre signature. C’est notre dernier rappel : votre lien de signature est valable ${encore}. Passé cette date, il ne fonctionnera plus.`
     : o.rappel
     ? `${Doc} attend toujours votre signature.`
-    : `Werner, d’Werner Immobilier, vous adresse ${doc.le} à signer.`;
+    : `Werner, de Werner Immobilier, vous adresse ${doc.le} à signer.`;
   const valable = o.rappel === 2 ? '' : ` et valable jusqu’au ${fin}`;
   const prenom = s.personne.prenom || nomSig(s);
   return {
@@ -865,11 +865,11 @@ export async function terminer(sb: SupabaseClient, doc: DocSigne, sigs: SigDoc[]
 const net = (t: unknown) => String(t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9@.]+/g, ' ').trim();
 const champ = (d: Donnees | null | undefined, k: string) => (d && typeof d[k] === 'string' ? String(d[k]).trim() : '');
 const QUI_AUTRE: Record<string, { un: string; pour: string }> = {
-  mandat_vente: { un: 'Un autre mandat de vente', pour: 'pour ce bien' },
+  mandat_vente: { un: 'Un autre mandat', pour: 'pour cette affaire' },
   avenant_vente: { un: 'Un autre avenant', pour: 'à ce mandat' },
   mandat_recherche: { un: 'Un autre mandat de recherche', pour: 'pour cette recherche' },
   avenant_recherche: { un: 'Un autre avenant', pour: 'à ce mandat' },
-  offre_achat: { un: 'Une autre offre d’achat', pour: 'du même demandeur pour ce bien' },
+  offre_achat: { un: 'Une autre offre', pour: 'du même demandeur pour ce local' },
   bon_visite: { un: 'Un autre bon de visite', pour: 'pour la même visite' },
   delegation: { un: 'Une autre délégation', pour: 'de ce mandat au même confrère' },
 };

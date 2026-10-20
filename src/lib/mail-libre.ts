@@ -163,7 +163,7 @@ export function habillageDe(reglages: Record<string, string | undefined>, identi
   const adresse = [id.adresse, [id.cp, id.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   return {
     conseiller: joliNom(conseillerDe(reglages)),
-    telephone: (reglages.conseiller_telephone || '').trim() || '01 00 00 00 00',
+    telephone: (reglages.conseiller_telephone || '').trim() || '01 87 66 06 00',
     agence: id.nom || 'Werner Immobilier',
     mentions: [`${id.nom} — ${id.societe}${id.forme ? `, ${id.forme}` : ''}`, adresse, id.carte ? `carte professionnelle ${id.carte}` : ''].filter(Boolean).join(' · '),
     /* V3.198 : le logo depuis espace.emilio-immo.com (src/lib/mail-charte.ts), plus depuis `site`. */

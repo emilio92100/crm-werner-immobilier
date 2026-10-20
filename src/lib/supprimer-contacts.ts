@@ -39,8 +39,8 @@ export async function empecheSuppression(id: string): Promise<string | null> {
       compter('documents'),
       compter('transactions', q => q.eq('etape_actuelle', 'finalise')),
     ]);
-    if (ventes) return 'Une vente signée : elle compte dans ton chiffre d’affaires. Archive-le plutôt.';
-    if (biens) return `Propriétaire de ${biens > 1 ? `${biens} biens` : 'un bien'} dans « Biens ». Archive-le plutôt.`;
+    if (ventes) return 'Une affaire signée : elle compte dans ton chiffre d’affaires. Archive-le plutôt.';
+    if (biens) return `Mandant de ${biens > 1 ? `${biens} affaires` : 'une affaire'} dans « Affaires ». Archive-le plutôt.`;
     if (docs) return `Relié à ${docs > 1 ? `${docs} documents` : 'un document'}. Archive-le plutôt.`;
     return null;
   } catch (e) {

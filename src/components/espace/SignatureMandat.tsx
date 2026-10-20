@@ -234,7 +234,7 @@ export function TexteMandat({ parties, identite, moi = 0, signes = [], bandeau, 
                       <div className="q">Le mandataire</div>
                       <div className="n">{`${identite.nom.toUpperCase()} · ${identite.signataireNom}`}</div>
                       {signes[0] ? <span className="mdt-ns ok">Signé</span> : <span className="mdt-ns">Non signé</span>}
-                      <div className="s">{signes[0] ? 'Sa signature a été apposée quand le premier mandant a signé.' : 'Sa signature est apposée sur le document au moment où le premier mandant signe.'}</div>
+                      <div className="s">{signes[0] ? 'Sa signature a été apposée lors de la première signature.' : 'Sa signature est apposée sur le document dès la première signature.'}</div>
                     </div>
                   </div>
                 );
@@ -485,7 +485,7 @@ function FormPersonne({ p, meme, champs, nouveau, onP, onMeme, onEnregistrer, on
   return (
     <div className="mdt-perso">
       <div className="mdt-perso-t">
-        <span className="n">Votre co-demandeur</span>
+        <span className="n">Votre co-signataire</span>
         {!nouveau && <button type="button" className="mdt-qui-a" onClick={onRetirer}>Retirer</button>}
       </div>
       <div className={'mdt-civ' + (champs.civilite ? ' err' : '')}>
@@ -558,7 +558,7 @@ function FormSociete({ s, champs, civilite, prenom, nom, kbis, kbisErr, onS, onK
     <div className="mdt-perso">
       <div className="mdt-perso-t"><span className="n">Votre société</span></div>
       <div className="mdt-soc-q">
-        <Champ lib="Retrouvez-la : son nom ou son SIREN" val={q} onChange={v => setQ(v)} placeholder="SCI Les Tilleuls, ou 732 829 320" auto="off" />
+        <Champ lib="Retrouvez-la : son nom ou son SIREN" val={q} onChange={v => setQ(v)} placeholder="SAS Le Comptoir, ou 732 829 320" auto="off" />
         {!court && etat === 'cherche' && <div className="mdt-soc-e">Recherche…</div>}
         {!court && etat === 'vide' && <div className="mdt-soc-e">{'Aucune société active ne correspond : vérifiez l’orthographe, ou remplissez les cases ci-dessous.'}</div>}
         {!court && etat === 'erreur' && <div className="mdt-soc-e">{'La recherche ne répond pas pour le moment : remplissez les cases ci-dessous.'}</div>}
@@ -574,7 +574,7 @@ function FormSociete({ s, champs, civilite, prenom, nom, kbis, kbisErr, onS, onK
         )}
       </div>
       {repris && <div className="mdt-info"><Ic n="check" t={16} /><span>{'Repris du registre national des entreprises. Vérifiez chaque case, et complétez la ville du greffe si elle manque.'}</span></div>}
-      <Champ lib="Nom de la société" val={s.denomination} onChange={maj('denomination')} err={champs.denomination} placeholder="SCI Les Tilleuls" auto="organization" />
+      <Champ lib="Nom de la société" val={s.denomination} onChange={maj('denomination')} err={champs.denomination} placeholder="SAS Le Comptoir" auto="organization" />
       <label className={'mdt-ch' + (champs.forme ? ' err' : '')}>
         <span className="l">Forme</span>
         <select className="mdt-sel" value={s.forme} onChange={e => maj('forme')(e.target.value)}>
@@ -584,7 +584,7 @@ function FormSociete({ s, champs, civilite, prenom, nom, kbis, kbisErr, onS, onK
       </label>
       <div className="mdt-deux">
         <Champ lib="N° SIREN" val={s.siren} onChange={v => maj('siren')(v.replace(/[^\d ]/g, '').slice(0, 11))} err={champs.siren} mode="numeric" placeholder="9 chiffres" auto="off" />
-        <Champ lib="Ville du greffe (RCS)" val={s.rcsVille} onChange={maj('rcsVille')} err={champs.rcsVille} placeholder="Nanterre" auto="off" />
+        <Champ lib="Ville du greffe (RCS)" val={s.rcsVille} onChange={maj('rcsVille')} err={champs.rcsVille} placeholder="Paris" auto="off" />
       </div>
       <Champ lib="Adresse du siège" val={s.siege} onChange={maj('siege')} err={champs.siege} placeholder="Numéro, rue, code postal et ville" auto="off" />
       <label className={'mdt-ch' + (champs.qualite ? ' err' : '')}>
@@ -808,12 +808,12 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
     const manque: Record<string, string> = manquesAdresse(adr);
     if (!certifie) manque.certifie = 'Cochez cette case pour recevoir votre code.';
     if (!v.ok || Object.keys(manque).length) { setChamps({ ...(v.ok ? {} : v.champs), ...manque, ...(Object.keys(manque).length ? { adresse: '' } : {}) }); return; }
-    if (edite !== null) { setErreur(`Enregistrez d’abord les informations de ${brouillon.prenom.trim() || 'votre co-demandeur'} (ou annulez).`); return; }
+    if (edite !== null) { setErreur(`Enregistrez d’abord les informations de ${brouillon.prenom.trim() || 'votre co-signataire'} (ou annulez).`); return; }
     const c0 = corps(v.mandant);
     if (achat === 'nom') {
       for (let i = 0; i < c0.cosignataires.length; i++) {
         const vc = validerPersonne(c0.cosignataires[i], [v.mandant.email, ...c0.cosignataires.filter((_, j) => j !== i).map(c => c.email)]);
-        if (!vc.ok) { ouvrirCo(i, vc.champs); setErreur(`Complétez les informations de ${c0.cosignataires[i].prenom || 'votre co-demandeur'}.`); return; }
+        if (!vc.ok) { ouvrirCo(i, vc.champs); setErreur(`Complétez les informations de ${c0.cosignataires[i].prenom || 'votre co-signataire'}.`); return; }
       }
     } else {
       const vs = validerSociete(soc);
@@ -830,7 +830,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
     } else if (r?.error === 'document') {
       refuser(r);
     } else if (r?.error === 'coordonnees' && r.champs) {
-      if (typeof r.co === 'number') { ouvrirCo(r.co, r.champs); setErreur('Vérifiez les informations de votre co-demandeur.'); }
+      if (typeof r.co === 'number') { ouvrirCo(r.co, r.champs); setErreur('Vérifiez les informations de votre co-signataire.'); }
       else if (r.societe) { setChampsSoc(r.champs); setErreur('Vérifiez les informations de votre société.'); }
       else setChamps(r.champs);
     } else {
@@ -941,11 +941,11 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
             ? 'Pour organiser cette visite et vous accompagner jusqu’au bout, Werner vous propose de confirmer votre recherche avec lui. C’est votre mandat de recherche.'
             : 'Werner vous propose de confirmer votre recherche avec lui. C’est votre mandat de recherche : il l’engage à vos côtés, jusqu’au bout.'}</p>
           <div className="mdt-puces">
-            <span><span className="k"><Ic n="check" t={14} /></span><span><b>Une seule signature</b>, valable pour tous les biens qu’il vous présentera&nbsp;: ensuite, plus rien à signer pour visiter.</span></span>
-            <span><span className="k"><Ic n="check" t={14} /></span><span>Il travaille pour vous, pas pour le mandant.</span></span>
-            <span><span className="k"><Ic n="check" t={14} /></span><span>Avant toute offre, il vérifie le dossier&nbsp;: copropriété, charges, travaux à venir.</span></span>
-            <span><span className="k"><Ic n="check" t={14} /></span><span>Il vous ouvre aussi les biens qui ne sont pas sur les portails.</span></span>
-            <span><span className="k"><Ic n="check" t={14} /></span><span>Il reste à vos côtés jusqu’à la signature chez le notaire.</span></span>
+            <span><span className="k"><Ic n="check" t={14} /></span><span><b>Une seule signature</b>, valable pour tous les locaux qu’il vous présentera&nbsp;: ensuite, plus rien à signer pour visiter.</span></span>
+            <span><span className="k"><Ic n="check" t={14} /></span><span>Il travaille pour vous, et pour vous seul.</span></span>
+            <span><span className="k"><Ic n="check" t={14} /></span><span>Avant toute offre, il vérifie le dossier&nbsp;: bail, charges, travaux à venir.</span></span>
+            <span><span className="k"><Ic n="check" t={14} /></span><span>Il vous ouvre aussi les locaux qui ne sont pas sur les portails.</span></span>
+            <span><span className="k"><Ic n="check" t={14} /></span><span>Il reste à vos côtés jusqu’à la signature du bail ou de l’acte.</span></span>
           </div>
           {/* V3.183 : « Commencer » a sa ligne dans l'historique (le résumé affiché). */}
           <button type="button" className="btn or mdt-plein" onClick={() => { setEtape('recap'); void envoyer('mandat', { etape: 'commencer' }); }}>
@@ -1036,7 +1036,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
           <Champ lib="E-mail — votre code arrive ici" val={m.email} onChange={maj('email')} err={champs.email} type="email" mode="email" auto="email" />
           <Champ lib="Téléphone" val={m.telephone} onChange={maj('telephone')} err={champs.telephone} type="tel" mode="tel" auto="tel" />
 
-          <div className="mdt-q2">Vous achetez</div>
+          <div className="mdt-q2">Vous cherchez</div>
           <div className="mdt-seg">
             <button type="button" data-on={achat === 'nom' ? '1' : undefined} onClick={() => { setAchat('nom'); setErreur(''); }}><Ic n="personne" t={17} /><span>En mon nom</span></button>
             <button type="button" data-on={achat === 'societe' ? '1' : undefined} onClick={() => { setAchat('societe'); setEdite(null); setErreur(''); }}><Ic n="societe" t={17} /><span>Via une société</span></button>
@@ -1067,7 +1067,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
               )}
               {edite === null && cos.length < COSIGNATAIRES_MAX && (
                 <button type="button" className="mdt-ajout" onClick={ajouterCo}>
-                  <Ic n="plus" t={17} /><span>{cos.length ? 'Ajouter une autre personne' : 'Ajouter mon conjoint ou un co\u2011acquéreur'}</span>
+                  <Ic n="plus" t={17} /><span>{cos.length ? 'Ajouter une autre personne' : 'Ajouter un associé'}</span>
                 </button>
               )}
               {edite === null && !cos.length && (
@@ -1075,8 +1075,8 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
                   <Ic n="info" t={19} />
                   <div>
                     <b>{m.civilite === 'Madame' ? 'Vous signez seule' : 'Vous signez seul'}</b>
-                    <p>{'Votre signature vous engage personnellement, même si vous achetez à deux ou via une société : votre engagement de ne pas acheter sans Werner un bien qu’il vous a présenté vaut aussi pour la personne avec qui vous achetez, et pour votre société.'}</p>
-                    <p>{'Vous préférez qu’elle signe aussi ? Ajoutez-la ci-dessus : elle recevra son propre lien.'}</p>
+                    <p>{'Votre signature vous engage personnellement, même si vous êtes plusieurs ou passez par une société : votre engagement de ne pas conclure sans Werner pour un local qu’il vous a présenté vaut aussi pour vos associés, et pour votre société.'}</p>
+                    <p>{'Vous préférez qu’un associé signe aussi ? Ajoutez-le ci-dessus : il recevra son propre lien.'}</p>
                   </div>
                 </div>
               )}
@@ -1093,7 +1093,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
               ? `Je certifie que les informations que j’ai renseignées sont exactes et complètes, et que je suis habilité${m.civilite === 'Madame' ? 'e' : ''} à engager ${soc.denomination.trim() || 'la société'}. Ma signature m’engage aussi personnellement.`
               : cos.length
                 ? `Je certifie que les informations que j’ai renseignées, pour moi et pour ${prenoms(cos)}, sont exactes et complètes.`
-                : 'Je certifie que les informations que j’ai renseignées sont exactes et complètes. Je signe ce mandat moi-même, et ma signature m’engage même si j’achète à plusieurs.'}</span>
+                : 'Je certifie que les informations que j’ai renseignées sont exactes et complètes. Je signe ce mandat moi-même, et ma signature m’engage même si nous sommes plusieurs.'}</span>
           </button>
           {champs.certifie && <div className="mdt-err-l">{champs.certifie}</div>}
           <button type="button" className="btn or mdt-plein" disabled={envoi} onClick={demanderCode}>
@@ -1180,7 +1180,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
     ? (attendre
       ? `Votre demande de visite est partie. Comme vous avez choisi d’attendre vos ${RETRACTATION_JOURS} jours, Werner vous proposera un créneau à partir du ${dateLongue(fin!.finRetractation)}.`
       : 'Votre demande de visite est partie avec vos disponibilités. Werner vous propose un créneau très vite.')
-    : 'Werner est prévenu. Vous pouvez maintenant demander vos visites en un geste, depuis chaque bien.';
+    : 'Werner est prévenu. Vous pouvez maintenant demander vos visites en un geste, depuis chaque local.';
 
   /* Signé à plusieurs : sa signature est faite, on attend les autres. Pas
      de rond qui tourne : qui a signé, qui on attend, et quoi faire si le
@@ -1219,7 +1219,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
         <div className="mdt-confiance fini">
           <span><Ic n="check" t={15} /><span>Signé par vous et par Werner Immobilier</span></span>
           <span><Ic n="mail" t={15} /><span>Exemplaire complet envoyé par e-mail</span></span>
-          <span><Ic n="etoile" t={15} /><span>Werner travaille désormais pour vous&nbsp;: biens hors marché, dossiers vérifiés, négociation</span></span>
+          <span><Ic n="etoile" t={15} /><span>Werner travaille désormais pour vous&nbsp;: locaux hors marché, dossiers vérifiés, négociation</span></span>
         </div>
         <p className="mdt-p petit">Vous le retrouvez à tout moment dans «&nbsp;Ma recherche&nbsp;».</p>
         {erreur && <div className="mdt-erreur">{erreur}</div>}
@@ -1467,7 +1467,7 @@ export function CarteMonMandat({ mandat, envoyer, onSigner, onRenoncer }: {
    ne marche plus). Au niveau du module (AGENTS.md §2.4). */
 const etatCo = (c: CoEspace): string => {
   if (c.statut === 'signe') return c.signe ? `Signé le ${dateLongue(c.signe)} à ${heureParis(c.signe)}` : 'Signé';
-  if (c.statut === 'decline') return 'A indiqué ne pas être concerné par cet achat';
+  if (c.statut === 'decline') return 'A indiqué ne pas être concerné par cette recherche';
   if (c.statut === 'annule') return 'N’a pas signé : le mandat continue sans cette signature';
   if (c.statut === 'retracte') return 'A renoncé au mandat';
   if (c.expire && Date.parse(c.expire) < Date.now()) return `Son lien a expiré : renvoyez-le (${c.email})`;
@@ -1754,7 +1754,7 @@ export function AvantVisiteDocument({ lien, onFermer }: { lien: string; onFermer
         <h3>Votre mandat de recherche vous attend</h3>
         <p className="mdt-p">{'Pour organiser cette visite, Werner vous a envoyé votre mandat de recherche. Il se relit en entier et se signe en deux minutes, avec un code reçu par e-mail.'}</p>
         <div className="mdt-puces">
-          <span><span className="k"><Ic n="check" t={14} /></span><span><b>Une seule signature</b>, valable pour tous les biens qu’il vous présentera.</span></span>
+          <span><span className="k"><Ic n="check" t={14} /></span><span><b>Une seule signature</b>, valable pour tous les locaux qu’il vous présentera.</span></span>
           <span><span className="k"><Ic n="check" t={14} /></span><span>Votre demande de visite est gardée&nbsp;: elle part dès votre retour dans votre espace, une fois signé.</span></span>
         </div>
         <a className="btn or mdt-plein" href={lien}>Lire et signer mon mandat</a>

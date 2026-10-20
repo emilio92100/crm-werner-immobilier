@@ -11,7 +11,7 @@
 
 /* « Ce qui vous plaît » : des mots qui valent pour une maison comme pour un
    appartement (« le jardin » ne disait rien d'un 3 pièces). */
-export const AIMES = ['Le quartier', 'Les volumes', 'La lumière', 'L’extérieur', 'Le prix', 'Le charme'];
+export const AIMES = ['L’emplacement', 'Les volumes', 'La vitrine', 'L’extérieur', 'Le loyer ou le prix', 'L’état'];
 
 export const PHOTOS_MAX = 4;
 

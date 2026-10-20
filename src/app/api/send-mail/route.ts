@@ -302,7 +302,7 @@ ${LIEN_POLICE_MAIL}
               <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 00 00 00 00</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>
         </td></tr>
 
@@ -484,7 +484,7 @@ ${LIEN_POLICE_MAIL}
               <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 00 00 00 00</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>
         </td></tr>
 
@@ -527,7 +527,7 @@ Le conseil qui change tout : ouvrez ce lien depuis votre téléphone, puis ajout
 Une question, une précision à me donner ? Répondez simplement à ce message, ou appelez-moi.
 
 Werner Immobilier
-01 00 00 00 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
+01 87 66 06 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
 }
 
 
@@ -645,7 +645,7 @@ ${LIEN_POLICE_MAIL}
               <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 00 00 00 00</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>
         </td></tr>
 
@@ -684,7 +684,7 @@ Ouvrir mon espace : ${lien}
 Une question, une précision à me donner ? Répondez simplement à ce message, ou appelez-moi.
 
 Werner Immobilier
-01 00 00 00 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
+01 87 66 06 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
 }
 
 
@@ -775,7 +775,7 @@ ${LIEN_POLICE_MAIL}
               <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 00 00 00 00</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>
         </td></tr>
 
@@ -812,7 +812,7 @@ Pour être prévenu sur votre téléphone : ouvrez ce lien depuis votre téléph
 Un souci pour l'ouvrir ? Répondez simplement à ce message, ou appelez-moi.
 
 Werner Immobilier
-01 00 00 00 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
+01 87 66 06 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
 }
 
 
@@ -931,7 +931,7 @@ Lire et signer mon mandat : ${lien}
 Une question avant de signer ? Répondez simplement à ce message.
 
 ---
-Werner · Werner Immobilier · 01 00 00 00 00`;
+Werner · Werner Immobilier · 01 87 66 06 00`;
 }
 
 function texteVisites(corps: string, lignes: LigneVisite[], token?: string | null): string {
@@ -941,7 +941,7 @@ function texteVisites(corps: string, lignes: LigneVisite[], token?: string | nul
     const adresse = lieuMail(b);
     return `- ${quandMail(l)} : ${titre}${adresse ? ` (${adresse})` : ''}`;
   }).join('\n');
-  return `${corps}\n\n${liste}\n\n---\nWerner · Werner Immobilier · 01 00 00 00 00${
+  return `${corps}\n\n${liste}\n\n---\nWerner · Werner Immobilier · 01 87 66 06 00${
     lienFin(token) ? `\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''
   }`;
 }

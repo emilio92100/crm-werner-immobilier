@@ -116,20 +116,20 @@ export default function PageActivite() {
             {!erreurCA && total > 0 && (
               <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', marginTop: 6, lineHeight: 1.5 }}>
                 {`Dont ${eurosRonds(cetteAnnee)} HT en ${annee}`}<br />
-                {`Chasse ${eurosRonds(chasse)} HT · Vente ${eurosRonds(vente)} HT`}
+                {`Recherches ${eurosRonds(chasse)} HT · Affaires ${eurosRonds(vente)} HT`}
               </div>
             )}
             {/* V3.50 : ce qui est attendu, discret, sous le réalisé. */}
             {prevu.length > 0 && aVenir > 0 && (
               <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', marginTop: 6, lineHeight: 1.5 }}>
-                {`À venir : ${eurosRonds(aVenir)} HT · ${prevu.length} compromis signé${prevu.length > 1 ? 's' : ''}`}
+                {`À venir : ${eurosRonds(aVenir)} HT · ${prevu.length} accord${prevu.length > 1 ? 's' : ''} signé${prevu.length > 1 ? 's' : ''}`}
               </div>
             )}
           </div>
         </div>
       )}
       <p style={{ fontSize: 12, color: '#94a3b8', margin: '14px 2px 0', lineHeight: 1.6, maxWidth: 720 }}>
-        {'Le CA additionne les honoraires HT saisis à l’étape « Acte » des transactions clôturées, et les honoraires encaissés des biens passés « Vendu » (ramenés en HT). Un honoraire non saisi ne compte pas. « À venir » : les honoraires des compromis signés dont l’acte n’est pas encore passé.'}
+        {'Le CA additionne les honoraires HT saisis à la signature du bail ou de l’acte des transactions clôturées, et les honoraires encaissés des affaires passées « Conclue » (ramenés en HT). Un honoraire non saisi ne compte pas. « À venir » : les honoraires des accords signés dont le bail ou l’acte n’est pas encore signé.'}
       </p>
     </div>
   );

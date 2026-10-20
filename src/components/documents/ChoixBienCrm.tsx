@@ -59,7 +59,7 @@ export default function AjoutBien({ clientId, plein, onAjouter }: {
         .select('id, reference, etape, titre, adresse, code_postal, ville, prix, photo, client_id, proprietaires:donnees->proprietaires, qui:donnees->qui, sciNom:donnees->sciNom')
         .eq('archive', false).order('updated_at', { ascending: false }).limit(400);
       if (!vivant) return;
-      if (error) { setErreur('Tes biens n’ont pas pu être lus : ' + error.message); setVentes([]); return; }
+      if (error) { setErreur('Tes affaires n’ont pas pu être lues : ' + error.message); setVentes([]); return; }
       const l = (data || []) as unknown as Vente[];
       setVentes(l);
       /* Le propriétaire : sa fiche quand le bien en a une, sinon le nom noté sur le bien. */
@@ -153,7 +153,7 @@ export default function AjoutBien({ clientId, plein, onAjouter }: {
         <div className={s.abChoix}>
           <button type="button" className={s.abTuile} onClick={() => setChemin('mandats')}>
             <span className={s.abTuileIc}><Ic n="panneau" t={18} /></span>
-            <span><b>Depuis mes mandats</b><small>Par sa référence, le nom du propriétaire ou l’adresse.</small></span>
+            <span><b>Depuis mes mandats</b><small>Par sa référence, le nom du mandant ou l’adresse.</small></span>
           </button>
           {clientId && (
             <button type="button" className={s.abTuile} onClick={() => setChemin('dossier')}>
@@ -171,7 +171,7 @@ export default function AjoutBien({ clientId, plein, onAjouter }: {
       {(chemin === 'mandats' || chemin === 'dossier') && (
         <>
           <input className={s.cherche} autoFocus autoComplete="off" value={q} onChange={e => setQ(e.target.value)}
-            placeholder={chemin === 'mandats' ? 'Une référence, un propriétaire, une adresse…' : 'Une adresse, une ville, une agence…'} />
+            placeholder={chemin === 'mandats' ? 'Une référence, un mandant, une adresse…' : 'Une adresse, une ville, une agence…'} />
           {(chemin === 'mandats' ? ventes : copies) === null ? <div className={s.chAide}>Chargement…</div> : (
             <div className={`${s.resultats} ${s.abListe}`}>
               {chemin === 'mandats' && trouvesV.map(v => {
@@ -197,7 +197,7 @@ export default function AjoutBien({ clientId, plein, onAjouter }: {
                     <span className={s.resDeux}>
                       <b>{c.titre || 'Bien'}</b>
                       <i>{[c.adresse, c.ville].filter(Boolean).join(', ') || 'Adresse non notée'}</i>
-                      <i>{[c.bien_vente_id ? 'Mon mandat' : c.agence_nom || (c.est_particulier ? 'Particulier' : ''), EUR(c.prix_acquereur)].filter(Boolean).join(' · ')}</i>
+                      <i>{[c.bien_vente_id ? 'Mon mandat' : c.agence_nom || (c.est_particulier ? 'Sans agence' : ''), EUR(c.prix_acquereur)].filter(Boolean).join(' · ')}</i>
                     </span>
                     {travail === c.id && <small>…</small>}
                   </button>
@@ -205,7 +205,7 @@ export default function AjoutBien({ clientId, plein, onAjouter }: {
               })}
               {(chemin === 'mandats' ? trouvesV.length : trouvesC.length) === 0 && (
                 <div className={s.resultat} style={{ cursor: 'default', color: '#64748b' }}>
-                  {q.trim() ? 'Aucun bien ne correspond.' : chemin === 'mandats' ? 'Aucun bien en vente pour l’instant.' : 'Aucun bien dans sa Sélection ni ses Présentés pour l’instant.'}
+                  {q.trim() ? 'Aucun bien ne correspond.' : chemin === 'mandats' ? 'Aucune affaire pour l’instant.' : 'Aucun bien dans sa Sélection ni ses Présentés pour l’instant.'}
                 </div>
               )}
             </div>

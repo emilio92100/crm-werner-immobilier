@@ -29,10 +29,10 @@ export async function bienVisitable(biens: BienAVisiter[], acceptes: Set<string>
     const v = ventes.find(x => x.id === b.bien_vente_id);
     if (!v) continue;
     const nom = b.titre || b.ville || 'Ce bien';
-    if (v.etape === 'vendu') { alert(`Ce bien est vendu.\n\n« ${nom} » ne peut plus être visité.`); return false; }
-    if (v.archive || v.etape === 'retire' || v.etape === 'suspendu') { alert(`Ce bien n’est plus en vente.\n\n« ${nom} » ne peut plus être visité.`); return false; }
+    if (v.etape === 'vendu') { alert(`Cette affaire est conclue.\n\n« ${nom} » ne peut plus être visité.`); return false; }
+    if (v.archive || v.etape === 'retire' || v.etape === 'suspendu') { alert(`Ce local n’est plus disponible.\n\n« ${nom} » ne peut plus être visité.`); return false; }
     if (v.etape === 'compromis' && !acceptes.has(b.id)) {
-      if (!confirm(`Ce bien est en signature : une visite ne sert que pour une offre de secours. Continuer ?\n\n« ${nom} »`)) return false;
+      if (!confirm(`Cette affaire est en signature : une visite ne sert que pour une offre de secours. Continuer ?\n\n« ${nom} »`)) return false;
       acceptes.add(b.id);
     }
   }

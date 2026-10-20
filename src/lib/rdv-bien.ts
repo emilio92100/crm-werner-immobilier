@@ -44,7 +44,7 @@ async function ligneVisite(r: RdvBien): Promise<LigneSuivi | null> {
   const b = bienDuRdv(r);
   if (b) q = q.eq('bien_id', b);
   const { data, error } = await q.limit(1);
-  if (error) { signalerEchec('La visite sur la fiche du bien', error.message); return null; }
+  if (error) { signalerEchec('La visite sur la fiche de l’affaire', error.message); return null; }
   return ((data || []) as LigneSuivi[])[0] || null;
 }
 
@@ -79,19 +79,19 @@ export async function annulerCoteBien(r: RdvBien, jour: string): Promise<void> {
     if (r.type === 'visite') {
       const l = await ligneVisite(r);
       if (!l || l.statut !== 'a_venir') return;
-      await verifie('L’annulation de la visite sur la fiche du bien',
+      await verifie('L’annulation de la visite sur la fiche de l’affaire',
         supabase.from('biens_vente_suivi').update({ statut: 'annulee' }).eq('id', l.id).select('id'), { ligne: true });
       return;
     }
     if (r.type === 'estimation' && bien) {
-      await majDonneesBien(bien, 'Le rendez-vous d’estimation sur la fiche du bien', d => {
+      await majDonneesBien(bien, 'Le rendez-vous d’estimation sur la fiche de l’affaire', d => {
         if (!estCeRdv(d, r.id, jour)) return false;
         delete d.rdvEstimation; delete d.rdvEstimationHeure; delete d.rdvEstimationRdv;
         return true;
       });
     }
   } catch (e) {
-    signalerEchec('La fiche du bien', (e as Error)?.message || '');
+    signalerEchec('La fiche de l’affaire', (e as Error)?.message || '');
   }
 }
 
@@ -108,13 +108,13 @@ export async function deplacerCoteBien(r: RdvBien, o: { date: string; heure: str
          la durée dans `donnees`, le reste de `donnees` gardé tel quel. */
       const le = new Date(`${o.date}T${o.heure || '12:00'}:00`);
       if (isNaN(le.getTime())) return;
-      await verifie('La nouvelle date de la visite sur la fiche du bien',
+      await verifie('La nouvelle date de la visite sur la fiche de l’affaire',
         supabase.from('biens_vente_suivi').update({ le: le.toISOString(), donnees: { ...(l.donnees || {}), duree: o.duree } })
           .eq('id', l.id).select('id'), { ligne: true });
       return;
     }
     if (r.type === 'estimation' && bien) {
-      await majDonneesBien(bien, 'La nouvelle date d’estimation sur la fiche du bien', d => {
+      await majDonneesBien(bien, 'La nouvelle date d’estimation sur la fiche de l’affaire', d => {
         if (!estCeRdv(d, r.id, o.ancienJour)) return false;
         d.rdvEstimation = o.date;
         if (o.heure) d.rdvEstimationHeure = o.heure; else delete d.rdvEstimationHeure;
@@ -123,7 +123,7 @@ export async function deplacerCoteBien(r: RdvBien, o: { date: string; heure: str
       });
     }
   } catch (e) {
-    signalerEchec('La fiche du bien', (e as Error)?.message || '');
+    signalerEchec('La fiche de l’affaire', (e as Error)?.message || '');
   }
 }
 
@@ -136,10 +136,10 @@ export async function renommerCoteBien(r: RdvBien, qui: string, tel: string): Pr
     if (r.type !== 'visite') return;
     const l = await ligneVisite(r);
     if (!l) return;
-    await verifie('Le nom du visiteur sur la fiche du bien',
+    await verifie('Le nom du visiteur sur la fiche de l’affaire',
       supabase.from('biens_vente_suivi').update({ qui, donnees: { ...(l.donnees || {}), tel } }).eq('id', l.id).select('id'), { ligne: true });
   } catch (e) {
-    signalerEchec('La fiche du bien', (e as Error)?.message || '');
+    signalerEchec('La fiche de l’affaire', (e as Error)?.message || '');
   }
 }
 
@@ -148,7 +148,7 @@ export async function renommerCoteBien(r: RdvBien, qui: string, tel: string): Pr
 export async function poserEstimationSurBien(bienId: string, rdvId: string, date: string, heure: string): Promise<boolean> {
   try {
     let ancien = '';
-    const ok = await majDonneesBien(bienId, 'Le rendez-vous d’estimation sur la fiche du bien', d => {
+    const ok = await majDonneesBien(bienId, 'Le rendez-vous d’estimation sur la fiche de l’affaire', d => {
       ancien = typeof d.rdvEstimationRdv === 'string' ? d.rdvEstimationRdv : '';
       d.rdvEstimation = date;
       if (heure) d.rdvEstimationHeure = heure; else delete d.rdvEstimationHeure;
@@ -163,7 +163,7 @@ export async function poserEstimationSurBien(bienId: string, rdvId: string, date
     }
     return ok;
   } catch (e) {
-    signalerEchec('Le rendez-vous d’estimation sur la fiche du bien', (e as Error)?.message || '');
+    signalerEchec('Le rendez-vous d’estimation sur la fiche de l’affaire', (e as Error)?.message || '');
     return false;
   }
 }
@@ -185,8 +185,8 @@ export async function etatVenteDesCopies(copies: { titre?: string | null; ville?
     const b = c.bien_vente_id ? parId.get(c.bien_vente_id) : null;
     if (!b) continue;
     const nom = c.titre || c.ville || 'Ce bien';
-    if (b.etape === 'vendu') out.bloque.push(`« ${nom} » : ce bien est vendu.`);
-    else if (b.archive || b.etape === 'retire' || b.etape === 'suspendu') out.bloque.push(`« ${nom} » : ce bien n’est plus en vente.`);
+    if (b.etape === 'vendu') out.bloque.push(`« ${nom} » : l’affaire est conclue.`);
+    else if (b.archive || b.etape === 'retire' || b.etape === 'suspendu') out.bloque.push(`« ${nom} » : ce local n’est plus disponible.`);
     else if (b.etape === 'compromis') out.secours.push(nom);
   }
   return out;

@@ -116,7 +116,7 @@ async function solderFinDeRecherche(sb: ReturnType<typeof base>, clientId: strin
       const prevue = d ? `Prévue le ${d[2]} ${MOIS_FIN[(d[1] || 1) - 1]} ${d[0]}${h}. ` : '';
       await journalServeur(sb, '[espace/fin] journal visite annulée', {
         client_id: clientId, recherche_id: x.recherche_id, bien_id: x.bien_id, type: 'visite_annulee',
-        titre: `✕ Visite annulée — ${x.biens?.titre || x.biens?.ville || 'le bien'}`,
+        titre: `✕ Visite annulée — ${x.biens?.titre || x.biens?.ville || 'le local'}`,
         description: `${prevue}Le client ${quoi}, depuis son espace.`,
       });
     }
@@ -256,7 +256,7 @@ async function prevenirApresVisite(
     non: 'Ses raisons rejoignent « Ce que ses visites ont appris », dans l’onglet Visites de sa fiche.',
   }[issue];
   const lignes = [
-    prix ? `<div style="margin-top:6px;font-size:15px;color:#232528"><b>Son prix en tête :</b> ${euros(prix)}</div>` : '',
+    prix ? `<div style="margin-top:6px;font-size:15px;color:#232528"><b>Son montant en tête :</b> ${euros(prix)}</div>` : '',
     motifs.length ? `<div style="margin-top:8px">${motifs.map(m => `<span style="display:inline-block;margin:0 6px 6px 0;padding:4px 10px;border-radius:99px;background:${ISSUES[issue].fond};color:${ISSUES[issue].couleur};font-size:13px;font-weight:700">${echappe(m)}</span>`).join('')}</div>` : '',
     mot ? `<div style="margin-top:8px;font-size:14px;line-height:1.6;color:#232528;background:#f6f6f7;border-radius:10px;padding:10px 12px">« ${echappe(mot)} »</div>` : '',
   ].join('');
@@ -282,7 +282,7 @@ async function prevenirApresVisite(
 </div>`;
   const texte = [
     `${phrase} : ${titre}${lieu ? ` (${lieu})` : ''}${prixBien ? ` — ${euros(prixBien)}` : ''}.`,
-    prix ? `Son prix en tête : ${euros(prix)}.` : '',
+    prix ? `Son montant en tête : ${euros(prix)}.` : '',
     motifs.length ? `Raisons : ${motifs.join(', ')}.` : '',
     mot ? `Son mot : « ${mot} »` : '',
     `Ouvrir sa fiche : ${lien}`,
@@ -349,8 +349,8 @@ const VALEURS: [string, string, (v: any) => string][] = [
   ['surface_max', 'Surface maximum', (v) => `${v}\u00a0m²`],
   ['surface_sejour_min', 'Séjour minimum', (v) => `${v}\u00a0m²`],
   ['exterieur_surface_min', 'Extérieur minimum', (v) => `${v}\u00a0m²`],
-  ['nb_pieces_min', 'Pièces minimum', (v) => `${v} pièce${Number(v) > 1 ? 's' : ''}`],
-  ['nb_pieces_max', 'Pièces maximum', (v) => `${v} pièce${Number(v) > 1 ? 's' : ''}`],
+  ['nb_pieces_min', 'Espaces minimum', (v) => `${v} espace${Number(v) > 1 ? 's' : ''}`],
+  ['nb_pieces_max', 'Espaces maximum', (v) => `${v} espace${Number(v) > 1 ? 's' : ''}`],
   ['chambres_min', 'Chambres minimum', (v) => (Number(v) === 0 ? 'aucune exigence' : `${v} chambre${Number(v) > 1 ? 's' : ''}`)],
   ['etage_min', 'Étage minimum', (v) => etage(Number(v))],
   ['etage_max', 'Étage maximum', (v) => etage(Number(v))],
@@ -387,7 +387,7 @@ function decrireChangements(avant: Record<string, any>, maj: Record<string, unkn
   const out: Changement[] = [];
   const dans = (k: string) => Object.prototype.hasOwnProperty.call(maj, k);
 
-  if (dans('type_bien')) comparerListe('Type de bien', liste(avant.type_bien), liste(maj.type_bien), out);
+  if (dans('type_bien')) comparerListe('Type de local', liste(avant.type_bien), liste(maj.type_bien), out);
 
   for (const [k, l, f] of VALEURS) {
     if (!dans(k)) continue;
@@ -406,7 +406,7 @@ function decrireChangements(avant: Record<string, any>, maj: Record<string, unkn
 
   if (dans('etat_souhaite')) {
     const e = (v: unknown) => liste(v).map((x) => ETIQ_ETATS[x] || x);
-    comparerListe('État du bien', e(avant.etat_souhaite), e(maj.etat_souhaite), out);
+    comparerListe('État du local', e(avant.etat_souhaite), e(maj.etat_souhaite), out);
   }
   if (dans('exposition_souhaitee')) comparerListe('Exposition', liste(avant.exposition_souhaitee), liste(maj.exposition_souhaitee), out);
   if (dans('secteurs')) comparerListe('Secteurs', liste(avant.secteurs), liste(maj.secteurs), out);
@@ -974,7 +974,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
             : maj.budget_max ? `budget jusqu'à ${eur(maj.budget_max)}` : null,
           maj.surface_min ? `${maj.surface_min} m² min` : null,
           maj.surface_max ? `${maj.surface_max} m² max` : null,
-          maj.nb_pieces_min ? `${maj.nb_pieces_min} pièces min` : null,
+          maj.nb_pieces_min ? `${maj.nb_pieces_min} espaces min` : null,
           maj.chambres_min != null ? `${maj.chambres_min} chambres min` : null,
           maj.etage_min || maj.etage_max || maj.etage_max_sans_ascenseur ? 'étage' : null,
           maj.exposition_souhaitee ? `exposition ${maj.exposition_souhaitee}` : null,
@@ -1107,8 +1107,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
       /* ── il dit que sa recherche est terminée ───────────────── */
       case 'fin': {
         const MOTIFS: Record<string, string> = {
-          trouve_avec_vous: 'a trouvé son bien avec nous',
-          trouve_ailleurs: 'a trouvé son bien par un autre biais',
+          trouve_avec_vous: 'a trouvé son local avec nous',
+          trouve_ailleurs: 'a trouvé son local par un autre biais',
           pause: 'souhaite mettre sa recherche en pause',
           /* Distinct de la pause, et la nuance compte : une pause se relance,
              un arrêt se clôture. Le rappel ne se prépare pas pareil. */
@@ -1148,7 +1148,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
            `updated_at` n'est pas touché : c'est lui qui dit à l'espace si la
            déclaration du client est toujours la dernière parole. */
         const BASCULE: Record<string, { statut: string; nom: string; raison: string | null }> = {
-          trouve_avec_vous: { statut: 'bien_trouve', nom: 'Bien trouvé', raison: 'Trouvé avec moi' },
+          trouve_avec_vous: { statut: 'bien_trouve', nom: 'Local trouvé', raison: 'Trouvé avec moi' },
           trouve_ailleurs: { statut: 'perdu', nom: 'Perdu', raison: 'Trouvé ailleurs' },
           abandon: { statut: 'perdu', nom: 'Perdu', raison: 'A renoncé' },
           pause: { statut: 'suspendu', nom: 'Suspendu', raison: null },
@@ -1244,7 +1244,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
         const lien = lienBienPublic(bien.id as string);
         const prix = prixDuBien(bien).demande;
         const carac = [bien.surface ? bien.surface + ' m²' : null,
-          bien.nb_pieces ? bien.nb_pieces + ' pièce' + (bien.nb_pieces > 1 ? 's' : '') : null,
+          bien.nb_pieces ? bien.nb_pieces + ' espace' + (bien.nb_pieces > 1 ? 's' : '') : null,
           bien.nb_chambres ? bien.nb_chambres + ' chambre' + (bien.nb_chambres > 1 ? 's' : '') : null,
         ].filter(Boolean).join(' · ');
         const lieuBien = [bien.quartier, bien.ville].filter(Boolean).join(', ');
@@ -1266,12 +1266,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
   </div>
   <div style="border:1px solid #eeeeed;border-top:none;border-radius:0 0 14px 14px;padding:24px">
     <p style="margin:0 0 16px">Bonjour,</p>
-    <p style="margin:0 0 20px;line-height:1.7">Voici un bien que je suis en train de regarder.
+    <p style="margin:0 0 20px;line-height:1.7">Voici un local que je suis en train de regarder.
       Dites-moi ce que vous en pensez.</p>
     <div style="border:1px solid #eeeeed;border-radius:12px;background:#f6f6f7;overflow:hidden">
       ${photo ? `<img src="${echappe(photo)}" alt="" width="510" style="width:100%;max-width:510px;height:auto;display:block;border:0" />` : ''}
       <div style="padding:16px">
-      <div style="font-weight:700;font-size:16px;color:#232528">${echappe(bien.titre || 'Le bien')}</div>
+      <div style="font-weight:700;font-size:16px;color:#232528">${echappe(bien.titre || 'Le local')}</div>
       ${lieuBien ? `<div style="color:#5B6B80;margin-top:5px;font-size:13px"><span style="color:#f08c42">&#9679;</span> ${echappe(lieuBien)}</div>` : ''}
       ${carac ? `<div style="color:#5B6B80;margin-top:6px;font-size:13px">${carac}</div>` : ''}
       ${prix ? `<div style="font-weight:800;font-size:20px;color:#232528;margin-top:10px">${Number(prix).toLocaleString('fr-FR')} €</div>` : ''}
@@ -1283,7 +1283,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
     <hr style="border:none;border-top:1px solid #eeeeed;margin:24px 0 14px">
     <div style="font-size:12px;color:#aba7a3;line-height:1.6">
       Fiche transmise par ${echappe(prenom)}.<br>
-      Ce bien est présenté par Werner, chasseur immobilier · 01 00 00 00 00<br>
+      Ce local est présenté par Werner, conseiller en immobilier d’entreprise · 01 87 66 06 00<br>
       Werner Immobilier — RT Conseils · CPI 9201 2020 000 045 344
     </div>
   </div>
@@ -1297,8 +1297,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
               /* V3.118 : c'est le client qui partage, pas Alexandre. */
               From: { Email: FROM_EMAIL, Name: cl?.prenom ? `${cl.prenom} via Werner Immobilier` : 'Werner Immobilier' },
               To: [{ Email: dest }],
-              Subject: `${prenom} vous partage un bien`,
-              TextPart: `Bonjour,\n\nVoici un bien que je suis en train de regarder. Dites-moi ce que vous en pensez.\n\n${bien.titre || ''}\n${[carac, prix ? Number(prix).toLocaleString('fr-FR') + ' \u20ac' : null].filter(Boolean).join(' \u00b7 ')}\n${lien}\n\n${prenom}\n\n---\nFiche transmise par ${prenom}.\nCe bien est présenté par Werner, chasseur immobilier · 01 00 00 00 00\nWerner Immobilier — RT Conseils · CPI 9201 2020 000 045 344`,
+              Subject: `${prenom} vous partage un local`,
+              TextPart: `Bonjour,\n\nVoici un local que je suis en train de regarder. Dites-moi ce que vous en pensez.\n\n${bien.titre || ''}\n${[carac, prix ? Number(prix).toLocaleString('fr-FR') + ' \u20ac' : null].filter(Boolean).join(' \u00b7 ')}\n${lien}\n\n${prenom}\n\n---\nFiche transmise par ${prenom}.\nCe local est présenté par Werner, conseiller en immobilier d’entreprise · 01 87 66 06 00\nWerner Immobilier — RT Conseils · CPI 9201 2020 000 045 344`,
               HTMLPart: html,
               CustomID: `partage-${bien.id}-${Date.now()}`,
               TrackOpens: 'disabled', TrackClicks: 'disabled',

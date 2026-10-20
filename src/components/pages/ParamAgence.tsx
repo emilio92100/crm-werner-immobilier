@@ -223,7 +223,7 @@ export default function ParamAgence() {
       <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 22 }}>
         <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: 16, color: NAVY }}>🏢 Identité de l’agence</div>
         <p style={{ fontSize: 13, color: GRIS, lineHeight: 1.6, margin: '6px 0 14px' }}>
-          {'Ce que tes documents impriment : le mandat de recherche aujourd’hui, les mandats de vente et les offres ensuite. Un document déjà signé ne change jamais ; les suivants prennent l’identité du jour de leur signature.'}
+          {'Ce que tes documents impriment : le mandat de recherche aujourd’hui, les mandats de location ou de vente et les offres ensuite. Un document déjà signé ne change jamais ; les suivants prennent l’identité du jour de leur signature.'}
         </p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <Etat ton={carteEtat.ton} titre="Carte professionnelle" texte={carteEtat.texte} />
@@ -289,8 +289,8 @@ export default function ParamAgence() {
         <TeteBloc e="💶" titre="Honoraires" sert="Ce que chaque type de mandat propose, et jusqu’où tu peux aller." />
         <div className={styles.param2} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {[
-            ['Mandat de recherche', `${tauxTexte(HONORAIRES_TAUX)} du prix`, `Proposé par défaut · tu peux aller jusqu’à ${tauxTexte(BAREME)}`],
-            ['Mandat de vente', `${tauxTexte(BAREME_VENTE)} du prix`, 'Pour les mandats de vente, à venir'],
+            ['Mandat de recherche', `${tauxTexte(HONORAIRES_TAUX)} du montant`, `Proposé par défaut · tu peux aller jusqu’à ${tauxTexte(BAREME)}`],
+            ['Mandat de location ou vente', `${tauxTexte(BAREME_VENTE)} du montant`, 'Pour les mandats de location ou de vente, à venir'],
           ].map(([t, v, d]) => (
             <div key={t} style={{ background: '#f8fafc', border: `1px solid ${TRAIT}`, borderRadius: 11, padding: '10px 12px' }}>
               <div style={{ fontSize: 11.5, fontWeight: 700, color: GRIS_CLAIR, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t}</div>
@@ -300,7 +300,7 @@ export default function ParamAgence() {
           ))}
         </div>
         <div style={{ fontSize: 12.5, color: GRIS, lineHeight: 1.55, marginTop: 10 }}>
-          {'Pour un demandeur, tu choisis le taux ou un forfait depuis sa fiche (bouton Mandat). Ces valeurs deviendront modifiables ici avec les mandats de vente : elles entrent dans le calcul du prix maximum de chaque mandat.'}
+          {'Pour un demandeur, tu choisis le taux ou un forfait depuis sa fiche (bouton Mandat). Ces valeurs deviendront modifiables ici avec les mandats de location ou de vente : elles entrent dans le calcul du prix maximum de chaque mandat.'}
         </div>
       </div>
 

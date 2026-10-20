@@ -50,11 +50,11 @@ export async function bienDuMandat(sb: SupabaseClient, doc: DocMandat): Promise<
   const id = typeof doc.donnees?.bienVenteId === 'string' && UUID.test(doc.donnees.bienVenteId) ? doc.donnees.bienVenteId : '';
   if (id) {
     const { data, error } = await sb.from('biens_vente').select('*').eq('id', id).maybeSingle();
-    if (error) throw new Error('Le bien du mandat n’a pas pu être lu : ' + error.message);
+    if (error) throw new Error('L’affaire du mandat n’a pas pu être lue : ' + error.message);
     if (data) return data as BienVente;
   }
   const { data, error } = await sb.from('biens_vente').select('*').eq('document_id', doc.id).limit(1);
-  if (error) throw new Error('Le bien du mandat n’a pas pu être lu : ' + error.message);
+  if (error) throw new Error('L’affaire du mandat n’a pas pu être lue : ' + error.message);
   return ((data || [])[0] as BienVente | undefined) || null;
 }
 
@@ -68,7 +68,7 @@ export async function prixChezAcheteurs(sb: SupabaseClient, bienId: string, avan
   const p = prixCopie(apres, etapes.apres);
   if (JSON.stringify(prixCopie(avant, etapes.avant)) === JSON.stringify(p)) return null;
   const { error } = await sb.from('biens').update(p).eq('bien_vente_id', bienId);
-  return error && !/bien_vente_id/.test(error.message) ? 'le nouveau prix chez les demandeurs qui ont reçu le bien : ' + error.message : null;
+  return error && !/bien_vente_id/.test(error.message) ? 'le nouveau montant chez les demandeurs qui ont reçu l’affaire : ' + error.message : null;
 }
 
 /* ── Signé dans Documents ────────────────────────────────────────────────
@@ -108,7 +108,7 @@ export async function mandatSigneSurBien(sb: SupabaseClient, doc: DocMandat, jou
     donnees: d, ...colonnesBien(d), document_id: doc.id, updated_at: maintenant,
     ...(passe ? { etape: 'mandat', etape_le: maintenant, ...(b.en_vente_le ? {} : { en_vente_le: maintenant }) } : {}),
   }).eq('id', b.id);
-  if (error) return `Le mandat est signé, mais la fiche du bien n’a pas pu suivre : ${error.message}. Passe le bien « En vente » depuis sa fiche.`;
+  if (error) return `Le mandat est signé, mais la fiche de l’affaire n’a pas pu suivre : ${error.message}. Passe l’affaire « Disponible » depuis sa fiche.`;
   const infos = { type, numero, date: jour, fin, ...(prix ? { prix } : {}), source: 'documents', document: doc.id };
   const jourFr = jour.split('-').reverse().join('/');
   const { error: e2 } = await sb.from('biens_vente_suivi').insert(passe
@@ -124,7 +124,7 @@ export async function mandatSigneSurBien(sb: SupabaseClient, doc: DocMandat, jou
     if (r.error) eRel = 'les relances de l’estimation : ' + r.error.message;
   }
   const pbs = [e2 ? 'la ligne de l’historique : ' + e2.message : null, await prixChezAcheteurs(sb, b.id, bd, d, { avant: b.etape, apres: passe ? 'mandat' : b.etape }), eRel].filter(Boolean);
-  return pbs.length ? `Le mandat est signé et noté sur la fiche du bien, mais ${pbs.join(' ; ')}.` : null;
+  return pbs.length ? `Le mandat est signé et noté sur la fiche de l’affaire, mais ${pbs.join(' ; ')}.` : null;
 }
 
 /* ── Retirer un mandat de la fiche ───────────────────────────────────────
@@ -167,9 +167,9 @@ export async function terminerMandatDuBien(sb: SupabaseClient, b: BienVente, rai
   const maintenant = new Date().toISOString();
   const { data, error } = await sb.from('biens_vente').update({ etape: 'retire', etape_le: maintenant, updated_at: maintenant })
     .eq('id', b.id).select().single();
-  if (error || !data) throw new Error('Le bien n’a pas pu passer « Retiré » : ' + (error?.message || 'rien n’est revenu'));
+  if (error || !data) throw new Error('L’affaire n’a pas pu passer « Retirée » : ' + (error?.message || 'rien n’est revenu'));
   const { error: e2 } = await sb.from('biens_vente_suivi').insert({ bien_id: b.id, type: 'etape', statut: 'retire', le: maintenant, donnees: { de: b.etape, raison } });
-  if (e2) throw new Error('Le bien est « Retiré », mais la ligne de l’historique n’a pas pu s’écrire : ' + e2.message);
+  if (e2) throw new Error('L’affaire est « Retirée », mais la ligne de l’historique n’a pas pu s’écrire : ' + e2.message);
   return data as BienVente;
 }
 

@@ -83,15 +83,15 @@ const FEUILLES: Record<AvisDecouverte, { tag: string; t: string; p: string; ph: 
   refuse: {
     tag: 'Pas pour moi',
     t: 'Qu’est-ce qui n’a pas convenu ?',
-    p: 'Choisissez une ou plusieurs raisons : c’est ce qui nous permet d’écarter ce type de bien pour la suite.',
-    ph: 'Ex : trop sombre, rue trop passante, cuisine trop petite…',
+    p: 'Choisissez une ou plusieurs raisons : c’est ce qui nous permet d’écarter ce type de local pour la suite.',
+    ph: 'Ex : rue peu fréquentée, vitrine trop petite, pas d’extraction…',
     btn: 'Envoyer mon retour', passer: 'Passer sans donner de raison',
   },
   interesse: {
     tag: 'Ça me plaît',
     t: 'Qu’est-ce qui vous a plu ?',
-    p: 'Choisissez ce qui compte, un ou plusieurs. Plus c’est précis, plus les biens suivants lui ressembleront.',
-    ph: 'Ex : la luminosité, le séjour, le quartier…',
+    p: 'Choisissez ce qui compte, un ou plusieurs. Plus c’est précis, plus les locaux suivants lui ressembleront.',
+    ph: 'Ex : l’emplacement, la vitrine, la luminosité…',
     btn: 'Envoyer mon avis', passer: 'Passer',
   },
   souhaite_visiter: {
@@ -107,7 +107,7 @@ const AVIS_OK: AvisDecouverte[] = ['refuse', 'interesse', 'souhaite_visiter'];
 /* Le prix d'un bien. V3.113 : sans prix (un bien de l'agence avant le
    mandat), « Prix à venir », pas un tiret. */
 const EUR = (n?: number | null) =>
-  !n ? 'Prix à venir' : n.toLocaleString('fr-FR').replace(/[  ]/g, ' ') + ' €';
+  !n ? 'Montant à venir' : n.toLocaleString('fr-FR').replace(/[  ]/g, ' ') + ' €';
 
 /* Le mélange de deux couleurs : le bouton rond passe du bleu au vert (ou au
    rouge) à mesure qu'il avance, au lieu de changer d'un coup. */
@@ -769,13 +769,13 @@ export default function Decouverte(props: Props) {
 
   const infos = courant ? (() => {
     const n = note(courant.id);
-    const meta = [courant.surface ? `${courant.surface} m²` : '', courant.pieces ? `${courant.pieces} pièce${courant.pieces > 1 ? 's' : ''}` : '', courant.secteur].filter(Boolean).join(' · ');
+    const meta = [courant.surface ? `${courant.surface} m²` : '', courant.pieces ? `${courant.pieces} espace${courant.pieces > 1 ? 's' : ''}` : '', courant.secteur].filter(Boolean).join(' · ');
     return (
       <>
         <div className="dec-l1">
           <b className="dec-prix tab">{EUR(courant.prix)}</b>
           <button type="button" className="dec-voir" onClick={ouvrirFiche}>
-            <span>Voir le bien</span><Svg d={D_FLECHE} t={16} />
+            <span>Voir le local</span><Svg d={D_FLECHE} t={16} />
           </button>
         </div>
         <div className="dec-titre">{courant.titre}</div>
@@ -806,8 +806,8 @@ export default function Decouverte(props: Props) {
   if (courant) {
     if (courant.chambres) atouts.push(`${courant.chambres} chambre${courant.chambres > 1 ? 's' : ''}`);
     if (courant.terrasse) atouts.push('Terrasse');
-    if (courant.balcon) atouts.push('Balcon');
-    if (courant.jardin) atouts.push('Jardin');
+    if (courant.balcon) atouts.push('Extérieur');
+    if (courant.jardin) atouts.push('Espace extérieur');
     if (courant.parking) atouts.push('Parking');
     if (courant.ascenseur) atouts.push('Ascenseur');
     if (courant.cave) atouts.push('Cave');
@@ -819,9 +819,9 @@ export default function Decouverte(props: Props) {
     <div className="dec-fin">
       <div className="dec-fin-h">
         <span className="dec-fin-ok"><Svg d={D_COCHE} t={30} l={2.6} /></span>
-        <h2>{fait === 0 ? 'Vous êtes à jour' : fait === 1 ? 'C’est noté pour ce bien' : `C’est noté pour ces ${fait} biens`}</h2>
+        <h2>{fait === 0 ? 'Vous êtes à jour' : fait === 1 ? 'C’est noté pour ce local' : `C’est noté pour ces ${fait} locaux`}</h2>
         <p>{fait === 0
-          ? 'Il n’y a plus de nouveau bien à regarder pour le moment.'
+          ? 'Il n’y a plus de nouveau local à regarder pour le moment.'
           : nb('souhaite_visiter') > 0
             ? 'Votre conseiller a reçu vos réponses. Pour les visites, il revient vers vous avec un rendez-vous.'
             : 'Votre conseiller a reçu vos réponses. Elles orientent déjà les prochaines propositions.'}</p>
@@ -836,7 +836,7 @@ export default function Decouverte(props: Props) {
       )}
       <div className="dec-fin-b">
         <button type="button" className="dec-fin-1" onClick={() => fermer()}>Revenir à mon espace</button>
-        {fait > 0 && <button type="button" className="dec-fin-2" onClick={() => fermer('consultes')}>Voir mes biens consultés</button>}
+        {fait > 0 && <button type="button" className="dec-fin-2" onClick={() => fermer('consultes')}>Voir mes locaux consultés</button>}
       </div>
       <div className="dec-fin-a" aria-live="polite">{pastilleAnnul}</div>
     </div>
@@ -846,14 +846,14 @@ export default function Decouverte(props: Props) {
   const chipNeuf = courant ? <span className="dec-neuf">{quand(courant.id)}</span> : null;
 
   return (
-    <div className={'dec' + (large ? ' pc' : '') + (visible ? ' on' : '')} role="dialog" aria-modal="true" aria-label="Vos nouveaux biens"
+    <div className={'dec' + (large ? ' pc' : '') + (visible ? ' on' : '')} role="dialog" aria-modal="true" aria-label="Vos nouveaux locaux"
       ref={racine} tabIndex={-1}>
       <header className="dec-tete">
         <img className="dec-logo" src="/logos/logo-emilio-800.png" alt="Werner Immobilier" width={800} height={336} />
         {large ? (
           <>
             <div className="dec-prog">
-              <b>Nouveaux biens</b>
+              <b>Nouveaux locaux</b>
               {total > 1 && total <= 12 && (
                 <span className="dec-pts" aria-hidden="true">
                   {uniques.map((id, k) => <i key={id} className={fini || k < rang - 1 ? 'pt-fait' : k === rang - 1 ? 'pt-ici' : ''} />)}

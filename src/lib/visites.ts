@@ -41,39 +41,38 @@ export const ISSUES: Record<Issue, {
    moi » d'avant la visite : la recherche les lit de la même façon. */
 export const RAISONS: Record<Issue, { i: string; n: string }[]> = {
   non: [
-    { i: 'lune', n: 'Trop sombre' },
-    { i: 'visavis', n: 'Le vis-à-vis' },
-    { i: 'bruit', n: 'Rue trop passante' },
-    { i: 'travaux', n: 'Trop de travaux' },
+    { i: 'lieu', n: 'L’emplacement' },
+    { i: 'oeil', n: 'Rue peu fréquentée' },
     { i: 'petit', n: 'Trop petit' },
+    { i: 'lune', n: 'Trop sombre' },
+    { i: 'travaux', n: 'Trop de travaux' },
+    { i: 'plan', n: 'La configuration' },
     { i: 'ascenseur', n: 'L’étage' },
-    { i: 'lieu', n: 'Le quartier' },
-    { i: 'jardin', n: 'Pas d’extérieur' },
-    { i: 'cuisine', n: 'La cuisine' },
-    { i: 'immeuble', n: 'Les parties communes' },
-    { i: 'euro', n: 'Le prix' },
+    { i: 'cuisine', n: 'Pas d’extraction' },
+    { i: 'terrasse', n: 'Pas d’extérieur' },
+    { i: 'euro', n: 'Le loyer ou le prix' },
   ],
   reflexion: [
-    { i: 'euro', n: 'Le prix' },
+    { i: 'euro', n: 'Le loyer ou le prix' },
     { i: 'travaux', n: 'Des travaux à chiffrer' },
-    { i: 'partage', n: 'En parler à un proche' },
+    { i: 'partage', n: 'En parler à un associé' },
     { i: 'loupe', n: 'Le comparer à d’autres' },
     { i: 'aide', n: 'Une question à poser' },
   ],
   revoir: [
     { i: 'soleil', n: 'À un autre moment de la journée' },
-    { i: 'partage', n: 'Avec un proche' },
+    { i: 'partage', n: 'Avec un associé' },
     { i: 'travaux', n: 'Avec un artisan' },
     { i: 'regle', n: 'Pour mesurer' },
-    { i: 'cave', n: 'Voir la cave ou les parties communes' },
+    { i: 'cave', n: 'Voir la réserve ou les annexes' },
   ],
   offre: [],
 };
 
 /* Ce qui lui a plu : le compte rendu d'Alexandre seulement. */
 export const AIME: string[] = [
-  'Séjour lumineux', 'Parquet ancien', 'Hauteur sous plafond', 'Cuisine ouverte',
-  'Le calme', 'Le quartier', 'L’extérieur', 'Bien entretenu', 'Les rangements',
+  'Belle vitrine', 'Bon emplacement', 'Hauteur sous plafond', 'Bien agencé',
+  'Le calme', 'Le quartier', 'L’extérieur', 'Bien entretenu', 'La réserve',
 ];
 
 /* Garde seulement les raisons connues pour cette issue, sans doublon. */

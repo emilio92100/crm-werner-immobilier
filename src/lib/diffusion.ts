@@ -103,12 +103,12 @@ export function etatDiffusion(b: Pick<BienVente, 'etape' | 'archive' | 'donnees'
   const supports = r ? supportsCoches(r.supports) : [];
   /* V3.96 : diffusé quand même, à l'étape où il a été réglé. */
   if (!b.archive && r && r.actif && r.horsEtape === b.etape && etapeHorsVente(b.etape) && supports.length) {
-    return { concerne: true, regle: true, supports, enLigne: true, ton: 'on', lib: 'Diffusé', detail: `Sur ${nomsSupports(supports)}, à ta demande, bien que le bien soit « ${etapeDe(b.etape).lib} ».` };
+    return { concerne: true, regle: true, supports, enLigne: true, ton: 'on', lib: 'Diffusé', detail: `Sur ${nomsSupports(supports)}, à ta demande, bien que l’affaire soit « ${etapeDe(b.etape).lib} ».` };
   }
   const concerne = !b.archive && ETAPES_REGLABLES.includes(b.etape);
   const base = { concerne, regle: !!r, supports };
-  if (!concerne) return { ...base, enLigne: false, ton: 'off', lib: 'Non diffusé', detail: b.archive ? 'Le bien est archivé.' : 'Rien à diffuser à cette étape.' };
-  if (b.etape === 'suspendu') return { ...base, enLigne: false, ton: 'pause', lib: 'Non diffusé', detail: 'La vente est en pause : rien ne part. Tes choix sont gardés pour la reprise.' };
+  if (!concerne) return { ...base, enLigne: false, ton: 'off', lib: 'Non diffusé', detail: b.archive ? 'L’affaire est archivée.' : 'Rien à diffuser à cette étape.' };
+  if (b.etape === 'suspendu') return { ...base, enLigne: false, ton: 'pause', lib: 'Non diffusé', detail: 'L’affaire est en pause : rien ne part. Tes choix sont gardés pour la reprise.' };
   if (!r) return { ...base, enLigne: false, ton: 'regler', lib: 'À régler', detail: 'Choisis où part l’annonce.' };
   if (!r.actif) return { ...base, enLigne: false, ton: 'off', lib: 'Non diffusé', detail: 'Coupé à la main : l’annonce ne part nulle part.' };
   if (!supports.length) return { ...base, enLigne: false, ton: 'off', lib: 'Non diffusé', detail: 'Aucun support coché.' };

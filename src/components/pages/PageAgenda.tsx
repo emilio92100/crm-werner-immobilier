@@ -296,10 +296,10 @@ function construire(visites: any[], rdvs: any[], transactions: any[], recherches
     const qui = nomDe(clientsParId[t.client_id]);
     const pose = (d: any, titre: string, genre: Genre) => { if (d) taches.push({ cle: `tx-${t.id}-${titre}`, jour: String(d).slice(0, 10), titre: `${titre} · ${qui}`, genre, clientId: t.client_id || null }); };
     pose(t.offre_date, 'Offre', 'signature');
-    pose(t.compromis_date, 'Compromis', 'signature');
+    pose(t.compromis_date, 'Accord', 'signature');
     if (fermes(t.client_id)) continue;
     pose(t.sru_date_fin, 'Fin du délai SRU', 'signature');
-    pose(t.acte_date_prevue, 'Acte prévu', 'signature');
+    pose(t.acte_date_prevue, 'Signature prévue', 'signature');
   }
   for (const r of recherches) {
     if (!r.mandat_date_expiration || r.sans_mandat) continue;
@@ -569,7 +569,7 @@ export default function PageAgenda({ onNavigate }: { onNavigate: (page: string, 
     const quoi = ev.source === 'visite' ? (ev.ids.length > 1 ? `ces ${ev.ids.length} visites` : 'cette visite') : 'ce rendez-vous';
     const bien = ev.source === 'rdv' ? bienDuRdv(ev) : null;
     const suite = ev.source === 'visite' ? 'Elle disparaît aussi de l’espace du client.'
-      : bien ? 'Il sort de ton agenda, et la fiche du bien est mise à jour.' : 'Il sort de ton agenda.';
+      : bien ? 'Il sort de ton agenda, et la fiche de l’affaire est mise à jour.' : 'Il sort de ton agenda.';
     if (!window.confirm(`Annuler ${quoi} du ${jourLong(ev.debut)} à ${hhmm(ev.debut)} ?\n\n${suite}`)) return;
     /* V3.50 : une visite d'acheteur s'annule partout de la même façon
        (src/lib/annuler-visites.ts) : le statut, son rappel dans les Relances
@@ -1433,11 +1433,11 @@ function Detail({ ev, etroit, onFerme, onModifier, onAnnuler, onCR, onDossier, o
           {ev.lieu && ligne('lieu', ev.lieu, 'Lieu')}
           {ev.contact && ligne('tel', ev.contact, ev.source === 'visite' ? 'Contact sur place' : 'Téléphone')}
           {ev.details?.mode && ligne(ev.details.mode === 'visio' ? 'visio' : 'tel', ev.details.mode === 'visio' ? 'Visio' : 'Téléphone', 'Comment')}
-          {ev.details?.etape && ligne('stylo', ({ offre: 'Offre d’achat', compromis: 'Compromis de vente', acte: 'Acte authentique' } as Record<string, string>)[ev.details.etape] || ev.details.etape, 'Signature')}
+          {ev.details?.etape && ligne('stylo', ({ offre: 'Offre', compromis: 'Accord', acte: 'Bail ou acte' } as Record<string, string>)[ev.details.etape] || ev.details.etape, 'Signature')}
         </div>
         {ev.biens.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Etiquette>{ev.biens.length > 1 ? `${ev.biens.length} biens à visiter` : 'Bien visité'}</Etiquette>
+            <Etiquette>{ev.biens.length > 1 ? `${ev.biens.length} locaux à visiter` : 'Local visité'}</Etiquette>
             {/* V3.134 : la carte du bien s'ouvre d'un clic — la fiche du bien
                 pour un bien de l'agence, sinon le dossier de l'acheteur, où
                 le bien est rangé. */}
@@ -1450,14 +1450,14 @@ function Detail({ ev, etroit, onFerme, onModifier, onAnnuler, onCR, onDossier, o
                   </span>
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 }}>
                     <b style={{ fontSize: 13, color: NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.titre}</b>
-                    {ouvrir && <span style={{ fontSize: 11.5, fontWeight: 700, color: OR_FONCE }}>{b.venteId ? 'Voir la fiche du bien' : 'Voir dans son dossier'}</span>}
+                    {ouvrir && <span style={{ fontSize: 11.5, fontWeight: 700, color: OR_FONCE }}>{b.venteId ? 'Voir la fiche de l’affaire' : 'Voir dans son dossier'}</span>}
                   </span>
                   {ouvrir && <span style={{ color: PALE, display: 'flex', flexShrink: 0 }}><Ic n="chevD" t={16} /></span>}
                 </>
               );
               const cadre: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 11, width: '100%', boxSizing: 'border-box', padding: 7, borderRadius: 12, border: `1px solid ${LIGNE}`, background: 'white', textAlign: 'left', fontFamily: 'inherit' };
               return ouvrir
-                ? <button key={b.id} type="button" className="ag-appui ag-lienBien" onClick={ouvrir} title={b.venteId ? 'Ouvrir la fiche du bien' : 'Ouvrir son dossier'} style={{ ...cadre, cursor: 'pointer' }}>{dedans}</button>
+                ? <button key={b.id} type="button" className="ag-appui ag-lienBien" onClick={ouvrir} title={b.venteId ? 'Ouvrir la fiche de l’affaire' : 'Ouvrir son dossier'} style={{ ...cadre, cursor: 'pointer' }}>{dedans}</button>
                 : <div key={b.id} style={cadre}>{dedans}</div>;
             })}
           </div>
@@ -1809,7 +1809,7 @@ function ChoixDossier({ dossiers, valeur, fige, onChange, libre = '', onLibre, o
         <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: PALE, display: 'flex', pointerEvents: 'none' }}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="7" /><path d="m20.5 20.5-4.7-4.7" /></svg>
         </span>
-        <input className="ag-champ" value={q} autoComplete="off" placeholder={onLibre ? 'Tape le nom du client…' : 'Tape le nom de l’demandeur…'} aria-label="Chercher un client"
+        <input className="ag-champ" value={q} autoComplete="off" placeholder={onLibre ? 'Tape le nom du client…' : 'Tape le nom du demandeur…'} aria-label="Chercher un client"
           onChange={e => taper(e.target.value)}
           onKeyDown={e => {
             if (e.key === 'ArrowDown') { e.preventDefault(); setActif(i => Math.min(nbOptions - 1, i + 1)); }
@@ -2168,7 +2168,7 @@ function Interrupteur({ actif, onChange, titre, sous, desactive }: { actif: bool
   );
 }
 
-const ETAPES: Record<string, string> = { offre: 'Signature de l’offre', compromis: 'Signature du compromis', acte: 'Signature de l’acte' };
+const ETAPES: Record<string, string> = { offre: 'Signature de l’offre', compromis: 'Signature de l’accord', acte: 'Signature du bail ou de l’acte' };
 
 /* Le mail au client : court, en clair, sans mot de métier. */
 function texteMail(o: { type: TypeRdv; prenom: string; debut: Date; lieu: string; biens: { titre: string; lieu: string }[]; mode: string; etape: string }) {
@@ -2188,14 +2188,14 @@ function texteMail(o: { type: TypeRdv; prenom: string; debut: Date; lieu: string
       ? `Notre échange en visio est prévu le ${quand}. Je vous enverrai le lien un peu avant.`
       : `Je vous appellerai le ${quand}, comme convenu.`;
   } else if (o.type === 'signature') {
-    const quoi = ({ offre: 'la signature de l’offre', compromis: 'la signature du compromis', acte: 'la signature de l’acte' } as Record<string, string>)[o.etape] || 'la signature';
+    const quoi = ({ offre: 'la signature de l’offre', compromis: 'la signature de l’accord', acte: 'la signature du bail ou de l’acte' } as Record<string, string>)[o.etape] || 'la signature';
     objet = `${maj(quoi)} · ${quand}`;
     phrase = `Je vous confirme le rendez-vous pour ${quoi}, le ${quand}${o.lieu ? `, ${o.lieu}` : ''}.`;
   } else {
     objet = `Rendez-vous confirmé · ${quand}`;
     phrase = `Je vous confirme notre rendez-vous du ${quand}${o.lieu ? `, ${o.lieu}` : ''}.`;
   }
-  const corps = `Bonjour ${o.prenom},\n\n${phrase}\n\nN'hésitez pas à m'appeler si le moindre changement s'impose.\n\nÀ très vite,\nWerner\nWerner Immobilier\n01 00 00 00 00`;
+  const corps = `Bonjour ${o.prenom},\n\n${phrase}\n\nN'hésitez pas à m'appeler si le moindre changement s'impose.\n\nÀ très vite,\nWerner\nWerner Immobilier\n01 87 66 06 00`;
   return { objet: maj(objet), corps };
 }
 
@@ -2398,13 +2398,13 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
       .map(b => {
         const v = venteDe(b);
         return { cle: 'd-' + b.id, dossier: true, id: b.id, titre: b.titre || b.ville || 'Bien', photo: b.photos?.[0] || null, actif: !!f.choisis[b.id],
-          sous: [prixCourt(b.prix_acquereur || b.prix_vendeur), lieuChoisi(b), v?.proprio ? `Propriétaire : ${v.proprio}` : ''].filter(Boolean).join(' · '),
+          sous: [prixCourt(b.prix_acquereur || b.prix_vendeur), lieuChoisi(b), v?.proprio ? `${['a_suivre', 'estimation'].includes(v.etape) ? 'Propriétaire' : 'Mandant'} : ${v.proprio}` : ''].filter(Boolean).join(' · '),
           pastille: b.etape === 'presente' ? 'Présenté' : 'En sélection' };
       });
     const deLAgence = (agence || [])
       .filter(a => !biens.some(b => b.bien_vente_id === a.id) && trouveBien([a.titre, a.adresse, a.code_postal, a.ville, a.reference, a.proprio], a.prix, qBien))
       .map(a => ({ cle: 'a-' + a.id, dossier: false, id: a.id, titre: a.titre || a.ville || 'Bien', photo: a.photo, actif: ajouts.includes(a.id),
-        sous: [prixCourt(a.prix), adresseVente(a), a.proprio ? `Propriétaire : ${a.proprio}` : ''].filter(Boolean).join(' · '),
+        sous: [prixCourt(a.prix), adresseVente(a), a.proprio ? `${['a_suivre', 'estimation'].includes(a.etape) ? 'Propriétaire' : 'Mandant'} : ${a.proprio}` : ''].filter(Boolean).join(' · '),
         pastille: etapeDe(a.etape).court }));
     return [...duDossier, ...deLAgence].slice(0, 8);
   })();
@@ -2466,9 +2466,9 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
   const rdvImpossible = f.type !== 'visite' && tableAbsente;
 
   const effets: string[] = [`Ajouté à ton agenda le ${jourLong(debut)} à ${hhmm(debut)}.`];
-  if (lie) effets.push(visiteurChange ? `La fiche du bien prend la nouvelle date, et le visiteur : ${f.proprietaire.trim()}.` : 'La fiche du bien prend la nouvelle date.');
+  if (lie) effets.push(visiteurChange ? `La fiche de l’affaire prend la nouvelle date, et le visiteur : ${f.proprietaire.trim()}.` : 'La fiche de l’affaire prend la nouvelle date.');
   else if (f.type === 'visite') effets.push('Visible aussi dans la page Visites et dans l’espace du client.');
-  if (bienEstim) effets.push(`La fiche du bien « ${bienEstim.titre} » reçoit la date d’estimation.`);
+  if (bienEstim) effets.push(`La fiche de l’affaire « ${bienEstim.titre} » reçoit la date d’estimation.`);
   if (avecDossier && dossier) effets.push(`Noté dans le suivi du dossier de ${dossier.nom}.`);
   if (personneLibre) effets.push(`${personneLibre} est noté sur le rendez-vous, sans être ajouté à tes contacts.`);
   /* Le rappel tombe à midi, la veille ou le jour même. Une veille déjà
@@ -2507,9 +2507,9 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
        le rappel, pour ne rien laisser derrière soi. */
     if (f.type === 'visite' && !ev) {
       const etat = await etatVenteDesCopies([...choisis, ...ajoutes.map(a => ({ titre: a.titre, ville: a.ville, bien_vente_id: a.id }))]);
-      if (etat.erreur && !window.confirm(`Je n'ai pas pu vérifier que ${nbBiens > 1 ? 'ces biens sont' : 'ce bien est'} toujours en vente.\n\n${etat.erreur}\n\nPlanifier la visite quand même ?`)) { setEnvoi(false); return; }
+      if (etat.erreur && !window.confirm(`Je n'ai pas pu vérifier que ${nbBiens > 1 ? 'ces locaux sont toujours disponibles' : 'ce local est toujours disponible'}.\n\n${etat.erreur}\n\nPlanifier la visite quand même ?`)) { setEnvoi(false); return; }
       if (etat.bloque.length) {
-        const reste = nbBiens > etat.bloque.length ? `\n\nDécoche ${etat.bloque.length > 1 ? 'ces biens' : 'ce bien'} pour caler les autres.` : '';
+        const reste = nbBiens > etat.bloque.length ? `\n\nDécoche ${etat.bloque.length > 1 ? 'ces locaux' : 'ce local'} pour caler les autres.` : '';
         setEnvoi(false); alert(`${etat.bloque.join('\n')}\n\nLa visite n'est pas planifiée.${reste}`); return;
       }
       if (etat.secours.length) {
@@ -2604,7 +2604,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
         let tous: any[] = choisis;
         if (ajoutes.length) {
           const { data: bvs, error: eBv } = await supabase.from('biens_vente').select('*').in('id', ajoutes.map(a => a.id));
-          if (eBv || !bvs || bvs.length !== ajoutes.length) { await echec(`${ajoutes.length > 1 ? 'Les biens' : 'Le bien'} de l’agence n’${ajoutes.length > 1 ? 'ont' : 'a'} pas pu être lu${ajoutes.length > 1 ? 's' : ''}.\n\n${eBv?.message || 'Réponse incomplète.'}`); return; }
+          if (eBv || !bvs || bvs.length !== ajoutes.length) { await echec(`${ajoutes.length > 1 ? 'Les affaires' : 'L’affaire'} de l’agence n’${ajoutes.length > 1 ? 'ont' : 'a'} pas pu être lue${ajoutes.length > 1 ? 's' : ''}.\n\n${eBv?.message || 'Réponse incomplète.'}`); return; }
           const copies: any[] = [];
           try {
             for (const bv of bvs as BienVente[]) copies.push((await copieDe(bv, dossier!.clientId, dossier!.rechercheId, 'souhaite_visiter')).copie);
@@ -2777,8 +2777,8 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
                 </div>
                 {rdvImpossible && <span style={{ fontSize: 12.5, color: '#92400e' }}>Ce type de rendez-vous s’enregistrera une fois le SQL de l’agenda lancé dans Supabase.</span>}
                 {lie && <span style={{ fontSize: 12.5, color: DOUX, lineHeight: 1.5 }}>{visiteurLibre
-                  ? 'Ce rendez-vous est lié à un bien : ici, le visiteur, la date, l’heure, la durée et les notes se changent. La fiche du bien suit.'
-                  : 'Ce rendez-vous est lié à un bien : ici, seuls la date, l’heure, la durée et les notes se changent. La fiche du bien suit.'}</span>}
+                  ? 'Ce rendez-vous est lié à une affaire : ici, le visiteur, la date, l’heure, la durée et les notes se changent. La fiche de l’affaire suit.'
+                  : 'Ce rendez-vous est lié à une affaire : ici, seuls la date, l’heure, la durée et les notes se changent. La fiche de l’affaire suit.'}</span>}
                 {visiteurLibre && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}><Libelle texte="Visiteur" aide="hors CRM" /><input className="ag-champ" value={f.proprietaire} onChange={e => maj_({ proprietaire: e.target.value })} placeholder="M. et Mme Martin" style={CHAMP} aria-label="Nom du visiteur" /></div>
@@ -2790,24 +2790,24 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><Libelle texte="Comment" /><Puces options={[{ v: 'tel', lib: 'Téléphone' }, { v: 'visio', lib: 'Visio' }]} valeur={f.mode} onChange={v => maj_({ mode: v, titre: null, lieu: null })} /></div>
               )}
               {f.type === 'signature' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><Libelle texte="Quelle signature" /><Puces options={[{ v: 'offre', lib: 'Offre' }, { v: 'compromis', lib: 'Compromis' }, { v: 'acte', lib: 'Acte' }]} valeur={f.etape} onChange={v => maj_({ etape: v, titre: null })} /></div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><Libelle texte="Quelle signature" /><Puces options={[{ v: 'offre', lib: 'Offre' }, { v: 'compromis', lib: 'Accord' }, { v: 'acte', lib: 'Bail ou acte' }]} valeur={f.etape} onChange={v => maj_({ etape: v, titre: null })} /></div>
               )}
               {f.type === 'estimation' && !ev && (biensEstim || []).length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <Libelle texte="Bien" aide="facultatif : un bien à suivre ou en estimation" />
-                  <select className="ag-champ" value={f.bienVenteId} aria-label="Bien à estimer" style={CHAMP}
+                  <Libelle texte="Affaire" aide="facultatif : une affaire à suivre ou en estimation" />
+                  <select className="ag-champ" value={f.bienVenteId} aria-label="Affaire à estimer" style={CHAMP}
                     onChange={e => {
                       const b = (biensEstim || []).find(x => x.id === e.target.value);
                       maj_(b ? { bienVenteId: b.id, proprietaire: b.proprietaire || f.proprietaire, telephone: b.telephone || f.telephone, lieu: b.lieu || null, titre: null } : { bienVenteId: '' });
                     }}>
-                    <option value="">Aucun bien</option>
+                    <option value="">Aucune affaire</option>
                     {(biensEstim || []).map(b => <option key={b.id} value={b.id}>{[b.titre, b.lieu, b.proprietaire].filter(Boolean).join(' · ')}</option>)}
                   </select>
                 </div>
               )}
               {f.type === 'estimation' && !lie && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}><Libelle texte="Propriétaire" /><input className="ag-champ" value={f.proprietaire} onChange={e => maj_({ proprietaire: e.target.value, titre: null })} placeholder="M. et Mme Roche" style={CHAMP} aria-label="Propriétaire" /></div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}><Libelle texte="Propriétaire" /><input className="ag-champ" value={f.proprietaire} onChange={e => maj_({ proprietaire: e.target.value, titre: null })} placeholder="M. Roche" style={CHAMP} aria-label="Propriétaire" /></div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}><Libelle texte="Téléphone" /><input className="ag-champ" value={f.telephone} onChange={e => maj_({ telephone: e.target.value })} placeholder="06 …" style={CHAMP} aria-label="Téléphone du propriétaire" /></div>
                 </div>
               )}
@@ -2842,18 +2842,18 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
                 );
                 return (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <Libelle texte="Biens à visiter" aide={nbBiens ? `${nbBiens} choisi${nbBiens > 1 ? 's' : ''}` : 'cherche-les, un ou plusieurs'} />
+                    <Libelle texte="Locaux à visiter" aide={nbBiens ? `${nbBiens} choisi${nbBiens > 1 ? 's' : ''}` : 'cherche-les, un ou plusieurs'} />
                     <ChampIcone ico="loupe">
-                      <input className="ag-champ" value={qBien} onChange={e => setQBien(e.target.value)} placeholder="Prix, adresse, propriétaire, référence…"
-                        style={{ ...CHAMP, paddingLeft: 42 }} aria-label="Chercher un bien à visiter" autoComplete="off"
+                      <input className="ag-champ" value={qBien} onChange={e => setQBien(e.target.value)} placeholder="Montant, adresse, mandant, référence…"
+                        style={{ ...CHAMP, paddingLeft: 42 }} aria-label="Chercher un local à visiter" autoComplete="off"
                         onKeyDown={e => { if (e.key === 'Escape' && qBien) { e.stopPropagation(); setQBien(''); } }} />
                     </ChampIcone>
                     {qBien.trim().length >= 2 && (
                       <div className="ag-panneau" style={{ display: 'flex', flexDirection: 'column', gap: 6, border: `1px solid ${BORD}`, borderRadius: 16, background: '#fdfcfc', padding: 8, boxShadow: '0 18px 40px -26px rgba(20, 19, 19,.45)' }}>
                         {agence === null
-                          ? <span style={{ fontSize: 12.5, color: PALE, padding: '6px 6px' }}>Je cherche dans tes biens…</span>
+                          ? <span style={{ fontSize: 12.5, color: PALE, padding: '6px 6px' }}>Je cherche dans tes affaires…</span>
                           : resultats.length === 0
-                            ? <span style={{ fontSize: 12.5, color: PALE, padding: '6px 6px', lineHeight: 1.5 }}>{`Rien ne correspond à « ${qBien.trim()} » : ni dans son dossier, ni dans tes biens en vente.`}</span>
+                            ? <span style={{ fontSize: 12.5, color: PALE, padding: '6px 6px', lineHeight: 1.5 }}>{`Rien ne correspond à « ${qBien.trim()} » : ni dans son dossier, ni dans tes affaires.`}</span>
                             : resultats.map(r => carte({ cle: r.cle, titre: r.titre, sous: r.sous, photo: r.photo, actif: r.actif, pastille: r.dossier ? `Son dossier · ${r.pastille}` : r.pastille,
                                 onClick: () => { basculerResultat(r); setQBien(''); } }))}
                       </div>
@@ -2869,7 +2869,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
                           onClick: () => maj_({ choisis: { ...f.choisis, [b.id]: !f.choisis[b.id] }, titre: null, lieu: null, contact: null }) }))}
                       </>
                     ) : !ajoutes.length && (
-                      <span style={{ fontSize: 12.5, color: PALE, lineHeight: 1.5 }}>Rien encore dans son dossier : cherche le bien ci-dessus, tes biens en vente y sont.</span>
+                      <span style={{ fontSize: 12.5, color: PALE, lineHeight: 1.5 }}>Rien encore dans son dossier : cherche le local ci-dessus, tes affaires y sont.</span>
                     )}
                   </div>
                 );
@@ -3015,7 +3015,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
         </div>
 
         <footer className="ag-modale-pied" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '12px 22px', borderTop: `1px solid ${BORD}`, background: '#fdfcfc', flexShrink: 0 }}>
-          <span role="status" style={{ fontSize: 12.5, color: retenue ? '#c05d12' : DOUX, fontWeight: retenue ? 700 : 400, flex: '1 1 200px' }}>{retenue ? 'Pour fermer sans enregistrer, appuie sur Annuler.' : lie || bienEstim ? 'Rendez-vous lié à un bien.' : avecDossier && dossier ? `Rangé dans le dossier de ${dossier.nom}.` : personneLibre ? `Avec ${personneLibre}, noté sur le rendez-vous (pas dans tes contacts).` : enAttente ? (libreOk ? `« ${enAttente} » n’est pas encore retenu : choisis un client de la liste, ou garde ce nom.` : `« ${enAttente} » n’est pas choisi : clique sur le bon dossier.`) : dossierObligatoire ? 'Choisis le dossier du client.' : 'Rendez-vous sans client.'}</span>
+          <span role="status" style={{ fontSize: 12.5, color: retenue ? '#c05d12' : DOUX, fontWeight: retenue ? 700 : 400, flex: '1 1 200px' }}>{retenue ? 'Pour fermer sans enregistrer, appuie sur Annuler.' : lie || bienEstim ? 'Rendez-vous lié à une affaire.' : avecDossier && dossier ? `Rangé dans le dossier de ${dossier.nom}.` : personneLibre ? `Avec ${personneLibre}, noté sur le rendez-vous (pas dans tes contacts).` : enAttente ? (libreOk ? `« ${enAttente} » n’est pas encore retenu : choisis un client de la liste, ou garde ce nom.` : `« ${enAttente} » n’est pas choisi : clique sur le bon dossier.`) : dossierObligatoire ? 'Choisis le dossier du client.' : 'Rendez-vous sans client.'}</span>
           <button type="button" className="ag-appui" onClick={fermer} style={{ height: 44, padding: '0 18px', borderRadius: 12, border: `1px solid ${BORD}`, background: 'white', color: DOUX, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
           <button type="button" onClick={enregistrer} disabled={envoi}
             style={{ height: 44, padding: '0 22px', borderRadius: 12, border: 'none', background: OR, color: NAVY, fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: envoi ? 'default' : 'pointer', fontFamily: 'inherit', opacity: envoi ? .7 : 1, boxShadow: '0 12px 24px -12px rgba(240, 140, 66,.95)' }}>

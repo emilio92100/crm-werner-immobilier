@@ -123,7 +123,7 @@ type BienLu = { titre?: string | null; etape?: string | null; ville?: string | n
 
 const phraseRecherche = (r: RechercheLue) => [
   r.type_bien ? String(r.type_bien).charAt(0).toUpperCase() + String(r.type_bien).slice(1) : '',
-  r.nb_pieces_min ? `${r.nb_pieces_min} p. et plus` : '',
+  r.nb_pieces_min ? `${r.nb_pieces_min} espaces et plus` : '',
   r.budget_max ? `jusqu’à ${euros(r.budget_max)}` : '',
   (r.secteurs || []).filter(Boolean).slice(0, 2).join(', '),
 ].filter(Boolean).join(' · ') || String(r.nom || '').trim() || 'Recherche ouverte';
@@ -189,7 +189,7 @@ export async function reponsePour(numero: string, sb: SupabaseClient = baseServe
   const libTypes = types.map(t => typeDe(t).lib).join(' · ');
   const j = conjoint ? conjointDe(c.conjoint) : null;
   const data: Record<string, string> = { Type: libTypes };
-  if (conjoint) data['Fiche'] = `Couple avec ${[c.prenom, c.nom].filter(Boolean).join(' ')}`;
+  if (conjoint) data['Fiche'] = `Sur la fiche de ${[c.prenom, c.nom].filter(Boolean).join(' ')}`;
 
   /* Sa recherche (un acheteur) et son bien (un vendeur, un propriétaire) :
      une lecture qui échoue n'empêche pas d'afficher le nom. */
@@ -205,7 +205,7 @@ export async function reponsePour(numero: string, sb: SupabaseClient = baseServe
   if (r0) data['Recherche'] = phraseRecherche(r0);
   ((biens.data || []) as BienLu[]).slice(0, 2).forEach((b, i) => {
     const titre = String(b.titre || '').trim() || titreBien(b.donnees || {});
-    data[i ? 'Autre bien' : 'Bien'] = [titre, b.ville, etapeDe(b.etape).court].filter(Boolean).join(' · ');
+    data[i ? 'Autre affaire' : 'Affaire'] = [titre, b.ville, etapeDe(b.etape).court].filter(Boolean).join(' · ');
   });
   if (c.archive === true) data['Attention'] = 'Contact archivé';
   if (trouves.length > 1) {

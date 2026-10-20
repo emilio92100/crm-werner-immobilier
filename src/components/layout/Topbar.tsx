@@ -24,7 +24,7 @@ const BIENS_MAX = 3;
 const SUIVIS_MAX = 6;
 /** « 0146424242 » → « 01 46 42 42 42 ». */
 const espacer = (t: string) => (/^0\d{9}$/.test(t) ? t.replace(/(\d{2})(?=\d)/g, '$1 ') : t);
-const titreDe = (b: BienRecherche) => b.titre || titreBien({ typeBien: b.type_bien || undefined, pieces: b.nb_pieces ?? undefined, surface: b.surface ?? undefined } as unknown as Donnees) || 'Son bien';
+const titreDe = (b: BienRecherche) => b.titre || titreBien({ typeBien: b.type_bien || undefined, pieces: b.nb_pieces ?? undefined, surface: b.surface ?? undefined } as unknown as Donnees) || 'Son affaire';
 
 /* Minuscules, sans accents ni ponctuation : « Rue de l'Église » → « rue de l eglise ». */
 function sansAccent(t: string) {
@@ -255,7 +255,7 @@ export default function Topbar({ onNavigate, onMenu, menuReduit = false, onBascu
      bille 3D, différente d'un téléphone à l'autre). */
   const STATUT_LIB: Record<string, string> = {
     prospect: 'Prospect', actif: 'Actif', suspendu: 'Suspendu',
-    bien_trouve: 'Bien trouvé', perdu: 'Perdu', offre_ecrite: 'Offre écrite',
+    bien_trouve: 'Local trouvé', perdu: 'Perdu', offre_ecrite: 'Offre écrite',
   };
 
   /* La première photo de chaque bien trouvé : dans `biens` ou dans la veille. */
@@ -412,7 +412,7 @@ export default function Topbar({ onNavigate, onMenu, menuReduit = false, onBascu
                         const e = etapeDe(b.etape);
                         const lieu = villeAffichee(b.ville, b.code_postal);
                         return (
-                          <button key={b.id} type="button" className={styles.searchBien} onClick={() => selectBien(b.id)} title="Ouvrir la fiche du bien">
+                          <button key={b.id} type="button" className={styles.searchBien} onClick={() => selectBien(b.id)} title="Ouvrir la fiche de l’affaire">
                             <span className={styles.searchBienPh}>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               {b.photo ? <img src={b.photo} alt="" /> : <Ic n="maison" t={14} />}

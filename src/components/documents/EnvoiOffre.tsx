@@ -26,7 +26,7 @@ const MAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export function objetOffre(d: Donnees) {
   const lieu = [txt(d, 'adresse'), txt(d, 'ville')].filter(Boolean).join(', ');
-  return `Offre d’achat${lieu ? ` · ${lieu}` : ''}`;
+  return `Offre${lieu ? ` · ${lieu}` : ''}`;
 }
 
 export function messageOffre(d: Donnees, signature: string) {
@@ -36,8 +36,8 @@ export function messageOffre(d: Donnees, signature: string) {
   const jusquau = txt(d, 'validite')
     ? `${jourLong(txt(d, 'validite'))}${txt(d, 'validiteHeure') ? ` à ${txt(d, 'validiteHeure').replace(':', ' h ')}` : ''}`
     : '';
-  const prixTxt = prix ? `, au prix de ${euros(prix)}${d.forme === 'fai' ? ', frais d’agence inclus' : ''}` : '';
-  return `Bonjour,\n\nJe vous transmets ci-joint l’offre d’achat signée de ${pl ? 'mes clients' : 'mon client'} pour le bien${lieu ? ` situé ${lieu}` : ''}${prixTxt}.\n\n${jusquau ? `Elle est valable jusqu’au ${jusquau}. ` : ''}Merci de la présenter au mandant et de me faire part de sa réponse${jusquau ? ' avant cette date' : ''}.\n\n${signature}`;
+  const prixTxt = prix ? `, pour un montant de ${euros(prix)}${d.forme === 'fai' ? ', frais d’agence inclus' : ''}` : '';
+  return `Bonjour,\n\nJe vous transmets ci-joint l’offre signée de ${pl ? 'mes clients' : 'mon client'} pour le local${lieu ? ` situé ${lieu}` : ''}${prixTxt}.\n\n${jusquau ? `Elle est valable jusqu’au ${jusquau}. ` : ''}Merci de la présenter au mandant et de me faire part de sa réponse${jusquau ? ' avant cette date' : ''}.\n\n${signature}`;
 }
 
 /* Les offres déjà envoyées de ce document. */
@@ -133,7 +133,7 @@ export function FenetreOffre({ doc, adresse, onFermer, onEnvoye }: {
             <label htmlFor="of-a">À</label>
             <input id="of-a" type="text" inputMode="email" autoComplete="off" autoFocus className={s.input} placeholder="agence@exemple.fr"
               value={a} onChange={e => { setA(e.target.value); setErreur(''); }} />
-            <i className={s.chAide}>{`L’agence du mandant${txt(d, 'agenceVendeur') ? ` (${txt(d, 'agenceVendeur')})` : ''}, ou le mandant s’il vend seul. Plusieurs ? Sépare-les par une virgule.`}</i>
+            <i className={s.chAide}>{`L’agence du mandant${txt(d, 'agenceVendeur') ? ` (${txt(d, 'agenceVendeur')})` : ''}, ou le mandant s’il n’a pas d’agence. Plusieurs ? Sépare-les par une virgule.`}</i>
           </div>
 
           <div className={s.pj}>

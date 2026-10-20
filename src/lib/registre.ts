@@ -131,7 +131,7 @@ export const TYPES_OBS: Record<TypeObs, { l: string; ic: string; ton: 'vert' | '
   annule: { l: 'Annulé', ic: 'croix', ton: 'rouge' },
   avenant: { l: 'Avenant', ic: 'plume', ton: 'bleu' },
   fin: { l: 'Fin du mandat', ic: 'drapeau', ton: 'gris' },
-  vente: { l: 'Vente conclue', ic: 'cle', ton: 'or' },
+  vente: { l: 'Affaire conclue', ic: 'cle', ton: 'or' },
   delegation: { l: 'Délégation', ic: 'accord', ton: 'bleu' },
   note: { l: 'Observation', ic: 'bulle', ton: 'bleu' },
 };
@@ -149,7 +149,7 @@ export function etatLigne(obs: ObsRegistre[]): EtatLigne {
   return { cle: d.type as TypeObs, l: t.l, ton: t.ton, le: d.le };
 }
 
-export const NATURES: Record<Nature, string> = { vente: 'Mandat de vente', recherche: 'Mandat de recherche' };
+export const NATURES: Record<Nature, string> = { vente: 'Mandat de location ou de vente', recherche: 'Mandat de recherche' };
 export const TYPES_MANDAT: Record<string, string> = { simple: 'simple', semi: 'semi-exclusif', exclusif: 'exclusif' };
 export const SOURCES: Record<string, string> = { document: 'Documents', espace: 'Signé dans l’espace', main: 'Inscrit à la main' };
 

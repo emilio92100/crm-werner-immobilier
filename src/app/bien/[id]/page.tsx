@@ -107,9 +107,9 @@ const T: Record<string, string[]> = {
    s'affichait ici comme disponible, prix et « Sélection privée » compris. */
 type Etat = 'vendu' | 'compromis' | 'retire';
 const BANDEAU: Record<Etat, { titre: string; sous: string; ic: string; c: string; fond: string; trait: string }> = {
-  vendu: { titre: 'Ce bien a été vendu', sous: 'Il n’est plus disponible.', ic: 'cle', c: ENCRE, fond: '#f1f0ef', trait: '#d9d8d6' },
-  compromis: { titre: 'En signature', sous: 'Une promesse de vente est signée : il n’est plus disponible pour l’instant.', ic: 'cle', c: OR_FONCE, fond: OR_FOND, trait: OR_TRAIT },
-  retire: { titre: 'Ce bien n’est plus en vente', sous: 'Il n’est plus proposé pour l’instant.', ic: 'maison', c: PLUME, fond: FOND, trait: TRAIT },
+  vendu: { titre: 'Ce local a trouvé preneur', sous: 'Il n’est plus disponible.', ic: 'cle', c: ENCRE, fond: '#f1f0ef', trait: '#d9d8d6' },
+  compromis: { titre: 'En signature', sous: 'Un accord est signé : il n’est plus disponible pour l’instant.', ic: 'cle', c: OR_FONCE, fond: OR_FOND, trait: OR_TRAIT },
+  retire: { titre: 'Ce local n’est plus sur le marché', sous: 'Il n’est plus proposé pour l’instant.', ic: 'maison', c: PLUME, fond: FOND, trait: TRAIT },
 };
 function etatDeVente(v: { etape?: string | null; archive?: boolean | null } | null): Etat | null {
   if (!v) return null;
@@ -122,7 +122,7 @@ function etatDeVente(v: { etape?: string | null; archive?: boolean | null } | nu
 /* Les coordonnées du conseiller : celles des Paramètres (« Tes coordonnées
    dans les mails »), comme la signature des mails ; celles d'avant si elles
    sont vides. */
-const TEL_DEFAUT = '01 00 00 00 00';
+const TEL_DEFAUT = '01 87 66 06 00';
 const MAIL_DEFAUT = 'contact@wernerimmobilier.com';
 function lienTel(t: string): string {
   const n = t.replace(/[^\d+]/g, '');
@@ -199,17 +199,17 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   /* « Paris 16e » plutôt que « Paris (75016) », comme sur le site. */
   const arr = /^paris/i.test(b.ville || '') && /^75\d{3}$/.test(b.code_postal || '') ? parseInt(String(b.code_postal).slice(3), 10) : 0;
   const ville = arr > 0 ? `Paris ${arr}${arr === 1 ? 'er' : 'e'}` : (b.ville || '');
-  const titre = String(b.titre || `${b.type_bien || 'Bien'}${b.surface ? ` ${nb(b.surface)} m²` : ''}`).slice(0, 90);
+  const titre = String(b.titre || `${b.type_bien || 'Local'}${b.surface ? ` ${nb(b.surface)} m²` : ''}`).slice(0, 90);
   /* V3.145 : le prix de l'annonce (ses honoraires, s'ils s'ajoutent, sont dits sur la page). */
   const prix = prixDuBien(b).demande;
   /* Ce que le titre dit déjà (« 3 pièces · 80 m² ») ne se répète pas dessous. */
   const details = [
-    b.nb_pieces && !/pi[eè]ce/i.test(titre) ? `${b.nb_pieces} pièce${b.nb_pieces > 1 ? 's' : ''}` : '',
+    b.nb_pieces && !/pi[eè]ce/i.test(titre) ? `${b.nb_pieces} espace${b.nb_pieces > 1 ? 's' : ''}` : '',
     b.surface && !/m²/.test(titre) ? `${nb(b.surface)} m²` : '',
     ville,
     prix ? `${fmt(prix)} €` : '',
   ].filter(Boolean).join(' · ');
-  const description = etat ? `${BANDEAU[etat].titre}. ${details}` : details || 'Un bien proposé par Werner Immobilier.';
+  const description = etat ? `${BANDEAU[etat].titre}. ${details}` : details || 'Un local proposé par Werner Immobilier.';
   const photos: string[] = Array.isArray(b.photos) ? b.photos.filter(Boolean) : [];
   const image = photos[0] ? apercuPhoto(photos[0]) : null;
   return {
@@ -259,7 +259,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
      bien de l'agence garde son prix, honoraires de l'agence compris. */
   const pb = prixDuBien(bien);
   const prix = pb.demande;
-  const labelPrix = pb.agence && bien.prix_acquereur ? 'Prix FAI · honoraires inclus' : 'Prix demandé';
+  const labelPrix = pb.agence && bien.prix_acquereur ? 'Montant honoraires inclus' : 'Montant demandé';
   const prixM2 = prix && bien.surface ? Math.round(prix / bien.surface) : null;
   const photos: string[] = Array.isArray(bien.photos) ? bien.photos.filter(Boolean) : [];
   const plans: string[] = Array.isArray(bien.plans) ? bien.plans.filter(Boolean) : [];
@@ -274,7 +274,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
 
   const chiffres: { i: string; v: string; l: string }[] = [];
   if (bien.surface) chiffres.push({ i: 'regle', v: `${nb(bien.surface)} m²`, l: 'Surface' });
-  if (bien.nb_pieces) chiffres.push({ i: 'plan', v: String(bien.nb_pieces), l: bien.nb_pieces > 1 ? 'Pièces' : 'Pièce' });
+  if (bien.nb_pieces) chiffres.push({ i: 'plan', v: String(bien.nb_pieces), l: bien.nb_pieces > 1 ? 'Espaces' : 'Espace' });
   if (bien.nb_chambres) chiffres.push({ i: 'lit', v: String(bien.nb_chambres), l: bien.nb_chambres > 1 ? 'Chambres' : 'Chambre' });
   if (bien.etage !== null && bien.etage !== undefined) {
     chiffres.push({
@@ -290,13 +290,13 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
 
   const inclus: { i: string; n: string }[] = [];
   if (bien.terrasse) inclus.push({ i: 'terrasse', n: 'Terrasse' });
-  if (bien.balcon) inclus.push({ i: 'terrasse', n: 'Balcon' });
-  if (bien.jardin) inclus.push({ i: 'jardin', n: 'Jardin' });
+  if (bien.balcon) inclus.push({ i: 'terrasse', n: 'Extérieur' });
+  if (bien.jardin) inclus.push({ i: 'jardin', n: 'Espace extérieur' });
   if (bien.parking) inclus.push({ i: 'parking', n: bien.nb_parking > 1 ? `${bien.nb_parking} parkings` : 'Parking' });
   if (bien.cave) inclus.push({ i: 'cave', n: 'Cave' });
   if (bien.ascenseur) inclus.push({ i: 'ascenseur', n: 'Ascenseur' });
   if (bien.gardien) inclus.push({ i: 'gardien', n: 'Gardien' });
-  if (bien.cuisine_equipee) inclus.push({ i: 'cuisine', n: 'Cuisine équipée' });
+  if (bien.cuisine_equipee) inclus.push({ i: 'cuisine', n: 'Cuisine professionnelle' });
   if (bien.climatisation) inclus.push({ i: 'clim', n: 'Climatisation' });
   if (bien.traversant) inclus.push({ i: 'traversant', n: 'Traversant' });
 
@@ -368,7 +368,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
         {/* Le prix d'abord : c'est la première question de celui qui reçoit le lien */}
         <div className="fb-prix" style={{ padding: '20px 0 2px' }}>
           <span style={{ fontFamily: JAKARTA, fontSize: 30, fontWeight: 800, color: OR_FONCE, letterSpacing: -.8 }}>
-            {prix ? `${fmt(prix)} €` : 'Prix à venir'}
+            {prix ? `${fmt(prix)} €` : 'Montant à venir'}
           </span>
           {prixM2 ? (
             <span style={{ fontSize: 13.5, color: PLUME_CLAIR, fontWeight: 700 }}>{fmt(prixM2)} €/m²</span>
@@ -378,12 +378,12 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
         <div style={{ fontSize: 11.5, color: OR, fontWeight: 700, marginBottom: pb.hono && prix ? 4 : 14 }}>{prix ? labelPrix : ''}</div>
         {pb.hono && prix && pb.total ? (
           <div style={{ fontSize: 12, color: PLUME, fontWeight: 600, lineHeight: 1.45, marginBottom: 14 }}>
-            {`+ ${fmt(pb.hono)} € de nos honoraires, soit ${fmt(pb.total)} € frais d’agence compris`}
+            {`+ ${fmt(pb.hono)} € HT de nos honoraires, soit ${fmt(pb.total)} € honoraires compris`}
           </div>
         ) : null}
 
         <h1 className="fb-h1" style={{ fontFamily: JAKARTA, fontSize: 25, fontWeight: 800, letterSpacing: -.5, lineHeight: 1.25, margin: '0 0 6px' }}>
-          {bien.titre || `${bien.type_bien || 'Bien'}${bien.surface ? ` — ${bien.surface} m²` : ''}`}
+          {bien.titre || `${bien.type_bien || 'Local'}${bien.surface ? ` — ${bien.surface} m²` : ''}`}
         </h1>
         {lieu && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, color: PLUME }}>
@@ -453,7 +453,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
               {plans.map((u, n) => (
                 <a key={u + n} href={u} target="_blank" rel="noopener noreferrer"
                   style={{ ...carte, display: 'block', background: '#fff', padding: 12, cursor: 'zoom-in' }}>
-                  <img src={u} alt={plans.length > 1 ? `Plan ${n + 1}` : 'Plan du bien'} loading="lazy"
+                  <img src={u} alt={plans.length > 1 ? `Plan ${n + 1}` : 'Plan du local'} loading="lazy"
                     style={{ display: 'block', width: '100%', maxHeight: 460, objectFit: 'contain', margin: '0 auto' }} />
                 </a>
               ))}
@@ -463,7 +463,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
 
         {inclus.length > 0 && (
           <>
-            <Titre>Ce que le bien comprend</Titre>
+            <Titre>Ce que le local comprend</Titre>
             <div className="fb-cartes">
               {inclus.map((x) => (
                 <div key={x.n} style={{ ...carte, display: 'flex', alignItems: 'center', gap: 11, padding: '11px 13px' }}>
@@ -513,7 +513,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
             </div>
           </div>
           <h2 style={{ fontFamily: JAKARTA, fontSize: 21, fontWeight: 800, margin: '0 0 8px', letterSpacing: -.3 }}>
-            {etat === 'vendu' || etat === 'retire' ? 'Vous cherchez un bien comme celui-ci\u00a0?' : 'Ce bien vous intéresse\u00a0?'}
+            {etat === 'vendu' || etat === 'retire' ? 'Vous cherchez un local comme celui-ci ?' : 'Ce local vous intéresse ?'}
           </h2>
           <div style={{ fontSize: 14, opacity: .72, marginBottom: 22, lineHeight: 1.6 }}>
             {etat === 'vendu' || etat === 'retire' ? 'Appelez-moi : je vous aide à trouver le vôtre.'
@@ -532,7 +532,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
 
         <div style={{ marginTop: 18, background: OR_FOND, border: `1px solid ${OR_TRAIT}`, borderRadius: 15, padding: '13px 15px', fontSize: 12.5, color: OR_FONCE, lineHeight: 1.6, boxShadow: OMBRE }}>
           Document non contractuel. Les surfaces, charges et diagnostics sont communiqués sous réserve
-          de vérification par les diagnostics, le règlement de copropriété et les documents notariés.
+          de vérification par les diagnostics, le bail, le règlement de copropriété et les actes.
         </div>
       </div>
 

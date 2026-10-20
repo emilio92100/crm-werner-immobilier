@@ -121,7 +121,7 @@ const LIB_OFFRE: [string, string][] = [
 const PREFIXES: { debut: string; o: Origine }[] = [
   { debut: 'Prochain contact repris d’ImmoFacile — ', o: { lib: 'Repris d’ImmoFacile', ico: 'horloge' } },
   { debut: 'Relance proposée au tri de l’import — ', o: { lib: 'Après le tri', ico: 'drapeau' } },
-  { debut: 'Projet de vente — recontacter ', o: { lib: 'Projet de vente', ico: 'personne' } },
+  { debut: 'Projet de vente — recontacter ', o: { lib: 'Affaire à confier', ico: 'personne' } },
   /* V3.165 : le pense-bête posé à la main (« Nouvelle relance »). */
   { debut: DEBUT_PENSE_BETE, o: { lib: 'Pense-bête', ico: 'note' } },
 ];
@@ -143,7 +143,7 @@ function origineDe(r: any, typeAction?: string | null): Origine {
   const pre = prefixeDe(r.note);
   if (pre) return pre.o;
   if (estRelanceOffre(r.note)) {
-    const lib = LIB_OFFRE.find(([t]) => String(r.note).startsWith(`${t} — `))?.[1] || 'Offre d’achat';
+    const lib = LIB_OFFRE.find(([t]) => String(r.note).startsWith(`${t} — `))?.[1] || 'Offre';
     return { lib, ico: 'euro', fort: true };
   }
   if (veutOffrir(r)) return { lib: 'Veut faire une offre', ico: 'euro', fort: true };
@@ -848,7 +848,7 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
             const autres = acheteur ? 0 : a.n - a.noms.length;
             const sous = acheteur
               ? `Sa recherche a été ouverte ${quand}. « Voir » ouvre sa fiche sur les biens trouvés, ${a.mandats.length > 1 ? 'ces mandats déjà cochés' : 'ce mandat déjà coché'}.`
-              : `${j === 0 ? 'Passé en vente aujourd’hui' : j === 1 ? 'Passé en vente hier' : `En vente depuis ${j} jours`}${a.noms.length ? ` · ${a.noms.join(', ')}${autres > 0 ? ` et ${autres > 1 ? `${autres} autres` : 'un autre'}` : ''}` : ''}. « Voir les demandeurs » ouvre sa fiche sur l’onglet Demandeurs.`;
+              : `${j === 0 ? 'Disponible depuis aujourd’hui' : j === 1 ? 'Disponible depuis hier' : `Disponible depuis ${j} jours`}${a.noms.length ? ` · ${a.noms.join(', ')}${autres > 0 ? ` et ${autres > 1 ? `${autres} autres` : 'un autre'}` : ''}` : ''}. « Voir les demandeurs » ouvre sa fiche sur l’onglet Demandeurs.`;
             const occupe = alerteEnCours === a.cle;
             return (
               <div key={a.cle} className={`rl-al rl-entre${acheteur ? '' : ' rl-al-m'}`} style={{ animationDelay: `${i * 80}ms` }}>

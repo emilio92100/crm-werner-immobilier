@@ -244,8 +244,8 @@ function FenInscrire({ prochain, onFermer, onInscrit }: { prochain: number; onFe
               <label className={r.champ}><span>Les mandants (noms et adresses)</span>
                 <textarea className={r.input} rows={2} value={mandants} onChange={e => setMandants(e.target.value)} placeholder="Monsieur Paul MARTIN, 3 rue de la Paix, 75002 Paris" />
               </label>
-              <label className={r.champ}><span>{nature === 'vente' ? 'Le bien à vendre' : 'Le bien recherché'}</span>
-                <textarea className={r.input} rows={2} value={objet} onChange={e => setObjet(e.target.value)} placeholder={nature === 'vente' ? '12 rue des Lilas, 92100 Boulogne · appartement de 4 pièces · prix 685 000 €' : 'Appartement de 3 pièces, Paris 16e, jusqu’à 800 000 €'} />
+              <label className={r.champ}><span>{nature === 'vente' ? 'L’affaire confiée' : 'Le local recherché'}</span>
+                <textarea className={r.input} rows={2} value={objet} onChange={e => setObjet(e.target.value)} placeholder={nature === 'vente' ? '12 rue des Lilas, 75002 Paris · boutique de 60 m² · droit au bail 120 000 €' : 'Bureaux de 150 m², Paris 8e, loyer jusqu’à 90 000 € HT HC par an'} />
               </label>
               <div className={r.premier}><b>{prochain}</b><span>{'Le numéro qu’il prendra, sauf si un autre mandat est inscrit avant.'}</span></div>
             </>
@@ -283,7 +283,7 @@ function FenObserver({ l, onFermer, onFait }: { l: LigneRegistre; onFermer: () =
   const aide: Partial<Record<TypeObs, string>> = {
     signe: 'Ex : signé à l’agence le 2 octobre 2026.', sans_suite: 'Ex : le mandant a renoncé avant de signer.',
     retracte: 'Ex : rétractation reçue par lettre recommandée le 9 octobre 2026, dans le délai de 14 jours.',
-    fin: 'Ex : résilié par lettre recommandée du 5 novembre 2026, fin le 20 novembre.', vente: 'Ex : acte authentique signé le 12 janvier 2027 chez Me Durand.',
+    fin: 'Ex : résilié par lettre recommandée du 5 novembre 2026, fin le 20 novembre.', vente: 'Ex : bail signé le 12 janvier 2027 au cabinet de Me Durand.',
     annule: 'Ex : mandat annulé d’un commun accord le …', delegation: 'Ex : délégué à l’Agence du Parc (SARL Parc Immobilier) le 3 octobre 2026, jusqu’au 3 janvier 2027.',
     note: 'Toute autre information utile.',
   };

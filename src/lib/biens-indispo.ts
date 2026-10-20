@@ -20,10 +20,10 @@ export type MotifIndispo = 'vendu' | 'compromis' | 'retire' | 'autre';
 export type Indispo = { le: string; motif: MotifIndispo; note: string | null };
 
 export const MOTIFS_INDISPO: { k: MotifIndispo; l: string; client: string }[] = [
-  { k: 'vendu', l: 'Vendu', client: 'Ce bien a été vendu.' },
-  { k: 'compromis', l: 'En signature', client: 'Ce bien est en signature de vente.' },
-  { k: 'retire', l: 'Retiré de la vente', client: 'Ce bien n’est plus proposé à la vente.' },
-  { k: 'autre', l: 'Autre raison', client: 'Ce bien n’est plus disponible.' },
+  { k: 'vendu', l: 'Loué ou vendu', client: 'Ce local a trouvé preneur.' },
+  { k: 'compromis', l: 'En signature', client: 'Ce local est en cours de signature.' },
+  { k: 'retire', l: 'Retiré du marché', client: 'Ce local a été retiré du marché.' },
+  { k: 'autre', l: 'Autre raison', client: 'Ce local n’est plus disponible.' },
 ];
 export const motifIndispo = (k: string | null | undefined) => MOTIFS_INDISPO.find(m => m.k === k) || MOTIFS_INDISPO[3];
 

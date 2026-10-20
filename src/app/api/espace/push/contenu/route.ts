@@ -36,11 +36,11 @@ type BienLite = {
   recherche_id: string;
 };
 
-/* « 3 pièces · 68 m² · Boulogne-Billancourt » — de quoi reconnaître le bien
-   d'un coup d'œil, sans rien dire de ce qui le regarde lui seul. */
+/* « Boutique · 68 m² · Paris 11e » — de quoi reconnaître le local d'un coup
+   d'œil, sans rien dire de ce qui le regarde lui seul. */
 function decrire(b: BienLite): string {
   const bouts = [
-    b.nb_pieces ? `${b.nb_pieces} pièce${b.nb_pieces > 1 ? 's' : ''}` : (b.type_bien || ''),
+    b.type_bien || (b.nb_pieces ? `${b.nb_pieces} espace${b.nb_pieces > 1 ? 's' : ''}` : ''),
     b.surface ? `${b.surface} m²` : '',
     b.quartier || b.ville || '',
   ].filter(Boolean);
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
     if (n === 0 && retenue) {
       return NextResponse.json({
         titre: 'Werner a retenu votre annonce',
-        corps: 'Elle est dans vos biens, avec ce qu’il en pense.',
+        corps: 'Elle est dans votre sélection, avec ce qu’il en pense.',
         url: `${lien}?r=${retenue.recherche_id}&bien=${retenue.id}`,
         pastille: 0,
       });
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
 
     if (n === 1) {
       return NextResponse.json({
-        titre: 'Un nouveau bien pour vous',
+        titre: 'Un nouveau local pour vous',
         corps: decrire(liste[0]),
         url: `${lien}?r=${liste[0].recherche_id}&bien=${liste[0].id}`,
         pastille: 1,
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({
-      titre: `${n} nouveaux biens vous attendent`,
+      titre: `${n} nouveaux locaux vous attendent`,
       corps: `Dont ${decrire(liste[0])}.`,
       url: vers,
       pastille: n,

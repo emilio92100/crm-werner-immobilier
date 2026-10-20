@@ -189,7 +189,7 @@ async function lireBiens(vs: VisiteBon[], deja?: BienVente | null) {
   const idsV = [...new Set(vs.map(v => v.bienVenteId || (v.bienId ? copies[v.bienId]?.bien_vente_id : null)).filter((x): x is string => !!x && !ventes[x]))];
   if (idsV.length) {
     const { data, error } = await supabase.from('biens_vente').select('*').in('id', idsV);
-    if (error) throw new Error('Les biens de l’agence n’ont pas pu être lus : ' + error.message);
+    if (error) throw new Error('Les affaires de l’agence n’ont pas pu être lues : ' + error.message);
     for (const b of (data || []) as BienVente[]) ventes[b.id] = b;
   }
   return { copies, ventes };

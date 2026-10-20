@@ -45,13 +45,13 @@ async function ventesAgence(): Promise<{ lignes: Encaisse[]; comptes: Set<string
   ]);
   const lignes: Encaisse[] = [];
   const comptes = new Set<string>();
-  if (!verif('Les biens vendus', bv.error) || !verif('L’historique des ventes', sv.error)) return { lignes, comptes };
+  if (!verif('Les affaires conclues', bv.error) || !verif('L’historique des affaires', sv.error)) return { lignes, comptes };
   for (const b of (bv.data || []) as { id: string; titre: string | null; client_id: string | null; vendu_le: string | null }[]) {
     const l = ((sv.data || []) as LigneVente[]).find(x => x.bien_id === b.id);
     const ttc = nombre(l?.donnees?.hono);
     if (ttc === null || ttc <= 0) continue;
     const quand = b.vendu_le || (typeof l?.donnees?.acte === 'string' ? l.donnees.acte : null);
-    lignes.push({ quand, ht: ttc / 1.2, source: 'vente', clientId: b.client_id, titre: b.titre || 'Vente' });
+    lignes.push({ quand, ht: ttc / 1.2, source: 'vente', clientId: b.client_id, titre: b.titre || 'Affaire' });
     comptes.add(b.id);
   }
   return { lignes, comptes };
@@ -117,12 +117,12 @@ export async function honorairesPrevus(): Promise<Encaisse[]> {
   ]);
   const lignes: Encaisse[] = [];
   const enCompromis = new Set<string>();
-  if (verif('Les biens en signature', bv.error) && verif('L’historique des ventes', sv.error)) {
+  if (verif('Les affaires en signature', bv.error) && verif('L’historique des affaires', sv.error)) {
     for (const b of (bv.data || []) as { id: string; titre: string | null; client_id: string | null }[]) {
       const l = ((sv.data || []) as LigneVente[]).find(x => x.bien_id === b.id);
       const ttc = nombre(l?.donnees?.hono);
       if (ttc === null || ttc <= 0) continue;
-      lignes.push({ quand: typeof l?.donnees?.acte === 'string' ? l.donnees.acte : null, ht: ttc / 1.2, source: 'vente', clientId: b.client_id, titre: b.titre || 'Vente' });
+      lignes.push({ quand: typeof l?.donnees?.acte === 'string' ? l.donnees.acte : null, ht: ttc / 1.2, source: 'vente', clientId: b.client_id, titre: b.titre || 'Affaire' });
       enCompromis.add(b.id);
     }
   }

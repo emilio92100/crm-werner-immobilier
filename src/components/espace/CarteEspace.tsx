@@ -50,7 +50,7 @@ const CLE_VU = 'emilio_carte_vu';
 /* Sous ce zoom, les étiquettes de prix se replient en simples points. */
 const ZOOM_PRIX = 12.9;
 
-export default function CarteEspace({ token, biens, focus, ville, onOuvrir, onListe, titre = 'Vos biens', sansFiltres = false, vide }: {
+export default function CarteEspace({ token, biens, focus, ville, onOuvrir, onListe, titre = 'Vos locaux', sansFiltres = false, vide }: {
   token: string;
   biens: BienCarte[];
   /* « Vos biens » (tout) ou « Vos nouveautés » (V3.28). */
@@ -123,7 +123,7 @@ export default function CarteEspace({ token, biens, focus, ville, onOuvrir, onLi
       if (localStorage.getItem(CLE_VU)) return;
       localStorage.setItem(CLE_VU, '1');
     } catch { /* stockage refusé : on le dit quand même */ }
-    setMessage('Chaque bien est dans une petite zone de quelques rues : l’adresse exacte vous est donnée avec la visite.');
+    setMessage('Chaque local est dans une petite zone de quelques rues : l’adresse exacte vous est donnée avec la visite.');
   }, []);
   useEffect(() => { if (!message) return; const t = setTimeout(() => setMessage(null), 7000); return () => clearTimeout(t); }, [message]);
 
@@ -342,7 +342,7 @@ export default function CarteEspace({ token, biens, focus, ville, onOuvrir, onLi
       }, 200);
       return;
     }
-    if (focus && sans.includes(focus)) setMessage('Ce bien n’a pas encore d’adresse assez précise pour la carte. Les autres y sont.');
+    if (focus && sans.includes(focus)) setMessage('Ce local n’a pas encore d’adresse assez précise pour la carte. Les autres y sont.');
     if (!places.length) { calculerVue(); return; }
     const b = new lib.LngLatBounds();
     for (const x of places) b.extend([x.z.lng, x.z.lat]);
@@ -420,7 +420,7 @@ export default function CarteEspace({ token, biens, focus, ville, onOuvrir, onLi
      où un trait fin sépare chaque choix ; le choix actif prend la couleur de
      sa catégorie (« Tous », le bleu de l'espace). */
   const filtresPc = (
-    <div className={s.filtresPc} role="group" aria-label="Filtrer les biens">
+    <div className={s.filtresPc} role="group" aria-label="Filtrer les locaux">
       <button type="button" className={`${s.fp} ${filtre === 'tout' ? s.fpOn : ''}`} aria-pressed={filtre === 'tout'}
         onClick={() => setFiltre('tout')}>
         Tous<b>{places.length}</b>
@@ -456,7 +456,7 @@ export default function CarteEspace({ token, biens, focus, ville, onOuvrir, onLi
               de hauteur quand on la choisit. */}
           {(choisi || compacte) && (
             <span className={s.actions}>
-              <button type="button" className={s.voir} onClick={e => { e.stopPropagation(); onOuvrir(p.id); }}>Voir le bien</button>
+              <button type="button" className={s.voir} onClick={e => { e.stopPropagation(); onOuvrir(p.id); }}>Voir le local</button>
               {p.z.exact && (
                 <a className={s.itin} href={lienItineraire(p.z.lat, p.z.lng)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>Itinéraire</a>
               )}
@@ -475,12 +475,12 @@ export default function CarteEspace({ token, biens, focus, ville, onOuvrir, onLi
     <div className={s.hors} role="note">
       <span className={s.horsIc}><Pic d={ATTENTION} t={15} /></span>
       <div className={s.horsTxt}>
-        <b>{nbHors === 1 ? '1 bien n’est pas sur la carte' : `${nbHors} biens ne sont pas sur la carte`}</b>
+        <b>{nbHors === 1 ? '1 local n’est pas sur la carte' : `${nbHors} locaux ne sont pas sur la carte`}</b>
         <span>
           {nbHors === 1 ? 'Son secteur n’est pas encore assez précis pour le placer.' : 'Leur secteur n’est pas encore assez précis pour les placer.'}
           {' '}
           <button type="button" onClick={() => (nbHors === 1 ? onOuvrir(horsCarte[0].id) : onListe())}>
-            {nbHors === 1 ? 'Voir le bien' : 'Les voir dans la liste'}
+            {nbHors === 1 ? 'Voir le local' : 'Les voir dans la liste'}
           </button>
         </span>
       </div>
@@ -489,8 +489,8 @@ export default function CarteEspace({ token, biens, focus, ville, onOuvrir, onLi
   ) : null;
   const rienIci = (
     <div className={s.rien}>
-      {charge ? 'Placement de vos biens…' : places.length ? 'Aucun bien dans cette partie de la carte.'
-        : !biens.length && vide ? vide : 'Vos biens n’ont pas encore d’adresse assez précise pour la carte.'}
+      {charge ? 'Placement de vos locaux…' : places.length ? 'Aucun local dans cette partie de la carte.'
+        : !biens.length && vide ? vide : 'Vos locaux n’ont pas encore d’adresse assez précise pour la carte.'}
       {!charge && visibles.length > 0 && <button type="button" onClick={toutVoir}>Tout voir</button>}
     </div>
   );
@@ -510,7 +510,7 @@ export default function CarteEspace({ token, biens, focus, ville, onOuvrir, onLi
         <div className={s.tetePc}>
           <div>
             <h2>{`${titre} sur la carte`}</h2>
-            <p>{ville ? `${ville} · ` : ''}chaque bien dans une petite zone&nbsp;; l’adresse exacte vient avec la visite.</p>
+            <p>{ville ? `${ville} · ` : ''}chaque local dans une petite zone&nbsp;; l’adresse exacte vient avec la visite.</p>
           </div>
           {bascule}
         </div>
@@ -521,7 +521,7 @@ export default function CarteEspace({ token, biens, focus, ville, onOuvrir, onLi
           {!tel && !sansFiltres && filtresPc}
           <FondCarte className={s.fond} surPrete={surPrete} centre={CENTRE} zoom={12.6}
             mention={tel ? 'haut-droite' : 'bas-gauche'} surErreur={m => setErreur(m)} />
-          {charge && <div className={s.charge} role="status"><span />Placement de vos biens…</div>}
+          {charge && <div className={s.charge} role="status"><span />Placement de vos locaux…</div>}
           {message && (
             <div className={s.message} role="status">
               <span>{message}</span>
@@ -530,7 +530,7 @@ export default function CarteEspace({ token, biens, focus, ville, onOuvrir, onLi
           )}
           {erreur && !message && <div className={s.message} role="alert"><span>{erreur}</span></div>}
           <div className={s.outils}>
-            <button type="button" onClick={toutVoir} aria-label="Voir tous les biens" title="Tout voir"><Pic d={CADRE} t={18} /></button>
+            <button type="button" onClick={toutVoir} aria-label="Voir tous les locaux" title="Tout voir"><Pic d={CADRE} t={18} /></button>
             {!tel && <>
               <button type="button" onClick={() => carte.current?.zoomIn()} aria-label="Zoomer"><Pic d={PLUS} t={18} /></button>
               <button type="button" onClick={() => carte.current?.zoomOut()} aria-label="Dézoomer"><Pic d={MOINS} t={18} /></button>
@@ -551,7 +551,7 @@ export default function CarteEspace({ token, biens, focus, ville, onOuvrir, onLi
         </div>
 
         {!tel && (
-          <aside className={s.cote} aria-label="Les biens de cette zone">
+          <aside className={s.cote} aria-label="Les locaux de cette zone">
             <div className={s.coteTete}>
               <b>Dans cette zone</b><span>{vue.length}</span>
               <button type="button" onClick={toutVoir}>Tout voir</button>

@@ -54,12 +54,12 @@ export async function mandatVenteEnCours(b: {
   let bien = b;
   if (b.etape === undefined) {
     const r = await supabase.from('biens_vente').select('id, etape, document_id, mandat_numero, donnees').eq('id', b.id).maybeSingle();
-    if (r.error) throw new Error('Le bien n’a pas pu être relu : ' + r.error.message);
+    if (r.error) throw new Error('L’affaire n’a pas pu être relue : ' + r.error.message);
     if (r.data) bien = r.data as typeof b;
   }
   const { data, error } = await supabase.from('documents').select('id, statut, numero, signe_le')
     .eq('modele', 'mandat_vente').eq('donnees->>bienVenteId', bien.id).in('statut', EN_COURS).limit(20);
-  if (error) throw new Error('Les mandats du bien n’ont pas pu être vérifiés : ' + error.message);
+  if (error) throw new Error('Les mandats de l’affaire n’ont pas pu être vérifiés : ' + error.message);
   /* Un mandat signé ne court plus quand le bien est retiré (« Mandat terminé
      sans vente ») ou vendu : on peut en signer un nouveau. */
   const fini = ['retire', 'vendu'].includes(String(bien.etape || ''));
@@ -123,8 +123,8 @@ export async function mandatRechercheEnCours(rechercheId: string): Promise<Manda
 
 /* La phrase qui le dit, la même partout. */
 export function phraseMandat(x: MandatEnCours): string {
-  const quoi = x.sorte === 'vente' ? 'Un mandat de vente' : 'Un mandat de recherche';
-  const ou = x.sorte === 'vente' ? 'sur ce bien' : 'pour cette recherche';
+  const quoi = x.sorte === 'vente' ? 'Un mandat de location ou de vente' : 'Un mandat de recherche';
+  const ou = x.sorte === 'vente' ? 'sur cette affaire' : 'pour cette recherche';
   const jour = x.signeLe ? new Date(x.signeLe.length <= 10 ? `${x.signeLe}T12:00:00` : x.signeLe).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
   if (x.propose) return `${quoi} est déjà proposé dans son espace${x.numero ? ` (n° ${x.numero})` : ''} : il ne l’a pas encore signé.`;
   const detail = [x.numero ? `n° ${x.numero}` : '', x.etat === 'signe' ? (jour ? `signé le ${jour}` : 'signé') : x.etat === 'signature' ? 'en cours de signature' : 'en préparation',
@@ -138,10 +138,10 @@ export function conseilMandat(x: MandatEnCours): string {
   if (x.etat !== 'signe') return 'Reprends-le plutôt que d’en commencer un second. Pour repartir de zéro, annule-le d’abord dans Documents.';
   if (x.cle === null) {
     return x.sorte === 'vente'
-      ? 'Pour changer le prix, les honoraires ou la durée : un avenant. Pour en signer un nouveau : d’abord « Mandat terminé sans vente » sur la fiche du bien.'
+      ? 'Pour changer le montant, les honoraires ou la durée : un avenant. Pour en signer un nouveau : d’abord « Mandat terminé sans suite » sur la fiche de l’affaire.'
       : 'Pour changer la recherche ou les honoraires : un avenant. Pour en signer un nouveau : efface d’abord le mandat noté sur sa recherche.';
   }
   return x.sorte === 'vente'
-    ? 'Pour changer le prix, les honoraires ou la durée : un avenant. Pour en signer un nouveau : annule d’abord le mandat en cours dans Documents.'
+    ? 'Pour changer le montant, les honoraires ou la durée : un avenant. Pour en signer un nouveau : annule d’abord le mandat en cours dans Documents.'
     : 'Pour changer la recherche ou les honoraires : un avenant. Pour en signer un nouveau : annule (ou fais rétracter) d’abord le mandat en cours.';
 }

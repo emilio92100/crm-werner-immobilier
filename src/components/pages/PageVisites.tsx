@@ -120,7 +120,7 @@ function Picto({ n, t = 16, plein }: { n: NomPicto; t?: number; plein?: boolean 
 function BienDemande({ d }: { d: DemandeVisite }) {
   const euros = (n: number) => n.toLocaleString('fr-FR').replace(/\u202f/g, '\u00a0') + '\u00a0€';
   const lieu = [d.bien.quartier, d.bien.ville].filter(Boolean).join(', ');
-  const carac = [d.bien.surface ? `${d.bien.surface}\u00a0m²` : '', d.bien.nb_pieces ? `${d.bien.nb_pieces}\u00a0pièces` : ''].filter(Boolean).join(' · ');
+  const carac = [d.bien.surface ? `${d.bien.surface}\u00a0m²` : '', d.bien.nb_pieces ? `${d.bien.nb_pieces}\u00a0espace${d.bien.nb_pieces > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
   const photo = d.bien.photos?.[0];
   return (
     <div className={dv.bien}>

@@ -290,7 +290,7 @@ export async function POST(req: NextRequest) {
       await solderRelancesOffre(sb, client.id, titreBien, [TETES_OFFRE.relire]);
       await ecritServeur('[espace/offre] relance', sb.from('relances').insert({
         client_id: client.id, recherche_id: recherche.id, type: 'rappel_client', statut: 'en_attente', date_echeance: new Date().toISOString(),
-        note: `${TETES_OFFRE.relire} — ${titreBien}${total ? ` · ${total.toLocaleString('fr-FR')} € frais d’agence compris` : ''}`.slice(0, 600),
+        note: `${TETES_OFFRE.relire} — ${titreBien}${total ? ` · ${total.toLocaleString('fr-FR')} € honoraires compris` : ''}`.slice(0, 600),
       }));
       await ecritServeur('[espace/offre] journal', sb.from('journal').insert({
         client_id: client.id, recherche_id: recherche.id, bien_id: bien.id, type: 'offre_faite',

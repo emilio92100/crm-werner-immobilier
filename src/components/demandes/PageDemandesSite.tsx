@@ -101,7 +101,7 @@ const nb = (t: string) => t.replace(/« /g, '«\u00a0').replace(/ »/g, '\u00a0�
 function sujetMail(d: DemandeSite): string {
   switch (cleCategorie(d)) {
     case 'estimation': return 'Votre demande d’estimation';
-    case 'mandat_recherche': return 'Votre recherche immobilière';
+    case 'mandat_recherche': return 'Votre recherche de local';
     case 'rappel_bien': return d.property_title ? `Votre demande sur le bien « ${d.property_title} »` : 'Votre demande sur un de nos biens';
     default: return 'Votre message sur wernerimmobilier.com';
   }
@@ -661,18 +661,18 @@ const iconeCanal = (canal: string) => {
 };
 const URGENCE = (delai: string): { k: 'vite' | 'bientot' | 'info'; ic: string; sous: string } => {
   const x = delai.toLowerCase();
-  if (/dès que|des que|vite|rapid/.test(x)) return { k: 'vite', ic: 'flamme', sous: 'Veut vendre vite' };
+  if (/dès que|des que|vite|rapid/.test(x)) return { k: 'vite', ic: 'flamme', sous: 'Veut aller vite' };
   if (/mois/.test(x)) return { k: 'bientot', ic: 'calendrier', sous: 'Projet en préparation' };
-  return { k: 'info', ic: 'info', sous: 'Veut surtout connaître le prix' };
+  return { k: 'info', ic: 'info', sous: 'Veut surtout connaître la valeur' };
 };
 /* V3.212 : « Votre bien est-il déjà en vente ? » — la réponse change
    l'appel : un bien libre est un mandat à prendre, un bien déjà en agence
    demande de savoir où en est le mandat. */
 const DEJA_EN_VENTE = (deja: string): { k: 'libre' | 'agence' | 'pap'; titre: string; sous: string } => {
   const x = deja.toLowerCase();
-  if (/agence/.test(x)) return { k: 'agence', titre: 'Déjà en vente en agence', sous: 'Un mandat existe ailleurs' };
-  if (/particulier/.test(x)) return { k: 'pap', titre: 'En vente entre particuliers', sous: 'Le propriétaire vend seul' };
-  return { k: 'libre', titre: 'Pas encore en vente', sous: 'Aucune agence ni annonce' };
+  if (/agence/.test(x)) return { k: 'agence', titre: 'Déjà sur le marché en agence', sous: 'Un mandat existe ailleurs' };
+  if (/particulier/.test(x)) return { k: 'pap', titre: 'Proposé sans agence', sous: 'Le propriétaire s’en occupe seul' };
+  return { k: 'libre', titre: 'Pas encore sur le marché', sous: 'Aucune agence ni annonce' };
 };
 const ICONE_TYPE = (t: string) => (/maison/i.test(t) ? 'maison' : /immeuble|appart/i.test(t) ? 'immeuble' : 'plus');
 const ICONE_ATOUT: Record<string, string> = { balcon: 'balcon', terrasse: 'parasol', jardin: 'fleur', cave: 'cave', parking: 'parking', box: 'box', loggia: 'loggia' };
@@ -729,13 +729,13 @@ function BandeauPub({ p }: { p: LecturePub }) {
    « Non précisé » : elle liste ce qu'il faut lui demander au téléphone, et
    coche ce que la page sait déjà (le type, l'adresse s'il les a donnés). */
 const QUESTIONS_EXPRESS = (p: LecturePub) => [
-  { ic: ICONE_TYPE(p.type), q: 'Le type de bien', r: p.type },
-  { ic: 'regle', q: 'La surface et le nombre de pièces', r: [p.surface && `${p.surface} m²`, p.pieces && `${p.pieces} p.`].filter(Boolean).join(' · ') },
-  { ic: 'escalier', q: 'L’étage, et s’il y a un ascenseur', r: '' },
+  { ic: ICONE_TYPE(p.type), q: 'Le type de local', r: p.type },
+  { ic: 'regle', q: 'La surface et le nombre d’espaces', r: [p.surface && `${p.surface} m²`, p.pieces && `${p.pieces} p.`].filter(Boolean).join(' · ') },
+  { ic: 'escalier', q: 'L’étage, l’accès et la vitrine', r: '' },
   { ic: 'etincelle', q: 'L’état général', r: '' },
-  { ic: 'balcon', q: 'L’extérieur et les annexes (balcon, cave, parking…)', r: '' },
-  { ic: 'calendrier', q: 'Quand il veut vendre', r: '' },
-  { ic: 'panneau', q: 'S’il est déjà en vente (agence, particulier)', r: '' },
+  { ic: 'balcon', q: 'Les annexes (réserve, terrasse, parking…)', r: '' },
+  { ic: 'calendrier', q: 'Quand il veut louer, céder ou vendre', r: '' },
+  { ic: 'panneau', q: 'S’il est déjà sur le marché (agence, seul)', r: '' },
 ];
 
 function ReperePub({ p }: { p: LecturePub }) {

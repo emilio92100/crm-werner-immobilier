@@ -14,7 +14,7 @@ import { maintenantParis, visitePasseeParis } from '@/lib/visites';
 /* Les étapes d'une transaction, dans l'ordre de la fiche client. */
 const ETAPES_TX: { cle: string; nom: string }[] = [
   { cle: 'offre', nom: 'Offre' }, { cle: 'negociation', nom: 'Négociation' },
-  { cle: 'offre_acceptee', nom: 'Offre acceptée' }, { cle: 'compromis', nom: 'Compromis' }, { cle: 'acte', nom: 'Acte' },
+  { cle: 'offre_acceptee', nom: 'Offre acceptée' }, { cle: 'compromis', nom: 'Accord' }, { cle: 'acte', nom: 'Signature' },
 ];
 type Tx = {
   id: string; client_id: string | null; recherche_id: string | null; bien_id: string | null; etape_actuelle: string;
@@ -240,7 +240,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
         <div className={styles.welcomeRight} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <button className={styles.mailBtn} onClick={demanderNouveauMail}>✉️ <span className={styles.motLong}>Envoyer un mail</span><span className={styles.motCourt}>Mail</span></button>
           <button className={styles.mailBtn} onClick={demanderNouveauRdv}>📅 <span className={styles.motLong}>Nouveau RDV</span><span className={styles.motCourt}>RDV</span></button>
-          <button className={styles.mailBtn} onClick={() => { demanderNouveauBien(); onNavigate('biens'); }}>🏡 <span className={styles.motLong}>Nouveau bien</span><span className={styles.motCourt}>Bien</span></button>
+          <button className={styles.mailBtn} onClick={() => { demanderNouveauBien(); onNavigate('biens'); }}>🏢 <span className={styles.motLong}>Nouvelle affaire</span><span className={styles.motCourt}>Affaire</span></button>
           {/* Comme celui de la barre du haut : il ouvre directement le formulaire. */}
           <button className={styles.nouveauBtn} onClick={demanderNouveauClient} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: 'none', background: '#f08c42', color: 'var(--emilio)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>+ <span className={styles.motLong}>Nouveau contact</span><span className={styles.motCourt}>Contact</span></button>
         </div>
@@ -287,11 +287,11 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
           <div className={`${styles.statLabel} ${styles.statLabelDark}`}>CA HT du mois en cours</div>
           {encaisse === null
             ? <div className={styles.statSub}>Chiffre d’affaires indisponible : recharge la page</div>
-            : caMois.length > 0 && <div className={styles.statSub}>{caMois.length > 1 ? `${caMois.length} actes signés` : '1 acte signé'}</div>}
+            : caMois.length > 0 && <div className={styles.statSub}>{caMois.length > 1 ? `${caMois.length} affaires conclues` : '1 affaire conclue'}</div>}
           {/* Ce qui arrive : les compromis signés, l'acte pas encore passé. */}
           {prevu && prevu.length > 0 && (
             <div className={`${styles.statLabel} ${styles.statLabelDark}`} style={{ marginTop: 4 }}>
-              {`À venir : ${eurosRonds(totalPrevu)} HT (${prevu.length > 1 ? `${prevu.length} compromis signés` : '1 compromis signé'})`}
+              {`À venir : ${eurosRonds(totalPrevu)} HT (${prevu.length > 1 ? `${prevu.length} accords signés` : '1 accord signé'})`}
             </div>
           )}
         </div>
@@ -350,7 +350,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
         {/* TRANSACTIONS */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
-            <div className={styles.cardTitle}>🏠 Transactions en cours
+            <div className={styles.cardTitle}>🤝 Transactions en cours
               {transactions.length > 0 && <span className={`${styles.pastille} ${styles.pastilleAmbre}`}>{transactions.length}</span>}
             </div>
           </div>
@@ -374,7 +374,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
                     <div className={styles.progBar}>
                       {ETAPES_TX.map((e, k) => <div key={e.cle} className={`${styles.progStep} ${k < i ? styles.done : k === i ? styles.active : ''}`} />)}
                     </div>
-                    {t.acte_date_prevue && <div className={styles.txHint}>{`Acte prévu le ${new Date(`${String(t.acte_date_prevue).slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR')}`}</div>}
+                    {t.acte_date_prevue && <div className={styles.txHint}>{`Signature prévue le ${new Date(`${String(t.acte_date_prevue).slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR')}`}</div>}
                   </div>
                 );
               })}
@@ -447,7 +447,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
             <div style={{ background: 'var(--emilio-fond)', borderRadius: 16, padding: 16 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#f08c42', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>🚀 Pour commencer</div>
               <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 13, color: 'white', marginBottom: 4 }}>Créez votre premier contact</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Ajoutez vos demandeurs et commencez la chasse !</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Ajoutez vos demandeurs et vos affaires pour commencer !</div>
               <button
                 onClick={() => onNavigate('clients')}
                 style={{ width: '100%', background: '#f08c42', color: 'var(--emilio)', border: 'none', borderRadius: 8, padding: '8px 0', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}

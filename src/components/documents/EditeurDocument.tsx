@@ -943,7 +943,7 @@ export default function EditeurDocument({ doc, onFermer, onMaj, onFinalise, reto
           points={[
             { ic: 'croix', ton: 'alerte', t: 'Le brouillon disparaît pour de bon, avec toutes ses réponses. Ça ne se rattrape pas.' },
             ...(fenSuppr.ligne ? [{ ic: 'liste', t: `Il a déjà le n° ${fenSuppr.ligne} au registre des mandats : cette ligne reste, notée « sans suite ».` }] : []),
-            ...(row.modele === 'mandat_vente' ? [{ ic: 'maison', t: 'Si la fiche du bien était passée « En vente » avec lui, on te demandera juste après ce qu’elle devient.' }] : []),
+            ...(row.modele === 'mandat_vente' ? [{ ic: 'maison', t: 'Si l’affaire était passée « Disponible » avec lui, on te demandera juste après ce qu’elle devient.' }] : []),
           ]}
           conseil="Tu hésites ? Garde-le : un brouillon n’engage à rien et ne compte nulle part tant qu’il n’est pas finalisé."
           onFermer={() => setFenSuppr(null)} onConfirmer={() => { void supprimer(fenSuppr.ligne); }} />

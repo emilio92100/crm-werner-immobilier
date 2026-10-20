@@ -17,8 +17,8 @@ import { criteresAgence, type CritereAgence, type ResumeAgence } from '@/lib/age
 
 const echappe = (t: string) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const ICO = `${IMAGES_MAIL}/mail/agence`;
-const TEL = '01 00 00 00 00';
-const TEL_URL = '+33100000000';
+const TEL = '01 87 66 06 00';
+const TEL_URL = '+33187660600';
 const MAIL_ALEX = 'contact@wernerimmobilier.com';
 
 export const SUJET_AGENCE = 'Un bien pour mon client ? Voici le lien pour me le proposer';
@@ -37,7 +37,7 @@ const criteres = (r: ResumeAgence): Critere[] => criteresAgence(r);
 
 const ETAPES = [
   { ico: 'etape-lien', t: 'Collez votre annonce', s: 'Votre site, SeLoger, Leboncoin… ou sa plaquette PDF, ou des photos.' },
-  { ico: 'etape-lue', t: 'Elle est lue toute seule', s: 'Photos, prix, surface : rien à ressaisir.' },
+  { ico: 'etape-lue', t: 'Elle est lue toute seule', s: 'Photos, montant, surface : rien à ressaisir.' },
   { ico: 'etape-tel', t: 'Je vous rappelle', s: 'Si le bien correspond à mon client.' },
 ];
 
@@ -67,7 +67,7 @@ export function mailLienAgence(o: { lien: string; interlocuteur?: string | null;
   <tr><td class="ag-pad" style="background:${MAIL.marque};border-radius:18px 18px 0 0;border-bottom:3px solid ${MAIL.or};padding:24px 28px 22px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
       <td style="vertical-align:middle;"><img src="${LOGO_BLANC_MAIL}" alt="Werner Immobilier" height="30" style="height:30px;width:auto;display:block;border:0;color:#ffffff;font-weight:800;font-size:15px;" /></td>
-      <td align="right" class="ag-badge" style="vertical-align:middle;"><span style="display:inline-block;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:${MAIL.orClair};font-size:10.5px;font-weight:800;letter-spacing:1.2px;white-space:nowrap;">RECHERCHE ACQUÉREUR</span></td>
+      <td align="right" class="ag-badge" style="vertical-align:middle;"><span style="display:inline-block;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:${MAIL.orClair};font-size:10.5px;font-weight:800;letter-spacing:1.2px;white-space:nowrap;">RECHERCHE DE LOCAL</span></td>
     </tr></table>
     <div class="ag-titre" style="margin-top:16px;font-size:26px;font-weight:800;line-height:1.2;color:#ffffff;">Un bien pour mon client&nbsp;?</div>
     <div style="margin-top:6px;font-size:15px;font-weight:600;line-height:1.5;color:#e9e8e6;">Déposez-le en un clic : il arrive directement chez moi.</div>
@@ -108,7 +108,7 @@ export function mailLienAgence(o: { lien: string; interlocuteur?: string | null;
       </td>
       <td style="padding:18px 0 0 14px;vertical-align:middle;">
         <div style="font-size:15.5px;font-weight:800;color:${MAIL.encre};">Werner</div>
-        <div style="font-size:13px;font-weight:600;color:${MAIL.plume};">Chasseur immobilier · Werner Immobilier</div>
+        <div style="font-size:13px;font-weight:600;color:${MAIL.plume};">Immobilier d’entreprise · Werner Immobilier</div>
         <div style="margin-top:5px;font-size:13px;font-weight:800;line-height:1.5;"><a href="tel:${TEL_URL}" style="color:${MAIL.marque};text-decoration:none;white-space:nowrap;"><img src="${ICO}/tel.png" width="14" height="14" alt="" style="width:14px;height:14px;border:0;vertical-align:-2px;margin-right:6px;" />${TEL}</a></div>
         <div style="font-size:13px;font-weight:700;line-height:1.5;"><a href="mailto:${MAIL_ALEX}" style="color:${MAIL.marque};text-decoration:none;"><img src="${ICO}/mail.png" width="14" height="14" alt="" style="width:14px;height:14px;border:0;vertical-align:-2px;margin-right:6px;" />${MAIL_ALEX}</a></div>
       </td>
@@ -133,7 +133,7 @@ export function mailLienAgence(o: { lien: string; interlocuteur?: string | null;
     'Il suffit d’y coller le lien de votre annonce (votre site, SeLoger, Leboncoin…), sa plaquette PDF ou quelques photos : elle arrive directement chez moi, je l’étudie et je reviens vers vous.',
     '',
     'Werner',
-    'Chasseur immobilier · Werner Immobilier',
+    'Immobilier d’entreprise · Werner Immobilier',
     `${TEL} · ${MAIL_ALEX}`,
   ].join('\n');
 

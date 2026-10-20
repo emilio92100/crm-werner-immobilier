@@ -57,8 +57,8 @@ type Vous = { agence: string; interlocuteur: string; tel: string; email: string 
 /** Ce qu'Alexandre a noté de la personne à qui il a envoyé ce lien (le code `?de=`). */
 export type VousRepris = { agence: string; interlocuteur: string | null; tel: string | null; email: string | null };
 
-const TEL = '01 00 00 00 00';
-const TEL_URL = '+33100000000';
+const TEL = '01 87 66 06 00';
+const TEL_URL = '+33187660600';
 const CLE_VOUS = 'emilio_agence_vous';
 const cleEnvois = (t: string) => `emilio_agence_envois:${t}`;
 const PHOTOS_MAX = 6;

@@ -51,7 +51,7 @@ export const lienAvecCode = (jeton: string, code?: string | null) => (code && co
 
 /** Le message à envoyer à l'agence (SMS ou mail), validé par Alexandre. */
 export function messageAgence(jeton: string): string {
-  return `Bonjour, c’est Werner, d’Werner Immobilier. Comme convenu, voici le lien pour me proposer vos biens pour mon client :\n${lienAgences(jeton)}\nIl suffit d’y coller le lien de votre annonce : elle arrive directement chez moi, je l’étudie et je reviens vers vous. Merci !`;
+  return `Bonjour, c’est Werner, de Werner Immobilier. Comme convenu, voici le lien pour me proposer vos biens pour mon client :\n${lienAgences(jeton)}\nIl suffit d’y coller le lien de votre annonce : elle arrive directement chez moi, je l’étudie et je reviens vers vous. Merci !`;
 }
 
 /* ── Ce que l'agence voit de la recherche : rien qui nomme le client ──
@@ -76,8 +76,8 @@ export function resumePourAgence(r: Record<string, unknown>): ResumeAgence {
   const types = String(r.type_bien || '').split(',').map(x => x.trim()).filter(Boolean);
   if (types.length) puces.push(types.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' ou '));
   const pMin = Number(r.nb_pieces_min) || 0, pMax = Number(r.nb_pieces_max) || 0;
-  if (pMin && pMax && pMax > pMin) puces.push(`${pMin} à ${pMax} pièces`);
-  else if (pMin) puces.push(`${pluriel(pMin, 'pièce')} et plus`);
+  if (pMin && pMax && pMax > pMin) puces.push(`${pMin} à ${pMax} espaces`);
+  else if (pMin) puces.push(`${pluriel(pMin, 'espace')} et plus`);
   const ch = Number(r.chambres_min) || 0;
   if (ch) puces.push(`${pluriel(ch, 'chambre')} au moins`);
   const sMin = Number(r.surface_min) || 0;
@@ -111,15 +111,15 @@ export type CritereAgence = { ico: 'maison' | 'surface' | 'lieu' | 'budget'; tit
 export function criteresAgence(r: ResumeAgence): CritereAgence[] {
   const p = [...r.puces];
   const prendre = (test: (x: string) => boolean) => { const i = p.findIndex(test); return i >= 0 ? p.splice(i, 1)[0] : null; };
-  const pieces = prendre(x => /pièce/.test(x));
+  const pieces = prendre(x => /espace/.test(x));
   const chambres = prendre(x => /chambre/.test(x));
   const surface = prendre(x => /m²/.test(x));
   const type = p.length && !/,/.test(p[0]) && p[0].length < 40 ? p.shift()! : null;
   const secteurs = p.length ? p.join(', ') : null;
   const l: CritereAgence[] = [];
   const detail = [pieces, chambres?.replace(' au moins', '')].filter(Boolean).join(' · ');
-  if (type || detail) l.push({ ico: 'maison', titre: type || detail, sous: type ? detail || 'Le type de bien' : 'Le bien' });
-  if (surface) l.push({ ico: 'surface', titre: surface, sous: 'Surface habitable' });
+  if (type || detail) l.push({ ico: 'maison', titre: type || detail, sous: type ? detail || 'Le type de local' : 'Le local' });
+  if (surface) l.push({ ico: 'surface', titre: surface, sous: 'Surface' });
   if (secteurs) l.push({ ico: 'lieu', titre: secteurs, sous: 'Les secteurs' });
   if (r.budget) l.push({ ico: 'budget', titre: r.budget, sous: 'Budget maximum', or: true });
   return l;

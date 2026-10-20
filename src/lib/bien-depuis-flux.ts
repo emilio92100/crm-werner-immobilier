@@ -186,6 +186,6 @@ export function bienDepuisFlux(bloc: string): BienDuFlux {
   d.idImmofacile = affId;
   const cree = balise(info, 'date_creation');
   d.notes = [`Repris de l’annonce ImmoFacile n° ${affId}${cree ? ` (créée le ${cree.slice(0, 10).split('-').reverse().join('/')})` : ''} :`, ...notes.map(l => `· ${l}`),
-    '· Le propriétaire et le numéro de mandat ne sont pas dans l’annonce : à compléter.'].join('\n');
-  return { donnees: d, photos, titre: titre || `Bien n° ${affId}`, affId };
+    '· Le mandant et le numéro de mandat ne sont pas dans l’annonce : à compléter.'].join('\n');
+  return { donnees: d, photos, titre: titre || `Affaire n° ${affId}`, affId };
 }

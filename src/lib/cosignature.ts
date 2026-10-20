@@ -114,24 +114,24 @@ export function mailInvitation(o: { co: Mandant; premier: Mandant; premierLe: st
     ? `${pn} a signé votre mandat de recherche${signeLe}, et il ne manque plus que votre signature. C'est notre dernier rappel : votre lien de signature est valable ${encore.replace(/’/g, "'")}. Passé cette date, il ne fonctionnera plus.`
     : o.rappel
     ? `${pn} a signé votre mandat de recherche${signeLe}. Il ne manque plus que votre signature pour qu'il soit complet.`
-    : `${pn} a signé aujourd'hui le mandat de recherche qu'${il} confie à Werner Immobilier, pour votre projet d'achat. ${Il} vous a ${indiquee} comme co-demandeur : le mandat sera complet avec votre signature.`;
+    : `${pn} a signé aujourd'hui le mandat de recherche qu'${il} confie à Werner Immobilier, pour votre projet. ${Il} vous a ${indiquee} comme co-demandeur : le mandat sera complet avec votre signature.`;
   const intro = o.rappel === 2
     ? `<p>${echappe(pn)} a signé votre mandat de recherche${echappe(signeLe)}, et il ne manque plus que votre signature.</p>
       <p>C’est notre <b>dernier rappel</b> : votre lien de signature est valable <b>${echappe(encore)}</b>. Passé cette date, il ne fonctionnera plus.</p>`
     : o.rappel
     ? `<p>${echappe(pn)} a signé votre mandat de recherche${echappe(signeLe)}. Il ne manque plus que votre signature pour qu’il soit complet.</p>`
-    : `<p><b>${echappe(pn)}</b> a signé aujourd’hui le mandat de recherche qu’${il} confie à Werner, d’Werner Immobilier, pour votre projet d’achat. ${Il} vous a ${indiquee} comme co-demandeur : le mandat sera complet avec votre signature.</p>`;
+    : `<p><b>${echappe(pn)}</b> a signé aujourd’hui le mandat de recherche qu’${il} confie à Werner, de Werner Immobilier, pour votre projet. ${Il} vous a ${indiquee} comme co-demandeur : le mandat sera complet avec votre signature.</p>`;
   /* Au dernier rappel, la date est déjà dite plus haut. */
   const valable = o.rappel === 2 ? '' : ` et valable jusqu’au ${fin}`;
   return {
     sujet,
-    texte: `Bonjour ${co.prenom},\n\n${introTexte}\n\nVous pourrez le relire en entier, vérifier vos informations et signer, en deux minutes :\n${lien}\n\nCe lien est personnel${valable.replace(/’/g, "'")}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\nVous n'êtes pas ${concerne} par cet achat ? Ouvrez le lien et choisissez « Je ne suis pas ${concerne} » : ${p} et Werner seront prévenus.\n\nWerner Immobilier`,
+    texte: `Bonjour ${co.prenom},\n\n${introTexte}\n\nVous pourrez le relire en entier, vérifier vos informations et signer, en deux minutes :\n${lien}\n\nCe lien est personnel${valable.replace(/’/g, "'")}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\nVous n'êtes pas ${concerne} par ce projet ? Ouvrez le lien et choisissez « Je ne suis pas ${concerne} » : ${p} et Werner seront prévenus.\n\nWerner Immobilier`,
     html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(co.prenom)},</p>
       ${intro}
       <p>Vous pourrez le relire en entier, vérifier vos informations et signer, en deux minutes&nbsp;:</p>
       <p>${bouton(lien, 'Relire et signer le mandat')}</p>
       <p style="font-size:13px;color:#5B6B80">Ce lien est personnel${echappe(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.</p>`,
-      `Vous n’êtes pas ${concerne} par cet achat ? Ouvrez le lien et choisissez « Je ne suis pas ${concerne} » : ${echappe(p)} et Werner seront prévenus.`),
+      `Vous n’êtes pas ${concerne} par ce projet ? Ouvrez le lien et choisissez « Je ne suis pas ${concerne} » : ${echappe(p)} et Werner seront prévenus.`),
   };
 }
 

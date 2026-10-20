@@ -284,8 +284,8 @@ export function resumeRecherche(r: any): Resume {
   const types = String(r?.type_bien || '').split(',').map((x) => x.trim()).filter(Boolean);
   const tete: string[] = [];
   if (types.length) tete.push(joindre(types));
-  if (r?.nb_pieces_min && r?.nb_pieces_max && r.nb_pieces_min !== r.nb_pieces_max) tete.push(`${r.nb_pieces_min} à ${r.nb_pieces_max} pièces`);
-  else if (r?.nb_pieces_min) tete.push(`${r.nb_pieces_min} pièces`);
+  if (r?.nb_pieces_min && r?.nb_pieces_max && r.nb_pieces_min !== r.nb_pieces_max) tete.push(`${r.nb_pieces_min} à ${r.nb_pieces_max} espaces`);
+  else if (r?.nb_pieces_min) tete.push(`${r.nb_pieces_min} espace${r.nb_pieces_min > 1 ? 's' : ''}`);
   let bien = tete.join(' · ');
   if (r?.chambres_min) bien += `${bien ? ' dont ' : ''}${r.chambres_min} chambre${r.chambres_min > 1 ? 's' : ''}${bien ? '' : ' minimum'}`;
   const sousBien: string[] = [];
@@ -294,7 +294,7 @@ export function resumeRecherche(r: any): Resume {
   else if (r?.surface_max) sousBien.push(`jusqu'à ${r.surface_max} m²`);
   const etats = String(r?.etat_souhaite || '').split(',').map((x) => ETATS[x.trim()]).filter(Boolean);
   if (etats.length) sousBien.push(`état : ${joindre(etats)}`);
-  if (bien || sousBien.length) lignes.push({ cle: 'Le bien', valeur: bien || sousBien.shift() || '', sous: sousBien.join(' · ') || undefined });
+  if (bien || sousBien.length) lignes.push({ cle: 'Le local', valeur: bien || sousBien.shift() || '', sous: sousBien.join(' · ') || undefined });
 
   // Où
   const secteurs: string[] = Array.isArray(r?.secteurs) ? r.secteurs : [];
@@ -414,7 +414,7 @@ ${LIEN_POLICE_MAIL}
           }${
             bouton('criteres', 'Mes critères ont changé', `background:#ffffff;color:${BLEU};border:1.5px solid ${BLEU};`)
           }${
-            bouton('trouve', 'J’ai trouvé mon bien', `background:${DORE};color:${ENCRE};border:1.5px solid ${DORE};`)
+            bouton('trouve', 'J’ai trouvé mon local', `background:${DORE};color:${ENCRE};border:1.5px solid ${DORE};`)
           }${
             bouton('pause', 'J’ai mis ma recherche en pause ou arrêtée', `background:#ffffff;color:#5B6B80;border:1.5px solid #e5e4e3;`)
           }
@@ -428,7 +428,7 @@ ${LIEN_POLICE_MAIL}
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Recherche immobilière sur mesure · Paris &amp; Hauts-de-Seine</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 00 00 00 00</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>
         </td></tr>
       </table>
@@ -456,11 +456,11 @@ ${LIEN_POLICE_MAIL}
     'Est-ce toujours d’actualité ? Un clic suffit pour me le dire :',
     `Je cherche toujours : ${lien('toujours')}`,
     `Mes critères ont changé : ${lien('criteres')}`,
-    `J’ai trouvé mon bien : ${lien('trouve')}`,
+    `J’ai trouvé mon local : ${lien('trouve')}`,
     `J’ai mis ma recherche en pause ou arrêtée : ${lien('pause')}`,
     '',
     'Bonne journée,',
-    'Werner · Werner Immobilier · 01 00 00 00 00',
+    'Werner · Werner Immobilier · 01 87 66 06 00',
   ].join('\n');
 
   return { sujet: 'Où en est votre recherche ?', html, texte };

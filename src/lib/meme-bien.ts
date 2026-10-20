@@ -103,9 +103,9 @@ export function rapprocher(cible: Omit<Repere, 'cle' | 'ou' | 'titre' | 'rang'> 
   const bouts = [ds < 0.5 ? 'même surface' : `${m2(r.surface!)} là-bas pour ${m2(cible.surface!)} ici`];
   if (cible.prix && r.prix) {
     const d = cible.prix - r.prix;
-    bouts.push(Math.abs(d) < 1000 ? 'même prix' : `${euros(Math.abs(d))} de ${d < 0 ? 'moins' : 'plus'} ici`);
+    bouts.push(Math.abs(d) < 1000 ? 'même montant' : `${euros(Math.abs(d))} de ${d < 0 ? 'moins' : 'plus'} ici`);
   } else if (cible.pieces && r.pieces) {
-    bouts.push(`${r.pieces} pièce${r.pieces > 1 ? 's' : ''} des deux côtés`);
+    bouts.push(`${r.pieces} espace${r.pieces > 1 ? 's' : ''} des deux côtés`);
   }
   return { repere: r, lien: false, phrase: `Sans doute le même bien que « ${r.titre} », ${r.ou} : ${bouts.join(', ')}.` };
 }

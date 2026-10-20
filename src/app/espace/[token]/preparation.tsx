@@ -19,8 +19,8 @@ const ENCRE = '#232528';
 const OR_CLAIR = '#f7b07a';
 const OR_FONCE = '#C8710F';
 
-const TEL = '01 00 00 00 00';
-const TEL_URL = '+33100000000';
+const TEL = '01 87 66 06 00';
+const TEL_URL = '+33187660600';
 const MAIL = 'contact@wernerimmobilier.com';
 
 export default function EspaceEnPreparation({ prenom }: { prenom?: string | null }) {

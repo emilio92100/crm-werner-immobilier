@@ -109,7 +109,7 @@ export const REPONSES: { k: 'repondu' | 'message' | 'sans_reponse'; l: string; i
 export const DISPOS: { k: 'disponible' | 'sous_offre' | 'vendu'; l: string; ic: string }[] = [
   { k: 'disponible', l: 'Toujours disponible', ic: 'coche' },
   { k: 'sous_offre', l: 'Sous offre', ic: 'euro' },
-  { k: 'vendu', l: 'Vendu', ic: 'cadenas' },
+  { k: 'vendu', l: 'Loué ou vendu', ic: 'cadenas' },
 ];
 
 const pad = (n: number) => String(n).padStart(2, '0');

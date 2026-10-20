@@ -32,7 +32,7 @@ export function conseillerDe(p: Record<string, string | undefined>): string {
 export function signatureDe(p: Record<string, string | undefined>): string {
   const posee = texteModele(p.signature_email || '').trim();
   if (posee) return posee;
-  return `Cordialement,\n${p.conseiller_prenom || 'Werner'} ${p.conseiller_nom || ''}\n${p.agence_nom || 'Werner Immobilier'}\n${p.conseiller_telephone || '01 00 00 00 00'}`;
+  return `Cordialement,\n${p.conseiller_prenom || 'Werner'} ${p.conseiller_nom || ''}\n${p.agence_nom || 'Werner Immobilier'}\n${p.conseiller_telephone || '01 87 66 06 00'}`;
 }
 
 /** Remplace les variables connues ; une variable inconnue reste telle quelle,

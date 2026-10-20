@@ -78,17 +78,17 @@ type Bien = {
      son mot (src/lib/suivi-client.ts). Jamais ce qui a été dit, ni l'agence. */
   suivi?: SuiviClient | null;
 };
-const motVente = (v: NonNullable<Bien['vente']>) => (v.vous ? (v.etat === 'vendu' ? 'Votre achat' : 'Votre compromis')
-  : v.etat === 'vendu' ? 'Vendu' : v.etat === 'retire' ? 'Plus en vente' : v.etat === 'pause' ? 'En pause' : 'En signature');
+const motVente = (v: NonNullable<Bien['vente']>) => (v.vous ? (v.etat === 'vendu' ? 'Votre local' : 'Votre accord')
+  : v.etat === 'vendu' ? 'Affaire conclue' : v.etat === 'retire' ? 'Retiré du marché' : v.etat === 'pause' ? 'En pause' : 'En signature');
 /* La phrase de la fiche pour un bien de l'agence qui n'est plus disponible
    (V3.48 : « l'acte » devient la signature chez le notaire ; « retiré » ne
    dit plus qui l'a décidé). */
 const phraseVente = (v: NonNullable<Bien['vente']>) => (v.vous
-  ? (v.etat === 'vendu' ? 'La vente est signée : félicitations pour votre achat.' : 'Votre compromis est signé. Prochaine étape : la signature définitive chez le notaire.')
-  : v.etat === 'vendu' ? 'Ce bien a été vendu.'
-    : v.etat === 'retire' ? 'Ce bien n’est plus proposé à la vente.'
-      : v.etat === 'pause' ? 'La vente de ce bien est en pause pour le moment. Nous vous dirons s’il revient.'
-        : 'Ce bien est en signature de vente. Si la vente ne se fait pas, il redeviendra disponible ici.');
+  ? (v.etat === 'vendu' ? 'L’affaire est signée : félicitations pour votre nouveau local.' : 'Votre accord est signé. Prochaine étape : la signature du bail ou de l’acte.')
+  : v.etat === 'vendu' ? 'Ce local a trouvé preneur.'
+    : v.etat === 'retire' ? 'Ce local n’est plus proposé sur le marché.'
+      : v.etat === 'pause' ? 'Cette affaire est en pause pour le moment. Nous vous dirons si elle revient.'
+        : 'Ce local est en signature. Si l’accord ne se fait pas, il redeviendra disponible ici.');
 /* Où en est son offre (V3.48). Avant, la fiche disait « Offre envoyée » pour
    toujours, même acceptée, refusée ou après le compromis. */
 /* V3.189 : son offre faite d'ici (ou préparée par Alexandre) a son propre
@@ -96,8 +96,8 @@ const phraseVente = (v: NonNullable<Bien['vente']>) => (v.vous
    accord — le bien va dans « Pas pour moi », et une nouvelle offre reste possible. */
 function etatOffre(b: Bien): { etiq: string; ton: string; ligne: string; fini?: boolean } | null {
   if (b.vente?.vous) {
-    return b.vente.etat === 'vendu' ? { etiq: 'Votre achat', ton: 'fait', ligne: 'La vente est signée : félicitations pour votre achat.' }
-      : { etiq: 'Compromis signé', ton: 'fait', ligne: 'Votre compromis est signé. Prochaine étape : la signature définitive chez le notaire.' };
+    return b.vente.etat === 'vendu' ? { etiq: 'Votre local', ton: 'fait', ligne: 'L’affaire est signée : félicitations pour votre nouveau local.' }
+      : { etiq: 'Accord signé', ton: 'fait', ligne: 'Votre accord est signé. Prochaine étape : la signature du bail ou de l’acte.' };
   }
   const s = b.offreSuivi;
   if (s) {
@@ -111,14 +111,14 @@ function etatOffre(b: Bien): { etiq: string; ton: string; ligne: string; fini?: 
   const o = b.offre;
   if (!o && b.avis !== 'offre_faite') return null;
   const st = o?.statut || 'en_attente';
-  if (st === 'acceptee') return { etiq: 'Offre acceptée', ton: 'fait', ligne: 'Le mandant a accepté votre offre. Prochaine étape : le compromis chez le notaire ; votre conseiller organise la suite avec vous.' };
+  if (st === 'acceptee') return { etiq: 'Offre acceptée', ton: 'fait', ligne: 'Votre offre a été acceptée. Prochaine étape : la signature ; votre conseiller organise la suite avec vous.' };
   /* V3.190 : une contre-proposition notée par son conseiller (offre faite avec lui, hors de son espace). */
-  if (st === 'contre') return { etiq: 'Réponse du mandant', ton: 'visite', ligne: 'Le mandant a répondu à votre offre par une proposition. Votre conseiller en parle avec vous.' };
-  if (st === 'refusee') return { etiq: 'Offre non retenue', ton: 'non', fini: true, ligne: 'Le mandant n’a pas retenu votre offre. Votre conseiller en parle avec vous.' };
+  if (st === 'contre') return { etiq: 'Contre-proposition', ton: 'visite', ligne: 'Vous avez reçu une contre-proposition à votre offre. Votre conseiller en parle avec vous.' };
+  if (st === 'refusee') return { etiq: 'Offre non retenue', ton: 'non', fini: true, ligne: 'Votre offre n’a pas été retenue. Votre conseiller en parle avec vous.' };
   if (st === 'retiree') return o?.tombe
-    ? { etiq: 'Vente non conclue', ton: 'non', fini: true, ligne: 'La vente ne s’est finalement pas faite. Votre conseiller fait le point avec vous.' }
+    ? { etiq: 'Affaire non conclue', ton: 'non', fini: true, ligne: 'L’affaire ne s’est finalement pas faite. Votre conseiller fait le point avec vous.' }
     : { etiq: 'Offre retirée', ton: 'non', fini: true, ligne: 'Votre offre a été retirée.' };
-  return { etiq: 'Offre envoyée', ton: 'fait', ligne: 'Votre offre est chez le mandant. Votre conseiller vous prévient dès sa réponse.' };
+  return { etiq: 'Offre envoyée', ton: 'fait', ligne: 'Votre offre a été transmise. Votre conseiller vous prévient dès qu’il a la réponse.' };
 }
 /* Un bien de l'agence qu'il ne peut plus visiter ni acheter (vendu à un
    autre, retiré, sous compromis, en pause). */
@@ -191,11 +191,11 @@ const EUR = (n?: number | null) =>
   n == null ? '—' : n.toLocaleString('fr-FR').replace(/[  ]/g, ' ') + ' €';
 /* V3.113 : le prix d'un BIEN. Un bien de l'agence présenté avant le mandat
    arrive sans prix (prixCopie) : « Prix à venir », pas un tiret. */
-const PRIX = (n?: number | null) => (n ? EUR(n) : 'Prix à venir');
+const PRIX = (n?: number | null) => (n ? EUR(n) : 'Montant à venir');
 /* V3.145 : sous le prix d'un bien, quand ses honoraires ne sont pas partagés
    (voir src/lib/honoraires-bien.ts, la même phrase partout). */
 const honoDe = (b: { prix: number | null; hono?: number }) =>
-  `+ ${EUR(b.hono || 0)} de nos honoraires, soit ${EUR((b.prix || 0) + (b.hono || 0))} frais d’agence compris`;
+  `+ ${EUR(b.hono || 0)} HT de nos honoraires, soit ${EUR((b.prix || 0) + (b.hono || 0))} honoraires compris`;
 /* Les descriptions d'annonces arrivent souvent d'un bloc, sans le moindre
    saut de ligne. On respire pour le lecteur : on coupe d'abord sur les sauts
    existants, puis on regroupe les phrases par paquets. On ne touche jamais
@@ -342,8 +342,8 @@ function phraseRecherche(c: Criteres): string {
   }
   if (c.piecesMin) {
     bouts.push(c.piecesMax && c.piecesMax > c.piecesMin
-      ? `${c.piecesMin} à ${c.piecesMax} pièces`
-      : `${c.piecesMin} pièce${c.piecesMin > 1 ? 's' : ''}${c.piecesMax === c.piecesMin ? '' : ' et plus'}`);
+      ? `${c.piecesMin} à ${c.piecesMax} espaces`
+      : `${c.piecesMin} espace${c.piecesMin > 1 ? 's' : ''}${c.piecesMax === c.piecesMin ? '' : ' et plus'}`);
   } else if (c.surfaceMin) bouts.push(`${c.surfaceMin} m² et plus`);
   const villes = grouperSecteurs(c.secteurs || []).map(v => v.ville);
   if (villes.length) bouts.push(villes.length > 2 ? `${villes.slice(0, 2).join(', ')} +${villes.length - 2}` : villes.join(', '));
@@ -401,7 +401,7 @@ const ETIQ: Record<string, { e: string; n: string; c: string }> = {
   visite_prevue: { e: '📅', n: 'Visite à venir', c: 'prevue' },
   visite: { e: '🏠', n: 'Visite effectuée', c: 'fait' },
   /* V3.47 : pour les cartes ; jamais un avis du client (voir `repondu`). */
-  votre_achat: { e: '🔑', n: 'Votre achat', c: 'fait' },
+  votre_achat: { e: '🔑', n: 'Votre local', c: 'fait' },
   plus_dispo: { e: '🔒', n: 'Plus disponible', c: 'vu' },
 };
 /* Après le clic sur un avis, on ne laisse pas un champ vide et muet :
@@ -410,8 +410,8 @@ const ETIQ: Record<string, { e: string; n: string; c: string }> = {
 const SUITE_AVIS: Record<string, { t: string; p: string; ph: string; btn: string }> = {
   interesse: {
     t: 'Qu’est-ce qui vous a plu ?',
-    p: 'Sélectionnez ce qui compte, un ou plusieurs. Plus c’est précis, plus les biens suivants ressembleront à celui-là.',
-    ph: 'Ex : la luminosité, le séjour, le quartier… et si je veux le visiter.',
+    p: 'Sélectionnez ce qui compte, un ou plusieurs. Plus c’est précis, plus les locaux suivants ressembleront à celui-là.',
+    ph: 'Ex : l’emplacement, la vitrine, la luminosité… et si je veux le visiter.',
     btn: 'Envoyer mon avis',
   },
   souhaite_visiter: {
@@ -425,8 +425,8 @@ const SUITE_AVIS: Record<string, { t: string; p: string; ph: string; btn: string
   },
   refuse: {
     t: 'Qu’est-ce qui n’a pas convenu ?',
-    p: 'Sélectionnez une ou plusieurs raisons — c’est ce qui nous permet d’écarter ce type de bien pour la suite. Vous pouvez aussi ajouter un mot.',
-    ph: 'Ex : trop sombre, rue trop passante, cuisine trop petite, pas de vrai extérieur…',
+    p: 'Sélectionnez une ou plusieurs raisons — c’est ce qui nous permet d’écarter ce type de local pour la suite. Vous pouvez aussi ajouter un mot.',
+    ph: 'Ex : rue peu fréquentée, vitrine trop petite, pas d’extraction, trop de travaux…',
     btn: 'Envoyer mon retour',
   },
 };
@@ -443,30 +443,30 @@ const SUITE_AVIS: Record<string, { t: string; p: string; ph: string; btn: string
    sans avoir à interpréter une phrase. */
 const PASTILLES: Record<string, { i: string; n: string }[]> = {
   interesse: [
+    { i: 'lieu', n: 'L’emplacement' },
+    { i: 'oeil', n: 'La vitrine' },
     { i: 'soleil', n: 'La luminosité' },
-    { i: 'lieu', n: 'Le quartier' },
-    { i: 'canape', n: 'Le séjour' },
     { i: 'etincelle', n: 'L’état' },
     { i: 'plan', n: 'Le plan' },
-    { i: 'jardin', n: 'L’extérieur' },
+    { i: 'terrasse', n: 'L’extérieur' },
     { i: 'immeuble', n: 'L’immeuble' },
-    { i: 'euro', n: 'Le prix' },
+    { i: 'euro', n: 'Le loyer ou le prix' },
   ],
   /* V3.209 : les moments en général ; les dates précises viennent du
      calendrier (ChoixDispos). « Le mercredi », « Samedi matin »… : retirés
      (« pourquoi le mercredi et pas les autres jours ? »). */
   souhaite_visiter: MOMENTS_DISPO.map(x => ({ i: x.i, n: x.n })),
   refuse: [
+    { i: 'lieu', n: 'L’emplacement' },
+    { i: 'oeil', n: 'Rue peu fréquentée' },
+    { i: 'petit', n: 'Trop petit' },
     { i: 'lune', n: 'Trop sombre' },
     { i: 'travaux', n: 'Trop de travaux' },
-    { i: 'bruit', n: 'Rue trop passante' },
-    { i: 'lieu', n: 'Le quartier' },
-    { i: 'petit', n: 'Trop petit' },
-    { i: 'jardin', n: 'Pas d’extérieur' },
+    { i: 'plan', n: 'La configuration' },
     { i: 'ascenseur', n: 'L’étage' },
-    { i: 'visavis', n: 'Le vis-à-vis' },
-    { i: 'euro', n: 'Le prix' },
-    { i: 'cuisine', n: 'La cuisine' },
+    { i: 'cuisine', n: 'Pas d’extraction' },
+    { i: 'terrasse', n: 'Pas d’extérieur' },
+    { i: 'euro', n: 'Le loyer ou le prix' },
   ],
 };
 /* Pour relire un retour déjà parti sous la forme où il a été coché. */
@@ -502,10 +502,10 @@ const GROUPES: { id: string; e: string; court: string; titre: string; ton: strin
   /* V3.47 : les biens de l'agence vendus ou sous compromis. Celui qu'il
      achète passe en tête, les autres à la fin : ils ne demandent plus rien. */
   { id: 'plus_dispo', e: '🔒', court: 'Plus disponibles', titre: 'Plus disponibles', ton: 'c-net',
-    note: 'En signature, vendus, retirés de la vente ou en pause. Vos retours comptent toujours : ils affinent la suite de la recherche.' },
+    note: 'En signature, conclus, retirés du marché ou en pause. Vos retours comptent toujours : ils affinent la suite de la recherche.' },
 ];
-GROUPES.unshift({ id: 'votre_achat', e: '🔑', court: 'Votre achat', titre: 'Votre achat', ton: 'c-or',
-  note: 'Le bien que vous achetez. Votre conseiller vous accompagne jusqu’à la signature définitive chez le notaire.' });
+GROUPES.unshift({ id: 'votre_achat', e: '🔑', court: 'Votre local', titre: 'Votre local', ton: 'c-or',
+  note: 'Le local que vous avez retenu. Votre conseiller vous accompagne jusqu’à la signature du bail ou de l’acte.' });
 /* Les filtres de « Consultés » (V3.27) : une visite calée et une visite
    souhaitée tombent sous le même « À visiter » — deux filtres pour la même
    intention faisaient double emploi. Les deux cadres restent distincts
@@ -755,8 +755,8 @@ const T: Record<string, string[]> = {
 const AGENT = {
   nom: 'Werner',
   role: 'Votre conseiller · Werner Immobilier',
-  tel: '01 00 00 00 00',
-  telUrl: '+33100000000',
+  tel: '01 87 66 06 00',
+  telUrl: '+33187660600',
   mail: 'contact@wernerimmobilier.com',
 };
 function Ico({ n, t = 22 }: { n: string; t?: number }) {
@@ -1126,8 +1126,8 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
      ne serait pas vrai. */
   /* V3.48 : le serveur refuse une visite ou une offre sur un bien qui n'est
      plus disponible (vendu, retiré, sous compromis) : on le dit simplement. */
-  const plusDispoMsg = () => montrer(<GrandOk titre="Ce bien n’est plus disponible"
-    texte="Il vient d’être réservé ou retiré de la vente. Votre conseiller vous en parle, et la recherche continue pour vous."
+  const plusDispoMsg = () => montrer(<GrandOk titre="Ce local n’est plus disponible"
+    texte="Il vient d’être réservé ou retiré du marché. Votre conseiller vous en parle, et la recherche continue pour vous."
     rappel={'Son numéro\u00a0: <b>' + AGENT.tel + '</b>'}
     onFermer={fermer} />, 'pleine');
   const pasParti = (titre = 'Ce n’est pas parti') => montrer(<GrandOk titre={titre}
@@ -1263,8 +1263,8 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
       montrer(<GrandOk
         titre="Votre espace est posé"
         texte={ecran.tactile
-          ? "Dernière étape : fermez cette page, et ouvrez « Ma recherche » depuis votre écran d'accueil. C'est là que nous vous proposerons de vous prévenir dès qu'un bien arrive."
-          : "Dernière étape : ouvrez « Ma recherche » depuis votre barre des tâches. C'est là que nous vous proposerons de vous prévenir dès qu'un bien arrive."}
+          ? "Dernière étape : fermez cette page, et ouvrez « Ma recherche » depuis votre écran d'accueil. C'est là que nous vous proposerons de vous prévenir dès qu'un local arrive."
+          : "Dernière étape : ouvrez « Ma recherche » depuis votre barre des tâches. C'est là que nous vous proposerons de vous prévenir dès qu'un local arrive."}
         rappel="Sans cette dernière ouverture, l'icône est bien là, mais les alertes ne sont pas encore activées."
         bouton="J'ai compris"
         onFermer={fermer} />, 'pleine');
@@ -1321,8 +1321,8 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
           if (r === 'ok') {
             montrer(<GrandOk
               titre="C'est noté, merci"
-              texte={"Dorénavant, dès qu'un bien est déposé dans votre espace, votre téléphone vous le signale. Vous n'avez plus à venir vérifier : c'est nous qui venons à vous."}
-              rappel="Uniquement pour un nouveau bien — jamais de publicité, jamais de relance. Vous pouvez les couper quand vous voulez depuis les réglages de votre téléphone."
+              texte={"Dorénavant, dès qu'un local est déposé dans votre espace, votre téléphone vous le signale. Vous n'avez plus à venir vérifier : c'est nous qui venons à vous."}
+              rappel="Uniquement pour un nouveau local — jamais de publicité, jamais de relance. Vous pouvez les couper quand vous voulez depuis les réglages de votre téléphone."
               bouton="J'ai compris"
               onFermer={fermer} />, 'pleine');
           }
@@ -1635,7 +1635,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
     montrer(<GrandOk
       titre="C'est noté, merci"
       texte={avis === 'refuse'
-        ? "Votre retour part directement dans votre dossier. Les prochaines propositions en tiendront compte pour ne plus vous montrer ce type de bien."
+        ? "Votre retour part directement dans votre dossier. Les prochaines propositions en tiendront compte pour ne plus vous montrer ce type de local."
         : avis === 'souhaite_visiter'
           ? "Werner est prévenu. Il vous rappelle pour caler la visite."
           : "Werner est prévenu. Il va vous en chercher d'autres dans le même esprit."}
@@ -1665,7 +1665,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
     const ok = await repondreVisite(v, issue, motifs, mot, prix);
     if (ok) {
       montrer(<GrandOk titre="C'est noté, merci" texte={QUESTION_VISITE[issue].ok}
-        rappel={`Vous retrouvez ce bien dans « Vos visites », rangé dans « ${issue === 'non' ? 'Pas pour moi' : 'En cours'} ».`}
+        rappel={`Vous retrouvez ce local dans « Vos visites », rangé dans « ${issue === 'non' ? 'Pas pour moi' : 'En cours'} ».`}
         onFermer={fermer} />, 'pleine');
     }
     return ok;
@@ -1688,8 +1688,8 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
   }
   const bienOffre = (b: Bien): BienOffre => ({
     id: b.id,
-    titre: b.titre || [b.pieces ? `${b.pieces} pièces` : '', b.ville || b.secteur].filter(Boolean).join(' · ') || 'Le bien',
-    meta: [b.pieces ? `${b.pieces} pièces` : '', b.surface ? `${b.surface} m²` : '', b.ville || b.secteur].filter(Boolean).join(' · '),
+    titre: b.titre || [b.pieces ? `${b.pieces} espace${b.pieces > 1 ? 's' : ''}` : '', b.ville || b.secteur].filter(Boolean).join(' · ') || 'Le local',
+    meta: [b.pieces ? `${b.pieces} espace${b.pieces > 1 ? 's' : ''}` : '', b.surface ? `${b.surface} m²` : '', b.ville || b.secteur].filter(Boolean).join(' · '),
     photo: (b.photos || [])[0] || null, prix: b.prix, honoOffre: b.honoOffre || { mode: 'aucun', val: 0 }, agence: !!b.agence,
   });
   /* Les offres rendues par le serveur : la carte de chaque bien se met à jour. */
@@ -1729,8 +1729,8 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
         if (r.offres) majOffres(r.offres as Record<string, OffreEspace>);
         montrer(<GrandOk titre="C’est noté"
           texte={retrait
-            ? 'Votre offre est retirée, et votre conseiller est prévenu. Vous pourrez en faire une autre sur ce bien quand vous voulez.'
-            : 'Votre conseiller est prévenu. La recherche continue, et vous pourrez toujours faire une nouvelle offre sur ce bien.'}
+            ? 'Votre offre est retirée, et votre conseiller est prévenu. Vous pourrez en faire une autre sur ce local quand vous voulez.'
+            : 'Votre conseiller est prévenu. La recherche continue, et vous pourrez toujours faire une nouvelle offre sur ce local.'}
           rappel="Vous le retrouvez dans « Vos visites », rangé dans « Pas pour moi »."
           onFermer={fermer} />, 'pleine');
         return true;
@@ -1950,7 +1950,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
         return;
       }
       montrer(<GrandOk titre="Merci, c'est noté"
-        texte="Nous continuons à chercher pour vous, sur les mêmes critères. Les prochains biens arriveront ici, comme d'habitude."
+        texte="Nous continuons à chercher pour vous, sur les mêmes critères. Les prochains locaux arriveront ici, comme d'habitude."
         rappel="Un critère a bougé entre-temps ? Vous pouvez le changer à tout moment, depuis « Mes critères ont évolué »."
         onFermer={fermer} />, 'pleine');
     }} />);
@@ -2021,7 +2021,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
     };
     const SUITES: Record<string, string> = {
       trouve_avec_vous: "Votre conseiller vous rappelle pour organiser la suite avec vous. Votre espace reste accessible en attendant.",
-      trouve_ailleurs: "Nous arrêtons de vous envoyer des biens. Votre conseiller vous rappelle pour en parler et clôturer votre dossier proprement.",
+      trouve_ailleurs: "Nous arrêtons de vous envoyer des locaux. Votre conseiller vous rappelle pour en parler et clôturer votre dossier proprement.",
       pause: "Votre recherche est mise de côté le temps qu'il vous faut. Votre conseiller vous rappelle pour en convenir avec vous, et votre espace reste accessible.",
       abandon: "C'est noté, et merci de l'avoir dit : ça nous évite de vous solliciter pour rien. Votre conseiller vous rappelle une dernière fois pour clôturer votre dossier proprement. Et si le projet repart un jour, vous savez où nous trouver.",
     };
@@ -2041,7 +2041,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
       /* La note est celle du chasseur : le client ne la réécrit pas, il demande. */
       const demandePartie = demandeNote ? !!(await envoyer('message', { texte: 'Demande sur la note de la recherche : ' + demandeNote }))?.ok : false;
       montrer(<GrandOk titre="C'est enregistré, merci"
-        texte="Merci d'avoir pris le temps de mettre à jour vos critères. Votre conseiller en est informé : il les intègre à votre recherche, et les biens qui vous seront proposés à partir de maintenant tiendront compte de ces changements. Si un point mérite d'être précisé de vive voix, il vous rappelle."
+        texte="Merci d'avoir pris le temps de mettre à jour vos critères. Votre conseiller en est informé : il les intègre à votre recherche, et les locaux qui vous seront proposés à partir de maintenant tiendront compte de ces changements. Si un point mérite d'être précisé de vive voix, il vous rappelle."
         rappel={[
           changements.length ? '<b>Ce qui a changé :</b><br>' + changements.join(' · ') : 'Votre conseiller est prévenu du changement.',
           demandeNote ? (demandePartie
@@ -2079,9 +2079,9 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
       const r = await envoyer('annonce', d);
       if (r?.ok && typeof r.dansVosBiens === 'string') {
         const b = biensRef.current.find(x => x.id === r.dansVosBiens);
-        montrer(<GrandOk titre="Ce bien est déjà dans vos biens"
+        montrer(<GrandOk titre="Ce local vous a déjà été proposé"
           texte="Werner vous l’avait déjà envoyé : vous le retrouvez dans votre espace, avec votre avis."
-          bouton={b ? 'Voir le bien' : 'Parfait'}
+          bouton={b ? 'Voir le local' : 'Parfait'}
           onFermer={() => { fermer(); if (b) window.setTimeout(() => ouvrirBien(b), 340); }} />, 'pleine');
         return 'ok';
       }
@@ -2095,8 +2095,8 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
           return 'ok';
         }
         montrer(<GrandOk titre="C’est envoyé à Werner"
-          texte="Il la regarde avec le même soin que les biens qu’il vous présente, et vous dit ce qu’il en pense."
-          rappel="Vous suivez sa réponse sur votre accueil&nbsp;: retenue, elle rejoint vos biens&nbsp;; écartée, il vous dit pourquoi."
+          texte="Il la regarde avec le même soin que les locaux qu’il vous présente, et vous dit ce qu’il en pense."
+          rappel="Vous suivez sa réponse sur votre accueil&nbsp;: retenue, elle rejoint votre sélection&nbsp;; écartée, il vous dit pourquoi."
           onFermer={fermer} autre={uneAutre} />, 'pleine');
         return 'ok';
       }
@@ -2182,7 +2182,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
                 <span className="selec-v">{nomCourant}</span>
                 {autresNonLus > 0 && (
                   <span className="selec-d">
-                    <b>{autresNonLus} nouveau{autresNonLus > 1 ? 'x' : ''} bien{autresNonLus > 1 ? 's' : ''}</b>
+                    <b>{`${autresNonLus} ${autresNonLus > 1 ? 'nouveaux locaux' : 'nouveau local'}`}</b>
                     {recherches.length > 2 ? ' sur vos autres recherches' : ' sur votre autre recherche'}
                   </span>
                 )}
@@ -2255,14 +2255,14 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
           )}
           {vue === 'annonces' && (
             <Vue icone="lien" titre="Vos annonces envoyées" aller={aller}
-              sous="Ce qu’Werner en a pensé, la plus récente d’abord.">
+              sous="Ce que Werner en a pensé, la plus récente d’abord.">
               <ListeAnnonces annonces={annonces || []} peutEnvoyer={peutEnvoyerAnnonce} Ico={Ico}
                 onEnvoyer={ouvrirEnvoiAnnonce}
                 onBien={id => { const b = biens.find(x => x.id === id); if (b) ouvrirBien(b); }} />
             </Vue>
           )}
           {vue === 'neufs' && (
-            <Vue icone="etoile" titre="Nouveaux biens pour vous" aller={aller}
+            <Vue icone="etoile" titre="Nouveaux locaux pour vous" aller={aller}
               droite={neufs.length > 0 ? (
                 /* Liste | Carte, comme dans « Consultés » (V3.28). */
                 <div className="lc" role="group" aria-label="Affichage">
@@ -2273,7 +2273,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
               /* Sans nouveauté, pas de phrase ici : le cadre juste dessous le
                  dit déjà (deux fois la même chose, V3.28). */
               sous={neufs.length
-                ? `${neufs.length} bien${neufs.length > 1 ? 's' : ''} retenu${neufs.length > 1 ? 's' : ''} pour vous depuis votre dernière visite, du plus récent au plus ancien. Ouvrez-les, puis dites-moi ce que vous en pensez.`
+                ? `${neufs.length} ${neufs.length > 1 ? 'locaux retenus' : 'local retenu'} pour vous depuis votre dernière visite, du plus récent au plus ancien. Ouvrez-les, puis dites-moi ce que vous en pensez.`
                 : undefined}>
               {/* V3.44 : en tête de liste, le chemin le plus court — un bien à la
                   fois, les photos puis l'avis. Toucher une carte de la liste
@@ -2290,7 +2290,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
                   <span className="vn-ic"><Ico n="loupe" t={22} /></span>
                   <b>Rien de nouveau pour le moment</b>
                   {enCours && !finDite
-                    ? <span>{'Nous cherchons pour vous tous les jours : dès qu’un bien correspond à ce que vous voulez, il s’affiche ici.'}<br />{'Vous n’êtes pas en attente.'}</span>
+                    ? <span>{'Nous cherchons pour vous tous les jours : dès qu’un local correspond à ce que vous voulez, il s’affiche ici.'}<br />{'Vous n’êtes pas en attente.'}</span>
                     : <span>{'Votre recherche est en pause : les nouveautés reprendront avec elle.'}</span>}
                 </div>
               )}
@@ -2299,7 +2299,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
               {neufs.length > 0 && !!passage?.lues && (
                 /* Centrée sur ordinateur, sous les deux colonnes de biens (V3.28). */
                 <div className="relance relance-pc" style={{ marginTop: 16 }}><Ico n="loupe" t={18} />
-                  <span suppressHydrationWarning>{`Ces biens sont ceux qui ont passé tous vos critères. ${debutRecherche(passage.quand, passage.lues)}.`}</span>
+                  <span suppressHydrationWarning>{`Ces locaux sont ceux qui ont passé tous vos critères. ${debutRecherche(passage.quand, passage.lues)}.`}</span>
                 </div>
               )}
               {/* « Aucun nouveau bien » ne veut pas dire « aucun bien retenu » :
@@ -2310,7 +2310,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
                 <div className="relance relance-centre" style={{ marginTop: 16 }}><Ico n="loupe" t={18} />
                   {/* « passage » est un mot du CRM : jamais devant le client (AGENTS.md §5). */}
                   {passage.proposees ? (
-                    <span suppressHydrationWarning>{`${debutRecherche(passage.quand, passage.lues)} et ${passage.proposees} bien${passage.proposees > 1 ? 's ont été retenus' : ' a été retenu'} pour vous. Vous ${passage.proposees > 1 ? 'les avez déjà ouverts\u00a0: ils vous attendent' : 'l\u2019avez déjà ouvert\u00a0: il vous attend'} dans «\u00a0Mes derniers biens consultés\u00a0».`}</span>
+                    <span suppressHydrationWarning>{`${debutRecherche(passage.quand, passage.lues)} et ${passage.proposees} ${passage.proposees > 1 ? 'locaux ont été retenus' : 'local a été retenu'} pour vous. Vous ${passage.proposees > 1 ? 'les avez déjà ouverts\u00a0: ils vous attendent' : 'l\u2019avez déjà ouvert\u00a0: il vous attend'} dans «\u00a0Mes locaux consultés\u00a0».`}</span>
                   ) : (
                     <span suppressHydrationWarning>{`${debutRecherche(passage.quand, passage.lues)} : aucune ne cochait toutes vos cases. Mieux vaut ne rien vous envoyer que vous faire perdre du temps.`}</span>
                   )}
@@ -2327,7 +2327,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
             const montres = choisi === 'tout' ? visibles : visibles.filter(g => filtreDe(g.id) === choisi);
             const nbFiltre = (f: typeof FILTRES_C[number]) => f.groupes.reduce((n, g) => n + (par[g]?.length || 0), 0);
             return (
-            <Vue icone="oeil" titre="Mes biens consultés" aller={aller}
+            <Vue icone="oeil" titre="Mes locaux consultés" aller={aller}
               sous="Tout ce que vous avez déjà ouvert, du plus récent au plus ancien, avec vos retours."
               droite={biens.length > 0 ? (
                 /* Liste | Carte : la même sélection, vue sur un plan. */
@@ -2337,7 +2337,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
                 </div>
               ) : null}>
               {ouverts.length === 0 ? (
-                <div className="vide-sec">Vous n&apos;avez encore ouvert aucun bien.<br />Ils se rangeront ici au fur et à mesure, avec vos retours.</div>
+                <div className="vide-sec">Vous n&apos;avez encore ouvert aucun local.<br />Ils se rangeront ici au fur et à mesure, avec vos retours.</div>
               ) : (<>
                 {/* Replié d'office : ce qu'on regarde (« Tout », ou le filtre
                     choisi, avec sa croix), et « Filtrer mes biens » qui déplie
@@ -2350,7 +2350,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
                       <div className="fcz-l">
                         {actif ? (
                           <button type="button" className="fc on" style={{ '--c': actif.c } as React.CSSProperties}
-                            onClick={() => setFiltreC('tout')} aria-label={`${actif.court} : revenir à tous mes biens`}>
+                            onClick={() => setFiltreC('tout')} aria-label={`${actif.court} : revenir à tous mes locaux`}>
                             <span className="fe">{actif.e}</span>{actif.court}<i>{nbFiltre(actif)}</i><span className="fcz-x"><Ico n="croix" t={11} /></span>
                           </button>
                         ) : (
@@ -2358,12 +2358,12 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
                         )}
                         <button type="button" className={'fcz-b' + (filtresOuverts ? ' ouvert' : '')} aria-expanded={filtresOuverts}
                           onClick={() => setFiltresOuverts(o => !o)}>
-                          <Ico n="filtre" t={15} /><span>{actif ? 'Filtrer' : 'Filtrer mes biens'}</span><span className="fcz-cv"><Ico n="chevron" t={13} /></span>
+                          <Ico n="filtre" t={15} /><span>{actif ? 'Filtrer' : 'Filtrer mes locaux'}</span><span className="fcz-cv"><Ico n="chevron" t={13} /></span>
                         </button>
                       </div>
                       <div className={'fcz-pli' + (filtresOuverts ? ' ouvert' : '')} aria-hidden={!filtresOuverts}>
                         <div className="fcz-in">
-                          <div className="filtres-c" role="group" aria-label="Filtrer mes biens">
+                          <div className="filtres-c" role="group" aria-label="Filtrer mes locaux">
                             {FILTRES_C.filter(f => nbFiltre(f) > 0).map(f => (
                               <button key={f.id} type="button" className={'fc' + (choisi === f.id ? ' on' : '')} aria-pressed={choisi === f.id}
                                 tabIndex={filtresOuverts ? 0 : -1} style={{ '--c': f.c } as React.CSSProperties}
@@ -2397,7 +2397,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
           {vue === 'carte' && (
             <CarteEspace key={carteNeufs ? 'neufs' : 'tout'} token={token}
               biens={carteNeufs ? nouveautesCarte : biensCarte} focus={focusCarte} ville={villeDeCarte(biens)}
-              titre={carteNeufs ? 'Vos nouveautés' : 'Vos biens'} sansFiltres={carteNeufs}
+              titre={carteNeufs ? 'Vos nouveautés' : 'Vos locaux'} sansFiltres={carteNeufs}
               vide={carteNeufs ? 'Vous avez donné votre avis sur toutes les nouveautés : merci ! Elles vous attendent dans « Consultés ».' : undefined}
               onOuvrir={id => { const b = biens.find(x => x.id === id); if (b) ouvrirBien(b); }}
               onListe={() => aller(carteNeufs ? 'neufs' : 'consultes')} />
@@ -2426,7 +2426,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
           <div className="pied-trait" />
           <b>Werner Immobilier</b><br />
           Numéro de carte professionnelle&nbsp;: <span className="insecable">CPI 9201 2020 000 045 344</span><br />
-          Chasse immobilière sur mesure · Paris &amp; Hauts-de-Seine
+          Immobilier d’entreprise · Paris &amp; Hauts-de-Seine
         </div>
       </div>
 
@@ -2466,12 +2466,12 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
           <div className="ecran-dedans">
             <span className="ecran-sceau"><Ico n={dansUneAppli ? 'partage' : 'maison'} t={19} /></span>
             <div className="ecran-txt">
-              <b>Ne ratez aucun bien</b>
+              <b>Ne ratez aucun local</b>
               <span>{dansUneAppli
-                ? <>Ouvrez cet espace dans votre navigateur&nbsp;: vous pourrez le garder sous la main et être prévenu dès qu&apos;un bien arrive.</>
+                ? <>Ouvrez cet espace dans votre navigateur&nbsp;: vous pourrez le garder sous la main et être prévenu dès qu&apos;un local arrive.</>
                 : ecran.tactile
                   ? <>Posez votre espace sur votre écran d&apos;accueil&nbsp;: vous y êtes en un geste, et vous êtes prévenu dès que votre conseiller vous en envoie un.</>
-                  : <>Posez votre espace dans votre barre des tâches&nbsp;: vous y êtes en un clic, et vous êtes prévenu dès que votre conseiller vous envoie un bien.</>}</span>
+                  : <>Posez votre espace dans votre barre des tâches&nbsp;: vous y êtes en un clic, et vous êtes prévenu dès que votre conseiller vous envoie un local.</>}</span>
             </div>
             <button type="button" className="ecran-oui" onClick={() => ecran.accepter(ouvrirGuideEcran)}>
               {dansUneAppli ? 'Voir comment' : 'Installer'}
@@ -2655,9 +2655,9 @@ function Accueil({ client, crit, neufs, vus, donnes, nbPlusDispo = 0, passage, s
   const ouverts = vus.length + donnes.length + nbPlusDispo;
   const reserve: Case[] = [];
   if (plait) reserve.push({ cle: 'plait', cls: 'c-plait', ico: 'pouce', n: plait,
-    l: plait > 1 ? 'biens qui vous plaisent' : 'bien qui vous plaît', go: () => onFiltre('interesse') });
+    l: plait > 1 ? 'locaux qui vous plaisent' : 'local qui vous plaît', go: () => onFiltre('interesse') });
   if (ouverts) reserve.push({ cle: 'vus', cls: 'c-vus', ico: 'oeil', n: ouverts,
-    l: ouverts > 1 ? 'biens consultés' : 'bien consulté', go: () => onFiltre('tout') });
+    l: ouverts > 1 ? 'locaux consultés' : 'local consulté', go: () => onFiltre('tout') });
   const case2: Case = vus.length
     ? { cle: 'avis', cls: 'c-avis', ico: 'pouce', n: vus.length, l: 'avis à donner', go: onAvis }
     : reserve.shift() || { cle: 'avis', cls: 'c-avis', ico: 'pouce', n: 0, l: 'avis à donner', go: onAvis, aucun: 'Aucun' };
@@ -2695,21 +2695,21 @@ function Accueil({ client, crit, neufs, vus, donnes, nbPlusDispo = 0, passage, s
         <div className="chasseur">
           <div className="av">W</div>
           <div><h4>Werner</h4><p>Il cherche pour vous au quotidien</p></div>
-          <a className="tel" href="tel:0100000000"><Ico n="tel" t={15} /> Appeler</a>
+          <a className="tel" href="tel:0187660600"><Ico n="tel" t={15} /> Appeler</a>
         </div>
       </>}
       {k === 'engage' && (
         <div className="engage">
           <div className="t">Mon engagement</div>
           <div><span className="k"><Ico n="check" t={15} /></span><span>Une recherche menée chaque jour&nbsp;: les principaux portails immobiliers, notre carnet d&apos;adresses de confrères et de partenaires, et notre base off-market.</span></div>
-          <div><span className="k"><Ico n="check" t={15} /></span><span>Tout bien qui passe vos critères arrive ici dans la journée, avant qu&apos;il ne circule.</span></div>
+          <div><span className="k"><Ico n="check" t={15} /></span><span>Tout local qui passe vos critères arrive ici dans la journée, avant qu&apos;il ne circule.</span></div>
           <div><span className="k"><Ico n="check" t={15} /></span><span>Chacun de vos retours est relu, et oriente les propositions suivantes.</span></div>
         </div>
       )}
       {k === 'lien' && (
         <div className="avis-lien"><Ico n="lieu" t={16} />
           <span><b style={{ color: 'var(--encre)' }}>Ce lien est le vôtre.</b>{' '}Il vous ouvre votre espace sans mot de passe
-            — gardez-le pour vous, ou transmettez-le à votre conjoint ou à un proche qui suit le projet avec vous&nbsp;:
+            — gardez-le pour vous, ou transmettez-le à votre associé ou à un proche qui suit le projet avec vous&nbsp;:
             il verra exactement la même chose.</span></div>
       )}
     </div>
@@ -2730,7 +2730,7 @@ function Accueil({ client, crit, neufs, vus, donnes, nbPlusDispo = 0, passage, s
               {neufs.length
                 ? <span className="auj-n tab">{neufs.length}</span>
                 : <span className="auj-n mot">À jour</span>}
-              <span className="auj-l">{neufs.length ? (neufs.length > 1 ? 'nouveaux biens' : 'nouveau bien') : 'rien de nouveau'}</span>
+              <span className="auj-l">{neufs.length ? (neufs.length > 1 ? 'nouveaux locaux' : 'nouveau local') : 'rien de nouveau'}</span>
             </span>
           </button>
           {[case2, case3].map(k => (
@@ -2800,7 +2800,7 @@ function Accueil({ client, crit, neufs, vus, donnes, nbPlusDispo = 0, passage, s
         {onNotif && (
           <button type="button" className="al3" onClick={onNotif}>
             <span className="al3-i or"><Ico n="cloche" t={17} /></span>
-            <span className="al3-t"><b>Être prévenu</b><i>dès qu’un bien arrive</i></span>
+            <span className="al3-t"><b>Être prévenu</b><i>dès qu’un local arrive</i></span>
           </button>
         )}
         <button type="button" className="al3" onClick={onBienvenue}>
@@ -2869,7 +2869,7 @@ function Accueil({ client, crit, neufs, vus, donnes, nbPlusDispo = 0, passage, s
                   <div><h3>{plusieurs ? 'Les critères de cette recherche' : 'Rappel de ma recherche'}</h3>
                     <p>{crit.budgetMax ? `Jusqu'à ${EUR(crit.budgetMax)}` : 'Budget à préciser'}
                       {crit.surfaceMin ? ` · ${crit.surfaceMin} m² minimum` : ''}
-                      {crit.piecesMin ? ` · ${crit.piecesMin} pièces` : ''}</p></div>
+                      {crit.piecesMin ? ` · ${crit.piecesMin} espace${crit.piecesMin > 1 ? 's' : ''}` : ''}</p></div>
                   <div className="pied-case">
                     <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--plume)' }}>Vos critères ont changé&nbsp;? Modifiez-les ici</span>
                     <span className="chev"><Ico n="fleche" t={18} /></span></div>
@@ -2904,7 +2904,7 @@ function CarrouselNeufs({ biens, crit, onOuvrir, aller, onDecouvrir, nbDecouvrir
   return (
     <section className="bloc-n" data-n={n}>
       <div className="bloc-h">
-        <h2>Nouveaux biens pour vous</h2>
+        <h2>Nouveaux locaux pour vous</h2>
         <button type="button" className="bloc-lien" onClick={() => aller('neufs')}>Tout voir</button>
       </div>
       <div className="carrou" data-n={n}>
@@ -2925,9 +2925,9 @@ function CarrouselNeufs({ biens, crit, onOuvrir, aller, onDecouvrir, nbDecouvrir
                   <b className="tab">{PRIX(b.prix)}</b>
                   {b.prix && b.surface ? <i className="tab">{`${nombre(Math.round(b.prix / b.surface))} €/m²`}</i> : null}
                 </span>
-                {b.prix && b.hono ? <span className="cn-h">{`+ ${EUR(b.hono)} de nos honoraires`}</span> : null}
+                {b.prix && b.hono ? <span className="cn-h">{`+ ${EUR(b.hono)} HT de nos honoraires`}</span> : null}
                 <span className="cn-t">{b.titre}</span>
-                <span className="cn-m">{[b.surface && b.surface + ' m²', b.pieces && b.pieces + ' pièces', b.secteur].filter(Boolean).join(' · ')}</span>
+                <span className="cn-m">{[b.surface && b.surface + ' m²', b.pieces && b.pieces + (b.pieces > 1 ? ' espaces' : ' espace'), b.secteur].filter(Boolean).join(' · ')}</span>
                 {corr && (
                   <span className="cn-j">
                     <span className="cn-jb"><i style={{ width: corr.note + '%' }} /></span>
@@ -2976,8 +2976,8 @@ function RecapRecherche({ aller }: { aller: (v: string) => void }) {
 function RienDeNeuf({ passage, aVoir, aller, enCours = true, achat = null }: { passage: Props['passage']; aVoir: boolean; aller: (v: string) => void; enCours?: boolean; achat?: Bien | null }) {
   /* V3.48 : sous compromis, la recherche est souvent en pause — on ne dit plus « elle continue ». */
   const etat = achat?.vente
-    ? (achat.vente.etat === 'vendu' ? 'Votre achat est signé : félicitations.'
-      : enCours ? 'Votre compromis est signé ; la recherche continue en attendant la signature définitive.' : 'Votre compromis est signé : la recherche est en pause jusqu’à la signature définitive.')
+    ? (achat.vente.etat === 'vendu' ? 'Votre affaire est signée : félicitations.'
+      : enCours ? 'Votre accord est signé ; la recherche continue en attendant la signature du bail ou de l’acte.' : 'Votre accord est signé : la recherche est en pause jusqu’à la signature du bail ou de l’acte.')
     : enCours ? 'Votre recherche continue, rien n’est bloqué.' : 'Votre recherche est en pause pour le moment.';
   return (
     <section className="calme">
@@ -2994,12 +2994,12 @@ function RienDeNeuf({ passage, aVoir, aller, enCours = true, achat = null }: { p
             {/* Le chiffre et l'heure sont juste au-dessus, dans « Aujourd'hui
                 pour vous » : on ne les redit pas, on dit ce qu'ils ont donné. */}
             <span>{passage.proposees
-              ? `La dernière recherche a retenu ${passage.proposees} bien${passage.proposees > 1 ? 's' : ''} : vous ${passage.proposees > 1 ? 'les avez' : 'l’avez'} déjà ouvert${passage.proposees > 1 ? 's' : ''}.`
+              ? `La dernière recherche a retenu ${passage.proposees} ${passage.proposees > 1 ? 'locaux' : 'local'} : vous ${passage.proposees > 1 ? 'les avez' : 'l’avez'} déjà ouvert${passage.proposees > 1 ? 's' : ''}.`
               : 'Aucune des annonces lues lors de la dernière recherche ne cochait toutes vos cases. Mieux vaut ne rien vous envoyer que vous faire perdre du temps.'}</span>
           </span>
         )}
         <span><span className="calme-k"><Ico n="etincelle" t={15} /></span>
-          <span>Dès qu’un bien correspond à ce que vous voulez, il arrive ici.</span>
+          <span>Dès qu’un local correspond à ce que vous voulez, il arrive ici.</span>
         </span>
       </div>
       {/* Le détail de ce travail est dans « Le marché sur vos critères ». La
@@ -3012,7 +3012,7 @@ function RienDeNeuf({ passage, aVoir, aller, enCours = true, achat = null }: { p
       )}
       {aVoir && (
         <button type="button" className="calme-b" onClick={() => aller('consultes')}>
-          <span>Revoir les biens déjà consultés</span><Ico n="fleche" t={16} />
+          <span>Revoir les locaux déjà consultés</span><Ico n="fleche" t={16} />
         </button>
       )}
     </section>
@@ -3028,7 +3028,7 @@ function AvisAttendus({ biens, onOuvrir }: { biens: Bien[]; onOuvrir: (b: Bien) 
       <div className="aa-h">
         <span className="aa-ic"><Ico n="pouce" t={18} /></span>
         <div>
-          <h2>{`${n} bien${n > 1 ? 's' : ''} attend${n > 1 ? 'ent' : ''} votre avis`}</h2>
+          <h2>{`${n} ${n > 1 ? 'locaux attendent' : 'local attend'} votre avis`}</h2>
           <p>Vous les avez ouverts : dites-nous ce que vous en pensez.</p>
         </div>
       </div>
@@ -3075,14 +3075,14 @@ function ApercuCarte({ biens, onVoir, fondu }: { biens: Bien[]; onVoir: () => vo
   if (fondu) return (
     <button type="button" className="dr-carte" onClick={onVoir}>
       {plan}
-      <span className="dr-carte-l"><Ico n="carte" t={14} /><b>Vos biens sur la carte</b><Ico n="fleche" t={14} /></span>
+      <span className="dr-carte-l"><Ico n="carte" t={14} /><b>Vos locaux sur la carte</b><Ico n="fleche" t={14} /></span>
     </button>
   );
   return (
     <button type="button" className="case large apercu-carte" onClick={onVoir}>
       {plan}
       <span className="ac-bas">
-        <span><b>Vos biens sur la carte</b><i>Chacun dans sa petite zone, à la couleur de votre avis</i></span>
+        <span><b>Vos locaux sur la carte</b><i>Chacun dans sa petite zone, à la couleur de votre avis</i></span>
         <span className="chev"><Ico n="fleche" t={18} /></span>
       </span>
     </button>
@@ -3205,13 +3205,13 @@ function plusDuBien(b: Bien, lignes: LigneCorr[]): { ico: string; t: string }[] 
   const m2 = ext ? ` de ${String(ext).replace('.', ',')} m²` : '';
   if (b.traversant) out.push({ ico: 'traversant', t: 'Traversant' });
   if (b.terrasse && !deja.has('terrasse') && !deja.has('extérieur')) out.push({ ico: 'terrasse', t: `Terrasse${m2}` });
-  else if (b.balcon && !deja.has('balcon') && !deja.has('extérieur')) out.push({ ico: 'terrasse', t: `Balcon${m2}` });
-  if (b.jardin && !deja.has('jardin') && !deja.has('extérieur')) out.push({ ico: 'jardin', t: 'Jardin' });
+  else if (b.balcon && !deja.has('balcon') && !deja.has('extérieur')) out.push({ ico: 'terrasse', t: `Extérieur${m2}` });
+  if (b.jardin && !deja.has('jardin') && !deja.has('extérieur')) out.push({ ico: 'jardin', t: 'Espace extérieur' });
   if (b.parking && !deja.has('parking')) out.push({ ico: 'parking', t: b.nbParking && b.nbParking > 1 ? `${b.nbParking} parkings` : 'Parking' });
   if (b.cave && !deja.has('cave')) out.push({ ico: 'cave', t: 'Cave' });
   if (b.ascenseur && !deja.has('ascenseur')) out.push({ ico: 'ascenseur', t: 'Ascenseur' });
   if (b.gardien && !deja.has('gardien')) out.push({ ico: 'gardien', t: 'Gardien' });
-  if (b.cuisineEquipee) out.push({ ico: 'cuisine', t: 'Cuisine équipée' });
+  if (b.cuisineEquipee) out.push({ ico: 'cuisine', t: 'Cuisine professionnelle' });
   if (b.clim) out.push({ ico: 'clim', t: 'Climatisation' });
   if (b.etage != null && b.etageTotal && b.etage === b.etageTotal && b.etage > 0 && !deja.has('étage')) out.push({ ico: 'immeuble', t: 'Dernier étage' });
   return out;
@@ -3235,14 +3235,14 @@ function AnneauNote({ note, t = 48 }: { note: number; t?: number }) {
 /* Une valeur longue — un quartier « selon l'annonce », une ville à rallonge —
    ne tient pas à droite sur un téléphone : elle écrasait le libellé en une
    colonne de trois lettres et débordait de la carte. Elle passe alors sous le
-   libellé, sur toute la largeur, précédée de « Ce bien : ». */
+   libellé, sur toute la largeur, précédée de « Ce local : ». */
 function LigneCritere({ x }: { x: LigneCorr }) {
   const long = x.valeur.length > 18;
   return (
     <div className={'an-l ' + x.etat + (long ? ' long' : '')}>
       <span className="an-case">{x.etat === 'oui' ? <Ico n="check" t={12} /> : x.etat === 'presque' ? '≈' : <Ico n="moins" t={12} />}</span>
       <span className="an-lib"><b>{x.lib}</b><i>{x.demande}</i></span>
-      <span className="an-val tab">{long ? <><em>{'Ce bien :'}</em>{' '}{x.valeur}</> : x.valeur}</span>
+      <span className="an-val tab">{long ? <><em>{'Ce local :'}</em>{' '}{x.valeur}</> : x.valeur}</span>
     </div>
   );
 }
@@ -3281,7 +3281,7 @@ function ModaleCorrespondance({ b, r, onFermer }: { b: Bien; r: Correspondance; 
           <div className="an-col">
             {plus.length > 0 && (
               <>
-                <div className="an-t"><Ico n="etoile" t={14} /> Les plus de ce bien</div>
+                <div className="an-t"><Ico n="etoile" t={14} /> Les plus de ce local</div>
                 <div className="an-plus">{plus.map((x, i) => (
                   <span key={i}><span className="an-plus-i"><Ico n={x.ico} t={16} /></span>{x.t}</span>
                 ))}</div>
@@ -3290,9 +3290,9 @@ function ModaleCorrespondance({ b, r, onFermer }: { b: Bien; r: Correspondance; 
             <div className="an-aide">
               <div className="an-t neutre">Comment cette note se calcule</div>
               <div className="puces">
-                <span><span className="k"><Ico n="check" t={15} /></span><span>Elle compare ce bien à chacun de vos critères&nbsp;: budget, secteur, trajet jusqu’à la station, surfaces, pièces, étage, énergie, exposition et équipements. Rien d’autre&nbsp;: ni le marché, ni les autres biens.</span></span>
-                <span><span className="k"><Ico n="check" t={15} /></span><span>Vos indispensables comptent trois fois plus&nbsp;; le budget, le secteur, le trajet, la surface et les chambres, deux fois. Un critère presque atteint compte pour moitié.</span></span>
-                <span><span className="k"><Ico n="check" t={15} /></span><span>Elle ne juge pas ce qui se découvre sur place&nbsp;: la lumière, le calme, l’état. C’est pour ça que votre conseiller vous présente aussi des biens qui ne cochent pas toutes les cases.</span></span>
+                <span><span className="k"><Ico n="check" t={15} /></span><span>Elle compare ce local à chacun de vos critères&nbsp;: budget, secteur, trajet jusqu’à la station, surfaces, espaces, étage, énergie, exposition et équipements. Rien d’autre&nbsp;: ni le marché, ni les autres locaux.</span></span>
+                <span><span className="k"><Ico n="check" t={15} /></span><span>Vos indispensables comptent trois fois plus&nbsp;; le budget, le secteur, le trajet et la surface, deux fois. Un critère presque atteint compte pour moitié.</span></span>
+                <span><span className="k"><Ico n="check" t={15} /></span><span>Elle ne juge pas ce qui se découvre sur place&nbsp;: la lumière, le calme, l’état. C’est pour ça que votre conseiller vous présente aussi des locaux qui ne cochent pas toutes les cases.</span></span>
               </div>
             </div>
           </div>
@@ -3347,16 +3347,16 @@ function Liste({ biens, onOuvrir, vide, sansEtiq, crit }: { biens: Bien[]; onOuv
               </span>
               <h4>{b.titre}</h4>
               <span className="meta">{[
-                b.surface && b.surface + ' m²', b.pieces && b.pieces + ' pièces',
+                b.surface && b.surface + ' m²', b.pieces && b.pieces + (b.pieces > 1 ? ' espaces' : ' espace'),
                 b.chambres && b.chambres + ' chambres', b.secteur,
               ].filter(Boolean).join(' · ')}</span>
               <span className="prix tab">{PRIX(b.prix)}</span>
-              {b.prix && b.hono ? <span className="hono-c">{`+ ${EUR(b.hono)} de nos honoraires`}</span> : null}
+              {b.prix && b.hono ? <span className="hono-c">{`+ ${EUR(b.hono)} HT de nos honoraires`}</span> : null}
               {/* V3.184 : né d'une annonce qu'il a envoyée, avec l'avis d'Alexandre. */}
               {b.proposeeLe && <span className="ra-pp"><Ico n="lien" t={12} /><span>{`Vous nous l’aviez envoyée ${dateAnnonce(b.proposeeLe)}`}</span></span>}
               {b.avisConseiller && (
                 <span className="mon-com fait">
-                  <span className="mc-t">{'L’avis d’Werner'}</span>
+                  <span className="mc-t">{'L’avis de Werner'}</span>
                   <span className="mc-c">{`« ${b.avisConseiller} »`}</span>
                 </span>
               )}
@@ -3403,11 +3403,11 @@ function Liste({ biens, onOuvrir, vide, sansEtiq, crit }: { biens: Bien[]; onOuv
 function bilanRecherche(re: number, ret: number): string {
   if (!re) {
     return ret
-      ? `Cette recherche n’a rien retenu de nouveau : vos ${ret} bien${ret > 1 ? 's' : ''} retenu${ret > 1 ? 's' : ''} depuis l’ouverture restent dans votre espace.`
+      ? `Cette recherche n’a rien retenu de nouveau : ${ret > 1 ? `les ${ret} locaux retenus` : 'le local retenu'} depuis l’ouverture ${ret > 1 ? 'restent' : 'reste'} dans votre espace.`
       : 'Cette recherche n’a rien retenu : aucune annonce ne correspondait assez à ce que vous cherchez.';
   }
-  const elle = `Cette recherche a retenu ${re} bien${re > 1 ? 's' : ''}`;
-  if (ret > re) return `${elle}. Avec ceux déjà retenus avant, cela fait ${ret} biens retenus pour vous depuis l’ouverture.`;
+  const elle = `Cette recherche a retenu ${re} ${re > 1 ? 'locaux' : 'local'}`;
+  if (ret > re) return `${elle}. Avec ceux déjà retenus avant, cela fait ${ret} locaux retenus pour vous depuis l’ouverture.`;
   if (ret < re) return `${elle} : votre conseiller les vérifie un par un avant de les déposer dans votre espace.`;
   return `${elle}, que vous retrouvez dans votre espace.`;
 }
@@ -3467,7 +3467,7 @@ function Marche({ passage, semaine, maxLues, aller, biens, crit, onAide }: any) 
               <span className="tu-i"><Ico n="etoile" t={19} /></span>
               <span className="tu-c">
                 <b className="tab"><span className="nv">{ret.toLocaleString('fr-FR')}<BtnAide cle="retenus" onAide={onAide} /></span></b>
-                <span>bien{ret > 1 ? 's' : ''} retenu{ret > 1 ? 's' : ''} pour vous</span></span></div>
+                <span>{ret > 1 ? 'locaux retenus pour vous' : 'local retenu pour vous'}</span></span></div>
           </div>
           {sur > 1 && (
             <div className="gr-note">
@@ -3529,7 +3529,7 @@ function Marche({ passage, semaine, maxLues, aller, biens, crit, onAide }: any) 
           {/* Une ligne, pas un paragraphe : le détail est derrière le « ? » de
               « écartées », juste au-dessus. La page se lit d'un coup d'œil. */}
           <span>Vos critères guident la recherche, ils ne l&apos;enferment pas&nbsp;: il nous arrive
-            d&apos;aller au-delà quand un bien le mérite.</span>
+            d&apos;aller au-delà quand un local le mérite.</span>
         </div>
       </div>
 
@@ -3538,7 +3538,7 @@ function Marche({ passage, semaine, maxLues, aller, biens, crit, onAide }: any) 
         <div className="gr-cadre c-net">
           <div className="gr-tete">
             <span className="ge"><Ico n="maison" t={16} /></span>
-            <h3>Les biens retenus pour vous</h3>
+            <h3>Les locaux retenus pour vous</h3>
             <span className="gn">{ret}</span>
           </div>
           <div className="tuiles">
@@ -3557,8 +3557,8 @@ function Marche({ passage, semaine, maxLues, aller, biens, crit, onAide }: any) 
             )}
           </div>
           <div className="gr-note">
-            <span>Ces trois chiffres viennent des biens déposés dans votre espace, et sont recalculés
-              à chaque nouveau bien&nbsp;: ils ne peuvent pas être périmés.
+            <span>Ces trois chiffres viennent des locaux déposés dans votre espace, et sont recalculés
+              à chaque nouveau local&nbsp;: ils ne peuvent pas être périmés.
               {bmax > 0 && (sous === prix.length
                 ? <> Tous tiennent dans votre budget de <b>{EUR(bmax)}</b>.</>
                 : <> <b>{sous} sur {prix.length}</b> tiennent dans votre budget de {EUR(bmax)}&nbsp;; les autres
@@ -3605,7 +3605,7 @@ function Marche({ passage, semaine, maxLues, aller, biens, crit, onAide }: any) 
               <span>{'Il faut au moins deux journées pour comparer. Revenez demain : vous verrez ici, jour par jour, combien d’annonces ont été lues pour vous.'}</span>
             </>) : (<>
               <b>Pas de recherche ces sept derniers jours</b>
-              <span>{'Le graphique reprend dès la prochaine journée de recherche. Vos biens et vos critères, eux, restent là.'}</span>
+              <span>{'Le graphique reprend dès la prochaine journée de recherche. Vos locaux et vos critères, eux, restent là.'}</span>
             </>)}
           </div>
         )}
@@ -3619,6 +3619,7 @@ function Marche({ passage, semaine, maxLues, aller, biens, crit, onAide }: any) 
    « surface non précisée » n'apprend rien au client. */
 const ARTICLE_TYPE: Record<string, string> = {
   appartement: 'un', maison: 'une', loft: 'un', duplex: 'un', terrain: 'un', autre: 'un',
+  bureaux: 'des', 'local commercial': 'un', restaurant: 'un', 'local d’activité': 'un', entrepôt: 'un', immeuble: 'un', parking: 'un',
 };
 /* « Un appartement ou une maison » : chaque type garde son article, et le
    premier prend la majuscule. Un type inconnu du CRM passe au masculin
@@ -3637,7 +3638,7 @@ function morceauxResume(crit: any, villes: { ville: string }[]) {
   const m: { t: string; fort?: boolean }[] = [];
   const types: string[] = crit.typesBien?.length ? crit.typesBien
     : (crit.typeBien ? [crit.typeBien] : []);
-  m.push({ t: types.length ? listeTypes(types) : 'Un bien' });
+  m.push({ t: types.length ? listeTypes(types) : 'Un local' });
   if (crit.surfaceMin) {
     m.push({ t: " d'au moins " });
     m.push({ t: `${crit.surfaceMin} m²`, fort: true });
@@ -3721,7 +3722,7 @@ function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
 
       {/* 1 — Le bien recherché */}
       {aQuelqueChose ? (
-        <CatE ico="maison" titre="Le bien recherché" sous="type et état">
+        <CatE ico="maison" titre="Le local recherché" sous="type et état">
           {types.length ? <div className="pastilles">{types.map((t: string) => <span className="past or" key={t}><Ico n={ICO_TYPE[t] || 'maison'} t={15} /><span>{t}</span></span>)}</div> : null}
           {(crit.etatSouhaite || crit.anneeMin) && (
             <div className="faits">
@@ -3733,16 +3734,16 @@ function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
       ) : null}
 
       {/* 2 — Surfaces & volumes */}
-      <CatE ico="regle" titre="Surfaces & volumes" sous="la taille du bien">
+      <CatE ico="regle" titre="Surfaces & volumes" sous="la taille du local">
         <div className="trio">
           <div className="mini-t"><span className="mini-i"><Ico n="regle" t={17} /></span><div className="v tab">{crit.surfaceMin ? crit.surfaceMin + ' m²' : '—'}</div><div className="l">surface min.</div></div>
-          <div className="mini-t"><span className="mini-i"><Ico n="plan" t={17} /></span><div className="v tab">{crit.piecesMin ?? '—'}</div><div className="l">pièces min.</div></div>
+          <div className="mini-t"><span className="mini-i"><Ico n="plan" t={17} /></span><div className="v tab">{crit.piecesMin ?? '—'}</div><div className="l">espaces min.</div></div>
           <div className="mini-t"><span className="mini-i"><Ico n="lit" t={17} /></span><div className="v tab">{crit.chambresMin ?? '—'}</div><div className="l">chambres min.</div></div>
         </div>
         {(crit.surfaceMax || crit.surfaceSejourMin || crit.piecesMax) && (
           <div className="faits">
             {crit.surfaceMax ? <Fait ico="regle" lib="Surface maximum" val={<span className="tab">{crit.surfaceMax} m²</span>} /> : null}
-            {crit.piecesMax ? <Fait ico="plan" lib="Pièces maximum" val={<span className="tab">{crit.piecesMax}</span>} /> : null}
+            {crit.piecesMax ? <Fait ico="plan" lib="Espaces maximum" val={<span className="tab">{crit.piecesMax}</span>} /> : null}
             {crit.surfaceSejourMin ? <Fait ico="canape" lib="Séjour d’au moins" val={<span className="tab">{crit.surfaceSejourMin} m²</span>} /> : null}
           </div>
         )}
@@ -3750,7 +3751,7 @@ function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
 
       {/* 3 — Étage & exposition */}
       {(etage.length || expos.length) ? (
-        <CatE ico="immeuble" titre="Étage & exposition" sous="où se trouve le bien dans l'immeuble">
+        <CatE ico="immeuble" titre="Étage & exposition" sous="où se trouve le local dans l'immeuble">
           {etage.length ? <div className="pastilles">{etage.map(e => <span className="past" key={e.t}><Ico n={e.ico} t={15} /><span>{e.t}</span></span>)}</div> : null}
           {expos.length ? (
             <div style={{ marginTop: etage.length ? 12 : 0 }}>
@@ -3768,7 +3769,7 @@ function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
       {equips.length ? (
         <CatE ico="etincelle" titre="Équipements" sous="ce qui compte pour vous">
           <div className="pastilles">{equips.map(e => <PastilleE key={e.texte} ico={e.ico} texte={e.texte} fort={e.fort} />)}</div>
-          {equips.some(e => e.fort) && <div className="note-cat">Ce qui est marqué <b>indispensable</b> n&apos;est jamais mis de côté : un bien qui ne l&apos;a pas ne vous est pas présenté.</div>}
+          {equips.some(e => e.fort) && <div className="note-cat">Ce qui est marqué <b>indispensable</b> n&apos;est jamais mis de côté : un local qui ne l&apos;a pas ne vous est pas présenté.</div>}
         </CatE>
       ) : null}
 
@@ -4143,8 +4144,8 @@ const ETIQ_ISSUE: Record<Issue, string> = { offre: 'fait', revoir: 'visite', ref
 const TON_ISSUE: Record<Issue, string> = { offre: 'or', revoir: 'visite', reflexion: 'bleu', non: 'non' };
 const QUESTION_VISITE: Record<Issue, { t: string; p: string; ph: string; btn: string; ok: string }> = {
   offre: {
-    t: 'Vous avez un prix en tête ?',
-    p: 'Facultatif, frais d’agence compris. Votre conseiller vous appelle pour préparer l’offre avec vous : le prix, le financement, les conditions.',
+    t: 'Vous avez un montant en tête ?',
+    p: 'Facultatif, honoraires compris. Votre conseiller vous appelle pour préparer l’offre avec vous : le montant et les conditions.',
     ph: 'Un mot pour votre conseiller, si vous voulez…',
     btn: 'Prévenir mon conseiller',
     ok: 'Votre conseiller est prévenu. Il vous appelle pour préparer l’offre avec vous.',
@@ -4152,23 +4153,23 @@ const QUESTION_VISITE: Record<Issue, { t: string; p: string; ph: string; btn: st
   revoir: {
     t: 'Pourquoi le revoir ?',
     p: 'Une ou plusieurs raisons, et vos disponibilités si vous voulez. Votre conseiller cale la 2e visite.',
-    ph: 'Ex : un soir de semaine, avec mon père…',
+    ph: 'Ex : un soir de semaine, avec mon associé…',
     btn: 'Envoyer ma demande',
     ok: 'Votre conseiller cale une 2e visite et revient vers vous avec le rendez-vous.',
   },
   reflexion: {
     t: 'Qu’est-ce qui vous fait hésiter ?',
     p: 'Une ou plusieurs raisons. Votre conseiller fait le point avec vous dans les prochains jours.',
-    ph: 'Ex : j’aimerais savoir si le mandant accepterait une négociation…',
+    ph: 'Ex : j’aimerais savoir si une négociation est possible…',
     btn: 'Envoyer',
     ok: 'Votre conseiller fait le point avec vous dans les prochains jours.',
   },
   non: {
     t: 'Qu’est-ce qui n’a pas convenu sur place ?',
-    p: 'Une ou plusieurs raisons : les prochains biens en tiendront compte.',
-    ph: 'Ex : le séjour donne sur un mur…',
+    p: 'Une ou plusieurs raisons : les prochains locaux en tiendront compte.',
+    ph: 'Ex : la vitrine est trop petite…',
     btn: 'Envoyer mon retour',
-    ok: 'Merci. Les prochains biens en tiendront compte, et celui-ci reste dans vos visites.',
+    ok: 'Merci. Les prochains locaux en tiendront compte, et celui-ci reste dans vos visites.',
   },
 };
 
@@ -4305,7 +4306,7 @@ function EtatVisite({ b, v, enLigne }: { b: Bien; v: VisiteE;
   const offreFaite = !!eo;
   const i = v.issue;
   const ligne = eo ? eo.ligne
-    : i === 'offre' ? `Votre conseiller vous appelle pour préparer l’offre avec vous.${v.prix ? ` Votre prix en tête : ${EUR(v.prix)}.` : ''}`
+    : i === 'offre' ? `Votre conseiller vous appelle pour préparer l’offre avec vous.${v.prix ? ` Votre montant en tête : ${EUR(v.prix)}.` : ''}`
     : i === 'revoir' ? 'Votre conseiller cale une 2e visite : le rendez-vous s’affichera dans « À venir ».'
     : i === 'reflexion' ? 'Votre conseiller fait le point avec vous dans les prochains jours.'
     : '';
@@ -4347,14 +4348,14 @@ function CarteVisite({ b, v, onOuvrir, onCompteRendu, onRepondre, onFaireOffre, 
      la date de la visite, puis ce qui suit — trois cartes par ligne. */
   return (
     <div className={'vv-carte' + (v.issue === 'non' || etatOffre(b)?.fini ? ' gris' : '')}>
-      <button type="button" className="vv-photo" onClick={onOuvrir} aria-label="Ouvrir le bien">
+      <button type="button" className="vv-photo" onClick={onOuvrir} aria-label="Ouvrir le local">
         {ph ? <img src={ph} alt="" /> : <Ico n="maison" t={28} />}
         <span className="vv-etq"><EtiqVisite b={b} v={v} /></span>
       </button>
       <div className="vv-corps">
       <button type="button" className="vv-tete" onClick={onOuvrir}>
         <span className="vv-l1"><b className="vv-prix tab">{PRIX(b.prix)}</b><span className="vv-quand">{quand}</span></span>
-        <span className="vv-meta">{[b.pieces === 1 ? 'Studio' : b.pieces && `${b.pieces} pièces`, b.surface && `${b.surface} m²`, b.ville || b.secteur].filter(Boolean).join(' · ')}</span>
+        <span className="vv-meta">{[b.pieces === 1 ? '1 espace' : b.pieces && `${b.pieces} espaces`, b.surface && `${b.surface} m²`, b.ville || b.secteur].filter(Boolean).join(' · ')}</span>
       </button>
       {o ? <CarteOffre o={o} indispo={indispo(b)} sansEtiquette {...(actionsOffre || {})} />
         : v.issue || etatOffre(b) ? (
@@ -4390,7 +4391,7 @@ function CarteAvisAccueil({ b, v, onRepondre, onOuvrir, onVoir, onFaireOffre }: 
           <span className="vv-ph">{ph ? <img src={ph} alt="" /> : <Ico n="maison" t={20} />}</span>
           <span className="vv-t">
             <b className="vv-prix tab">{PRIX(b.prix)}</b>
-            <span className="vv-meta">{[b.pieces === 1 ? 'Studio' : b.pieces && `${b.pieces} pièces`, b.surface && `${b.surface} m²`, b.ville || b.secteur].filter(Boolean).join(' · ')}</span>
+            <span className="vv-meta">{[b.pieces === 1 ? '1 espace' : b.pieces && `${b.pieces} espaces`, b.surface && `${b.surface} m²`, b.ville || b.secteur].filter(Boolean).join(' · ')}</span>
           </span>
         </button>
         <AvisVisite v={v} onRepondre={onRepondre} onFaireOffre={onFaireOffre} />
@@ -4450,7 +4451,7 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir
   type Onglet = 'tout' | 'offres' | 'avis' | 'encours' | 'non';
   const [onglet, setOnglet] = useState<Onglet>('tout');
   const RANGS: { k: Onglet; l: string; l2: L; ton: string; note: string }[] = [
-    { k: 'offres', l: 'Vos offres', l2: offres, ton: 'vert', note: 'Où en est chacune, et ce que le mandant a répondu.' },
+    { k: 'offres', l: 'Vos offres', l2: offres, ton: 'vert', note: 'Où en est chacune, et la réponse que vous avez reçue.' },
     { k: 'avis', l: 'Votre avis', l2: avis, ton: 'or', note: 'Un geste suffit : c’est ce qui décide de la suite.' },
     { k: 'encours', l: 'En cours', l2: retenus, ton: 'bleu', note: 'Ceux que vous gardez en tête, et où on en est.' },
     { k: 'non', l: 'Pas pour moi', l2: non, ton: 'brique', note: noteNon },
@@ -4458,7 +4459,7 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir
   const pleins = RANGS.filter(r => r.l2.length > 0);
   const actif = pleins.find(r => r.k === onglet) || null;
   const liste = actif ? actif.l2 : [...offres, ...avis, ...retenus, ...non];
-  const note = actif ? actif.note : pleins.length === 1 ? pleins[0].note : 'Chaque bien visité, rangé d’après votre dernière visite.';
+  const note = actif ? actif.note : pleins.length === 1 ? pleins[0].note : 'Chaque local visité, rangé d’après votre dernière visite.';
   const carte = ({ b, v }: { b: Bien; v: VisiteE }) => (
     <CarteVisite key={v.id} b={b} v={v} onOuvrir={() => onOuvrir(b)} onCompteRendu={() => onOuvrir(b, { versCr: true })} onRepondre={onRepondre}
       onFaireOffre={onFaireOffre?.(b)} actionsOffre={actionsOffre?.(b)} />
@@ -4466,12 +4467,12 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir
 
   return (
     <Vue icone="calendrier" aller={aller} titre="Vos visites"
-      sous={total ? undefined : 'Aucune visite pour l’instant. Quand un bien vous plaît, dites « Je veux visiter » sur sa fiche : votre conseiller organise la visite, et elle s’affiche ici.'}>
+      sous={total ? undefined : 'Aucune visite pour l’instant. Quand un local vous plaît, dites « Je veux visiter » sur sa fiche : votre conseiller organise la visite, et elle s’affiche ici.'}>
       {total > 0 && (
         <div className="vv-res">
           <span className="vv-res-ic" aria-hidden="true"><Ico n="calendrier" t={22} /></span>
           <span className="vv-res-t">
-            <b>{`${total} bien${total > 1 ? 's' : ''} avec votre conseiller`}</b>
+            <b>{`${total} ${total > 1 ? 'locaux' : 'local'} avec votre conseiller`}</b>
             <span>{'Il cale chaque visite et vous accompagne sur place.'}</span>
           </span>
           <span className="vv-res-p">
@@ -4499,7 +4500,7 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir
         <div className="vv-groupe">
           <div className="sep"><span>{`Déjà visités · ${deja}`}</span><i /></div>
           {pleins.length > 1 && (
-            <div className="vv-onglets" role="tablist" aria-label="Vos biens visités, par étape">
+            <div className="vv-onglets" role="tablist" aria-label="Vos locaux visités, par étape">
               <button type="button" role="tab" aria-selected={!actif} className="vv-ong" data-ton="encre" onClick={() => setOnglet('tout')}>
                 <i aria-hidden="true" /><span>Tout</span><b className="tab">{deja}</b>
               </button>
@@ -4666,7 +4667,7 @@ function EtapeOE({ e }: { e: SuiviClient['etapes'][number] }) {
         {(quand || e.sous) && <small>{[quand, e.sous].filter(Boolean).join(' · ')}</small>}
         {e.mot && (
           <span className="oe-mot">
-            <i>{'Le mot d’Werner'}</i>
+            <i>{'Le mot de Werner'}</i>
             <span>{`« ${e.mot} »`}</span>
           </span>
         )}
@@ -4717,7 +4718,7 @@ function OuEnEst({ s }: { s: SuiviClient }) {
         )}
         {apres.map((e, i) => <EtapeOE key={'r' + i} e={e} />)}
       </ol>
-      <p className="oe-pied">{'Les étapes se mettent à jour à chaque appel d’Werner.'}</p>
+      <p className="oe-pied">{'Les étapes se mettent à jour à chaque appel de Werner.'}</p>
     </div>
   );
 }
@@ -4829,13 +4830,13 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
      laisse aucune trace à l'écran — pas de titre orphelin. */
   const inclus: [string, string][] = [];
   if (b.terrasse) inclus.push(['terrasse', 'Terrasse']);
-  if (b.balcon) inclus.push(['terrasse', 'Balcon']);
-  if (b.jardin) inclus.push(['jardin', 'Jardin']);
+  if (b.balcon) inclus.push(['terrasse', 'Extérieur']);
+  if (b.jardin) inclus.push(['jardin', 'Espace extérieur']);
   if (b.parking) inclus.push(['parking', b.nbParking && b.nbParking > 1 ? `${b.nbParking} parkings` : 'Parking']);
   if (b.cave) inclus.push(['cave', 'Cave']);
   if (b.ascenseur) inclus.push(['ascenseur', 'Ascenseur']);
   if (b.gardien) inclus.push(['gardien', 'Gardien']);
-  if (b.cuisineEquipee) inclus.push(['cuisine', 'Cuisine équipée']);
+  if (b.cuisineEquipee) inclus.push(['cuisine', 'Cuisine professionnelle']);
   if (b.clim) inclus.push(['clim', 'Climatisation']);
   if (b.traversant) inclus.push(['traversant', 'Traversant']);
 
@@ -4960,7 +4961,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
         {b.proposeeLe && (
           <div className="ra-propose">
             <b><Ico n="lien" t={14} /><span>{`Vous nous l’aviez envoyée ${dateAnnonce(b.proposeeLe)}`}</span></b>
-            {b.avisConseiller && <span><i>{'L’avis d’Werner\u00a0: '}</i>{`«\u00a0${b.avisConseiller}\u00a0»`}</span>}
+            {b.avisConseiller && <span><i>{'L’avis de Werner\u00a0: '}</i>{`«\u00a0${b.avisConseiller}\u00a0»`}</span>}
             {b.sonMot && <span><i>{'Votre mot\u00a0: '}</i>{`«\u00a0${b.sonMot}\u00a0»`}</span>}
           </div>
         )}
@@ -5005,7 +5006,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
                 <div className="cpr" ref={refCr}>
                   <div className="cpr-tete">
                     <span className="cpr-ic" aria-hidden="true"><Ico n="note" t={16} /></span>
-                    <span className="cpr-tt">{'Le compte rendu d’Werner'}</span>
+                    <span className="cpr-tt">{'Le compte rendu de Werner'}</span>
                     {et > 0 && <span className="cpr-et" aria-label={`${et} sur 5`}>{'★'.repeat(et)}<i>{'★'.repeat(Math.max(0, 5 - et))}</i></span>}
                   </div>
                   <TexteCR texte={b.visiteFaite.commentaire} />
@@ -5036,7 +5037,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
         )}
         <div className="specs">
           {b.surface ? <div className="spec"><div className="v tab">{b.surface} m²</div><div className="l">Surface</div></div> : null}
-          {b.pieces ? <div className="spec"><div className="v tab">{b.pieces}</div><div className="l">Pièces</div></div> : null}
+          {b.pieces ? <div className="spec"><div className="v tab">{b.pieces}</div><div className="l">Espaces</div></div> : null}
           {b.chambres ? <div className="spec"><div className="v tab">{b.chambres}</div><div className="l">Chambres</div></div> : null}
           {b.etage != null ? <div className="spec"><div className="v tab">{b.etage === 0 ? 'RDC' : b.etage + 'e'}{b.etageTotal ? '/' + b.etageTotal : ''}</div><div className="l">Étage</div></div> : null}
           {b.expo ? <div className="spec"><div className="v">{b.expo}</div><div className="l">Exposition</div></div> : null}
@@ -5086,7 +5087,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
               {plans.map((u, n) => (
                 <button type="button" className="plan-f" key={u + n} onClick={() => setPleinPlan(n)}
                   aria-label={plans.length > 1 ? `Agrandir le plan ${n + 1}` : 'Agrandir le plan'}>
-                  <img src={u} alt={plans.length > 1 ? `Plan ${n + 1}` : 'Plan du bien'} loading="lazy" draggable={false} />
+                  <img src={u} alt={plans.length > 1 ? `Plan ${n + 1}` : 'Plan du local'} loading="lazy" draggable={false} />
                   <span className="plan-z"><Ico n="loupe" t={14} />Agrandir</span>
                 </button>
               ))}
@@ -5096,7 +5097,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
 
         {inclus.length > 0 && (
           <>
-            <label className="lab">Ce que le bien comprend</label>
+            <label className="lab">Ce que le local comprend</label>
             <div className="incl">{inclus.map(([i, n]) => (
               <div className="ic" key={n}><span className="r"><Ico n={i} t={19} /></span><span className="n">{n}</span></div>
             ))}</div>
@@ -5154,7 +5155,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
           <div className="apres-avis fini">
             <div className="aa-t">{etiqRetour ? `${etiqRetour.e} ${etiqRetour.n}` : 'Retour enregistré'}</div>
             <p className="aa-p">{b.avis === 'visite'
-              ? 'Vous avez visité ce bien avec votre conseiller.'
+              ? 'Vous avez visité ce local avec votre conseiller.'
               : parConseiller
                 ? `Votre conseiller a noté ce retour${dateRetour ? ` le ${dateRetour}` : ''}, d’après votre échange. Il oriente déjà la suite de votre recherche.`
                 : `Votre conseiller a reçu ce retour${dateRetour ? ` le ${dateRetour}` : ''}. Il oriente déjà la suite de votre recherche.`}</p>
@@ -5185,7 +5186,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
             )}
             <p className="aa-n">{parConseiller
               ? 'Ce n’est pas tout à fait ça ? Dites-le à votre conseiller, il corrige.'
-              : 'Vous avez changé d’avis sur ce bien ? Dites-le à votre conseiller, il met le dossier à jour.'}</p>
+              : 'Vous avez changé d’avis sur ce local ? Dites-le à votre conseiller, il met le dossier à jour.'}</p>
           </div>
         )}
 
@@ -5286,14 +5287,14 @@ function ModaleBientot({ onFermer, onPartager }: { onFermer: () => void; onParta
           <div className="rond-ok"><Ico n="horloge" t={30} /></div>
           <div className="bt-etiq">En cours de développement</div>
           <h3 id="bientot-t">{'Le téléchargement n\u2019est pas encore disponible'}</h3>
-          <p>{'Cette fonction est en cours de développement. Vous pourrez très bientôt télécharger la fiche du bien, directement ici.'}</p>
+          <p>{'Cette fonction est en cours de développement. Vous pourrez très bientôt télécharger la fiche du local, directement ici.'}</p>
           <div className="bt-astuce">
             <Ico n="partage" t={18} />
-            <span>{'En attendant, le bouton «\u00a0Partager\u00a0», juste à gauche, vous permet déjà d\u2019envoyer ce bien à vos proches.'}</span>
+            <span>{'En attendant, le bouton «\u00a0Partager\u00a0», juste à gauche, vous permet déjà d’envoyer ce local à vos proches.'}</span>
           </div>
           <div className="bt-actions">
             <button type="button" className="btn or" onClick={onPartager}>
-              <Ico n="partage" t={16} /><span>Partager ce bien</span>
+              <Ico n="partage" t={16} /><span>Partager ce local</span>
             </button>
             <button type="button" className="btn lien" onClick={onFermer}>Fermer</button>
           </div>
@@ -5332,13 +5333,13 @@ function ModalePartage({ b, client, onFermer, onEnvoyer }: any) {
           <div className="pop-fin">
             <div className="rond-ok"><Ico n="check" t={32} /></div>
             <h3>La fiche est partie</h3>
-            <p>{mail} vient de recevoir la fiche du bien.</p>
+            <p>{mail} vient de recevoir la fiche du local.</p>
             <button className="btn or" onClick={onFermer}>Parfait</button>
           </div>
         ) : (
           <>
             <div className="pop-tete">
-              <div><div className="sur">Partager ce bien</div><h3>{b.titre}</h3></div>
+              <div><div className="sur">Partager ce local</div><h3>{b.titre}</h3></div>
               <button className="fermer" onClick={onFermer} aria-label="Fermer" disabled={etat === 'envoi'}>
                 <Ico n="croix" t={14} /></button>
             </div>
@@ -5353,8 +5354,8 @@ function ModalePartage({ b, client, onFermer, onEnvoyer }: any) {
 
               <div className="ape">
                 <div className="ape-t">Aperçu du message</div>
-                <div className="ape-l"><span>Objet</span>{client.prenom} vous partage un bien</div>
-                <div className="ape-c">Bonjour,<br />Voici un bien que je suis en train de regarder avec
+                <div className="ape-l"><span>Objet</span>{client.prenom} vous partage un local</div>
+                <div className="ape-c">Bonjour,<br />Voici un local que je suis en train de regarder avec
                   mon conseiller immobilier. Dites-moi ce que vous en pensez.<br /><br />
                   <b>{b.titre}</b><br />
                   {[b.surface && b.surface + ' m²', PRIX(b.prix)].filter(Boolean).join(' · ')}<br />
@@ -5372,7 +5373,7 @@ function ModalePartage({ b, client, onFermer, onEnvoyer }: any) {
                   setCopie(true); setTimeout(() => setCopie(false), 1800);
                 }}>{copie ? '✓ Lien copié' : 'ou copier le lien'}</button>
               </div>
-              <p className="txt mention">Le message part au nom d&apos;Werner Immobilier.</p>
+              <p className="txt mention">Le message part au nom de Werner Immobilier.</p>
             </div>
           </>
         )}
@@ -5453,9 +5454,9 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
 
   const ETAPES: { id: string; ico: string; titre: string; sous: string; contenu: React.ReactNode }[] = [
     {
-      id: 'bien', ico: 'maison', titre: 'Le bien recherché', sous: 'Quel type de bien, dans quel état',
+      id: 'bien', ico: 'maison', titre: 'Le local recherché', sous: 'Quel type de local, dans quel état',
       contenu: (<>
-        <label className="lab">Type de bien <i>plusieurs choix possibles</i></label>
+        <label className="lab">Type de local <i>plusieurs choix possibles</i></label>
         <div className="choix">{TYPES_E.map(([x, i]) => (
           <button key={x} className="ch or" aria-pressed={t.typesBien.includes(x)} onClick={() => basculeType(x)}>{i} {x}</button>))}</div>
         <label className="lab">État souhaité <i>plusieurs choix possibles</i></label>
@@ -5474,7 +5475,7 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
       </>),
     },
     {
-      id: 'surfaces', ico: 'regle', titre: 'Surfaces & volumes', sous: 'La taille du bien',
+      id: 'surfaces', ico: 'regle', titre: 'Surfaces & volumes', sous: 'La taille du local',
       contenu: (<>
         <label className="lab">Surface minimum</label>
         <div className="pas"><button className="rond" onClick={() => pas('surfaceMin', -1)}>−</button>
@@ -5482,7 +5483,7 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
           <button className="rond" onClick={() => pas('surfaceMin', 1)}>+</button></div>
         <label className="lab">Surface maximum</label>
         <ChampNum val={t.surfaceMax} onChange={num('surfaceMax')} suffixe="m²" aide="Vide = pas de plafond" />
-        <label className="lab">Pièces minimum</label>
+        <label className="lab">Espaces minimum</label>
         <div className="choix">{[2, 3, 4, 5, 6].map(n => (
           <button key={n} className="ch" aria-pressed={t.piecesMin === n} onClick={() => setT(v => ({ ...v, piecesMin: n }))}>{n}{n === 6 ? '+' : ''}</button>))}</div>
         <label className="lab">Chambres minimum</label>
@@ -5532,7 +5533,7 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
         <label className="lab">Un extérieur</label>
         <div className="choix">
           <button className={'ch niv' + (niv('exterieur') ? ' n' + niv('exterieur') : '')} aria-pressed={!!niv('exterieur')} onClick={() => tourner('exterieur')}>
-            🌤️ Balcon, terrasse ou jardin{niv('exterieur') ? <i className="mk">{niv('exterieur') === 'indispensable' ? 'indispensable' : 'souhaité'}</i> : null}
+            🌤️ Terrasse ou extérieur{niv('exterieur') ? <i className="mk">{niv('exterieur') === 'indispensable' ? 'indispensable' : 'souhaité'}</i> : null}
           </button>
         </div>
         {niv('exterieur') ? (<>
@@ -5595,7 +5596,7 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
       </>),
     },
     {
-      id: 'projet', ico: 'note', titre: 'Mon projet', sous: 'Votre échéance, et la note d’Werner',
+      id: 'projet', ico: 'note', titre: 'Mon projet', sous: 'Votre échéance, et la note de Werner',
       contenu: (<>
         <label className="lab">Échéance souhaitée</label>
         <div className="choix">{URGENCES_E.map(([k, l, i]) => (
@@ -5605,7 +5606,7 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
           <blockquote className="corps">{crit.notes || 'Aucune précision notée pour l’instant.'}</blockquote>
           <div className="pq">Cette note lui appartient : vous ne pouvez pas la modifier vous-même. Dites-lui ce que vous voudriez y changer, il s’en occupe.</div>
           <textarea rows={3} value={demandeNote} onChange={e => setDemandeNote(e.target.value)}
-            placeholder="Ce que je voudrais qu’Werner corrige dans cette note… (facultatif)" />
+            placeholder="Ce que je voudrais que Werner corrige dans cette note… (facultatif)" />
         </div>
       </>),
     },
@@ -5637,9 +5638,9 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
       c.push('budget ' + (t.budgetMin ? EUR(t.budgetMin) + ' – ' + EUR(t.budgetMax) : 'jusqu’à ' + EUR(t.budgetMax)));
     }
     if (surfaceMin !== (crit.surfaceMin ?? null)) c.push(t.surfaceMin + ' m² minimum');
-    if (piecesMin !== (crit.piecesMin ?? null)) c.push(t.piecesMin + ' pièces minimum');
+    if (piecesMin !== (crit.piecesMin ?? null)) c.push(t.piecesMin + ' espaces minimum');
     if (chambresMin !== (crit.chambresMin ?? null)) c.push(t.chambresMin + ' chambres minimum');
-    if (t.typesBien.join() !== (crit.typesBien || []).join()) c.push(t.typesBien.length ? 'type de bien : ' + t.typesBien.join(', ') : 'plus de contrainte de type');
+    if (t.typesBien.join() !== (crit.typesBien || []).join()) c.push(t.typesBien.length ? 'type de local : ' + t.typesBien.join(', ') : 'plus de contrainte de type');
     if (t.secteurs.join() !== crit.secteurs.join()) c.push(t.secteurs.length + ' secteurs');
     if (JSON.stringify(t.exigences) !== JSON.stringify(crit.exigences || {})) c.push('équipements souhaités');
     if ((t.dpeMax || '') !== (crit.dpeMax || '')) c.push(t.dpeMax ? 'DPE ' + t.dpeMax + ' maximum' : 'plus de contrainte de DPE');
@@ -5742,7 +5743,7 @@ function FinRecherche({ onFermer, onChoisir, seulement, titre, intro }: any) {
   const [mot, setMot] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const TOUS: [string, string, string][] = [
-    ['trouve_avec_vous', "J'ai trouvé, grâce à vous", 'Le bien vient de votre sélection.'],
+    ['trouve_avec_vous', "J'ai trouvé, grâce à vous", 'Le local vient de votre sélection.'],
     ['trouve_ailleurs', "J'ai trouvé par un autre biais", 'Une autre agence, un particulier, une relation.'],
     ['pause', 'Je mets ma recherche en pause', 'Le projet est reporté, sans être abandonné.'],
     /* Quatrième réponse, et pas un doublon de la pause : l'une se relance,
@@ -5938,7 +5939,7 @@ function Message({ onFermer, onEnvoi }: any) {
       <div className="corps-f">
         <p className="txt" style={{ marginTop: 0, color: 'var(--plume)' }}>Werner le reçoit tout de suite et vous rappelle.</p>
         <textarea rows={5} value={txt} onChange={e => setTxt(e.target.value)} autoFocus
-          placeholder="Ex : finalement on pourrait regarder un peu plus loin, et on peut monter si le bien est refait." />
+          placeholder="Ex : finalement on pourrait regarder un peu plus loin, et on peut monter si le local est déjà aménagé." />
         <BtnEnvoi enCours={envoi} classe="btn encre" libelle="Envoyer" style={{ marginTop: 12 }}
           onClick={async () => {
             if (!txt.trim()) return;
@@ -5986,7 +5987,7 @@ function lienGoogle(v: { date: string; heure: string | null; titre: string; adre
     action: 'TEMPLATE',
     text: 'Visite — ' + v.titre,
     dates: `${fmt(debut)}/${fmt(fin)}`,
-    details: 'Visite organisée par Werner Immobilier.\nWerner · 01 00 00 00 00',
+    details: 'Visite organisée par Werner Immobilier.\nWerner · 01 87 66 06 00',
     ctz: 'Europe/Paris',
   });
   if (v.adresse) p.set('location', v.adresse);
@@ -6002,7 +6003,7 @@ function ProchaineVisite({ v, autres, token, onBien, titre = 'Votre prochaine vi
   return (
     <div className="visite-a-venir vav2">
       {v.photo && (onBien
-        ? <button type="button" className="vav-photo" onClick={onBien} aria-label="Revoir le bien"><img src={v.photo} alt="" /></button>
+        ? <button type="button" className="vav-photo" onClick={onBien} aria-label="Revoir le local"><img src={v.photo} alt="" /></button>
         : <span className="vav-photo"><img src={v.photo} alt="" /></span>)}
       <div className="vav-corps">
         <div className="vav-t"><Ico n="calendrier" t={15} /><span>{titre}</span></div>
@@ -6013,7 +6014,7 @@ function ProchaineVisite({ v, autres, token, onBien, titre = 'Votre prochaine vi
         <div className="vav-b2">{v.titre}</div>
         {v.adresse && <div className="vav-a"><Ico n="lieu" t={13} /><span>{v.adresse}</span></div>}
         <div className="vav-act">
-          {onBien && <button type="button" className="vav-voir2" onClick={onBien}><span>Revoir le bien</span><Ico n="fleche" t={14} /></button>}
+          {onBien && <button type="button" className="vav-voir2" onClick={onBien}><span>Revoir le local</span><Ico n="fleche" t={14} /></button>}
           <span className="vav-ag-t">Ajouter à mon agenda</span>
           <span className="vav-ag-b">
             <a className="vav-ics" href={lienGoogle(v)} target="_blank" rel="noopener noreferrer">Google&nbsp;Agenda</a>
@@ -6032,22 +6033,22 @@ function ProchaineVisite({ v, autres, token, onBien, titre = 'Votre prochaine vi
 const AIDES: Record<string, { ico: string; sur: string; titre: string; texte: string; puces: string[] }> = {
   /* V3.184 : le « ? » de « Une annonce repérée ? » (texte validé par Alexandre). */
   annonce: {
-    ico: 'lien', sur: 'Une annonce repérée', titre: 'Vous avez vu un bien qui vous plaît ailleurs\u00a0?',
-    texte: 'Envoyez-le à Werner : il le regarde avec le même soin que les biens qu’il vous présente, et vous dit ce qu’il en pense.',
+    ico: 'lien', sur: 'Une annonce repérée', titre: 'Vous avez vu un local qui vous plaît ailleurs ?',
+    texte: 'Envoyez-le à Werner : il le regarde avec le même soin que les locaux qu’il vous présente, et vous dit ce qu’il en pense.',
     puces: [
-      'Collez le lien de l’annonce : SeLoger, Leboncoin, le site d’une agence… Pas de lien ? Vous avez vu une affiche en vitrine ou un panneau « À vendre » ? Prenez-le en photo, depuis votre téléphone.',
-      'Il vérifie le prix, le quartier, la copropriété, et appelle l’agence si besoin.',
-      'Vous suivez sa réponse sur votre accueil : retenue, elle rejoint vos biens ; écartée, il vous dit pourquoi.',
+      'Collez le lien de l’annonce : SeLoger, Leboncoin, le site d’une agence… Pas de lien ? Vous avez vu une affiche en vitrine ou un panneau « À louer » ou « À céder » ? Prenez-le en photo, depuis votre téléphone.',
+      'Il vérifie le loyer ou le prix, l’emplacement, le bail, et appelle l’agence si besoin.',
+      'Vous suivez sa réponse sur votre accueil : retenue, elle rejoint votre sélection ; écartée, il vous dit pourquoi.',
       'Cela ne vous engage à rien : c’est une question, comme un message.',
     ],
   },
   /* V3.145 : le « ? » du prix d'un bien (texte validé par Alexandre). */
   prix: {
-    ico: 'euro', sur: 'Le prix', titre: 'Prix demandé pour ce bien.',
+    ico: 'euro', sur: 'Le montant', titre: 'Montant demandé pour ce local.',
     texte: 'Le plus souvent, vous n’avez rien à payer en plus.',
     puces: [
-      'Sinon, nos honoraires s’ajoutent : c’est alors écrit sur le bien, avec leur montant.',
-      'Les frais de notaire sont toujours en plus.',
+      'Sinon, nos honoraires s’ajoutent : c’est alors écrit sur le local, avec leur montant.',
+      'Les frais d’acte sont toujours en plus.',
     ],
   },
   /* V3.188 : le « ? » de « + 6 000 € de nos honoraires » (Alexandre : « dans le
@@ -6055,20 +6056,20 @@ const AIDES: Record<string, { ico: string; sur: string; titre: string; texte: st
      le fait qu'on vous accompagne soit compris dans votre négociation »). */
   honoraires: {
     ico: 'euro', sur: 'Nos honoraires', titre: 'Notre accompagnement, compris dans la négociation.',
-    texte: 'Ce montant, ce sont nos honoraires : notre accompagnement, de la recherche du bien jusqu’à la signature chez le notaire.',
+    texte: 'Ce montant, ce sont nos honoraires : notre accompagnement, de la recherche du local jusqu’à la signature du bail ou de l’acte.',
     puces: [
-      'Le prix affiché est celui de l’annonce. Quand vous faites une offre, nous négocions pour que vous payiez le moins cher possible.',
+      'Le montant affiché est celui de l’annonce. Quand vous faites une offre, nous négocions pour que vous payiez le moins cher possible.',
       'Notre but : que la baisse obtenue couvre nos honoraires. Notre accompagnement est alors compris dans votre négociation.',
-      'Vous ne les payez que si vous achetez ce bien, le jour de la signature chez le notaire. Rien avant.',
-      'Les frais de notaire restent en plus.',
+      'Vous ne les payez que si l’affaire se fait, le jour de la signature. Rien avant.',
+      'Les frais d’acte restent en plus.',
     ],
   },
   decouvrir: {
     ico: 'etoile', sur: 'Vos nouveautés', titre: 'Ce que veut dire « à découvrir »',
-    texte: "C'est le nombre de biens retenus pour vous que vous n'avez pas encore ouverts.",
+    texte: "C'est le nombre de locaux retenus pour vous que vous n'avez pas encore ouverts.",
     puces: [
-      'Dès qu’un bien passe tous vos critères, il arrive ici et le compteur monte.',
-      'Il redescend à mesure que vous les ouvrez : ceux-là partent dans « Mes derniers biens consultés ».',
+      'Dès qu’un local passe tous vos critères, il arrive ici et le compteur monte.',
+      'Il redescend à mesure que vous les ouvrez : ceux-là partent dans « Mes locaux consultés ».',
       'À zéro, vous êtes à jour — rien ne vous attend, et rien ne s’est perdu.',
     ],
   },
@@ -6077,16 +6078,16 @@ const AIDES: Record<string, { ico: string; sur: string; titre: string; texte: st
     texte: "Le nombre d'annonces que nous avons lues pour vous depuis l'ouverture de votre dossier.",
     puces: [
       'Chaque jour, nous passons en revue ce qui sort sur votre secteur : portails, confrères, off-market.',
-      'Ce ne sont pas des biens qui vous correspondent : c’est tout ce que nous avons regardé pour en trouver. La grande majorité est écartée.',
+      'Ce ne sont pas des locaux qui vous correspondent : c’est tout ce que nous avons regardé pour en trouver. La grande majorité est écartée.',
       'Ce total ne fait que monter, un peu plus à chaque journée de recherche.',
     ],
   },
   retenus: {
-    ico: 'etoile', sur: 'Ce qui vous arrive', titre: 'Ce que veut dire « bien retenu pour vous »',
-    texte: "C'est le nombre de biens que nous avons jugés dignes de vous être montrés, et que vous retrouvez dans cet espace.",
+    ico: 'etoile', sur: 'Ce qui vous arrive', titre: 'Ce que veut dire « local retenu pour vous »',
+    texte: "C'est le nombre de locaux que nous avons jugés dignes de vous être montrés, et que vous retrouvez dans cet espace.",
     puces: [
-      'Un bien n’arrive ici que s’il passe tous vos critères — ou s’il en vaut vraiment la peine, et nous vous disons alors pourquoi.',
-      'C’est exactement ce que vous avez sous les yeux : ce chiffre est le nombre de biens présents dans votre espace, ni plus ni moins.',
+      'Un local n’arrive ici que s’il passe tous vos critères — ou s’il en vaut vraiment la peine, et nous vous disons alors pourquoi.',
+      'C’est exactement ce que vous avez sous les yeux : ce chiffre est le nombre de locaux présents dans votre espace, ni plus ni moins.',
       'Il monte lentement, et c’est normal : c’est le signe qu’on ne vous envoie pas tout et n’importe quoi.',
     ],
   },
@@ -6095,18 +6096,18 @@ const AIDES: Record<string, { ico: string; sur: string; titre: string; texte: st
     texte: "Une annonce écartée est une annonce que nous avons lue et qui ne méritait pas de vous être présentée.",
     puces: [
       'Le plus souvent, elle s’éloignait trop de ce que vous cherchez : le budget, la surface, le secteur, l’étage.',
-      'Mais vos critères ne sont pas une barrière. Quelques mètres carrés de moins, un étage imprévu, un prix un peu au-dessus quand il y a de la négociation à aller chercher : si le reste y est, nous vous le présentons quand même, en vous disant pourquoi.',
+      'Mais vos critères ne sont pas une barrière. Quelques mètres carrés de moins, un étage imprévu, un loyer ou un prix un peu au-dessus quand il y a de la négociation à aller chercher : si le reste y est, nous vous le présentons quand même, en vous disant pourquoi.',
       'Nous ne les gardons pas une par une : ce qui est conservé, c’est le compte, pour que vous voyiez le volume de tri fait pour vous.',
       'Si vous trouvez qu’on écarte trop, ou pas assez, dites-le : vos critères se modifient depuis « Rappel de ma recherche ».',
     ],
   },
   m2: {
     ico: 'regle', sur: 'Vos repères', titre: 'Ce que veut dire « du m² en moyenne »',
-    texte: "C'est la moyenne du prix au mètre carré des biens présents dans votre espace.",
+    texte: "C'est la moyenne du loyer ou du prix au mètre carré des locaux présents dans votre espace.",
     puces: [
-      'Elle est calculée sur vos biens à vous, pas sur une statistique de quartier : elle dit le prix du marché tel que vous le rencontrez.',
-      'Elle est recalculée à chaque bien déposé : elle ne peut pas être périmée.',
-      'Elle sert de repère pour situer un bien : nettement en dessous, il y a souvent une raison ; nettement au-dessus, elle doit se justifier.',
+      'Elle est calculée sur vos locaux à vous, pas sur une statistique de quartier : elle dit le marché tel que vous le rencontrez.',
+      'Elle est recalculée à chaque local déposé : elle ne peut pas être périmée.',
+      'Elle sert de repère pour situer un local : nettement en dessous, il y a souvent une raison ; nettement au-dessus, elle doit se justifier.',
     ],
   },
   rythme: {
@@ -6125,7 +6126,7 @@ const AIDES: Record<string, { ico: string; sur: string; titre: string; texte: st
     puces: [
       'La recherche est reprise chaque jour depuis cette date, y compris les jours où rien n’est retenu.',
       'Une recherche aboutit rarement en une semaine : compter en jours permet de voir où en est le projet, sans se raconter d’histoires.',
-      'Tout ce qui a été fait depuis reste consultable dans « Mes derniers biens consultés ».',
+      'Tout ce qui a été fait depuis reste consultable dans « Mes locaux consultés ».',
     ],
   },
 };
@@ -6198,12 +6199,12 @@ function DemandeNotif({ onOui, onNon }: { onOui: () => Promise<string>; onNon: (
     <div className="bienv">
       <div className="bienv-sceau"><Ico n="etincelle" t={28} /></div>
       <div className="bienv-sur">Rester au courant</div>
-      <h3>Vous prévenir dès qu&apos;un bien arrive&nbsp;?</h3>
-      <p>Votre conseiller dépose dans ce dossier les biens qu&apos;il retient pour vous, au fil
+      <h3>Vous prévenir dès qu&apos;un local arrive&nbsp;?</h3>
+      <p>Votre conseiller dépose dans ce dossier les locaux qu&apos;il retient pour vous, au fil
         de la semaine. Si vous le souhaitez, votre téléphone vous le signale&nbsp;— vous
         n&apos;avez plus à venir vérifier.</p>
       <div className="puces">
-        <span><span className="k"><Ico n="check" t={15} /></span><span>Uniquement quand un <b>nouveau bien</b> est déposé pour vous.</span></span>
+        <span><span className="k"><Ico n="check" t={15} /></span><span>Uniquement quand un <b>nouveau local</b> est déposé pour vous.</span></span>
         <span><span className="k"><Ico n="check" t={15} /></span><span>Jamais de publicité, jamais de relance commerciale.</span></span>
         <span><span className="k"><Ico n="check" t={15} /></span><span>Vous pouvez les couper quand vous voulez, depuis les réglages de votre téléphone.</span></span>
       </div>

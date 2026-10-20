@@ -75,20 +75,20 @@ export async function GET(req: NextRequest) {
         .eq('id', visite.bien_id).maybeSingle()
     : { data: null };
 
-  const titre = bien?.titre || `${bien?.type_bien || 'Bien'} — ${bien?.ville || ''}`;
+  const titre = bien?.titre || `${bien?.type_bien || 'Local'} — ${bien?.ville || ''}`;
   const lieu = [bien?.adresse || bien?.adresse_probable || bien?.quartier, bien?.ville]
     .filter(Boolean).join(', ');
   const details = [
     'Visite organisée par Werner Immobilier.',
     visite.contact_agence ? `Contact sur place : ${visite.contact_agence}` : '',
     visite.commentaire || '',
-    'Werner · 01 00 00 00 00',
+    'Werner · 01 87 66 06 00',
   ].filter(Boolean).join('\n');
 
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Werner Immobilier//Espace demandeur//FR',
+    'PRODID:-//Werner Immobilier//Espace client//FR',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
