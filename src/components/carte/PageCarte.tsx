@@ -112,6 +112,21 @@ const CATS_TYPES: Cat[] = [
 ];
 const TOUTES = [...CATS_CONTACTS, ...CATS_BIENS, ...CATS_NATURES, ...CATS_TYPES];
 const actifsParDefaut = () => Object.fromEntries(TOUTES.map(c => [c.k, !c.eteint]));
+/* 22 octobre 2026 — Alexandre : « rien n'est coché et je vois des chiffres sur
+   la carte, je ne comprends pas ». Ce qui est coché est exactement ce qui se
+   voit : une section de filtres (nature, type de local) ne reste jamais vide —
+   décocher sa dernière pastille les recoche toutes —, et si plus rien n'est
+   coché dans les contacts ni dans les affaires, les affaires d'office
+   reviennent (toutes sauf conclues et retirées). Avant, une section vide
+   vidait la carte sans rien dire. */
+function completer(a: Record<string, boolean>, nb: Record<string, number>): Record<string, boolean> {
+  const n = { ...a };
+  const existe = (c: Cat) => (nb[c.k] || 0) > 0;
+  for (const sec of [CATS_NATURES, CATS_TYPES]) if (sec.some(existe) && !sec.some(c => existe(c) && n[c.k])) for (const c of sec) n[c.k] = true;
+  const quoi = [...CATS_CONTACTS, ...CATS_BIENS];
+  if (quoi.some(existe) && !quoi.some(c => existe(c) && n[c.k])) for (const c of CATS_BIENS) n[c.k] = !c.eteint;
+  return n;
+}
 
 /* Les teintes du statut d'un acheteur : les mêmes que la liste des contacts. */
 const TEINTE_STATUT: Record<string, Teinte> = {
@@ -422,9 +437,11 @@ export default function PageCarte({ onNavigate, onMenu }: {
     } catch { /* sans mémoire : la carte s'ouvre sur sa dernière vue */ }
     return () => mq.removeEventListener('change', maj);
   }, []);
-  const basculerCat = (k: string) => setActifs(a => { const n = { ...a, [k]: !a[k] }; ecrire('carte.filtres', JSON.stringify(n)); return n; });
+  /* Ce que le CRM contient par filtre (nbCrm, plus bas), pour completer(). */
+  const nbRef = useRef<Record<string, number>>({});
+  const basculerCat = (k: string) => setActifs(a => { const n = completer({ ...a, [k]: !a[k] }, nbRef.current); ecrire('carte.filtres', JSON.stringify(n)); return n; });
   const toutSection = (cats: Cat[], v: boolean) => setActifs(a => {
-    const n = { ...a, ...Object.fromEntries(cats.map(c => [c.k, v])) };
+    const n = completer({ ...a, ...Object.fromEntries(cats.map(c => [c.k, v])) }, nbRef.current);
     ecrire('carte.filtres', JSON.stringify(n));
     return n;
   });
@@ -511,26 +528,8 @@ export default function PageCarte({ onNavigate, onMenu }: {
     for (const p of places) for (const k of [...p.cats, ...(p.filtres || [])]) n[k] = (n[k] || 0) + 1;
     return n;
   }, [places]);
-  /* 22 octobre 2026 — Alexandre : « même avec Affaires en cours, rien ne
-     s'affiche ; on est obligé d'appuyer sur Local commercial ou Bureaux ».
-     Une affaire devait avoir sa nature ET son type cochés : « Aucun » sur
-     les types vidait la carte. Désormais, une section de filtres (nature,
-     type de local) où rien n'est coché ne filtre pas : tout y passe, et la
-     section le dit. Dès qu'une puce est cochée, seules les cochées passent. */
-  /* Même chose pour ce qu'on montre (Alexandre, le soir même : « j'ai Local
-     commercial, et rien ne s'affiche ») : « Affaires en cours » était décoché,
-     et rien d'autre ne l'était. Quand rien n'est coché ni dans les contacts
-     ni dans les affaires, la carte montre ce qu'elle montre d'office (tout,
-     sauf les affaires conclues et retirées), et le dit. Un contact coché seul
-     garde son sens : les contacts, sans les affaires. */
-  const libre = useMemo(() => {
-    const vide = (cats: Cat[]) => !cats.some(c => nbCat[c.k] && actifs[c.k]);
-    return { n: vide(CATS_NATURES), t: vide(CATS_TYPES), quoi: vide(CATS_CONTACTS) && vide(CATS_BIENS) };
-  }, [nbCat, actifs]);
-  const montre = useCallback((k: string) => (libre.quoi ? !TOUTES.find(c => c.k === k)?.eteint : !!actifs[k]), [libre, actifs]);
-  const visibles = useMemo(() => places.filter(p => p.cats.some(montre)
-    && (p.filtres || []).every(k => (k.startsWith('n:') && libre.n) || (k.startsWith('t:') && libre.t) || actifs[k] !== false)
-    && (!q || normer(`${p.titre} ${p.sous} ${p.adresse} ${p.etiquette}`).includes(q))), [places, actifs, q, libre, montre]);
+  const visibles = useMemo(() => places.filter(p => p.cats.some(k => actifs[k]) && (p.filtres || []).every(k => actifs[k] !== false)
+    && (!q || normer(`${p.titre} ${p.sous} ${p.adresse} ${p.etiquette}`).includes(q))), [places, actifs, q]);
   /* Ce que le CRM contient, placé ou non (V3.28) : un filtre s'affiche dès
      que sa catégorie existe, même si aucun n'a d'adresse — il montre alors
      « 0 », en pâle, et un appui dit pourquoi. Avant, les mandats sans
@@ -541,6 +540,18 @@ export default function PageCarte({ onNavigate, onMenu }: {
     for (const x of sansAdresse) for (const k of x.cats) n[k] = (n[k] || 0) + 1;
     return n;
   }, [points, sansAdresse]);
+  nbRef.current = nbCrm;
+  /* Les filtres gardés d'une visite d'avant (ou d'avant cette règle) : une
+     section vide se recoche, comme au clic. */
+  useEffect(() => {
+    if (!Object.keys(nbCrm).length) return;
+    setActifs(a => {
+      const n = completer(a, nbCrm);
+      if (Object.keys(n).every(k => n[k] === a[k])) return a;
+      ecrire('carte.filtres', JSON.stringify(n));
+      return n;
+    });
+  }, [nbCrm]);
 
   /* ── La carte ── */
   const visiblesRef = useRef(visibles);
@@ -999,30 +1010,26 @@ export default function PageCarte({ onNavigate, onMenu }: {
                   </div>}
                   {CATS_BIENS.some(c => nbCrm[c.k]) && <div className={s.section}>
                     <div className={s.sectionTete}><span>Affaires</span>
-                      <button type="button" onClick={() => toutSection(CATS_BIENS, !CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]))}>
-                        {CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucune' : 'Toutes'}
-                      </button>
+                      {/* « Aucune » seulement quand des contacts restent cochés : sans eux, la carte se viderait (completer). */}
+                      {(!CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]) || CATS_CONTACTS.some(c => nbCat[c.k] && actifs[c.k])) && (
+                        <button type="button" onClick={() => toutSection(CATS_BIENS, !CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]))}>
+                          {CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucune' : 'Toutes'}
+                        </button>
+                      )}
                     </div>
                     <div className={s.puces}>{puces(CATS_BIENS)}</div>
-                    {libre.quoi && <p className={s.sectionLibre}>{'Aucune cochée : toutes celles en cours s’affichent.'}</p>}
                   </div>}
                   {CATS_NATURES.some(c => nbCrm[c.k]) && <div className={s.section}>
                     <div className={s.sectionTete}><span>Nature de l’affaire</span>
-                      <button type="button" onClick={() => toutSection(CATS_NATURES, !CATS_NATURES.every(c => !nbCat[c.k] || actifs[c.k]))}>
-                        {CATS_NATURES.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucune' : 'Toutes'}
-                      </button>
+                      {!CATS_NATURES.every(c => !nbCat[c.k] || actifs[c.k]) && <button type="button" onClick={() => toutSection(CATS_NATURES, true)}>Toutes</button>}
                     </div>
                     <div className={s.puces}>{puces(CATS_NATURES)}</div>
-                    {libre.n && <p className={s.sectionLibre}>{'Aucune cochée : toutes s’affichent.'}</p>}
                   </div>}
                   {CATS_TYPES.some(c => nbCrm[c.k]) && <div className={s.section}>
                     <div className={s.sectionTete}><span>Type de local</span>
-                      <button type="button" onClick={() => toutSection(CATS_TYPES, !CATS_TYPES.every(c => !nbCat[c.k] || actifs[c.k]))}>
-                        {CATS_TYPES.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucun' : 'Tous'}
-                      </button>
+                      {!CATS_TYPES.every(c => !nbCat[c.k] || actifs[c.k]) && <button type="button" onClick={() => toutSection(CATS_TYPES, true)}>Tous</button>}
                     </div>
                     <div className={s.puces}>{puces(CATS_TYPES)}</div>
-                    {libre.t && <p className={s.sectionLibre}>{'Aucun coché : tous s’affichent.'}</p>}
                   </div>}
                   {!places.length && !progres && <p className={s.vide}>Aucune adresse à placer pour l’instant.</p>}
                 </>
@@ -1136,16 +1143,13 @@ export default function PageCarte({ onNavigate, onMenu }: {
                     <button type="button" onClick={() => toutSection(cats, !tous)}>{pliTel === 'biens' ? (tous ? 'Aucune' : 'Toutes') : tous ? 'Aucun' : 'Tous'}</button>
                   </div>
                   <div className={s.puces}>{puces(cats)}</div>
-                  {libre.quoi && <p className={s.sectionLibre}>{pliTel === 'biens' ? 'Aucune cochée : toutes celles en cours s’affichent.' : 'Aucun coché : tout ce qui est en cours s’affiche.'}</p>}
                   {pliTel === 'biens' && CATS_NATURES.some(c => nbCrm[c.k]) && <>
                     <div className={s.sectionTete}><span>Nature</span></div>
                     <div className={s.puces}>{puces(CATS_NATURES)}</div>
-                    {libre.n && <p className={s.sectionLibre}>{'Aucune cochée : toutes s’affichent.'}</p>}
                   </>}
                   {pliTel === 'biens' && CATS_TYPES.some(c => nbCrm[c.k]) && <>
                     <div className={s.sectionTete}><span>Type de local</span></div>
                     <div className={s.puces}>{puces(CATS_TYPES)}</div>
-                    {libre.t && <p className={s.sectionLibre}>{'Aucun coché : tous s’affichent.'}</p>}
                   </>}
                 </div>
               );
