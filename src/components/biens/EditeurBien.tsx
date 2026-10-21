@@ -11,6 +11,8 @@ import { ChampBien, habitable, manquesBien, proprioOuvert } from './ChampsBien';
 import { PICTO_BLOC, PICTO_ETAPE, Picto, aUnDessin, teinte } from './Pictos';
 import { ajouterSuivi, bienVide, biensSemblables, enregistrerBien, supprimerBien, type BienSemblable } from './outils';
 import s from '@/components/documents/Documents.module.css';
+import RappelSecteur from '@/components/shared/RappelSecteur';
+import { QUARTIERS } from '@/lib/secteurs';
 import b from './Biens.module.css';
 
 /* ═══ L'éditeur d'un bien ═════════════════════════════════════════════════
@@ -446,6 +448,14 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
   /* La ligne la plus fraîche, pour la fermeture (V3.48) : l'état `row` n'est
      pas encore à jour juste après un enregistrement. */
   const rowRef = useRef(row);
+  /* V3.226 — Le rappel du quartier (Alexandre : « avant de valider le bien,
+     un petit message : n'oubliez pas d'indiquer le secteur, c'est important
+     pour le rapprochement »). Une fois par ouverture, jamais bloquant :
+     seulement pour un bien neuf ou modifié ici, dont la ville est dite et le
+     quartier pas. */
+  const [rappel, setRappel] = useState<null | 'terminer' | 'fermer'>(null);
+  const rappelVu = useRef(false);
+  const modifie = useRef(false);
 
   const enregistrer = useCallback(async (): Promise<boolean> => {
     if (enVol.current) await enVol.current;
@@ -491,6 +501,7 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
       return n;
     });
     aEnregistrer.current = true;
+    modifie.current = true;
     setEnreg('attente');
     if (minuterie.current) clearTimeout(minuterie.current);
     minuterie.current = setTimeout(() => { enregistrer(); }, 800);
@@ -546,11 +557,18 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
     } catch (e) { setEnreg({ erreur: `L’estimation est enregistrée, mais pas sa ligne d’historique : ${(e as Error).message}` }); }
   }
 
+  /* V3.226 : la ville est dite, pas le quartier — le rappel, une fois. */
+  const quartierManque = () => {
+    const x = dernier.current;
+    return !rappelVu.current && (nouveau || modifie.current) && rowRef.current.etape !== 'annonce_type'
+      && !!String(x.ville || '').trim() && !String(x.quartier || '').trim();
+  };
   async function fermer() {
     const ok = await vider();
     if (nouveau && bienVide(dernier.current)) {
       try { await supprimerBien({ ...row, donnees: dernier.current }); onFermer(null); return; } catch { /* on le garde */ }
     }
+    if (ok && quartierManque()) { rappelVu.current = true; setRappel('fermer'); return; }
     if (!ok && !confirm('La dernière modification n’a pas pu être enregistrée.\n\nFermer quand même ?')) return;
     if (ok) await noterEstimation();
     onFermer(rowRef.current);
@@ -561,6 +579,7 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
     const ok = await vider();
     if (!ok) return;
     if (nouveau && bienVide(dernier.current)) { await fermer(); return; }
+    if (quartierManque()) { rappelVu.current = true; setRappel('terminer'); return; }
     await noterEstimation();
     onFermer(rowRef.current);
   }
@@ -732,6 +751,42 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
           ? <button type="button" className={`${s.btn} ${s.btnNavy}`} onClick={() => aller(cur + 1)}>{`${ETAPES[cur + 1].court} →`}</button>
           : <button type="button" className={`${s.btn} ${s.btnOr}`} onClick={terminer}>{nouveau ? 'Terminer' : 'Fermer'}</button>}
       </div>
+
+      {/* V3.226 — Le rappel du quartier, avant de terminer. */}
+      {rappel && (() => {
+        const cp = String(d.cp || '').replace(/\s/g, '');
+        const connus = (QUARTIERS[cp === '75116' ? '75016' : cp]?.quartiers || []).slice(0, 8);
+        const continuer = () => { const r = rappel; setRappel(null); if (r === 'fermer') void fermer(); else void terminer(); };
+        const allerAuQuartier = () => {
+          setRappel(null);
+          allerA('bien');
+          setTimeout(() => {
+            const el = formRef.current?.querySelector<HTMLElement>('[data-champ="quartier"]');
+            if (!el) return;
+            el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            const boite = getComputedStyle(el).display === 'contents' ? (el.firstElementChild as HTMLElement | null) : el;
+            boite?.setAttribute('data-eclaire-champ', 'oui');
+            setTimeout(() => boite?.removeAttribute('data-eclaire-champ'), 2200);
+            el.querySelector<HTMLInputElement>('input, textarea')?.focus({ preventScroll: true });
+          }, 380);
+        };
+        return (
+          <RappelSecteur
+            titre="Le quartier n’est pas indiqué"
+            texte={`Indique le quartier de l’affaire : le rapprochement sera plus précis avec tes demandeurs qui ne cherchent que certains quartiers. Sans lui, seule la ville est comparée.`.replace(' :', '\u00a0:')}
+            choix={connus}
+            onChoisir={q => {
+              /* Le quartier choisi, puis on termine comme demandé (le temps
+                 que la saisie soit prise en compte). */
+              maj('quartier', q);
+              setRappel(null);
+              setTimeout(continuer, 60);
+            }}
+            principal="Écrire le quartier" onPrincipal={allerAuQuartier}
+            secondaire={rappel === 'terminer' && nouveau ? 'Terminer sans' : 'Fermer sans'} onSecondaire={continuer}
+            onFermer={() => setRappel(null)} />
+        );
+      })()}
     </div>
   );
 }

@@ -202,7 +202,7 @@ function ExplicationAcheteurs({ liste, bons, partiels, avant, bien, onFermer, on
   const secteur = !bc ? null
     : !ville ? { ok: false, t: 'La ville de cette affaire n’est pas renseignée : le secteur n’est pas comparé du tout. Remplis-la dans sa fiche.' }
       : !quartier ? { ok: false, t: `La ville est comparée (${ville}), pas le quartier : il n’est pas renseigné. Un demandeur qui veut un autre quartier de ${ville} est compté quand même. Remplis « Quartier » dans la fiche de l’affaire.` }
-        : { ok: true, t: `Ville et quartier comparés (${ville}, ${quartier}). Un demandeur qui a choisi d’autres quartiers de ${ville} ne gagne que la moitié des points du secteur.` };
+        : { ok: true, t: `Ville et quartier comparés (${ville}, ${quartier}). Un demandeur qui n’a choisi que d’autres quartiers de ${ville} passe au mieux « en partie » : à toi de juger.` };
 
   const fen = (
     <div className={a.voile} onMouseDown={e => { if (e.target === e.currentTarget) onFermer(); }}>
