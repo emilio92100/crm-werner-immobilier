@@ -517,13 +517,20 @@ export default function PageCarte({ onNavigate, onMenu }: {
      les types vidait la carte. Désormais, une section de filtres (nature,
      type de local) où rien n'est coché ne filtre pas : tout y passe, et la
      section le dit. Dès qu'une puce est cochée, seules les cochées passent. */
+  /* Même chose pour ce qu'on montre (Alexandre, le soir même : « j'ai Local
+     commercial, et rien ne s'affiche ») : « Affaires en cours » était décoché,
+     et rien d'autre ne l'était. Quand rien n'est coché ni dans les contacts
+     ni dans les affaires, la carte montre ce qu'elle montre d'office (tout,
+     sauf les affaires conclues et retirées), et le dit. Un contact coché seul
+     garde son sens : les contacts, sans les affaires. */
   const libre = useMemo(() => {
     const vide = (cats: Cat[]) => !cats.some(c => nbCat[c.k] && actifs[c.k]);
-    return { n: vide(CATS_NATURES), t: vide(CATS_TYPES) };
+    return { n: vide(CATS_NATURES), t: vide(CATS_TYPES), quoi: vide(CATS_CONTACTS) && vide(CATS_BIENS) };
   }, [nbCat, actifs]);
-  const visibles = useMemo(() => places.filter(p => p.cats.some(k => actifs[k])
+  const montre = useCallback((k: string) => (libre.quoi ? !TOUTES.find(c => c.k === k)?.eteint : !!actifs[k]), [libre, actifs]);
+  const visibles = useMemo(() => places.filter(p => p.cats.some(montre)
     && (p.filtres || []).every(k => (k.startsWith('n:') && libre.n) || (k.startsWith('t:') && libre.t) || actifs[k] !== false)
-    && (!q || normer(`${p.titre} ${p.sous} ${p.adresse} ${p.etiquette}`).includes(q))), [places, actifs, q, libre]);
+    && (!q || normer(`${p.titre} ${p.sous} ${p.adresse} ${p.etiquette}`).includes(q))), [places, actifs, q, libre, montre]);
   /* Ce que le CRM contient, placé ou non (V3.28) : un filtre s'affiche dès
      que sa catégorie existe, même si aucun n'a d'adresse — il montre alors
      « 0 », en pâle, et un appui dit pourquoi. Avant, les mandats sans
@@ -997,6 +1004,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
                       </button>
                     </div>
                     <div className={s.puces}>{puces(CATS_BIENS)}</div>
+                    {libre.quoi && <p className={s.sectionLibre}>{'Aucune cochée : toutes celles en cours s’affichent.'}</p>}
                   </div>}
                   {CATS_NATURES.some(c => nbCrm[c.k]) && <div className={s.section}>
                     <div className={s.sectionTete}><span>Nature de l’affaire</span>
@@ -1128,6 +1136,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
                     <button type="button" onClick={() => toutSection(cats, !tous)}>{pliTel === 'biens' ? (tous ? 'Aucune' : 'Toutes') : tous ? 'Aucun' : 'Tous'}</button>
                   </div>
                   <div className={s.puces}>{puces(cats)}</div>
+                  {libre.quoi && <p className={s.sectionLibre}>{pliTel === 'biens' ? 'Aucune cochée : toutes celles en cours s’affichent.' : 'Aucun coché : tout ce qui est en cours s’affiche.'}</p>}
                   {pliTel === 'biens' && CATS_NATURES.some(c => nbCrm[c.k]) && <>
                     <div className={s.sectionTete}><span>Nature</span></div>
                     <div className={s.puces}>{puces(CATS_NATURES)}</div>
