@@ -257,8 +257,9 @@ export function presenter(d: DemandeSite): Presentation {
       extraction: pris('extraction'), vitrine: pris('vitrine'), activite: pris('activite'), etage: pris('niveau', 'etage'),
       loyer: pris('loyer actuel', 'loyer'), finBail: pris('fin du bail', 'echeance du bail'), bail: pris('bail'),
       prix: pris('prix souhaite'), adresse: pris('adresse'), ville: pris('ville'), delai: pris('delai'),
+      loyerVoulu: pris('loyer souhaite'), murs: pris('murs'),
     };
-    ajouter('Son projet', 'calendrier', [...garder('Projet', r.projet), ...garder('Vous êtes', r.qui), ...garder('Délai', delai(d.timeline || r.delai)), ...garder('Prix souhaité', montant(r.prix))]);
+    ajouter('Son projet', 'calendrier', [...garder('Projet', r.projet), ...garder('Vous êtes', r.qui), ...garder('Délai', delai(d.timeline || r.delai)), ...garder('Loyer souhaité', r.loyerVoulu), ...garder('Prix souhaité', montant(r.prix)), ...garder('Murs', r.murs)]);
     ajouter('Le local', 'vitrine', [
       ...garder('Type', typeBien(d.property_type || r.type)),
       ...garder('Surface', surface(d.desired_surface || r.surface)),
