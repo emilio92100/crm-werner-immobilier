@@ -38,7 +38,7 @@ export type AnnonceSite = {
   montantLib: string;      // « Loyer annuel HT HC », « Prix du droit au bail »…
   montantTexte: string;    // « 48 000 € HT HC / an »
   loyerM2: string;
-  /* Loué au poste : `montant` est le loyer annuel d’UN poste ; combien le bureau en compte. */
+  /* Loué au poste : `montant` est le loyer annuel d’UN poste ; `nbPostes`, les postes disponibles. */
   parPoste: boolean; nbPostes: number | null;
   loyerBail: number | null; // le loyer du bail en cours (cession, murs occupés)
   statut: 'disponible' | 'sous_offre' | 'en_signature';

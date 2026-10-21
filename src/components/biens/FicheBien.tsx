@@ -274,7 +274,7 @@ function Faits({ d, vide }: { d: Donnees; vide?: ReactNode }) {
   if (nat) items.push({ ic: NATURES.find(x => x.v === nat)?.ic || 'agence', ton: 'or', v: natureCourte(nat), l: nomLocal(d.typeBien) || 'Local' });
   if (n('surface')) items.push({ ic: 'regle', ton: 'or', v: m2(n('surface') as number), l: d.divisible === 'oui' ? (n('surfDivMin') ? `Divisible dès ${m2(n('surfDivMin') as number)}` : 'Divisible') : 'Surface totale' });
   else if (n('terrain')) items.push({ ic: 'terrain', ton: 'vert', v: m2(n('terrain') as number), l: 'Terrain' });
-  if (p.parPoste && p.nbPostes) items.push({ ic: 'groupe', ton: 'bleu', v: `${p.nbPostes} postes`, l: 'Loué au poste' });
+  if (p.parPoste && p.nbPostes) items.push({ ic: 'groupe', ton: 'bleu', v: `${p.nbPostes} poste${p.nbPostes > 1 ? 's' : ''}`, l: p.nbPostes > 1 ? 'Disponibles, au poste' : 'Disponible, au poste' });
   else if (p.loyerAn && n('surface')) items.push({ ic: 'euro', ton: 'bleu', v: loyerM2(p.loyerAn, n('surface')).replace(' HT HC / m² / an', ''), l: 'HT HC le m² par an' });
   if (n('etage') !== null && !['terrain', 'immeuble', 'entrepot'].includes(String(d.typeBien || ''))) items.push({ ic: asc ? 'ascenseur' : 'escalier', ton: 'ardoise', v: etageTexte(n('etage'), n('etages')).replace(' étage', '').replace('Rez-de-chaussée', 'RDC'), l: n('etage') === 0 ? (n('surfSousSol') ? 'Avec sous-sol' : 'Rez-de-chaussée') : asc ? 'Avec ascenseur' : 'Sans ascenseur' });
   if (estCommerce(d) && n('vitrine')) items.push({ ic: 'vitrine', ton: 'violet', v: `${String(n('vitrine')).replace('.', ',')} m`, l: EMPLACEMENTS.find(x => x.v === d.emplacement)?.l ? `Vitrine · ${EMPLACEMENTS.find(x => x.v === d.emplacement)?.l}` : 'De vitrine' });

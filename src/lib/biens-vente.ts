@@ -731,9 +731,10 @@ export const ETAPES_BIEN: EtapeBien[] = [
       { t: 'titre', cle: 't-prix', lib: 'Le prix', ic: 'etiquette' },
       /* 21 octobre 2026 : un bureau équipé, un coworking se louent au poste. */
       { t: 'choix', cle: 'parPoste', lib: 'Il se loue', ic: 'cle', si: estLocation, options: [
-        { v: 'non', l: 'Le local entier', ic: 'immeuble' }, { v: 'oui', l: 'Au poste de travail', aide: 'Bureau équipé, coworking', ic: 'bureau' },
-      ] },
-      { t: 'nombre', cle: 'nbPostes', lib: 'Nombre de postes dans le bureau', ic: 'groupe', si: auPoste },
+        { v: 'non', l: 'Le local entier', aide: 'Un seul preneur, un bail pour tout le local', ic: 'immeuble' }, { v: 'oui', l: 'Au poste de travail', aide: 'Bureau équipé, coworking : chaque poste a son contrat', ic: 'bureau' },
+      ], aide: 'Au poste, l’annonce et le site affichent le prix d’un poste par mois (« 1 650 € HT / poste / mois ») et le nombre de postes disponibles.' },
+      { t: 'nombre', cle: 'nbPostes', lib: 'Postes disponibles', ic: 'groupe', si: auPoste,
+        aide: 'Ceux qu’un client peut prendre aujourd’hui. Un bureau de 4 postes dont 2 sont déjà loués : écris 2. À changer quand un poste se loue.' },
       { t: 'eurosAn', cle: 'prix', lib: 'Prix d’un poste', ic: 'etiquette', si: auPoste, aide: 'Tape le prix d’un poste par mois, hors taxes : l’année se calcule. Ce qui est compris (internet, ménage, salle de réunion) va dans le texte de l’annonce.' },
       { t: 'euros', cle: 'prix', lib: 'Loyer annuel HT HC', ic: 'etiquette', unite: '€/an', si: d => estLocation(d) && !auPoste(d), aide: 'Hors taxes et hors charges. À l’estimation : la valeur locative conseillée.' },
       { t: 'euros', cle: 'prix', lib: 'Prix du droit au bail', ic: 'etiquette', si: estCessionBail, aide: 'Ce que le preneur paie au locataire sortant. Le loyer du bail est dans « Le bail ».' },
@@ -1152,7 +1153,7 @@ export function mentionsAnnonce(d: Donnees): string {
   if (a.prix) {
     if (estLocation(d)) {
       const l = [auPoste(d)
-        ? `Prix d’un poste : ${fmt(a.prix / 12)} HT par mois, soit ${fmt(a.prix)} HT par an${nbPostesDe(d) ? ` (${nbPostesDe(d)} postes dans le bureau)` : ''}${d.tvaLoyer === 'oui' ? ', TVA en sus' : ''}.`
+        ? `Prix d’un poste : ${fmt(a.prix / 12)} HT par mois, soit ${fmt(a.prix)} HT par an${nbPostesDe(d) ? ` (${nbPostesDe(d)} poste${(nbPostesDe(d) || 0) > 1 ? 's' : ''} disponible${(nbPostesDe(d) || 0) > 1 ? 's' : ''})` : ''}${d.tvaLoyer === 'oui' ? ', TVA en sus' : ''}.`
         : `Loyer : ${fmt(a.prix)} HT HC par an${nb(d, 'surface') ? ` (${loyerM2(a.prix, nb(d, 'surface'))})` : ''}${d.tvaLoyer === 'oui' ? ', TVA en sus' : ''}.`];
       if (nb(d, 'chargesAn')) l.push(`Charges : ${fmt(nb(d, 'chargesAn') as number)} HT par an${d.chargesMode === 'forfait' ? ', au forfait' : ', par provision'}.`);
       if (nb(d, 'taxeFonciere')) l.push(`Taxe foncière : ${fmt(nb(d, 'taxeFonciere') as number)} par an${d.tfRefacturee === 'oui' ? ', remboursée par le preneur' : d.tfRefacturee === 'non' ? ', à la charge du bailleur' : ''}.`);
