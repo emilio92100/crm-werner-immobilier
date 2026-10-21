@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useRangees } from '@/components/shared/colonnes';
 import { signalerEchec, verifie } from '@/lib/ecritures';
 import { toutLire } from '@/lib/registre';
 import { supabase, genererReference, addJournal } from '@/lib/supabase';
@@ -710,6 +711,9 @@ export default function Clients({ onNavigate, fenetre }: {
      choix se retient d'un écran à l'autre, comme dans la fiche. */
   const [modeCrit, setModeCrit] = useState<ModeCrit>('tout');
   const [etapeCrit, setEtapeCrit] = useState(0);
+  /* 22 octobre 2026 : les rangées de pastilles sans pastille seule en bas (colonnes.ts). */
+  const defilRef = useRef<HTMLDivElement>(null);
+  useRangees(defilRef, `${showModal}-${step}-${etapeCrit}`);
   const [sensCrit, setSensCrit] = useState<1 | -1>(1);
   const [adrSug, setAdrSug] = useState<any[]>([]);
   /* Le 2e téléphone et le 2e e-mail : cachés tant qu'on ne les demande pas. */
@@ -1626,7 +1630,7 @@ export default function Clients({ onNavigate, fenetre }: {
               </div>
 
               {/* ── Corps ── */}
-              <div className="nc-defil" style={{ padding: '20px 26px', overflowY: 'auto', flex: 1 }}>
+              <div ref={defilRef} className="nc-defil" style={{ padding: '20px 26px', overflowY: 'auto', flex: 1 }}>
                 {error && <div className={styles.errorBox} style={{ marginBottom: 16 }}>{error}</div>}
 
                 <div key={`${step}-${surCriteres ? iC : 'x'}`} className="nc-corps">

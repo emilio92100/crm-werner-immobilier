@@ -22,6 +22,7 @@ import { Croix, Ic } from '@/components/documents/ApercuActe';
 import { Picto, pictoChoix } from './Pictos';
 import { creerFicheProprio, deposerPhoto, deposerPiece, doublonsContact, marquerVendeur, nomClient, ouvrirPiece, retirerPhoto, retirerPiece, type ClientMini } from './outils';
 import ChoixQuartiers from '@/components/shared/ChoixQuartiers';
+import { coupable, useColonnes } from '@/components/shared/colonnes';
 import { communeDeVille, communeDuCp, memeNom, titreQuartiers } from '@/lib/quartiers';
 import s from '@/components/documents/Documents.module.css';
 import b from './Biens.module.css';
@@ -191,6 +192,8 @@ function ChampPieces({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
   const [focus, setFocus] = useState<string | null>(null);
   const defaut = d.typeBien === 'local' || d.typeBien === 'restaurant' ? 'Rez-de-chaussée' : 'Niveau principal';
   const [niveauAjout, setNiveauAjout] = useState<string>(() => (l.length ? l[l.length - 1].niveau || defaut : defaut));
+  /* Les tuiles « Ajouter un espace » (et « Autre espace… ») sans vignette seule en bas. */
+  const grillePieces = useColonnes(PIECES_TUILES.length + 1, { min: 104, serre: 96, minTel: 96 });
   const ecrire = (x: Piece[]) => maj('detailPieces', x);
   const ajouter = (nom = '') => {
     const p: Piece = { id: nouvelId(), niveau: niveauAjout, nom: nom ? nomLibre(l, nom) : '', surface: null, expo: '', note: '' };
@@ -245,10 +248,10 @@ function ChampPieces({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
               </select>
             </label>
           </div>
-          <div className={b.tuilesP}>
+          <div ref={grillePieces.ref} style={grillePieces.style} data-cols={grillePieces.cols ?? undefined} className={b.tuilesP}>
             {PIECES_TUILES.map(x => (
               <button key={x} type="button" className={b.tuileP} onClick={() => ajouter(x)}>
-                <span><Ic n={pictoPiece(x)} t={20} /></span>{x}
+                <span><Ic n={pictoPiece(x)} t={20} /></span>{coupable(x)}
               </button>
             ))}
             <button type="button" className={`${b.tuileP} ${b.tuileAutre}`} onClick={() => ajouter()}>
@@ -959,6 +962,10 @@ function ChampJournal({ c, v, onChange, off }: { c: Extract<ChampBien, { t: 'jou
 type ChampChoix = Extract<ChampBien, { t: 'choix' | 'cases' }>;
 function ChampVignettes({ c, d, maj, off }: { c: ChampChoix; d: Donnees; maj: Maj; off: boolean }) {
   if (c.si && !c.si(d)) return null;
+  return <Vignettes c={c} d={d} maj={maj} off={off} />;
+}
+/* Le rendu, à part : le crochet des colonnes ne s'appelle que pour un champ affiché. */
+function Vignettes({ c, d, maj, off }: { c: ChampChoix; d: Donnees; maj: Maj; off: boolean }) {
   const v = d[c.cle];
   const multi = c.t === 'cases';
   const l = Array.isArray(v) ? (v as unknown[]).filter((x): x is string => typeof x === 'string') : [];
@@ -966,6 +973,8 @@ function ChampVignettes({ c, d, maj, off }: { c: ChampChoix; d: Donnees; maj: Ma
   const dessins = c.options.map(o => pictoChoix(c.cle, o.v));
   const dessine = dessins.every(Boolean);
   const avecAide = c.options.some(o => o.aide);
+  /* Les mêmes largeurs que le CSS (.vgn, .vgnLarge), un peu serrées si tout tient alors sur une ligne. */
+  const grille = useColonnes(c.options.length, avecAide ? { min: 128, serre: 112, minTel: 150 } : { min: 104, serre: 96, minTel: 96 });
   const vide = multi ? !l.length : (v === undefined || v === null || v === '');
   const manque = !!c.requis && vide;
   const choisir = (x: string) => (multi ? maj(c.cle, estOn(x) ? l.filter(y => y !== x) : [...l, x]) : maj(c.cle, x));
@@ -976,7 +985,7 @@ function ChampVignettes({ c, d, maj, off }: { c: ChampChoix; d: Donnees; maj: Ma
         {manque && <span className={b.vqManque}>À compléter</span>}
         {multi && <span className={b.vqPlus}>plusieurs choix possibles</span>}
       </div>
-      <div className={`${b.vgn} ${avecAide ? b.vgnLarge : ''}`} role={multi ? 'group' : 'radiogroup'} aria-label={c.lib}>
+      <div ref={grille.ref} style={grille.style} data-cols={grille.cols ?? undefined} className={`${b.vgn} ${avecAide ? b.vgnLarge : ''}`} role={multi ? 'group' : 'radiogroup'} aria-label={c.lib}>
         {c.options.map((o, i) => {
           const on = estOn(o.v);
           const n = dessins[i];
@@ -984,7 +993,7 @@ function ChampVignettes({ c, d, maj, off }: { c: ChampChoix; d: Donnees; maj: Ma
             <button key={o.v} type="button" role={multi ? 'checkbox' : 'radio'} aria-checked={on} disabled={off}
               className={`${b.vg} ${on ? b.vgOn : ''} ${manque ? b.vgManque : ''}`} title={!avecAide ? o.aide : undefined} onClick={() => choisir(o.v)}>
               {dessine && n ? <Picto n={n} t={40} className={b.vgPicto} /> : o.ic ? <span className={b.vgTrait}><Ic n={o.ic} t={20} /></span> : null}
-              <span className={b.vgL}>{o.l}</span>
+              <span className={b.vgL}>{coupable(o.l)}</span>
               {avecAide && o.aide && <span className={b.vgAide}>{o.aide}</span>}
               {on && <span className={b.vgCoche} aria-hidden="true"><Ic n="check" t={11} e={3.2} /></span>}
             </button>

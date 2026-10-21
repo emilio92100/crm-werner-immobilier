@@ -797,6 +797,9 @@ input.pcNote { flex: 1 1 200px; min-width: 0; width: auto; }
   .pcIc { width: 40px; height: 40px; border-radius: 12px; }
   .pcOutils { justify-content: flex-end; }
   .tuilesP { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  /* « Autre espace… » seul en bas : un bouton sur toute la ligne (22 octobre 2026). */
+  .tuilesP:not([data-cols]) > .tuileAutre:last-child:nth-child(3n+1) { grid-column: 1 / -1; flex-direction: row; justify-content: center; padding: 9px 10px; }
+  .tuilesP:not([data-cols]) > .tuileAutre:last-child:nth-child(3n+1) > span { width: 30px; height: 30px; border-radius: 10px; }
   .tuileP { padding: 10px 4px 9px; font-size: 12px; }
   .sect { padding: 14px 13px 16px; border-radius: 15px; }
   .anMois { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
@@ -1250,6 +1253,10 @@ button.pillRouge svg { color: white !important; }
 .lieBloc { display: flex; flex-direction: column; gap: 8px; }
 .lieActs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .lieAide { flex: 1 1 260px; font-size: 12px; line-height: 1.45; color: #94a3b8; }
+/* 22 octobre 2026 (Alexandre : « Continuer sans propriétaire » ouvrait un grand
+   encadré blanc) : dans la question, qui empile en colonne, la base de 260 px
+   devenait une HAUTEUR. Là, la phrase prend juste sa place. */
+.question > .lieAide { flex: none; }
 .lieNote { font-size: 12.5px; color: #8b3e0b; padding: 7px 11px; border-radius: 10px; background: #fbf0e9; }
 .npCivilite { display: flex; gap: 6px; }
 .npCivilite button { height: 32px; padding: 0 14px; border-radius: 99px; border: 1px solid #eaeae9; background: #fff; color: #475569; font: 700 12.5px 'DM Sans', sans-serif; cursor: pointer; }
@@ -1885,7 +1892,8 @@ nav.sousOnglets > span[aria-hidden="true"] { border-radius: 13px; }
 .vg:hover:not(:disabled) .vgPicto { transform: translateY(-1px) scale(1.06); }
 .vgTrait { width: 40px; height: 40px; border-radius: 12px; background: #f5f5f5; color: #2e3034; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .vgOn .vgTrait { background: #fbd6ba; color: #a85515; }
-.vgL { max-width: 100%; overflow-wrap: break-word; }
+/* 22 octobre 2026 : un mot trop long se coupe à la française (« Recomman-dation »), plus « Recommandatio / n ». */
+.vgL { max-width: 100%; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
 .vgAide { font-size: 11.5px; font-weight: 500; color: #6b7686; }
 .vgCoche { position: absolute; top: 7px; right: 7px; width: 20px; height: 20px; border-radius: 50%; background: #f08c42; color: #25272b; display: inline-flex; align-items: center; justify-content: center; }
 @media (prefers-reduced-motion: reduce) { .vgPicto, .sommChev, .sommJauge i { transition: none; } .sommPanneau { animation: none; } }
@@ -1944,6 +1952,11 @@ nav.sousOnglets > span[aria-hidden="true"] { border-radius: 13px; }
   .sectTete b { font-size: 16px; }
   .vgn { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .vgnLarge { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* 22 octobre 2026 : une vignette seule sur la dernière ligne se met au
+     milieu (3 colonnes), ou au milieu de toute la ligne (2 colonnes), au lieu
+     de rester collée à gauche. */
+  .vgn:not(.vgnLarge):not([data-cols]) > :last-child:nth-child(3n+1) { grid-column: 2; }
+  .vgnLarge:not([data-cols]) > :last-child:nth-child(2n+1) { grid-column: 1 / -1; justify-self: center; width: calc(50% - 4px); }
   .vg { min-height: 90px; padding: 10px 4px 8px; border-radius: 16px; }
 }
 

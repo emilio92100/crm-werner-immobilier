@@ -258,3 +258,9 @@ button:active:not(:disabled) { transform: scale(.985); }
 /* Sur le téléphone de la rubrique Carte : sous la recherche et les filtres. */
 /* V3.28 : sous « Mes contacts » et « Mes biens ». */
 .carte-mention-sous-filtres { right: 12px; top: calc(114px + env(safe-area-inset-top, 0px)); }
+
+/* 22 octobre 2026 — une rangée de pastilles qui laissait une ou deux pastilles
+   seules sur sa dernière ligne se resserre (src/components/shared/colonnes.ts,
+   useRangees). */
+[data-serre="oui"] { column-gap: 5px !important; }
+[data-serre="oui"] > * { padding-left: max(6px, .6em) !important; padding-right: max(8px, .7em) !important; }

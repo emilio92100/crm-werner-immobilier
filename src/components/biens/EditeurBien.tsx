@@ -1,4 +1,5 @@
 'use client';
+import { useRangees } from '@/components/shared/colonnes';
 import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { euros } from '@/lib/mandat';
 import { liste, num, txt } from '@/lib/actes';
@@ -443,6 +444,8 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
   };
   const [enreg, setEnreg] = useState<Enreg>('ok');
   const formRef = useRef<HTMLDivElement>(null);
+  /* 22 octobre 2026 : les rangées de pastilles sans pastille seule en bas (colonnes.ts). */
+  useRangees(formRef, `${etape}-${mode}`);
   const [ignores, setIgnores] = useState<string[]>(vus);
 
   /* ── L'enregistrement automatique ── */

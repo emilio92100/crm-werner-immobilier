@@ -9,19 +9,20 @@
    Avant le SQL, les colonnes n'existent pas : on n'écrit la source que si
    elle a été choisie, et on le dit (colonneSourceAbsente). Isomorphe. */
 
+/* 22 octobre 2026 : sans « Fichiers achetés » (ZeCible, Maline : des fichiers
+   de particuliers, ceux d'Emilio Immobilier) ; les portails sont ceux de
+   l'immobilier d'entreprise. Aucun contact n'avait ces sources. */
 export type SourceContact =
   | 'recommandation' | 'relationnel' | 'ancien_client'
   | 'pige' | 'boitage' | 'panneau'
-  | 'zecible' | 'maline'
   | 'site' | 'plateforme' | 'reseaux' | 'appel_entrant'
   | 'autre';
 
 export const FAMILLES_SOURCE: { k: string; lib: string }[] = [
   { k: 'bouche', lib: 'Bouche-à-oreille' },
   { k: 'prospection', lib: 'Prospection' },
-  { k: 'fichiers', lib: 'Fichiers achetés' },
   { k: 'internet', lib: 'Il nous a trouvés' },
-  { k: 'autre', lib: '' },
+  { k: 'autre', lib: 'Autre' },
 ];
 
 /* `detail` : ce que la source demande en plus, et la question posée. */
@@ -32,20 +33,18 @@ export const SOURCES: { k: SourceContact; lib: string; ic: string; famille: stri
   { k: 'pige', lib: 'Pige', ic: 'loupe', famille: 'prospection' },
   { k: 'boitage', lib: 'Boîtage, flyers', ic: 'mail', famille: 'prospection' },
   { k: 'panneau', lib: 'Panneau, vitrine', ic: 'panneau', famille: 'prospection' },
-  { k: 'zecible', lib: 'ZeCible', ic: 'cible', famille: 'fichiers' },
-  { k: 'maline', lib: 'Maline', ic: 'lignes', famille: 'fichiers' },
-  { k: 'site', lib: 'Site, estimation en ligne', ic: 'globe', famille: 'internet' },
-  { k: 'plateforme', lib: 'Plateforme immobilière', ic: 'ecran', famille: 'internet', detail: 'plateforme', question: 'Laquelle ?' },
+  { k: 'site', lib: 'Site internet', ic: 'globe', famille: 'internet' },
+  { k: 'plateforme', lib: 'Portail d’annonces', ic: 'ecran', famille: 'internet', detail: 'plateforme', question: 'Lequel ?' },
   { k: 'reseaux', lib: 'Réseaux sociaux', ic: 'partage', famille: 'internet' },
   { k: 'appel_entrant', lib: 'Appel entrant', ic: 'telephone', famille: 'internet' },
-  { k: 'autre', lib: 'Autre', ic: 'points', famille: 'autre', detail: 'texte', question: 'Laquelle ?' },
+  { k: 'autre', lib: 'Autre source', ic: 'points', famille: 'autre', detail: 'texte', question: 'Laquelle ?' },
 ];
 
-export const PLATEFORMES = ['SeLoger', 'Leboncoin', 'Bien’ici', 'Logic-Immo', 'Belles Demeures', 'PAP', 'Figaro Immobilier'];
+export const PLATEFORMES = ['SeLoger', 'Geolocaux', 'BureauxLocaux', 'Leboncoin', 'CessionPME'];
 
 export const sourceDe = (k?: string | null) => SOURCES.find(s => s.k === k) || null;
 
-/* « Recommandation · Hortense Marhic », « ZeCible », « Plateforme immobilière · SeLoger ». */
+/* « Recommandation · Hortense Marhic », « Pige », « Portail d’annonces · SeLoger ». */
 export function libelleSource(k?: string | null, detail?: string | null): string {
   const s = sourceDe(k);
   if (!s) return '';
