@@ -28,6 +28,9 @@ import { COOKIE_APERCU, apercuOuvert } from '@/lib/apercu-site';
  *                                   route demande elle-même le badge ou CRON_SECRET — V3.97)
  *  - /api/seloger/contacts         (les demandes des portails : le cron et AVIV n'ont pas le cookie ;
  *                                   la route demande le badge, CRON_SECRET ou sa clé — V3.100)
+ *  - /api/site/annonces et /api/site/demande (le site wernerimmobilier.com, dépôt
+ *                                   werner-immobilier-site : ses annonces, sans rien de privé,
+ *                                   et le dépôt de ses formulaires, tout vérifié dans la route)
  *  - les fichiers statiques
  */
 
@@ -39,7 +42,7 @@ const COOKIE = COOKIE_BADGE;
 /* /api/ringover/contact : Ringover demande qui est le numéro d'un appel
    (V3.141) ; /api/ringover/recherche : il cherche un contact du CRM (V3.143).
    Leur serrure : la signature de Ringover (lib/ringover-serveur.ts). */
-const PUBLIC_PATHS = ['/login', '/api/login', '/api/point-auto/envoi', '/api/mandat/relances', '/api/signer', '/api/demandes-site/notifier', '/api/flux-site', '/api/flux-site/sitemap', '/api/diffusion/portails', '/api/seloger/contacts', '/api/ringover/contact', '/api/ringover/recherche', '/api/site/apercu'];
+const PUBLIC_PATHS = ['/login', '/api/login', '/api/point-auto/envoi', '/api/mandat/relances', '/api/signer', '/api/demandes-site/notifier', '/api/flux-site', '/api/flux-site/sitemap', '/api/diffusion/portails', '/api/seloger/contacts', '/api/ringover/contact', '/api/ringover/recherche', '/api/site/apercu', '/api/site/annonces', '/api/site/demande'];
 const PUBLIC_PREFIXES = ['/bien/', '/espace/', '/api/espace/', '/signer/', '/proposer/', '/api/agences/', '/site'];
 
 /* Le sous-domaine de l'espace acheteur. Tout le monde vit sur le même projet

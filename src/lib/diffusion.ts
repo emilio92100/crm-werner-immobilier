@@ -46,8 +46,10 @@ export const ETAPES_DIFFUSEES: EtapeVente[] = ['mandat', 'offre', 'compromis', '
 const ETAPES_REGLABLES: EtapeVente[] = [...ETAPES_DIFFUSEES, 'suspendu'];
 export const etapeDiffusee = (e: string | null | undefined) => ETAPES_DIFFUSEES.includes(e as EtapeVente);
 
-/* Ce qu'on propose quand rien n'est encore réglé : SeLoger Bureaux & Commerces. */
-export const SUPPORTS_DEFAUT: Record<Support, boolean> = { site: false, seloger: true, bd: false, jinka: false };
+/* Ce qu'on propose quand rien n'est encore réglé : SeLoger Bureaux & Commerces et le site. */
+/* 21 octobre 2026 : le site de Werner aussi (ses annonces y paraissent par
+   défaut, src/lib/annonces-site.ts). */
+export const SUPPORTS_DEFAUT: Record<Support, boolean> = { site: true, seloger: true, bd: false, jinka: false };
 
 export type Diffusion = {
   /* Le bouton « Diffusion en cours / Non diffusé ». */

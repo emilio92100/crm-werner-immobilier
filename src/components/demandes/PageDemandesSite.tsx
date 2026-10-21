@@ -394,7 +394,7 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
 
   /* Les pastilles du tiroir (V3.129, maquette A) : les formulaires du site,
      ou les portails, puis « Toutes » / « Tous les portails » tout à droite. */
-  const COURT_CAT: Record<string, string> = { estimation: 'Estimations', mandat_recherche: 'Demandeurs', rappel_bien: 'Infos local', contact: 'Messages' };
+  const COURT_CAT: Record<string, string> = { estimation: 'Estimations', mandat_recherche: 'Demandeurs', rappel_bien: 'Infos local', contact: 'Messages', investisseur: 'Investisseurs', apporteur: 'Apporteurs' };
   const tuilesTiroir = prov === 'site'
     ? [...CATEGORIES.map(c => ({ k: c.k as string, lib: c.pluriel, libCourt: COURT_CAT[c.k] || c.pluriel, c: c.c, ic: c.ic, court: '', tous: false })), { k: 'toutes', lib: 'Toutes', libCourt: 'Toutes', c: BLEU, ic: 'liste', court: '', tous: true }].map(t => {
       const l = dansLaProv.filter(d => !d.archive && (t.k === 'toutes' || cleCategorie(d) === t.k));

@@ -79,7 +79,7 @@ export const TABLE_DEMANDES = 'contact_submissions';
 export const SITE_PUBLIC = 'https://www.wernerimmobilier.com';
 
 /* ── Les catégories : une par formulaire du site ───────────────────────── */
-export type CategorieDemande = 'estimation' | 'mandat_recherche' | 'rappel_bien' | 'contact';
+export type CategorieDemande = 'estimation' | 'mandat_recherche' | 'rappel_bien' | 'contact' | 'investisseur' | 'apporteur';
 
 export const CATEGORIES: {
   k: CategorieDemande; lib: string; court: string; pluriel: string;
@@ -93,6 +93,11 @@ export const CATEGORIES: {
   { k: 'mandat_recherche', lib: 'Accompagnement demandeur', court: 'Demandeur', pluriel: 'Accompagnements', ic: 'loupe', c: '#0f7a4f', fond: '#ecfdf5', trait: '#bfe8d3', type: 'acheteur' },
   { k: 'rappel_bien', lib: 'Info sur un local', court: 'Info local', pluriel: 'Infos sur un local', ic: 'maison', c: '#76716c', fond: '#f7f6f6', trait: '#e3e0de', type: 'acheteur' },
   { k: 'contact', lib: 'Demande générale', court: 'Message', pluriel: 'Messages', ic: 'bulle', c: '#2e3034', fond: '#f4f3f2', trait: '#e0dedd', type: null },
+  /* 21 octobre 2026 : les deux formulaires propres au site de Werner
+     (« Rejoindre la liste privée », « Transmettre une info »). Ajoutés après
+     « contact » : categorieDe() retombe toujours sur CATEGORIES[3]. */
+  { k: 'investisseur', lib: 'Investisseur', court: 'Investisseur', pluriel: 'Investisseurs', ic: 'courbe', c: '#0e7490', fond: '#ecfeff', trait: '#bae6f0', type: 'acheteur' },
+  { k: 'apporteur', lib: 'Apporteur d’affaires', court: 'Apporteur', pluriel: 'Apporteurs d’affaires', ic: 'partage', c: '#7c3aed', fond: '#f5f3ff', trait: '#ddd6fe', type: 'partenaire' },
 ];
 /* Un type inconnu (un futur formulaire) se range avec les demandes générales. */
 export const categorieDe = (k: string | null | undefined) => CATEGORIES.find(c => c.k === k) || CATEGORIES[3];
@@ -223,8 +228,9 @@ export type Presentation = {
   bien: { titre: string; ref: string; lien: string } | null;
 };
 
-/* Les formulaires qui écrivent leurs réponses « Clé : valeur » dans le message. */
-const STRUCTURES = new Set<CategorieDemande>(['estimation', 'mandat_recherche']);
+/* Les formulaires qui écrivent leurs réponses « Clé : valeur » dans le message.
+   21 octobre 2026 : tous ceux de wernerimmobilier.com (/api/site/demande). */
+const STRUCTURES = new Set<CategorieDemande>(['estimation', 'mandat_recherche', 'rappel_bien', 'contact', 'investisseur', 'apporteur']);
 
 export function presenter(d: DemandeSite): Presentation {
   const lu = lireMessage(d.message);
@@ -235,55 +241,54 @@ export function presenter(d: DemandeSite): Presentation {
   const rubriques: Rubrique[] = [];
   let bien: Presentation['bien'] = null;
   const cat = cleCategorie(d);
+  const ajouter = (titre: string, ic: string, champs: Champ[], puces?: string[]) => {
+    if (champs.length || (puces && puces.length)) rubriques.push({ titre, ic, champs, ...(puces && puces.length ? { puces } : {}) });
+  };
+  /* « Extraction, Vitrine » → deux puces. */
+  const puces = (v: string) => v.split(/\s*[,;·]\s*/).map(x => x.trim()).filter(Boolean);
 
   if (cat === 'estimation') {
-    /* Chaque réponse est prise (et marquée comme rangée) avant d'être
-       choisie : une colonne remplie ne doit pas renvoyer la même réponse du
-       message dans « Autres réponses ». */
+    /* « Confier mon local » : le projet, le local, le bail en cours, l'adresse.
+       Chaque réponse est prise (et marquée comme rangée) avant d'être choisie :
+       une colonne remplie ne doit pas renvoyer la même réponse du message dans
+       « Autres réponses ». */
     const r = {
-      type: pris('type'), surface: pris('surface'), pieces: pris('pieces'), chambres: pris('chambres'),
-      etage: pris('etage'), ascenseur: pris('ascenseur'), exposition: pris('exposition'), etat: pris('etat'),
-      adresse: pris('adresse'), cp: pris('code postal'), ville: pris('ville'),
-      delai: pris('delai projet', 'delai'), deja: pris('deja en vente'), raison: pris('raison'),
-      formule: pris('formule'),
+      projet: pris('projet'), qui: pris('vous etes'), type: pris('type', 'type de local'), surface: pris('surface'),
+      extraction: pris('extraction'), vitrine: pris('vitrine'), activite: pris('activite'), etage: pris('niveau', 'etage'),
+      loyer: pris('loyer actuel', 'loyer'), finBail: pris('fin du bail', 'echeance du bail'), bail: pris('bail'),
+      prix: pris('prix souhaite'), adresse: pris('adresse'), ville: pris('ville'), delai: pris('delai'),
     };
-    const leBien = [
+    ajouter('Son projet', 'calendrier', [...garder('Projet', r.projet), ...garder('Vous êtes', r.qui), ...garder('Délai', delai(d.timeline || r.delai)), ...garder('Prix souhaité', montant(r.prix))]);
+    ajouter('Le local', 'vitrine', [
       ...garder('Type', typeBien(d.property_type || r.type)),
       ...garder('Surface', surface(d.desired_surface || r.surface)),
-      ...garder('Pièces', r.pieces ? (/^\d+$/.test(r.pieces) ? `${r.pieces} pièce${Number(r.pieces) > 1 ? 's' : ''}` : r.pieces) : ''),
-      ...garder('Chambres', r.chambres),
-      ...garder('Étage', r.etage),
-      ...garder('Ascenseur', r.ascenseur),
-      ...garder('Exposition', r.exposition),
-      ...garder('État', r.etat),
-    ];
-    if (leBien.length || lu.atouts.length) rubriques.push({ titre: 'Le local', ic: 'maison', champs: leBien, puces: lu.atouts });
-    const ville = [r.cp, r.ville].filter(Boolean).join(' ') || propre(d.desired_location);
-    const ou = [...garder('Adresse', r.adresse), ...garder('Ville', r.adresse ? '' : ville)];
-    if (ou.length) rubriques.push({ titre: 'Où', ic: 'lieu', champs: ou });
-    /* V3.216 : « Formule : Rappel express » — le visiteur n'a laissé que son prénom et son numéro. */
-    const projet = [...garder('Demande', /express/i.test(r.formule) ? 'Rappel express (prénom et numéro seulement)' : r.formule), ...garder('Délai', delai(d.timeline || r.delai)), ...garder('Déjà en vente', r.deja), ...garder('Raison', r.raison)];
-    if (projet.length) rubriques.push({ titre: 'Son projet', ic: 'calendrier', champs: projet });
+      ...garder('Niveau', r.etage),
+      ...garder('Extraction', r.extraction),
+      ...garder('Vitrine', r.vitrine),
+      ...garder('Activité', r.activite),
+    ], lu.atouts);
+    ajouter('Le bail en cours', 'bail', [...garder('Loyer actuel', r.loyer), ...garder('Bail', r.bail), ...garder('Fin du bail', r.finBail)]);
+    const ou = propre(d.desired_location) || [r.adresse, r.ville].filter(Boolean).join(', ');
+    ajouter('Où', 'lieu', garder('Adresse', ou));
   }
 
   if (cat === 'mandat_recherche') {
-    const recherche = [
+    /* « Je cherche un local ». */
+    const r = {
+      projet: pris('projet'), activite: pris('activite'), indisp: pris('indispensable'),
+      loyer: pris('loyer max', 'loyer maximum'), dab: pris('droit au bail max', 'droit au bail maximum'), prix: pris('prix max', 'prix maximum'),
+      societe: pris('societe'), delai: pris('delai'),
+    };
+    ajouter('Sa recherche', 'loupe', [
+      ...garder('Projet', r.projet),
+      ...garder('Activité', r.activite),
       ...garder('Type de local', typeBien(d.property_type)),
-      ...garder('Budget', montant(d.budget)),
       ...garder('Secteur', propre(d.desired_location)),
       ...garder('Surface', surface(d.desired_surface)),
-      ...garder('Pièces', traduire(PIECES, pris('pieces'))),
-      ...garder('Étage', traduire(ETAGES, pris('etage'))),
-      ...garder('Extérieur', traduire(EXTERIEURS, pris('exterieur'))),
-    ];
-    if (recherche.length) rubriques.push({ titre: 'Sa recherche', ic: 'loupe', champs: recherche });
-    const priorites = ['priorite 1', 'priorite 2', 'priorite 3'].map(k => traduire(PRIORITES, pris(k))).filter(Boolean);
-    if (priorites.length) rubriques.push({ titre: 'Ses priorités', ic: 'etoile', champs: [], puces: priorites, numerotees: true });
-    const projet = [
-      ...garder('Délai', delai(d.timeline)),
-      ...garder('Financement', traduire(FINANCEMENTS, pris('financement'))),
-    ];
-    if (projet.length) rubriques.push({ titre: 'Son projet', ic: 'calendrier', champs: projet });
+    ], r.indisp ? puces(r.indisp) : undefined);
+    const budget = [...garder('Loyer maximum', r.loyer), ...garder('Droit au bail maximum', r.dab), ...garder('Prix maximum', r.prix)];
+    ajouter('Son budget', 'euro', budget.length ? budget : garder('Budget', montant(d.budget)));
+    ajouter('Son projet', 'calendrier', [...garder('Délai', delai(d.timeline || r.delai)), ...garder('Société', r.societe)]);
   }
 
   if (cat === 'rappel_bien') {
@@ -291,20 +296,31 @@ export function presenter(d: DemandeSite): Presentation {
       bien = {
         titre: d.property_title || 'Local du site',
         ref: d.property_ref || '',
-        lien: d.property_ref ? `${SITE_PUBLIC}/biens/${encodeURIComponent(d.property_ref)}` : '',
+        lien: d.property_ref ? `${SITE_PUBLIC}/annonces/${encodeURIComponent(d.property_ref)}` : '',
       };
     }
     /* Le site écrivait parfois le bien dans le message aussi. */
     utilises.add('bien concerne');
+    const souhaite = pris('souhaite');
+    ajouter('Sa demande', 'bulle', [...garder('Activité', pris('activite')), ...garder('Société', pris('societe'))], souhaite ? puces(souhaite) : undefined);
+  }
+
+  if (cat === 'investisseur') {
+    const interets = pris('interets', 'ce qui l interesse');
+    ajouter('Ce qu’il cherche', 'courbe', [...garder('Budget', pris('budget') || montant(d.budget)), ...garder('Secteurs', pris('secteurs') || propre(d.desired_location))], interets ? puces(interets) : undefined);
+  }
+
+  if (cat === 'apporteur') {
+    ajouter('L’info', 'partage', [...garder('Concerne', pris('concerne')), ...garder('Adresse', pris('adresse') || propre(d.desired_location))]);
+  }
+
+  if (cat === 'contact') {
+    ajouter('Qui', 'personne', [...garder('Vous êtes', pris('vous etes')), ...garder('Société', pris('societe'))]);
   }
 
   /* Ce que le client a écrit lui-même : la ligne « Message : … », ou le texte
-     libre (le formulaire de contact n'a que lui). Les réponses non rangées
-     plus haut (un champ qu'un futur formulaire ajouterait) ne se perdent pas :
-     elles vont dans « Autres réponses ». */
-  /* Le formulaire de contact et la demande sur un bien n'ont qu'un champ
-     libre : le message se lit tel que le client l'a écrit, sans chercher
-     de « Clé : valeur » dans ses phrases. */
+     libre. Les réponses non rangées plus haut (un champ qu'un futur formulaire
+     ajouterait) ne se perdent pas : elles vont dans « Autres réponses ». */
   if (!STRUCTURES.has(cat)) return { rubriques, dvf: null, message: String(d.message || '').trim(), bien };
   const mot = pris('message');
   const restes = c.filter(x => !utilises.has(cle(x.l)));
