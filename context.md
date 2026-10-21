@@ -373,8 +373,8 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
 - **L'adresse de l'espace client** — fait le 21 octobre 2026 côté DNS : wernerimmobilier.com,
   www, espace et crm pointent sur Vercel (IONOS, TTL 5 minutes ; l'hébergement WordPress piraté
   est débranché du domaine). Chez IONOS, le contrat « WordPress Hosting Boost » (105224331) contient
-  aussi le domaine, le DNS et la boîte contact@ : **ne jamais le résilier tel quel**, le domaine
-  partirait avec (choix d'Alexandre, 21 octobre : on le garde pour l'instant). Le VPS (113365249),
+  aussi le domaine et le DNS (sa boîte contact@ ne sert pas : les mails sont chez Microsoft 365,
+  §8) : **ne jamais le résilier tel quel**, le domaine partirait avec (choix d'Alexandre, 21 octobre : on le garde pour l'instant). Le VPS (113365249),
   inutilisé, est résilié au 15 août 2027 (dossier K-148836641-43). espace et crm sont sur ce projet ;
   wernerimmobilier.com et www sont sur le projet du site (`werner-immobilier-site`). Sur Vercel (vérifié le
   21 octobre 2026) : `NEXT_PUBLIC_HOTE_ESPACE` = espace.wernerimmobilier.com (domaine validé ; les
@@ -451,7 +451,17 @@ Une anomalie nouvelle s'ajoute ici, datée, avant d'être corrigée.
 
 ### Mailjet
 
-Pas encore branché pour Werner : ni compte, ni domaine d'envoi validé. Ce que l'origine a appris
+**Le 21 octobre 2026** : le compte Mailjet de Werner existe (créé par Alexandre ; contact@ y est
+une adresse d'expédition active). Le domaine wernerimmobilier.com y est ajouté (validation par le TXT
+`mailjet._707c2960`, posé chez IONOS) et sa clé DKIM posée (TXT `mailjet._domainkey`, 2048 bits).
+**Les mails de Werner sont chez Microsoft 365**, pas chez IONOS : le MX va à
+`wernerimmobilier-com.mail.protection.outlook.com` (la boîte contact@ d'IONOS ne reçoit rien). Le SPF
+garde donc `include:spf.protection.outlook.com` ; il faut y ajouter `include:spf.mailjet.com` (à faire
+par Alexandre : `v=spf1 include:spf.mailjet.com include:mailgun.org include:_spf-eu.ionos.com
+include:spf.protection.outlook.com ~all`). `mailgun.org`, la CNAME `email` et `k1._domainkey` sont
+des restes d'anciens outils, laissés tels quels. Restent sur Vercel : `MAILJET_API_KEY`,
+`MAILJET_API_SECRET`, puis `MAILJET_FROM_SIGNATURE` = signature@wernerimmobilier.com une fois le
+domaine « Actif » dans Mailjet (aucune boîte à créer : le domaine validé suffit). Ce que l'origine a appris
 (historique §8) : le SPF se crée en **TXT** (pas le type « SPF » déprécié), avec DKIM et DMARC ; le
 suivi reste coupé (`TrackOpens` et `TrackClicks` sur `disabled`) ; Gmail retire les ombres et les
 SVG : contraste et tableaux. Les images des mails se chargent depuis `NEXT_PUBLIC_MAIL_IMAGES_URL`
