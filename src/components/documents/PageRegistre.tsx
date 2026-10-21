@@ -180,19 +180,43 @@ function LigneR({ l, obs, i, onObserver, onDocument, onClient }: {
 }
 
 /* Les deux bouts de la frise. */
-function Prochain({ n }: { n: number }) {
+function Prochain({ n, commun }: { n: number; commun: boolean }) {
   return (
     <div className={`${r.jalon} ${r.jalonBout}`}>
       <div className={r.jalonG}><span className={`${r.puce} ${r.puceProchain}`}><small>N°</small>{n}</span></div>
-      <div className={r.bout}><b>Prochain numéro</b><span>{'Pris par le prochain mandat finalisé dans Documents, ou signé par un demandeur dans son espace — sauf si Alexandre en inscrit un avant (registre commun).'}</span></div>
+      <div className={r.bout}>
+        <b>Prochain numéro</b>
+        <span>{commun
+          ? 'Celui qui suit dans le registre commun, à cet instant : il ira au prochain mandat, le tien ou celui d’Alexandre, selon qui finalise le premier.'
+          : 'Pris par le prochain mandat finalisé dans Documents, ou signé par un demandeur dans son espace.'}</span>
+      </div>
     </div>
   );
 }
-function Depart({ d }: { d: Depart }) {
+function Depart({ d, commun }: { d: Depart; commun: boolean }) {
   return (
     <div className={`${r.jalon} ${r.jalonBout}`}>
       <div className={r.jalonG}><span className={r.puceDepart}><Ic n="drapeau" t={16} e={2} /></span></div>
-      <div className={r.bout}><b>{`Départ du registre, au n° ${d.premier_numero}`}</b><span>{`Le ${quandRegistre(d.demarre_le)}${d.reprise ? ` · ${d.reprise}` : ''}`}</span></div>
+      <div className={r.bout}><b>{commun ? `Début de la numérotation commune, au n° ${d.premier_numero}` : `Départ du registre, au n° ${d.premier_numero}`}</b><span>{`Le ${quandRegistre(d.demarre_le)}${d.reprise ? ` · ${d.reprise}` : ''}`}</span></div>
+    </div>
+  );
+}
+
+/* Registre commun (22 octobre 2026) — Alexandre : « quand ça saute de
+   numéro, qu'il ait des précisions, en mode grisé : numéro d'Emilio ». Les
+   numéros qui manquent entre deux mandats de Werner ont été pris dans le
+   registre de RT CONSEILS par les mandats d'Alexandre : une ligne grisée,
+   sans carte, dit lesquels. Rien de leur contenu (ce sont ses clients). */
+type Trou = { de: number; a: number };
+function LigneTrou({ t }: { t: Trou }) {
+  const n = t.a - t.de + 1;
+  return (
+    <div className={r.trou}>
+      <div className={r.trouG}><span className={r.trouPoint} /></div>
+      <div className={r.trouTxt} title="Ces numéros sont dans le registre des mandats de RT CONSEILS, tenu dans le CRM d’Emilio Immobilier.">
+        <b>{n === 1 ? `N° ${t.de}` : `N° ${t.de} à ${t.a}`}</b>
+        <span>{n === 1 ? 'un mandat d’Alexandre · Emilio Immobilier' : `${n} mandats d’Alexandre · Emilio Immobilier`}</span>
+      </div>
     </div>
   );
 }
@@ -381,6 +405,23 @@ export default function PageRegistre({ onNavigate }: { onNavigate: (page: string
     });
     return g;
   })();
+  /* Les trous de la numérotation commune, sur la frise entière seulement :
+     au-dessus de chaque mandat, les numéros pris avant le suivant (ou avant
+     le prochain numéro) ; sous le premier, ceux pris depuis le départ. */
+  const avecTrous = complet && !!commun?.actif && !!depart;
+  const { trouApres, trouDepart } = (() => {
+    const apres = new Map<string, Trou>();
+    let dep: Trou | null = null;
+    if (!avecTrous || !depart) return { trouApres: apres, trouDepart: dep };
+    const asc = [...lignes].sort((a, b) => a.numero - b.numero);
+    const trou = (de: number, a: number): Trou | null => (a >= de ? { de, a } : null);
+    dep = trou(depart.premier_numero, (asc[0]?.numero ?? prochain) - 1);
+    asc.forEach((l, k) => {
+      const t = trou(l.numero + 1, (asc[k + 1]?.numero ?? prochain) - 1);
+      if (t) apres.set(l.id, t);
+    });
+    return { trouApres: apres, trouDepart: dep };
+  })();
 
   async function exporter() {
     if (!depart) return;
@@ -438,7 +479,7 @@ export default function PageRegistre({ onNavigate }: { onNavigate: (page: string
         <div className={`${r.message} ${commun.erreur ? r.messageKo : r.messageOk}`}>
           {commun.erreur
             ? `Le registre commun ne répond pas : ${commun.erreur}`
-            : 'Numérotation commune : tes mandats prennent leur numéro dans le registre des mandats de RT CONSEILS, tenu par Alexandre, à la suite des siens. Les numéros qui manquent ici sont les siens ; ta ligne est aussi chez lui, avec ce qui lui arrive (signé, annulé…).'}
+            : 'Numérotation commune : tes mandats prennent leur numéro dans le registre des mandats de RT CONSEILS, tenu par Alexandre, à la suite des siens. Les numéros qui manquent ici sont les siens : ils sont grisés dans la frise. Ta ligne est aussi chez lui, avec ce qui lui arrive (signé, annulé…).'}
         </div>
       )}
       {!depart && !absent && !commun?.actif && <Demarrage onDemarre={charger} />}
@@ -475,22 +516,31 @@ export default function PageRegistre({ onNavigate }: { onNavigate: (page: string
             <div className={r.vide}><b>Rien ici</b>Aucun mandat ne correspond à cette recherche.</div>
           ) : (
             <div className={r.frise}>
-              {complet && ordre === 'recent' && <Prochain n={prochain} />}
-              {complet && ordre === 'registre' && <Depart d={depart} />}
+              {complet && ordre === 'recent' && <Prochain n={prochain} commun={!!commun?.actif} />}
+              {complet && ordre === 'registre' && <Depart d={depart} commun={!!commun?.actif} />}
+              {ordre === 'registre' && trouDepart && <LigneTrou t={trouDepart} />}
               {groupes.map(g => (
                 <Fragment key={g.mois}>
                   <div className={r.mois}><span><em className={r.moisLong}>{g.mois}</em><em className={r.moisCourt}>{g.court}</em></span></div>
-                  {g.lignes.map(({ l, i }) => (
-                    <LigneR key={l.id} l={l} i={i} obs={parLigne.get(l.id) || []}
-                      onObserver={() => setFen({ k: 'observer', l })}
-                      onDocument={l.document_id ? () => onNavigate('documents', { ouvrir: l.document_id })
-                        : l.signature_id ? () => onNavigate('documents', { ouvrir: 'r-' + l.signature_id }) : undefined}
-                      onClient={l.client_id ? () => ficheClient(l.client_id!) : undefined} />
-                  ))}
+                  {g.lignes.map(({ l, i }) => {
+                    const t = trouApres.get(l.id);
+                    return (
+                      <Fragment key={l.id}>
+                        {ordre === 'recent' && t && <LigneTrou t={t} />}
+                        <LigneR l={l} i={i} obs={parLigne.get(l.id) || []}
+                          onObserver={() => setFen({ k: 'observer', l })}
+                          onDocument={l.document_id ? () => onNavigate('documents', { ouvrir: l.document_id })
+                            : l.signature_id ? () => onNavigate('documents', { ouvrir: 'r-' + l.signature_id }) : undefined}
+                          onClient={l.client_id ? () => ficheClient(l.client_id!) : undefined} />
+                        {ordre === 'registre' && t && <LigneTrou t={t} />}
+                      </Fragment>
+                    );
+                  })}
                 </Fragment>
               ))}
-              {complet && ordre === 'recent' && <Depart d={depart} />}
-              {complet && ordre === 'registre' && <Prochain n={prochain} />}
+              {ordre === 'recent' && trouDepart && <LigneTrou t={trouDepart} />}
+              {complet && ordre === 'recent' && <Depart d={depart} commun={!!commun?.actif} />}
+              {complet && ordre === 'registre' && <Prochain n={prochain} commun={!!commun?.actif} />}
             </div>
           )}
         </>

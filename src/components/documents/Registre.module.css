@@ -143,6 +143,17 @@ textarea.input { resize: vertical; min-height: 70px; line-height: 1.5; }
 .bout { display: flex; flex-direction: column; gap: 2px; padding: 12px 4px 2px; }
 .bout b { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13.5px; font-weight: 800; color: var(--emilio); }
 .bout span { font-size: 12.5px; color: #8391a7; line-height: 1.45; }
+/* Registre commun : les numéros d'Alexandre entre deux mandats de Werner.
+   Grisés, sans carte : un petit point gris sur le trait, une étiquette en pointillé. */
+.trou { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; min-height: 32px; animation: jalonEntre .38s cubic-bezier(.22,.9,.3,1) both; }
+.trouG { position: relative; z-index: 1; display: flex; justify-content: center; }
+.trouPoint { width: 9px; height: 9px; border-radius: 50%; background: #cfccc8; box-shadow: 0 0 0 4px var(--bg, #fafaf9); }
+.trouTxt {
+  justify-self: start; max-width: 100%; display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 1px 8px;
+  padding: 6px 12px; border-radius: 11px; border: 1px dashed #dcdad7; background: #f4f3f2;
+  font-size: 12.5px; color: #8d8982; line-height: 1.4;
+}
+.trouTxt b { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 800; color: #6f6b65; white-space: nowrap; }
 .vide { padding: 36px 20px; text-align: center; border: 1.5px dashed #eaeae9; border-radius: 16px; color: #94a3b8; font-size: 13.5px; line-height: 1.55; background: white; }
 .vide b { display: block; font-size: 15px; color: var(--emilio); margin-bottom: 3px; }
 
@@ -170,7 +181,8 @@ textarea.input { resize: vertical; min-height: 70px; line-height: 1.5; }
   .departHaut, .departForm { padding: 20px 18px; }
   .departHaut h2 { font-size: 22px; }
   .frise > *::after { left: 31px; }
-  .jalon, .mois { grid-template-columns: 64px minmax(0, 1fr); }
+  .jalon, .mois, .trou { grid-template-columns: 64px minmax(0, 1fr); }
+  .trouTxt { font-size: 12px; padding: 5px 10px; }
   .puce { flex-direction: column; align-items: center; gap: 0; padding: 4px 7px; font-size: 13.5px; border-radius: 12px; }
   .puce small { font-size: 8px; }
   .jalonG { padding-top: 8px; }
@@ -190,7 +202,7 @@ textarea.input { resize: vertical; min-height: 70px; line-height: 1.5; }
   .fenetre { align-items: flex-end; padding: 0; }
   .fenetreIn { width: 100%; border-radius: 20px 20px 0 0; max-height: 92dvh; }
 }
-@media (prefers-reduced-motion: reduce) { .jalon { animation: none; } .carte, .puce, .btn { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .jalon, .trou { animation: none; } .carte, .puce, .btn { transition: none; } }
 
 /* V3.152 — Le téléphone bord à bord : la page n'a plus de marge sur les côtés
    (dès 760 px, comme l'en-tête de la rubrique) ; le démarrage, l'état du
@@ -202,4 +214,5 @@ textarea.input { resize: vertical; min-height: 70px; line-height: 1.5; }
   .departHaut, .departForm { padding-left: 14px; padding-right: 14px; }
   .etat { padding-left: 14px; padding-right: 14px; }
   .frise, .triBar { padding-left: 14px; padding-right: 14px; }
+  .message { margin: 0 14px; }
 }

@@ -461,7 +461,11 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   vérifie les empreintes sans chercher de trou). Ce qui arrive ensuite (signé, annulé…) s'écrit ici
   puis là-bas. Le navigateur passe par `/api/registre/action` (la clé reste au serveur). Sans clé :
   le registre d'avant, seul. Les anciens numéros de Werner (838, 847, 856, 859…) ne bougent pas : ils
-  sont plus petits que le départ de la copie, donc « anciens » (`numeroAncien`). La fiche du mandat
+  sont plus petits que le départ de la copie, donc « anciens » (`numeroAncien`). Branché le 22
+  octobre 2026 : clé posée dans les deux projets, copie démarrée au n° 1001 (le registre d'Alexandre
+  finissait au 1000). Page Registre : les numéros pris par Alexandre entre deux mandats de Werner
+  s'affichent grisés dans la frise (« N° 1005 à 1008 · 4 mandats d'Alexandre », sans leur contenu :
+  ce sont ses clients), entre le départ, les lignes et le prochain numéro. La fiche du mandat
   en ligne (`src/components/fiche/MandatEnLigne.tsx`) renvoie encore à ImmoFacile pour réserver :
   à reprendre avec le mandat de recherche dans l'espace.
 - **L'adresse de l'espace client** — fait le 21 octobre 2026 côté DNS : wernerimmobilier.com,
