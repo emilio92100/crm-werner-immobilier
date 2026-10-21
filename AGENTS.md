@@ -53,8 +53,10 @@ séparés. Les détails techniques anciens sont dans
   logo, sa signature « Werner Immobilier » (21 octobre), est tiré de
   `outils/logo-werner-masque.png` par `outils/logos-werner.py` (mêmes noms et
   mêmes tailles que les logos d'origine) ; les icônes gardent un « W ».
-- Ne jamais ouvrir wernerimmobilier.com : le site est piraté (fausse
-  vérification Cloudflare, octobre 2026).
+- wernerimmobilier.com est, depuis le 21 octobre 2026, le nouveau site de
+  Werner (dépôt `werner-immobilier-site`) : il lit les annonces du CRM par
+  `/api/site/annonces` et y dépose ses formulaires par `/api/site/demande`.
+  L'ancien WordPress, piraté, est débranché : ne jamais ouvrir son hébergement.
 
 ---
 

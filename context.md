@@ -16,8 +16,11 @@ locaux commerciaux, restaurants, locaux d'activité, entrepôts. Il fait des **l
 **cessions de droit au bail**, des **cessions de fonds de commerce** et des ventes de **murs**,
 libres ou occupés. Werner travaille sous la **carte T de RT CONSEILS** (CPI 9201 2020 000 045 344) :
 ses mandats sont au nom de RT CONSEILS. Ses coordonnées : **01 87 66 06 00**,
-**contact@wernerimmobilier.com**. **Ne jamais ouvrir wernerimmobilier.com** : le site est piraté
-(fausse vérification Cloudflare, octobre 2026).
+**contact@wernerimmobilier.com**. Depuis le 21 octobre 2026, **wernerimmobilier.com** est le
+nouveau site de Werner (dépôt `werner-immobilier-site`, projet Vercel du même nom), qui lit ses
+annonces dans `/api/site/annonces` et dépose ses formulaires par `/api/site/demande`. L'ancien
+WordPress, piraté (fausse vérification Cloudflare), est débranché du domaine : ne jamais ouvrir
+son hébergement IONOS.
 
 L'outil a **trois faces** :
 
@@ -74,7 +77,6 @@ et les colonnes `clients.vendeur_*`), puis `outils/sql/werner-commerce.sql` (§2
 | `WERNER_MAILS_AUTORISES` (ou `EMILIO_MAILS_AUTORISES`) | Facultative : la liste des adresses qui peuvent entrer. Vide, tout compte Supabase du projet entre |
 | `MAILJET_API_KEY` · `MAILJET_API_SECRET` · `MAILJET_FROM_EMAIL` · `MAILJET_FROM_NAME` | **À poser.** Sans elles, aucun mail ne part. Replis d'expéditeur : contact@wernerimmobilier.com, « Werner Immobilier » |
 | `MAILJET_FROM_SIGNATURE` | **À poser** après la validation du domaine dans Mailjet : `signature@wernerimmobilier.com`. Les mails d'une signature (lien, code, exemplaire signé, renonciation : l'option `expediteur: 'signature'` de `envoyerMail`) partent de cette adresse, réponses vers contact@. Vide, ils partent de `MAILJET_FROM_EMAIL` |
-| `SITE_CODE_APERCU` | Le code du bouton « Accès avant-première » de la page d'attente de wernerimmobilier.com (`src/lib/apercu-site.ts`). Jamais écrit dans le dépôt, qui est public. Vide, le bouton refuse tout code |
 | `ANTHROPIC_API_KEY` · `CRON_SECRET` | **À poser** : la clé de l'IA ; le secret des tâches planifiées (sans lui, elles refusent de tourner, c'est voulu) |
 | `RINGOVER_CLE_CONTACT` · `RINGOVER_CLE_RECHERCHE` · `NEXT_PUBLIC_HOTE_ESPACE` | **À poser** quand Ringover sera branché, et quand le sous-domaine de l'espace existera (§6) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY` · `VAPID_SUBJECT` | À poser pour les notifications de l'espace client |
@@ -371,8 +373,9 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   en ligne (`src/components/fiche/MandatEnLigne.tsx`) cessera de renvoyer à ImmoFacile pour réserver
   un numéro.
 - **L'adresse de l'espace client** — fait le 21 octobre 2026 côté DNS : wernerimmobilier.com,
-  www, espace et crm pointent sur ce projet Vercel (IONOS, TTL 5 minutes ; l'hébergement WordPress
-  piraté est débranché du domaine, pas encore résilié). Reste à poser `NEXT_PUBLIC_HOTE_ESPACE` =
+  www, espace et crm pointent sur Vercel (IONOS, TTL 5 minutes ; l'hébergement WordPress piraté
+  est débranché du domaine, pas encore résilié). espace et crm sont sur ce projet ;
+  wernerimmobilier.com et www sont sur le projet du site (`werner-immobilier-site`). Reste à poser `NEXT_PUBLIC_HOTE_ESPACE` =
   espace.wernerimmobilier.com une fois le domaine validé par Vercel, puis
   `NEXT_PUBLIC_MAIL_IMAGES_URL` et `NEXT_PUBLIC_CRM_URL` (https://crm.wernerimmobilier.com).
   Anciens enregistrements, pour revenir en arrière : A @ et A www 217.160.0.153, AAAA @ et AAAA www
@@ -413,12 +416,12 @@ types TypeScript ne décrivent plus le schéma » (§2), `relances.statut = 'rep
 4. **Le rapprochement garde sans les comparer** `loyerMin`, `postesMin` et `activite`.
 5. **Une société mandante passe pour une SCI** (`donnees.qui = 'sci'`, `sciNom`) : les modèles de
    l'origine la traiteront comme une SCI.
-6. **Des liens vers https://www.wernerimmobilier.com**, le site piraté : le barème des honoraires
+6. **Des liens vers https://www.wernerimmobilier.com** (piraté jusqu’au 21 octobre) : le barème des honoraires
    envoyé aux portails (`src/lib/seloger.ts`, `src/lib/poliris.ts`), `SITE_PUBLIC`
    (`src/lib/demandes-site.ts`), `/api/flux-site/sitemap`, et le site imprimé dans les documents et
    les mails (`IDENTITE_DEFAUT.site`). Aucun n'agit aujourd'hui (ni diffusion ni Mailjet branchés) ;
-   **avant de brancher Mailjet ou la diffusion, vérifier que le site est réparé**, sinon retirer
-   ces liens. La redirection de l'adresse nue de l'espace (`src/proxy.ts`) a été retirée le
+   Depuis le 21 octobre, ces liens mènent au nouveau site ; **reste la page `/honoraires`**, que
+   le site n'a pas encore : il faut le barème de Werner (point 7) avant de brancher la diffusion. La redirection de l'adresse nue de l'espace (`src/proxy.ts`) a été retirée le
    21 octobre : elle mène à la page « lien introuvable ».
 7. **Le barème des honoraires est celui d'Emilio** (`src/lib/mandat.ts` : 2,5 % et 5 %), désormais
    écrit « HT » ; les commentaires disent encore TTC. Celui de Werner reste à poser.
@@ -461,5 +464,5 @@ Le reste, et leur raison d'être : l'historique, §9.
 
 ### Hors périmètre
 
-Le dépôt et la base d'Emilio (jamais) ; le site wernerimmobilier.com (pas dans ce dépôt, et piraté) ;
+Le dépôt et la base d'Emilio (jamais) ; le site wernerimmobilier.com (dépôt `werner-immobilier-site`) ;
 la comptabilité ; le multi-utilisateur et le multi-agence.
