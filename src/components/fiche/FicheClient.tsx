@@ -466,6 +466,7 @@ import { ListeCoordonnees, lignesDe, nettoyer } from '@/components/shared/ListeC
 import { ChoixQuand } from '@/components/pages/PageAgenda';
 import FenetreIndispo from './FenetreIndispo';
 import { colonneEspaceAbsente, espaceSelonStatut, prendreBienvenue } from '@/lib/espace-choix';
+import RappelSecteur from '@/components/shared/RappelSecteur';
 
 /* Les titres que le formulaire « Ajouter une action » écrit tout seul (un
    type, une issue d'appel) : un autre clic peut les remplacer. Un titre tapé
@@ -1251,7 +1252,16 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
   const [sensCrit, setSensCrit] = useState<1 | -1>(1);
   useEffect(() => { setModeCrit(lireModeCrit()); }, []);
   const changerModeCrit = (m: ModeCrit) => { setModeCrit(m); setEtapeCrit(0); setSensCrit(1); ecrireModeCrit(m); };
-  const ouvrirCriteres = (etape = 0) => { setEtapeCrit(etape); setSensCrit(1); setShowCriteres(true); };
+  /* V3.226 — Le rappel du secteur (Alexandre : « dans les critères de
+     recherche d'un client, un rappel avant d'enregistrer, pas obligatoire »).
+     Une fois par ouverture de la fenêtre. */
+  const [rappelCrit, setRappelCrit] = useState(false);
+  const rappelCritVu = useRef(false);
+  const ouvrirCriteres = (etape = 0) => { rappelCritVu.current = false; setEtapeCrit(etape); setSensCrit(1); setShowCriteres(true); };
+  const sauverCriteres = () => {
+    if (!(crit.secteurs || []).length && !rappelCritVu.current) { rappelCritVu.current = true; setRappelCrit(true); return; }
+    void saveCriteres();
+  };
   /* V3.122 : « Son parcours » de la fiche ouvre son étape, en mode étape par
      étape (le choix d'affichage enregistré, lui, ne bouge pas). */
   const ouvrirEtapeCrit = (id: string) => { setModeCrit('etapes'); ouvrirCriteres(Math.max(0, ORDRE_ETAPES_CRIT.indexOf(id))); };
@@ -5957,23 +5967,34 @@ ${signatureMail()}`,
             {modeCrit === 'tout' ? (
               <div className={styles.modalFooter}>
                 <button className={styles.btn} onClick={() => setShowCriteres(false)}>Annuler</button>
-                <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={saveCriteres} disabled={saving}>{saving ? '...' : '✓ Sauvegarder'}</button>
+                <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={sauverCriteres} disabled={saving}>{saving ? '...' : '✓ Sauvegarder'}</button>
               </div>
             ) : (
               <div className={`${styles.modalFooter} ${styles.critNav}`}>
                 <button className={styles.btn} onClick={() => (iE === 0 ? setShowCriteres(false) : allerE(iE - 1))}>{iE === 0 ? 'Annuler' : '← Précédent'}</button>
                 <div className={styles.critNavD}>
                   {iE < nbE - 1 && (
-                    <button className={styles.btn} onClick={saveCriteres} disabled={saving} title="Enregistre les critères et ferme la pop-up">{saving ? '...' : 'Enregistrer et fermer'}</button>
+                    <button className={styles.btn} onClick={sauverCriteres} disabled={saving} title="Enregistre les critères et ferme la pop-up">{saving ? '...' : 'Enregistrer et fermer'}</button>
                   )}
                   {iE < nbE - 1
                     ? <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => allerE(iE + 1)}>Suivant →</button>
-                    : <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={saveCriteres} disabled={saving}>{saving ? '...' : '✓ Sauvegarder'}</button>}
+                    : <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={sauverCriteres} disabled={saving}>{saving ? '...' : '✓ Sauvegarder'}</button>}
                 </div>
               </div>
             )}
           </div>
         </div>
+        {/* V3.226 — Le rappel du secteur, avant d'enregistrer. */}
+        {rappelCrit && (
+          <RappelSecteur
+            titre="Aucun secteur pour cette recherche"
+            texte="Sans secteur, cette recherche reste « à compléter » : elle n’est comparée à aucune de tes affaires et n’apparaît pas dans leurs demandeurs potentiels. Ajoute au moins une ville ou un arrondissement, et ses quartiers s’il n’en veut que certains."
+            principal="Ajouter un secteur"
+            onPrincipal={() => { setRappelCrit(false); setModeCrit('etapes'); setSensCrit(1); setEtapeCrit(Math.max(0, ORDRE_ETAPES_CRIT.indexOf('lieu'))); }}
+            secondaire="Enregistrer quand même"
+            onSecondaire={() => { setRappelCrit(false); void saveCriteres(); }}
+            onFermer={() => setRappelCrit(false)} />
+        )}
         </Portail>
         );
       })()}
