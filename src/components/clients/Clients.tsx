@@ -36,11 +36,14 @@ import { STATUTS_LOT, archiverContact, changerStatutContact, effacerContact, emp
 import { FenetreMail, type ContactMail } from '@/components/pages/PageMail';
 import { retirerFicheOuverte, signalerFicheOuverte } from '@/components/layout/FichesOuvertes';
 import { lireParcours, parcoursVide } from '@/lib/parcours';
+import { colonneEspaceAbsente, espaceSelonStatut, marquerBienvenue } from '@/lib/espace-choix';
+import InterrupteurEspace from '@/components/shared/InterrupteurEspace';
 
 const STATUTS = [
   { key: 'tous',        label: 'Tous',       color: '' },
-  { key: 'prospect',    label: 'Prospects',  color: '#8b5cf6' },
-  { key: 'actif',       label: 'Actifs',     color: '#10b981' },
+  /* Werner : comme chez Emilio, « Actif » = avec son espace client (src/lib/espace-choix.ts). */
+  { key: 'prospect',    label: 'Prospects · sans espace',  color: '#8b5cf6' },
+  { key: 'actif',       label: 'Actifs · avec espace',     color: '#10b981' },
   { key: 'suspendu',    label: 'Suspendus',  color: '#f59e0b' },
   { key: 'bien_trouve', label: 'Finalisés',  color: '#3b82f6' },
   { key: 'perdu',       label: 'Perdus',     color: '#ef4444' },
@@ -168,8 +171,8 @@ function SuiteListe({ reste, onSuite }: { reste: number; onSuite: () => void }) 
 /* Les cinq états d'un dossier, avec ce qu'ils veulent dire. Mêmes libellés
    que le menu de statut de la fiche : un seul vocabulaire. */
 const ETATS_NOUVEAU: { cle: string; nom: string; quand: string; point: string }[] = [
-  { cle: 'prospect',    nom: 'Prospect',    quand: 'Premier contact, rien de signé', point: '#8b5cf6' },
-  { cle: 'actif',       nom: 'Actif',       quand: 'Recherche en cours',             point: '#10b981' },
+  { cle: 'prospect',    nom: 'Prospect',    quand: 'Premier contact · sans espace client', point: '#8b5cf6' },
+  { cle: 'actif',       nom: 'Actif',       quand: 'Recherche en cours · avec son espace', point: '#10b981' },
   { cle: 'suspendu',    nom: 'Suspendu',    quand: 'En pause, à reprendre plus tard', point: '#f59e0b' },
   { cle: 'bien_trouve', nom: 'Local trouvé', quand: 'Bail ou acte signé, dossier clos', point: '#3b82f6' },
   { cle: 'perdu',       nom: 'Perdu',       quand: 'Ne cherche plus avec nous',       point: '#ef4444' },
@@ -452,6 +455,8 @@ function Ico({ d, c = '#8593a8', t = 13 }: { d: React.ReactNode; c?: string; t?:
   );
 }
 const D_TYPE = <><path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10V20h13V10" /></>;
+/* Werner : un téléphone, pour l'espace client. */
+const D_ESPACE = <><rect x="6.5" y="2.5" width="11" height="19" rx="2.5" /><path d="M11 18.5h2" /></>;
 const D_PIECES = <><rect x="4" y="3" width="13" height="18" rx="1.5" /><circle cx="13.5" cy="12" r="1" /></>;
 const D_SURFACE = <><path d="M4 20h16" /><path d="M4 20V8" /><path d="M20 20V8" /><path d="M4 8h16" /></>;
 const D_CHAMBRE = <><path d="M4 21V8l8-5 8 5v13" /><path d="M10 21v-6h4v6" /></>;
@@ -1118,7 +1123,14 @@ export default function Clients({ onNavigate, fenetre }: {
          sans elle, et on le dit. */
       const src = form.source ? { source: form.source, source_detail: form.source_detail.trim() || null } : {};
       const libSrc = libelleSource(form.source, form.source_detail);
-      let r = await supabase.from('clients').insert({ ...ligne, ...src, types: typesEcrits, pro }).select().single();
+      /* Werner : « Actif » = avec son espace (src/lib/espace-choix.ts). Avant
+         le SQL espace-client-choix, la colonne manque : on crée sans elle. */
+      const esp = acheteur ? espaceSelonStatut(form.statut) : {};
+      let r = await supabase.from('clients').insert({ ...ligne, ...esp, ...src, types: typesEcrits, pro }).select().single();
+      if (r.error && colonneEspaceAbsente(r.error.message)) {
+        r = await supabase.from('clients').insert({ ...ligne, ...src, types: typesEcrits, pro }).select().single();
+        if (!r.error && esp.espace_client) signalerEchec('Son espace client', 'lance d’abord outils/sql/espace-client-choix.sql dans Supabase, puis active-le depuis sa fiche.');
+      }
       if (r.error && form.source && colonneSourceAbsente(r.error.message)) {
         r = await supabase.from('clients').insert({ ...ligne, types: typesEcrits, pro }).select().single();
         if (!r.error) signalerEchec('La source du contact', 'lancez d’abord outils/sql/source-contact.sql dans Supabase, puis choisissez-la depuis sa fiche (« Modifier »).');
@@ -1179,7 +1191,10 @@ export default function Clients({ onNavigate, fenetre }: {
           await verifie('Son parcours', supabase.from('recherches').update({ parcours }).eq('id', (rech as { id: string }).id).select('id'), { ligne: true });
         }
         await addJournal(data.id, 'creation', 'Dossier créé', `Référence : ${reference}${libSrc ? ` · source : ${libSrc}` : ''}`);
+        /* Werner : avec son espace, sa fiche s'ouvre et propose le mail de bienvenue. */
+        if (!eRech && (data as { espace_client?: boolean }).espace_client === true) marquerBienvenue(data.id);
       }
+      const avecEspace = !!data && acheteur && (data as { espace_client?: boolean }).espace_client === true;
       const versBien = !!data && !acheteur && form.creerBien && (form.types.includes('vendeur') || form.types.includes('proprietaire'));
       if (fenetre) {
         /* Ouverte depuis une demande du site : on reste dans la rubrique
@@ -1207,6 +1222,8 @@ export default function Clients({ onNavigate, fenetre }: {
       signalerMaj();
       /* Un vendeur : « Nouveau bien » s'ouvre, lui déjà propriétaire. */
       if (versBien && data) { demanderNouveauBien(data.id); onNavigate('biens'); return; }
+      /* Werner : un demandeur avec son espace — sa fiche, qui propose le mail de bienvenue. */
+      if (avecEspace && data) { onNavigate('fiche', data); return; }
       fetchClients();
       /* On le montre dans sa catégorie. */
       if (data) setCats([acheteur ? (form.critPlusTard ? 'non_filtre' : 'acheteur') : (form.types.find(k => k !== 'acheteur') as Categorie) || 'tous']);
@@ -1770,6 +1787,12 @@ export default function Clients({ onNavigate, fenetre }: {
                             ? 'La veille cherchera pour ce client dès la création du dossier.'
                             : 'Aucune veille tant que le dossier n\'est pas « Actif ». Vous pourrez basculer le statut à tout moment depuis sa fiche.'}
                         </div>
+                        {/* Werner : « Actif » = avec son espace client (src/lib/espace-choix.ts). */}
+                        <InterrupteurEspace on={form.statut === 'actif'}
+                          onChange={v => setForm({ ...form, statut: (v ? 'actif' : 'prospect') as StatutClient })}
+                          sous={form.statut === 'actif'
+                            ? 'Une page à lui avec les locaux proposés, où il répond en un clic. Sa fiche te proposera ensuite de lui envoyer le mail de bienvenue.'
+                            : 'Sans espace, les locaux que tu lui envoies mènent à leur fiche publique. Tu pourras l’ouvrir plus tard depuis sa fiche.'} />
                       </Bloc>}
 
                       {/* Werner : pas de « Sa situation aujourd’hui » (logement actuel,
@@ -2043,6 +2066,13 @@ export default function Clients({ onNavigate, fenetre }: {
                             {(client.statut as string) !== 'actif' && (
                               <span className={styles.etiquette} style={{ color: t.fg, background: t.bg, border: `1px solid ${t.trait}` }}>
                                 {ETIQUETTE[client.statut] || client.statut}
+                              </span>
+                            )}
+                            {/* Werner : son espace client est ouvert. */}
+                            {(client as { espace_client?: boolean }).espace_client === true && (
+                              <span className={styles.proprio} title="Il a son espace client : les locaux envoyés y arrivent, il y répond en un clic"
+                                style={{ background: '#fdf4ec', borderColor: '#f6c9a3', color: '#b4561a' }}>
+                                <Ico t={10} d={D_ESPACE} c="#c2621c" />Espace
                               </span>
                             )}
                             {(() => {
@@ -2342,9 +2372,9 @@ export default function Clients({ onNavigate, fenetre }: {
       {statutLot && (
         <ConfirmerLot ic="drapeau"
           titre={`Passer ${statutLot.cibles.length > 1 ? `${statutLot.cibles.length} demandeurs` : statutLot.cibles.length ? '1 demandeur' : 'ces contacts'} « ${STATUTS_LOT.find(x => x.k === statutLot.statut)?.lib} » ?`}
-          phrase={statutLot.statut === 'actif' ? 'La veille cherche à nouveau pour eux, sur leur recherche la plus récente (ou celles d’avant leur pause). Une ligne dans leur suivi.'
+          phrase={statutLot.statut === 'actif' ? 'Chacun a son espace client (aucun mail ne part : le mail de bienvenue se propose depuis sa fiche). La veille cherche à nouveau pour eux, sur leur recherche la plus récente (ou celles d’avant leur pause). Une ligne dans leur suivi.'
             : statutLot.statut === 'suspendu' ? 'Leur dossier se met en pause, sans date de reprise (elle se met depuis leur fiche). La veille s’arrête. Une ligne dans leur suivi.'
-              : 'Ils repassent « Prospect ». La veille s’arrête. Une ligne dans leur suivi.'}
+              : 'Ils repassent « Prospect » : leur espace client se ferme (le lien qu’ils ont reçu ne s’ouvre plus ; rien n’est perdu s’ils repassent Actif). La veille s’arrête. Une ligne dans leur suivi.'}
           liste={statutLot.cibles.map(c => nomFoyer(c) || 'Sans nom')} ignores={statutLot.ignores}
           libValider={`Passer « ${STATUTS_LOT.find(x => x.k === statutLot.statut)?.lib} » (${statutLot.cibles.length})`}
           avancement={statutLot.avancement} onValider={() => { void faireStatut(); }} onFermer={() => setStatutLot(null)} />

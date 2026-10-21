@@ -21,6 +21,7 @@ import { supabase, addJournal } from '@/lib/supabase';
 import { effacerPhotosDeBiens } from '@/lib/photos';
 import { cloreRelancesArchive } from '@/lib/relances';
 import { colonneSuspensionAbsente, lireSuspension } from '@/lib/suspension';
+import { colonneEspaceAbsente, espaceSelonStatut } from '@/lib/espace-choix';
 
 const absente = (m: string) => /does not exist|schema cache/i.test(m || '');
 
@@ -108,8 +109,8 @@ export async function archiverContact(id: string, archive: boolean): Promise<voi
    ⚠️ Si changeStatut change, changer ici aussi. */
 export type StatutLot = 'actif' | 'prospect' | 'suspendu';
 export const STATUTS_LOT: { k: StatutLot; lib: string; sous: string; c: string }[] = [
-  { k: 'actif', lib: 'Actif', sous: 'Recherche en cours : la veille cherche', c: '#10b981' },
-  { k: 'prospect', lib: 'Prospect', sous: 'Premier contact, rien de signé', c: '#8b5cf6' },
+  { k: 'actif', lib: 'Actif', sous: 'Recherche en cours, avec son espace client : la veille cherche', c: '#10b981' },
+  { k: 'prospect', lib: 'Prospect', sous: 'Premier contact, sans espace client', c: '#8b5cf6' },
   { k: 'suspendu', lib: 'Suspendu', sous: 'En pause, sans date de reprise', c: '#f59e0b' },
 ];
 
@@ -120,7 +121,9 @@ export async function changerStatutContact(id: string, statut: StatutLot): Promi
     const { data: avant } = await supabase.from('clients').select('*').eq('id', id).maybeSingle();
     aReprendre = lireSuspension(avant)?.recherches || [];
   }
-  let { data, error } = await supabase.from('clients').update({ statut, suspension: null }).eq('id', id).select('id');
+  /* Werner : comme chez Emilio, « Actif » ouvre son espace, « Prospect » le ferme (src/lib/espace-choix.ts). */
+  let { data, error } = await supabase.from('clients').update({ statut, suspension: null, ...espaceSelonStatut(statut) }).eq('id', id).select('id');
+  if (error && colonneEspaceAbsente(error.message)) ({ data, error } = await supabase.from('clients').update({ statut, suspension: null }).eq('id', id).select('id'));
   if (error && colonneSuspensionAbsente(error.message)) ({ data, error } = await supabase.from('clients').update({ statut }).eq('id', id).select('id'));
   if (error) throw new Error(error.message);
   if (!data || !(data as unknown[]).length) throw new Error('la base n’a rien modifié (session expirée ? recharge la page)');

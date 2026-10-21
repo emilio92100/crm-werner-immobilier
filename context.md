@@ -409,6 +409,14 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   bienvenue, « Renvoyer le lien », le mandat en ligne et ses rappels ne partent pas. Werner l'active
   ou le coupe sur la fiche du demandeur, onglet « Son espace ». Avant le SQL, tout le monde est sans
   espace et l'activation échoue (message rouge).
+  **Comme chez Emilio** (choix d'Alexandre) : « Actif » = avec son espace, « Prospect » = sans
+  (`src/lib/espace-choix.ts`). La création d'un demandeur (interrupteur animé
+  `shared/InterrupteurEspace.tsx`), le menu d'état de la fiche, le changement en lot et la réouverture
+  écrivent aussi `espace_client` ; les passages automatiques (suspendu pendant une signature, local
+  trouvé) n'y touchent pas. Passer Actif ou repasser Prospect ouvre d'abord une fenêtre qui explique
+  (« J'ai compris », « Ne plus m'expliquer » retenu dans le navigateur) ; un espace qui s'ouvre propose
+  le mail de bienvenue (`FenProposerBienvenue`, aussi juste après la création). Dans Contacts : la
+  pastille « Espace » sur la ligne, et les filtres « Prospects · sans espace » / « Actifs · avec espace ».
 - **Mailjet et les clés** — le compte et le domaine d'envoi de Werner, les variables Mailjet,
   `ANTHROPIC_API_KEY`, `CRON_SECRET`, Ringover, les notifications (§1).
 - **Le premier accès de Werner** — aujourd'hui, `/login` ouvre un compte Supabase créé à la main. Le

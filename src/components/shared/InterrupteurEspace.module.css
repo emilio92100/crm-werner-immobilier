@@ -1,0 +1,38 @@
+/* L'interrupteur de l'espace client. Pas de transform sur le bouton lui-même
+   (AGENTS.md §2.7) : seul le rond intérieur glisse. */
+.inter {
+  display: flex; align-items: flex-start; gap: 12px; width: 100%;
+  padding: 12px 14px; border-radius: 14px; text-align: left; cursor: pointer;
+  background: #fafaf9; border: 1px solid #ebeae8; font: inherit; color: inherit;
+  transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+.inter:hover { border-color: #dcdad7; }
+.inter[data-on='oui'] { background: #fdf4ec; border-color: #f6c9a3; box-shadow: 0 0 0 3px rgba(240, 140, 66, .08); }
+.inter:disabled { cursor: progress; opacity: .7; }
+
+.piste {
+  position: relative; flex: 0 0 auto; width: 44px; height: 26px; margin-top: 1px;
+  border-radius: 999px; background: #c9c6c2;
+  transition: background .28s ease;
+}
+.inter[data-on='oui'] .piste { background: #f08c42; }
+.bouton {
+  position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .22);
+  transition: transform .32s cubic-bezier(.34, 1.56, .64, 1);
+}
+.inter[data-on='oui'] .bouton { transform: translateX(18px); }
+
+.textes { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.textes b { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: #2e3034; }
+.textes i {
+  font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: .3px;
+  padding: 2px 8px; border-radius: 999px; background: #eceae7; color: #6b6864;
+  transition: background .25s ease, color .25s ease;
+}
+.inter[data-on='oui'] .textes i { background: #f08c42; color: #fff; }
+.textes small { font-size: 12.5px; line-height: 1.5; color: #6b6864; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bouton, .piste, .inter, .textes i { transition: none; }
+}

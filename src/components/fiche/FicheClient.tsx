@@ -22,7 +22,7 @@ import { retirerFicheOuverte } from '@/components/layout/FichesOuvertes';
 import { signalerMaj, demanderRendezVous, lireOuvertureFiche, oublierOuvertureFiche, demanderNouveauBien, demanderOngletBien, demanderVisitePour, EVT_RDV_ENREGISTRE } from '@/lib/intentions';
 import { retenirPlace, useHauteur, usePlace } from '@/lib/place-fiche';
 import CloreRelances, { relancesACocher } from '@/components/shared/CloreRelances';
-import { jetonEspace, BIENS_PAR_MAIL } from '@/lib/jeton';
+import { jetonEspace, lienEspace, BIENS_PAR_MAIL } from '@/lib/jeton';
 import { nomFoyer, conjointDe } from '@/lib/foyer';
 import {
   BasculeCriteres, CorpsCriteres, CRIT_VIDE, EXPOSITIONS, etapesCriteres,
@@ -71,6 +71,125 @@ function Portail({ children }: { children: React.ReactNode }) {
   useEffect(() => { setPret(true); }, []);
   if (!pret) return null;
   return createPortal(children, document.body);
+}
+
+/* ══ Werner : Actif ou Prospect, ce que ça change (21 octobre 2026) ══════
+   Alexandre : « un petit message explicatif pour qu'il comprenne bien,
+   quand il passe quelqu'un en actif, avec un petit pop-up, en mode j'ai
+   compris ». Les mots disent ce qui se passe pour le CLIENT, pas pour la base. */
+export function FenExpliquerEspace({ vers, prenom, onAnnuler, onValider }: {
+  vers: 'actif' | 'prospect'; prenom: string; onAnnuler: () => void; onValider: (retenir: boolean) => void | Promise<void>;
+}) {
+  const [retenir, setRetenir] = useState(false);
+  const [occupe, setOccupe] = useState(false);
+  const actif = vers === 'actif';
+  const points = actif ? [
+    { ic: 'mobile', t: 'Il a son espace client', s: 'Une page à lui, où arrivent les locaux que tu lui envoies.' },
+    { ic: 'coche', t: 'Il te répond en un clic', s: '« Ça m’intéresse », une visite, ou non avec son motif : tu le vois sur sa fiche.' },
+    { ic: 'loupe', t: 'La veille cherche pour lui', s: 'Et le point automatique peut lui écrire quand rien ne bouge.' },
+    { ic: 'envoyer', t: 'Juste après : son mail de bienvenue', s: 'Je te propose de lui envoyer son lien. Tu peux aussi le faire plus tard.' },
+  ] : [
+    { ic: 'mobile', t: 'Son espace se ferme', s: 'Le lien qu’il a reçu affichera « Ce lien n’est plus actif ».' },
+    { ic: 'envoyer', t: 'Tes envois restent possibles', s: 'Les locaux que tu lui envoies mènent à leur fiche publique, avec tes coordonnées.' },
+    { ic: 'loupe', t: 'La veille s’arrête pour lui', s: 'Plus de point automatique non plus.' },
+    { ic: 'remettre', t: 'Rien n’est perdu', s: 'Repassé Actif, il retrouve tout son espace, tel qu’il l’avait laissé.' },
+  ];
+  return (
+    <Portail>
+      <div className={styles.overlay}>
+        <div className={styles.modal} style={{ maxWidth: 480 }}>
+          <div className={styles.modalHeader}>
+            <h2 className={styles.modalTitle}>{actif ? `Passer ${prenom} en Actif` : `Repasser ${prenom} en Prospect`}</h2>
+            <button className={styles.modalClose} onClick={onAnnuler} aria-label="Fermer">✕</button>
+          </div>
+          <div className={styles.modalBody}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {points.map((x, i) => (
+                <div key={x.t} className="explique-point" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', animationDelay: `${i * 70}ms` }}>
+                  <span style={{ flex: '0 0 auto', width: 32, height: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: actif ? '#fdf4ec' : '#f4f3f2', color: actif ? '#c2621c' : '#55524e' }}>
+                    <Icone nom={x.ic} taille={16} epaisseur={2} />
+                  </span>
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <b style={{ fontSize: 14, color: '#2e3034' }}>{x.t}</b>
+                    <span style={{ fontSize: 13, color: '#6b6864', lineHeight: 1.5 }}>{x.s}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: '#6b6864', cursor: 'pointer' }}>
+              <input type="checkbox" checked={retenir} onChange={e => setRetenir(e.target.checked)} />
+              {'Ne plus m’expliquer'}
+            </label>
+          </div>
+          <div className={styles.modalFooter}>
+            <button className={styles.btn} onClick={onAnnuler} disabled={occupe}>Annuler</button>
+            <button className={`${styles.btn} ${styles.btnPrimary}`} disabled={occupe}
+              onClick={async () => { setOccupe(true); await onValider(retenir); }}>
+              {occupe ? '…' : actif ? 'J’ai compris, passer Actif' : 'J’ai compris, repasser Prospect'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Portail>
+  );
+}
+
+/* ══ Werner : son espace est prêt, le mail de bienvenue (21 octobre 2026) ═ */
+export function FenProposerBienvenue({ prenom, nom, emails, lien, envoi, dejaAccueilli, onEnvoyer, onPlusTard }: {
+  prenom: string; nom: string; emails: string[]; lien: string; envoi: boolean; dejaAccueilli: boolean;
+  onEnvoyer: () => void | Promise<void>; onPlusTard: () => void;
+}) {
+  const [copie, setCopie] = useState(false);
+  const copier = async () => { try { await navigator.clipboard.writeText(lien); setCopie(true); setTimeout(() => setCopie(false), 2000); } catch { /* ignore */ } };
+  const whatsapp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`Bonjour ${prenom}, voici votre espace : vous y retrouverez les locaux que je vous propose, et vous pourrez me répondre en un clic.\n${lien}`)}`, '_blank');
+  const contenu = dejaAccueilli
+    ? ['Que sa nouvelle recherche est ouverte dans son espace', 'Le même lien qu’avant : rien à réinstaller']
+    : ['Son lien personnel, qui ne change jamais', 'Ce que son espace lui permet : voir les locaux, répondre, demander une visite', 'Comment l’ajouter sur l’écran d’accueil de son téléphone'];
+  return (
+    <Portail>
+      <div className={styles.overlay}>
+        <div className={styles.modal} style={{ maxWidth: 480 }}>
+          <div className={styles.modalHeader}>
+            <h2 className={styles.modalTitle}>{`L’espace de ${nom || prenom} est prêt`}</h2>
+            <button className={styles.modalClose} onClick={onPlusTard} aria-label="Fermer">✕</button>
+          </div>
+          <div className={styles.modalBody}>
+            {emails.length > 0 ? (
+              <>
+                <div style={{ fontSize: 14, color: '#2e3034', lineHeight: 1.5 }}>{`Lui envoyer ${dejaAccueilli ? 'le mot qui le prévient' : 'le mail de bienvenue'} maintenant, à ${emails.join(', ')} ?`}</div>
+                <div style={{ background: '#fdf4ec', border: '1px solid #f6c9a3', borderRadius: 12, padding: '11px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: '#b4561a' }}>Ce que le mail contient</span>
+                  {contenu.map(t => (
+                    <span key={t} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13, color: '#55524e', lineHeight: 1.45 }}>
+                      <span style={{ color: '#c2621c', flex: '0 0 auto', marginTop: 1 }}><Icone nom="coche" taille={14} epaisseur={2.4} /></span>{t}
+                    </span>
+                  ))}
+                </div>
+                <div style={{ fontSize: 12.5, color: '#8a8682' }}>{'Il ne part qu’une fois. Plus tard, tu le retrouves dans l’onglet « Son espace ».'}</div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 14, color: '#2e3034', lineHeight: 1.5 }}>{`${prenom} n’a pas d’adresse mail sur sa fiche : envoie-lui son lien par message.`}</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className={styles.btn} onClick={copier}>{copie ? '✓ Lien copié' : 'Copier son lien'}</button>
+                  <button className={styles.btn} onClick={whatsapp}>WhatsApp</button>
+                </div>
+              </>
+            )}
+          </div>
+          <div className={styles.modalFooter}>
+            <button className={styles.btn} onClick={onPlusTard} disabled={envoi}>{emails.length > 0 ? 'Plus tard' : 'Fermer'}</button>
+            {emails.length > 0 && (
+              <button className={`${styles.btn} ${styles.btnPrimary}`} disabled={envoi} onClick={() => { void onEnvoyer(); }}>
+                {envoi ? 'Envoi…' : 'Envoyer maintenant'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </Portail>
+  );
 }
 
 /* Trois points et une boîte d'archive (V3.128) : absents de la table d'Icone. */
@@ -218,11 +337,22 @@ const MOTIFS_CLOTURE: { cle: string; nom: string; quoi: string; statut: string; 
   { cle: 'autre', nom: 'Autre raison', quoi: 'À préciser dans la note ci-dessous', statut: 'perdu', point: '#64748b' },
 ];
 
+/* Werner : « Ne plus m'expliquer » la fenêtre Actif / Prospect (ce
+   navigateur seulement ; rien d'important ne dépend de ce choix). */
+const CLE_EXPLICATION = 'werner-explication-actif-prospect';
+function explicationVue(): boolean {
+  try { return localStorage.getItem(CLE_EXPLICATION) === '1'; } catch { return false; }
+}
+function retenirExplication() {
+  try { localStorage.setItem(CLE_EXPLICATION, '1'); } catch { /* navigation privée */ }
+}
+
 /* Les états d'un dossier. Le libellé seul ne suffisait pas : on dit quand
    chacun s'emploie, pour qu'on choisisse sans hésiter. */
 const ETATS_CLIENT: { cle: string; nom: string; quand: string; point: string }[] = [
-  { cle: 'prospect',    nom: 'Prospect',    quand: 'Premier contact, rien de signé', point: '#8b5cf6' },
-  { cle: 'actif',       nom: 'Actif',       quand: 'Recherche en cours',             point: '#10b981' },
+  /* Werner : comme chez Emilio, « Actif » = avec son espace client (src/lib/espace-choix.ts). */
+  { cle: 'prospect',    nom: 'Prospect',    quand: 'Premier contact · sans espace client', point: '#8b5cf6' },
+  { cle: 'actif',       nom: 'Actif',       quand: 'Recherche en cours · avec son espace', point: '#10b981' },
   { cle: 'suspendu',    nom: 'Suspendu',    quand: 'En pause, à reprendre plus tard', point: '#f59e0b' },
   { cle: 'bien_trouve', nom: 'Local trouvé', quand: 'Bail ou acte signé, dossier clos', point: '#3b82f6' },
   { cle: 'perdu',       nom: 'Perdu',       quand: 'Le client ne cherche plus avec nous', point: '#ef4444' },
@@ -335,6 +465,7 @@ import { mandatsPour, type MandatOk } from '@/lib/rapprochement';
 import { ListeCoordonnees, lignesDe, nettoyer } from '@/components/shared/ListeCoordonnees';
 import { ChoixQuand } from '@/components/pages/PageAgenda';
 import FenetreIndispo from './FenetreIndispo';
+import { colonneEspaceAbsente, espaceSelonStatut, prendreBienvenue } from '@/lib/espace-choix';
 
 /* Les titres que le formulaire « Ajouter une action » écrit tout seul (un
    type, une issue d'appel) : un autre clic peut les remplacer. Un titre tapé
@@ -1609,12 +1740,12 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
      recherche vient de s'ouvrir dedans. */
   const dejaAccueilli = recherches.some(x => x.id !== rechercheActive?.id && !!x.bienvenue_envoye_le);
 
-  async function envoyerBienvenue() {
-    if (!rechercheActive || rechercheActive.bienvenue_envoye_le || envoiBienvenue) return;
+  async function envoyerBienvenue(sansConfirmer = false): Promise<boolean> {
+    if (!rechercheActive || rechercheActive.bienvenue_envoye_le || envoiBienvenue) return false;
     const dest = (client.emails || []).filter((e: string) => e && e.includes('@'));
     if (dest.length === 0) {
       alert("Ce client n'a pas d'adresse mail valide.");
-      return;
+      return false;
     }
     const quoi = dejaAccueilli
       ? `Prévenir ${dest.join(', ')} que la recherche « ${rechercheActive.nom} » est ouverte ?\n\n`
@@ -1623,7 +1754,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
       : `Envoyer le mail de bienvenue à ${dest.join(', ')} ?\n\n`
         + `Il contient le lien de son espace et l'invite à l'installer sur son téléphone. `
         + `Il ne peut être envoyé qu'une fois.`;
-    if (!confirm(quoi)) return;
+    if (!sansConfirmer && !confirm(quoi)) return false;
     setEnvoiBienvenue(true);
     try {
       const r = await fetch('/api/send-mail', {
@@ -1636,7 +1767,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
       const d = await r.json();
       if (!d?.success) {
         alert(`Le mail n'est pas parti : ${d?.results?.[0]?.error || d?.error || 'erreur inconnue'}`);
-        return;
+        return false;
       }
       if (d.avertissements?.length) signalerEchec('Le mail est parti, mais son suivi', d.avertissements.join(' ; '));
       /* On relit la recherche plutôt que de deviner : c'est le serveur qui a
@@ -1647,8 +1778,10 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
          déjà « 👋 Mail de bienvenue envoyé » quand le mail part : la fiche
          l'écrivait une deuxième fois. */
       load();
+      return true;
     } catch (e) {
       alert(`Le mail n'est pas parti : ${(e as Error).message}`);
+      return false;
     } finally {
       setEnvoiBienvenue(false);
     }
@@ -1660,16 +1793,26 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
      Activé, tout se passe comme dans le CRM d'origine. */
   const espaceClient = client.espace_client === true;
   const [basculeEspace, setBasculeEspace] = useState(false);
+  /* Comme chez Emilio : l'espace suit « Actif » / « Prospect ». Sur un autre
+     statut (suspendu…), l'interrupteur ne touche qu'à l'espace. */
   async function basculerEspaceClient(v: boolean) {
     if (basculeEspace) return;
-    if (!v && !confirm(`Couper l’espace de ${client.prenom || 'ce client'} ?\n\n`
-      + `Le lien qu’il a peut-être reçu mènera à « Ce lien n’est plus actif ». Les locaux que tu lui enverras ensuite mèneront à leur fiche publique. Tu pourras le rallumer quand tu voudras : il retrouvera tout.`)) return;
+    if (v && client.statut === 'prospect') { await changeStatut('actif'); return; }
+    if (!v && client.statut === 'actif') { await changeStatut('prospect'); return; }
+    if (!v && !confirm(`Fermer l’espace de ${client.prenom || 'ce client'} ?\n\n`
+      + `Le lien qu’il a reçu mènera à « Ce lien n’est plus actif ». Les locaux que tu lui enverras ensuite mèneront à leur fiche publique. Tu pourras le rouvrir quand tu voudras : il retrouvera tout.`)) return;
     setBasculeEspace(true);
-    const ok = await verifie(v ? 'L’activation de son espace' : 'L’arrêt de son espace',
+    const ok = await verifie(v ? 'L’ouverture de son espace' : 'La fermeture de son espace',
       supabase.from('clients').update({ espace_client: v }).eq('id', client.id).select('id'), { ligne: true });
     setBasculeEspace(false);
-    if (ok) setClient(c => ({ ...c, espace_client: v }));
+    if (ok) { setClient(c => ({ ...c, espace_client: v })); if (v) setProposerBienvenue(true); }
   }
+  /* La fenêtre qui explique Actif / Prospect, et « Ne plus m'expliquer ». */
+  const [expliquer, setExpliquer] = useState<string | null>(null);
+  /* Le mail de bienvenue proposé quand l'espace s'ouvre (ou juste après la
+     création d'un demandeur avec son espace : Clients.tsx). */
+  const [proposerBienvenue, setProposerBienvenue] = useState(false);
+  useEffect(() => { if (client.id && prendreBienvenue(client.id)) setProposerBienvenue(true); }, [client.id]);
 
   /* V3.110 — Renvoyer le lien. Alexandre : « le mail de bienvenue, on ne
      peut plus le renvoyer ; avoir un bouton à côté, renvoyer le lien, si un
@@ -2550,7 +2693,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
   async function rouvrirDossier() {
     if (!confirm('Rouvrir ce dossier ?\n\nLe statut repasse à « Actif » et la veille reprend sur cette recherche.')) return;
     setSaving(true);
-    const ok = await verifie('La réouverture du dossier', supabase.from('clients').update({ statut: 'actif', raison_perte: null }).eq('id', client.id).select('id'), { ligne: true })
+    const ok = await verifie('La réouverture du dossier', supabase.from('clients').update({ statut: 'actif', raison_perte: null, ...(client.espace_client === undefined ? {} : espaceSelonStatut('actif')) }).eq('id', client.id).select('id'), { ligne: true })
       && (!rechercheId || await verifie('La reprise de la veille', supabase.from('recherches').update({ active: true, updated_at: new Date().toISOString() }).eq('id', rechercheId).select('id'), { ligne: true }));
     if (!ok) { setSaving(false); load(); return; }
     await addJournal(client.id, 'statut_change', '↩️ Dossier rouvert — la veille reprend');
@@ -2622,9 +2765,18 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     }
   }
 
+  /* Werner : passer Actif ouvre son espace, repasser Prospect le ferme. Une
+     petite fenêtre le dit avant (« J'ai compris »), sauf si Werner a coché
+     « Ne plus m'expliquer ». */
   async function changeStatut(statut: string) {
+    if (client.statut === statut) return;
+    if ((statut === 'actif' || statut === 'prospect') && !explicationVue()) { setExpliquer(statut); return; }
+    await appliquerStatut(statut);
+  }
+  async function appliquerStatut(statut: string) {
     // Anti-doublon : ne rien faire si le statut est déjà le même
     if (client.statut === statut) return;
+    const avaitEspace = client.espace_client === true;
     /* V3.50 : « Bien trouvé » et « Perdu » ferment le dossier. Ils passent
        par la fenêtre de clôture — le motif, puis la même sortie que partout
        (relances, visites, veille, transaction ouverte). Avant, le menu ne
@@ -2638,7 +2790,11 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
        vieille date restée en base réveillerait plus tard un dossier suspendu
        « sans date » (voir src/lib/suspension.ts). Base sans la colonne : on
        écrit le statut seul. */
-    let { data, error } = await supabase.from('clients').update({ statut, suspension: null }).eq('id', client.id).select().maybeSingle();
+    let { data, error } = await supabase.from('clients').update({ statut, suspension: null, ...espaceSelonStatut(statut) }).eq('id', client.id).select().maybeSingle();
+    if (error && colonneEspaceAbsente(error.message)) {
+      ({ data, error } = await supabase.from('clients').update({ statut, suspension: null }).eq('id', client.id).select().maybeSingle());
+      if (!error && statut === 'actif') signalerEchec('Son espace client', 'lance d’abord outils/sql/espace-client-choix.sql dans Supabase.');
+    }
     if (error && colonneSuspensionAbsente(error.message)) {
       ({ data, error } = await supabase.from('clients').update({ statut }).eq('id', client.id).select().maybeSingle());
     }
@@ -2647,6 +2803,8 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
       return;
     }
     setClient(data as Client);
+    /* Son espace vient de s'ouvrir : le mail de bienvenue, s'il ne l'a pas eu. */
+    if (!avaitEspace && (data as Client).espace_client === true) setProposerBienvenue(true);
 
     /* Le statut et la veille marchaient chacun de leur côté : la veille lit le
        drapeau « active » de la recherche, que rien ne touchait. Un dossier
@@ -4521,8 +4679,9 @@ ${signatureMail()}`,
               </div>
               <p className={styles.situNotes}>{`Les locaux que tu envoies à ${client.prenom || 'ce client'} mènent à leur fiche publique : photos, description, et tes coordonnées pour te répondre. Aucun mail ne lui parle d’espace.`}</p>
               <p className={styles.situNotes}>{'Avec un espace, il retrouve tous les locaux proposés sur une page à lui, répond « ça m’intéresse », demande une visite ou dit non, et tu vois ses réponses ici. Le point automatique et le mail de bienvenue passent aussi par l’espace.'}</p>
+              {client.statut === 'prospect' && <p className={styles.situNotes}>{'Lui ouvrir son espace, c’est le passer « Actif ».'}</p>}
               <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} style={{ alignSelf: 'flex-start' }} onClick={() => basculerEspaceClient(true)} disabled={basculeEspace}>
-                {basculeEspace ? 'Activation…' : 'Activer son espace'}
+                {basculeEspace ? 'Ouverture…' : client.statut === 'prospect' ? 'Ouvrir son espace (passer Actif)' : 'Ouvrir son espace'}
               </button>
             </div>
           </div>
@@ -4545,7 +4704,7 @@ ${signatureMail()}`,
                     ? 'Elle a déjà son espace : ce mail lui dit que cette recherche s’y trouve aussi.'
                     : 'Son lien d’espace, et comment l’installer sur son téléphone pour recevoir les biens en notification.'}</p>
                 {!rechercheActive.bienvenue_envoye_le && (
-                  <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} style={{ alignSelf: 'flex-start' }} onClick={envoyerBienvenue} disabled={envoiBienvenue}>
+                  <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} style={{ alignSelf: 'flex-start' }} onClick={() => { void envoyerBienvenue(); }} disabled={envoiBienvenue}>
                     {envoiBienvenue ? 'Envoi…' : dejaAccueilli ? 'Prévenir le client' : 'Envoyer le mail de bienvenue'}
                   </button>
                 )}
@@ -4563,7 +4722,7 @@ ${signatureMail()}`,
                 des critères : c'est un mail automatique, il vit avec l'espace. */}
             {client.id && <PointAuto clientId={client.id} integre />}
             <button type="button" className={styles.btn} style={{ alignSelf: 'flex-start' }} onClick={() => basculerEspaceClient(false)} disabled={basculeEspace}>
-              {basculeEspace ? 'Enregistrement…' : 'Couper son espace'}
+              {basculeEspace ? 'Enregistrement…' : client.statut === 'actif' ? 'Fermer son espace (repasser Prospect)' : 'Fermer son espace'}
             </button>
           </div>
         )}
@@ -4681,7 +4840,7 @@ ${signatureMail()}`,
                     son application : le bouton ne lui renvoie pas un lien, il
                     lui annonce simplement que la nouvelle recherche est ouverte
                     au même endroit. */}
-                <button className={styles.editBtn} onClick={envoyerBienvenue}
+                <button className={styles.editBtn} onClick={() => { void envoyerBienvenue(); }}
                   disabled={!!rechercheActive?.bienvenue_envoye_le || envoiBienvenue}
                   title={rechercheActive?.bienvenue_envoye_le
                     ? `Déjà envoyé le ${new Date(rechercheActive.bienvenue_envoye_le).toLocaleDateString('fr-FR')}. S’il ne l’a pas reçu : « Renvoyer le lien », juste à côté.`
@@ -5880,6 +6039,20 @@ ${signatureMail()}`,
         </Portail>
       )}
 
+      {/* Werner : ce que change le passage en Actif ou en Prospect. */}
+      {expliquer && (
+        <FenExpliquerEspace vers={expliquer as 'actif' | 'prospect'} prenom={client.prenom || 'ce client'}
+          onAnnuler={() => setExpliquer(null)}
+          onValider={async (retenir) => { if (retenir) retenirExplication(); const st = expliquer; setExpliquer(null); if (st) await appliquerStatut(st); }} />
+      )}
+      {/* Werner : son espace vient de s'ouvrir — le mail de bienvenue. */}
+      {proposerBienvenue && espaceClient && rechercheActive && !rechercheActive.bienvenue_envoye_le && (
+        <FenProposerBienvenue prenom={client.prenom || 'ce client'} nom={`${client.prenom || ''} ${client.nom || ''}`.trim()}
+          emails={(client.emails || []).filter((e: string) => e && e.includes('@'))}
+          lien={lienEspace(client.token_espace)} envoi={envoiBienvenue} dejaAccueilli={dejaAccueilli}
+          onEnvoyer={async () => { if (await envoyerBienvenue(true)) setProposerBienvenue(false); }}
+          onPlusTard={() => setProposerBienvenue(false)} />
+      )}
       {showCloture && (
         <Portail>
         <div className={styles.overlay}>
