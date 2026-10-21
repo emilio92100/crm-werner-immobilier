@@ -272,6 +272,11 @@ export function adressesClient(c: { emails?: unknown; conjoint?: unknown } | nul
 /* ── Les mails ── */
 const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || 'contact@wernerimmobilier.com';
 const FROM_NAME = process.env.MAILJET_FROM_NAME || 'Werner Immobilier';
+/* 21 octobre 2026 : les mails d'une signature (lien, code, exemplaire signé,
+   renonciation) partent de signature@wernerimmobilier.com, réglé sur Vercel par
+   MAILJET_FROM_SIGNATURE ; les réponses vont à contact@. Sans ce réglage, ils
+   partent de l'adresse habituelle, comme avant. */
+const FROM_SIGNATURE = (process.env.MAILJET_FROM_SIGNATURE || '').trim();
 
 export const echappe = (t: string) =>
   String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -283,6 +288,8 @@ type MailAEnvoyer = {
   /* L'expéditeur affiché : Alexandre (par défaut), le CRM (ses alertes), ou
      l'agence seule (le mail du code : un nom neutre, qu'on reconnaît). */
   pj?: PieceJointe[]; deLaPartDe?: 'alexandre' | 'crm' | 'agence'; repondreA?: string;
+  /* Un mail de signature : l'adresse signature@ quand elle est réglée. */
+  expediteur?: 'signature';
   /* V3.152 : le pixel d'ouverture de Mailjet, pour ce mail seulement. Coupé
      partout depuis le réglage de la délivrabilité (context.md §8). */
   suiviOuverture?: boolean;
@@ -308,10 +315,10 @@ export async function envoyerMailSuivi(o: MailAEnvoyer): Promise<{ erreur: strin
       headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
       body: JSON.stringify({
         Messages: [{
-          From: { Email: FROM_EMAIL, Name: o.deLaPartDe === 'crm' ? 'Werner · CRM' : o.deLaPartDe === 'agence' ? 'Werner Immobilier' : FROM_NAME },
+          From: { Email: o.expediteur === 'signature' && FROM_SIGNATURE ? FROM_SIGNATURE : FROM_EMAIL, Name: o.deLaPartDe === 'crm' ? 'Werner · CRM' : o.deLaPartDe === 'agence' ? 'Werner Immobilier' : FROM_NAME },
           To: [{ Email: o.a, ...(o.nomA ? { Name: o.nomA } : {}) }],
           ...(o.cci && o.cci.toLowerCase() !== o.a.toLowerCase() ? { Bcc: [{ Email: o.cci }] } : {}),
-          ...(o.repondreA ? { ReplyTo: { Email: o.repondreA } } : {}),
+          ...(o.repondreA || (o.expediteur === 'signature' && FROM_SIGNATURE) ? { ReplyTo: { Email: o.repondreA || FROM_EMAIL } } : {}),
           Subject: o.sujet,
           TextPart: o.texte,
           HTMLPart: o.html,

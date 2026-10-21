@@ -242,7 +242,7 @@ export async function prevenirArret(sigs: SigDoc[], m: Modele, d: Donnees, annul
   const prevenus: string[] = [], echecs: string[] = [];
   for (const x of aPrevenir(sigs)) {
     const mail = mailArret({ s: x, m, d, annulation });
-    const e = await envoyerMail({ a: x.personne.email, nomA: nomSig(x), sujet: mail.sujet, texte: mail.texte, html: mail.html, repondreA: 'contact@wernerimmobilier.com' });
+    const e = await envoyerMail({ expediteur: 'signature', a: x.personne.email, nomA: nomSig(x), sujet: mail.sujet, texte: mail.texte, html: mail.html, repondreA: 'contact@wernerimmobilier.com' });
     if (e) echecs.push(`${nomSig(x)} : ${e}`); else prevenus.push(nomSig(x));
   }
   return { prevenus, echecs };
@@ -263,7 +263,7 @@ export function lienNeuf(s: SigDoc, le: string, note?: string, expire?: string):
 export async function envoyerLien(s: SigDoc, m: Modele, d: Donnees, rappel: 0 | 1 | 2 = 0): Promise<string | null> {
   if (!s.jeton || !s.lien_expire_le) return 'lien absent';
   const x = mailInvitation({ s, m, d, lien: lienSigner(s.jeton), expire: s.lien_expire_le, rappel });
-  return envoyerMail({ a: s.personne.email, nomA: nomSig(s), sujet: x.sujet, texte: x.texte, html: x.html, repondreA: 'contact@wernerimmobilier.com' });
+  return envoyerMail({ expediteur: 'signature', a: s.personne.email, nomA: nomSig(s), sujet: x.sujet, texte: x.texte, html: x.html, repondreA: 'contact@wernerimmobilier.com' });
 }
 
 /* Renvoie son lien (le même s'il vaut encore, sinon un neuf), ou un rappel.
@@ -360,7 +360,7 @@ export async function envoyerCode(sb: SupabaseClient, s: SigDoc, tous: SigDoc[],
   if (!data) return { erreur: ARRETEE, statut: 409 };
   const x = data as SigDoc;
   const mail = mailCode({ s: x, m, d, code, minutes: CODE_MINUTES });
-  const e = await envoyerMail({ a: email, nomA: nomSig(x), deLaPartDe: 'agence', sujet: mail.sujet, texte: mail.texte, html: mail.html });
+  const e = await envoyerMail({ expediteur: 'signature', a: email, nomA: nomSig(x), deLaPartDe: 'agence', sujet: mail.sujet, texte: mail.texte, html: mail.html });
   if (e) return { erreur: 'mail', statut: 502 };
   return { email: masquerEmail(email), s: x };
 }
@@ -637,7 +637,7 @@ export async function envoyerExemplaire(o: {
      C'est la trace écrite de ce qu'il a vu en signant. */
   const r = o.s.cle !== 'agence' && o.m.rappel ? o.m.rappel(o.d) : null;
   const rappel = r ? `Pour rappel : ${r.titre.charAt(0).toLowerCase() + r.titre.slice(1)}, ${r.valeur}${r.detail ? ` (${r.detail})` : ''}${r.ecart ? `, ${r.ecart}` : ''}.` : '';
-  return envoyerMail({
+  return envoyerMail({ expediteur: 'signature',
     a: o.s.personne.email, nomA: nomSig(o.s), pj, repondreA: 'contact@wernerimmobilier.com',
     sujet: o.complet ? `${Doc}, signé${e} par tous` : `${Doc} : votre signature est enregistrée`,
     texte: `Bonjour ${prenom},\n\n${sansCourbes(corps)}${rappel ? `\n\n${sansCourbes(rappel)}` : ''}\n\nWerner Immobilier\n\n—\n${sansCourbes(pied)}`,

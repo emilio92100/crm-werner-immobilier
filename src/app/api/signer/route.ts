@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
         }).eq('id', co.id);
         if (error) return ko('enregistrement', 500, { detail: error.message });
         const joli = `${code.slice(0, 3)} ${code.slice(3)}`;
-        const eMail = await envoyerMail({
+        const eMail = await envoyerMail({ expediteur: 'signature',
           a: p.email, nomA: nomDe(p), deLaPartDe: 'agence',
           sujet: `Votre code de signature : ${code}`,
           texte: `Bonjour ${p.prenom},\n\nVoici votre code pour signer votre mandat de recherche : ${joli}\n\nIl est valable ${CODE_MINUTES} minutes.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.\n\nWerner Immobilier`,
@@ -279,7 +279,7 @@ export async function POST(req: NextRequest) {
           client_id: l.client_id, recherche_id: l.recherche_id, type: 'rappel_client', statut: 'en_attente', date_echeance: le,
           note: `${moi} a renoncé au mandat de recherche n° ${l.numero} ; il continue avec ${premier}. À rappeler.`,
         }));
-        await envoyerMail({
+        await envoyerMail({ expediteur: 'signature',
           a: co.personne.email, nomA: moi, repondreA: 'contact@wernerimmobilier.com',
           sujet: `Votre renonciation au mandat de recherche n° ${l.numero}`,
           texte: `Bonjour ${co.personne.prenom},\n\nNous avons bien reçu votre renonciation au mandat de recherche n° ${l.numero}, le ${dateLongue(le)} à ${heureParis(le)}. Il ne vous engage plus, sans aucun frais.\n\nWerner Immobilier`,
@@ -287,7 +287,7 @@ export async function POST(req: NextRequest) {
             <p>Nous avons bien reçu votre renonciation au <b>mandat de recherche n° ${echappe(l.numero)}</b>, le ${dateLongue(le)} à ${heureParis(le)}. Il ne vous engage plus, sans aucun frais.</p>
             <p>Werner Immobilier</p>`, 'Ce message vaut accusé de réception de votre rétractation.'),
         });
-        await envoyerMail({
+        await envoyerMail({ expediteur: 'signature',
           a: l.mandant.email, nomA: premier, repondreA: 'contact@wernerimmobilier.com',
           sujet: `${co.personne.prenom} a renoncé au mandat de recherche n° ${l.numero}`,
           texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a renoncé au mandat de recherche n° ${l.numero}, le ${dateLongue(le)}. Le mandat continue avec vous. Si vous souhaitez y mettre fin aussi, vous pouvez le faire depuis votre espace, rubrique « Ma recherche ».\n\nWerner Immobilier`,
@@ -333,7 +333,7 @@ export async function POST(req: NextRequest) {
         if (signe) {
           await envoyerExemplaire({ a: l.mandant, numero: l.numero, signe, complet: true, fin, attendus: [] });
         }
-        await envoyerMail({
+        await envoyerMail({ expediteur: 'signature',
           a: l.mandant.email, nomA: premier, repondreA: 'contact@wernerimmobilier.com',
           sujet: `${co.personne.prenom} ne signera pas le mandat de recherche n° ${l.numero}`,
           texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a indiqué ne pas être concerné par cette recherche : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.\n\nS'il s'agit d'une erreur, appelez Werner au 01 87 66 06 00 : il lui renverra un lien.\n\nWerner Immobilier`,

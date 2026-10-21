@@ -73,6 +73,8 @@ et les colonnes `clients.vendeur_*`), puis `outils/sql/werner-commerce.sql` (§2
 | `WERNER_ACCESS_CODE` (l'ancien nom `EMILIO_ACCESS_CODE` est encore lu) | Facultative : sans elle, le badge est signé avec la seule clé de service (`codeAcces()`, `src/lib/badge.ts`). La changer invalide tous les badges. À vérifier sur Vercel |
 | `WERNER_MAILS_AUTORISES` (ou `EMILIO_MAILS_AUTORISES`) | Facultative : la liste des adresses qui peuvent entrer. Vide, tout compte Supabase du projet entre |
 | `MAILJET_API_KEY` · `MAILJET_API_SECRET` · `MAILJET_FROM_EMAIL` · `MAILJET_FROM_NAME` | **À poser.** Sans elles, aucun mail ne part. Replis d'expéditeur : contact@wernerimmobilier.com, « Werner Immobilier » |
+| `MAILJET_FROM_SIGNATURE` | **À poser** après la validation du domaine dans Mailjet : `signature@wernerimmobilier.com`. Les mails d'une signature (lien, code, exemplaire signé, renonciation : l'option `expediteur: 'signature'` de `envoyerMail`) partent de cette adresse, réponses vers contact@. Vide, ils partent de `MAILJET_FROM_EMAIL` |
+| `SITE_CODE_APERCU` | Le code du bouton « Accès avant-première » de la page d'attente de wernerimmobilier.com (`src/lib/apercu-site.ts`). Jamais écrit dans le dépôt, qui est public. Vide, le bouton refuse tout code |
 | `ANTHROPIC_API_KEY` · `CRON_SECRET` | **À poser** : la clé de l'IA ; le secret des tâches planifiées (sans lui, elles refusent de tourner, c'est voulu) |
 | `RINGOVER_CLE_CONTACT` · `RINGOVER_CLE_RECHERCHE` · `NEXT_PUBLIC_HOTE_ESPACE` | **À poser** quand Ringover sera branché, et quand le sous-domaine de l'espace existera (§6) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY` · `VAPID_SUBJECT` | À poser pour les notifications de l'espace client |
@@ -368,8 +370,13 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   d'origine (réserve de numéros, numéro posé à la signature, mandat en ligne), et la fiche du mandat
   en ligne (`src/components/fiche/MandatEnLigne.tsx`) cessera de renvoyer à ImmoFacile pour réserver
   un numéro.
-- **L'adresse de l'espace client** — un sous-domaine à créer, puis `NEXT_PUBLIC_HOTE_ESPACE`. Avant,
-  changer la redirection de l'adresse nue vers wernerimmobilier.com (§7).
+- **L'adresse de l'espace client** — fait le 21 octobre 2026 côté DNS : wernerimmobilier.com,
+  www, espace et crm pointent sur ce projet Vercel (IONOS, TTL 5 minutes ; l'hébergement WordPress
+  piraté est débranché du domaine, pas encore résilié). Reste à poser `NEXT_PUBLIC_HOTE_ESPACE` =
+  espace.wernerimmobilier.com une fois le domaine validé par Vercel, puis
+  `NEXT_PUBLIC_MAIL_IMAGES_URL` et `NEXT_PUBLIC_CRM_URL` (https://crm.wernerimmobilier.com).
+  Anciens enregistrements, pour revenir en arrière : A @ et A www 217.160.0.153, AAAA @ et AAAA www
+  2001:8d8:100f:f000::200 (service WordPress d'IONOS).
 - **Mailjet et les clés** — le compte et le domaine d'envoi de Werner, les variables Mailjet,
   `ANTHROPIC_API_KEY`, `CRON_SECRET`, Ringover, les notifications (§1).
 - **Le premier accès de Werner** — aujourd'hui, `/login` ouvre un compte Supabase créé à la main. Le
