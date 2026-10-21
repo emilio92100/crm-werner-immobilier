@@ -402,7 +402,7 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
       return { ...t, n: l.length, sous: n ? pluriel(n, 'nouvelle', 'nouvelles') : 'Rien de nouveau', vif: n > 0, on: cat === t.k, choisir: () => setCat(t.k as Categorie) };
     })
     : prov === 'portails'
-      ? [...PORTAILS.map(x => ({ k: x.k as string, lib: x.lib, libCourt: x.lib, c: x.c, ic: '', court: x.court, tous: false })), { k: 'tous', lib: 'Tous les portails', libCourt: 'Tous', c: BLEU, ic: 'liste', court: '', tous: true }].map(t => {
+      ? [...PORTAILS.map(x => ({ k: x.k as string, lib: x.k === 'seloger' ? 'SeLoger Bureaux & Commerces' : x.lib, libCourt: x.lib, c: x.c, ic: '', court: x.court, tous: false })), { k: 'tous', lib: 'Tous les portails', libCourt: 'Tous', c: BLEU, ic: 'liste', court: '', tous: true }].map(t => {
         const l = demandes.filter(d => !d.archive && provenanceDe(d).portail && (t.k === 'tous' || provenanceDe(d).k === t.k));
         const n = l.filter(d => statutDe(d.statut).k === 'nouveau').length;
         return { ...t, n: l.length, sous: l.length ? (n ? pluriel(n, 'nouvelle', 'nouvelles') : 'Rien de nouveau') : 'Avec la passerelle SeLoger', vif: n > 0, on: portail === t.k, choisir: () => setPortail(t.k as Portail) };
@@ -530,6 +530,8 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
             )}
             <button type="button" className={s.btn} onClick={() => { setCharge(true); charger(); }}>Réessayer</button>
           </div>
+        ) : sansPortails ? (
+          <PasserelleSeLoger />
         ) : demandes.length === 0 ? (
           <div className={s.vide}>
             <span className={s.videIc}><PictoBoite taille={26} /></span>
@@ -594,6 +596,27 @@ export default function PageDemandesSite({ onNavigate }: { onNavigate: (page: st
 }
 
 /* ── Une demande dans la liste ─────────────────────────────────────────── */
+/* ── Portails : la passerelle SeLoger, pas encore branchée (21 octobre 2026) ──
+   Alexandre : « si Werner sélectionne Portail, mettre un petit message : à
+   connecter, contacter le support SeLoger pour faire la jonction ». Montré tant
+   qu'aucune demande n'est arrivée d'un portail : la première demande reçue le
+   fait disparaître (lib/seloger-contacts-serveur.ts, outils/sql/demandes-portails.sql). */
+export function PasserelleSeLoger() {
+  return (
+    <div className={s.vide}>
+      <span className={s.videIc}><PictoBoite taille={26} /></span>
+      <span className={s.aFaire}>À faire</span>
+      <div className={s.videTitre}>Les demandes SeLoger ne sont pas encore branchées</div>
+      <div className={s.videSous}>{'Pour l’instant, les messages reçus sur SeLoger Bureaux & Commerces arrivent seulement par mail, sur contact@wernerimmobilier.com.'}</div>
+      <ol className={s.etapesPasserelle}>
+        <li><span>{'Contacter le support SeLoger (votre conseiller ou le service client pro) et demander l’envoi automatique des contacts vers le CRM.'}</span></li>
+        <li><span>{'SeLoger fournit des codes de connexion : les transmettre à Alexandre, qui les pose dans le CRM.'}</span></li>
+        <li><span>{'Ensuite, chaque demande reçue sur SeLoger arrive ici, avec le local concerné, comme celles du site.'}</span></li>
+      </ol>
+    </div>
+  );
+}
+
 function CarteDemande({ d, on, eclair, maintenant, rang, onChoisir }: {
   d: DemandeSite; on: boolean; eclair?: boolean; maintenant: number; rang: number; onChoisir: () => void;
 }) {

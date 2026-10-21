@@ -1048,3 +1048,23 @@
 @media (prefers-reduced-motion: reduce) {
   .pubBandeau, .pubTuile { animation: none; }
 }
+
+/* Portails : la passerelle SeLoger pas encore branchée (21 octobre 2026). */
+.aFaire {
+  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px;
+  background: #fdf1e3; color: #c2621c; border: 1px solid #f2d3ad;
+  font-size: 11.5px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase;
+}
+.etapesPasserelle {
+  margin: 10px 0 0; padding: 0; list-style: none; counter-reset: pas;
+  display: flex; flex-direction: column; gap: 10px; max-width: 480px; text-align: left;
+}
+.etapesPasserelle > li {
+  counter-increment: pas; display: flex; gap: 10px; align-items: flex-start;
+  font-size: 14px; line-height: 1.5; color: #4b5563;
+}
+.etapesPasserelle > li::before {
+  content: counter(pas); flex: 0 0 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center; background: #2e3034; color: #fff;
+  font-size: 12px; font-weight: 700; margin-top: 1px;
+}

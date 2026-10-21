@@ -62,7 +62,10 @@ export const PROVENANCES: { k: Provenance; lib: string; court: string; c: string
   { k: 'logicimmo', lib: 'Logic-Immo', court: 'LI', c: '#0b6e6a', fond: '#e9f5f4', trait: '#bfe3df', portail: true },
   { k: 'bellesdemeures', lib: 'Belles Demeures', court: 'BD', c: '#5b2d6e', fond: '#f5eef8', trait: '#dfc9e8', portail: true },
 ];
-export const PORTAILS = PROVENANCES.filter(x => x.portail);
+/* Werner (21 octobre 2026) : SeLoger Bureaux & Commerces seul. Logic-Immo et
+   Belles Demeures (résidentiel) restent dans PROVENANCES pour lire une demande
+   déjà rangée, mais ne sont plus proposés. */
+export const PORTAILS = PROVENANCES.filter(x => x.portail && x.k === 'seloger');
 export const PAGE_PUB = 'estimation.wernerimmobilier.com';
 const LIGNE_PUB = /^\s*Page\s*:\s*estimation\.emilio-immo\.com\s*$/im;
 export const vientDeLaPub = (message: string | null | undefined) => LIGNE_PUB.test(String(message ?? ''));
