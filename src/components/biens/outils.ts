@@ -9,7 +9,7 @@ import { visitePasseeParis } from '@/lib/visites';
 import { signalerEchec } from '@/lib/ecritures';
 import { toutLire } from '@/lib/registre';
 import { modele, aujourdhui, lirePersonnes, PERSONNE_VIDE, type Personne } from '@/lib/actes';
-import { correspondance, criteresDepuisRecherche, grouperSecteurs, type Correspondance } from '@/lib/correspondance';
+import { correspondance, criteresDepuisRecherche, grouperSecteurs, lireCriteresPro, type Correspondance } from '@/lib/correspondance';
 import { raisonEcart, type RaisonEcart } from '@/lib/ecart-acheteur';
 import { conjointDe } from '@/lib/foyer';
 import { ETAPES_EN_VENTE, TYPES_CONTACT, acheteurEnCours, colonneContactAbsente, typesDe, typesSelonBiens } from '@/lib/contacts';
@@ -498,7 +498,11 @@ export const SEUIL_LISTE = 50;
 /* Ce qui manque à une recherche pour être jugée : « budget », « secteur ». */
 export function manqueRecherche(r: RechercheMini): string[] {
   const m: string[] = [];
-  if (!(Number(r.budget_max) > 0)) m.push('budget');
+  /* Werner (21 octobre 2026) : le loyer maximum d'un demandeur qui veut louer
+     est dans `criteres_pro.loyerMax`, pas dans `budget_max` (le prix d'une
+     cession ou d'un achat). Sans ce test, tout demandeur « location » passait
+     « à compléter » et n'était jamais compté parmi les demandeurs potentiels. */
+  if (!(Number(r.budget_max) > 0) && !(Number(lireCriteresPro(r.criteres_pro).loyerMax) > 0)) m.push('budget');
   const sect = (r as Record<string, unknown>).secteurs;
   if (!Array.isArray(sect) || !sect.some(x => String(x || '').trim())) m.push('secteur');
   return m;
@@ -577,11 +581,15 @@ export const noteJournal = (n: number) => (n >= 0 ? ` · correspondance ${n} %` 
    pas montrée, avec sa raison. Les cases s'additionnent : leur somme est le
    nombre de recherches regardées (`total`). Les pas montrées sont rangées
    par raison, les plus proches d'abord (`ordre`). */
-export type RaisonCache = RaisonEcart | 'loin' | 'type' | 'peu';
+/* 21 octobre 2026 : `nature` (pas ce qu'il cherche) écrit en toutes lettres, en plus de
+   RaisonEcart qui le porte : le fichier se compile avec l'ancien ecart-acheteur.ts comme avec
+   le nouveau (les deux partent en deux fois sur GitHub). */
+export type RaisonCache = RaisonEcart | 'nature' | 'loin' | 'type' | 'peu';
 export const RAISONS_CACHE: Record<RaisonCache, { lib: string; sous: string }> = {
   secteur: { lib: 'Autre secteur', sous: 'Le bien n’est pas dans les villes qu’ils cherchent.' },
   type: { lib: 'Autre type de local', sous: 'Ils cherchent autre chose.' },
-  budget: { lib: 'Trop cher pour eux', sous: 'Plus de 10 % au-dessus de leur budget.' },
+  budget: { lib: 'Trop cher pour eux', sous: 'Loyer ou prix à plus de 10 % au-dessus de leur budget.' },
+  nature: { lib: 'Pas ce qu’ils cherchent', sous: 'Une location pour qui veut acheter, un fonds pour qui veut louer…' },
   surface: { lib: 'Trop petit', sous: 'Moins de 90 % de la surface qu’ils demandent.' },
   chambres: { lib: 'Pas assez de bureaux', sous: 'Il leur en faut davantage.' },
   indispensable: { lib: 'Il manque un indispensable', sous: 'Un équipement qu’ils exigent n’y est pas.' },
@@ -595,6 +603,17 @@ function detailEcart(raison: RaisonEcart, corr: Correspondance, bc: ReturnType<t
   if (raison === 'budget' && cr.budgetMax && bc.prix) {
     const plus = Math.round((bc.prix / cr.budgetMax - 1) * 100);
     return { detail: `+${plus} % · jusqu’à ${eurosSuivi(cr.budgetMax)}`, ordre: plus };
+  }
+  /* Werner : un loyer ou un prix d'affaire trop haut — la ligne le dit (les
+     mêmes lignes que LIGNES_PRIX, src/lib/ecart-acheteur.ts). */
+  if (raison === 'budget') {
+    const LIGNES_PRIX = ['Budget', 'Loyer annuel', 'Droit au bail', 'Prix du fonds', 'Prix'];
+    const l = corr.lignes.find(x => LIGNES_PRIX.includes(x.lib) && x.etat === 'non');
+    if (l) return { detail: `${l.valeur} · ${l.demande}`, ordre: 0 };
+  }
+  if ((raison as string) === 'nature') {
+    const l = corr.lignes.find(x => x.lib === 'Ce qu’il cherche');
+    return { detail: l ? `il cherche : ${l.demande.toLowerCase()}` : '', ordre: -corr.note };
   }
   if (raison === 'secteur') {
     const villes = [...new Set(grouperSecteurs(cr.secteurs || []).map(v => v.ville))];

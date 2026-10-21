@@ -1266,6 +1266,14 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
   const rechRappro = useMemo(() => recherchesRappro(liste), [liste]);
   const tries = useMemo(() => acheteursTries(bien, rechRappro, liste.clients, detail?.copies || []), [bien, rechRappro, liste, detail]);
   const acheteurs = tries.retenus;
+  /* Le dernier rapprochement, pour dire sur la carte « Demandeurs
+     potentiels » si les pistes ont été vérifiées (« 4 oui · 3 à voir »). */
+  const derniereSeance = useMemo(() => {
+    const l = (detail?.suivi || []).map(lireSeance).filter((x): x is NonNullable<ReturnType<typeof lireSeance>> => !!x)
+      .sort((p, q) => String(q.le).localeCompare(String(p.le)));
+    const se = l[0];
+    return se ? { le: se.le, oui: se.lignes.filter(x => x.v === 'oui').length, aVoir: se.lignes.filter(x => x.v === 'a_voir').length } : null;
+  }, [detail]);
   /* V3.112 : l'onglet « Rapprochement » — tout le tri de la base (outils.ts). */
   const tri = useMemo(() => triBien(bien, rechRappro, liste.clients, detail?.copies || []), [bien, rechRappro, liste, detail]);
   /* « Un autre client… » : la fenêtre d'envoi avec la recherche par nom (LotBiens). */
@@ -2354,7 +2362,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
             {!avant && <CarteVisites nbVisites={nbVisites} nbAVenir={visitesAVenir.length} nbOffres={offresOuvertes.length} repartition={repartition} prochaine={prochaineVisite}
               onVoir={() => setOnglet('visites')} onVisite={ouvrirVisite} onOffre={ouvrirOffre} />}
             {(avant || e !== 'vendu') && <CartePourLaVisite {...visitePourCarte(d)} onModifier={() => onModifier('pratique')} />}
-            {avant && <CarteAcheteurs acheteurs={acheteurs} mode={mode} onVoir={() => setOnglet('acheteurs')} />}
+            {avant && <CarteAcheteurs acheteurs={acheteurs} mode={mode} bien={bien} seance={derniereSeance} onVoir={() => setOnglet('acheteurs')} />}
           </Kpis>
           )}
           {/* V3.172 : le nom de l'acquéreur ouvre sa fiche ; le montant est la

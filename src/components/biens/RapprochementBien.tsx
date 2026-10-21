@@ -46,7 +46,7 @@ const pause = (ms: number) => new Promise(ok => setTimeout(ok, ms));
 const CHEVRON = 'm6 9 6 6 6-6';
 
 const ICONE_CACHE: Record<RaisonCache, string> = {
-  secteur: 'lieu', type: 'maison', budget: 'euro', surface: 'regle', chambres: 'lit', indispensable: 'cadenas', loin: 'cible', peu: 'info',
+  secteur: 'lieu', type: 'maison', budget: 'euro', surface: 'regle', chambres: 'lit', indispensable: 'cadenas', loin: 'cible', peu: 'info', nature: 'cle',
 };
 
 /* ── Une séance de rapprochement, gardée dans l'historique du bien ── */
@@ -412,7 +412,7 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
         {aide && !en && (
           <div className={r.aide}>
             <ol className={r.aideEtapes}>
-              <li><b>{'Le premier tri'}</b><span>{'Les recherches ouvertes de tes demandeurs (actifs, prospects, en pause), du même type de local. Écartées d’office : budget dépassé de plus de 10 %, ville hors de leurs secteurs, surface sous 90 % de leur minimum, un indispensable qui manque.'}</span></li>
+              <li><b>{'Le premier tri'}</b><span>{'Les recherches ouvertes de tes demandeurs (actifs, prospects, en pause), du même type de local. Écartées d’office : loyer ou prix dépassé de plus de 10 %, pas ce qu’ils cherchent (une location pour qui veut acheter…), ville hors de leurs secteurs, surface sous 90 % de leur minimum, un indispensable qui manque.'}</span></li>
               <li><b>{'La relecture'}</b><span>{'Chaque dossier qui passe est relu comme tu le ferais : ses indispensables, ses précisions, son parcours, ses comptes rendus de visite, ce qu’il a dit des biens montrés, face à toute la fiche de l’affaire et ta visite sur place. Ni nom, ni téléphone, ni adresse ne sont lus.'}</span></li>
               <li><b>{'Le résultat'}</b><span>{'Pour chacun, un avis : Oui, À voir ou Non, et une note de potentiel sur 100 : ses chances d’être intéressé. Puis une phrase, ses plus et ses moins. Jusqu’à 7 % au-dessus de son budget, ça se négocie : ce n’est pas un non.'}</span></li>
               <li><b>{'Gardé, daté'}</b><span>{'Chaque rapprochement reste ici, avec sa date, et dans l’historique de l’affaire. Relancé, il ne relit que ce qui a changé : un nouveau demandeur, une recherche modifiée, l’affaire ou son montant.'}</span></li>

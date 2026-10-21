@@ -6,10 +6,10 @@
    L'onglet lui-même, « Rapprochement », est dans RapprochementBien.tsx
    (V3.112 : il remplace la liste d'ici). */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Ic } from '@/components/documents/ApercuActe';
-import { dateCourte, lirePhotos, specsBien, titreBien, villeAffichee, type BienVente } from '@/lib/biens-vente';
+import { dateCourte, lirePhotos, specsBien, titreBien, versCorrespondance, villeAffichee, type BienVente } from '@/lib/biens-vente';
 import { prixCarte } from './CarteBien';
 import { demanderOuvertureFiche } from '@/lib/intentions';
 import {
@@ -108,8 +108,18 @@ export function Illu() {
   );
 }
 
-/* ══ LA CARTE DE LA VUE D'ENSEMBLE ═══════════════════════════════════════ */
-export function CarteAcheteurs({ acheteurs, mode, onVoir }: { acheteurs: Acheteur[]; mode: ModeAcheteurs; onVoir: () => void }) {
+/* ══ LA CARTE DE LA VUE D'ENSEMBLE ═══════════════════════════════════════
+   21 octobre 2026 (repris du CRM d'Emilio, V3.224-225) — Alexandre : « ça
+   affiche 99 en gros : on a l'impression qu'il y a 99 acheteurs pour ce bien.
+   Il faut prendre plus de recul… et que l'explication soit simple, quand il a
+   un local ou une affaire ». Le chiffre se lit pour ce qu'il est : des pistes
+   à vérifier, « À confirmer » à côté, à peine plus gros que le texte. Dessous,
+   le premier tri en clair, puis où en est la vérification : le dernier
+   rapprochement (« Vérifié le … : 4 oui · 3 à voir ») ou « Pas encore
+   vérifié ». Le « ? » ouvre « Comment lire ce chiffre » ; le lien mène au
+   rapprochement. */
+export type SeanceCarte = { le: string; oui: number; aVoir: number };
+export function CarteAcheteurs({ acheteurs, mode, onVoir, bien, seance }: { acheteurs: Acheteur[]; mode: ModeAcheteurs; onVoir: () => void; bien?: BienVente; seance?: SeanceCarte | null }) {
   const liste = acheteurs.filter(x => fiable(x) && x.corr.note >= SEUIL_LISTE);
   const bons = liste.filter(x => x.corr.note >= SEUIL_CORRESPOND);
   const nouveaux = bons.filter(estNouveau).length;
@@ -117,10 +127,17 @@ export function CarteAcheteurs({ acheteurs, mode, onVoir }: { acheteurs: Acheteu
   const n = avant ? liste.length : bons.length;
   const tete = (avant ? liste : bons).slice(0, 4);
   const reste = n - tete.length;
+  const [aide, setAide] = useState(false);
   return (
     <div className={`${a.kpi} ${a.kpiOr}`}>
-      <div className={a.kpiT}><span className={a.kpiIc}><Ic n="groupe" t={17} /></span>{avant ? 'Demandeurs potentiels' : 'Les demandeurs'}</div>
-      <div className={a.kpiN}><b>{n}</b><span>{avant ? (n > 1 ? 'pourraient être intéressés' : 'pourrait être intéressé') : n > 1 ? 'correspondent' : 'correspond'}</span></div>
+      <div className={a.kpiT}>
+        <span className={a.kpiIc}><Ic n="groupe" t={17} /></span>
+        <span>{avant ? 'Demandeurs potentiels' : 'Les demandeurs'}</span>
+        <button type="button" className={a.qBtn} aria-label="Comment lire ce chiffre" title="Comment lire ce chiffre" onClick={() => setAide(true)}>?</button>
+      </div>
+      {aide && <ExplicationAcheteurs liste={avant ? liste : bons} bons={bons.length} partiels={liste.length - bons.length} avant={avant} bien={bien}
+        onFermer={() => setAide(false)} onVoir={() => { setAide(false); onVoir(); }} />}
+      <div className={a.kpiN}><b>{n}</b><span>{n > 1 ? 'pistes à vérifier' : 'piste à vérifier'}</span>{n > 0 && <i className={a.kpiConfirmer}>{'À confirmer'}</i>}</div>
       {n > 0 ? (
         <div className={a.pile}>
           {tete.map((x, i) => <span key={x.recherche.id} className={a[`f${(i % 3) + 1}`]}><Avatar acheteur={x} petit /></span>)}
@@ -128,12 +145,116 @@ export function CarteAcheteurs({ acheteurs, mode, onVoir }: { acheteurs: Acheteu
           {!avant && nouveaux > 0 && <span className={a.nouveaux}><i className={a.ping} />{nouveaux > 1 ? `${nouveaux} nouveaux` : '1 nouveau'}</span>}
         </div>
       ) : <span className={a.kpiSous}>{avant ? 'Aucune recherche ne correspond encore.' : 'Aucune recherche ne correspond pour l’instant.'}</span>}
-      {avant && n > 0
-        ? <span className={a.kpiSous}>{`${bons.length} correspond${bons.length > 1 ? 'ent' : ''} · ${liste.length - bons.length} en partie`}</span>
-        : null}
-      <button type="button" className={a.kpiLien} onClick={onVoir}>Voir les demandeurs</button>
+      {n > 0 && (
+        <span className={a.kpiSous}>{avant
+          ? `Premier tri automatique dans tes demandeurs : ${bons.length} correspond${bons.length > 1 ? 'ent' : ''} · ${liste.length - bons.length} en partie.`
+          : 'Premier tri automatique dans tes demandeurs.'}</span>
+      )}
+      {n > 0 && (seance
+        ? <span className={a.kpiVerif}><Ic n="check" t={14} e={2.4} /><span>{`Vérifié le ${dateCourte(seance.le)} : ${seance.oui + seance.aVoir ? `${seance.oui} oui · ${seance.aVoir} à voir` : 'personne de vraiment intéressé'}`}</span></span>
+        : <span className={a.kpiVerifPas}><Ic n="info" t={14} /><span>{'Pas encore vérifié un par un.'}</span></span>)}
+      <button type="button" className={a.kpiLien} onClick={onVoir}>{seance ? 'Voir le rapprochement' : n > 0 ? 'Vérifier avec le rapprochement' : 'Voir les demandeurs'}</button>
     </div>
   );
+}
+
+/* ══ « Comment lire ce chiffre » ═════════════════════════════════════════
+   La fenêtre du « ? », courte : une phrase qui dit ce que c'est (et ce que ce
+   n'est pas encore), les deux chiffres, le tri en trois étapes, le secteur DE
+   CETTE AFFAIRE (sa ville, son quartier : renseignés ou non, et ce que ça
+   change), ce qui manque encore à sa fiche, puis le rapprochement pour être
+   sûr. Le tri : acheteursTries (outils.ts), raisonEcart
+   (src/lib/ecart-acheteur.ts), la note de src/lib/correspondance.ts. */
+/* Les espaces insécables du français : « … », avant « : » et « ; ». */
+const fr = (t: string) => t.replace(/« /g, '« ').replace(/ »/g, ' »').replace(/ ([:;?!])/g, ' $1');
+const enMots = (l: string[]) => (l.length < 2 ? l.join('') : `${l.slice(0, -1).join(', ')} et ${l[l.length - 1]}`);
+
+function ExplicationAcheteurs({ liste, bons, partiels, avant, bien, onFermer, onVoir }: {
+  liste: Acheteur[]; bons: number; partiels: number; avant: boolean; bien?: BienVente;
+  onFermer: () => void; onVoir: () => void;
+}) {
+  useEffect(() => {
+    const touche = (e: KeyboardEvent) => { if (e.key === 'Escape') onFermer(); };
+    window.addEventListener('keydown', touche);
+    return () => window.removeEventListener('keydown', touche);
+  }, [onFermer]);
+  const n = liste.length;
+  const statut = (x: Acheteur) => String((x.client as { statut?: unknown }).statut || '');
+  const prospects = liste.filter(x => statut(x) === 'prospect').length;
+  const pause = liste.filter(x => statut(x) === 'suspendu').length;
+  const actifs = n - prospects - pause;
+  const bc = bien ? versCorrespondance(bien) : null;
+  const ville = bc?.ville ? villeAffichee(bc.ville, bien?.code_postal) : '';
+  const quartier = bc?.quartier || '';
+  const pro = bc?.pro;
+  const manque = bc ? [
+    pro && !pro.nature ? 'sa nature (location, cession, fonds…)' : '',
+    pro && !pro.loyerAn && !pro.prix ? 'le loyer ou le prix' : '',
+    !bc.surface ? 'la surface' : '',
+  ].filter(Boolean) : [];
+  const parmi = enMots([
+    actifs ? `${actifs} actif${actifs > 1 ? 's' : ''}` : '',
+    prospects ? `${prospects} prospect${prospects > 1 ? 's' : ''}` : '',
+    pause ? `${pause} en pause` : '',
+  ].filter(Boolean));
+  const p = n > 1;
+  /* Le secteur de cette affaire : ce qui est comparé, et ce qui ne l'est pas. */
+  const secteur = !bc ? null
+    : !ville ? { ok: false, t: 'La ville de cette affaire n’est pas renseignée : le secteur n’est pas comparé du tout. Remplis-la dans sa fiche.' }
+      : !quartier ? { ok: false, t: `La ville est comparée (${ville}), pas le quartier : il n’est pas renseigné. Un demandeur qui veut un autre quartier de ${ville} est compté quand même. Remplis « Quartier » dans la fiche de l’affaire.` }
+        : { ok: true, t: `Ville et quartier comparés (${ville}, ${quartier}). Un demandeur qui a choisi d’autres quartiers de ${ville} ne gagne que la moitié des points du secteur.` };
+
+  const fen = (
+    <div className={a.voile} onMouseDown={e => { if (e.target === e.currentTarget) onFermer(); }}>
+      <div className={`${a.fen} ${a.qFen}`} role="dialog" aria-modal="true" aria-labelledby="q-demandeurs-titre">
+        <div className={a.fenTete}>
+          <span className={a.fenIc}><Ic n="groupe" t={20} /></span>
+          <div className={a.fenTx}>
+            <h2 id="q-demandeurs-titre">{fr('Comment lire ce chiffre')}</h2>
+          </div>
+          <button type="button" className={a.fermer} aria-label="Fermer" onClick={onFermer}><Ic n="croix" t={16} e={2.2} /></button>
+        </div>
+
+        <div className={a.qCorps}>
+          <p className={a.qLead}>
+            <b>{fr(`${n} ${p ? 'recherches' : 'recherche'} de tes demandeurs ${p ? 'collent' : 'colle'} avec cette affaire sur le papier.`)}</b>
+            {' '}
+            <span>{fr(p ? `Ce ne sont pas encore ${n} demandeurs intéressés : c’est à vérifier.` : 'Ce n’est pas encore un demandeur intéressé : c’est à vérifier.')}</span>
+          </p>
+
+          <div className={a.qChiffres}>
+            <div className={`${a.qTuile} ${a.qTuileOr}`}><b>{bons}</b><span>{bons > 1 ? 'correspondent' : 'correspond'}</span><small>{fr('70 % de leurs critères ou plus')}</small></div>
+            {avant && <div className={a.qTuile}><b>{partiels}</b><span>{fr('en partie')}</span><small>{fr('de 50 à 69 %')}</small></div>}
+          </div>
+          {parmi && <p className={a.qParmi}>{fr(`Dont ${parmi}.`)}</p>}
+
+          <section className={a.qBloc}>
+            <h3>{fr('Le tri, en trois étapes')}</h3>
+            <ol className={a.qEtapes}>
+              <li><b>{fr('On écarte')}</b><span>{fr(' une autre ville, un autre type de local, ce qu’il ne cherche pas (une location pour qui veut acheter des murs…), un loyer ou un prix dépassé de plus de 10 %, une surface trop petite, un indispensable qui manque.')}</span></li>
+              <li><b>{fr('On note les autres')}</b><span>{fr(' : la part de leurs critères que l’affaire remplit. Ce qu’il cherche compte triple ; le loyer, le prix, le secteur et la surface comptent double.')}</span></li>
+              <li><b>{fr('On garde')}</b><span>{fr(' ceux à 50 % ou plus.')}</span></li>
+            </ol>
+          </section>
+
+          {secteur && (
+            <section className={`${a.qBloc} ${secteur.ok ? a.qSecteurOk : a.qSecteur}`}>
+              <h3><Ic n={secteur.ok ? 'check' : 'info'} t={15} e={secteur.ok ? 2.4 : 1.9} /><span>{fr('Le secteur de cette affaire')}</span></h3>
+              <p>{fr(secteur.t)}</p>
+              {manque.length > 0 && <p>{fr(`À compléter aussi : ${enMots(manque)}. Ce qui manque n’est pas comparé : le chiffre est plus large que la réalité.`)}</p>}
+            </section>
+          )}
+
+          <section className={a.qBloc}>
+            <h3>{fr('Pour être sûr')}</h3>
+            <p>{fr('Lance le rapprochement : chaque dossier est relu un par un (ses indispensables, ses visites, ce qu’il a dit des locaux montrés) et reçoit Oui, À voir ou Non.')}</p>
+            <button type="button" className={a.qVoir} onClick={onVoir}><span>{fr('Vérifier avec le rapprochement')}</span><Ic n="droite" t={15} e={2.3} /></button>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+  return typeof document === 'undefined' ? null : createPortal(fen, document.body);
 }
 
 /* ══ SÉLECTION OU ENVOI ══════════════════════════════════════════════════ */
