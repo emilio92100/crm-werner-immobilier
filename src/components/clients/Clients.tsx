@@ -11,9 +11,10 @@ import AvatarContact from '@/components/contacts/AvatarContact';
 import { conjointDe, nomFoyer } from '@/lib/foyer';
 import EnteteRubrique, { PictoClients } from '@/components/shared/EnteteRubrique';
 import Cascade from '@/components/shared/Cascade';
+import RappelSecteur from '@/components/shared/RappelSecteur';
 import {
   BasculeCriteres, classesCrit, colonnesCriteres, CorpsCriteres, CRIT_VIDE, ecrireModeCrit,
-  etapesCriteres, FriseCriteres, lireModeCrit,
+  etapesCriteres, FriseCriteres, lireModeCrit, ORDRE_ETAPES_CRIT,
 } from '@/components/shared/CriteresRecherche';
 import type { CritForm, ModeCrit } from '@/components/shared/CriteresRecherche';
 import { intentions, prendreIntentionNouveauClient, signalerMaj, EVT_NOUVEAU_CLIENT, EVT_DEMANDE_VUE, demanderNouveauBien, annoncerVue, vueDemandee } from '@/lib/intentions';
@@ -700,6 +701,10 @@ export default function Clients({ onNavigate, fenetre }: {
   const [showModal, setShowModal] = useState(() => !!fenetre || intentions.nouveauClient);
   const [form, setForm] = useState(initForm);
   const [crit, setCrit] = useState<CritForm>(CRIT_VIDE);
+  /* V3.226 — Le rappel du secteur avant de créer un acheteur sans secteur. */
+  const [rappelSecteur, setRappelSecteur] = useState(false);
+  const rappelSecteurVu = useRef(false);
+  const indexRecherche = useRef(-1);
   const [step, setStep] = useState(0);
   /* Les critères se remplissent d'un bloc ou catégorie par catégorie — le
      choix se retient d'un écran à l'autre, comme dans la fiche. */
@@ -737,7 +742,7 @@ export default function Clients({ onNavigate, fenetre }: {
        a donné (budget, type, surface, pièces…) dans sa recherche. Avant, elle
        repartait vide : « acheteur non filtré », tout était dans les notes. */
     setCrit(pre?.criteres ? { ...CRIT_VIDE, ...pre.criteres } : CRIT_VIDE);
-    setStep(0); setEtapeCrit(0); setSensCrit(1); setDoublon(null);
+    setStep(0); setEtapeCrit(0); setSensCrit(1); setDoublon(null); rappelSecteurVu.current = false;
     setError(''); setAdrSug([]); setAutresCoord(false); setShowModal(true);
   }
 
@@ -1066,6 +1071,10 @@ export default function Clients({ onNavigate, fenetre }: {
     if (!form.types.length) { setError('Choisissez qui est ce contact : demandeur, mandant, notaire…'); setStep(0); return; }
     if (!form.prenom.trim() && !form.nom.trim()) { setError('Renseignez au moins un prénom ou un nom'); setStep(1); return; }
     const acheteur = form.types.includes('acheteur');
+    /* V3.226 : sa recherche sans secteur — le rappel, une fois. */
+    if (acheteur && !form.critPlusTard && !(crit.secteurs || []).length && !rappelSecteurVu.current) {
+      rappelSecteurVu.current = true; setRappelSecteur(true); return;
+    }
     setSaving(true); setError('');
     /* V3.50 : avant de créer, un contact qui existe peut-être déjà (même
        e-mail, même téléphone, même nom). Depuis une demande du site, c'est
@@ -1449,6 +1458,7 @@ export default function Clients({ onNavigate, fenetre }: {
           ] : []),
         ];
         const pas = GRANDES[Math.min(step, GRANDES.length - 1)].cle;
+        indexRecherche.current = GRANDES.findIndex(x => x.cle === 'recherche');
         const etapesCrit = etapesCriteres(crit, setCrit);
         const nbC = etapesCrit.length;
         const iC = Math.min(Math.max(etapeCrit, 0), nbC - 1);
@@ -1883,6 +1893,21 @@ export default function Clients({ onNavigate, fenetre }: {
                   </button>
                 ) : (
                   <button type="button" className={`${styles.btnPrimary} nc-suite`} disabled={step === 0 && !form.types.length} style={step === 0 && !form.types.length ? { opacity: 0.5 } : undefined} onClick={continuer}>Continuer →</button>
+                )}
+                {/* V3.226 — Le rappel du secteur avant de créer l'acheteur. */}
+                {rappelSecteur && (
+                  <RappelSecteur
+                    titre="Aucun secteur pour sa recherche"
+                    texte="Sans secteur, sa recherche reste « à compléter » : elle n’est comparée à aucune de tes affaires et n’apparaît pas dans leurs demandeurs potentiels. Ajoute au moins une ville ou un arrondissement, et ses quartiers s’il n’en veut que certains."
+                    principal="Ajouter un secteur"
+                    onPrincipal={() => {
+                      setRappelSecteur(false); setModeCrit('etapes'); setSensCrit(1);
+                      if (indexRecherche.current >= 0) setStep(indexRecherche.current);
+                      setEtapeCrit(Math.max(0, ORDRE_ETAPES_CRIT.indexOf('lieu')));
+                    }}
+                    secondaire="Créer quand même"
+                    onSecondaire={() => { setRappelSecteur(false); void handleCreate({ preventDefault() {} } as React.FormEvent); }}
+                    onFermer={() => setRappelSecteur(false)} />
                 )}
               </div>
             </div>
