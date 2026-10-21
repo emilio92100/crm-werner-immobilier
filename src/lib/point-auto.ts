@@ -168,7 +168,9 @@ export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { cl
     const q = sb.from('clients').select(cols);
     return opts.clientId ? q.eq('id', opts.clientId) : q.eq('statut', 'actif');
   };
-  let { data: clients, error } = await lire(`${COLS}, types, archive`);
+  /* Werner : `espace_client` en plus, quand son SQL est passé. */
+  let { data: clients, error } = await lire(`${COLS}, types, archive, espace_client`);
+  if (error && /espace_client/.test(error.message)) ({ data: clients, error } = await lire(`${COLS}, types, archive`));
   if (error && colonneContactAbsente(error.message)) ({ data: clients, error } = await lire(COLS));
   if (error) throw new Error('Lecture des clients impossible : ' + error.message);
   /* L'envoi quotidien : seulement les vrais acheteurs. Pour une fiche
@@ -218,6 +220,8 @@ export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { cl
     else if (!email) empechement = 'Pas d’adresse mail sur sa fiche.';
     else if (!recherche) empechement = 'Pas de recherche en cours.';
     else if (!c.token_espace) empechement = 'Son espace n’a pas encore de lien : ouvre sa fiche une fois pour le créer.';
+    /* Werner : ce mail passe par l'espace ; sans espace activé, il ne part pas. */
+    else if (c.espace_client !== true) empechement = 'Pas d’espace client : ce mail passe par son espace. Active-le plus haut si tu veux qu’il parte.';
 
     const ech = echeance({ dernierMouvement, dernierEnvoi, creeLe: c.created_at, delai: reglages.delai });
 

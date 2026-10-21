@@ -529,7 +529,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
             <a href={`tel:${lienTel(telConseiller)}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: OR, color: ENCRE, padding: '14px 26px', borderRadius: 14, fontFamily: JAKARTA, fontWeight: 800, fontSize: 14, textDecoration: 'none' }}>
               <Ico n="tel" t={16} />{telConseiller}
             </a>
-            <a href={`mailto:${mailConseiller}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,.08)', color: '#fff', padding: '14px 26px', borderRadius: 14, fontFamily: JAKARTA, fontWeight: 700, fontSize: 14, textDecoration: 'none', border: '1px solid rgba(255,255,255,.25)' }}>
+            <a href={`mailto:${mailConseiller}?subject=${encodeURIComponent(`Ce local m’intéresse : ${bien.titre || `${bien.type_bien || 'Local'}${bien.surface ? ` de ${bien.surface} m²` : ''}`}`)}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,.08)', color: '#fff', padding: '14px 26px', borderRadius: 14, fontFamily: JAKARTA, fontWeight: 700, fontSize: 14, textDecoration: 'none', border: '1px solid rgba(255,255,255,.25)' }}>
               <Ico n="mail" t={16} />Me contacter
             </a>
           </div>

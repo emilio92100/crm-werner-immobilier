@@ -302,10 +302,11 @@ async function relancerPropositions(sb: SupabaseClient, ko: Echecs): Promise<str
       if (!rappel) continue;
       const { data: c, error: eC } = await sb.from('clients').select('*').eq('id', clientId).maybeSingle();
       if (eC) { ko.noter(`mandat proposé (recherche ${rid}) : fiche du client illisible (${eC.message})`); continue; }
-      const client = c as { prenom?: string | null; nom?: string | null; emails?: unknown; token_espace?: string | null } | null;
+      const client = c as { prenom?: string | null; nom?: string | null; emails?: unknown; token_espace?: string | null; espace_client?: boolean } | null;
       const emails = (Array.isArray(client?.emails) ? client!.emails as unknown[] : []).filter((e): e is string => typeof e === 'string' && e.includes('@'));
       const nom = `${client?.prenom || ''} ${client?.nom || ''}`.trim() || 'Le client';
-      if (!client?.token_espace || !emails.length) { bilan.push(`${nom} : pas d'adresse ou pas d'espace, pas de rappel`); continue; }
+      /* Werner : le mandat se signe dans l'espace ; sans espace activé, pas de rappel. */
+      if (!client?.token_espace || client.espace_client !== true || !emails.length) { bilan.push(`${nom} : pas d'adresse ou pas d'espace, pas de rappel`); continue; }
       const lien = `${lienEspace(client.token_espace, site)}?r=${encodeURIComponent(rid)}&mandat=1`;
       const prenom = client.prenom || '';
       const sujet = rappel === 1 ? 'Votre mandat de recherche vous attend' : 'Votre mandat de recherche, pour organiser vos visites';

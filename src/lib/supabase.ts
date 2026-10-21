@@ -87,6 +87,10 @@ export interface Client {
      Les jetons posés sur les recherches restent valables : ce sont les liens
      déjà envoyés, et ils retombent tout seuls sur celui-ci. */
   token_espace?: string
+  /* Werner (outils/sql/espace-client-choix.sql) : l'espace n'existe que si
+     Werner l'a activé. Absent ou faux : pas d'espace, les locaux envoyés
+     mènent à leur fiche publique. */
+  espace_client?: boolean
   /* Une personne ou un couple (src/lib/foyer.ts) : colonnes du SQL
      « signature-plusieurs », absentes avant qu'il soit lancé. */
   civilite?: string | null

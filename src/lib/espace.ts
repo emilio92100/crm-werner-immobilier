@@ -97,9 +97,11 @@ export async function ouvrirEspace(
      Le jeton du client d'abord : c'est le cas normal, et c'est aussi ce qui
      évite de se renvoyer soi-même quand la reprise lui a donné le jeton de
      sa première recherche (les deux valeurs sont alors identiques). */
+  /* `*` : `espace_client` (Werner) n'existe qu'après son SQL ; une colonne
+     nommée qui manque ferait échouer la lecture. */
   const { data: parClient } = await supabase
     .from('clients')
-    .select('id, prenom, nom, reference, token_espace, created_at')
+    .select('*')
     .eq('token_espace', token)
     .maybeSingle();
 
@@ -113,7 +115,7 @@ export async function ouvrirEspace(
        de la recherche : c'est elle qu'il s'attend à voir s'ouvrir. */
     const { data: parRecherche } = await supabase
       .from('recherches')
-      .select('id, client_id, clients(id, prenom, nom, reference, token_espace, created_at)')
+      .select('id, client_id, clients(*)')
       .eq('token_espace', token)
       .maybeSingle();
 
@@ -124,6 +126,12 @@ export async function ouvrirEspace(
     ancienLien = true;
     origine = parRecherche.id as string;
   }
+
+  /* Werner : l'espace n'existe que si Werner l'a activé sur la fiche
+     (`clients.espace_client`, outils/sql/espace-client-choix.sql). Sinon, le
+     lien mène à « Ce lien n'est plus actif », comme un lien inconnu. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ((client as any).espace_client !== true) return null;
 
   /* ── 2. toutes ses recherches ──
      On ne filtre PAS sur `active` : cette colonne dit laquelle est mise en

@@ -1654,6 +1654,23 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     }
   }
 
+  /* Werner — l'espace client, au choix (21 octobre 2026). Alexandre : « pour
+     beaucoup de clients, il ne voudra pas qu'il y ait un espace ». Par
+     défaut, pas d'espace : les locaux envoyés mènent à leur fiche publique.
+     Activé, tout se passe comme dans le CRM d'origine. */
+  const espaceClient = client.espace_client === true;
+  const [basculeEspace, setBasculeEspace] = useState(false);
+  async function basculerEspaceClient(v: boolean) {
+    if (basculeEspace) return;
+    if (!v && !confirm(`Couper l’espace de ${client.prenom || 'ce client'} ?\n\n`
+      + `Le lien qu’il a peut-être reçu mènera à « Ce lien n’est plus actif ». Les locaux que tu lui enverras ensuite mèneront à leur fiche publique. Tu pourras le rallumer quand tu voudras : il retrouvera tout.`)) return;
+    setBasculeEspace(true);
+    const ok = await verifie(v ? 'L’activation de son espace' : 'L’arrêt de son espace',
+      supabase.from('clients').update({ espace_client: v }).eq('id', client.id).select('id'), { ligne: true });
+    setBasculeEspace(false);
+    if (ok) setClient(c => ({ ...c, espace_client: v }));
+  }
+
   /* V3.110 — Renvoyer le lien. Alexandre : « le mail de bienvenue, on ne
      peut plus le renvoyer ; avoir un bouton à côté, renvoyer le lien, si un
      client me dit : je ne l'ai pas reçu ». Un mail court, le même lien
@@ -3987,9 +4004,9 @@ ${signatureMail()}`,
         const espaceEnPied = coords.length <= 3;
         const boutonEspace = (cls: string) => (
           <button type="button" className={cls} onClick={() => setVue('espace')}>
-            <span className={espaceLe ? styles.teteEspaceOn : styles.teteEspaceOff} />
+            <span className={espaceClient && espaceLe ? styles.teteEspaceOn : styles.teteEspaceOff} />
             <b>Son espace</b>
-            <span suppressHydrationWarning>{espaceLe ? ` · ouvert ${ilYA(espaceLe)}` : ' · pas encore ouvert'}</span>
+            <span suppressHydrationWarning>{!espaceClient ? ' · non activé' : espaceLe ? ` · ouvert ${ilYA(espaceLe)}` : ' · pas encore ouvert'}</span>
           </button>
         );
         return (
@@ -4495,7 +4512,23 @@ ${signatureMail()}`,
           </div>
         )}
 
-        {vue === 'espace' && (
+        {vue === 'espace' && !espaceClient && (
+          <div className={styles.ens}>
+            <div className={styles.carteEns}>
+              <div className={styles.carteEnsT}>
+                <span className={styles.carteEnsIc}><Icone nom="mobile" taille={15} epaisseur={2} /></span>
+                <b>Pas d’espace client</b>
+              </div>
+              <p className={styles.situNotes}>{`Les locaux que tu envoies à ${client.prenom || 'ce client'} mènent à leur fiche publique : photos, description, et tes coordonnées pour te répondre. Aucun mail ne lui parle d’espace.`}</p>
+              <p className={styles.situNotes}>{'Avec un espace, il retrouve tous les locaux proposés sur une page à lui, répond « ça m’intéresse », demande une visite ou dit non, et tu vois ses réponses ici. Le point automatique et le mail de bienvenue passent aussi par l’espace.'}</p>
+              <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} style={{ alignSelf: 'flex-start' }} onClick={() => basculerEspaceClient(true)} disabled={basculeEspace}>
+                {basculeEspace ? 'Activation…' : 'Activer son espace'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {vue === 'espace' && espaceClient && (
           <div className={styles.ens}>
             {rechercheActive
               ? <LienEspace recherche={rechercheActive} client={client} />
@@ -4529,6 +4562,9 @@ ${signatureMail()}`,
             {/* Le mail « Où en est votre recherche ? » (V3.17), sorti du bloc
                 des critères : c'est un mail automatique, il vit avec l'espace. */}
             {client.id && <PointAuto clientId={client.id} integre />}
+            <button type="button" className={styles.btn} style={{ alignSelf: 'flex-start' }} onClick={() => basculerEspaceClient(false)} disabled={basculeEspace}>
+              {basculeEspace ? 'Enregistrement…' : 'Couper son espace'}
+            </button>
           </div>
         )}
 

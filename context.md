@@ -401,6 +401,14 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   `NEXT_PUBLIC_CRM_URL` et `CRM_URL` sont posées.
   Anciens enregistrements, pour revenir en arrière : A @ et A www 217.160.0.153, AAAA @ et AAAA www
   2001:8d8:100f:f000::200 (service WordPress d'IONOS).
+- **L'espace client, au choix de Werner** (21 octobre 2026) — `clients.espace_client`
+  (`outils/sql/espace-client-choix.sql`, **à exécuter dans Supabase**), faux par défaut. Sans espace :
+  les locaux envoyés par mail mènent à leur fiche publique `/bien/<id>` (son bouton « Me contacter »
+  porte le titre du local en objet), aucun mail ne parle d'espace, le lien d'espace mène à « Ce lien
+  n'est plus actif » (`ouvrirEspace`, `src/lib/espace.ts`), et le point automatique, le mail de
+  bienvenue, « Renvoyer le lien », le mandat en ligne et ses rappels ne partent pas. Werner l'active
+  ou le coupe sur la fiche du demandeur, onglet « Son espace ». Avant le SQL, tout le monde est sans
+  espace et l'activation échoue (message rouge).
 - **Mailjet et les clés** — le compte et le domaine d'envoi de Werner, les variables Mailjet,
   `ANTHROPIC_API_KEY`, `CRON_SECRET`, Ringover, les notifications (§1).
 - **Le premier accès de Werner** — aujourd'hui, `/login` ouvre un compte Supabase créé à la main. Le

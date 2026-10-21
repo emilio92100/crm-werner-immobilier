@@ -248,7 +248,8 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
 
   /* Le lien direct : il ouvre l'espace sur CETTE recherche (r=), et le
      mandat par-dessus. */
-  const lien = client?.token_espace ? `${lienEspace(client.token_espace)}?r=${encodeURIComponent(recherche.id)}&mandat=1` : '';
+  /* Werner : sans espace activé (`clients.espace_client`), pas de lien. */
+  const lien = client?.token_espace && client?.espace_client === true ? `${lienEspace(client.token_espace)}?r=${encodeURIComponent(recherche.id)}&mandat=1` : '';
   const tauxN = lireTaux(taux);
   const tauxOk = tauxN > 0 && tauxN <= BAREME;
   const budget = typeof recherche?.budget_max === 'number' ? recherche.budget_max : null;
@@ -930,6 +931,9 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
                   <button type="button" style={btn} onClick={copier}>{copie ? '✓ Copié' : '🔗 Copier le lien'}</button>
                   <button type="button" style={btnOr} disabled={travail === 'mail'} onClick={envoyerMail}>{travail === 'mail' ? 'Envoi…' : '✉️ Envoyer par e-mail'}</button>
                 </div>
+              )}
+              {!lien && client?.espace_client !== true && (
+                <div style={{ marginTop: 8, color: '#92400e' }}>{'Pas d’espace client : ce mandat se signe dans son espace. Active-le dans l’onglet « Son espace », ou fais-le signer depuis Documents.'}</div>
               )}
               <button type="button" style={{ ...btn, marginTop: 8, color: '#b91c1c', borderColor: '#fecaca' }} disabled={travail === 'retirer'} onClick={() => { void demanderRetrait(); }}>{travail === 'retirer' && !fenRetrait ? '…' : 'Retirer la proposition'}</button>
             </div>

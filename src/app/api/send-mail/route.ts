@@ -270,9 +270,9 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
       <tr><td class="bord" style="padding:20px 28px 26px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f6f6f7;border:1px solid #F7D5B0;border-radius:14px;">
           <tr><td style="padding:18px 20px 20px;">
-            <div style="font-size:10.5px;letter-spacing:2px;color:${DORE_TEXTE};font-weight:700;">DANS VOTRE ESPACE</div>
+            <div style="font-size:10.5px;letter-spacing:2px;color:${DORE_TEXTE};font-weight:700;">${lien ? 'DANS VOTRE ESPACE' : 'ET AUSSI'}</div>
             <div style="font-size:18px;font-weight:800;color:${BLEU};margin-top:6px;line-height:1.3;">${n === 1 ? 'Un autre local vous attend' : `${n} autres locaux vous attendent`}</div>
-            <div style="font-size:13px;color:#5B6B80;line-height:1.6;margin-top:5px;">Pour que ce message reste agréable à lire, les ${BIENS_PAR_MAIL} premiers sont ci-dessus. ${n === 1 ? 'Le suivant est' : 'Les suivants sont'} dans votre espace, avec toutes leurs photos et leur fiche complète.</div>
+            <div style="font-size:13px;color:#5B6B80;line-height:1.6;margin-top:5px;">Pour que ce message reste agréable à lire, les ${BIENS_PAR_MAIL} premiers sont ci-dessus. ${lien ? `${n === 1 ? 'Le suivant est' : 'Les suivants sont'} dans votre espace, avec toutes leurs photos et leur fiche complète.` : `${n === 1 ? 'Le suivant a sa' : 'Les suivants ont leur'} fiche complète, avec toutes les photos, à un clic :`}</div>
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;"><tr>${vignettes}${plus}</tr></table>
             ${lien
               ? `<a href="${lien}" style="display:block;margin-top:16px;background:${BLEU};color:#ffffff;text-decoration:none;text-align:center;padding:14px;border-radius:11px;font-size:15px;font-weight:700;">${n === 1 ? 'Découvrir l’autre local' : `Découvrir les ${n} autres locaux`} &rarr;</a>`
@@ -1054,13 +1054,23 @@ async function envoyer(req: NextRequest) {
     }
 
     // Récupère clients
+    /* `*` : `espace_client` (Werner) n'existe qu'après son SQL ; une colonne
+       nommée qui manque ferait échouer la lecture. */
     const { data: clients } = await supabase
       .from('clients')
-      .select('id, prenom, nom, reference, emails, token_espace')
+      .select('*')
       .in('id', client_ids);
 
     if (!clients || clients.length === 0) {
       return NextResponse.json({ error: 'Clients introuvables' }, { status: 404 });
+    }
+    /* Werner : l'espace n'existe que si Werner l'a activé sur la fiche
+       (`clients.espace_client`). Sans lui, les locaux mènent à leur fiche
+       publique, et les mails qui ne parlent que de l'espace ne partent pas. */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const espaceOuvert = (c: any) => c?.espace_client === true;
+    if ((bienvenue || lienSeul || mode === 'mandat') && clients.some(c => !espaceOuvert(c))) {
+      return NextResponse.json({ error: 'Pas d’espace client pour ce demandeur : active-le sur sa fiche, onglet « Son espace ».' }, { status: 400 });
     }
 
     /* {{conseiller}} : le nom posé dans les Paramètres (V3.20). Les autres
@@ -1101,6 +1111,9 @@ async function envoyer(req: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tokenEspace = ((rech as any)?.clients?.token_espace as string) || (rech?.token_espace as string) || null;
     }
+    /* Le lien d'espace d'un client, ou rien s'il n'a pas d'espace (Werner). */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const jetonDe = (c: any): string | null => (espaceOuvert(c) ? ((c.token_espace as string) || tokenEspace) : null);
 
     /* Mise en route, ou recherche qui s'ajoute à un espace déjà ouvert ?
        On ne le demande pas au CRM : on le lit en base, comme ça les deux ne
@@ -1196,7 +1209,7 @@ async function envoyer(req: NextRequest) {
       if (!montres.length) return NextResponse.json({ error: 'Affaire introuvable' }, { status: 404 });
       const emails = (client.emails || []).filter((e: string) => e && e.includes('@'));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const jeton = ((client as any).token_espace as string) || tokenEspace;
+      const jeton = jetonDe(client);
       return NextResponse.json({
         success: true, apercu: true, objet: personnaliser(objet, client, conseiller), destinataires: emails,
         html: buildHtml({ prenom: client.prenom, corps: personnaliser(corps || '', client, conseiller), biens: ordonner(montres), token: jeton, recherche: recherche_id || null }),
@@ -1250,7 +1263,7 @@ async function envoyer(req: NextRequest) {
           .map(v => ({ id: v.id, date_visite: v.date_visite, heure: v.heure, bien: v.bien_id ? parId[v.bien_id] || null : null }));
         if (lignes.length === 0) { resultats.push({ client_id: client.id, success: false, error: 'Aucune visite pour ce client' }); continue; }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const jeton = ((client as any).token_espace as string) || tokenEspace;
+        const jeton = jetonDe(client);
         const corpsPerso = personnaliser(corps || '', client, conseiller);
         const sujetV = personnaliser(objet, client, conseiller);
         /* V3.134 — l'aperçu (Alexandre : « montre-moi l'aperçu que le client
@@ -1328,7 +1341,7 @@ async function envoyer(req: NextRequest) {
         const emails = sourceEmails.filter((e: string) => e && e.includes('@'));
         if (emails.length === 0) { resultats.push({ client_id: client.id, success: false, error: 'Pas d\'email valide' }); continue; }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const jeton = ((client as any).token_espace as string) || tokenEspace;
+        const jeton = jetonDe(client);
         const sujet = objet?.trim() || 'Votre mandat de recherche est prêt';
         try {
           const mjRes = await fetch('https://api.mailjet.com/v3.1/send', {
@@ -1413,7 +1426,7 @@ async function envoyer(req: NextRequest) {
       /* Chaque client reçoit SON lien. Celui tiré de la recherche ne sert
          qu'en secours, pour les dossiers pas encore repris. */
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const jeton = ((client as any).token_espace as string) || tokenEspace;
+      const jeton = jetonDe(client);
       /* V3.110 : renvoyer le lien. Sans lien, rien à envoyer ; et pas deux
          fois en deux minutes (un double clic, un autre onglet). */
       if (lienSeul) {

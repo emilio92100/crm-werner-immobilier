@@ -2985,7 +2985,8 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
     onEnvoye(); onFerme();
   }
 
-  const lienDossier = lienEspace(client?.token_espace || recherche?.token_espace);
+  /* Werner : le lien de l'espace seulement s'il est activé (`clients.espace_client`). */
+  const lienDossier = client?.espace_client === true ? lienEspace(client?.token_espace || recherche?.token_espace) : '';
   async function viaLien() {
     if (bloque) return;
     try { if (lienDossier) { await navigator.clipboard.writeText(lienDossier); setCopie(true); } } catch { /* ignore */ }
