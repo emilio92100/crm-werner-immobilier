@@ -152,7 +152,7 @@ type Criteres = {
   notes: string;
   transportMinutes: number | null; transportLignes: string[]; transportArrets: Arret[];
   /* Werner : nature, loyer annuel, vitrine, emplacement (recherches.criteres_pro). */
-  natures?: string[]; loyerMin?: number | null; loyerMax?: number | null;
+  natures?: string[]; activite?: string; loyerMin?: number | null; loyerMax?: number | null;
   vitrineMin?: number | null; postesMin?: number | null; emplacements?: string[];
 };
 type Props = {
@@ -609,23 +609,6 @@ const TYPES_E: [string, string][] = [
   ['Local d’activité', '🏭'], ['Entrepôt', '📦'], ['Immeuble', '🏬'],
   ['Terrain', '🌱'], ['Parking', '🅿️'],
 ];
-const ETATS_E: [string, string, string][] = [
-  ['a_renover', 'À rénover', '🔨'], ['travaux_legers', 'Travaux légers', '🧰'],
-  ['bon_etat', 'Bon état', '✨'], ['refait_neuf', 'Refait à neuf', '💎'],
-];
-/* L'état souhaité se choisit à plusieurs, enregistré « travaux_legers,bon_etat ».
-   Rien = pas de préférence. Mêmes règles que le CRM (CriteresRecherche.tsx). */
-const etatsListe = (v?: string | null) => { const l = String(v || '').split(',').map(x => x.trim()); return ETATS_E.map(e => e[0]).filter(k => l.includes(k)); };
-const CUISINES_E: [string, string, string][] = [
-  ['', 'Indifférent', '🤷'], ['ouverte', 'Ouverte sur la salle', '🍽️'], ['separee', 'Séparée', '🚪'],
-];
-const EXPO_E: [string, string, string][] = [['sud','Sud','☀️'],['est','Est','🌅'],['ouest','Ouest','🌇'],['nord','Nord','❄️'],['traversant','Traversant','↔️']];
-/* clé technique (colonne en base) ↔ libellé lisible ↔ emoji */
-const EQUIP_E: [string, string, string][] = [
-  ['parking','Parking','🅿️'], ['cave','Cave','📦'], ['balcon','Espace extérieur','🌿'],
-  ['terrasse','Terrasse','☀️'], ['jardin','Cour','🌳'], ['ascenseur','Ascenseur','🛗'],
-  ['gardien','Gardien','👮'],
-];
 const URGENCES_E: [string, string, string][] = [
   ['immediate', 'Immédiate', '🔥'], ['3_mois', 'Sous 3 mois', '⏱️'],
   ['6_mois', 'Sous 6 mois', '📆'], ['annee', "Dans l'année", '🗓️'],
@@ -638,7 +621,32 @@ const FINANCEMENTS_E: [string, string, string][] = [
   ['mixte_cash_relais', 'Mixte · cash + prêt relais', '🔀'],
   ['mixte_pret_relais', 'Mixte · prêt + prêt relais', '🔀'],
 ];
-const LETTRES_DPE = ['A','B','C','D','E','F','G'];
+/* Werner : les mêmes mots que l'assistant du CRM (CriteresRecherche.tsx :
+   NATURES_RECHERCHE, EMPLACEMENTS_RECHERCHE, EXIGENCES_PRO, FINANCEMENTS),
+   les mêmes clés, pour que le rapprochement compare clé à clé. */
+const NATURES_E: [string, string, string, string][] = [
+  ['location', 'Louer', '🔑', 'Un local vide, un bail neuf'],
+  ['cession_bail', 'Reprendre un bail', '📄', 'Un droit au bail'],
+  ['fonds', 'Racheter un fonds', '🛍️', 'Une affaire en activité'],
+  ['murs', 'Acheter des murs', '🏛️', 'Pour s’y installer'],
+  ['murs_occupes', 'Investir', '📈', 'Des murs déjà loués'],
+];
+const EMPLACEMENTS_E: [string, string][] = [
+  ['n1', 'N° 1'], ['n1bis', 'N° 1 bis'], ['n2', 'N° 2'],
+  ['quartier', 'Commerce de quartier'], ['centre', 'Centre commercial'], ['zone', 'Zone commerciale'],
+];
+const EXIGENCES_E: [string, string, string][] = [
+  ['rdc', 'Rez-de-chaussée', '🚪'], ['vitrineEq', 'Vitrine', '🪟'], ['extraction', 'Extraction', '🔥'],
+  ['terrasse', 'Terrasse', '☀️'], ['reserve', 'Réserve', '📦'], ['clim', 'Climatisation', '❄️'],
+  ['pmr', 'Accès PMR', '♿'], ['parking', 'Parking', '🅿️'], ['ascenseur', 'Ascenseur', '🛗'],
+  ['fibre', 'Fibre', '🌐'], ['cablage', 'Câblage', '🔌'], ['plancherTech', 'Plancher technique', '🧩'],
+  ['quai', 'Quai de chargement', '🚚'], ['cuisinePro', 'Cuisine équipée', '🍳'], ['chambreFroide', 'Chambre froide', '🧊'],
+];
+const FINANCEMENTS_PRO_E: [string, string, string][] = [
+  ['fonds_propres', 'Fonds propres', '💵'], ['pret_valide', 'Prêt accordé', '✅'],
+  ['pret_en_cours', 'Prêt en cours', '⏳'], ['a_monter', 'Financement à monter', '📝'],
+  ['mixte', 'Fonds propres et prêt', '🔀'], ['credit_bail', 'Crédit-bail', '🏦'],
+];
 
 /* Une valeur du récapitulatif : petite carte avec son icône (dessinée, V3.68). */
 function Fait({ ico, lib, val }: { ico: string; lib: string; val: React.ReactNode }) {
@@ -2052,7 +2060,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
       /* Pas enregistrés (V3.17) : l'écran reste ouvert avec ce qu'il a choisi,
          et le dit (voir ModifCriteres) ; rien n'a changé. */
       if (!r?.ok) return false;
-      setCrit(nv);
+      setCrit({ ...crit, ...nv });
       /* La note est celle du chasseur : le client ne la réécrit pas, il demande. */
       const demandePartie = demandeNote ? !!(await envoyer('message', { texte: 'Demande sur la note de la recherche : ' + demandeNote }))?.ok : false;
       montrer(<GrandOk titre="C'est enregistré, merci"
@@ -3653,15 +3661,18 @@ function morceauxResume(crit: any, villes: { ville: string }[]) {
   const m: { t: string; fort?: boolean }[] = [];
   const types: string[] = crit.typesBien?.length ? crit.typesBien
     : (crit.typeBien ? [crit.typeBien] : []);
-  m.push({ t: types.length ? listeTypes(types) : 'Un local' });
+  /* Werner : « Louer ou reprendre un bail : un local commercial d'au moins 60 m²… » */
+  const natures: string[] = (crit.natures || []).map((k: string) => NATURES_E.find(x => x[0] === k)?.[1] || k);
+  const local = types.length ? listeTypes(types) : 'Un local';
+  if (natures.length) {
+    m.push({ t: natures.map((x, i) => (i ? x.charAt(0).toLowerCase() + x.slice(1) : x)).join(' ou ') + ' : ', fort: true });
+    m.push({ t: local.charAt(0).toLowerCase() + local.slice(1) });
+  } else m.push({ t: local });
   if (crit.surfaceMin) {
     m.push({ t: " d'au moins " });
     m.push({ t: `${crit.surfaceMin} m²`, fort: true });
   }
-  if (crit.chambresMin) {
-    m.push({ t: ' avec ' });
-    m.push({ t: `${crit.chambresMin} bureau${crit.chambresMin > 1 ? 'x' : ''}`, fort: true });
-  }
+  if (crit.activite) m.push({ t: `, activité\u00a0: ${crit.activite.charAt(0).toLowerCase()}${crit.activite.slice(1)}` });
   if (villes.length) {
     const courts = villes.map(v => v.ville.replace(/-sur-Seine$/i, '').replace(/-Billancourt$/i, ''));
     m.push({ t: ', à ' });
@@ -3671,8 +3682,12 @@ function morceauxResume(crit: any, villes: { ville: string }[]) {
       fort: true,
     });
   }
+  if (crit.loyerMax) {
+    m.push({ t: ", loyer jusqu'à " });
+    m.push({ t: `${EUR(crit.loyerMax)} HT HC par an`, fort: true });
+  }
   if (crit.budgetMax) {
-    m.push({ t: crit.budgetMin ? ', entre ' : ", jusqu'à " });
+    m.push({ t: crit.budgetMin ? ', prix entre ' : ", prix jusqu'à " });
     if (crit.budgetMin) { m.push({ t: EUR(crit.budgetMin), fort: true }); m.push({ t: ' et ' }); }
     m.push({ t: EUR(crit.budgetMax), fort: true });
   }
@@ -3687,39 +3702,28 @@ function morceauxResume(crit: any, villes: { ville: string }[]) {
    présentation d'avant, une icône dessinée partout, plus aucun émoji. */
 const ICO_EQUIP: Record<string, string> = {
   parking: 'parking', cave: 'cave', balcon: 'balcon', terrasse: 'terrasse', jardin: 'jardin', ascenseur: 'ascenseur', gardien: 'gardien',
+  rdc: 'immeuble', vitrineEq: 'vitrine', extraction: 'cuisine', reserve: 'cave', clim: 'clim', cuisinePro: 'cuisine', chambreFroide: 'clim',
 };
 const ICO_TYPE: Record<string, string> = { Appartement: 'immeuble', Maison: 'maison', Loft: 'immeuble', Duplex: 'immeuble', Terrain: 'jardin', Autre: 'maison',
   Bureaux: 'immeuble', 'Local commercial': 'immeuble', Restaurant: 'cuisine', 'Local d’activité': 'travaux', Entrepôt: 'cave', Immeuble: 'immeuble', Parking: 'parking' };
-const ICO_EXPO: Record<string, string> = { sud: 'soleil', est: 'soleil', ouest: 'soleil', nord: 'boussole', traversant: 'traversant' };
 
 function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
   /* On n'invente rien : s'il n'y a pas de minimum, on écrit « jusqu'à ». */
   const bmin: number | null = crit.budgetMin || null;
   const bmax: number | null = crit.budgetMax || null;
   const ex: Record<string, string> = crit.exigences || {};
-  const expos: string[] = (crit.exposition || '').split(',').map((x: string) => x.trim()).filter(Boolean);
   const types: string[] = crit.typesBien?.length ? crit.typesBien : (crit.typeBien ? [crit.typeBien] : []);
-  const iDpe = crit.dpeMax ? LETTRES_DPE.indexOf(crit.dpeMax) : -1;
 
-  /* Les équipements retenus, dans l'ordre du CRM, avec leur niveau. */
+  /* Ce qu'il faut au local (Werner : EXIGENCES_PRO), dans l'ordre du CRM, avec leur niveau. */
   const equips: { ico: string; texte: string; fort: boolean }[] = [];
-  EQUIP_E.forEach(([cle, lib]) => {
-    if (crit.equip.includes(lib) || ex[cle]) equips.push({ ico: ICO_EQUIP[cle] || 'check', texte: lib, fort: ex[cle] === 'indispensable' });
+  EXIGENCES_E.forEach(([cle, lib]) => {
+    if (ex[cle]) equips.push({ ico: ICO_EQUIP[cle] || 'check', texte: lib, fort: ex[cle] === 'indispensable' });
   });
-  if (ex.exterieur) equips.push({ ico: 'terrasse', texte: `Extérieur${crit.exterieurSurfaceMin ? ` de ${crit.exterieurSurfaceMin} m² mini` : ''}`, fort: ex.exterieur === 'indispensable' });
-  if (crit.cuisineType) equips.push({ ico: 'cuisine', texte: `Cuisine professionnelle ${crit.cuisineType === 'ouverte' ? 'ouverte' : 'séparée'}`, fort: ex.cuisine === 'indispensable' });
+  const natures: string[] = (crit.natures || []).map((k: string) => NATURES_E.find(x => x[0] === k)?.[1] || k);
+  const emplacements: string[] = (crit.emplacements || []).map((k: string) => EMPLACEMENTS_E.find(x => x[0] === k)?.[1] || k);
 
-  /* V3.68 : chaque pastille d'étage a son icône (Alexandre : « à partir du
-     deuxième, pas de rez-de-chaussée… il n'y a pas d'icône »). */
-  const etage: { ico: string; t: string }[] = [
-    crit.etageMin ? { ico: 'immeuble', t: `à partir du ${crit.etageMin}e` } : null,
-    crit.etageMax ? { ico: 'immeuble', t: `jusqu'au ${crit.etageMax}e` } : null,
-    crit.rdcExclu ? { ico: 'croix', t: 'pas de rez-de-chaussée' } : null,
-    crit.dernierEtage ? { ico: 'etoile', t: 'dernier étage recherché' } : null,
-    crit.etageMaxSansAscenseur ? { ico: 'ascenseur', t: `${crit.etageMaxSansAscenseur}e maximum sans ascenseur` } : null,
-  ].filter((x): x is { ico: string; t: string } => !!x);
 
-  const aQuelqueChose = types.length || crit.etatSouhaite || crit.anneeMin;
+  const aQuelqueChose = types.length || natures.length || crit.activite;
   const villesResume = grouperSecteurs(crit.secteurs || []);
 
   return (
@@ -3738,64 +3742,28 @@ function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
 
       {/* 1 — Le bien recherché */}
       {aQuelqueChose ? (
-        <CatE ico="maison" titre="Le local recherché" sous="type et état">
-          {types.length ? <div className="pastilles">{types.map((t: string) => <span className="past or" key={t}><Ico n={ICO_TYPE[t] || 'maison'} t={15} /><span>{t}</span></span>)}</div> : null}
-          {(crit.etatSouhaite || crit.anneeMin) && (
-            <div className="faits">
-              {etatsListe(crit.etatSouhaite).length > 0 && <Fait ico="etincelle" lib="État souhaité" val={etatsListe(crit.etatSouhaite).map((k, i) => { const l = ETATS_E.find(x => x[0] === k)?.[1] || k; return i ? l.charAt(0).toLowerCase() + l.slice(1) : l; }).join(' ou ')} />}
-              {crit.anneeMin ? <Fait ico="calendrier" lib="Construit après" val={<span className="tab">{crit.anneeMin}</span>} /> : null}
-            </div>
-          )}
+        <CatE ico="maison" titre="Mon projet" sous="ce que vous voulez faire, et le local">
+          {natures.length ? <div className="pastilles">{natures.map((t: string) => <span className="past" key={t}><Ico n="cle" t={15} /><span>{t}</span></span>)}</div> : null}
+          {types.length ? <div className="pastilles" style={{ marginTop: natures.length ? 8 : 0 }}>{types.map((t: string) => <span className="past or" key={t}><Ico n={ICO_TYPE[t] || 'maison'} t={15} /><span>{t}</span></span>)}</div> : null}
+          {crit.activite ? <div className="faits"><Fait ico="vitrine" lib="Activité" val={crit.activite} /></div> : null}
         </CatE>
       ) : null}
 
       {/* 2 — Surfaces & volumes */}
-      <CatE ico="regle" titre="Surfaces & volumes" sous="la taille du local">
+      <CatE ico="regle" titre="Surface & vitrine" sous="la taille du local">
         <div className="trio">
           <div className="mini-t"><span className="mini-i"><Ico n="regle" t={17} /></span><div className="v tab">{crit.surfaceMin ? crit.surfaceMin + ' m²' : '—'}</div><div className="l">surface min.</div></div>
-          <div className="mini-t"><span className="mini-i"><Ico n="plan" t={17} /></span><div className="v tab">{crit.piecesMin ?? '—'}</div><div className="l">espaces min.</div></div>
-          <div className="mini-t"><span className="mini-i"><Ico n="lit" t={17} /></span><div className="v tab">{crit.chambresMin ?? '—'}</div><div className="l">bureaux min.</div></div>
+          <div className="mini-t"><span className="mini-i"><Ico n="plan" t={17} /></span><div className="v tab">{crit.surfaceMax ? crit.surfaceMax + ' m²' : '—'}</div><div className="l">surface max.</div></div>
+          <div className="mini-t"><span className="mini-i"><Ico n="vitrine" t={17} /></span><div className="v tab">{crit.vitrineMin ? crit.vitrineMin + ' m' : '—'}</div><div className="l">vitrine min.</div></div>
         </div>
-        {(crit.surfaceMax || crit.surfaceSejourMin || crit.piecesMax) && (
-          <div className="faits">
-            {crit.surfaceMax ? <Fait ico="regle" lib="Surface maximum" val={<span className="tab">{crit.surfaceMax} m²</span>} /> : null}
-            {crit.piecesMax ? <Fait ico="plan" lib="Espaces maximum" val={<span className="tab">{crit.piecesMax}</span>} /> : null}
-            {crit.surfaceSejourMin ? <Fait ico="canape" lib="Surface de vente d’au moins" val={<span className="tab">{crit.surfaceSejourMin} m²</span>} /> : null}
-          </div>
-        )}
       </CatE>
 
-      {/* 3 — Étage & exposition */}
-      {(etage.length || expos.length) ? (
-        <CatE ico="immeuble" titre="Étage & exposition" sous="où se trouve le local dans l'immeuble">
-          {etage.length ? <div className="pastilles">{etage.map(e => <span className="past" key={e.t}><Ico n={e.ico} t={15} /><span>{e.t}</span></span>)}</div> : null}
-          {expos.length ? (
-            <div style={{ marginTop: etage.length ? 12 : 0 }}>
-              <div className="ss-t">Exposition souhaitée</div>
-              <div className="pastilles">{expos.map(e => {
-                const t = EXPO_E.find(x => x[0] === e);
-                return <span className="past or" key={e}><Ico n={ICO_EXPO[e] || 'boussole'} t={15} /><span>{t ? t[1] : e}</span></span>;
-              })}</div>
-            </div>
-          ) : null}
-        </CatE>
-      ) : null}
-
       {/* 4 — Équipements */}
-      {equips.length ? (
-        <CatE ico="etincelle" titre="Équipements" sous="ce qui compte pour vous">
-          <div className="pastilles">{equips.map(e => <PastilleE key={e.texte} ico={e.ico} texte={e.texte} fort={e.fort} />)}</div>
+      {(equips.length || emplacements.length) ? (
+        <CatE ico="etincelle" titre="Ce qu’il me faut" sous="ce qui compte pour vous">
+          {equips.length ? <div className="pastilles">{equips.map(e => <PastilleE key={e.texte} ico={e.ico} texte={e.texte} fort={e.fort} />)}</div> : null}
+          {emplacements.length ? <div className="faits"><Fait ico="lieu" lib="Emplacement" val={emplacements.join(', ')} /></div> : null}
           {equips.some(e => e.fort) && <div className="note-cat">Ce qui est marqué <b>indispensable</b> n&apos;est jamais mis de côté : un local qui ne l&apos;a pas ne vous est pas présenté.</div>}
-        </CatE>
-      ) : null}
-
-      {/* 5 — Performance énergétique */}
-      {crit.dpeMax ? (
-        <CatE ico="eclair" titre="Performance énergétique" sous="la plus mauvaise lettre acceptée">
-          <div className="dpe-r">{LETTRES_DPE.map((d, i) => (
-            <span key={d} className={'dpe-l' + (i <= iDpe ? ' ok' : '') + (d === crit.dpeMax ? ' pt' : '')}>{d}</span>
-          ))}</div>
-          <div className="note-cat">Vous gardez <b>{LETTRES_DPE.slice(0, iDpe + 1).join(' ')}</b>{iDpe < 6 ? <> — les locaux classés {LETTRES_DPE.slice(iDpe + 1).join(' ')} sont écartés.</> : '.'}</div>
         </CatE>
       ) : null}
 
@@ -3837,23 +3805,32 @@ function Recherche({ crit, aller, onCriteres, onMessage, mandatCarte }: any) {
       ) : null}
 
       {/* 8 — Budget */}
-      <CatE ico="euro" titre="Budget" sous="votre enveloppe">
-        <div className="gros tab">
-          {bmin && bmax ? <>{EUR(bmin)} <small>à</small> {EUR(bmax)}</>
-            : bmax ? <><small>Jusqu&apos;à</small> {EUR(bmax)}</>
-              : bmin ? <><small>À partir de</small> {EUR(bmin)}</>
-                : <small>À préciser ensemble</small>}
-        </div>
+      <CatE ico="euro" titre="Budget" sous="le loyer, ou le prix">
+        {crit.loyerMax || crit.loyerMin ? (
+          <div className="gros tab">
+            {crit.loyerMin && crit.loyerMax ? <>{EUR(crit.loyerMin)} <small>à</small> {EUR(crit.loyerMax)}</>
+              : crit.loyerMax ? <><small>Jusqu&apos;à</small> {EUR(crit.loyerMax)}</> : <><small>À partir de</small> {EUR(crit.loyerMin)}</>}
+            <small>{' HT HC par an'}</small>
+          </div>
+        ) : null}
+        {bmin || bmax ? (
+          <div className="gros tab" style={{ marginTop: crit.loyerMax || crit.loyerMin ? 8 : 0 }}>
+            <small>{'Prix '}</small>
+            {bmin && bmax ? <>{EUR(bmin)} <small>à</small> {EUR(bmax)}</>
+              : bmax ? <><small>jusqu&apos;à</small> {EUR(bmax)}</> : <><small>à partir de</small> {EUR(bmin)}</>}
+          </div>
+        ) : null}
+        {!(crit.loyerMax || crit.loyerMin || bmin || bmax) ? <div className="gros tab"><small>À préciser ensemble</small></div> : null}
         {(crit.apport || crit.financement) && (
           <div className="faits">
             {crit.apport ? <Fait ico="portefeuille" lib="Apport" val={<span className="tab">{EUR(crit.apport)}</span>} /> : null}
-            {crit.financement && <Fait ico="banque" lib="Financement" val={(FINANCEMENTS_E.find(x => x[0] === crit.financement)?.[1]) || crit.financement} />}
+            {crit.financement && <Fait ico="banque" lib="Financement" val={(FINANCEMENTS_PRO_E.find(x => x[0] === crit.financement)?.[1]) || (FINANCEMENTS_E.find(x => x[0] === crit.financement)?.[1]) || crit.financement} />}
           </div>
         )}
       </CatE>
 
       {/* 9 — Mon projet + la note d'Alexandre, en lecture seule */}
-      <CatE ico="note" titre="Mon projet" sous="échéance et précisions">
+      <CatE ico="note" titre="Mon échéance" sous="quand vous voulez vous installer, et les précisions">
         {crit.urgence && (
           <div className="faits">
             <Fait ico="horloge" lib="Échéance souhaitée" val={(URGENCES_E.find(x => x[0] === crit.urgence)?.[1]) || crit.urgence} />
@@ -5399,190 +5376,123 @@ function ModalePartage({ b, client, onFermer, onEnvoyer }: any) {
   );
 }
 
-/* « Mes critères ont évolué » — le même parcours que le CRM d'Alexandre,
-   mais en neuf étapes, pensées pour un pouce sur un téléphone.
-   On peut sauter directement à la catégorie que l'on veut changer. */
+/* « Mes critères ont évolué » — le même parcours que l'assistant du CRM de
+   Werner, en sept étapes pensées pour un pouce sur un téléphone : le projet
+   (louer, reprendre un bail, un fonds, des murs), la surface et la vitrine,
+   le budget (le loyer annuel HT HC, ou le prix), ce qu'il faut au local, où,
+   les transports, l'échéance. On peut sauter directement à l'étape voulue.
+   La nature, l'activité, le loyer, la vitrine et l'emplacement vont dans
+   recherches.criteres_pro (route /api/espace/criteres) ; le reste dans les
+   colonnes d'origine. */
 function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
   const [enr, setEnr] = useState(false);
   const [rate, setRate] = useState(false);
   const [etape, setEtape] = useState(0);
   const [sens, setSens] = useState<1 | -1>(1);
   const [demandeNote, setDemandeNote] = useState('');
+  const txt = (v: unknown) => (v ? String(v) : '');
   const [t, setT] = useState({
+    natures: [...(crit.natures || [])] as string[],
+    activite: (crit.activite || '') as string,
     typesBien: [...(crit.typesBien || [])] as string[],
-    etatSouhaite: crit.etatSouhaite || '',
-    anneeMin: crit.anneeMin ? String(crit.anneeMin) : '',
-    budgetMin: crit.budgetMin || 0,
-    budgetMax: crit.budgetMax || 1000000,
-    apport: crit.apport ? String(crit.apport) : '',
-    financement: crit.financement || '',
-    surfaceMin: crit.surfaceMin || 60,
-    surfaceMax: crit.surfaceMax ? String(crit.surfaceMax) : '',
-    surfaceSejourMin: crit.surfaceSejourMin ? String(crit.surfaceSejourMin) : '',
-    piecesMin: crit.piecesMin || 3,
-    chambresMin: crit.chambresMin || 2,
-    etageMin: crit.etageMin ? String(crit.etageMin) : '',
-    etageMax: crit.etageMax ? String(crit.etageMax) : '',
-    rdcExclu: !!crit.rdcExclu,
-    dernierEtage: !!crit.dernierEtage,
-    etageMaxSansAscenseur: crit.etageMaxSansAscenseur ? String(crit.etageMaxSansAscenseur) : '',
-    exposition: crit.exposition || '',
+    surfaceMin: crit.surfaceMin || 50,
+    surfaceMax: txt(crit.surfaceMax),
+    vitrineMin: txt(crit.vitrineMin),
+    loyerMin: txt(crit.loyerMin),
+    loyerMax: txt(crit.loyerMax),
+    budgetMin: txt(crit.budgetMin),
+    budgetMax: txt(crit.budgetMax),
+    apport: txt(crit.apport),
+    financement: (crit.financement || '') as string,
     exigences: { ...(crit.exigences || {}) } as Record<string, string>,
-    cuisineType: crit.cuisineType || '',
-    exterieurSurfaceMin: crit.exterieurSurfaceMin ? String(crit.exterieurSurfaceMin) : '',
-    dpeMax: crit.dpeMax || '',
-    urgence: crit.urgence || '',
+    emplacements: [...(crit.emplacements || [])] as string[],
+    urgence: (crit.urgence || '') as string,
     transportMinutes: crit.transportMinutes || 0,
     arrets: [...(crit.transportArrets || [])] as Arret[],
     secteurs: [...crit.secteurs],
   });
-  /* Les valeurs de départ, pour savoir ensuite si le client a touché un curseur. */
+  /* Les valeurs de départ, pour savoir ensuite si le client a touché le curseur de surface. */
   const depart = useRef(t).current;
 
-  /* Une borne ne tire plus l'autre : on bloque seulement quand elles se
-     croisent, et on retient celle que l'on est en train de bouger. */
-  const pas = (cle: string, d: number) => {
-    setT(v => {
-      const n = { ...v } as any;
-      const p = cle === 'surfaceMin' ? 5 : 25000;
-      const plancher = cle === 'surfaceMin' ? 20 : (cle === 'budgetMin' ? 0 : 50000);
-      n[cle] = Math.max(plancher, n[cle] + d * p);
-      if (n.budgetMin && n.budgetMin > n.budgetMax) {
-        if (cle === 'budgetMin') n.budgetMin = n.budgetMax; else n.budgetMax = n.budgetMin;
-      }
-      return n;
-    });
-  };
-  const basculeType = (v: string) =>
-    setT(x => ({ ...x, typesBien: x.typesBien.includes(v) ? x.typesBien.filter((y: string) => y !== v) : [...x.typesBien, v] }));
-  const expos: string[] = t.exposition.split(',').map((x: string) => x.trim()).filter(Boolean);
-  const basculeExpo = (k: string) =>
-    setT(x => ({ ...x, exposition: (expos.includes(k) ? expos.filter((y: string) => y !== k) : [...expos, k]).join(', ') }));
+  const pasSurface = (d: number) => setT(v => ({ ...v, surfaceMin: Math.max(10, v.surfaceMin + d * 5) }));
+  const basculer = (cle: 'natures' | 'typesBien' | 'emplacements', v: string) =>
+    setT(x => ({ ...x, [cle]: x[cle].includes(v) ? x[cle].filter((y: string) => y !== v) : [...x[cle], v] }));
   const niv = (k: string) => t.exigences[k] || '';
-  const setNiv = (k: string, n: string) => setT(x => {
+  const tourner = (k: string) => setT(x => {
+    const c = ['', 'souhaite', 'indispensable'];
     const e = { ...x.exigences };
+    const n = c[(c.indexOf(e[k] || '') + 1) % 3];
     if (n) e[k] = n; else delete e[k];
     return { ...x, exigences: e };
   });
-  const tourner = (k: string) => { const c = ['', 'souhaite', 'indispensable']; setNiv(k, c[(c.indexOf(niv(k)) + 1) % 3]); };
-
   const num = (cle: string) => (v: string) => setT(x => ({ ...x, [cle]: v }));
+  /* Le budget suit le projet : un loyer pour une location, un prix pour le reste. */
+  const veutLouer = !t.natures.length || t.natures.includes('location');
+  const veutAcheter = !t.natures.length || t.natures.some(k => k !== 'location');
 
   const ETAPES: { id: string; ico: string; titre: string; sous: string; contenu: React.ReactNode }[] = [
     {
-      id: 'bien', ico: 'maison', titre: 'Le local recherché', sous: 'Quel type de local, dans quel état',
+      id: 'projet', ico: 'cible', titre: 'Mon projet', sous: 'Ce que vous voulez faire, et pour quelle activité',
       contenu: (<>
+        <label className="lab">Vous souhaitez <i>plusieurs choix possibles</i></label>
+        <div className="choix">{NATURES_E.map(([k, l, i]) => (
+          <button key={k} className="ch or" aria-pressed={t.natures.includes(k)} onClick={() => basculer('natures', k)}>{i} {l}</button>))}</div>
         <label className="lab">Type de local <i>plusieurs choix possibles</i></label>
         <div className="choix">{TYPES_E.map(([x, i]) => (
-          <button key={x} className="ch or" aria-pressed={t.typesBien.includes(x)} onClick={() => basculeType(x)}>{i} {x}</button>))}</div>
-        <label className="lab">État souhaité <i>plusieurs choix possibles</i></label>
-        <div className="choix">
-          <button className="ch" aria-pressed={!etatsListe(t.etatSouhaite).length} onClick={() => setT(x => ({ ...x, etatSouhaite: '' }))}>🤷 Pas de préférence</button>
-          {ETATS_E.map(([k, l, i]) => {
-            const actif = etatsListe(t.etatSouhaite).includes(k);
-            return (
-              <button key={k} className="ch" aria-pressed={actif}
-                onClick={() => setT(x => { const deja = etatsListe(x.etatSouhaite); return { ...x, etatSouhaite: ETATS_E.map(e => e[0]).filter(y => (y === k ? !actif : deja.includes(y))).join(',') }; })}>{i} {l}</button>
-            );
-          })}
+          <button key={x} className="ch or" aria-pressed={t.typesBien.includes(x)} onClick={() => basculer('typesBien', x)}>{i} {x}</button>))}</div>
+        <label className="lab">Votre activité</label>
+        <div className="champ-n">
+          <input type="text" value={t.activite} maxLength={120} style={{ flex: '1 1 100%', width: '100%' }} placeholder="Restaurant, boutique de prêt-à-porter, cabinet…"
+            onChange={e => setT(x => ({ ...x, activite: e.target.value }))} />
         </div>
-        <label className="lab">📅 Construit après</label>
-        <ChampNum val={t.anneeMin} onChange={num('anneeMin')} aide="Laissez vide si l’année n’a pas d’importance" />
       </>),
     },
     {
-      id: 'surfaces', ico: 'regle', titre: 'Surfaces & volumes', sous: 'La taille du local',
+      id: 'surfaces', ico: 'regle', titre: 'Surface & vitrine', sous: 'La taille du local',
       contenu: (<>
         <label className="lab">Surface minimum</label>
-        <div className="pas"><button className="rond" onClick={() => pas('surfaceMin', -1)}>−</button>
+        <div className="pas"><button className="rond" onClick={() => pasSurface(-1)}>−</button>
           <span className="val tab">{t.surfaceMin} m²</span>
-          <button className="rond" onClick={() => pas('surfaceMin', 1)}>+</button></div>
+          <button className="rond" onClick={() => pasSurface(1)}>+</button></div>
         <label className="lab">Surface maximum</label>
         <ChampNum val={t.surfaceMax} onChange={num('surfaceMax')} suffixe="m²" aide="Vide = pas de plafond" />
-        <label className="lab">Espaces minimum</label>
-        <div className="choix">{[2, 3, 4, 5, 6].map(n => (
-          <button key={n} className="ch" aria-pressed={t.piecesMin === n} onClick={() => setT(v => ({ ...v, piecesMin: n }))}>{n}{n === 6 ? '+' : ''}</button>))}</div>
-        <label className="lab">Bureaux minimum</label>
-        <div className="choix">{[1, 2, 3, 4, 5].map(n => (
-          <button key={n} className="ch" aria-pressed={t.chambresMin === n} onClick={() => setT(v => ({ ...v, chambresMin: n }))}>{n}{n === 5 ? '+' : ''}</button>))}</div>
-        <label className="lab">Surface de vente d’au moins</label>
-        <ChampNum val={t.surfaceSejourMin} onChange={num('surfaceSejourMin')} suffixe="m²" aide="Vide si vous n’avez pas d’exigence sur la surface de vente" />
+        <label className="lab">Vitrine d’au moins</label>
+        <ChampNum val={t.vitrineMin} onChange={num('vitrineMin')} suffixe="m" aide="Le linéaire de vitrine sur rue. Vide si ce n’est pas important" />
       </>),
     },
     {
-      id: 'etage', ico: 'immeuble', titre: 'Étage & exposition', sous: 'La place dans l’immeuble et l’orientation',
+      id: 'budget', ico: 'euro', titre: 'Budget', sous: veutLouer && veutAcheter ? 'Le loyer, ou le prix' : veutLouer ? 'Le loyer que vous visez' : 'Votre enveloppe et son financement',
       contenu: (<>
-        <label className="lab">Étage</label>
-        <div className="duo-n">
-          <div><div className="borne">À partir du</div><ChampNum val={t.etageMin} onChange={num('etageMin')} suffixe="e" /></div>
-          <div><div className="borne">Jusqu’au</div><ChampNum val={t.etageMax} onChange={num('etageMax')} suffixe="e" /></div>
-        </div>
-        <div className="choix" style={{ marginTop: 12 }}>
-          <button className="ch" aria-pressed={t.rdcExclu} onClick={() => setT(x => ({ ...x, rdcExclu: !x.rdcExclu }))}>Pas de rez-de-chaussée</button>
-          <button className="ch" aria-pressed={t.dernierEtage} onClick={() => setT(x => ({ ...x, dernierEtage: !x.dernierEtage }))}>Dernier étage</button>
-        </div>
-        <label className="lab">Ascenseur</label>
-        <div className="choix">
-          <button className={'ch niv' + (niv('ascenseur') ? ' n' + niv('ascenseur') : '')} aria-pressed={!!niv('ascenseur')} onClick={() => tourner('ascenseur')}>
-            🛗 Ascenseur{niv('ascenseur') ? <i className="mk">{niv('ascenseur') === 'indispensable' ? 'indispensable' : 'souhaité'}</i> : null}
-          </button>
-        </div>
-        {niv('ascenseur') !== 'indispensable' && (
-          <>
-            <div className="borne" style={{ marginTop: 12 }}>Sans ascenseur, j’accepte jusqu’au</div>
-            <ChampNum val={t.etageMaxSansAscenseur} onChange={num('etageMaxSansAscenseur')} suffixe="e étage" aide="Vide si monter à pied ne vous dérange pas" />
-          </>
-        )}
-        <label className="lab">Exposition souhaitée <i>plusieurs choix possibles</i></label>
-        <div className="choix">{EXPO_E.map(([k, l, i]) => (
-          <button key={k} className="ch or" aria-pressed={expos.includes(k)} onClick={() => basculeExpo(k)}>{i} {l}</button>))}</div>
+        {veutLouer && (<>
+          <label className="lab">Loyer annuel maximum <i>hors taxes, hors charges</i></label>
+          <ChampNum val={t.loyerMax} onChange={num('loyerMax')} suffixe="€ / an" aide="Vide si vous préférez en parler avec Werner" />
+          <label className="lab">Loyer annuel minimum</label>
+          <ChampNum val={t.loyerMin} onChange={num('loyerMin')} suffixe="€ / an" aide="Facultatif" />
+        </>)}
+        {veutAcheter && (<>
+          <label className="lab">{'Prix maximum '}<i>{t.natures.some(k => k === 'murs' || k === 'murs_occupes') ? 'murs, hors droits' : 'droit au bail ou fonds'}</i></label>
+          <ChampNum val={t.budgetMax} onChange={num('budgetMax')} suffixe="€" aide="Vide si vous préférez en parler avec Werner" />
+          <label className="lab">Prix minimum</label>
+          <ChampNum val={t.budgetMin} onChange={num('budgetMin')} suffixe="€" aide="Facultatif" />
+          <label className="lab">Apport</label>
+          <ChampNum val={t.apport} onChange={num('apport')} suffixe="€" aide="Vide si vous préférez ne pas le préciser ici" />
+          <label className="lab">Financement</label>
+          <div className="choix">{FINANCEMENTS_PRO_E.map(([k, l, i]) => (
+            <button key={k} className="ch" aria-pressed={t.financement === k} onClick={() => setT(x => ({ ...x, financement: x.financement === k ? '' : k }))}>{i} {l}</button>))}</div>
+        </>)}
       </>),
     },
     {
-      id: 'equip', ico: 'etincelle', titre: 'Équipements', sous: 'Ce qui ferait plaisir, et ce sans quoi c’est non',
+      id: 'equip', ico: 'etincelle', titre: 'Ce qu’il me faut', sous: 'Ce qui serait un plus, et ce sans quoi c’est non',
       contenu: (<>
         <label className="lab">Appuyez une fois pour « souhaité », deux fois pour « indispensable »</label>
-        <div className="choix">{EQUIP_E.filter(([k]) => k !== 'ascenseur').map(([k, l, i]) => (
+        <div className="choix">{EXIGENCES_E.map(([k, l, i]) => (
           <button key={k} className={'ch niv' + (niv(k) ? ' n' + niv(k) : '')} aria-pressed={!!niv(k)} onClick={() => tourner(k)}>
             {i} {l}{niv(k) ? <i className="mk">{niv(k) === 'indispensable' ? 'indispensable' : 'souhaité'}</i> : null}
           </button>))}</div>
-        <label className="lab">Un extérieur</label>
-        <div className="choix">
-          <button className={'ch niv' + (niv('exterieur') ? ' n' + niv('exterieur') : '')} aria-pressed={!!niv('exterieur')} onClick={() => tourner('exterieur')}>
-            🌤️ Terrasse ou extérieur{niv('exterieur') ? <i className="mk">{niv('exterieur') === 'indispensable' ? 'indispensable' : 'souhaité'}</i> : null}
-          </button>
-        </div>
-        {niv('exterieur') ? (<>
-          <div className="borne" style={{ marginTop: 12 }}>D’au moins</div>
-          <ChampNum val={t.exterieurSurfaceMin} onChange={num('exterieurSurfaceMin')} suffixe="m²" aide="Vide si la taille importe peu" />
-        </>) : null}
-        <label className="lab">Cuisine professionnelle</label>
-        <div className="choix">
-          {CUISINES_E.map(([k, l, i]) => (
-            <button key={k || 'ind'} className="ch" aria-pressed={t.cuisineType === k} onClick={() => setT(x => ({ ...x, cuisineType: k }))}>{i} {l}</button>))}
-        </div>
-        {t.cuisineType ? (
-          <div className="choix" style={{ marginTop: 9 }}>
-            {[['souhaite', 'Simple préférence'], ['indispensable', 'Indispensable']].map(([k, l]) => (
-              <button key={k} className="ch or" aria-pressed={niv('cuisine') === k} onClick={() => setNiv('cuisine', niv('cuisine') === k ? '' : k)}>{l}</button>))}
-          </div>
-        ) : null}
-      </>),
-    },
-    {
-      id: 'energie', ico: 'eclair', titre: 'Performance énergétique', sous: 'La plus mauvaise lettre que vous acceptez',
-      contenu: (<>
-        <div className="dpe-choix">{LETTRES_DPE.map(d => {
-          const i = LETTRES_DPE.indexOf(t.dpeMax);
-          const passe = t.dpeMax ? LETTRES_DPE.indexOf(d) <= i : false;
-          return <button key={d} className={'dpe-b' + (passe ? ' ok' : '') + (t.dpeMax === d ? ' pt' : '')}
-            onClick={() => setT(x => ({ ...x, dpeMax: x.dpeMax === d ? '' : d }))}>{d}</button>;
-        })}</div>
-        <p className="txt" style={{ marginTop: 12 }}>
-          {t.dpeMax
-            ? <>Vous gardez <b>{LETTRES_DPE.slice(0, LETTRES_DPE.indexOf(t.dpeMax) + 1).join(' ')}</b>{LETTRES_DPE.indexOf(t.dpeMax) < 6 ? <> et écartez {LETTRES_DPE.slice(LETTRES_DPE.indexOf(t.dpeMax) + 1).join(' ')}.</> : '.'}</>
-            : <>Aucune exigence — toutes les étiquettes passent.</>}
-        </p>
+        <label className="lab">Emplacement <i>plusieurs choix possibles</i></label>
+        <div className="choix">{EMPLACEMENTS_E.map(([k, l]) => (
+          <button key={k} className="ch or" aria-pressed={t.emplacements.includes(k)} onClick={() => basculer('emplacements', k)}>{l}</button>))}</div>
       </>),
     },
     {
@@ -5594,25 +5504,7 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
       contenu: <ArretPicker arrets={t.arrets} onChange={(v) => setT(x => ({ ...x, arrets: v }))} minutesDefaut={t.transportMinutes || 10} />,
     },
     {
-      id: 'budget', ico: 'euro', titre: 'Budget', sous: 'Votre enveloppe et son financement',
-      contenu: (<>
-        <div className="borne">Minimum</div>
-        <div className="pas"><button className="rond" onClick={() => pas('budgetMin', -1)}>−</button>
-          <span className="val tab">{t.budgetMin ? EUR(t.budgetMin) : 'Aucun'}</span>
-          <button className="rond" onClick={() => pas('budgetMin', 1)}>+</button></div>
-        <div className="borne">Maximum</div>
-        <div className="pas"><button className="rond" onClick={() => pas('budgetMax', -1)}>−</button>
-          <span className="val tab">{EUR(t.budgetMax)}</span>
-          <button className="rond" onClick={() => pas('budgetMax', 1)}>+</button></div>
-        <label className="lab">Apport</label>
-        <ChampNum val={t.apport} onChange={num('apport')} suffixe="€" aide="Vide si vous préférez ne pas le préciser ici" />
-        <label className="lab">Financement</label>
-        <div className="choix">{FINANCEMENTS_E.map(([k, l, i]) => (
-          <button key={k} className="ch" aria-pressed={t.financement === k} onClick={() => setT(x => ({ ...x, financement: x.financement === k ? '' : k }))}>{i} {l}</button>))}</div>
-      </>),
-    },
-    {
-      id: 'projet', ico: 'note', titre: 'Mon projet', sous: 'Votre échéance, et la note de Werner',
+      id: 'echeance', ico: 'note', titre: 'Mon échéance', sous: 'Quand vous voulez vous installer, et la note de Werner',
       contenu: (<>
         <label className="lab">Échéance souhaitée</label>
         <div className="choix">{URGENCES_E.map(([k, l, i]) => (
@@ -5640,48 +5532,45 @@ function ModifCriteres({ crit, onFermer, onEnregistrer }: any) {
   }, [i]);
 
   async function enregistrer() {
-    /* Un curseur doit bien partir de quelque part : quand le dossier n'avait
-       ni budget, ni surface, ni pièces, ni chambres, l'écran propose une
-       valeur de départ (1 000 000 €, 60 m², 3 pièces, 2 chambres). Tant que
-       le client n'y a pas touché, ce n'est pas son choix : on renvoie ce qu'il
-       y avait avant, et rien ne s'écrit à sa place. */
-    type Curseur = 'budgetMax' | 'surfaceMin' | 'piecesMin' | 'chambresMin';
-    const choisi = (k: Curseur) => (t[k] === depart[k] ? (crit[k] ?? null) : t[k]);
-    const budgetMax = choisi('budgetMax'), surfaceMin = choisi('surfaceMin');
-    const piecesMin = choisi('piecesMin'), chambresMin = choisi('chambresMin');
+    /* La surface part d'une valeur proposée (50 m²) quand le dossier n'en
+       avait pas : tant que le client n'y a pas touché, ce n'est pas son
+       choix, on renvoie ce qu'il y avait. */
+    const surfaceMin = t.surfaceMin === depart.surfaceMin ? (crit.surfaceMin ?? null) : t.surfaceMin;
+    const nombre = (v: string) => { const x = String(v).replace(/\s/g, '').trim(); return x === '' ? null : Number(x); };
+    const egal = (a: unknown, b: unknown) => String(a ?? '') === String(b ?? '');
+    const libs = (l: string[], table: [string, string, ...string[]][]) => l.map(k => table.find(x => x[0] === k)?.[1] || k).join(', ');
     const c: string[] = [];
-    if ((t.budgetMin || null) !== (crit.budgetMin || null) || budgetMax !== (crit.budgetMax ?? null)) {
-      c.push('budget ' + (t.budgetMin ? EUR(t.budgetMin) + ' – ' + EUR(t.budgetMax) : 'jusqu’à ' + EUR(t.budgetMax)));
-    }
-    if (surfaceMin !== (crit.surfaceMin ?? null)) c.push(t.surfaceMin + ' m² minimum');
-    if (piecesMin !== (crit.piecesMin ?? null)) c.push(t.piecesMin + ' espaces minimum');
-    if (chambresMin !== (crit.chambresMin ?? null)) c.push(t.chambresMin + ' bureaux minimum');
+    if (t.natures.join() !== (crit.natures || []).join()) c.push(t.natures.length ? 'projet : ' + libs(t.natures, NATURES_E).toLowerCase() : 'projet non précisé');
     if (t.typesBien.join() !== (crit.typesBien || []).join()) c.push(t.typesBien.length ? 'type de local : ' + t.typesBien.join(', ') : 'plus de contrainte de type');
+    if (t.activite.trim() !== (crit.activite || '')) c.push(t.activite.trim() ? 'activité : ' + t.activite.trim() : 'activité retirée');
+    if (!egal(surfaceMin, crit.surfaceMin)) c.push(t.surfaceMin + ' m² minimum');
+    if (!egal(nombre(t.surfaceMax), crit.surfaceMax)) c.push(t.surfaceMax ? t.surfaceMax + ' m² maximum' : 'plus de surface maximum');
+    if (!egal(nombre(t.vitrineMin), crit.vitrineMin)) c.push(t.vitrineMin ? 'vitrine d’au moins ' + t.vitrineMin + ' m' : 'plus de contrainte de vitrine');
+    if (!egal(nombre(t.loyerMax), crit.loyerMax) || !egal(nombre(t.loyerMin), crit.loyerMin)) c.push('loyer annuel');
+    if (!egal(nombre(t.budgetMax), crit.budgetMax) || !egal(nombre(t.budgetMin), crit.budgetMin)) c.push('prix');
+    if (JSON.stringify(t.exigences) !== JSON.stringify(crit.exigences || {})) c.push('ce qu’il faut au local');
+    if (t.emplacements.join() !== (crit.emplacements || []).join()) c.push('emplacement');
     if (t.secteurs.join() !== crit.secteurs.join()) c.push(t.secteurs.length + ' secteurs');
-    if (JSON.stringify(t.exigences) !== JSON.stringify(crit.exigences || {})) c.push('équipements souhaités');
-    if ((t.dpeMax || '') !== (crit.dpeMax || '')) c.push(t.dpeMax ? 'DPE ' + t.dpeMax + ' maximum' : 'plus de contrainte de DPE');
-    if (t.exposition !== (crit.exposition || '')) c.push('exposition');
     const arretsAvant = (crit.transportArrets || []).map((a: Arret) => a.nom + a.minutes).join();
     if (t.arrets.map(a => a.nom + a.minutes).join() !== arretsAvant) {
       c.push(t.arrets.length
         ? 'transports : ' + t.arrets.map(a => `${a.nom} (${a.minutes || 10} min)`).join(' · ')
         : 'plus de contrainte de transport');
     }
-    const nombre = (v: string) => (v.trim() === '' ? null : Number(v));
+    if ((t.urgence || '') !== (crit.urgence || '')) c.push('échéance');
     setEnr(true); setRate(false);
-    const ok = await onEnregistrer({
-      ...crit, ...t,
-      budgetMax, surfaceMin, piecesMin, chambresMin,
-      budgetMin: t.budgetMin || null,
-      apport: nombre(t.apport), anneeMin: nombre(t.anneeMin),
-      surfaceMax: nombre(t.surfaceMax), surfaceSejourMin: nombre(t.surfaceSejourMin),
-      etageMin: nombre(t.etageMin), etageMax: nombre(t.etageMax),
-      etageMaxSansAscenseur: nombre(t.etageMaxSansAscenseur),
-      exterieurSurfaceMin: nombre(t.exterieurSurfaceMin),
-      equip: EQUIP_E.filter(([k]) => t.exigences[k]).map(([, l]) => l),
-      transportMinutes: t.transportMinutes || null,
-      transportArrets: t.arrets,
-    }, c, demandeNote.trim());
+    /* Seuls les champs de cet écran partent : la route ne touche qu'à eux. */
+    const envoi = {
+      natures: t.natures, activite: t.activite.trim(), typesBien: t.typesBien,
+      surfaceMin, surfaceMax: nombre(t.surfaceMax), vitrineMin: nombre(t.vitrineMin),
+      loyerMin: nombre(t.loyerMin), loyerMax: nombre(t.loyerMax),
+      budgetMin: nombre(t.budgetMin), budgetMax: nombre(t.budgetMax),
+      apport: nombre(t.apport), financement: t.financement || null,
+      exigences: t.exigences, emplacements: t.emplacements,
+      secteurs: t.secteurs, urgence: t.urgence || null,
+      transportMinutes: t.transportMinutes || null, transportArrets: t.arrets,
+    };
+    const ok = await onEnregistrer(envoi, c, demandeNote.trim());
     if (!ok) { setEnr(false); setRate(true); }
   }
 

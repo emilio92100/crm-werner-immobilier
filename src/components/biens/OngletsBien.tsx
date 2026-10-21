@@ -733,6 +733,9 @@ export type InfosCompromis = {
   /* V3.172 : achat comptant (pas de condition de prêt), un notaire commun,
      à la charge de qui sont les honoraires. */
   comptant?: boolean; notaireCommun?: boolean; charge?: 'acquereur' | 'vendeur' | null;
+  /* Werner : une location n'a ni condition de prêt ni rétractation ; la
+     rétractation ne reste affichée que sur un accord d'avant qui l'avait. */
+  location?: boolean;
 };
 export type ActionsOffre = {
   /* Une réponse : accepte, contre-offre, nouvelle proposition, refus… */
@@ -754,6 +757,8 @@ export type ActionsOffre = {
   onAcquereur?: () => void;
   onHonoraires?: () => void;
   notaires?: NotaireCarte[]; notaireCommun?: boolean; onNotaires?: () => void;
+  /* Werner : une location (un bail, pas un acte). */
+  location?: boolean;
 };
 
 export const dateAn = (iso: string | null | undefined) => {
@@ -963,8 +968,8 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
               )}
               {sorte === 'acceptee' && (
                 <>
-                  <b className={o.suiteQ}>Prochaine étape : la signature du bail ou de l’acte</b>
-                  <span className={o.suiteTx}>Une fois l’accord signé, l’affaire passe « En signature » et le CRM calcule les dates : rétractation, prêt, acte.</span>
+                  <b className={o.suiteQ}>{a.location ? 'Prochaine étape : la signature du bail' : 'Prochaine étape : la signature de l’acte'}</b>
+                  <span className={o.suiteTx}>{a.location ? 'Une fois l’accord signé, l’affaire passe « En signature » et le CRM propose la date de signature du bail.' : 'Une fois l’accord signé, l’affaire passe « En signature » et le CRM propose les dates : condition de prêt, signature de l’acte.'}</span>
                   {a.onCompromis && <button type="button" className={`${o.act} ${o.actOr} ${o.suiteBtn}`} onClick={a.onCompromis}>L’accord est signé<Ic n="fleche" t={14} e={2.4} /></button>}
                   <div className={o.petits}>
                     <button type="button" className={o.petit} onClick={() => rep({ k: 'rouvrir' })}>Annuler l’acceptation</button>
@@ -980,9 +985,9 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
                   <div className={o.dates}>
                     {[
                       { ic: 'doc', col: '#393836', l: 'Accord signé le', v: c.signe },
-                      { ic: 'bouclier', col: '#c05d12', l: 'Rétractation jusqu’au', v: c.sru },
-                      { ic: 'banque', col: '#1d4ed8', l: c.comptant ? 'Condition de prêt' : 'Condition de prêt jusqu’au', v: c.pretLimite, sans: c.comptant ? 'Aucune · comptant' : '' },
-                      { ic: 'plume', col: '#6d28d9', l: sorte === 'vendu' ? 'Bail ou acte signé le' : 'Bail ou acte prévu le', v: sorte === 'vendu' ? c.venduLe || c.acte : c.acte },
+                      ...(c.sru ? [{ ic: 'bouclier', col: '#c05d12', l: 'Rétractation jusqu’au', v: c.sru }] : []),
+                      ...(c.location && !c.pretLimite ? [] : [{ ic: 'banque', col: '#1d4ed8', l: c.comptant ? 'Condition de prêt' : 'Condition de prêt jusqu’au', v: c.pretLimite, sans: c.comptant ? 'Aucune · comptant' : '' }]),
+                      { ic: 'plume', col: '#6d28d9', l: c.location ? (sorte === 'vendu' ? 'Bail signé le' : 'Bail prévu le') : sorte === 'vendu' ? 'Acte signé le' : 'Acte prévu le', v: sorte === 'vendu' ? c.venduLe || c.acte : c.acte },
                     ].map((y: { ic: string; col: string; l: string; v: string | null | undefined; sans?: string }) => {
                       const passe = !!y.v && (joursDepuis(String(y.v)) ?? -1) > 0;
                       return (
@@ -1016,7 +1021,9 @@ export function CarteOffreB({ o: x, prix, a, replie, onPli }: {
 }
 
 const RAPPEL_MOT: Record<string, string> = { sru: 'rétractation', pret: 'prêt', acte: 'signature' };
-const manque = (c: InfosCompromis) => !c.sru || (!c.pretLimite && !c.comptant) || !c.acte || (c.notaires || []).length < (c.notaireCommun ? 1 : 2);
+/* Werner : plus de rétractation à demander (achat d'un logement seulement),
+   ni de condition de prêt pour une location. */
+const manque = (c: InfosCompromis) => (!c.location && !c.pretLimite && !c.comptant) || !c.acte || (c.notaires || []).length < (c.notaireCommun ? 1 : 2);
 const sansEsp = (t: string) => t.replace(/[\s.]+/g, '');
 
 /* Les notaires d'un dossier (V3.45, V3.172) : celui du vendeur et celui de

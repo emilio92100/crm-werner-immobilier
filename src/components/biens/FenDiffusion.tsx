@@ -3,7 +3,7 @@ import { useState, type CSSProperties } from 'react';
 import { Ic } from '@/components/documents/ApercuActe';
 import { etapeDe, type BienVente } from '@/lib/biens-vente';
 import {
-  ETAPES_DIFFUSEES, SUPPORTS, SUPPORTS_DEFAUT, etapeHorsVente, lireDiffusion, nomsSupports, nouvelleDiffusion, supportsCoches,
+  ETAPES_DIFFUSEES, SUPPORTS, SUPPORTS_DEFAUT, etapeHorsVente, lireDiffusion, nomsSupports, nouvelleDiffusion, supportBranche, supportsEnvoyes,
   type Diffusion, type Support,
 } from '@/lib/diffusion';
 import { Fenetre } from './FenetresBien';
@@ -34,8 +34,9 @@ export default function FenDiffusion({ bien, premiere, onFermer, onEnregistrer }
   const et = etapeDe(bien.etape);
   const enPause = bien.etape === 'suspendu';
   const etapeOk = ETAPES_DIFFUSEES.includes(bien.etape);
-  const coches = supportsCoches(choix);
-  const basculer = (k: Support) => setChoix(c => ({ ...c, [k]: !c[k] }));
+  /* Seuls comptent les supports branchés : SeLoger, en attente, ne se coche pas encore. */
+  const coches = supportsEnvoyes(choix);
+  const basculer = (k: Support) => { if (supportBranche(k)) setChoix(c => ({ ...c, [k]: !c[k] })); };
 
   /* En pause, l'interrupteur dit ce qui se passera à la reprise. */
   const vif = actif && (etapeOk || hors);
@@ -67,13 +68,14 @@ export default function FenDiffusion({ bien, premiere, onFermer, onEnregistrer }
 
       <div className={b.diffSupports} data-eteint={!vif ? 'oui' : undefined} role="group" aria-label="Les supports">
         {SUPPORTS.map((x, i) => {
-          const on = !!choix[x.k];
+          const branche = supportBranche(x.k);
+          const on = branche && !!choix[x.k];
           return (
-            <button key={x.k} type="button" role="checkbox" aria-checked={on} className={b.diffSupport} data-on={on ? 'oui' : undefined}
+            <button key={x.k} type="button" role="checkbox" aria-checked={on} aria-disabled={!branche} className={b.diffSupport} data-on={on ? 'oui' : undefined} data-attente={!branche ? 'oui' : undefined}
               style={{ ['--spC' as string]: x.c, ['--spFond' as string]: x.fond, animationDelay: `${i * 45}ms` } as CSSProperties} onClick={() => basculer(x.k)}>
               <span className={b.diffPuce}>{x.court}</span>
-              <span className={b.diffSupportT}><b>{x.lib}</b><small>{x.sous}</small></span>
-              <span className={b.diffCase}><Ic n="check" t={14} e={3} /></span>
+              <span className={b.diffSupportT}><b>{x.lib}</b><small>{branche ? x.sous : 'Bientôt : en attente du branchement avec SeLoger'}</small></span>
+              {branche ? <span className={b.diffCase}><Ic n="check" t={14} e={3} /></span> : <span className={b.diffBientot}>Bientôt</span>}
             </button>
           );
         })}
@@ -81,7 +83,7 @@ export default function FenDiffusion({ bien, premiere, onFermer, onEnregistrer }
 
       <div className={b.diffNote}>
         <Ic n="horloge" t={16} />
-        <span>Le CRM n’envoie pas encore tes annonces à SeLoger : tu les publies toujours comme aujourd’hui. Ces choix serviront dès que l’envoi sera branché, rien à refaire ce jour-là.</span>
+        <span>{'Ton site reçoit l’annonce tout de suite (deux minutes au plus). SeLoger\u00a0: le CRM ne lui envoie pas encore les annonces, tu les publies comme aujourd’hui. La case s’ouvrira quand l’envoi sera branché, rien à refaire ce jour-là.'}</span>
       </div>
     </Fenetre>
   );

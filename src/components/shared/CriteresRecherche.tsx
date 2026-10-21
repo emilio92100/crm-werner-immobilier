@@ -67,7 +67,7 @@ export const URGENCES: [string, string, string][] = [
   ['6_mois', 'Sous 6 mois', '📆'], ['annee', "Dans l'année", '🗓️'],
 ];
 export const CUISINES: [string, string, string][] = [
-  ['', 'Indifférent', '🤷'], ['ouverte', 'Ouverte sur le séjour', '🍽️'], ['separee', 'Séparée', '🚪'],
+  ['', 'Indifférent', '🤷'], ['ouverte', 'Ouverte sur la salle', '🍽️'], ['separee', 'Séparée', '🚪'],
 ];
 /* L'état souhaité se choisit à plusieurs (« travaux légers » ET « bon état »).
    Les clés sont enregistrées à la suite, séparées par des virgules, dans

@@ -1,4 +1,4 @@
-import { CHAMPS_ANNONCE, nettoyerLecture, completerParRegex } from '@/lib/lecture-annonce';
+import { CHAMPS_ANNONCE, nettoyerLecture, completerParRegex, typeLocalDuTexte } from '@/lib/lecture-annonce';
 
 /* ═══ La lecture d'une annonce par son lien (V3.197) ═══════════════════════
    Sortie de api/extract-bien pour servir à deux endroits :
@@ -275,10 +275,7 @@ export function detectPortail(url: string): string {
 
 export function extractFromUrl(url: string, portail: string) {
   const u = url.toLowerCase();
-  let type_bien = 'Appartement';
-  if (u.includes('maison') || u.includes('villa')) type_bien = 'Maison';
-  else if (u.includes('studio')) type_bien = 'Studio';
-  else if (u.includes('loft')) type_bien = 'Loft';
+  const type_bien = typeLocalDuTexte(u.replace(/[-_/]+/g, ' '));
   let ville = '';
   ['paris','boulogne','neuilly','levallois','courbevoie','issy','clichy','rueil','puteaux','suresnes'].forEach(v => { if (u.includes(v)) ville = v.charAt(0).toUpperCase() + v.slice(1); });
   return { titre: `${type_bien}${ville ? ` — ${ville}` : ''} (à compléter)`, type_bien, ville, source_portail: portail, surface: null, nb_pieces: null, etage: null, parking: false, dpe: '', prix_vendeur: null, description: '', photos: [], agence_nom: '', code_postal: '', adresse: '' };
@@ -359,10 +356,6 @@ function extractBienRegex(html: string, url: string, portail: string) {
   const agence = extractText(html, [/"agencyName"\s*:\s*"([^"]{2,80})"/, /"advertiserName"\s*:\s*"([^"]{2,80})"/]);
   const description = extractText(html, [/"description"\s*:\s*"([^"]{50,2000})"/, /<meta[^>]+name="description"[^>]+content="([^"]{30,500})"/i]).replace(/\\n/g,' ').replace(/\s+/g,' ').trim().substring(0,800);
   const parking = /parking|garage|stationnement/i.test(html);
-  let type_bien = 'Appartement';
-  if (/\bmaison\b/.test(html.toLowerCase()) || /\bvilla\b/.test(html.toLowerCase())) type_bien = 'Maison';
-  else if (/\bloft\b/.test(html.toLowerCase())) type_bien = 'Loft';
-  else if (/\bstudio\b/.test(html.toLowerCase())) type_bien = 'Studio';
-  else if (/\bduplex\b/.test(html.toLowerCase())) type_bien = 'Duplex';
+  const type_bien = typeLocalDuTexte(titre || html.slice(0, 20000));
   return { titre: titre || `${type_bien}${ville ? ` — ${ville}` : ''}`, type_bien, ville: ville||'', code_postal: cp||'', surface: surface||null, nb_pieces: pieces ? Math.round(pieces) : null, nb_chambres: chambres ? Math.round(chambres) : null, etage: etage ? Math.round(etage) : null, parking, dpe: dpe||'', prix_vendeur: prix||null, description: description||'', photos: extractPhotos(html), source_portail: portail, agence_nom: agence||'', adresse: '' };
 }

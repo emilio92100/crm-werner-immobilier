@@ -29,7 +29,7 @@ import { copieDe } from '@/components/biens/outils';
  *   - les autres rendez-vous (client, appel, signature, estimation, perso)
  *     vivent dans `rendez_vous` (voir agenda-rendez-vous.sql) ;
  *   - la bande « À faire » montre ce que le CRM sait déjà : offre /
- *     compromis / acte, fin du délai SRU, fin de mandat, visite à caler.
+ *     accord / signature, fin de mandat, visite à caler.
  *     V3.76 : plus les relances. Elles ont leur page, leurs pastilles et le
  *     tableau de bord ; dans l'agenda, quinze relances du jour faisaient
  *     quinze lignes (Alexandre : « les relances ne doivent pas être sur
@@ -283,7 +283,7 @@ function construire(visites: any[], rdvs: any[], transactions: any[], recherches
   /* V3.76 : les relances ne sont plus dans l'agenda (voir l'en-tête). */
   /* V3.50 : un dossier clos n'a plus d'échéance à surveiller. Ces tâches
      restaient dans l'agenda pour un client perdu ou archivé.
-     - L'acte et la fin du délai SRU : seulement perdu ou archivé. Pas « bien
+     - La signature prévue : seulement perdu ou archivé. Pas « bien
        trouvé » (un client qui a trouvé avec nous attend encore son acte), pas
        la recherche arrêtée (la fiche met la veille en pause dès le compromis :
        ce sont justement les dossiers où l'acte arrive).
@@ -298,7 +298,8 @@ function construire(visites: any[], rdvs: any[], transactions: any[], recherches
     pose(t.offre_date, 'Offre', 'signature');
     pose(t.compromis_date, 'Accord', 'signature');
     if (fermes(t.client_id)) continue;
-    pose(t.sru_date_fin, 'Fin du délai SRU', 'signature');
+    /* Werner : plus de « Fin du délai SRU » (il ne vaut que pour l'achat d'un
+       logement). La colonne `sru_date_fin` reste en base, l'agenda ne la lit plus. */
     pose(t.acte_date_prevue, 'Signature prévue', 'signature');
   }
   for (const r of recherches) {

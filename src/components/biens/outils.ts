@@ -1767,7 +1767,7 @@ export async function finaliserAcquereur(clientId: string, o: { rechercheId?: st
       }
     }
     const a = await supabase.from('clients').update({ statut: 'bien_trouve', raison_perte: null }).eq('id', clientId);
-    if (a.error) { signalerEchec('Le statut « Bien trouvé » du demandeur', a.error.message); return { ok: false, bienTrouve: false, autres: 0 }; }
+    if (a.error) { signalerEchec('Le statut « Local trouvé » du demandeur', a.error.message); return { ok: false, bienTrouve: false, autres: 0 }; }
     if (!rechercheId) {
       const b = await supabase.from('recherches').update({ active: false }).eq('client_id', clientId);
       if (b.error) signalerEchec('L’arrêt de la veille du demandeur', b.error.message);
@@ -1834,7 +1834,7 @@ const TYPES_CONTACT_ORDRE = TYPES_CONTACT.map(t => t.k);
 export async function vendeurSigne(clientId: string, bienId: string): Promise<boolean> {
   try {
     const { data, error } = await supabase.from('clients').select('types').eq('id', clientId).maybeSingle();
-    if (error || !data) { signalerEchec('Le type « Mandant signé »', error?.message || 'contact introuvable'); return false; }
+    if (error || !data) { signalerEchec('Le type « Ancien mandant »', error?.message || 'contact introuvable'); return false; }
     /* Un autre de ses biens encore en vente : il reste aussi « Vendeur ».
        V3.137 : « en vente » = mandat, sous offre ou sous compromis. */
     const autres = await supabase.from('biens_vente').select('id').eq('client_id', clientId).neq('id', bienId).in('etape', ETAPES_EN_VENTE).eq('archive', false).limit(1);
@@ -1843,7 +1843,7 @@ export async function vendeurSigne(clientId: string, bienId: string): Promise<bo
     const t: string[] = typesDe(data).filter(x => encore || x !== 'vendeur');
     const types = TYPES_CONTACT_ORDRE.filter(k => k === 'vendeur_signe' || t.includes(k));
     const r = await supabase.from('clients').update({ types }).eq('id', clientId);
-    if (r.error) { signalerEchec('Le type « Mandant signé »', r.error.message); return false; }
+    if (r.error) { signalerEchec('Le type « Ancien mandant »', r.error.message); return false; }
     /* V3.50 : « son bien actuel est à vendre » (fiche contact) ne l'est plus —
        sauf s'il a encore un bien en vente avec nous. Sans ça, il restait
        « vendeur » sur la carte et dans la liste des contacts. */
@@ -1852,7 +1852,7 @@ export async function vendeurSigne(clientId: string, bienId: string): Promise<bo
       if (v.error) signalerEchec('« Son local est à céder » sur la fiche du mandant', v.error.message);
     }
     return true;
-  } catch (e) { signalerEchec('Le type « Mandant signé »', (e as Error).message); return false; }
+  } catch (e) { signalerEchec('Le type « Ancien mandant »', (e as Error).message); return false; }
 }
 /* Au compromis : une autre offre restée « acceptée » (une offre tombée, ou
    le compromis signé avec un autre) passe « retirée » — deux offres

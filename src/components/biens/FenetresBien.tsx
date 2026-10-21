@@ -1003,7 +1003,7 @@ export function FenOffre({ bien, pour, existante, options, recherches, proprio, 
       <div className={b.groupe}>
         <div className={b.groupeT}><Ic n="euro" t={14} />L’offre</div>
         <div className={b.g3}>
-          <Ch lib="Montant proposé"><SaisieNombre v={montant} euros unite="€" off={false} onChange={setMontant} /></Ch>
+          <Ch lib={estLocation(d) ? 'Loyer proposé (annuel HT HC)' : 'Montant proposé'}><SaisieNombre v={montant} euros unite="€" off={false} onChange={setMontant} /></Ch>
           <ChampJour lib="Reçue le" v={recue} onChange={setRecue} raccourcis={rDuJour()} />
           <ChampJour lib="Valable jusqu’au" v={jusquau} onChange={setJusquau} vide="Sans délai" effacer depuis="Depuis sa réception"
             raccourcis={rApres(recue, [['Sous 3 jours', 3], ['Sous 5 jours', 5], ['Sous une semaine', 7], ['Sous 10 jours', 10]])} />
@@ -1016,15 +1016,16 @@ export function FenOffre({ bien, pour, existante, options, recherches, proprio, 
         )}
         {/* Werner : pas de financement à dire pour une location (un loyer, pas un achat). */}
         {!estLocation(d) && <>
-        <ChG lib="Financement"><Pills options={[{ v: 'comptant', l: 'Comptant' }, { v: 'pret', l: 'Prêt' }, { v: 'relais', l: 'Prêt relais' }]} v={fin} onChange={x => setFin(fin === x ? '' : x)} /></ChG>
+        {/* Werner : plus de « prêt relais » (la vente d'un logement pour en acheter un autre) ; une offre d'avant qui l'avait le garde. */}
+        <ChG lib="Financement"><Pills options={[{ v: 'comptant', l: 'Comptant' }, { v: 'pret', l: 'Avec un prêt' }, ...(fin === 'relais' ? [{ v: 'relais' as const, l: 'Prêt relais' }] : [])]} v={fin} onChange={x => setFin(fin === x ? '' : x)} /></ChG>
         {!fin && <div className={b.calc}>Pas encore dit ? Laisse vide : rien ne s’affichera sur l’offre.</div>}
         {fin === 'comptant' && <div className={b.calc}>Achat comptant : la promesse n’aura pas de condition suspensive de prêt.</div>}
         </>}
-        <div className={b.g3}>
+        {!estLocation(d) && <div className={b.g3}>
           <Ch lib="Apport"><SaisieNombre v={apport} euros unite="€" off={false} onChange={setApport} /></Ch>
           {avecPret && <Ch lib="Prêt demandé"><SaisieNombre v={pret} euros unite="€" off={false} onChange={setPret} /></Ch>}
           {avecPret && <Ch lib="Accord de principe"><input className={s.input} value={accord} onChange={e => setAccord(e.target.value)} placeholder="Ex : oui, reçu le 20/09" /></Ch>}
-        </div>
+        </div>}
         <Ch lib="Conditions particulières"><input className={s.input} value={conditions} onChange={e => setConditions(e.target.value)} placeholder="Ex : aucune ; accord du bailleur…" /></Ch>
         <label className={s.fichier}>
           <Ic n="trombone" t={18} />
@@ -1461,7 +1462,9 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
   const location = estLocation(d);
   const [sru, setSru] = useState(avecSru ? tx('sru') : '');
   const [pretL, setPretL] = useState(existant ? tx('pretLimite') : location ? '' : plusJours(aujourdhui(), 45));
-  const [acte, setActe] = useState(existant ? tx('acte') : rMois(aujourdhui(), 3));
+  /* Werner : un bail se signe en quelques semaines, un acte de cession ou de vente en deux à trois mois. */
+  const moisActe = location ? 1 : 3;
+  const [acte, setActe] = useState(existant ? tx('acte') : rMois(aujourdhui(), moisActe));
   const hDefaut = (p: number | null) => honorairesPour(d, p) ?? a.hono;
   /* Les honoraires : ceux du compromis ; sinon ceux négociés à l'acceptation
      de l'offre (V3.172) ; sinon ceux du mandat sur ce prix. Notés ou tapés,
@@ -1554,7 +1557,7 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
     if (!finDe(ex.financement)) setFin(finDe(odDe(o).financement));
     if (!aDesNotaires(lireNotairesDossier(ex))) setNotaires(notairesInit(o));
   };
-  const majSigne = (x: string) => { setSigne(x); if (!x) return; if (avecSru) setSru(plusJours(x, 11)); if (!location) setPretL(plusJours(x, 45)); setActe(rMois(x, 3)); };
+  const majSigne = (x: string) => { setSigne(x); if (!x) return; if (avecSru) setSru(plusJours(x, 11)); if (!location) setPretL(plusJours(x, 45)); setActe(rMois(x, moisActe)); };
   const majPrix = (x: number | null) => { setPrix(x); if (!honoFixe) setHono(hDefaut(x)); };
   const net = prix && hono !== null ? prix - hono : null;
   async function valider() {
@@ -1612,8 +1615,10 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
       raccourcis: rApres(signe, [['10 jours après', 10], ['11 jours après', 11], ['15 jours après', 15]]) },
     { cle: 'pret', ic: 'banque', c: '#1d4ed8', f: '#eff6ff', lib: 'Condition de prêt jusqu’au', aide: 'En général 45 à 60 jours', v: pretL, set: setPretL,
       raccourcis: rApres(signe, [['30 jours après', 30], ['45 jours après', 45], ['60 jours après', 60]]) },
-    { cle: 'acte', ic: 'plume', c: '#6d28d9', f: '#f5f3ff', lib: 'Signature prévue le', aide: 'Environ trois mois après', v: acte, set: setActe,
-      raccourcis: signe ? [{ lib: '2 mois après', k: rMois(signe, 2) }, { lib: '3 mois après', k: rMois(signe, 3) }, { lib: '4 mois après', k: rMois(signe, 4) }] : [] },
+    { cle: 'acte', ic: 'plume', c: '#6d28d9', f: '#f5f3ff', lib: location ? 'Signature du bail le' : 'Signature de l’acte le',
+      aide: location ? 'Souvent deux à quatre semaines après' : 'Souvent deux à trois mois après', v: acte, set: setActe,
+      raccourcis: !signe ? [] : location ? [...rApres(signe, [['2 semaines après', 14]]), { lib: '1 mois après', k: rMois(signe, 1) }, { lib: '2 mois après', k: rMois(signe, 2) }]
+        : [{ lib: '2 mois après', k: rMois(signe, 2) }, { lib: '3 mois après', k: rMois(signe, 3) }, { lib: '4 mois après', k: rMois(signe, 4) }] },
   ]).filter(x => (x.cle !== 'sru' || avecSru) && (x.cle !== 'pret' || !location));
   const dateOffre = (o: SuiviVente | null) => { const r = odDe(o).reponse_le; return typeof r === 'string' && r ? ` du ${dateLongue(r)}` : ''; };
   return (
@@ -1645,7 +1650,7 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
           onHono={x => { setHono(x); setHonoFixe(true); }} onCharge={setCharge} onMandat={() => { setHono(hDefaut(prix)); setHonoFixe(false); setHonoSrc('mandat'); }} />
       </Section>
       {!location && <Section ic="banque" c="#1d4ed8" f="#eff6ff" titre="Le financement">
-        <Pills options={[{ v: 'comptant', l: 'Comptant' }, { v: 'pret', l: 'Avec un prêt' }, { v: 'relais', l: 'Prêt relais' }]} v={fin} onChange={x => setFin(fin === x ? '' : x)} />
+        <Pills options={[{ v: 'comptant', l: 'Comptant' }, { v: 'pret', l: 'Avec un prêt' }, ...(fin === 'relais' ? [{ v: 'relais' as const, l: 'Prêt relais' }] : [])]} v={fin} onChange={x => setFin(fin === x ? '' : x)} />
         <div className={b.calc}>
           {comptant ? 'Achat comptant : pas de condition suspensive de prêt, ni de date pour elle.' : fin ? 'Avec une condition suspensive de prêt : sa date est juste dessous.' : 'Pas encore dit : la condition de prêt reste proposée.'}
           {finVientDeLOffre ? ' Repris de l’offre.' : ''}
@@ -1672,7 +1677,7 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
         </div>
         {!existant ? <div className={b.calc}>Calculées depuis la signature : ajuste-les à ce qui est écrit dans l’accord.</div>
           : ((!pretL && !comptant && !location) || !acte) && signe ? (
-            <button type="button" className={b.notaireAjout} onClick={() => { if (!pretL && !comptant && !location) setPretL(plusJours(signe, 45)); if (!acte) setActe(rMois(signe, 3)); }}>
+            <button type="button" className={b.notaireAjout} onClick={() => { if (!pretL && !comptant && !location) setPretL(plusJours(signe, 45)); if (!acte) setActe(rMois(signe, moisActe)); }}>
               <Ic n="calendrier" t={13} />{`Calculer depuis la signature du ${dateLongue(signe)}`}
             </button>
           ) : null}
@@ -1995,18 +2000,18 @@ export function FenVendu({ bien, compromis, offres = [], proprio = null, prevues
       const vendeurId = proprio?.id || bien.client_id;
       await noterJalon(bien, 'acte', {
         vendeur: vendeurId ? { clientId: vendeurId, titre: `🔑 Affaire signée le ${jourSuivi(date)}`,
-          texte: [`${titre}${lePrix}${quiAcq ? ` · demandeur : ${quiAcq}` : ''}`, not, vSigne ? 'Il passe en « Mandant signé ».' : null] } : null,
+          texte: [`${titre}${lePrix}${quiAcq ? ` · demandeur : ${quiAcq}` : ''}`, not, vSigne ? 'Il passe en « Ancien mandant ».' : null] } : null,
         acquereur: offre?.client_id ? { clientId: offre.client_id, rechercheId: offre.recherche_id, type: fini ? 'dossier_finalise' : undefined,
           titre: `🔑 Affaire signée le ${jourSuivi(date)}`,
           texte: [`${titre}${lePrix}`, not,
-            fini ? 'Dossier finalisé (« Bien trouvé ») : la veille s’arrête, ses relances en attente sont soldées.'
+            fini ? 'Dossier clos (« Local trouvé ») : la veille s’arrête, ses relances en attente sont soldées.'
               : rechArretee ? 'Cette recherche s’arrête ; ses autres recherches continuent.' : null] } : null,
       });
       /* Le bandeau de la liste : ce qui vient de se passer, en une phrase. */
       onFait(r, [
         `Affaire signée le ${jourSuivi(date)}${prix ? `, ${euros(prix)}` : ''}${quiAcq ? `, avec ${quiAcq}` : ''}. Elle est rangée dans « Conclues ».`,
-        vSigne ? `${nomProprio} passe « Mandant signé ».` : '',
-        fini ? `Le dossier de ${acquereur} est finalisé.` : rechArretee ? `La recherche de ${acquereur} pour cette affaire s’arrête, ses autres recherches continuent.` : '',
+        vSigne ? `${nomProprio} passe « Ancien mandant ».` : '',
+        fini ? `Le dossier de ${acquereur} est clos (« Local trouvé »).` : rechArretee ? `La recherche de ${acquereur} pour cette affaire s’arrête, ses autres recherches continuent.` : '',
         txCloses ? `Sa transaction sur cette affaire est close.` : '',
       ].filter(Boolean).join(' '));
     } catch (e) { setErreur((e as Error).message); setOccupe(false); }
@@ -2048,12 +2053,12 @@ export function FenVendu({ bien, compromis, offres = [], proprio = null, prevues
             <CaseVisites prevues={prevues} on={annulerV} onChange={setAnnulerV} />
             {offre?.client_id && (
               <Suite on={finAcq} onChange={setFinAcq} ic="check" c="#1d4ed8" f="#eff6ff"
-                t={`Dossier de ${acquereur} finalisé : il passe « Bien trouvé »`}
-                s="Sa recherche s’arrête, ses relances en attente sont soldées. S’il a une autre recherche en cours, elle continue : il ne passe pas « Bien trouvé »." />
+                t={`Dossier de ${acquereur} clos : il passe « Local trouvé »`}
+                s="Sa recherche s’arrête, ses relances en attente sont soldées. S’il a une autre recherche en cours, elle continue : il ne passe pas « Local trouvé »." />
             )}
             {proprio && (
               <Suite on={signeV} onChange={setSigneV} ic="cle" c="#15803d" f="#f0fdf4"
-                t={`${nomProprio} passe en « Mandant signé »`}
+                t={`${nomProprio} passe en « Ancien mandant »`}
                 s="Il quitte les mandants en cours, sans être archivé : un ancien client, pour une recommandation ou un prochain projet." />
             )}
             <Trace t={traces.length > 1 ? 'Une ligne datée dans leur suivi' : 'Une ligne datée dans son suivi'} s={`${traces.join(' · ')}.`} />

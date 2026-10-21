@@ -65,7 +65,7 @@ function Demarrage({ onDemarre }: { onDemarre: () => void }) {
   /* Un départ qui retombe sur des numéros que le CRM connaît déjà : deux
      mandats pourraient porter le même. */
   const conflit = !!(connu && premier && premier <= connu.n);
-  const texteReprise = touche ? reprise : (valide ? `Suite du registre ImmoFacile, dont le dernier numéro utilisé est le ${n}.` : '');
+  const texteReprise = touche ? reprise : (valide ? `Suite du registre des mandats tenu jusqu’ici, dont le dernier numéro utilisé est le ${n}.` : '');
 
   async function demarrer() {
     if (!premier) return;
@@ -101,7 +101,7 @@ function Demarrage({ onDemarre }: { onDemarre: () => void }) {
         )}
         <label className={r.champ}>
           <span>La mention de reprise, imprimée en tête du registre</span>
-          <textarea className={r.input} rows={2} value={texteReprise} onChange={e => { setTouche(true); setReprise(e.target.value); }} placeholder="Suite du registre ImmoFacile, dont le dernier numéro utilisé est le …" />
+          <textarea className={r.input} rows={2} value={texteReprise} onChange={e => { setTouche(true); setReprise(e.target.value); }} placeholder="Suite du registre des mandats tenu jusqu’ici, dont le dernier numéro utilisé est le …" />
         </label>
         <label className={r.coche}>
           <input type="checkbox" checked={note} onChange={e => setNote(e.target.checked)} />

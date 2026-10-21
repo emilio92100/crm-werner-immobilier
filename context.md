@@ -354,18 +354,16 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
 - **La relecture des textes** — en cours. Aucun mot du résidentiel (AGENTS.md §0), honoraires HT.
 - **La relecture visuelle de chaque mail** — les gabarits de l'origine, aux couleurs converties : un
   par un, en 390 et 1280 px, quand Mailjet sera branché.
-- **Retirer les modules propres à l'origine** : ImmoFacile (restent `/api/import-immofacile`,
-  `/api/biens-vente/photos-immofacile`, `src/lib/*immofacile*.ts` et deux feuilles de style) ; Jinka
-  (`src/lib/poliris.ts`, `src/lib/jinka-serveur.ts`) et Belles Demeures (la clé `bd` de la diffusion),
-  deux portails résidentiels ; « Pub estimation » dans Demandes Internet (`PageDemandesSite.tsx`).
-- **Réécrire les consignes de l'IA** pour l'immobilier d'entreprise, **sans Yanport** : les routes
-  `/api/analyse-bien`, `/api/rapprochement-ia`, `/api/reformuler-bien`, `/api/parse-texte-bien`,
-  `/api/extract-bien`, `/api/biens-vente/annonce`, et la veille (`/veille/import`, `OngletVeille.tsx`,
-  qui lisent encore `yanport_id`).
+- **Les modules propres à l'origine sont retirés** (21 octobre 2026) : plus de route ni d'écran
+  ImmoFacile, Jinka (`poliris.ts` supprimé) ni Belles Demeures ; l'onglet « Pub estimation » n'existe
+  plus. Restent, voulus, les clés lues sur les données déjà enregistrées (`idImmofacile`, `bd`,
+  `jinka`, la provenance `pub`) et le renvoi à ImmoFacile de `MandatEnLigne.tsx` (voir le registre,
+  plus bas).
+- **Les consignes de l'IA** parlent d'immobilier d'entreprise (21 octobre 2026), et les lectures de
+  secours (sans IA) devinent un type de local (`typeLocalDuTexte`, `src/lib/lecture-annonce.ts`), plus
+  « Appartement ». `yanport_id` reste une clé de dédoublonnage de la veille, sans rien à l'écran.
 - **Les documents juridiques** — en attente des modèles de Werner. Les catégories sont renommées ; les
   textes de `src/lib/actes/` et le barème de `src/lib/mandat.ts` sont ceux de l'origine (§7).
-- **Le logo de Werner** — il remplacera les fichiers de `outils/logos-werner.py` (mêmes noms, mêmes
-  tailles).
 - **Le registre des mandats sous la carte RT CONSEILS** — on attend la réponse de Werner sur le
   numéro à reprendre (où en est sa numérotation sous cette carte) ; elle ne doit jamais doubler celle
   d'Emilio, qui signe sous la même carte. Ensuite, le registre se met en place comme dans le CRM
@@ -374,7 +372,10 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   un numéro.
 - **L'adresse de l'espace client** — fait le 21 octobre 2026 côté DNS : wernerimmobilier.com,
   www, espace et crm pointent sur Vercel (IONOS, TTL 5 minutes ; l'hébergement WordPress piraté
-  est débranché du domaine, pas encore résilié). espace et crm sont sur ce projet ;
+  est débranché du domaine). Chez IONOS, le contrat « WordPress Hosting Boost » (105224331) contient
+  aussi le domaine, le DNS et la boîte contact@ : **ne jamais le résilier tel quel**, le domaine
+  partirait avec (choix d'Alexandre, 21 octobre : on le garde pour l'instant). Le VPS (113365249),
+  inutilisé, est résilié au 15 août 2027 (dossier K-148836641-43). espace et crm sont sur ce projet ;
   wernerimmobilier.com et www sont sur le projet du site (`werner-immobilier-site`). Reste à poser `NEXT_PUBLIC_HOTE_ESPACE` =
   espace.wernerimmobilier.com une fois le domaine validé par Vercel, puis
   `NEXT_PUBLIC_MAIL_IMAGES_URL` et `NEXT_PUBLIC_CRM_URL` (https://crm.wernerimmobilier.com).
@@ -401,10 +402,10 @@ types TypeScript ne décrivent plus le schéma » (§2), `relances.statut = 'rep
 
 **Celles de Werner**, relevées en lisant le code le 21 octobre 2026 :
 
-1. **L'espace client modifie encore les critères d'origine.** Depuis le 21 octobre (fb1004a), sa
-   note lit `criteres_pro` (nature, loyer, vitrine, emplacement) et `biens.pro` ; mais quand le
-   client change ses critères depuis l'espace, il écrit toujours `nb_pieces_min` et `chambres_min`
-   (`/api/espace/criteres`), rebaptisées « espaces » et « bureaux », et rien dans `criteres_pro`.
+1. **Réglé le 21 octobre 2026 : l'espace client modifie les critères du commerce.** « Modifier mes
+   critères » (`EspaceClient.tsx`, sept étapes) écrit `criteres_pro` (natures, activité, loyer,
+   vitrine, emplacements) par `/api/espace/criteres`, qui fusionne avec ce qui existe et décrit le
+   changement à Werner avec ces mots-là. Les anciennes clés restent lues.
 2. **La page publique d'un local** lit `biens.pro` depuis le 21 octobre : « Loyer annuel HT HC »,
    « / an » et « €/m²/an » pour une location, le libellé de la nature sinon (prix du droit au bail,
    du fonds, de vente). Un local lu sur une annonce avant cette date n'a pas de `pro` : il garde
@@ -425,14 +426,20 @@ types TypeScript ne décrivent plus le schéma » (§2), `relances.statut = 'rep
    21 octobre : elle mène à la page « lien introuvable ».
 7. **Le barème des honoraires est celui d'Emilio** (`src/lib/mandat.ts` : 2,5 % et 5 %), désormais
    écrit « HT » ; les commentaires disent encore TTC. Celui de Werner reste à poser.
-8. **La transaction d'un demandeur et l'agenda suivent une vente de logement** : compromis, prêt,
-   acte. Depuis le 21 octobre, plus de délai SRU posé ni affiché (fiche du demandeur, fenêtre
-   « L'accord est signé ») et plus de financement ni de condition de prêt pour une location ;
-   reste « Fin du délai SRU » dans `PageAgenda.tsx`, pour les anciennes dates seulement.
+8. **Réglé le 21 octobre 2026 : plus de délai SRU nulle part.** Ni posé, ni affiché (fiche du
+   demandeur, « L'accord est signé », carte de l'offre, agenda). Une location n'a ni financement,
+   ni apport, ni condition de prêt ; sa date de signature est « Signature du bail » (un mois après
+   l'accord), celle d'une cession ou d'une vente « Signature de l'acte » (trois mois). Le « prêt
+   relais » n'est plus proposé. À la conclusion, le demandeur passe « Local trouvé » et le mandant
+   « Ancien mandant », les mêmes mots que dans les Contacts.
 9. **La diffusion SeLoger n'est pas vérifiée pour Werner.** `src/lib/seloger.ts` parle à l'API d'AVIV
    de l'origine. Avant de la brancher : vérifier que SeLoger Bureaux & Commerces passe par elle, et
    comment raccrocher les 63 annonces déjà en ligne sans les doubler (l'origine a perdu des annonces
-   sur un « Duplicated classified » : voir le commentaire du fichier).
+   sur un « Duplicated classified » : voir le commentaire du fichier). En attendant (21 octobre
+   2026), la diffusion n'envoie qu'au site (`SUPPORTS_BRANCHES = ['site']`, `src/lib/diffusion.ts`) :
+   une affaire disponible, sous offre ou en signature sans réglage est « Diffusé · Mon site (réglage
+   par défaut) », et SeLoger s'affiche grisé, « en attente du branchement ». Le jour venu : ajouter
+   'seloger' à `SUPPORTS_BRANCHES` et le cocher dans `SUPPORTS_DEFAUT`.
 
 Une anomalie nouvelle s'ajoute ici, datée, avant d'être corrigée.
 

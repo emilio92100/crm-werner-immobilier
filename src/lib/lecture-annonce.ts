@@ -108,6 +108,21 @@ export function nettoyerLecture(parsed: Record<string, unknown>): Record<string,
   return out;
 }
 
+/* Werner : le type de local deviné dans un texte ou une adresse d'annonce,
+   quand l'IA n'a pas répondu (les mêmes libellés que CHAMPS_ANNONCE). Par
+   défaut, un local commercial : c'est l'essentiel de ce que Werner lit. */
+export function typeLocalDuTexte(t: string): string {
+  const x = t.toLowerCase();
+  if (/\brestaurant|\bbrasserie|\bcaf[ée](?![a-z])|\bbar\b|\bpizzeria|\btraiteur|\bfast[- ]?food|\brestauration/.test(x)) return 'Restaurant';
+  if (/\bbureaux?\b|\bplateau\b|\bopen[- ]?space|\bcoworking/.test(x)) return 'Bureaux';
+  if (/\bentrep[oô]ts?(?![a-z])|\bstockage\b|\blogistique|\bhangar/.test(x)) return 'Entrepôt';
+  if (/local d['’ ]activit|\blocaux? d['’ ]activit|\batelier\b|\blocaux? industriels?/.test(x)) return 'Local d’activité';
+  if (/\bimmeuble\b/.test(x)) return 'Immeuble';
+  if (/\bterrain\b/.test(x)) return 'Terrain';
+  if (/\bparking\b|\bbox\b/.test(x)) return 'Parking';
+  return 'Local commercial';
+}
+
 /* « sans ascenseur », « pas de cave », « ni balcon » : le mot est là, la
    chose non. Une mention ne compte que si rien ne la nie juste avant. */
 const NEGATION = /(?:\bsans|\bpas\s+d[e'’]?|\baucune?|\bni|\bnon|\babsence\s+d[e'’]?)\s*(?:de\s+|d[’']\s*)?(?:la\s+|le\s+|l[’']\s*)?$/i;

@@ -57,7 +57,7 @@ import { visitePourCarte } from './pour-visite';
 import { OngletVisitesOffres } from './VisitesOffres';
 import { FenPointVendeur } from './PointVendeur';
 import FenDiffusion from './FenDiffusion';
-import { etapeDiffusee, etatDiffusion, lireDiffusion, nomsSupports, supportDe, supportsCoches } from '@/lib/diffusion';
+import { etapeDiffusee, etatDiffusion, lireDiffusion, nomsSupports, supportDe, supportsEnvoyes } from '@/lib/diffusion';
 import Depliant from '@/components/shared/Depliant';
 import { BoutonPli, PastillePli } from '@/components/shared/Pli';
 import {
@@ -2006,7 +2006,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
     return {
       signe: t('signe') || l.le.slice(0, 10), sru: t('sru'), pretLimite: t('pretLimite'), acte: t('acte'), prix: typeof c.prix === 'number' ? c.prix : null,
       venduLe: e === 'vendu' ? bien.vendu_le : null, hono: typeof c.hono === 'number' ? c.hono : hO ? hO.hono : null, notaires, rappels,
-      comptant: financement === 'comptant', notaireCommun: commun,
+      comptant: financement === 'comptant', notaireCommun: commun, location: estLocation(d),
       charge: c.charge === 'vendeur' || c.charge === 'acquereur' ? c.charge : hO ? hO.charge : null,
       piece: chemin ? String(c.nom || 'compromis.pdf') : undefined,
       onPiece: chemin ? () => ouvrirPiece(chemin, String(c.nom || 'compromis.pdf')) : undefined,
@@ -2452,6 +2452,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
                 onCompromis: e === 'offre' || e === 'mandat' || e === 'suspendu' ? () => setFen({ k: 'compromis', offre: x.id }) : undefined,
                 onVendu: e === 'compromis' ? () => setFen({ k: 'vendu' }) : undefined,
                 compromis: x.statut === 'acceptee' ? compromisDe(x) : null,
+                location: estLocation(d),
               };
             }}
             encart={bien.etape === 'offre' && offres.length > 0 && !offresOuvertes.length && !offres.some(x => x.statut === 'acceptee') ? (
@@ -2561,7 +2562,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
       {fen?.k === 'diffusion' && <FenDiffusion bien={bien} premiere={fen.premiere} onFermer={() => setFen(null)} onEnregistrer={x => {
         majDonnees('diffusion', x);
         setFen(null);
-        const l = supportsCoches(x.supports);
+        const l = supportsEnvoyes(x.supports);
         setMessage({ ok: true, t: !x.actif ? 'Diffusion coupée : l’annonce ne part nulle part.' : l.length ? `Diffusion enregistrée : ${nomsSupports(l)}.` : 'Diffusion enregistrée, sans support coché : rien ne part.' });
       }} />}
       {fen?.k === 'estimation' && <FenEstimation bien={bien} reprise={cycleAvant} onFermer={() => setFen(null)} onFait={r => apres(r)} />}

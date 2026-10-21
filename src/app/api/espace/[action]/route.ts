@@ -10,6 +10,7 @@ import { ecritServeur } from '@/lib/ecritures';
 import { colonneSuspensionAbsente } from '@/lib/suspension';
 import { retracteEnLigne, pourEspaceAcheteur } from '@/lib/documents-espace';
 import { logoMail } from '@/lib/mail-charte';
+import { lireCriteresPro } from '@/lib/correspondance';
 import { prixDuBien } from '@/lib/honoraires-bien';   // V3.145 : le prix de l'annonce, partout
 
 /**
@@ -326,16 +327,23 @@ const ETIQ_ETATS: Record<string, string> = {
   a_renover: 'à rénover', travaux_legers: 'travaux légers', bon_etat: 'bon état', refait_neuf: 'refait à neuf',
 };
 const ETIQ_FINANCEMENT: Record<string, string> = {
-  cash: 'cash', pret_valide: 'prêt validé', pret_en_cours: 'prêt en cours', a_monter: 'prêt à monter',
-  pret_relais: 'prêt relais', mixte_cash_pret: 'cash + prêt', mixte_cash_relais: 'cash + prêt relais',
+  /* Werner (CriteresRecherche.tsx, FINANCEMENTS) */
+  fonds_propres: 'fonds propres', pret_valide: 'prêt accordé', pret_en_cours: 'prêt en cours',
+  a_monter: 'financement à monter', mixte: 'fonds propres et prêt', credit_bail: 'crédit-bail',
+  /* les clés d'origine, encore lisibles dans d'anciens dossiers */
+  cash: 'cash', pret_relais: 'prêt relais', mixte_cash_pret: 'cash + prêt', mixte_cash_relais: 'cash + prêt relais',
   mixte_pret_relais: 'prêt + prêt relais',
 };
 const ETIQ_URGENCE: Record<string, string> = {
   immediate: 'immédiate', '3_mois': 'sous 3 mois', '6_mois': 'sous 6 mois', annee: 'dans l’année',
 };
 const ETIQ_EXIGENCE: Record<string, string> = {
-  parking: 'Parking', cave: 'Cave', balcon: 'Espace extérieur', terrasse: 'Terrasse', jardin: 'Cour',
-  ascenseur: 'Ascenseur', gardien: 'Gardien', interphone: 'Interphone', digicode: 'Digicode',
+  /* Werner (CriteresRecherche.tsx, EXIGENCES_PRO) */
+  rdc: 'Rez-de-chaussée', vitrineEq: 'Vitrine', extraction: 'Extraction', terrasse: 'Terrasse', reserve: 'Réserve',
+  clim: 'Climatisation', pmr: 'Accès PMR', parking: 'Parking', ascenseur: 'Ascenseur', fibre: 'Fibre', cablage: 'Câblage',
+  plancherTech: 'Plancher technique', quai: 'Quai de chargement', cuisinePro: 'Cuisine équipée', chambreFroide: 'Chambre froide',
+  /* les clés d'origine */
+  cave: 'Cave', balcon: 'Espace extérieur', jardin: 'Cour', gardien: 'Gardien', interphone: 'Interphone', digicode: 'Digicode',
   exterieur: 'Extérieur', cuisine: 'Cuisine professionnelle',
 };
 const etage = (v: number) => (v === 0 ? 'rez-de-chaussée' : v === 1 ? '1er étage' : `${v}e étage`);
@@ -428,6 +436,8 @@ function decrireChangements(avant: Record<string, any>, maj: Record<string, unkn
     if (plus.length || moins.length) out.push({ l: 'Arrêts de transport', plus, moins });
   }
 
+  if (dans('criteres_pro')) changementsPro(avant.criteres_pro, maj.criteres_pro, out);
+
   /* Équipements : « souhaité » / « indispensable » / rien, un par un. */
   if (dans('exigences')) {
     const ea = (avant.exigences && typeof avant.exigences === 'object' ? avant.exigences : {}) as Record<string, string>;
@@ -439,6 +449,27 @@ function decrireChangements(avant: Record<string, any>, maj: Record<string, unkn
     });
   }
   return out;
+}
+
+/* Les critères du commerce (recherches.criteres_pro, lireCriteresPro) : les
+   mêmes mots que l'assistant du CRM (CriteresRecherche.tsx). */
+const ETIQ_NATURE: Record<string, string> = {
+  location: 'louer', cession_bail: 'reprendre un bail', fonds: 'racheter un fonds', murs: 'acheter des murs', murs_occupes: 'investir',
+};
+const ETIQ_EMPLACEMENT: Record<string, string> = {
+  n1: 'n° 1', n1bis: 'n° 1 bis', n2: 'n° 2', quartier: 'commerce de quartier', centre: 'centre commercial', zone: 'zone commerciale',
+};
+function changementsPro(avant: unknown, apres: unknown, out: Changement[]) {
+  const a = lireCriteresPro(avant), p = lireCriteresPro(apres);
+  comparerListe('Projet', a.natures.map(k => ETIQ_NATURE[k] || k), p.natures.map(k => ETIQ_NATURE[k] || k), out);
+  if ((a.activite || '') !== (p.activite || '')) out.push({ l: 'Activité', a: a.activite || null, p: p.activite || null });
+  const val = (l: string, x: number | null, y: number | null, f: (n: number) => string) => {
+    if (x !== y) out.push({ l, a: x == null ? null : f(x), p: y == null ? null : f(y) });
+  };
+  val('Loyer annuel minimum', a.loyerMin, p.loyerMin, EUR_T);
+  val('Loyer annuel maximum', a.loyerMax, p.loyerMax, EUR_T);
+  val('Vitrine minimum', a.vitrineMin, p.vitrineMin, (n) => `${n}\u00a0m`);
+  comparerListe('Emplacement', a.emplacements.map(k => ETIQ_EMPLACEMENT[k] || k), p.emplacements.map(k => ETIQ_EMPLACEMENT[k] || k), out);
 }
 
 /* La même chose en une ligne, pour les endroits qui n'affichent que du texte. */
@@ -819,8 +850,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
         const poser = (colonne: string, champ: string, valeur: unknown) => {
           if (present(champ)) maj[colonne] = valeur;
         };
-        poser('budget_min', 'budgetMin', n(c.budgetMin, 50_000, 20_000_000));
-        poser('budget_max', 'budgetMax', n(c.budgetMax, 50_000, 20_000_000));
+        /* Werner : le prix d'un droit au bail ou d'un fonds peut être petit (dès 1 000 €). */
+        poser('budget_min', 'budgetMin', n(c.budgetMin, 1_000, 50_000_000));
+        poser('budget_max', 'budgetMax', n(c.budgetMax, 1_000, 50_000_000));
         poser('surface_min', 'surfaceMin', n(c.surfaceMin, 5, 2_000));
         poser('nb_pieces_min', 'piecesMin', n(c.piecesMin, 1, 20));
         poser('chambres_min', 'chambresMin', n(c.chambresMin, 0, 20));
@@ -844,8 +876,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
           return ok.length ? ok.join(',') : null;
         };
         poser('etat_souhaite', 'etatSouhaite', etats(c.etatSouhaite));
-        poser('financement', 'financement', parmi(c.financement, ['cash', 'pret_valide', 'pret_en_cours', 'a_monter', 'pret_relais',
-          'mixte_cash_pret', 'mixte_cash_relais', 'mixte_pret_relais']));
+        poser('financement', 'financement', parmi(c.financement, Object.keys(ETIQ_FINANCEMENT)));
         poser('urgence', 'urgence', parmi(c.urgence, ['immediate', '3_mois', '6_mois', 'annee']));
         poser('cuisine_type', 'cuisineType', parmi(c.cuisineType, ['ouverte', 'separee']));
         poser('dpe_max', 'dpeMax', parmi(c.dpeMax, ['A', 'B', 'C', 'D', 'E', 'F', 'G']));
@@ -883,8 +914,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
           maj.secteurs = c.secteurs.filter((s: unknown) => typeof s === 'string').slice(0, 20);
         }
 
-        const CLES_EXIGENCES = ['parking', 'cave', 'balcon', 'terrasse', 'jardin', 'ascenseur',
-          'gardien', 'interphone', 'digicode', 'exterieur', 'cuisine'];
+        /* Toutes les clés connues : celles du commerce (EXIGENCES_PRO) et les anciennes. */
+        const CLES_EXIGENCES = Object.keys(ETIQ_EXIGENCE);
         /* interphone et digicode ont aussi leur colonne (le CRM les écrit) :
            absentes d'ici, elles restaient figées quand le client les changeait
            (§6.21). */
@@ -910,6 +941,25 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
               if (e.includes(lib)) { if (!ex[cle]) ex[cle] = 'souhaite'; } else delete ex[cle];
             });
           maj.exigences = ex;
+        }
+
+        /* Les critères du commerce (recherches.criteres_pro) : la nature du
+           projet, l'activité, le loyer annuel HT HC, la vitrine, l'emplacement.
+           On part de ce qui est en base (le CRM y range aussi `postesMin`) et
+           on ne remplace que ce que l'écran envoie. */
+        const CLES_PRO = ['natures', 'activite', 'loyerMin', 'loyerMax', 'vitrineMin', 'emplacements'];
+        if (CLES_PRO.some(present)) {
+          const { data: rp, error: eRp } = await supabase.from('recherches').select('criteres_pro').eq('id', recherche.id).maybeSingle();
+          if (eRp) return NextResponse.json({ ok: false, error: 'enregistrement impossible' }, { status: 500 });
+          const pro: Record<string, unknown> = { ...((rp?.criteres_pro && typeof rp.criteres_pro === 'object' && !Array.isArray(rp.criteres_pro)) ? rp.criteres_pro as Record<string, unknown> : {}) };
+          const parmiListe = (v: unknown, connues: string[]) => (Array.isArray(v) ? [...new Set(v.filter((x): x is string => typeof x === 'string' && connues.includes(x)))] : []);
+          if (present('natures')) pro.natures = parmiListe(c.natures, Object.keys(ETIQ_NATURE));
+          if (present('activite')) pro.activite = typeof c.activite === 'string' ? c.activite.trim().slice(0, 120) : '';
+          if (present('loyerMin')) pro.loyerMin = n(c.loyerMin, 1, 50_000_000);
+          if (present('loyerMax')) pro.loyerMax = n(c.loyerMax, 1, 50_000_000);
+          if (present('vitrineMin')) pro.vitrineMin = n(c.vitrineMin, 1, 500);
+          if (present('emplacements')) pro.emplacements = parmiListe(c.emplacements, Object.keys(ETIQ_EMPLACEMENT));
+          maj.criteres_pro = pro;
         }
 
         /* Ces quatre-là ont toujours une valeur dans l'écran client : un null

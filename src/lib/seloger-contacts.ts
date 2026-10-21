@@ -2,7 +2,15 @@ import type { BienVente } from '@/lib/biens-vente';
 import { titreBien } from '@/lib/biens-vente';
 import type { CategorieDemande, Provenance } from '@/lib/demandes-site';
 import { idSite } from '@/lib/flux-site';
-import { idJinka } from '@/lib/poliris';
+
+/* L'identifiant d'une annonce chez les portails (repris de l'ancien
+   lib/poliris.ts, propre au CRM d'origine) : le numéro ImmoFacile d'un bien
+   importé, sinon la référence, sinon l'id. */
+const idAnnonce = (b: { id: string; reference: string | null; donnees: Record<string, unknown> | null }) => {
+  const d = b.donnees || {};
+  const n = typeof d.idImmofacile === 'string' || typeof d.idImmofacile === 'number' ? String(d.idImmofacile).trim() : '';
+  return (n || (b.reference || '').trim() || b.id.replace(/-/g, '')).slice(0, 30);
+};
 
 /* ═══ Les demandes des acquéreurs SeLoger, Logic-Immo, Belles Demeures (V3.100) ═
    L'API « Seeker Leads » v1 d'AVIV rend les demandes de contact reçues par
@@ -89,7 +97,7 @@ export function indexerBiens(biens: BienIndexable[]): IndexBiens {
   const tries = [...biens].sort((x, y) => Number(!!x.archive) - Number(!!y.archive));
   const poser = (k: string, b: BienIndexable) => { if (k && !m.has(k)) m.set(k, fiche(b)); };
   for (const b of tries) {
-    poser(cle(idJinka(b)), b);
+    poser(cle(idAnnonce(b)), b);
     poser(cle(b.reference), b);
     poser(cle((b.donnees || {}).idImmofacile), b);
   }

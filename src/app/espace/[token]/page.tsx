@@ -749,7 +749,7 @@ export default async function PageEspace({ params, searchParams }: {
         transportMinutes: recherche.transport_minutes ?? null,
         transportLignes: recherche.transport_lignes || [],
         transportArrets: recherche.transport_arrets || [],
-        ...(() => { const p = lireCriteresPro(recherche.criteres_pro); return { natures: p.natures, loyerMin: p.loyerMin, loyerMax: p.loyerMax, vitrineMin: p.vitrineMin, postesMin: p.postesMin, emplacements: p.emplacements }; })(),
+        ...(() => { const p = lireCriteresPro(recherche.criteres_pro); return { natures: p.natures, activite: p.activite, loyerMin: p.loyerMin, loyerMax: p.loyerMax, vitrineMin: p.vitrineMin, postesMin: p.postesMin, emplacements: p.emplacements }; })(),
         equip: [
           recherche.terrasse && 'Terrasse', recherche.balcon && 'Espace extérieur', recherche.jardin && 'Cour',
           recherche.parking && 'Parking', recherche.ascenseur && 'Ascenseur', recherche.cave && 'Cave',

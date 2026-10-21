@@ -34,8 +34,8 @@ export type Support = 'site' | 'seloger' | 'bd' | 'jinka';
    Jinka (résidentiel) ne sont plus proposés : leurs clés restent dans le
    type pour les réglages déjà enregistrés, jamais cochées. */
 export const SUPPORTS: { k: Support; lib: string; court: string; sous: string; c: string; fond: string }[] = [
-  { k: 'seloger', lib: 'SeLoger Bureaux & Commerces', court: 'SL', sous: 'Le portail de l’immobilier d’entreprise', c: '#b4233c', fond: '#fdf0f2' },
   { k: 'site', lib: 'Mon site', court: 'Site', sous: 'wernerimmobilier.com', c: '#2e3034', fond: '#f5f4f3' },
+  { k: 'seloger', lib: 'SeLoger Bureaux & Commerces', court: 'SL', sous: 'Le portail de l’immobilier d’entreprise', c: '#b4233c', fond: '#fdf0f2' },
 ];
 export const supportDe = (k: Support) => SUPPORTS.find(x => x.k === k)!;
 
@@ -46,10 +46,23 @@ export const ETAPES_DIFFUSEES: EtapeVente[] = ['mandat', 'offre', 'compromis', '
 const ETAPES_REGLABLES: EtapeVente[] = [...ETAPES_DIFFUSEES, 'suspendu'];
 export const etapeDiffusee = (e: string | null | undefined) => ETAPES_DIFFUSEES.includes(e as EtapeVente);
 
-/* Ce qu'on propose quand rien n'est encore réglé : SeLoger Bureaux & Commerces et le site. */
-/* 21 octobre 2026 : le site de Werner aussi (ses annonces y paraissent par
-   défaut, src/lib/annonces-site.ts). */
-export const SUPPORTS_DEFAUT: Record<Support, boolean> = { site: true, seloger: true, bd: false, jinka: false };
+/* Les supports où le CRM envoie vraiment l'annonce. Le 21 octobre 2026, le
+   site seul : l'envoi vers SeLoger attend l'accès d'AVIV (context.md §7,
+   point 9). D'ici là, SeLoger s'affiche dans la fenêtre, grisé, « en
+   attente », et ne compte nulle part ; ses cases déjà enregistrées sont
+   gardées pour le jour du branchement. Ce jour-là : ajouter 'seloger' ici
+   et le cocher dans SUPPORTS_DEFAUT. */
+export const SUPPORTS_BRANCHES: Support[] = ['site'];
+export const supportBranche = (k: Support) => SUPPORTS_BRANCHES.includes(k);
+
+/* Ce qu'on propose quand rien n'est encore réglé : le site (Alexandre,
+   21 octobre 2026 : « Diffusion en cours, avec juste son site coché »). */
+export const SUPPORTS_DEFAUT: Record<Support, boolean> = { site: true, seloger: false, bd: false, jinka: false };
+
+/* Les étapes où une affaire jamais réglée part quand même sur le site (les
+   mêmes que le site, src/lib/annonces-site.ts) : disponible, sous offre, en
+   signature. */
+const ETAPES_SITE_DEFAUT: EtapeVente[] = ['mandat', 'offre', 'compromis'];
 
 export type Diffusion = {
   /* Le bouton « Diffusion en cours / Non diffusé ». */
@@ -82,6 +95,8 @@ export const nouvelleDiffusion = (actif: boolean, supports: Record<Support, bool
 export const etapeHorsVente = (e: string | null | undefined) => !!e && !ETAPES_REGLABLES.includes(e as EtapeVente);
 
 export const supportsCoches = (s: Record<Support, boolean>): Support[] => SUPPORTS.filter(x => s[x.k]).map(x => x.k);
+/* Les cases cochées où l'annonce part vraiment (les supports branchés). */
+export const supportsEnvoyes = (s: Record<Support, boolean>): Support[] => supportsCoches(s).filter(supportBranche);
 
 /* « Mon site, SeLoger et Jinka ». */
 export function nomsSupports(l: Support[]): string {
@@ -102,7 +117,7 @@ export type EtatDiffusion = {
 
 export function etatDiffusion(b: Pick<BienVente, 'etape' | 'archive' | 'donnees'>): EtatDiffusion {
   const r = lireDiffusion(b.donnees);
-  const supports = r ? supportsCoches(r.supports) : [];
+  const supports = r ? supportsEnvoyes(r.supports) : [];
   /* V3.96 : diffusé quand même, à l'étape où il a été réglé. */
   if (!b.archive && r && r.actif && r.horsEtape === b.etape && etapeHorsVente(b.etape) && supports.length) {
     return { concerne: true, regle: true, supports, enLigne: true, ton: 'on', lib: 'Diffusé', detail: `Sur ${nomsSupports(supports)}, à ta demande, bien que l’affaire soit « ${etapeDe(b.etape).lib} ».` };
@@ -111,9 +126,11 @@ export function etatDiffusion(b: Pick<BienVente, 'etape' | 'archive' | 'donnees'
   const base = { concerne, regle: !!r, supports };
   if (!concerne) return { ...base, enLigne: false, ton: 'off', lib: 'Non diffusé', detail: b.archive ? 'L’affaire est archivée.' : 'Rien à diffuser à cette étape.' };
   if (b.etape === 'suspendu') return { ...base, enLigne: false, ton: 'pause', lib: 'Non diffusé', detail: 'L’affaire est en pause : rien ne part. Tes choix sont gardés pour la reprise.' };
+  /* Jamais réglée : à une étape du site, elle y est déjà (le site la montre par défaut). */
+  if (!r && ETAPES_SITE_DEFAUT.includes(b.etape)) return { ...base, supports: ['site'], enLigne: true, ton: 'on', lib: 'Diffusé', detail: 'Sur Mon site (réglage par défaut).' };
   if (!r) return { ...base, enLigne: false, ton: 'regler', lib: 'À régler', detail: 'Choisis où part l’annonce.' };
   if (!r.actif) return { ...base, enLigne: false, ton: 'off', lib: 'Non diffusé', detail: 'Coupé à la main : l’annonce ne part nulle part.' };
-  if (!supports.length) return { ...base, enLigne: false, ton: 'off', lib: 'Non diffusé', detail: 'Aucun support coché.' };
+  if (!supports.length) return { ...base, enLigne: false, ton: 'off', lib: 'Non diffusé', detail: supportsCoches(r.supports).length ? 'Seul SeLoger est coché, et l’envoi vers SeLoger n’est pas encore branché : coche « Mon site ».' : 'Aucun support coché.' };
   return { ...base, enLigne: true, ton: 'on', lib: 'Diffusé', detail: `Sur ${nomsSupports(supports)}.` };
 }
 

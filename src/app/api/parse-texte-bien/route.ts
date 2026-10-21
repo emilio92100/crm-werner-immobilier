@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CHAMPS_ANNONCE, nettoyerLecture, completerParRegex } from '@/lib/lecture-annonce';
+import { CHAMPS_ANNONCE, nettoyerLecture, completerParRegex, typeLocalDuTexte } from '@/lib/lecture-annonce';
 
 /* V3.186 : une quarantaine de champs et la description complète prennent
    plus de temps à écrire. */
@@ -85,11 +85,7 @@ function parseTexteRegex(texte: string, _url: string) {
   const cpMatch = t.match(/(\d{5})\s+([A-ZÀ-Ü][a-zà-ü\s-]{2,30})/);
   const cp = cpMatch?.[1] || '';
   const ville = cpMatch?.[2]?.trim() || '';
-  let type_bien = 'Appartement';
-  if (/\bmaison\b|\bvilla\b/i.test(t)) type_bien = 'Maison';
-  else if (/\bstudio\b/i.test(t)) type_bien = 'Studio';
-  else if (/\bloft\b/i.test(t)) type_bien = 'Loft';
-  else if (/\bduplex\b/i.test(t)) type_bien = 'Duplex';
+  const type_bien = typeLocalDuTexte(t);
 
   const bien = {
     titre: `${type_bien}${ville ? ` — ${ville}` : ''}`,

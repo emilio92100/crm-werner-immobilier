@@ -2022,12 +2022,12 @@ export function BandeauMarche({ p, sobre }: { p: any; sobre?: boolean }) {
                       </span>
                     </div>
                   )}
-                  <div style={{ fontSize: 11, color: '#c6c3c1', marginTop: 8, marginBottom: 4 }}>Source : Yanport</div>
+                  <div style={{ fontSize: 11, color: '#c6c3c1', marginTop: 8, marginBottom: 4 }}>Source : l’historique de l’annonce, relevé par la veille</div>
                 </>
               ) : (
                 <div style={{ fontSize: 13, color: '#94a3b8', padding: '6px 0 10px' }}>
                   {nbBaisses > 0
-                    ? `Yanport signale ${nbBaisses} baisse${nbBaisses > 1 ? 's' : ''}, mais le détail n'a pas encore été récupéré. La prochaine veille le complétera.`
+                    ? `La veille a relevé ${nbBaisses} baisse${nbBaisses > 1 ? 's' : ''} de prix, sans le détail pour l’instant. La prochaine veille le complétera.`
                     : "Aucun historique de prix récupéré pour l'instant."}
                 </div>
               )}
