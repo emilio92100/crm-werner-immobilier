@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { QUARTIERS, searchCommune, useSansVille, type CpSuggestion } from '@/lib/secteurs';
+import { communeDeVille, memeNom, titreQuartiers } from '@/lib/quartiers';
+import ChoixQuartiers from '@/components/shared/ChoixQuartiers';
 
 /* Sélecteur de secteurs.
 
@@ -17,9 +19,9 @@ import { QUARTIERS, searchCommune, useSansVille, type CpSuggestion } from '@/lib
 
 type Bloc = { ville: string; cp: string; quartiers: string[]; toute: boolean };
 
-/* Retrouver le code postal d'une ville déjà choisie, pour proposer ses quartiers connus. */
-const CP_PAR_VILLE: Record<string, string> = {};
-Object.entries(QUARTIERS).forEach(([cp, v]) => { CP_PAR_VILLE[v.ville.toLowerCase()] = cp; });
+/* V3.227 : le code postal d'une ville déjà choisie (« Paris 16ème » comme
+   « Paris 16e »), pour proposer ses quartiers de référence (src/lib/quartiers.ts). */
+const cpDeVille = (ville: string) => communeDeVille(ville)?.cp || '';
 
 export default function SecteurPicker({
   secteurs,
@@ -43,7 +45,7 @@ export default function SecteurPicker({
     const ville = m ? m[2].trim() : s.trim();
     const quartier = m ? m[1].trim() : null;
     if (!index[ville]) {
-      index[ville] = { ville, cp: CP_PAR_VILLE[ville.toLowerCase()] || '', quartiers: [], toute: false };
+      index[ville] = { ville, cp: cpDeVille(ville), quartiers: [], toute: false };
       blocs.push(index[ville]);
     }
     if (quartier) index[ville].quartiers.push(quartier);
@@ -71,7 +73,8 @@ export default function SecteurPicker({
 
   function ajouterQuartier(ville: string, q: string) {
     const label = `${q} (${ville})`;
-    if (secteurs.includes(label)) return;
+    /* V3.227 : déjà là, même écrit autrement (« Epinettes », « Épinettes »). */
+    if (secteurs.some(x => { const m = x.match(/^(.+?)\s*\((.+?)\)$/); return !!m && m[2].trim() === ville && memeNom(m[1].trim(), q); })) return;
     /* Choisir un quartier précise la recherche : « toute la ville » n'a plus lieu d'être. */
     maj(avecQuartier(secteurs, ville, label));
   }
@@ -131,8 +134,8 @@ export default function SecteurPicker({
       {blocs.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
           {blocs.map((b) => {
-            const connus = (b.cp && QUARTIERS[b.cp]?.quartiers) || [];
-            const restants = connus.filter((q) => !b.quartiers.includes(q));
+            const commune = b.cp ? communeDeVille(b.ville) : null;
+            const connus = commune ? QUARTIERS[commune.cp]?.quartiers || [] : [];
             const tiroir = ouvert === b.ville;
             return (
               <div key={b.ville} style={carte}>
@@ -160,16 +163,17 @@ export default function SecteurPicker({
 
                 {tiroir && (
                   <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #e5e3e2' }}>
-                    {restants.length > 0 ? (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                        {restants.map((q) => (
-                          <button type="button" key={q} onClick={() => ajouterQuartier(b.ville, q)} style={piluleVide}>+ {q}</button>
-                        ))}
+                    {/* V3.227 : les quartiers de référence, cochés s'ils sont choisis ; un clic ajoute ou retire. */}
+                    {commune ? (
+                      <div style={{ marginBottom: 10 }}>
+                        <ChoixQuartiers commune={commune} choisis={b.quartiers} titre={titreQuartiers(commune.ville)}
+                          onChoisir={(q) => {
+                            const deja = b.quartiers.find((x) => memeNom(x, q));
+                            if (deja) retirerQuartier(b.ville, deja); else ajouterQuartier(b.ville, q);
+                          }} />
                       </div>
                     ) : (
-                      <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8 }}>
-                        {connus.length ? 'Tous les quartiers connus sont déjà dans la liste.' : 'Aucun quartier pré-enregistré pour cette commune — saisissez-le vous-même.'}
-                      </div>
+                      <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8 }}>Aucun quartier proposé pour cette commune : saisissez-le vous-même.</div>
                     )}
                     <div style={{ display: 'flex', gap: 6 }}>
                       <input

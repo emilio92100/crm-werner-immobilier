@@ -5,7 +5,7 @@
   background: rgba(37, 39, 43, .52); font-family: 'DM Sans', sans-serif;
 }
 .fen {
-  width: min(470px, 100%); max-height: min(90vh, 640px); overflow-y: auto; box-sizing: border-box;
+  width: min(520px, 100%); max-height: min(90vh, 640px); overflow-y: auto; box-sizing: border-box;
   display: flex; flex-direction: column; gap: 14px; padding: 22px 22px 20px;
   background: #fff; border-radius: 22px; box-shadow: 0 40px 80px -30px rgba(15, 23, 42, .6);
 }
@@ -16,14 +16,6 @@
   background: #fbf0e9; border: 1px solid #f9c8a3; color: #c2621c;
 }
 .texte { margin: 0; font-size: 14px; line-height: 1.55; color: #4b4e53; }
-.choix { display: flex; flex-direction: column; gap: 8px; }
-.choixT { font: 700 12.5px 'DM Sans', sans-serif; color: #3f4247; }
-.puces { display: flex; flex-wrap: wrap; gap: 6px; }
-.puce {
-  padding: 7px 12px; border-radius: 99px; border: 1.5px solid #ececec; background: #fff; cursor: pointer;
-  font: 700 13px 'DM Sans', sans-serif; color: #3f4247; transition: border-color .15s, background .15s, color .15s;
-}
-.puce:hover { border-color: #e0894a; background: #fff7f0; color: #25272b; }
 .pied { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
 .principal, .secondaire {
   height: 42px; padding: 0 16px; border-radius: 12px; cursor: pointer; font: 700 13.5px 'DM Sans', sans-serif;

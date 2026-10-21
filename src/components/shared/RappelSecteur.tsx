@@ -14,12 +14,16 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Ic } from '@/components/documents/ApercuActe';
+import ChoixQuartiers from '@/components/shared/ChoixQuartiers';
+import type { CommuneRef } from '@/lib/quartiers';
 import r from './RappelSecteur.module.css';
 
-export default function RappelSecteur({ titre, texte, choix, onChoisir, principal, onPrincipal, secondaire, onSecondaire, onFermer }: {
+export default function RappelSecteur({ titre, texte, commune, choix, onChoisir, principal, onPrincipal, secondaire, onSecondaire, onFermer }: {
   titre: string;
   texte: string;
-  /* Des quartiers connus, à choisir d'un clic (un bien de Boulogne : Silly-Gallieni…). */
+  /* V3.227 : les quartiers de référence de sa commune, à choisir d'un clic. */
+  commune?: CommuneRef | null;
+  /* Ou une simple liste de noms, quand la commune n'a pas de quartiers de référence. */
   choix?: string[];
   onChoisir?: (q: string) => void;
   principal: string;
@@ -33,6 +37,7 @@ export default function RappelSecteur({ titre, texte, choix, onChoisir, principa
     window.addEventListener('keydown', touche, true);
     return () => window.removeEventListener('keydown', touche, true);
   }, [onFermer]);
+  const proposes = commune || (choix?.length ? { ville: '', quartiers: choix.map(nom => ({ nom })) } : null);
   const fen = (
     <div className={r.voile} onMouseDown={e => { if (e.target === e.currentTarget) onFermer(); }}>
       <div className={r.fen} role="dialog" aria-modal="true" aria-labelledby="rappel-secteur-titre">
@@ -41,14 +46,7 @@ export default function RappelSecteur({ titre, texte, choix, onChoisir, principa
           <h2 id="rappel-secteur-titre">{titre}</h2>
         </div>
         <p className={r.texte}>{texte}</p>
-        {choix && choix.length > 0 && onChoisir && (
-          <div className={r.choix}>
-            <span className={r.choixT}>{'Choisis-le\u00a0:'}</span>
-            <div className={r.puces}>
-              {choix.map(q => <button key={q} type="button" className={r.puce} onClick={() => onChoisir(q)}>{q}</button>)}
-            </div>
-          </div>
-        )}
+        {proposes && onChoisir && <ChoixQuartiers commune={proposes} choisis={[]} titre={'Choisis-le\u00a0:'} onChoisir={onChoisir} />}
         <div className={r.pied}>
           <button type="button" className={r.secondaire} onClick={onSecondaire}>{secondaire}</button>
           <button type="button" className={r.principal} onClick={onPrincipal}>{principal}</button>
