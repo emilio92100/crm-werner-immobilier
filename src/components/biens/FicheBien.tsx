@@ -1321,6 +1321,18 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
     } catch (e) { setMessage({ t: (e as Error).message, ok: false }); }
   }
   const ouvrirDoc = (id: string) => onNavigate('documents', { ouvrir: id });
+  /* Une reconnaissance signée : l'adresse du local, d'un clic, par e-mail
+     (/api/documents/adresse). */
+  async function envoyerAdresseReco(x: { id: string }) {
+    setMessage({ t: 'Envoi de l’adresse du local…', ok: true });
+    try {
+      const r = await fetch('/api/documents/adresse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: x.id }) });
+      const j = await r.json().catch(() => null) as { ok?: boolean; erreur?: string; avertissement?: string } | null;
+      if (!r.ok || !j?.ok) throw new Error(j?.erreur || `Erreur ${r.status}`);
+      setMessage(j.avertissement ? { t: j.avertissement, ok: false } : { t: 'L’adresse du local lui est partie par e-mail, avec le lien de sa fiche. Tu en reçois la copie.', ok: true });
+      void apres();
+    } catch (e) { setMessage({ t: (e as Error).message, ok: false }); }
+  }
   /* L'exemplaire signé d'un document du CRM (scellé en ligne ou sur place,
      ou le scan d'une signature à la main), à retélécharger (V3.32). */
   async function ouvrirSigne(x: { signe_chemin?: string | null; titre: string | null; signature?: { mode?: string } | null }) {
@@ -2034,6 +2046,15 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
   const bons = vivants(docsDe('bon_visite'));
   const recos = vivants(docsDe('reconnaissance'));
   const recosSignees = recos.filter(x => x.statut === 'signe').length;
+  /* L'adresse du local, partie après la signature (src/lib/reconnaissance-serveur.ts) :
+     sa ligne dans l'historique de l'affaire. */
+  const adresseEnvoyee = (id: string) => (detail?.suivi || []).find(x => {
+    const dd = (x.donnees || {}) as Record<string, unknown>;
+    return x.type === 'note' && dd.adresseEnvoyee === true && dd.document === id;
+  }) || null;
+  /* Signées, l'adresse pas encore partie : « Lui envoyer l'adresse ». */
+  const recosSansAdresse = recos.filter(x => x.statut === 'signe' && !adresseEnvoyee(x.id));
+  const nomReco = (x: DocLie) => sansPrefixe(x.titre, /^Reconnaissance\s*·\s*/) || 'Reconnaissance';
   /* Le récapitulatif de chaque étape (V3.32) : ses documents dans l'ordre,
      l'avenant sous son mandat, chacun avec son état. */
   const maillon = (x: DocLie, titre: string, o: { retrait?: boolean; avant?: string } = {}): MaillonDoc => {
@@ -2146,8 +2167,18 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
         return [recosSignees ? `${recosSignees} signée${recosSignees > 1 ? 's' : ''}` : '', aSigner ? `${aSigner} à signer` : '', prepa ? `${prepa} en préparation` : ''].filter(Boolean).join(' · ');
       })() : 'Aucune pour l’instant',
       detail: 'Avant de donner l’adresse : il reconnaît que tu lui as présenté le local, et s’engage à ne pas traiter en direct, ni par une autre agence.',
-      suite: recos.length ? <ChaineDocs items={[...recos].sort(parDate).map(x => maillon(x, sansPrefixe(x.titre, /^Reconnaissance\s*·\s*/) || 'Reconnaissance'))} /> : undefined,
-      actions: <BtnTuile onClick={() => setFen({ k: 'reconnaissance' })}><Ic n="plus" t={12} e={2.6} />Nouvelle reconnaissance</BtnTuile>,
+      suite: recos.length ? <ChaineDocs items={[...recos].sort(parDate).map(x => {
+        const mm = maillon(x, nomReco(x));
+        if (x.statut !== 'signe') return mm;
+        const env = adresseEnvoyee(x.id);
+        return { ...mm, detail: `${mm.detail} · ${env ? `adresse envoyée le ${dateCourte(env.le)}` : 'adresse pas encore envoyée'}` };
+      })} /> : undefined,
+      actions: <>
+        {recosSansAdresse.map(x => (
+          <BoutonAct key={x.id} or onClick={() => { void envoyerAdresseReco(x); }}><Ic n="mail" t={13} />{recosSansAdresse.length > 1 ? `L’adresse à ${nomReco(x)}` : 'Lui envoyer l’adresse'}</BoutonAct>
+        ))}
+        <BtnTuile onClick={() => setFen({ k: 'reconnaissance' })}><Ic n="plus" t={12} e={2.6} />Nouvelle reconnaissance</BtnTuile>
+      </>,
     },
     avant ? { k: 'bons', ic: 'calendrier', titre: 'Les bons de visite', etat: 'plustard', statut: 'Après le mandat', detail: 'Prérempli avec le demandeur et le local, et ses autres visites du jour s’il le faut : il protège tes honoraires.' } : {
       k: 'bons', ic: 'calendrier', titre: 'Les bons de visite', etat: bons.length ? (bonsSignes === bons.length ? 'fait' : 'encours') : 'libre',

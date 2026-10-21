@@ -7,7 +7,7 @@ import { ecritServeur } from '@/lib/ecritures';
 import {
   lireSignataires, inviter, envoyerCode, validerSignature, sceller, assembler, envoyerExemplaire,
   classer, lireFichier, nomSig, actif, attendu, emailValide, nomDocument, ALERTES, envoyerMail, gabarit, echappe, lienCrmDocument,
-  offreFinie, ARRETEE, prevenirArret, validerSansCode, signeSansCodeFait, codeValideFait, lancerSignature,
+  offreFinie, ARRETEE, prevenirArret, validerSansCode, signeSansCodeFait, codeValideFait, lancerSignature, auFeminin,
   type DocSigne, type SigDoc, type SignatureDoc,
 } from '@/lib/signature-documents';
 import { offrePartieEnSignature } from '@/lib/offres-serveur';
@@ -112,7 +112,7 @@ async function traiterPost(req: NextRequest) {
       const r = await lancerSignature(sb, doc, body.signataires);
       if ('erreur' in r) return ko(r.erreur, r.statut, r.plus || {});
       const mode = r.signature.mode;
-      await journal(mode === 'en_ligne' ? `📨 ${m.titre} envoyé pour signature en ligne` : `✍️ ${m.titre} : signature sur place ouverte`,
+      await journal(mode === 'en_ligne' ? `📨 ${m.titre} envoyé${auFeminin(m) ? 'e' : ''} pour signature en ligne` : `✍️ ${m.titre} : signature sur place ouverte`,
         `${doc.titre || ''}${mode === 'en_ligne' ? ` · liens envoyés à ${r.personnes.map(p => p.email).join(', ')}` : ''}${r.echecs.length ? `\n⚠️ Non envoyé : ${r.echecs.join(' ; ')}` : ''}`);
       /* V3.189 : une offre d'achat qui part en signature prend la suite de la
          précédente dans son fil (une contre-proposition qu'elle accepte, une

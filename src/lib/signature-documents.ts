@@ -54,6 +54,8 @@ import { avenantSigneSurBien } from './documents-avenant-bien';
 import { solderRelancesSignature } from './documents-relances';
 import { finValiditeOffre } from './actes/offre-achat';
 import { offreSigneeParTous } from './offres-serveur';
+import { envoyerAdresseReco } from './reconnaissance-serveur';
+import { lieuDe as secteurReco } from './actes/reconnaissance';
 import { lireSuivi } from './offres';
 
 export const BUCKET = 'mandats';
@@ -164,8 +166,8 @@ const bouton = (href: string, texte: string) =>
 const sansCourbes = (t: string) => t.replace(/’/g, "'");
 /* « appelez Werner » ne servait à rien sans son numéro. */
 const UNE_QUESTION = 'Une question ? Répondez à ce message, ou appelez Werner au 01 87 66 06 00.';
-/* L'offre est le seul modèle au féminin : « la relire », « signée par tous ». */
-const auFeminin = (m: Pick<Modele, 'id'>) => m.id === 'offre_achat';
+/* L'offre et la reconnaissance sont au féminin : « la relire », « signée par tous ». */
+export const auFeminin = (m: Pick<Modele, 'id'>) => m.id === 'offre_achat' || m.id === 'reconnaissance';
 
 /* L'invitation, et ses deux rappels (2 et 7 jours). Le dernier dit combien
    de jours il reste avant que le lien ne marche plus. */
@@ -184,14 +186,20 @@ export function mailInvitation(o: { s: SigDoc; m: Modele; d: Donnees; lien: stri
     : o.rappel
     ? `${Doc} attend toujours votre signature.`
     : `Werner, de Werner Immobilier, vous adresse ${doc.le} à signer.`;
+  /* La reconnaissance : ce qu'elle est, en deux phrases, et ce qu'il gagne à
+     la signer (l'adresse, tout de suite, quand Werner l'a voulu ainsi). */
+  const pourquoi = o.m.id === 'reconnaissance'
+    ? `Le local : ${[txt(o.d, 'description'), secteurReco(o.d)].filter(Boolean).join(', ')}${txt(o.d, 'reference') ? ` (réf. ${txt(o.d, 'reference')})` : ''}. Avant de vous en donner l’adresse, nous vous demandons simplement de confirmer que c’est notre agence qui vous l’a présenté.${o.d.adresseApres !== 'main' ? ' Dès votre signature, l’adresse vous est envoyée par e-mail.' : ''}`
+    : '';
   const valable = o.rappel === 2 ? '' : ` et valable jusqu’au ${fin}`;
   const prenom = s.personne.prenom || nomSig(s);
   const le = auFeminin(o.m) ? 'la' : 'le';
   return {
     sujet,
-    texte: `Bonjour ${prenom},\n\n${sansCourbes(intro)}\n\nVous pourrez ${le} relire en entier, puis ${le} signer en ligne :\n${lien}\n\nCe lien est personnel${sansCourbes(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\n${sansCourbes(UNE_QUESTION)}\n\nWerner Immobilier`,
+    texte: `Bonjour ${prenom},\n\n${sansCourbes(intro)}${pourquoi ? `\n\n${sansCourbes(pourquoi)}` : ''}\n\nVous pourrez ${le} relire en entier, puis ${le} signer en ligne :\n${lien}\n\nCe lien est personnel${sansCourbes(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\n${sansCourbes(UNE_QUESTION)}\n\nWerner Immobilier`,
     html: gabarit('Un document à signer', `<p>Bonjour ${echappe(prenom)},</p>
-      <p>${echappe(intro)}</p>
+      <p>${echappe(intro)}</p>${pourquoi ? `
+      <p>${echappe(pourquoi)}</p>` : ''}
       <p>Vous pourrez ${le} relire en entier, puis ${le} signer en ligne&nbsp;:</p>
       <p>${bouton(lien, 'Relire et signer')}</p>
       <p style="font-size:13px;color:#5B6B80">Ce lien est personnel${echappe(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.</p>`,
@@ -751,13 +759,21 @@ export async function classer(sb: SupabaseClient, doc: DocSigne, sd: SignatureDo
      tous laisse aussi sa ligne dans l'historique de l'affaire — c'est le
      feu vert pour donner l'adresse. */
   const bienReco = doc.modele === 'reconnaissance' && typeof doc.donnees?.bienVenteId === 'string' ? doc.donnees.bienVenteId : '';
+  const adresseAuto = doc.modele === 'reconnaissance' && doc.donnees?.adresseApres !== 'main';
   if (bienReco) {
     const { error: e4 } = await sb.from('biens_vente_suivi').insert({
       bien_id: bienReco, type: 'note', le, client_id: doc.client_id || null, qui: doc.titre ? doc.titre.replace(/^Reconnaissance\s*·\s*/, '') : null,
-      commentaire: `✍️ Reconnaissance d’information signée ${sd.mode === 'sur_place' ? 'sur place' : 'en ligne'} le ${dateCourte(le)} à ${heureParis(le)} : tu peux lui donner l’adresse.`,
+      commentaire: `✍️ Reconnaissance d’information signée ${sd.mode === 'sur_place' ? 'sur place' : 'en ligne'} le ${dateCourte(le)} à ${heureParis(le)}${adresseAuto ? '.' : ' : tu peux lui donner l’adresse (« Lui envoyer l’adresse », onglet Documents).'}`,
       donnees: { document: doc.id, reconnaissance: true },
     });
     if (e4) pbs.push('historique de l’affaire : ' + e4.message);
+  }
+  /* Alexandre (21 octobre 2026) : « tout peut être autonome ? ». L'adresse
+     du local part toute seule, dès la dernière signature (sauf si Werner a
+     choisi de la donner lui-même). */
+  if (adresseAuto) {
+    const pbA = await envoyerAdresseReco(sb, doc, { auto: true });
+    if (pbA) pbs.push('adresse du local : ' + pbA);
   }
   /* V3.189 : une offre d'achat signée par tous — « Offre signée, à envoyer »
      dans les Relances, le bien « Offre faite », la précédente remplacée. */

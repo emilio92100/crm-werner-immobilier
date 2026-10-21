@@ -497,7 +497,7 @@ async function signerDocument(req: NextRequest, sb: SupabaseClient, jeton: strin
       /* L'historique qui ne s'écrit pas : le mail d'alerte part quand même, et le dit. */
       if (doc.client_id && !ligneFaite && !(await ecritServeur('L’historique du client', sb.from('journal').insert({
         client_id: doc.client_id, type: 'mandat', metadata: { document_id: doc.id, signataire_id: s.id },
-        titre: `✍️ ${moi} a signé ${nd.court}${restants.length ? '' : ' — signé par tous'}`,
+        titre: `✍️ ${moi} a signé ${nd.court}${restants.length ? '' : ` — signé${SD.auFeminin(m) ? 'e' : ''} par tous`}`,
         description: `${doc.titre || m.titre} · signé avec son lien personnel le ${dateCourte(le)} à ${heureParis(le)}${restants.length ? `\nOn attend encore : ${restants.map(SD.nomSig).join(', ')}` : ''}${echecs.length ? `\n⚠️ ${echecs.join(' ; ')}` : ''}`,
       })))) echecs.push('la signature n’a pas été notée dans l’historique du client');
       /* V3.58 — Alexandre : « il ne faut pas envoyer un mail à chaque personne
@@ -519,12 +519,17 @@ async function signerDocument(req: NextRequest, sb: SupabaseClient, jeton: strin
         const liste = [...(agenceLe ? [`L’agence : le ${dateCourte(agenceLe)} à ${heureParis(agenceLe)}, au lancement`] : []), ...signes.map(quiQuand)];
         const pj = pdf ? { pj: [{ nom: SD.nomFichierPdf(m, d), type: 'application/pdf', base64: Buffer.from(pdf).toString('base64') }] } : {};
         if (fini) {
+          /* La reconnaissance d'information : où en est l'adresse du local. */
+          const reco = m.id === 'reconnaissance'
+            ? d.adresseApres === 'main' ? 'Pour lui donner l’adresse du local : sur la fiche de l’affaire, onglet Documents, « Lui envoyer l’adresse ».'
+              : echecs.some(e => e.startsWith('adresse du local')) ? '' : 'L’adresse du local lui est partie toute seule par e-mail, avec le lien de sa fiche (tu en as reçu la copie).'
+            : '';
           await envoyerMail({
             a: ALERTES(), deLaPartDe: 'crm', ...pj,
             sujet: `✅ Signé par tous : ${titreDoc}`,
-            texte: `Tout le monde a signé ${nd.le} (${titreDoc}). La dernière signature est celle de ${moi}, le ${dateCourte(le)} à ${heureParis(le)}.\n\nLes signatures :\n${liste.map(x => `- ${x}`).join('\n')}\n\nChacun a reçu son exemplaire, et le document est rangé dans Documents.${echecs.length ? `\n⚠️ ${echecs.join(' ; ')}` : ''}\n\n${lienCrm}`,
+            texte: `Tout le monde a signé ${nd.le} (${titreDoc}). La dernière signature est celle de ${moi}, le ${dateCourte(le)} à ${heureParis(le)}.${reco ? `\n\n${reco}` : ''}\n\nLes signatures :\n${liste.map(x => `- ${x}`).join('\n')}\n\nChacun a reçu son exemplaire, et le document est rangé dans Documents.${echecs.length ? `\n⚠️ ${echecs.join(' ; ')}` : ''}\n\n${lienCrm}`,
             html: gabarit('Signé par tous', `<p><b>Tout le monde a signé</b> ${echappe(nd.le)} (${echappe(titreDoc)}). La dernière signature est celle de ${echappe(moi)}, le ${dateCourte(le)} à ${heureParis(le)}.</p>
-              <p style="margin-bottom:4px">Les signatures :</p>
+              ${reco ? `<p>${echappe(reco)}</p>` : ''}<p style="margin-bottom:4px">Les signatures :</p>
               <ul style="margin-top:0;padding-left:18px">${liste.map(x => `<li>${echappe(x)}</li>`).join('')}</ul>
               <p>Chacun a reçu son exemplaire, et le document est rangé dans Documents.</p>
               ${echecs.length ? `<p style="color:#b91c1c">⚠️ ${echappe(echecs.join(' ; '))}</p>` : ''}${bouton(lienCrm, 'Ouvrir le CRM')}`,

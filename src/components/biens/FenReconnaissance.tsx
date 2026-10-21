@@ -5,7 +5,7 @@ import { PERSONNE_VIDE } from '@/lib/actes';
 import type { BienVente } from '@/lib/biens-vente';
 import { Ic } from '@/components/documents/ApercuActe';
 import { lireClients } from './ChampsBien';
-import { Ch, Erreur, Fenetre, Option, Pills, Section, sansAccent, type OptionAcheteur } from './FenetresBien';
+import { Ch, Erreur, Fenetre, Option, Pills, Section, Suite, sansAccent, type OptionAcheteur } from './FenetresBien';
 import { doublonsContact, nomClient, type ClientMini, type DocLie } from './outils';
 import {
   descriptionLocal, faireReconnaissance, honorairesReconnaissance, lieuReconnaissance, montantReconnaissance, societeDe,
@@ -17,9 +17,10 @@ import b from './Biens.module.css';
 /* ═══ « Reconnaissance » : avant de donner l'adresse d'un local ═══════════
    Werner : « un bouton, ça ouvre un pop-up, il met le mail du client, le
    client signe avec une signature électronique, et moi je reçois la
-   notification et le document signé ». Trois questions, chacune avec ce
+   notification et le document signé ». Quatre questions, chacune avec ce
    qu'elle change : pour qui (un contact, ou une fiche créée ici), comment il
-   signe, combien de temps il s'engage. Le reste (le local, son secteur —
+   signe, ce que devient l'adresse une fois signé (elle part toute seule,
+   d'office), combien de temps il s'engage. Le reste (le local, son secteur —
    jamais l'adresse —, le montant, les honoraires) vient de l'affaire, et se
    lit dans l'aperçu avant d'envoyer. La suite : reconnaissance.ts. */
 
@@ -51,6 +52,9 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
   const [doublons, setDoublons] = useState<ClientMini[]>([]);
   const [email, setEmail] = useState('');
   const [mode, setMode] = useState<ModeReco>('en_ligne');
+  /* Alexandre : « est-ce que tout peut être autonome ? ». Oui, d'office :
+     l'adresse part toute seule dès sa signature. */
+  const [auto, setAuto] = useState(true);
   const [duree, setDuree] = useState('12');
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState('');
@@ -101,7 +105,7 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
     }
     setOccupe(true);
     try {
-      const r = await faireReconnaissance({ bien, client: choisi, nouveau, email: mail, duree: n, signature: mode, relire });
+      const r = await faireReconnaissance({ bien, client: choisi, nouveau, email: mail, duree: n, signature: mode, adresseApres: auto ? 'auto' : 'main', relire });
       onFait(r);
     } catch (e) {
       setErreur((e as Error).message);
@@ -236,7 +240,18 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
           : 'Elle sert seulement à lui envoyer son exemplaire signé. Sans adresse, tu le gardes dans le CRM.'}</div>}
       </Section>
 
-      <Section ic="bouclier" c="#475569" f="#f8fafc" titre="3. Combien de temps s’engage-t-il ?">
+      <Section ic="lieu" c="#0f766e" f="#effaf8" titre="3. Une fois signée, l’adresse">
+        <Suite on={auto} onChange={setAuto} ic="mail" c="#0f766e" f="#effaf8"
+          t="Lui envoyer l’adresse tout seul, dès qu’il a signé"
+          s="Il reçoit par e-mail l’adresse exacte du local et le lien de sa fiche. Tu en reçois la copie : rien à faire de ton côté." />
+        <div className={s.chAide}>{!auto
+          ? 'Tu la lui donnes toi-même : une fois signée, un bouton « Lui envoyer l’adresse » t’attend sur la fiche de l’affaire (onglet Documents), ou tu la lui dis de vive voix.'
+          : mode === 'sur_place' && !emailOk((nouveau ? nouveau.email : email).trim())
+            ? 'Sans son adresse e-mail, elle ne peut pas lui partir : donne-la-lui de vive voix, devant le local.'
+            : 'Le document, lui, ne dit jamais l’adresse : seulement le secteur.'}</div>
+      </Section>
+
+      <Section ic="bouclier" c="#475569" f="#f8fafc" titre="4. Combien de temps s’engage-t-il ?">
         <Pills options={['6', '12', '18', '24'].map(v => ({ v, l: `${v} mois` }))} v={duree} onChange={setDuree} />
         <div className={s.chAide}>{`Pendant ${n} mois à compter de sa signature, il ne traite pas ce local en direct avec ${bien.donnees?.nature === 'cession_bail' || bien.donnees?.nature === 'fonds' ? 'le locataire qui cède' : 'le propriétaire'}, ni par une société à lui, ni par une autre agence. 12 mois, c’est la durée de tes mandats.`}</div>
       </Section>

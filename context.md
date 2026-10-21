@@ -436,7 +436,13 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   phrase « l'adresse exacte sera communiquée après la signature ; elle est couverte par les mêmes
   engagements ». Signée par tous : mail « Signé par tous » avec le
   PDF, ligne dans le suivi du client et dans l'historique de l'affaire (`classer`,
-  `signature-documents.ts`). ⚠️ À faire relire par l'avocat d'Alexandre avant le premier usage.
+  `signature-documents.ts`). **L'adresse du local** part ensuite toute seule au client, par e-mail
+  (adresse exacte, local, référence, lien de sa fiche ; copie cachée à Werner) — sauf si Werner a
+  décoché « Lui envoyer l'adresse tout seul » (`donnees.adresseApres = 'main'`) : alors « Lui
+  envoyer l'adresse », d'un clic, sur la ligne « Les reconnaissances » de l'onglet Documents
+  (`/api/documents/adresse`). Les deux chemins : `src/lib/reconnaissance-serveur.ts`, qui note
+  l'envoi dans l'historique de l'affaire (`donnees.adresseEnvoyee`) et le suivi du client. Le mail
+  d'invitation dit pourquoi on lui demande de signer. ⚠️ À faire relire par l'avocat d'Alexandre avant le premier usage.
 - **Le registre des mandats sous la carte RT CONSEILS** — on attend la réponse de Werner sur le
   numéro à reprendre (où en est sa numérotation sous cette carte) ; elle ne doit jamais doubler celle
   d'Emilio, qui signe sous la même carte. Ensuite, le registre se met en place comme dans le CRM

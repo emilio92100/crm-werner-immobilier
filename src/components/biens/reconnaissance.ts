@@ -36,6 +36,8 @@ export type DemandeReconnaissance = {
   email: string;
   duree: number;
   signature: ModeReco;
+  /* Une fois signée, l'adresse part toute seule (auto), ou Werner la donne. */
+  adresseApres: 'auto' | 'main';
   /* Le brouillon seulement : il s'ouvre dans Documents pour être relu. */
   relire?: boolean;
 };
@@ -113,6 +115,7 @@ async function donneesDe(x: DemandeReconnaissance, client: ClientMini, p: Person
     duree: x.duree,
     honoraires: honorairesReconnaissance(b),
     signature: x.signature,
+    adresseApres: x.adresseApres,
   };
 }
 
@@ -179,6 +182,6 @@ export async function faireReconnaissance(x: DemandeReconnaissance): Promise<Res
     await noter(`🛡️ Reconnaissance d’information prête pour ${qui} : le lien de signature reste à envoyer.`);
     return { id: row.id, client, etat: 'pret', avertissements: avert };
   }
-  await noter(`🛡️ Reconnaissance d’information envoyée à ${qui} (${email}) : il la signe en ligne, avec un code reçu par e-mail. Tu reçois le document signé.`);
+  await noter(`🛡️ Reconnaissance d’information envoyée à ${qui} (${email}) : il la signe en ligne, avec un code reçu par e-mail. Tu reçois le document signé${x.adresseApres === 'auto' ? ', et l’adresse du local lui part toute seule' : ''}.`);
   return { id: row.id, client, etat: 'envoye', avertissements: avert };
 }

@@ -2556,4 +2556,4 @@ export function FenNote({ bien, onFermer, onFait }: { bien: BienVente; onFermer:
 }
 
 /* Pour les fenêtres rangées à part (FenReconnaissance.tsx). */
-export { Ch, ChG, Pills, Erreur, Option, Section, sansAccent };
+export { Ch, ChG, Pills, Erreur, Option, Section, Suite, sansAccent };

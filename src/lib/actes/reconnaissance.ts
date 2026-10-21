@@ -71,6 +71,8 @@ const ETAPES: Etape[] = [
     id: 'affaire', titre: 'Le local présenté', court: 'Le local', sous: 'Ce que tu lui présentes, et ce que le document en dit.', vers: 'Le local présenté', ic: 'immeuble',
     champs: [
       { t: 'texte', cle: 'description', lib: 'Le local', ic: 'doc', large: true, requis: true, exemple: 'Boutique de 55 m² à louer' },
+      { t: 'texte', cle: 'adresse', lib: 'Adresse exacte', ic: 'lieu', large: true, avec: ['cp', 'ville'],
+        aide: 'Jamais écrite dans le document : elle lui part par e-mail une fois signé.' },
       { t: 'texte', cle: 'cp', lib: 'Code postal', ic: 'mail', aide: 'Il donne l’arrondissement écrit dans le document (« Paris 11e »).' },
       { t: 'texte', cle: 'ville', lib: 'Ville', ic: 'immeuble', requis: true },
       { t: 'texte', cle: 'quartier', lib: 'Quartier', ic: 'cible', exemple: 'Oberkampf', question: 'Préciser le quartier ?',
@@ -93,6 +95,10 @@ const ETAPES: Etape[] = [
     id: 'signature', titre: 'La signature', court: 'Signature', sous: 'En ligne avec son code, ou sur place.', vers: 'Date et signatures', ic: 'plume',
     champs: [
       CHAMP_SIGNATURE_VISITE,
+      { t: 'choix', cle: 'adresseApres', lib: 'Une fois signée, l’adresse du local', ic: 'lieu', tuiles: true, options: [
+        { v: 'auto', l: 'Part toute seule', aide: 'Par e-mail, dès sa signature, avec le lien de la fiche', ic: 'mail' },
+        { v: 'main', l: 'Je la donne moi-même', aide: '« Lui envoyer l’adresse » sur la fiche de l’affaire, ou de vive voix', ic: 'personne' },
+      ] },
       { t: 'texte', cle: 'faitA', lib: 'Fait à', ic: 'lieu', requis: true },
       { t: 'date', cle: 'date', lib: 'Le', ic: 'calendrier', requis: true },
     ],
@@ -190,7 +196,7 @@ function defaut(c: Contexte): Donnees {
     description: b?.titre || '', adresse: b?.adresse || '', cp: b?.code_postal || '', ville: b?.ville || '', quartier: b?.quartier || '',
     montant: '', reference: '',
     duree: 12, honoraires: '', note: '',
-    signature: 'en_ligne', faitA: c.identite.ville, date: aujourdhui(),
+    signature: 'en_ligne', adresseApres: 'auto', faitA: c.identite.ville, date: aujourdhui(),
   };
 }
 
