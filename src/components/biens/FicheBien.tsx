@@ -274,7 +274,8 @@ function Faits({ d, vide }: { d: Donnees; vide?: ReactNode }) {
   if (nat) items.push({ ic: NATURES.find(x => x.v === nat)?.ic || 'agence', ton: 'or', v: natureCourte(nat), l: nomLocal(d.typeBien) || 'Local' });
   if (n('surface')) items.push({ ic: 'regle', ton: 'or', v: m2(n('surface') as number), l: d.divisible === 'oui' ? (n('surfDivMin') ? `Divisible dès ${m2(n('surfDivMin') as number)}` : 'Divisible') : 'Surface totale' });
   else if (n('terrain')) items.push({ ic: 'terrain', ton: 'vert', v: m2(n('terrain') as number), l: 'Terrain' });
-  if (p.loyerAn && n('surface')) items.push({ ic: 'euro', ton: 'bleu', v: loyerM2(p.loyerAn, n('surface')).replace(' HT HC / m² / an', ''), l: 'HT HC le m² par an' });
+  if (p.parPoste && p.nbPostes) items.push({ ic: 'groupe', ton: 'bleu', v: `${p.nbPostes} postes`, l: 'Loué au poste' });
+  else if (p.loyerAn && n('surface')) items.push({ ic: 'euro', ton: 'bleu', v: loyerM2(p.loyerAn, n('surface')).replace(' HT HC / m² / an', ''), l: 'HT HC le m² par an' });
   if (n('etage') !== null && !['terrain', 'immeuble', 'entrepot'].includes(String(d.typeBien || ''))) items.push({ ic: asc ? 'ascenseur' : 'escalier', ton: 'ardoise', v: etageTexte(n('etage'), n('etages')).replace(' étage', '').replace('Rez-de-chaussée', 'RDC'), l: n('etage') === 0 ? (n('surfSousSol') ? 'Avec sous-sol' : 'Rez-de-chaussée') : asc ? 'Avec ascenseur' : 'Sans ascenseur' });
   if (estCommerce(d) && n('vitrine')) items.push({ ic: 'vitrine', ton: 'violet', v: `${String(n('vitrine')).replace('.', ',')} m`, l: EMPLACEMENTS.find(x => x.v === d.emplacement)?.l ? `Vitrine · ${EMPLACEMENTS.find(x => x.v === d.emplacement)?.l}` : 'De vitrine' });
   if ((estCommerce(d) || estActivite(d)) && d.extraction) items.push({ ic: 'flamme', ton: 'ambre', v: d.extraction === 'oui' ? 'Extraction' : d.extraction === 'possible' ? 'Possible' : 'Non', l: d.extraction === 'oui' ? 'En place' : 'Extraction' });
@@ -863,7 +864,7 @@ export function OngletBien({ bien, vue = 'tout', onModifier, onSurfaces, onEstim
     <Famille key="prix" ton="or" ic="etiquette" titre={avant ? 'Estimation et prix' : loc ? 'Loyer et honoraires' : 'Prix et honoraires'} onModifier={avant ? onEstimation : M('prix:t-prix')} large={large}>
       {avant && <Kv l="Estimation" v={fourchetteE} aller={onEstimation} />}
       <Kv l={avant ? 'Montant conseillé' : libPrix(d)} v={a.prix ? montantAffaire(a.prix, d) : ''} aller={avant ? onEstimation : A('prix', 'prix')} />
-      {loc && <Kv l="Loyer au m²" v={a.prix && surf ? loyerM2(a.prix, surf) : ''} aller={avant ? onEstimation : A('prix', 'prix')} />}
+      {loc && d.parPoste !== 'oui' && <Kv l="Loyer au m²" v={a.prix && surf ? loyerM2(a.prix, surf) : ''} aller={avant ? onEstimation : A('prix', 'prix')} />}
       {loc && <Kv l="Loyer mensuel" v={a.prix ? `${euros(a.prix / 12)} HT HC` : ''} aller={avant ? onEstimation : A('prix', 'prix')} />}
       {loc && <Kv l="Droit d’entrée" v={eur(num(d, 'droitEntree'))} aller={A('prix', 'droitEntree')} />}
       {!loc && a.acq && <Kv l="Hors honoraires" v={eur(a.net)} aller={avant ? onEstimation : A('prix', 'prix')} />}

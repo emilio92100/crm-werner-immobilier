@@ -38,6 +38,8 @@ export type AnnonceSite = {
   montantLib: string;      // « Loyer annuel HT HC », « Prix du droit au bail »…
   montantTexte: string;    // « 48 000 € HT HC / an »
   loyerM2: string;
+  /* Loué au poste : `montant` est le loyer annuel d’UN poste ; combien le bureau en compte. */
+  parPoste: boolean; nbPostes: number | null;
   loyerBail: number | null; // le loyer du bail en cours (cession, murs occupés)
   statut: 'disponible' | 'sous_offre' | 'en_signature';
   exclusif: boolean;
@@ -129,9 +131,11 @@ export function annoncePourSite(b: BienVente): AnnonceSite {
     quartier: b.quartier || txt(d, 'quartier'),
     surface,
     montant,
-    montantLib: N?.prix || 'Prix',
+    montantLib: pro.parPoste ? 'Prix d’un poste' : N?.prix || 'Prix',
     montantTexte: montant ? montantAffaire(montant, d) : '',
-    loyerM2: nat === 'location' ? loyerM2(montant, surface) : '',
+    loyerM2: nat === 'location' && !pro.parPoste ? loyerM2(montant, surface) : '',
+    /* Loué au poste (21 octobre 2026) : `montant` est le loyer annuel d'un poste. */
+    parPoste: pro.parPoste, nbPostes: pro.nbPostes,
     loyerBail: nat && nat !== 'location' ? pro.loyerAn : null,
     statut: b.etape === 'offre' ? 'sous_offre' : b.etape === 'compromis' ? 'en_signature' : 'disponible',
     exclusif: (b.mandat_type || txt(d, 'mandatType')) === 'exclusif',

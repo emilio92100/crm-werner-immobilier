@@ -49,11 +49,22 @@ export const avecLoyer = (d: Donnees) => estLocation(d) || bailEnCours(d);
 /* Une vente au sens strict (un prix, un acte) : tout sauf la location. */
 export const estCession = (d: Donnees) => !!natureDe(d) && !estLocation(d);
 
+/* Une location AU POSTE (21 octobre 2026) : un bureau équipé, un coworking.
+   Werner loue un poste à la fois ; `prix` reste un loyer annuel, celui d'UN
+   poste (le prix mensuel d'un poste × 12), et `nbPostes` dit combien le
+   bureau en compte. Tout ce qui lit `prix` (listes, rapprochement, espace)
+   continue de marcher ; l'affichage parle d'un poste, au mois. */
+export const auPoste = (d: Donnees) => estLocation(d) && d.parPoste === 'oui';
+export const nbPostesDe = (d: Donnees): number | null => {
+  const v = d.nbPostes;
+  const n = typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v.replace(',', '.')) : NaN;
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+};
 /* Le nom du montant principal, selon la nature (« Loyer annuel HT HC »). */
-export const libPrix = (d: Donnees) => NATURES.find(n => n.v === natureDe(d))?.prix || 'Prix';
-export const libPrixCourt = (d: Donnees) => NATURES.find(n => n.v === natureDe(d))?.prixCourt || 'Prix';
+export const libPrix = (d: Donnees) => (auPoste(d) ? 'Prix d’un poste' : NATURES.find(n => n.v === natureDe(d))?.prix || 'Prix');
+export const libPrixCourt = (d: Donnees) => (auPoste(d) ? 'Poste' : NATURES.find(n => n.v === natureDe(d))?.prixCourt || 'Prix');
 /* L'unité qu'on écrit après le montant : un loyer est annuel et hors taxes. */
-export const unitePrix = (d: Donnees) => (estLocation(d) ? 'HT HC / an' : '');
+export const unitePrix = (d: Donnees) => (auPoste(d) ? 'HT / poste / an' : estLocation(d) ? 'HT HC / an' : '');
 
 /* ── Les types de local ───────────────────────────────────────────────────
    La clé est enregistrée dans `donnees.typeBien` et la colonne `type_bien` ;
@@ -89,6 +100,8 @@ const fmt = (n: number) => `${Math.round(n).toLocaleString('fr-FR').replace(/ 
 /* « 48 000 € HT HC / an » pour un loyer, « 180 000 € » pour un prix. */
 export function montantAffaire(n: number | null | undefined, d: Donnees): string {
   if (!n) return '';
+  /* Au poste : le prix d'un poste, au mois (« 1 650 € HT / poste / mois »). */
+  if (auPoste(d)) return `${fmt(n / 12)} HT / poste / mois`;
   const u = unitePrix(d);
   return u ? `${fmt(n)} ${u}` : fmt(n);
 }
@@ -185,6 +198,8 @@ export type ProBien = {
   extraction: string | null; destinationType: string | null; destination: string | null;
   bailType: string | null; bailFin: string | null; activite: string | null;
   equipements: string[];
+  /* Loué au poste : `loyerAn` est celui d'un poste ; combien le bureau en compte. */
+  parPoste: boolean; nbPostes: number | null;
 };
 const n0 = (d: Donnees, k: string): number | null => {
   const v = d[k];
@@ -218,5 +233,6 @@ export function proDuBien(d: Donnees): ProBien {
     extraction: t0(d, 'extraction'), destinationType: t0(d, 'destinationType'), destination: t0(d, 'destination'),
     bailType: t0(d, 'bailType'), bailFin: t0(d, 'bailFin'), activite: nat === 'fonds' ? t0(d, 'activite') : null,
     equipements: [...tous],
+    parPoste: auPoste(d), nbPostes: auPoste(d) ? nbPostesDe(d) : null,
   };
 }
