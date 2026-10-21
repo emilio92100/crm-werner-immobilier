@@ -14,16 +14,27 @@
 import { grouperSecteurs, type BienCorr, type Correspondance, type CriteresCorr } from '@/lib/correspondance';
 import { cleCommune } from '@/lib/communes';
 
-export type RaisonEcart = 'budget' | 'secteur' | 'surface' | 'chambres' | 'indispensable';
+export type RaisonEcart = 'budget' | 'secteur' | 'surface' | 'chambres' | 'indispensable' | 'nature';
 export const RAISONS_ECART: Record<RaisonEcart, string> = {
   budget: 'budget trop court', secteur: 'autre secteur', surface: 'trop petit',
   chambres: 'pas assez de bureaux fermés', indispensable: 'il manque un indispensable',
+  nature: 'il cherche autre chose',
 };
+/* Werner (21 octobre 2026) : une affaire n'a pas de ligne « Budget » mais
+   « Loyer annuel », « Droit au bail », « Prix du fonds » ou « Prix »
+   (correspondance.ts). Seul « Budget » était lu : un loyer à 50 % au-dessus
+   de ce que le demandeur peut payer ne l'écartait jamais. Toutes ces lignes
+   comptent maintenant comme le budget. */
+export const LIGNES_PRIX = ['Budget', 'Loyer annuel', 'Droit au bail', 'Prix du fonds', 'Prix'];
 const DE_L_IMMEUBLE = new Set(['Ascenseur', 'Gardien']);
 
 export function raisonEcart(corr: Correspondance, b: BienCorr, c: CriteresCorr): RaisonEcart | null {
   const non = (lib: string) => corr.lignes.some(l => l.lib === lib && l.etat === 'non');
-  if (non('Budget')) return 'budget';
+  if (LIGNES_PRIX.some(non)) return 'budget';
+  /* Et ce qu'il cherche : une location pour qui veut acheter des murs, un
+     fonds pour qui veut louer… n'est pas « un peu moins bien », c'est autre
+     chose (la ligne « Ce qu'il cherche », poids 3, restait une simple note). */
+  if (non('Ce qu’il cherche')) return 'nature';
   if (non('Secteur') && b.ville) {
     const ville = cleCommune(b.ville);
     if (!grouperSecteurs(c.secteurs || []).some(v => cleCommune(v.ville) === ville)) return 'secteur';
