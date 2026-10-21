@@ -623,9 +623,20 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
      s'arrête au haut de l'étape. */
   useEffect(() => {
     if (!etapeDepart || (mode !== 'tout' && !sectDepart)) return;
-    const t = setTimeout(() => {
+    /* 22 octobre 2026 (Alexandre : « quand on appuie sur Modifier, est-ce que
+       ça affiche bien la bonne partie ? ») : non, pas toujours. La fenêtre
+       s'ouvre en grandissant depuis le bouton (lib/mouvement.ts) ; mesurée
+       pendant ce zoom, « Accès et transports » paraissait 8 fois plus haut
+       qu'il n'est, et la page s'arrêtait sur l'adresse. La position se lit
+       désormais dans la mise en page (offsetTop, que le zoom ne touche pas),
+       et la descente se refait une fois l'ouverture finie, sauf si on a déjà
+       fait défiler soi-même. */
+    const posee = { top: -1 };
+    const haut = (n: HTMLElement | null) => { let y = 0; while (n) { y += n.offsetTop; n = n.offsetParent as HTMLElement | null; } return y; };
+    const descendre = (seconde: boolean) => {
       const zone = formRef.current;
       if (!zone) return;
+      if (seconde && (posee.top < 0 || Math.abs(zone.scrollTop - posee.top) > 4)) return;
       const etapeEl = zone.querySelector<HTMLElement>(`[data-etape="${etapeDepart}"]`);
       const champ = sectDepart.startsWith('@') ? sectDepart.slice(1) : '';
       /* Le champ : sa boîte, ou celle de son contenu quand l'enveloppe est transparente. */
@@ -635,16 +646,22 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
       if (!x) return;
       /* Un champ se pose au tiers de la hauteur, avec de l'air au-dessus ; une partie, en haut. */
       const marge = champ && x !== etapeEl ? Math.min(140, zone.clientHeight * 0.25) : 12;
-      if (zone.scrollHeight > zone.clientHeight + 4) zone.scrollTo({ top: x.getBoundingClientRect().top - zone.getBoundingClientRect().top + zone.scrollTop - marge });
-      else x.scrollIntoView({ block: champ ? 'center' : 'start' });
+      if (zone.scrollHeight > zone.clientHeight + 4) {
+        zone.scrollTo({ top: Math.max(0, haut(x) - haut(zone) - zone.clientTop - marge) });
+        posee.top = zone.scrollTop;
+      } else x.scrollIntoView({ block: champ ? 'center' : 'start' });
+      if (seconde) return;
       if (sectDepart && x !== etapeEl) {
         const marque = champ ? 'data-eclaire-champ' : 'data-eclaire';
         x.setAttribute(marque, 'oui'); setTimeout(() => x.removeAttribute(marque), 2200);
         /* Le curseur, seulement à la souris : au téléphone, le clavier cacherait le champ. */
         if (champ && window.matchMedia('(hover: hover)').matches) x.querySelector<HTMLElement>('input:not([type=checkbox]):not([type=radio]):not([type=file]), textarea')?.focus({ preventScroll: true });
       }
-    }, sectDepart ? 380 : 50);
-    return () => clearTimeout(t);
+    };
+    const t1 = setTimeout(() => descendre(false), sectDepart ? 380 : 50);
+    /* Après l'ouverture (environ 0,6 s) : la même descente, mesurée au repos. */
+    const t2 = setTimeout(() => descendre(true), 950);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
