@@ -21,6 +21,8 @@ import { ChampActe, manquesEtape } from '@/components/documents/ChampsActe';
 import { Croix, Ic } from '@/components/documents/ApercuActe';
 import { Picto, pictoChoix } from './Pictos';
 import { creerFicheProprio, deposerPhoto, deposerPiece, doublonsContact, marquerVendeur, nomClient, ouvrirPiece, retirerPhoto, retirerPiece, type ClientMini } from './outils';
+import ChoixQuartiers from '@/components/shared/ChoixQuartiers';
+import { communeDeVille, communeDuCp, memeNom, titreQuartiers } from '@/lib/quartiers';
 import s from '@/components/documents/Documents.module.css';
 import b from './Biens.module.css';
 
@@ -991,10 +993,37 @@ function ChampVignettes({ c, d, maj, off }: { c: ChampChoix; d: Donnees; maj: Ma
   );
 }
 
+/* ── Le quartier (V3.227) ──
+   Les quartiers de référence de la commune (par le code postal, sinon par la
+   ville) se choisissent d'un clic ; le champ reste libre pour un autre nom.
+   Recliquer le quartier choisi le retire. */
+function ChampQuartier({ exemple, d, maj, off }: { exemple: string; d: Donnees; maj: Maj; off: boolean }) {
+  const v = typeof d.quartier === 'string' ? d.quartier : '';
+  const ville = txt(d, 'ville'), cp = txt(d, 'cp');
+  const commune = communeDuCp(cp) || communeDeVille(ville, cp);
+  return (
+    <div className={`${s.ch} ${s.large}`} data-champ="quartier" data-cle="quartier">
+      <label className={s.chLib} htmlFor="ch-quartier"><span className={s.chIc}><Ic n="boussole" t={14} /></span><span>Quartier</span></label>
+      <input id="ch-quartier" className={s.input} disabled={off} autoComplete="off" value={v}
+        placeholder={commune ? 'Choisis-le juste en dessous, ou écris-le' : exemple}
+        onChange={e => maj('quartier', e.target.value)} />
+      {commune ? (
+        <div className={b.qChoix}>
+          <ChoixQuartiers commune={commune} choisis={v ? [v] : []} titre={titreQuartiers(commune.ville)} off={off}
+            onChoisir={n => maj('quartier', memeNom(n, v) ? '' : n)} />
+        </div>
+      ) : ville ? (
+        <div className={s.chAide}>{`Pas de quartiers proposés pour ${ville} : écris-le comme tes demandeurs le disent.`}</div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ChampBien({ c, d, maj, off, bienId }: { c: ChampBien; d: Donnees; maj: Maj; off: boolean; bienId: string }) {
   /* V3.107 : enveloppe transparente (display: contents, la grille ne bouge
      pas), pour que l'éditeur trouve le champ par sa clé (`data-champ`). */
   if (c.t === 'choix' || c.t === 'cases') return <ChampVignettes c={c} d={d} maj={maj} off={off} />;
+  if (c.cle === 'quartier') return <ChampQuartier exemple={'exemple' in c && typeof c.exemple === 'string' ? c.exemple : ''} d={d} maj={maj} off={off} />;
   if (estChampActe(c)) return <div data-champ={c.cle} style={{ display: 'contents' }}><ChampActe c={c} d={d} maj={maj} off={off} /></div>;
   if (c.si && !c.si(d)) return null;
   let controle: React.ReactNode = null;

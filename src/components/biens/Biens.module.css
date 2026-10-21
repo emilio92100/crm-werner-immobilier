@@ -2017,3 +2017,6 @@ nav.sousOnglets > span[aria-hidden="true"] { border-radius: 13px; }
   .messageFiche { padding-left: 14px; padding-right: 14px; }
   .pProprioPan { width: calc(100vw - 28px); }
 }
+
+/* V3.227 — Les quartiers proposés sous le champ Quartier. */
+.qChoix { margin-top: 10px; }

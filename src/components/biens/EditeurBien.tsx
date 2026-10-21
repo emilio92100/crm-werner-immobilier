@@ -12,7 +12,7 @@ import { PICTO_BLOC, PICTO_ETAPE, Picto, aUnDessin, teinte } from './Pictos';
 import { ajouterSuivi, bienVide, biensSemblables, enregistrerBien, supprimerBien, type BienSemblable } from './outils';
 import s from '@/components/documents/Documents.module.css';
 import RappelSecteur from '@/components/shared/RappelSecteur';
-import { QUARTIERS } from '@/lib/secteurs';
+import { communeDeVille, communeDuCp } from '@/lib/quartiers';
 import b from './Biens.module.css';
 
 /* ═══ L'éditeur d'un bien ═════════════════════════════════════════════════
@@ -755,7 +755,7 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
       {/* V3.226 — Le rappel du quartier, avant de terminer. */}
       {rappel && (() => {
         const cp = String(d.cp || '').replace(/\s/g, '');
-        const connus = (QUARTIERS[cp === '75116' ? '75016' : cp]?.quartiers || []).slice(0, 8);
+        const commune = communeDuCp(cp) || communeDeVille(String(d.ville || ''), cp);
         const continuer = () => { const r = rappel; setRappel(null); if (r === 'fermer') void fermer(); else void terminer(); };
         const allerAuQuartier = () => {
           setRappel(null);
@@ -774,7 +774,7 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
           <RappelSecteur
             titre="Le quartier n’est pas indiqué"
             texte={`Indique le quartier de l’affaire : le rapprochement sera plus précis avec tes demandeurs qui ne cherchent que certains quartiers. Sans lui, seule la ville est comparée.`.replace(' :', '\u00a0:')}
-            choix={connus}
+            commune={commune}
             onChoisir={q => {
               /* Le quartier choisi, puis on termine comme demandé (le temps
                  que la saisie soit prise en compte). */
