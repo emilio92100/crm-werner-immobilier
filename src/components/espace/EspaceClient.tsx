@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { lienBienPublic } from '@/lib/jeton';
 import { QUARTIERS, searchCommune, type CpSuggestion } from '@/lib/secteurs';
+import { communeDeVille } from '@/lib/quartiers';
 import ArretPicker, { PastilleArret } from '@/components/shared/ArretPicker';
 import type { Arret } from '@/lib/arrets';
 import SignatureMandat, { AvantVisiteDocument, CarteMonMandat, CartePret, CarteAttente, CarteDocuments, Renonciation, mandatARenoncer, CSS_MANDAT, type MandatEspace } from './SignatureMandat';
@@ -599,8 +600,8 @@ const grouperSecteurs = (liste: string[]) => {
   }
   return villes;
 };
-const cpDeVille = (ville: string) =>
-  Object.keys(QUARTIERS).find(cp => normVille(QUARTIERS[cp].ville) === normVille(ville)) || null;
+/* V3.227 : « Paris 16ème » comme « Paris 16e » (src/lib/quartiers.ts). */
+const cpDeVille = (ville: string) => communeDeVille(ville)?.cp || null;
 
 
 /* Mêmes intitulés que le CRM : ce que le client lit ici est ce qu'Alexandre voit. */
