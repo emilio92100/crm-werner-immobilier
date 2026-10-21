@@ -376,6 +376,14 @@ function Semblables({ l, onOuvrir, onIgnorer }: { l: BienSemblable[]; onOuvrir: 
   );
 }
 
+/* La hauteur d'un élément dans la page, lue dans la mise en page : un zoom
+   en cours (l'ouverture d'une fenêtre) ne la fausse pas (22 octobre 2026). */
+function hautDansLaPage(el: HTMLElement | null): number {
+  let y = 0;
+  for (let n = el; n; n = n.offsetParent as HTMLElement | null) y += n.offsetTop;
+  return y;
+}
+
 export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false, autres, vus = [], onOuvrirExistant, onMaj, onFermer }: {
   bien: BienVente;
   etapeDepart?: string;
@@ -632,7 +640,6 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
        et la descente se refait une fois l'ouverture finie, sauf si on a déjà
        fait défiler soi-même. */
     const posee = { top: -1 };
-    const haut = (n: HTMLElement | null) => { let y = 0; while (n) { y += n.offsetTop; n = n.offsetParent as HTMLElement | null; } return y; };
     const descendre = (seconde: boolean) => {
       const zone = formRef.current;
       if (!zone) return;
@@ -647,7 +654,7 @@ export default function EditeurBien({ bien, etapeDepart: depart, nouveau = false
       /* Un champ se pose au tiers de la hauteur, avec de l'air au-dessus ; une partie, en haut. */
       const marge = champ && x !== etapeEl ? Math.min(140, zone.clientHeight * 0.25) : 12;
       if (zone.scrollHeight > zone.clientHeight + 4) {
-        zone.scrollTo({ top: Math.max(0, haut(x) - haut(zone) - zone.clientTop - marge) });
+        zone.scrollTo({ top: Math.max(0, hautDansLaPage(x) - hautDansLaPage(zone) - zone.clientTop - marge) });
         posee.top = zone.scrollTop;
       } else x.scrollIntoView({ block: champ ? 'center' : 'start' });
       if (seconde) return;
