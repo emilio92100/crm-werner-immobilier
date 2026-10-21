@@ -376,9 +376,11 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   aussi le domaine, le DNS et la boîte contact@ : **ne jamais le résilier tel quel**, le domaine
   partirait avec (choix d'Alexandre, 21 octobre : on le garde pour l'instant). Le VPS (113365249),
   inutilisé, est résilié au 15 août 2027 (dossier K-148836641-43). espace et crm sont sur ce projet ;
-  wernerimmobilier.com et www sont sur le projet du site (`werner-immobilier-site`). Reste à poser `NEXT_PUBLIC_HOTE_ESPACE` =
-  espace.wernerimmobilier.com une fois le domaine validé par Vercel, puis
-  `NEXT_PUBLIC_MAIL_IMAGES_URL` et `NEXT_PUBLIC_CRM_URL` (https://crm.wernerimmobilier.com).
+  wernerimmobilier.com et www sont sur le projet du site (`werner-immobilier-site`). Sur Vercel (vérifié le
+  21 octobre 2026) : `NEXT_PUBLIC_HOTE_ESPACE` = espace.wernerimmobilier.com (domaine validé ; les
+  liens donnés aux clients portent cette adresse, et elle n'ouvre que l'espace : `/` et `/login` y
+  mènent à « lien introuvable »), `NEXT_PUBLIC_MAIL_IMAGES_URL`, `NEXT_PUBLIC_SITE_URL`,
+  `NEXT_PUBLIC_CRM_URL` et `CRM_URL` sont posées.
   Anciens enregistrements, pour revenir en arrière : A @ et A www 217.160.0.153, AAAA @ et AAAA www
   2001:8d8:100f:f000::200 (service WordPress d'IONOS).
 - **Mailjet et les clés** — le compte et le domaine d'envoi de Werner, les variables Mailjet,
