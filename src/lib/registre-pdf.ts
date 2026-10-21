@@ -10,12 +10,12 @@ import { LOGO_MARINE } from './mandat-logo';
 import type { IdentiteAgence } from './agence';
 import { etatLigne, NATURES, TYPES_MANDAT, TYPES_OBS, SOURCES, quandRegistre, type Depart, type LigneRegistre, type ObsRegistre, type Probleme, type TypeObs } from './registre';
 
-const BLEU = rgb(52 / 255, 73 / 255, 110 / 255);
-const MARINE = rgb(46 / 255, 65 / 255, 102 / 255);
-const OR = rgb(201 / 255, 168 / 255, 76 / 255);
-const GRIS = rgb(100 / 255, 116 / 255, 139 / 255);
-const FILET = rgb(227 / 255, 232 / 255, 240 / 255);
-const FOND = rgb(246 / 255, 248 / 255, 251 / 255);
+const BLEU = rgb(46 / 255, 48 / 255, 52 / 255);    // #2e3034, l’anthracite de Werner
+const MARINE = rgb(35 / 255, 37 / 255, 40 / 255);  // #232528
+const OR = rgb(240 / 255, 140 / 255, 66 / 255);    // #f08c42
+const GRIS = rgb(107 / 255, 104 / 255, 100 / 255);
+const FILET = rgb(234 / 255, 234 / 255, 233 / 255);
+const FOND = rgb(249 / 255, 248 / 255, 248 / 255);
 const VERT = rgb(22 / 255, 101 / 255, 52 / 255);
 const ROUGE = rgb(185 / 255, 28 / 255, 28 / 255);
 

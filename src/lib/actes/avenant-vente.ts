@@ -33,6 +33,8 @@ const REPRIS = ['qui', 'situation', 'logementFamille', 'conjoint', 'lien', 'regi
   'sciNom', 'sciForme', 'sciSiege', 'sciRcs', 'sciPouvoir', 'adresse', 'cp', 'ville', 'type',
   'nature', 'copro', 'description', 'lots', 'tantiemesBase', 'tantiemesTotal', 'actions', 'rythme', 'penale',
   'charge', 'honoMode', 'taux', 'forfait', 'prix', 'duree', 'dureeMode', 'periode', 'dureeMax',
+  /* Werner : la nature, le montant écrit et la TVA du mandat. */
+  'montant', 'tvaHono', 'activite', 'conso',
   /* Le bien du CRM (V3.32) : l'avenant apparaît dans l'onglet Documents du bien. */
   'bienVenteId'];
 
@@ -45,6 +47,9 @@ const estCopro = (d: Donnees) => d.nature !== 'terrain' && d.copro === 'oui';
 function argentNouveau(d: Donnees) {
   const h = change(d, 'honoraires');
   return argent({
+    /* Werner : la nature dit comment se calculent les honoraires (sur le
+       loyer annuel pour une location). */
+    nature: d.nature, tvaHono: d.tvaHono,
     prix: change(d, 'prix') ? d.nouveauPrix : d.prix,
     charge: h ? d.charge2 : d.charge,
     honoMode: h ? d.honoMode2 : d.honoMode,

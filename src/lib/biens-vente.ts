@@ -1344,34 +1344,43 @@ export function contexteDocument(b: BienVente) {
     etage: nb(d, 'etage'), prix_acquereur: argentBien(d).prix, prix_vendeur: argentBien(d).net, agence_nom: 'Werner Immobilier', description: null,
   };
 }
-/* Le mandat de vente prérempli : les vendeurs, le bien, le prix, les honoraires. */
+/* Le mandat de commercialisation prérempli depuis l'affaire : le mandant,
+   la nature, les locaux, le bail, le prix et les honoraires
+   (src/lib/actes/mandat-vente.ts). `prix` garde le sens de l'affaire ; le
+   montant que le mandat écrit s'en déduit à l'ouverture de l'éditeur. */
 export function versMandatVente(b: BienVente, base: Donnees): Donnees {
-  /* Le mandat prérempli depuis l'affaire (le modèle de document reste celui
-     d'une vente, en attendant les mandats de l'immobilier d'entreprise). */
   const d = b.donnees || {};
   const vs = lirePersonnes(d.proprietaires);
-  const t = d.typeBien;
+  const t = typeof d.typeBien === 'string' ? d.typeBien : '';
+  const nat = natureDe(d);
   const description = [
-    titreBien(d), natureDe(d) ? (NATURES.find(n => n.v === natureDe(d))?.l || '').toLowerCase() : '',
+    titreBien(d),
     enImmeuble(d) && nb(d, 'etage') !== null ? `au ${etageTexte(nb(d, 'etage')).toLowerCase()}` : '',
   ].filter(Boolean).join(', ');
-  const qui = d.qui === 'indivision' || d.qui === 'sci' ? d.qui : 'personne';
+  const qui = d.qui === 'indivision' || d.qui === 'personne' ? d.qui : 'sci';
+  const dest = DESTINATIONS.find(x => x.v === d.destinationType);
+  const activites = d.destinationType === 'tous' ? 'Tous commerces' : txt(d, 'destination') || (dest ? dest.l : '');
+  const usage = t === 'bureaux' || d.destinationType === 'bureaux' ? 'bureaux' : d.destinationType === 'liberal' ? 'professionnel'
+    : t === 'activite' || t === 'entrepot' ? 'activite' : 'commerce';
+  const garder = (k: string) => (d[k] !== undefined && d[k] !== null && d[k] !== '' ? { [k]: d[k] } : {});
   return {
     ...base,
     bienVenteId: b.id,
-    qui, ...(qui === 'sci' ? { sciNom: txt(d, 'sciNom') } : {}),
+    ...(nat ? { nature: nat } : {}),
+    qui, conso: qui === 'sci' ? 'non' : 'oui',
+    ...(qui === 'sci' ? { sciNom: txt(d, 'sciNom') } : {}),
     vendeurs: vs.length ? vs : base.vendeurs,
-    notaire: txt(d, 'notaire') || base.notaire || '',
-    nature: t === 'terrain' ? 'terrain' : 'autre',
     adresse: txt(d, 'adresse'), cp: txt(d, 'cp'), ville: txt(d, 'ville'), description,
-    copro: d.copro === 'oui' ? 'oui' : d.copro === 'non' ? 'non' : base.copro,
-    ...(d.copro === 'oui' && txt(d, 'lot') ? { lots: [{ numero: txt(d, 'lot'), nature: nomType(t), tantiemes: '' }] } : {}),
-    ...(nb(d, 'carrez') ? { carrez: nb(d, 'carrez') } : {}),
-    ...(nb(d, 'terrain') ? { terrain: nb(d, 'terrain') } : {}),
-    ...(txt(d, 'cadastre') ? { cadastre: txt(d, 'cadastre') } : {}),
-    occupation: d.occupation === 'loue' ? 'loue' : d.occupation === 'occupe' ? 'vendeur' : 'libre',
+    copro: d.copro === 'oui' ? 'oui' : 'non',
+    ...(d.copro === 'oui' && txt(d, 'lot') ? { lots: [{ numero: txt(d, 'lot'), nature: nomType(t) }] } : {}),
+    ...(nat === 'fonds' && txt(d, 'activite') ? { activite: `Un fonds de commerce de ${txt(d, 'activite').charAt(0).toLowerCase()}${txt(d, 'activite').slice(1)}` } : {}),
+    ...(nat === 'location' ? { usage, ...garder('disponible'), ...garder('droitEntree') } : {}),
+    ...(activites ? { activites } : {}),
+    ...(d.bailType ? { bailType: d.bailType } : {}),
+    ...garder('bailDebut'), ...garder('bailFin'), ...garder('loyerAn'), ...garder('indexation'),
+    ...garder('chargesAn'), ...garder('taxeFonciere'), ...garder('tfRefacturee'), ...garder('depotMois'),
     type: d.mandatType === 'simple' || d.mandatType === 'semi' || d.mandatType === 'exclusif' ? d.mandatType : base.type,
-    prix: num(d, 'prix') ?? base.prix, charge: d.charge === 'vendeur' ? 'vendeur' : 'acquereur',
+    prix: num(d, 'prix') ?? base.prix, montant: null, charge: d.charge === 'vendeur' ? 'vendeur' : 'acquereur',
     honoMode: d.honoMode === 'forfait' ? 'forfait' : 'taux',
     ...(num(d, 'taux') !== null ? { taux: num(d, 'taux') } : {}), ...(num(d, 'forfait') !== null ? { forfait: num(d, 'forfait') } : {}),
     numero: txt(d, 'mandatNumero') || base.numero || '',

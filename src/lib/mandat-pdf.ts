@@ -42,23 +42,23 @@ const LARGEUR = A4.l - MARGE.g - MARGE.d;
 /* La palette Emilio */
 /* V3.17 : le bleu Emilio du CRM et du site, plutôt que le marine presque
    noir d'avant (#3b3d42 pour les bandeaux, #25272b pour le texte). */
-const BLEU = rgb(52 / 255, 73 / 255, 110 / 255);         // #2e3034, le bleu Emilio
-const MARINE = rgb(46 / 255, 65 / 255, 102 / 255);       // #26282c, le texte, un bleu foncé
-const OR = rgb(201 / 255, 168 / 255, 76 / 255);          // #f08c42
-const OR_FONCE = rgb(160 / 255, 124 / 255, 40 / 255);    // l'or lisible en petit sur blanc
-const GRIS = rgb(100 / 255, 116 / 255, 139 / 255);       // #64748b
-const GRIS_CLAIR = rgb(152 / 255, 164 / 255, 182 / 255);
-const FILET = rgb(227 / 255, 232 / 255, 240 / 255);      // #eaeae9
-const FOND = rgb(246 / 255, 248 / 255, 251 / 255);       // #f9f8f8
-const BLEU_PALE = rgb(219 / 255, 227 / 255, 238 / 255);  // le texte doux sur le bleu
-const ENCRE = rgb(31 / 255, 58 / 255, 107 / 255);        // #404247, le tampon
+const BLEU = rgb(46 / 255, 48 / 255, 52 / 255);          // #2e3034, l’anthracite de Werner (les aplats sombres)
+const MARINE = rgb(35 / 255, 37 / 255, 40 / 255);        // #232528, l’encre du texte
+const OR = rgb(240 / 255, 140 / 255, 66 / 255);          // #f08c42, l’orange de Werner
+const OR_FONCE = rgb(194 / 255, 98 / 255, 28 / 255);     // #c2621c, l’orange lisible en petit sur blanc
+const GRIS = rgb(107 / 255, 104 / 255, 100 / 255);       // #6b6864
+const GRIS_CLAIR = rgb(163 / 255, 160 / 255, 155 / 255); // #a3a09b
+const FILET = rgb(234 / 255, 234 / 255, 233 / 255);      // #eaeae9
+const FOND = rgb(249 / 255, 248 / 255, 248 / 255);       // #f9f8f8
+const BLEU_PALE = rgb(217 / 255, 215 / 255, 212 / 255);  // #d9d7d4, le texte doux sur l’anthracite
+const ENCRE = rgb(64 / 255, 66 / 255, 71 / 255);         // #404247, le tampon
 const VERT = rgb(22 / 255, 101 / 255, 52 / 255);
 const VERT_FOND = rgb(240 / 255, 253 / 255, 244 / 255);
 const VERT_TRAIT = rgb(187 / 255, 247 / 255, 208 / 255);
 const BLANC = rgb(1, 1, 1);
-const OR_PALE = rgb(250 / 255, 245 / 255, 230 / 255);  // le fond des pastilles d'icône
-const OR_TRAIT = rgb(236 / 255, 222 / 255, 182 / 255);
-const BLEU_FOND = rgb(238 / 255, 243 / 255, 249 / 255); // les encadrés
+const OR_PALE = rgb(253 / 255, 244 / 255, 236 / 255);  // #fdf4ec, le fond des pastilles d'icône
+const OR_TRAIT = rgb(246 / 255, 201 / 255, 163 / 255); // #f6c9a3
+const BLEU_FOND = rgb(244 / 255, 243 / 255, 242 / 255); // #f4f3f2, les encadrés
 const BRIQUE = rgb(185 / 255, 28 / 255, 28 / 255);      // « non signé »
 const BRIQUE_FOND = rgb(254 / 255, 242 / 255, 242 / 255);
 const BRIQUE_TRAIT = rgb(252 / 255, 202 / 255, 202 / 255);

@@ -30,6 +30,9 @@ export type Fonds = 'non' | 'garantie';
 export type IdentiteAgence = {
   /* Identité */
   nom: string; societe: string; forme: string; siege: string; rcs: string; tva: string;
+  /* Le représentant légal de la société titulaire de la carte (« Alexandre
+     ROGELET, Président ») : les mandats de Werner l'impriment. */
+  representantLegal: string;
   /* Carte professionnelle */
   carte: string; carteMention: string; carteDelivree: string; carteFin: string;
   /* L'argent des clients */
@@ -56,6 +59,7 @@ export const IDENTITE_DEFAUT: IdentiteAgence = {
   siege: '10 avenue Kléber, 75016 Paris',
   rcs: 'RCS de Nanterre n° 884 141 201',
   tva: 'FR34884141201',
+  representantLegal: 'Alexandre ROGELET, Président',
   carte: 'CPI 9201 2020 000 045 344',
   carteMention: 'Transactions sur immeubles et fonds de commerce',
   carteDelivree: 'la CCI Paris Île-de-France',
@@ -68,8 +72,11 @@ export const IDENTITE_DEFAUT: IdentiteAgence = {
   mediateurNom: 'Association MEDIMMOCONSO',
   mediateurAdresse: '1 allée du Parc de Mesemena, Bât. A, CS 25222, 44505 La Baule Cedex',
   mediateurSite: 'www.medimmoconso.fr',
-  signataireNom: 'Werner',
-  signataireQualite: 'agent commercial habilité',
+  /* Ses mandats (octobre 2026) : RT CONSEILS, titulaire de la carte, est
+     représentée par WB INVEST (Werner Immobilier), dont Werner BONNETON
+     est le gérant. */
+  signataireNom: 'Werner BONNETON',
+  signataireQualite: 'gérant de la société WB INVEST (Werner Immobilier), SARL au capital de 1 000 €',
   adresse: '10 avenue Kléber',
   cp: '75016',
   ville: 'Paris',
@@ -109,6 +116,7 @@ export const CHAMPS: Champ[] = [
   { cle: 'rcs', lib: 'Immatriculation', bloc: 'identite', requis: true, exemple: 'RCS de Nanterre n° 884 141 201', max: 80 },
   { cle: 'siege', lib: 'Siège social', bloc: 'identite', requis: true, max: 160, large: true },
   { cle: 'tva', lib: 'TVA intracommunautaire', bloc: 'identite', max: 30 },
+  { cle: 'representantLegal', lib: 'Représentant légal', bloc: 'identite', exemple: 'Alexandre ROGELET, Président', aide: 'Celui qui représente la société titulaire de la carte. Imprimé dans les mandats.', max: 120 },
 
   { cle: 'carte', lib: 'Numéro', bloc: 'carte', requis: true, exemple: 'CPI 9201 2020 000 045 344', max: 40 },
   { cle: 'carteFin', lib: 'Valable jusqu’au', bloc: 'carte', type: 'date', aide: 'Trois ans après sa délivrance ou son dernier renouvellement.' },

@@ -395,8 +395,22 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
 - **Les consignes de l'IA** parlent d'immobilier d'entreprise (21 octobre 2026), et les lectures de
   secours (sans IA) devinent un type de local (`typeLocalDuTexte`, `src/lib/lecture-annonce.ts`), plus
   « Appartement ». `yanport_id` reste une clé de dédoublonnage de la veille, sans rien à l'écran.
-- **Les documents juridiques** — en attente des modèles de Werner. Les catégories sont renommées ; les
-  textes de `src/lib/actes/` et le barème de `src/lib/mandat.ts` sont ceux de l'origine (§7).
+- **Les documents juridiques** — le **mandat de commercialisation** est fait (21 octobre 2026,
+  `src/lib/actes/mandat-vente.ts`, id `mandat_vente` gardé) : location, cession de droit au bail,
+  fonds de commerce, murs libres ou occupés, en simple, semi-exclusif ou exclusif, d'après les
+  quatre mandats de Werner (n° 847, 856, 838, 859) ; durées, reconduction, honoraires HT/TTC, actions,
+  délais, 12 mois d'interdiction et clauses particulières sont des questions. Ses deux clauses
+  pénales et le rappel de l'article 78 sont toujours imprimés en capitales (son mandat de location
+  n° 847 n'avait pas ce rappel : un mandat avec clause pénale sans lui est nul, Cass. 1re civ.,
+  3 novembre 2016). `prix` garde le sens de l'affaire (honoraires compris quand l'acquéreur paie) ;
+  `montant` est ce que le mandat écrit (le loyer, le prix hors honoraires en sus), tenus d'accord par
+  `deduire`. Un mandant « consommateur » (`conso`) ajoute information précontractuelle, médiateur,
+  Bloctel, rétractation et annexe L215. Le mandataire : RT CONSEILS (représentant légal, champ
+  `representantLegal` de l'identité), représentée par Werner BONNETON, gérant de WB INVEST. Les PDF
+  sont aux couleurs de Werner (`mandat-pdf.ts`, `registre-pdf.ts`). Restent à adapter : le mandat
+  de recherche, l'avenant (calcule déjà comme le mandat), la délégation, le bon de visite, l'offre.
+  ⚠️ L'identité enregistrée dans Paramètres › Agence l'emporte sur celle du code : vérifier qu'elle
+  dit bien Werner BONNETON.
 - **Le registre des mandats sous la carte RT CONSEILS** — on attend la réponse de Werner sur le
   numéro à reprendre (où en est sa numérotation sous cette carte) ; elle ne doit jamais doubler celle
   d'Emilio, qui signe sous la même carte. Ensuite, le registre se met en place comme dans le CRM
