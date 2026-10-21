@@ -1,0 +1,40 @@
+/* Le rappel du secteur (V3.226) : une petite fenêtre au centre ; au
+   téléphone, elle monte du bas. Couleurs du CRM de Werner : noir grisé, orange doux. */
+.voile {
+  position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: rgba(37, 39, 43, .52); font-family: 'DM Sans', sans-serif;
+}
+.fen {
+  width: min(470px, 100%); max-height: min(90vh, 640px); overflow-y: auto; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 14px; padding: 22px 22px 20px;
+  background: #fff; border-radius: 22px; box-shadow: 0 40px 80px -30px rgba(15, 23, 42, .6);
+}
+.tete { display: flex; align-items: center; gap: 12px; }
+.tete h2 { margin: 0; font: 800 18px/1.3 'Plus Jakarta Sans', sans-serif; color: #25272b; }
+.ic {
+  width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+  background: #fbf0e9; border: 1px solid #f9c8a3; color: #c2621c;
+}
+.texte { margin: 0; font-size: 14px; line-height: 1.55; color: #4b4e53; }
+.choix { display: flex; flex-direction: column; gap: 8px; }
+.choixT { font: 700 12.5px 'DM Sans', sans-serif; color: #3f4247; }
+.puces { display: flex; flex-wrap: wrap; gap: 6px; }
+.puce {
+  padding: 7px 12px; border-radius: 99px; border: 1.5px solid #ececec; background: #fff; cursor: pointer;
+  font: 700 13px 'DM Sans', sans-serif; color: #3f4247; transition: border-color .15s, background .15s, color .15s;
+}
+.puce:hover { border-color: #e0894a; background: #fff7f0; color: #25272b; }
+.pied { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.principal, .secondaire {
+  height: 42px; padding: 0 16px; border-radius: 12px; cursor: pointer; font: 700 13.5px 'DM Sans', sans-serif;
+}
+.principal { border: none; background: #2f3136; color: #fff; box-shadow: 0 10px 20px -14px rgba(37, 39, 43, .8); }
+.principal:hover { background: #45484e; }
+.secondaire { border: 1.5px solid #e5e5e5; background: #fff; color: #4b4e53; }
+.secondaire:hover { border-color: #cfcfcf; color: #25272b; }
+@media (max-width: 720px) {
+  .voile { padding: 0; align-items: flex-end; }
+  .fen { width: 100%; border-radius: 22px 22px 0 0; padding: 20px 16px calc(18px + env(safe-area-inset-bottom, 0px)); }
+  .pied { flex-direction: column-reverse; }
+  .principal, .secondaire { width: 100%; height: 46px; }
+}
