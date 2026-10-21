@@ -7,6 +7,7 @@
    Isomorphe : aucune dépendance serveur. */
 
 import type { Arret } from '@/lib/arrets';
+import { communeDeVille, lireCommune, nomsProches, quartierCouvre } from '@/lib/quartiers';
 import { EMPLACEMENTS, EQUIPEMENTS, NATURES, type ProBien } from '@/lib/affaires';
 
 /* Ce que la note lit d'un bien : le sous-ensemble du `Bien` de l'espace. */
@@ -79,21 +80,8 @@ const lireSecteur = (label: string) => {
    arrondissement) ou, à défaut, avec le code postal. Une ville entière, côté
    recherche, comprend tous ses arrondissements ; un bien dont on ne sait pas
    l'arrondissement est « presque » dans celui demandé. */
-const ARRONDIS = /^(paris|lyon|marseille)\s*(\d{1,2})\s*(?:er|e|eme|ieme|em)?(?:\s*arr(?:ondissement)?\.?)?$/;
-function arrondDuCp(base: string, cp: string | null | undefined): number | null {
-  const c = String(cp || '').replace(/\s/g, '');
-  if (base === 'paris' && /^75\d{3}$/.test(c)) { const n = c === '75116' ? 16 : Number(c.slice(3)); return n >= 1 && n <= 20 ? n : null; }
-  if (base === 'lyon' && /^6900[1-9]$/.test(c)) return Number(c.slice(3));
-  if (base === 'marseille' && /^130(0[1-9]|1[0-6])$/.test(c)) return Number(c.slice(3));
-  return null;
-}
-function lireCommune(v: string, cp?: string | null): { base: string; n: number | null } {
-  const s = String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[-–]/g, ' ').replace(/\s+/g, ' ').trim();
-  const m = s.match(ARRONDIS);
-  if (m) return { base: m[1], n: Number(m[2]) };
-  const base = s.replace(/[^a-z0-9]/g, '');
-  return { base, n: arrondDuCp(base, cp) };
-}
+/* V3.227 : la lecture d'une commune vit dans src/lib/quartiers.ts, avec les
+   quartiers de référence. */
 /** La ville d'une recherche face à celle d'un bien : « oui », « presque »
     (la bonne ville, arrondissement du bien inconnu) ou null (autre ville). */
 export function memeCommune(villeRecherche: string, villeBien: string, cpBien?: string | null): 'oui' | 'presque' | null {
@@ -227,7 +215,11 @@ export function correspondance(b: BienCorr, c: CriteresCorr | null | undefined):
     const exacte = rel.find(y => y.r === 'oui');
     const v = (exacte || rel[0])?.x;
     const arrondInconnu = !exacte && !!v;
-    const q = v && b.quartier ? v.quartiers.find(x => normVille(x).includes(normVille(b.quartier as string)) || normVille(b.quartier as string).includes(normVille(x))) : null;
+    /* V3.227 : un début de nom suffit, et un quartier de référence couvre ses
+       lieux (le client a choisi Chaillot, le bien est au Trocadéro). */
+    const commune = v ? communeDeVille(v.ville, b.code_postal) : null;
+    const q = v && b.quartier ? v.quartiers.find(x => quartierCouvre(x, b.quartier as string, commune)) : null;
+    const qVu = q && b.quartier && !nomsProches(q, b.quartier) ? `${b.quartier}, dans ${q}` : q;
     /* « Parchamp-Albert Kahn, Jean-Jaurès-Reine et 3 autres » : le client
        sait combien il en a choisi, au lieu d'un « … » qui ne dit rien. */
     const deuxEtLeReste = (l: string[], mot: string) => `${l.slice(0, 2).join(', ')}${l.length > 2 ? ` et ${l.length - 2} autre${l.length > 3 ? 's' : ''}${mot}` : ''}`;
@@ -242,7 +234,7 @@ export function correspondance(b: BienCorr, c: CriteresCorr | null | undefined):
        des portails gardent la règle d'avant. */
     const horsQuartiers = !!(v && !arrondInconnu && b.quartierSur && b.quartier && v.quartiers.length && !q);
     if (horsQuartiers || arrondInconnu) aVerifier = true;
-    L.push({ ico: 'lieu', lib: 'Secteur', demande, valeur: horsQuartiers ? `${b.quartier} · hors de ses quartiers` : arrondInconnu ? `${b.ville} · arrondissement à préciser` : q || b.quartier || b.ville, etat: !v ? 'non' : horsQuartiers || arrondInconnu ? 'presque' : 'oui', poids: 2 });
+    L.push({ ico: 'lieu', lib: 'Secteur', demande, valeur: horsQuartiers ? `${b.quartier} · hors de ses quartiers` : arrondInconnu ? `${b.ville} · arrondissement à préciser` : qVu || b.quartier || b.ville, etat: !v ? 'non' : horsQuartiers || arrondInconnu ? 'presque' : 'oui', poids: 2 });
   }
 
   /* Le trajet : minutes à pied jusqu'à la station, quand l'annonce permet de le dire. */

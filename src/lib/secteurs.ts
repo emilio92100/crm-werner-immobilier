@@ -2,23 +2,14 @@
 // Utilisé par le formulaire de création (Clients.tsx) et d'édition (FicheClient.tsx).
 import { useEffect, useState } from 'react';
 import { normVille } from '@/lib/correspondance';
+import { QUARTIERS_REF, nomsDe } from '@/lib/quartiers';
 
-export const QUARTIERS: Record<string, { ville: string; quartiers: string[] }> = {
-  '75001': { ville: 'Paris 1er', quartiers: ['Saint-Germain-l\'Auxerrois', 'Les Halles', 'Palais Royal', 'Place Vendôme'] },
-  '75006': { ville: 'Paris 6ème', quartiers: ['Saint-Germain-des-Prés', 'Luxembourg', 'Vavin', 'Notre-Dame-des-Champs', 'Saint-Sulpice'] },
-  '75007': { ville: 'Paris 7ème', quartiers: ['Saint-Thomas-d\'Aquin', 'Invalides', 'École Militaire', 'Gros-Caillou', 'Tour Eiffel'] },
-  '75008': { ville: 'Paris 8ème', quartiers: ['Champs-Élysées', 'Faubourg du Roule', 'Madeleine', 'Europe'] },
-  '75015': { ville: 'Paris 15ème', quartiers: ['Grenelle', 'Javel', 'Saint-Lambert', 'Necker', 'Beaugrenelle', 'Convention', 'Commerce', 'Falguière', 'Brancion'] },
-  '75016': { ville: 'Paris 16ème', quartiers: ['Auteuil', 'Muette', 'Porte Dauphine', 'Chaillot', 'Victor Hugo', 'Trocadéro'] },
-  '75017': { ville: 'Paris 17ème', quartiers: ['Ternes', 'Plaine de Monceau', 'Batignolles', 'Epinettes'] },
-  '92100': { ville: 'Boulogne-Billancourt', quartiers: ['Parchamp-Albert Kahn', 'Silly-Gallieni', 'Renault-Billancourt', 'Point-du-Jour', 'Vaillant-Marcel Sembat', 'Jean-Jaurès-Reine'] },
-  '92200': { ville: 'Neuilly-sur-Seine', quartiers: ['Neuilly Centre', 'Bagatelle', 'Roule', 'Pont de Neuilly'] },
-  '92300': { ville: 'Levallois-Perret', quartiers: ['Centre Levallois', 'Pont de Levallois', 'Victor Hugo'] },
-  '92400': { ville: 'Courbevoie', quartiers: ['Becon', 'La Défense', 'Centre Courbevoie'] },
-  '92500': { ville: 'Rueil-Malmaison', quartiers: ['Centre Rueil', 'Jonchères', 'Buzenval'] },
-  '92600': { ville: 'Asnières-sur-Seine', quartiers: ['Centre Asnières', 'Bords de Seine'] },
-  '92800': { ville: 'Puteaux', quartiers: ['Centre Puteaux', 'La Défense', 'Île de Puteaux'] },
-};
+/* V3.227 : la liste vient des quartiers de référence (src/lib/quartiers.ts) :
+   tout Paris, quartier par quartier, avec les noms d'usage. Ici, une liste à
+   plat (référence, puis lieux, puis autres noms) pour ceux qui la lisent ainsi. */
+export const QUARTIERS: Record<string, { ville: string; quartiers: string[] }> = Object.fromEntries(
+  Object.entries(QUARTIERS_REF).map(([cp, c]) => [cp, { ville: c.ville, quartiers: nomsDe(c) }]),
+);
 
 export type CpSuggestion = { cp: string; ville: string };
 
