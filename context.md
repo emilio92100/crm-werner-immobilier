@@ -205,6 +205,24 @@ d'une affaire et dans les alertes (`src/lib/rapprochement.ts`, `src/lib/alertes-
 `werner-commerce.sql` a aussi ajouté **`biens.pro`** (jsonb) : ce résumé, copié quand une affaire est
 proposée à un demandeur (`versBienAcheteur()`) ; rien de privé (ni mandant, ni chiffres du fonds).
 
+**Écartés d'office** (`raisonEcart`, `src/lib/ecart-acheteur.ts`), quelle que soit la note : une
+autre ville, un loyer ou un prix à plus de 10 % au-dessus (toutes les lignes de prix d'une affaire,
+`LIGNES_PRIX` — avant le 21 octobre 2026, seule « Budget » était lue et un loyer trop haut n'écartait
+jamais personne), **pas ce qu'il cherche** (`nature` : une location pour qui veut acheter des murs…,
+« Pas ce qu'ils cherchent » dans le rapprochement), une surface sous 90 %, un indispensable qui manque.
+Une recherche **sans budget ni loyer maximum, ou sans secteur**, est « à compléter » et n'est pas comptée
+(`manqueRecherche`, `outils.ts`) — depuis le 21 octobre, `criteres_pro.loyerMax` compte comme un
+budget : avant, tout demandeur « location » passait « à compléter ».
+
+**La carte « Demandeurs potentiels »** de la vue d'ensemble d'une affaire (`CarteAcheteurs`,
+`AcheteursBien.tsx`, repris du CRM d'Emilio le 21 octobre 2026) : « 23 **pistes à vérifier** »,
+« À confirmer », le chiffre à peine plus gros que le texte ; « Premier tri automatique dans tes
+demandeurs : 17 correspondent · 6 en partie. » ; puis « ✓ Vérifié le … : 3 oui · 2 à voir » (le
+dernier rapprochement, `FicheBien` → `seance`) ou « Pas encore vérifié un par un. ». Son « ? » ouvre
+« Comment lire ce chiffre » : une phrase, les deux chiffres, le tri en trois étapes, le secteur de
+cette affaire (ville et quartier renseignés ou non, et ce que ça change), ce qui manque à sa fiche
+(nature, loyer ou prix, surface), puis « Vérifier avec le rapprochement ».
+
 ### Le marché, l'ancienneté d'une annonce
 
 Savoir **depuis quand une annonce est en ligne** se lit dans les données de la page SeLoger Bureaux &
