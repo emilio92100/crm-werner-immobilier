@@ -184,7 +184,7 @@ function Prochain({ n }: { n: number }) {
   return (
     <div className={`${r.jalon} ${r.jalonBout}`}>
       <div className={r.jalonG}><span className={`${r.puce} ${r.puceProchain}`}><small>N°</small>{n}</span></div>
-      <div className={r.bout}><b>Prochain numéro</b><span>{'Pris par le prochain mandat finalisé dans Documents, ou signé par un demandeur dans son espace.'}</span></div>
+      <div className={r.bout}><b>Prochain numéro</b><span>{'Pris par le prochain mandat finalisé dans Documents, ou signé par un demandeur dans son espace — sauf si Alexandre en inscrit un avant (registre commun).'}</span></div>
     </div>
   );
 }
@@ -331,6 +331,14 @@ export default function PageRegistre({ onNavigate }: { onNavigate: (page: string
   const [message, setMessage] = useState<{ t: string; ok: boolean } | null>(null);
   const [ordre, setOrdre] = useState<'recent' | 'registre'>('recent');
 
+  /* Le registre commun (22 octobre 2026, src/lib/registre-commun.ts) : les
+     numéros viennent du registre de RT CONSEILS, tenu par Alexandre. */
+  const [commun, setCommun] = useState<{ actif: boolean; prochain: number | null; erreur?: string } | null>(null);
+  useEffect(() => {
+    fetch('/api/registre/action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'etat' }) })
+      .then(x => x.json()).then(j => setCommun({ actif: !!j?.commun, prochain: typeof j?.prochain === 'number' ? j.prochain : null, erreur: j?.erreur || (j?.ok ? undefined : j?.erreur) }))
+      .catch(() => setCommun(null));
+  }, []);
   const charger = useCallback(async () => {
     const d = await lireDepart(supabase);
     setAbsent(d.absent);
@@ -359,7 +367,7 @@ export default function PageRegistre({ onNavigate }: { onNavigate: (page: string
   const trouvees = lignes.filter(l => !q || `${l.numero} ${l.mandants} ${l.objet}`.toLowerCase().includes(q));
   const compte = (f: Filtre) => trouvees.filter(l => f === 'tout' || (f === 'reserve' ? etatDe(l) === 'reserve' : f === 'signe' ? etatDe(l) === 'signe' : !['reserve', 'signe'].includes(etatDe(l)))).length;
   const visibles = trouvees.filter(l => filtre === 'tout' || (filtre === 'reserve' ? etatDe(l) === 'reserve' : filtre === 'signe' ? etatDe(l) === 'signe' : !['reserve', 'signe'].includes(etatDe(l))));
-  const prochain = lignes.length ? lignes[0].numero + 1 : depart?.premier_numero || 1;
+  const prochain = commun?.actif && commun.prochain ? commun.prochain : lignes.length ? lignes[0].numero + 1 : depart?.premier_numero || 1;
   /* La frise entière (départ et prochain numéro aux deux bouts) seulement
      sans filtre ni recherche ; les mandats groupés par mois d'inscription. */
   const complet = !q && filtre === 'tout';
@@ -426,7 +434,15 @@ export default function PageRegistre({ onNavigate }: { onNavigate: (page: string
         <div className={`${r.message} ${r.messageKo}`}>{'Une étape avant de commencer : le registre n’existe pas encore dans la base. Ouvre Supabase › SQL Editor, lance le fichier outils/sql/registre-mandats.sql, puis recharge cette page.'}</div>
       )}
       {erreur && <div className={`${r.message} ${r.messageKo}`}>{erreur}</div>}
-      {!depart && !absent && <Demarrage onDemarre={charger} />}
+      {commun?.actif && (
+        <div className={`${r.message} ${commun.erreur ? r.messageKo : r.messageOk}`}>
+          {commun.erreur
+            ? `Le registre commun ne répond pas : ${commun.erreur}`
+            : 'Numérotation commune : tes mandats prennent leur numéro dans le registre des mandats de RT CONSEILS, tenu par Alexandre, à la suite des siens. Les numéros qui manquent ici sont les siens ; ta ligne est aussi chez lui, avec ce qui lui arrive (signé, annulé…).'}
+        </div>
+      )}
+      {!depart && !absent && !commun?.actif && <Demarrage onDemarre={charger} />}
+      {!depart && !absent && commun?.actif && <div className={`${r.message} ${r.messageKo}`}>{'Le registre commun est branché, mais sa copie ici n’est pas encore démarrée (outils/sql/registre-commun.sql, dernière ligne).'}</div>}
       {depart && (
         <>
           <section className={`${r.etat} ${verif && !verif.ok ? r.etatKo : ''}`}>
@@ -435,6 +451,7 @@ export default function PageRegistre({ onNavigate }: { onNavigate: (page: string
               <b>{!verif ? 'Vérification en cours…' : verif.erreur ? 'La vérification n’a pas pu se faire' : verif.ok ? 'Registre intact' : `${verif.problemes.length} anomalie${verif.problemes.length > 1 ? 's' : ''} dans le registre`}</b>
               <span>{!verif ? '' : verif.erreur ? verif.erreur : !verif.ok
                 ? verif.problemes.map(p => `${p.numero ? `n° ${p.numero} : ` : ''}${p.probleme}`).join(' · ')
+                : commun?.actif ? `Vérifié à l’ouverture : aucune ligne n’a été retouchée. Numérotation commune avec le registre d’Alexandre${commun.prochain ? ` : prochain numéro, ${commun.prochain}` : ''}.`
                 : lignes.length === 0 ? `Démarré et prêt : le premier mandat prendra le n° ${prochain}.`
                 : lignes.length === 1 ? `Vérifié à l’ouverture : le n° ${depart.premier_numero} n’a pas été retouché. Prochain numéro : ${prochain}.`
                 : `Vérifié à l’ouverture : les numéros se suivent de ${depart.premier_numero} à ${prochain - 1}, et aucune ligne n’a été retouchée. Prochain numéro : ${prochain}.`}</span>

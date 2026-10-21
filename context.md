@@ -453,12 +453,17 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   le PDF) ; à la signature, une relance du jour (« Relances », la cloche du menu) dit quoi faire :
   l'appeler pour la visite, ou d'abord lui donner l'adresse. « C'est fait » la ferme. Le mail
   d'invitation dit pourquoi on lui demande de signer. ⚠️ À faire relire par l'avocat d'Alexandre avant le premier usage.
-- **Le registre des mandats sous la carte RT CONSEILS** — on attend la réponse de Werner sur le
-  numéro à reprendre (où en est sa numérotation sous cette carte) ; elle ne doit jamais doubler celle
-  d'Emilio, qui signe sous la même carte. Ensuite, le registre se met en place comme dans le CRM
-  d'origine (réserve de numéros, numéro posé à la signature, mandat en ligne), et la fiche du mandat
-  en ligne (`src/components/fiche/MandatEnLigne.tsx`) cessera de renvoyer à ImmoFacile pour réserver
-  un numéro.
+- **Le registre des mandats sous la carte RT CONSEILS** — le registre commun (22 octobre 2026) :
+  quand `REGISTRE_COMMUN_CLE` est posée (la même dans les deux projets Vercel), chaque mandat de
+  Werner prend son numéro dans le registre d'Alexandre (CRM Emilio, `POST /api/registre/commun`), à
+  la suite des siens, puis s'inscrit ici avec ce numéro (`src/lib/registre-commun.ts`, copie locale :
+  `outils/sql/registre-commun.sql`, qui fait accepter le numéro donné, par le serveur seulement, et
+  vérifie les empreintes sans chercher de trou). Ce qui arrive ensuite (signé, annulé…) s'écrit ici
+  puis là-bas. Le navigateur passe par `/api/registre/action` (la clé reste au serveur). Sans clé :
+  le registre d'avant, seul. Les anciens numéros de Werner (838, 847, 856, 859…) ne bougent pas : ils
+  sont plus petits que le départ de la copie, donc « anciens » (`numeroAncien`). La fiche du mandat
+  en ligne (`src/components/fiche/MandatEnLigne.tsx`) renvoie encore à ImmoFacile pour réserver :
+  à reprendre avec le mandat de recherche dans l'espace.
 - **L'adresse de l'espace client** — fait le 21 octobre 2026 côté DNS : wernerimmobilier.com,
   www, espace et crm pointent sur Vercel (IONOS, TTL 5 minutes ; l'hébergement WordPress piraté
   est débranché du domaine). Chez IONOS, le contrat « WordPress Hosting Boost » (105224331) contient

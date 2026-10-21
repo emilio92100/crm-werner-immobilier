@@ -20,9 +20,28 @@
 
    Tout marche AVANT que le SQL soit passé : une table absente se lit comme
    « registre pas démarré », et le CRM continue comme avant (numéro saisi à
-   la main, réserve de l'espace). Navigateur et serveur. */
+   la main, réserve de l'espace). Navigateur et serveur.
+
+   22 octobre 2026 — le registre commun avec le CRM d'Emilio (RT CONSEILS,
+   src/lib/registre-commun.ts) : inscrire, noter une observation et annoncer
+   le prochain numéro passent par le serveur (la clé partagée ne quitte pas
+   le serveur) — depuis le navigateur, par /api/registre/action. */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { inscrireServeur, observerServeur, prochainServeur } from './registre-commun';
+
+const auNavigateur = () => typeof window !== 'undefined';
+async function parLeServeur<T>(action: string, corps: Record<string, unknown>): Promise<T> {
+  let r: Response;
+  try {
+    r = await fetch('/api/registre/action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ...corps }) });
+  } catch {
+    throw new Error('Pas de connexion : vérifie le réseau, puis réessaie.');
+  }
+  const j = await r.json().catch(() => null) as (Record<string, unknown> & { ok?: boolean; erreur?: string }) | null;
+  if (!r.ok || !j?.ok) throw new Error(j?.erreur || `Erreur ${r.status}`);
+  return j as T;
+}
 
 export type Depart = { premier_numero: number; demarre_le: string; reprise: string | null; empreinte: string };
 export type Nature = 'vente' | 'recherche';
@@ -73,6 +92,10 @@ export async function toutLire<T>(lire: (de: number, a: number) => PromiseLike<{
 /* Le numéro suivant, pour l'annoncer (« le prochain sera le 4331 »). Il
    n'est pris qu'à l'inscription. */
 export async function prochainNumero(sb: SupabaseClient, depart: Depart): Promise<number> {
+  const n = auNavigateur()
+    ? (await parLeServeur<{ prochain: number | null }>('prochain', {}).catch(() => ({ prochain: null }))).prochain
+    : await prochainServeur(sb).catch(() => null);
+  if (n) return n;
   const { data } = await sb.from('registre_mandats').select('numero').order('numero', { ascending: false }).limit(1).maybeSingle();
   return data ? Number((data as { numero: number }).numero) + 1 : depart.premier_numero;
 }
@@ -87,11 +110,8 @@ export const numeroAncien = (numero: unknown, premier: number | null) => {
 /* Inscrire : rend la ligne (déjà là pour ce document ou cette signature,
    ou nouvelle). Lève une erreur en mots simples. */
 export async function inscrire(sb: SupabaseClient, e: Entree): Promise<LigneRegistre> {
-  const { data, error } = await sb.rpc('registre_inscrire', { p: e });
-  if (error) throw new Error('Le registre n’a pas pu donner de numéro : ' + error.message);
-  const l = (Array.isArray(data) ? data[0] : data) as LigneRegistre | null;
-  if (!l?.numero) throw new Error('Le registre n’a pas pu donner de numéro.');
-  return l;
+  if (auNavigateur()) return (await parLeServeur<{ ligne: LigneRegistre }>('inscrire', { e })).ligne;
+  return inscrireServeur(sb, e);
 }
 
 /* Ajouter une observation, sur la ligne retrouvée par son id, son document,
@@ -105,14 +125,10 @@ export type Observation = {
   type: TypeObs; texte: string; document_id?: string | null;
 };
 export async function observer(sb: SupabaseClient, o: Observation): Promise<string | null> {
-  const { numeroSinon, ...reste } = o;
-  const p = { ...reste, numero: o.numero === undefined ? undefined : String(o.numero) };
-  const { data, error } = await sb.rpc('registre_observer', { p });
-  if (error) return registreAbsent(error) ? null : 'Le registre des mandats n’a pas pu noter : ' + error.message;
-  if (data || numeroSinon === undefined || numeroSinon === null || numeroSinon === '') return null;
-  const r2 = await sb.rpc('registre_observer', { p: { type: o.type, texte: o.texte, document_id: o.document_id, numero: String(numeroSinon) } });
-  if (r2.error) return registreAbsent(r2.error) ? null : 'Le registre des mandats n’a pas pu noter : ' + r2.error.message;
-  return null;
+  if (auNavigateur()) {
+    try { await parLeServeur('observer', { o }); return null; } catch (e) { return (e as Error).message; }
+  }
+  return observerServeur(sb, o);
 }
 
 export async function verifier(sb: SupabaseClient): Promise<{ ok: boolean; problemes: Probleme[]; erreur?: string }> {
