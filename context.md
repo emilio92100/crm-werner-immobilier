@@ -431,9 +431,10 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   client est choisi ou créé (demandeur, prospect : « Demandeurs non filtrés ») ; une adresse e-mail
   nouvelle s'ajoute à sa fiche. Par e-mail : le PDF est figé et le lien part (code par e-mail) ; sur
   place : Documents s'ouvre, il signe sans code (comme le bon de visite, `SANS_CODE_SUR_PLACE`).
-  L'adresse dans le document : le secteur seulement (d'office par e-mail), la rue sans le numéro, ou
-  l'adresse exacte (d'office sur place) — sans elle, le document dit qu'elle est donnée après la
-  signature et couverte par le même engagement. Signée par tous : mail « Signé par tous » avec le
+  Jamais l'adresse dans le document (Alexandre, 21 octobre : il la lirait sans signer) : le
+  secteur seulement (« Paris 11e, quartier Oberkampf »), la référence, la surface, le montant, et la
+  phrase « l'adresse exacte sera communiquée après la signature ; elle est couverte par les mêmes
+  engagements ». Signée par tous : mail « Signé par tous » avec le
   PDF, ligne dans le suivi du client et dans l'historique de l'affaire (`classer`,
   `signature-documents.ts`). ⚠️ À faire relire par l'avocat d'Alexandre avant le premier usage.
 - **Le registre des mandats sous la carte RT CONSEILS** — on attend la réponse de Werner sur le

@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import AvatarContact, { personneDe } from '@/components/contacts/AvatarContact';
 import { PERSONNE_VIDE } from '@/lib/actes';
-import type { ModeAdresse } from '@/lib/actes/reconnaissance';
 import type { BienVente } from '@/lib/biens-vente';
 import { Ic } from '@/components/documents/ApercuActe';
 import { lireClients } from './ChampsBien';
@@ -18,10 +17,10 @@ import b from './Biens.module.css';
 /* ═══ « Reconnaissance » : avant de donner l'adresse d'un local ═══════════
    Werner : « un bouton, ça ouvre un pop-up, il met le mail du client, le
    client signe avec une signature électronique, et moi je reçois la
-   notification et le document signé ». Quatre questions, chacune avec ce
+   notification et le document signé ». Trois questions, chacune avec ce
    qu'elle change : pour qui (un contact, ou une fiche créée ici), comment il
-   signe, ce que le document dit de l'adresse, combien de temps il s'engage.
-   Le reste (le local, le montant, les honoraires) vient de l'affaire, et se
+   signe, combien de temps il s'engage. Le reste (le local, son secteur —
+   jamais l'adresse —, le montant, les honoraires) vient de l'affaire, et se
    lit dans l'aperçu avant d'envoyer. La suite : reconnaissance.ts. */
 
 const VIDE: NouveauDestinataire = { prenom: '', nom: '', societe: '', email: '', telephone: '' };
@@ -52,11 +51,6 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
   const [doublons, setDoublons] = useState<ClientMini[]>([]);
   const [email, setEmail] = useState('');
   const [mode, setMode] = useState<ModeReco>('en_ligne');
-  /* Par e-mail, il lit le document avant de signer : le secteur seulement,
-     d'office. Sur place, il est devant le local : l'adresse exacte. Tant
-     que Werner n'a pas choisi lui-même, le choix suit la façon de signer. */
-  const [adresse, setAdresse] = useState<ModeAdresse>('secteur');
-  const [adresseChoisie, setAdresseChoisie] = useState(false);
   const [duree, setDuree] = useState('12');
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState('');
@@ -87,10 +81,7 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
     setChoisi(c); setNouveau(null); setDoublons([]); setErreur(''); setQ('');
     setEmail(c?.emails?.find(Boolean) || '');
   };
-  const changerMode = (m: ModeReco) => {
-    setMode(m); setErreur('');
-    if (!adresseChoisie) setAdresse(m === 'sur_place' ? 'complete' : 'secteur');
-  };
+  const changerMode = (m: ModeReco) => { setMode(m); setErreur(''); };
   const dejaPourLui = choisi ? deja.filter(x => x.client_id === choisi.id) : [];
   const n = Number(duree) || 12;
 
@@ -110,7 +101,7 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
     }
     setOccupe(true);
     try {
-      const r = await faireReconnaissance({ bien, client: choisi, nouveau, email: mail, duree: n, adresseMode: adresse, signature: mode, relire });
+      const r = await faireReconnaissance({ bien, client: choisi, nouveau, email: mail, duree: n, signature: mode, relire });
       onFait(r);
     } catch (e) {
       setErreur((e as Error).message);
@@ -245,27 +236,16 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
           : 'Elle sert seulement à lui envoyer son exemplaire signé. Sans adresse, tu le gardes dans le CRM.'}</div>}
       </Section>
 
-      <Section ic="lieu" c="#0f766e" f="#effaf8" titre="3. Dans le document, l’adresse">
-        <Pills<ModeAdresse> options={[
-          { v: 'secteur', l: 'Le secteur seulement', ic: 'cible' },
-          { v: 'rue', l: 'La rue, sans le numéro', ic: 'carte' },
-          { v: 'complete', l: 'L’adresse exacte', ic: 'lieu' },
-        ]} v={adresse} onChange={x => { setAdresse(x); setAdresseChoisie(true); }} />
-        <div className={s.chAide}>
-          {`Le document dira : « ${lieuReconnaissance(bien, adresse)} ».`}
-          {adresse !== 'complete' ? ' Il précise que l’adresse exacte lui est donnée après sa signature, et qu’elle est couverte par le même engagement.' : ' Il la lit avant de signer : à choisir quand il est déjà devant le local.'}
-        </div>
-      </Section>
-
-      <Section ic="bouclier" c="#475569" f="#f8fafc" titre="4. Combien de temps s’engage-t-il ?">
+      <Section ic="bouclier" c="#475569" f="#f8fafc" titre="3. Combien de temps s’engage-t-il ?">
         <Pills options={['6', '12', '18', '24'].map(v => ({ v, l: `${v} mois` }))} v={duree} onChange={setDuree} />
         <div className={s.chAide}>{`Pendant ${n} mois à compter de sa signature, il ne traite pas ce local en direct avec ${bien.donnees?.nature === 'cession_bail' || bien.donnees?.nature === 'fonds' ? 'le locataire qui cède' : 'le propriétaire'}, ni par une société à lui, ni par une autre agence. 12 mois, c’est la durée de tes mandats.`}</div>
       </Section>
 
       <div className={b.groupe}>
-        <div className={b.groupeT}><Ic n="oeil" t={14} />Ce que le document dira aussi</div>
+        <div className={b.groupeT}><Ic n="oeil" t={14} />Ce que le document dira</div>
         <div className={b.reste} style={{ background: '#fff', borderColor: '#eeeeed' }}>
           <div style={{ color: '#334155' }}><Ic n="doc" t={14} /><span>{`Le local : ${descriptionLocal(bien)}${bien.reference ? ` (réf. ${bien.reference})` : ''}.`}</span></div>
+          <div style={{ color: '#334155' }}><Ic n="lieu" t={14} /><span>{`Où : ${lieuReconnaissance(bien)}. Jamais l’adresse : le document dit qu’elle lui est donnée après sa signature, et qu’elle est couverte par le même engagement.`}</span></div>
           <div style={{ color: '#334155' }}><Ic n="etiquette" t={14} /><span>{montant ? `Montant annoncé : ${montant}.` : 'Pas de montant : l’affaire n’en a pas encore.'}</span></div>
           <div style={{ color: '#334155' }}><Ic n="euro" t={14} /><span>{honoraires
             ? `S’il passait outre, il te devrait le montant de tes honoraires : ${honoraires}.`

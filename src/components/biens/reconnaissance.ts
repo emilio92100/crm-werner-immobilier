@@ -19,7 +19,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { PERSONNE_VIDE, type Donnees, type Personne } from '@/lib/actes';
-import { RECONNAISSANCE, lieuDe, type ModeAdresse } from '@/lib/actes/reconnaissance';
+import { RECONNAISSANCE, lieuDe } from '@/lib/actes/reconnaissance';
 import { argentBien, contexteDocument, personneDepuisClient, pourcent, type BienVente } from '@/lib/biens-vente';
 import { auPoste, estLocation, estMurs, localCourt, natureDe, nbPostesDe } from '@/lib/affaires';
 import { euros } from '@/lib/mandat';
@@ -35,7 +35,6 @@ export type DemandeReconnaissance = {
   nouveau: NouveauDestinataire | null;
   email: string;
   duree: number;
-  adresseMode: ModeAdresse;
   signature: ModeReco;
   /* Le brouillon seulement : il s'ouvre dans Documents pour être relu. */
   relire?: boolean;
@@ -87,10 +86,11 @@ export function honorairesReconnaissance(b: BienVente): string {
   return `${euros(a.hono)} HT${a.taux !== null ? `, soit ${pourcent(a.taux)}` : ''}, à la charge ${d.charge === 'vendeur' ? (estMurs(d) ? 'du vendeur' : 'du cédant') : 'de l’acquéreur'}`;
 }
 
-/* Ce que le document dira du lieu, pour l'aperçu de la fenêtre. */
-export function lieuReconnaissance(b: BienVente, mode: ModeAdresse): string {
+/* Ce que le document dira du lieu (le secteur, jamais l'adresse), pour
+   l'aperçu de la fenêtre. */
+export function lieuReconnaissance(b: BienVente): string {
   const d = b.donnees || {};
-  return lieuDe({ adresse: d.adresse, cp: d.cp, ville: d.ville, quartier: d.quartier, adresseMode: mode });
+  return lieuDe({ cp: d.cp, ville: d.ville, quartier: d.quartier });
 }
 
 /* Les réponses du document, préremplies. */
@@ -108,7 +108,6 @@ async function donneesDe(x: DemandeReconnaissance, client: ClientMini, p: Person
     description: descriptionLocal(b),
     adresse: typeof d.adresse === 'string' ? d.adresse : '', cp: typeof d.cp === 'string' ? d.cp : '',
     ville: typeof d.ville === 'string' ? d.ville : '', quartier: typeof d.quartier === 'string' ? d.quartier : '',
-    adresseMode: x.adresseMode,
     montant: montantReconnaissance(b),
     reference: b.reference || '',
     duree: x.duree,

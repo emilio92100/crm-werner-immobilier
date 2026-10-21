@@ -27,12 +27,12 @@ import {
   type Donnees, type Modele, type Etape, type Contexte, type Personne, type CaseSignature,
 } from './commun';
 
-/* Ce que le document dit du lieu : l'adresse exacte, la rue seulement (sans
-   le numéro), ou le secteur seulement. Werner choisit : sans l'adresse
-   exacte, il la donne une fois le document signé. */
-export type ModeAdresse = 'complete' | 'rue' | 'secteur';
-export const modeAdresse = (d: Donnees): ModeAdresse => (d.adresseMode === 'rue' || d.adresseMode === 'secteur' ? d.adresseMode : 'complete');
-const sansNumero = (a: string) => a.replace(/^\s*\d+\s*(bis|ter|quater|[a-d])?\b\s*,?\s*/i, '').trim();
+/* Ce que le document dit du lieu : le secteur seulement, jamais l'adresse.
+   Alexandre (21 octobre 2026) : « quand il signe la reconnaissance, il ne
+   faut pas qu'il y ait l'adresse du bien ». Il la lit avant de signer : s'il
+   ne signait pas, il l'aurait quand même. L'adresse reste dans les réponses
+   (elle donne l'arrondissement), elle n'est jamais imprimée ; Werner la
+   donne une fois le document signé. */
 /* « Paris 8e », « Boulogne-Billancourt » */
 function villeCourte(cp: string, ville: string): string {
   const m = /^75(\d{3})$/.exec(cp.replace(/\s/g, ''));
@@ -43,11 +43,8 @@ function villeCourte(cp: string, ville: string): string {
   return ville;
 }
 export function lieuDe(d: Donnees): string {
-  const adresse = txt(d, 'adresse'), cp = txt(d, 'cp'), ville = txt(d, 'ville'), quartier = txt(d, 'quartier');
-  const mode = modeAdresse(d);
-  if (mode === 'secteur') return [villeCourte(cp, ville), quartier ? `quartier ${quartier}` : ''].filter(Boolean).join(', ') || 'secteur à préciser';
-  const rue = mode === 'rue' ? sansNumero(adresse) : adresse;
-  return [rue, [cp, ville].filter(Boolean).join(' ')].filter(Boolean).join(', ') || 'adresse à préciser';
+  const cp = txt(d, 'cp'), ville = txt(d, 'ville'), quartier = txt(d, 'quartier');
+  return [villeCourte(cp, ville), quartier ? `quartier ${quartier}` : ''].filter(Boolean).join(', ') || 'secteur à préciser';
 }
 
 /* Celui qui a le local en main, selon l'affaire. */
@@ -74,14 +71,10 @@ const ETAPES: Etape[] = [
     id: 'affaire', titre: 'Le local présenté', court: 'Le local', sous: 'Ce que tu lui présentes, et ce que le document en dit.', vers: 'Le local présenté', ic: 'immeuble',
     champs: [
       { t: 'texte', cle: 'description', lib: 'Le local', ic: 'doc', large: true, requis: true, exemple: 'Boutique de 55 m² à louer' },
-      { t: 'texte', cle: 'adresse', lib: 'Adresse', ic: 'lieu', large: true, requis: true, avec: ['cp', 'ville'] },
-      { t: 'texte', cle: 'cp', lib: 'Code postal', ic: 'mail' },
+      { t: 'texte', cle: 'cp', lib: 'Code postal', ic: 'mail', aide: 'Il donne l’arrondissement écrit dans le document (« Paris 11e »).' },
       { t: 'texte', cle: 'ville', lib: 'Ville', ic: 'immeuble', requis: true },
-      { t: 'choix', cle: 'adresseMode', lib: 'Dans le document, l’adresse', ic: 'lieu', tuiles: true, options: [
-        { v: 'complete', l: 'Exacte', aide: 'Le numéro et la rue', ic: 'lieu' },
-        { v: 'rue', l: 'La rue seulement', aide: 'Sans le numéro', ic: 'carte' },
-        { v: 'secteur', l: 'Le secteur seulement', aide: 'L’arrondissement, le quartier', ic: 'cible' },
-      ], aide: 'Il lit le document avant de signer : sans l’adresse exacte, tu la lui donnes une fois signé.' },
+      { t: 'texte', cle: 'quartier', lib: 'Quartier', ic: 'cible', exemple: 'Oberkampf', question: 'Préciser le quartier ?',
+        aide: 'Le document dit le secteur seulement, jamais l’adresse : il la lit avant de signer. Tu la lui donnes une fois signé.' },
       { t: 'texte', cle: 'montant', lib: 'Le montant annoncé', ic: 'etiquette', large: true, exemple: '1 650 € HT / poste / mois' },
       { t: 'texte', cle: 'reference', lib: 'Référence', ic: 'liste' },
     ],
@@ -124,7 +117,7 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
     P(`Situé : ${lieuDe(d)}.`),
     ...(txt(d, 'montant') ? [P(`Montant annoncé : ${txt(d, 'montant')}.`)] : []),
     ...(txt(d, 'reference') ? [Pp(`Référence de l’Agence : ${txt(d, 'reference')}.`)] : []),
-    ...(modeAdresse(d) !== 'complete' ? [Pp('L’adresse exacte sera communiquée par l’Agence après la signature du présent document ; elle est couverte par les mêmes engagements.')] : []),
+    Pp('L’adresse exacte sera communiquée par l’Agence après la signature du présent document ; elle est couverte par les mêmes engagements.'),
   ];
 
   const reconnait: Bloc[] = [
@@ -181,7 +174,7 @@ function manques(d: Donnees): string[] {
   const out: string[] = [];
   destinatairesDe(d).forEach((p, i) => { if (!p.nom) out.push(`Le nom du destinataire${i ? ` ${i + 1}` : ''}`); });
   if (!txt(d, 'description')) out.push('Le local présenté');
-  if (!txt(d, 'adresse') || !txt(d, 'ville')) out.push('L’adresse du local');
+  if (!txt(d, 'ville')) out.push('La ville du local');
   const duree = num(d, 'duree');
   if (!duree || duree < 1 || duree > 36) out.push('La durée de l’engagement : de 1 à 36 mois');
   if (!txt(d, 'faitA') || !txt(d, 'date')) out.push('Le lieu et la date');
@@ -195,7 +188,7 @@ function defaut(c: Contexte): Donnees {
   return {
     destinataires: [p], societe: '',
     description: b?.titre || '', adresse: b?.adresse || '', cp: b?.code_postal || '', ville: b?.ville || '', quartier: b?.quartier || '',
-    adresseMode: 'complete', montant: '', reference: '',
+    montant: '', reference: '',
     duree: 12, honoraires: '', note: '',
     signature: 'en_ligne', faitA: c.identite.ville, date: aujourdhui(),
   };
