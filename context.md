@@ -223,6 +223,21 @@ dernier rapprochement, `FicheBien` → `seance`) ou « Pas encore vérifié un p
 cette affaire (ville et quartier renseignés ou non, et ce que ça change), ce qui manque à sa fiche
 (nature, loyer ou prix, surface), puis « Vérifier avec le rapprochement ».
 
+**Le secteur précis** (21 octobre 2026, repris du CRM d'Emilio, sa V3.226). Une adresse tapée donne la
+ville « Paris », les demandeurs choisissent « Paris 8ème » : comparées lettre à lettre, l'affaire était
+écartée d'office pour tous ceux qui cherchent un arrondissement. `memeCommune()` (`correspondance.ts`)
+lit Paris, Lyon et Marseille avec leur arrondissement (8, 8e, 8ème…) ou, à défaut, le code postal de
+l'affaire (75116 = 16e) ; « Paris » entier comprend tous les arrondissements ; sans code postal,
+« arrondissement à préciser » (presque). Les quartiers : un nom contenu dans l'autre suffit
+(« Gallieni » ↔ « Silly-Gallieni »). **Hors des quartiers choisis, ou d'arrondissement inconnu, une
+affaire ne « correspond » jamais** : note plafonnée à 69 %, « en partie », à juger dans le rapprochement.
+
+**Le rappel du secteur** (`shared/RappelSecteur.tsx`, jamais bloquant, une fois par ouverture) : une
+affaire créée ou modifiée avec une ville et sans quartier (`EditeurBien`, à « Terminer » ou à la
+fermeture : les quartiers connus de sa ville se choisissent d'un clic, ou « Écrire le quartier ») ;
+les critères d'une recherche (`FicheClient`) et la création d'un demandeur (`Clients`) sans aucun
+secteur (« Ajouter un secteur » ouvre l'étape « Où chercher », ou « Enregistrer / Créer quand même »).
+
 ### Le marché, l'ancienneté d'une annonce
 
 Savoir **depuis quand une annonce est en ligne** se lit dans les données de la page SeLoger Bureaux &
