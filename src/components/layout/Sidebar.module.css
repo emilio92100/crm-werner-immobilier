@@ -12,7 +12,7 @@
 
 /* LOGO */
 .logo {
-  padding: 22px 20px 18px;
+  padding: 16px 20px 13px;
   display: flex; align-items: center; gap: 12px;
   border-bottom: 1px solid #f1f5f9;
   position: relative; z-index: 1; flex-shrink: 0;
@@ -20,7 +20,8 @@
 
 /* V3.29 : le logo de l'agence, en grand, à la place de « EI Emilio
    Immobilier ». Le « E » seul quand la barre est réduite. */
-.logoGrand { display: block; width: 176px; height: auto; margin: 2px auto 0; }
+/* 22 octobre 2026 (Alexandre : « le logo un peu plus petit ») : 176 → 138 px. */
+.logoGrand { display: block; width: 138px; height: auto; margin: 0 auto; }
 .logoMark {
   display: none; width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(37, 39, 43,0.2);
@@ -245,7 +246,7 @@
   .voileOuvert { opacity: 1; pointer-events: auto; }
 
   .logo { padding: 16px 16px 14px 20px; }
-  .logoGrand { width: 150px; margin: 0; }
+  .logoGrand { width: 124px; margin: 0; }
   .fermer {
     display: inline-flex; align-items: center; justify-content: center;
     margin-left: auto; width: 38px; height: 38px; border-radius: 12px;
