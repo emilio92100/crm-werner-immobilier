@@ -4,7 +4,8 @@
    visite, si je choisis sur place. »
 
    Un signataire signe SANS code à usage unique seulement si TOUT est vrai :
-     · le document est un bon de visite ;
+     · le document est un bon de visite, ou une reconnaissance
+       d'information (Werner, 21 octobre 2026) ;
      · ses réponses disent « Sur place » (donnees.signature) ;
      · la signature lancée est bien une signature sur place ;
      · ce signataire est attendu sur place (pas passé à son lien, pas déjà
@@ -19,7 +20,7 @@
 
    Sans dépendance lourde : le banc d'essai l'importe tel quel. */
 
-import { surPlaceSansCode, type Donnees } from '@/lib/actes/commun';
+import { SANS_CODE_SUR_PLACE, surPlaceSansCode, type Donnees } from '@/lib/actes/commun';
 
 export type DemandeSansCode = {
   /* documents.modele */
@@ -36,7 +37,7 @@ export type DemandeSansCode = {
 
 export function signeSansCode(o: DemandeSansCode): boolean {
   return o.badge === true
-    && o.modele === 'bon_visite'
+    && SANS_CODE_SUR_PLACE.includes(o.modele)
     && surPlaceSansCode(o.modele, o.donnees || {})
     && o.signature?.mode === 'sur_place'
     && o.signataire?.mode === 'sur_place'

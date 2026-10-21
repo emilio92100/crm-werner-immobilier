@@ -14,8 +14,9 @@ import { AVENANT_VENTE } from './avenant-vente';
 import { AVENANT_RECHERCHE } from './avenant-recherche';
 import { COURRIER_RECONDUCTION } from './courrier-reconduction';
 import { DELEGATION } from './delegation';
+import { RECONNAISSANCE } from './reconnaissance';
 
-export const MODELES: Modele[] = [MANDAT_VENTE, AVENANT_VENTE, MANDAT_RECHERCHE, AVENANT_RECHERCHE, OFFRE_ACHAT, BON_VISITE, COURRIER_RECONDUCTION, DELEGATION];
+export const MODELES: Modele[] = [MANDAT_VENTE, AVENANT_VENTE, MANDAT_RECHERCHE, AVENANT_RECHERCHE, OFFRE_ACHAT, BON_VISITE, RECONNAISSANCE, COURRIER_RECONDUCTION, DELEGATION];
 export const modele = (id: string): Modele | null => MODELES.find(m => m.id === id) || null;
 
 /* Les rubriques de la page, dans l'ordre. Le mandat de recherche en ligne
@@ -25,7 +26,7 @@ export const CATEGORIES: { id: Categorie; titre: string; sous: string; ic: strin
   { id: 'mandats_vente', titre: 'Mandats de commercialisation', sous: 'Location, cession ou vente : simple, semi-exclusif ou exclusif', ic: 'immeuble', couleur: 'or' },
   { id: 'mandats_recherche', titre: 'Mandats de recherche', sous: 'Pour un demandeur : en ligne depuis l’espace, ou sur papier', ic: 'loupe', couleur: 'bleu' },
   { id: 'offres', titre: 'Offres et lettres d’intention', sous: 'Faites par tes demandeurs, et la réponse du mandant', ic: 'euro', couleur: 'brique' },
-  { id: 'bons_visite', titre: 'Bons de visite', sous: 'La preuve de chaque visite', ic: 'calendrier', couleur: 'vert' },
+  { id: 'bons_visite', titre: 'Bons de visite et reconnaissances', sous: 'La preuve de chaque visite, et la reconnaissance avant de donner une adresse', ic: 'calendrier', couleur: 'vert' },
   { id: 'courriers', titre: 'Courriers', sous: 'L’information avant chaque reconduction', ic: 'boucle', couleur: 'gris' },
   { id: 'delegations', titre: 'Délégations', sous: 'Un mandat confié à un confrère', ic: 'accord', couleur: 'bleu' },
 ];

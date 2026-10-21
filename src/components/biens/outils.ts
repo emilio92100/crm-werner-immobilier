@@ -2256,10 +2256,15 @@ export async function creerFicheProprio(p: Personne, societe?: { denomination: s
 /* La fiche d'un visiteur venu hors du CRM (V3.50, « Créer sa fiche » sur sa
    visite) : le minimum, comme pour un propriétaire, mais acheteur et
    prospect — sa recherche s'ouvrira depuis sa fiche. */
-export async function creerFicheAcheteur(p: Personne): Promise<ClientMini> {
+export async function creerFicheAcheteur(p: Personne, societe?: { denomination: string } | null): Promise<ClientMini> {
   const reference = await genererReference();
+  /* Werner : un demandeur signe souvent pour sa société (créée ou à créer) :
+     elle va dans « Sa société » (clients.pro.structure), comme pour un
+     propriétaire. */
+  const denom = societe?.denomination?.trim() || '';
   const ligne = {
-    reference, prenom: p.prenom || '', nom: p.nom || '', token_espace: jetonEspace(p.prenom, p.nom),
+    ...(denom ? { pro: { structure: { denomination: denom, forme: '', rcs: '', siege: '', qualite: '', associes: [] } } } : {}),
+    reference, prenom: p.prenom || '', nom: p.nom || (denom && !p.prenom ? denom : ''), token_espace: jetonEspace(p.prenom, p.nom),
     emails: p.email ? [p.email.trim().toLowerCase()] : [], telephones: p.telephone ? [p.telephone.trim()] : [],
     statut: 'prospect',
   };

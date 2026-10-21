@@ -202,6 +202,7 @@ function nomGenerique(id: string): { le: string; du: string; court: string } {
     case 'avenant_recherche': return { le: 'l’avenant au mandat de recherche', du: 'de l’avenant au mandat de recherche', court: 'l’avenant' };
     case 'offre_achat': return { le: 'l’offre', du: 'de l’offre', court: 'l’offre' };
     case 'bon_visite': return { le: 'le bon de visite', du: 'du bon de visite', court: 'le bon de visite' };
+    case 'reconnaissance': return { le: 'la reconnaissance d’information', du: 'de la reconnaissance d’information', court: 'la reconnaissance' };
     case 'delegation': return { le: 'la délégation de mandat', du: 'de la délégation de mandat', court: 'la délégation' };
     default: return { le: 'ce document', du: 'de ce document', court: 'le document' };
   }

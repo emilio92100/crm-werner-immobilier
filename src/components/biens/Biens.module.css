@@ -1743,6 +1743,8 @@ nav.sousOnglets { background: transparent; border: none; padding: 0; border-radi
 .gestePlus { padding: 0 17px 0 15px; }
 /* V3.139 : « Envoyer », l'icône dorée, comme « Nouveau contact ». */
 .gesteEnvoi > svg { color: #d86d1b; }
+/* Werner : « Reconnaissance », avant de donner l'adresse (le bouclier). */
+.gesteReco > svg { color: #2e3034; }
 .chevalCourt .statutDiff .diffLong { display: none; }
 .chevalCourt .statutDiff .diffCourt { display: inline; }
 .chevalSerre .gesteTx, .chevalSerre .statutEtape .etLong { display: none; }
@@ -1777,6 +1779,8 @@ nav.sousOnglets { background: transparent; border: none; padding: 0; border-radi
      (« Modifier la fiche ») : trois icônes ne tiennent plus sur le rang. */
   .gesteModif { display: none; }
   .gesteModif + .geste::before { display: none; }
+  /* Werner : la reconnaissance est en tête de « ⋯ ». */
+  .gesteReco { display: none; }
   .statutEtape { padding: 0 9px; gap: 5px; }
   .statutDiff { margin-left: 9px; padding: 0 10px; gap: 5px; }
   .statutDiff::before { left: -9px; width: 9px; }

@@ -313,7 +313,7 @@ détail colonne par colonne : l'historique, §2.
 - **Carte** (`PageCarte.tsx`) — contacts et affaires, filtrés par type de contact, étape, **nature** et
   **type de local** ; un loyer s'affiche « / an ».
 - **Documents** — les catégories : Mandats de commercialisation (location, cession ou vente), Mandats
-  de recherche, Offres et lettres d'intention, Bons de visite, Courriers, Délégations ; le registre
+  de recherche, Offres et lettres d'intention, Bons de visite et reconnaissances, Courriers, Délégations ; le registre
   des mandats à part. Les textes des modèles sont encore ceux de l'origine (§6).
 - **L'espace client** (`/espace/<jeton>`) — celui des acheteurs d'Emilio : un client = un lien = une
   application, les locaux proposés, ses avis, ses visites, ses critères. Textes revus le 21 octobre ;
@@ -421,6 +421,21 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   de recherche, l'avenant (calcule déjà comme le mandat), la délégation, le bon de visite, l'offre.
   ⚠️ L'identité enregistrée dans Paramètres › Agence l'emporte sur celle du code : vérifier qu'elle
   dit bien Werner BONNETON.
+- **La reconnaissance d'information** (21 octobre 2026, `src/lib/actes/reconnaissance.ts`, id
+  `reconnaissance`, rangée avec les bons de visite) — avant de donner l'adresse d'un local, le
+  demandeur reconnaît que l'Agence le lui a présenté et s'engage, 6 à 24 mois, à ne pas traiter en
+  direct (ni par une société à lui, ni par une autre agence) ; sinon, une indemnité égale aux
+  honoraires (art. 1231-5). Pas de numéro du registre. Depuis la fiche d'une affaire : le geste
+  « Reconnaissance », « ⋯ › Reconnaissance d'information », et la ligne « Les reconnaissances » de
+  l'onglet Documents (`FenReconnaissance.tsx`, puis `src/components/biens/reconnaissance.ts`). Le
+  client est choisi ou créé (demandeur, prospect : « Demandeurs non filtrés ») ; une adresse e-mail
+  nouvelle s'ajoute à sa fiche. Par e-mail : le PDF est figé et le lien part (code par e-mail) ; sur
+  place : Documents s'ouvre, il signe sans code (comme le bon de visite, `SANS_CODE_SUR_PLACE`).
+  L'adresse dans le document : le secteur seulement (d'office par e-mail), la rue sans le numéro, ou
+  l'adresse exacte (d'office sur place) — sans elle, le document dit qu'elle est donnée après la
+  signature et couverte par le même engagement. Signée par tous : mail « Signé par tous » avec le
+  PDF, ligne dans le suivi du client et dans l'historique de l'affaire (`classer`,
+  `signature-documents.ts`). ⚠️ À faire relire par l'avocat d'Alexandre avant le premier usage.
 - **Le registre des mandats sous la carte RT CONSEILS** — on attend la réponse de Werner sur le
   numéro à reprendre (où en est sa numérotation sous cette carte) ; elle ne doit jamais doubler celle
   d'Emilio, qui signe sous la même carte. Ensuite, le registre se met en place comme dans le CRM

@@ -147,6 +147,7 @@ export function nomDocument(m: Modele, d: Donnees): { le: string; du: string; co
     case 'avenant_recherche': return { le: `l’avenant n° ${no} au mandat de recherche${mn ? ` n° ${mn}` : ''}`, du: `de l’avenant n° ${no} au mandat de recherche${mn ? ` n° ${mn}` : ''}`, court: 'l’avenant' };
     case 'offre_achat': return { le: `l’offre${adresse ? ` pour le ${adresse}` : ''}`, du: `de l’offre${adresse ? ` pour le ${adresse}` : ''}`, court: 'l’offre' };
     case 'bon_visite': return { le: `le bon de visite${adresse ? ` du ${adresse}` : ''}`, du: `du bon de visite${adresse ? ` du ${adresse}` : ''}`, court: 'le bon de visite' };
+    case 'reconnaissance': return { le: 'la reconnaissance d’information', du: 'de la reconnaissance d’information', court: 'la reconnaissance' };
     default: return { le: `le document « ${m.entete(d)} »`, du: `du document « ${m.entete(d)} »`, court: 'le document' };
   }
 }
@@ -745,6 +746,18 @@ export async function classer(sb: SupabaseClient, doc: DocSigne, sd: SignatureDo
       metadata: { document_id: doc.id, ...(biensBon ? { biens: biensBon } : {}) },
     });
     if (e3) pbs.push('suivi du client : ' + e3.message);
+  }
+  /* Werner (21 octobre 2026) : une reconnaissance d'information signée par
+     tous laisse aussi sa ligne dans l'historique de l'affaire — c'est le
+     feu vert pour donner l'adresse. */
+  const bienReco = doc.modele === 'reconnaissance' && typeof doc.donnees?.bienVenteId === 'string' ? doc.donnees.bienVenteId : '';
+  if (bienReco) {
+    const { error: e4 } = await sb.from('biens_vente_suivi').insert({
+      bien_id: bienReco, type: 'note', le, client_id: doc.client_id || null, qui: doc.titre ? doc.titre.replace(/^Reconnaissance\s*·\s*/, '') : null,
+      commentaire: `✍️ Reconnaissance d’information signée ${sd.mode === 'sur_place' ? 'sur place' : 'en ligne'} le ${dateCourte(le)} à ${heureParis(le)} : tu peux lui donner l’adresse.`,
+      donnees: { document: doc.id, reconnaissance: true },
+    });
+    if (e4) pbs.push('historique de l’affaire : ' + e4.message);
   }
   /* V3.189 : une offre d'achat signée par tous — « Offre signée, à envoyer »
      dans les Relances, le bien « Offre faite », la précédente remplacée. */

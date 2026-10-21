@@ -52,6 +52,7 @@ import { CarteAcheteurs, FenEnvoiAcheteurs, modeAcheteurs, teinte } from './Ache
 import { RapprochementBien, lireSeance, resumeSeance } from './RapprochementBien';
 import { FenEnvoiLot } from './LotBiens';
 import { DossierBien, type DestPropose } from './DossierBien';
+import FenReconnaissance from './FenReconnaissance';
 import { PastilleProprio } from './PastilleProprio';
 import { visitePourCarte } from './pour-visite';
 import { OngletVisitesOffres } from './VisitesOffres';
@@ -93,7 +94,7 @@ type Onglet = 'apercu' | 'photos' | 'bien' | 'visites' | 'acheteurs' | 'document
 type Fen =
   | { k: 'mandat' } | { k: 'estimation' } | { k: 'estim' } | { k: 'offre'; pour?: ChoixA; existante?: SuiviVente } | { k: 'compromis'; offre?: string; existant?: SuiviVente }
   /* V3.172 : « Il accepte » demande les honoraires négociés ; les notaires d'une offre. */
-  | { k: 'accepte'; offre: SuiviVente; edition?: boolean } | { k: 'notaires'; offre: SuiviVente } | { k: 'tombe' } | { k: 'revente' } | { k: 'vendu'; correction?: boolean } | { k: 'prix' } | { k: 'visite'; pour?: ChoixA } | { k: 'note' }
+  | { k: 'accepte'; offre: SuiviVente; edition?: boolean } | { k: 'notaires'; offre: SuiviVente } | { k: 'tombe' } | { k: 'revente' } | { k: 'vendu'; correction?: boolean } | { k: 'prix' } | { k: 'visite'; pour?: ChoixA } | { k: 'note' } | { k: 'reconnaissance' }
   | { k: 'deplacer'; v: VisiteU } | { k: 'point' }
   | { k: 'raison'; etape: EtapeVente; titre: string; sur: string } | { k: 'acheteurs'; liste: Acheteur[] } | { k: 'annulerMandat'; vers?: EtapeVente }
   | { k: 'diffusion'; premiere?: boolean };
@@ -2031,6 +2032,8 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
     return { mode: 'libre', nom: o.qui || '', tel: '' };
   };
   const bons = vivants(docsDe('bon_visite'));
+  const recos = vivants(docsDe('reconnaissance'));
+  const recosSignees = recos.filter(x => x.statut === 'signe').length;
   /* Le récapitulatif de chaque étape (V3.32) : ses documents dans l'ordre,
      l'avenant sous son mandat, chacun avec son état. */
   const maillon = (x: DocLie, titre: string, o: { retrait?: boolean; avant?: string } = {}): MaillonDoc => {
@@ -2133,6 +2136,18 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
       k: 'mandat', ic: 'plume', titre: 'Le mandat', etat: 'afaire', statut: 'À préparer',
       detail: 'Prérempli avec le local, le propriétaire, le montant et les honoraires. Signé ailleurs (papier, autre logiciel) : « Déjà signé ? ».',
       actions: <><BoutonAct or onClick={() => faireDocument({ modele: 'mandat_vente' })}><Ic n="plume" t={13} />Préparer le mandat</BoutonAct><BtnTuile onClick={dejaSigne}>Déjà signé ?</BtnTuile></>,
+    },
+    /* Werner (21 octobre 2026) : les reconnaissances d'information, avant
+       de donner l'adresse — une par demandeur, signée en ligne ou sur place. */
+    {
+      k: 'reconnaissances', ic: 'bouclier', titre: 'Les reconnaissances', etat: recos.length ? (recosSignees === recos.length ? 'fait' : 'encours') : 'libre',
+      statut: recos.length ? (() => {
+        const aSigner = recos.filter(x => x.statut === 'pret').length, prepa = recos.filter(x => x.statut === 'brouillon').length;
+        return [recosSignees ? `${recosSignees} signée${recosSignees > 1 ? 's' : ''}` : '', aSigner ? `${aSigner} à signer` : '', prepa ? `${prepa} en préparation` : ''].filter(Boolean).join(' · ');
+      })() : 'Aucune pour l’instant',
+      detail: 'Avant de donner l’adresse : il reconnaît que tu lui as présenté le local, et s’engage à ne pas traiter en direct, ni par une autre agence.',
+      suite: recos.length ? <ChaineDocs items={[...recos].sort(parDate).map(x => maillon(x, sansPrefixe(x.titre, /^Reconnaissance\s*·\s*/) || 'Reconnaissance'))} /> : undefined,
+      actions: <BtnTuile onClick={() => setFen({ k: 'reconnaissance' })}><Ic n="plus" t={12} e={2.6} />Nouvelle reconnaissance</BtnTuile>,
     },
     avant ? { k: 'bons', ic: 'calendrier', titre: 'Les bons de visite', etat: 'plustard', statut: 'Après le mandat', detail: 'Prérempli avec le demandeur et le local, et ses autres visites du jour s’il le faut : il protège tes honoraires.' } : {
       k: 'bons', ic: 'calendrier', titre: 'Les bons de visite', etat: bons.length ? (bonsSignes === bons.length ? 'fait' : 'encours') : 'libre',
@@ -2275,6 +2290,10 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
           <div className={b.gestes} role="group" aria-label="Gestes de l’affaire">
             <button type="button" className={`${b.geste} ${envoyable ? b.gesteModif : ''}`} onClick={() => onModifier()} aria-label="Modifier la fiche"><Ic n="crayon" t={15} /><span className={b.gesteTx}>Modifier</span></button>
             {envoyable && <button type="button" className={`${b.geste} ${b.gesteEnvoi}`} onClick={ouvrirEnvoi} aria-label="Envoyer cette affaire"><Ic n="envoyer" t={15} /><span className={b.gesteTx}>Envoyer</span></button>}
+            {/* Werner (21 octobre 2026) : avant de donner l'adresse, la
+                reconnaissance d'information à faire signer. Au téléphone,
+                elle est en tête de « ⋯ ». */}
+            <button type="button" className={`${b.geste} ${b.gesteReco}`} onClick={() => setFen({ k: 'reconnaissance' })} aria-label="Faire signer une reconnaissance d’information"><Ic n="bouclier" t={15} /><span className={b.gesteTx}>Reconnaissance</span></button>
             {/* La note, en un clic (V3.81) ; Visite et Point vendeur sont dans « ⋯ ». */}
             <button type="button" className={`${b.geste} ${b.gesteNote}`} onClick={() => setFen({ k: 'note' })} aria-label="Ajouter une note"><Ic n="bulle" t={15} /><span className={b.gesteTx}>Note</span></button>
             <button type="button" className={`${b.geste} ${b.gestePlus}`} aria-label="Plus d’actions" aria-haspopup="menu" aria-expanded={menu === 'plus'} onClick={() => setMenu(menu === 'plus' ? null : 'plus')}><Ic n="points" t={16} e={2.6} /></button>
@@ -2283,6 +2302,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
             <div className={b.menu} role="menu">
               <button type="button" role="menuitem" className={b.menuItem} onClick={() => { setMenu(null); onModifier(); }}><Ic n="crayon" t={16} /><span><b>Modifier la fiche</b><small>Étape par étape ou tout sur une page</small></span></button>
               {envoyable && <button type="button" role="menuitem" className={b.menuItem} onClick={() => { setMenu(null); ouvrirEnvoi(); }}><Ic n="envoyer" t={16} /><span><b>Envoyer cette affaire</b><small>Un client du CRM, ou une adresse e-mail</small></span></button>}
+              <button type="button" role="menuitem" className={b.menuItem} onClick={() => { setMenu(null); setFen({ k: 'reconnaissance' }); }}><Ic n="bouclier" t={16} /><span><b>Reconnaissance d’information</b><small>Avant de donner l’adresse : il s’engage à ne pas traiter en direct</small></span></button>
               <button type="button" role="menuitem" className={b.menuItem} onClick={() => { setMenu(null); ouvrirVisite(); }}><Ic n="cle" t={16} /><span><b>Planifier une visite</b><small>Un demandeur suivi, ou quelqu’un hors du CRM</small></span></button>
               <button type="button" role="menuitem" className={b.menuItem} onClick={() => { setMenu(null); ouvrirOffre(); }}><Ic n="euro" t={16} /><span><b>Enregistrer une offre</b><small>Montant, financement, validité</small></span></button>
               <button type="button" role="menuitem" className={b.menuItem} onClick={() => { setMenu(null); garde('prix', () => setFen({ k: 'prix' }))(); }}><Ic n="etiquette" t={16} /><span><b>Changer le montant ou les honoraires</b><small>L’ancien reste dans l’historique</small></span></button>
@@ -2622,6 +2642,23 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
           commentaire: v.commentaire }))}
         onFermer={() => setFen(null)} onFait={r => { setMessage({ t: 'Le point mandant est noté.', ok: true }); void apres(r); }} />}
       {fen?.k === 'note' && <FenNote bien={bien} onFermer={() => setFen(null)} onFait={() => apres()} />}
+      {fen?.k === 'reconnaissance' && (
+        <FenReconnaissance bien={bien} suggestions={options} deja={vivants(docsDe('reconnaissance'))}
+          onFermer={() => setFen(null)}
+          onVoir={id => { setFen(null); ouvrirDoc(id); }}
+          onFait={r => {
+            setFen(null);
+            if (r.etat === 'envoye') {
+              setMessage(r.avertissements.length
+                ? { t: r.avertissements.join(' '), ok: false }
+                : { t: `Reconnaissance envoyée à ${nomClient(r.client)} : il la signe en ligne, avec un code reçu par e-mail. Tu recevras le document signé par e-mail ; il se range dans Documents, sur l’affaire et sur sa fiche.`, ok: true });
+              void apres();
+            } else {
+              if (r.avertissements.length) setMessage({ t: r.avertissements.join(' '), ok: false });
+              onNavigate('documents', { ouvrir: r.id, retour: { page: 'biens', data: { bien: bien.id }, lib: 'L’affaire' } });
+            }
+          }} />
+      )}
       {fen?.k === 'raison' && <FenRaison bien={bien} etape={fen.etape} titre={fen.titre} sur={fen.sur} prevues={prevues} offres={offres} onFermer={() => setFen(null)} onFait={r => apres(r)} />}
       {fen?.k === 'annulerMandat' && (
         <FenAnnulerMandat bien={bien} depuis={etapeAvantMandat(detail?.suivi || [])} vers0={fen.vers} enRoute={!!mandatEnRoute}

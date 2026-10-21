@@ -317,7 +317,10 @@ export const CHAMP_SIGNATURE: Champ = {
    Les mandats et l'offre d'achat gardent leur code, sur place comme en
    ligne. Côté serveur, la règle complète (session du CRM comprise) est dans
    src/lib/signature-sans-code.ts. */
-export const surPlaceSansCode = (modeleId: string, d: Donnees): boolean => modeleId === 'bon_visite' && modeSignature(d) === 'sur_place';
+/* Werner (21 octobre 2026) : la reconnaissance d'information aussi — elle
+   se signe dans la boutique, devant lui, comme un bon de visite. */
+export const SANS_CODE_SUR_PLACE = ['bon_visite', 'reconnaissance'];
+export const surPlaceSansCode = (modeleId: string, d: Donnees): boolean => SANS_CODE_SUR_PLACE.includes(modeleId) && modeSignature(d) === 'sur_place';
 export const CHAMP_SIGNATURE_VISITE: Champ = {
   t: 'choix', cle: 'signature', lib: 'Comment sera-t-il signé ?', ic: 'plume', tuiles: true, options: [
     { v: 'papier', l: 'À la main', aide: 'Imprimé, signé sur papier, puis scanné.', ic: 'plume' },
