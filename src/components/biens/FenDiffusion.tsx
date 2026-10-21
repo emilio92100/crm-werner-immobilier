@@ -7,6 +7,8 @@ import {
   type Diffusion, type Support,
 } from '@/lib/diffusion';
 import { Fenetre } from './FenetresBien';
+import EcartsAnnonce from './EcartsAnnonce';
+import { ecartsAnnonce } from '@/lib/controle-montants';
 import s from '@/components/documents/Documents.module.css';
 import b from './Biens.module.css';
 
@@ -23,8 +25,10 @@ import b from './Biens.module.css';
    « Diffuser quand même » : le bien part alors comme s'il était en vente,
    jusqu'à ce que son étape change. */
 
-export default function FenDiffusion({ bien, premiere, onFermer, onEnregistrer }: {
+export default function FenDiffusion({ bien, premiere, onFermer, onEnregistrer, onAnnonce }: {
   bien: BienVente; premiere?: boolean; onFermer: () => void; onEnregistrer: (d: Diffusion) => void;
+  /* Corriger le texte de l'annonce (un montant ne correspond pas à la fiche). */
+  onAnnonce?: () => void;
 }) {
   const avant = lireDiffusion(bien.donnees);
   const hors = etapeHorsVente(bien.etape);
@@ -36,6 +40,8 @@ export default function FenDiffusion({ bien, premiere, onFermer, onEnregistrer }
   const etapeOk = ETAPES_DIFFUSEES.includes(bien.etape);
   /* Seuls comptent les supports branchés : SeLoger, en attente, ne se coche pas encore. */
   const coches = supportsEnvoyes(choix);
+  /* 22 octobre 2026 : avant de diffuser, les montants du texte comparés à la fiche. */
+  const ecarts = ecartsAnnonce(bien.donnees);
   const basculer = (k: Support) => { if (supportBranche(k)) setChoix(c => ({ ...c, [k]: !c[k] })); };
 
   /* En pause, l'interrupteur dit ce qui se passera à la reprise. */
@@ -65,6 +71,8 @@ export default function FenDiffusion({ bien, premiere, onFermer, onEnregistrer }
         </span>
         <span className={b.diffBascule} aria-hidden="true"><span /></span>
       </button>
+
+      <EcartsAnnonce ecarts={ecarts} avant onCorriger={onAnnonce} libelle="Corriger l’annonce" />
 
       <div className={b.diffSupports} data-eteint={!vif ? 'oui' : undefined} role="group" aria-label="Les supports">
         {SUPPORTS.map((x, i) => {

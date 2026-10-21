@@ -59,6 +59,7 @@ import { visitePourCarte } from './pour-visite';
 import { OngletVisitesOffres } from './VisitesOffres';
 import { FenPointVendeur } from './PointVendeur';
 import FenDiffusion from './FenDiffusion';
+import { ecartsAnnonce } from '@/lib/controle-montants';
 import { etapeDiffusee, etatDiffusion, lireDiffusion, nomsSupports, supportDe, supportsEnvoyes } from '@/lib/diffusion';
 import Depliant from '@/components/shared/Depliant';
 import { BoutonPli, PastillePli } from '@/components/shared/Pli';
@@ -896,7 +897,7 @@ export function OngletBien({ bien, vue = 'tout', onModifier, onSurfaces, onEstim
       <CorpsOnglet k={vue} ordre={ordre}>
         {vue === 'tout' ? (
           <Col>
-            <CarteAnnonce titre={txt(d, 'annonceTitre')} texte={txt(d, 'annonceTexte')} mentions={controleAnnonce(d)} mentionsTexte={mentionsAnnonce(d)} onEcrire={M('annonce')} onReformuler={onAnnonce ? x => reformulerAnnonce(d, x) : undefined} onAppliquer={onAnnonce} />
+            <CarteAnnonce titre={txt(d, 'annonceTitre')} texte={txt(d, 'annonceTexte')} mentions={controleAnnonce(d)} mentionsTexte={mentionsAnnonce(d)} controler={x => ecartsAnnonce(d, x)} onEcrire={M('annonce')} onReformuler={onAnnonce ? x => reformulerAnnonce(d, x) : undefined} onAppliquer={onAnnonce} />
             <Familles>
               {prix}
               {bail}
@@ -2654,7 +2655,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
       {fen?.k === 'mandat' && <FenMandat bien={bien} offres={offres} onFermer={() => setFen(null)} onFait={r => {
         void apres(r).then(() => { if (r && etapeDiffusee(r.etape) && !lireDiffusion(r.donnees)) setFen({ k: 'diffusion', premiere: true }); });
       }} />}
-      {fen?.k === 'diffusion' && <FenDiffusion bien={bien} premiere={fen.premiere} onFermer={() => setFen(null)} onEnregistrer={x => {
+      {fen?.k === 'diffusion' && <FenDiffusion bien={bien} premiere={fen.premiere} onFermer={() => setFen(null)} onAnnonce={() => { setFen(null); onModifier('annonce'); }} onEnregistrer={x => {
         majDonnees('diffusion', x);
         setFen(null);
         const l = supportsEnvoyes(x.supports);

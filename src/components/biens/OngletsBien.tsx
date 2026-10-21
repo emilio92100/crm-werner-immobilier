@@ -10,6 +10,8 @@ import AvatarContact, { type Personne, type Teinte } from '@/components/contacts
 import { BoutonPli, PastillePli } from '@/components/shared/Pli';
 import { paragraphes } from '@/lib/annonce-texte';
 import FenAnnonce from './FenAnnonce';
+import EcartsAnnonce from './EcartsAnnonce';
+import type { Ecart } from '@/lib/controle-montants';
 import { COULEURS, habitable, nbPrincipales } from './ChampsBien';
 import f from '@/components/fiche/FriseSuivi.module.css';
 import o from './OngletsBien.module.css';
@@ -192,8 +194,10 @@ export function Lettres({ genre, v, titre }: { genre: 'dpe' | 'ges'; v: string; 
    d'avant ». `onReformuler` rend la nouvelle version ; `onAppliquer`
    l'enregistre dans la fiche. */
 const fr = (n: number) => n.toLocaleString('fr-FR');
-export function CarteAnnonce({ titre = '', texte, mentions, mentionsTexte, onEcrire, onReformuler, onAppliquer }: {
+export function CarteAnnonce({ titre = '', texte, mentions, mentionsTexte, controler, onEcrire, onReformuler, onAppliquer }: {
   titre?: string; texte: string; mentions: { ok: boolean; l: string; aide?: string }[]; onEcrire: () => void;
+  /* 22 octobre 2026 : les montants du texte comparés à la fiche (controle-montants.ts). */
+  controler?: (texte: string) => Ecart[];
   /* V3.80 : les mentions telles qu'elles s'écrivent (« Ajouter les mentions
      à la fin », dans la fenêtre). */
   mentionsTexte?: string;
@@ -235,6 +239,7 @@ export function CarteAnnonce({ titre = '', texte, mentions, mentionsTexte, onEcr
     finally { setEcrit(false); }
   };
   const ia = onReformuler && onAppliquer;
+  const ecarts = controler ? controler(texte) : [];
   return (
     <div className={o.annonce}>
       <div className={o.annonceL}>
@@ -251,6 +256,7 @@ export function CarteAnnonce({ titre = '', texte, mentions, mentionsTexte, onEcr
           <button type="button" className={`${o.act} ${texte || ia ? '' : o.actMarine}`} onClick={onAppliquer ? () => setFen(true) : onEcrire}>{texte ? 'Modifier' : 'Écrire l’annonce'}</button>
         </div>
       </div>
+      <EcartsAnnonce ecarts={ecarts} onCorriger={onAppliquer ? () => setFen(true) : onEcrire} />
       {(erreur || avant) && (
         <div className={erreur ? o.iaErreur : o.iaInfo}>
           {erreur || 'Nouvelle version écrite et enregistrée.'}
@@ -307,7 +313,7 @@ export function CarteAnnonce({ titre = '', texte, mentions, mentionsTexte, onEcr
         </div>
       )}
       {fen && onAppliquer && (
-        <FenAnnonce titre={titre} texte={texte} mentions={mentions} mentionsTexte={mentionsTexte}
+        <FenAnnonce titre={titre} texte={texte} mentions={mentions} mentionsTexte={mentionsTexte} controler={controler}
           onReformuler={onReformuler} onEnregistrer={(t, x) => { setAvant(null); onAppliquer(t, x); }}
           onFiche={() => { setFen(false); onEcrire(); }} onFermer={() => setFen(false)} />
       )}

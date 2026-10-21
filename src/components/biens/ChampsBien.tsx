@@ -25,6 +25,8 @@ import ChoixQuartiers from '@/components/shared/ChoixQuartiers';
 import { communeDeVille, communeDuCp, memeNom, titreQuartiers } from '@/lib/quartiers';
 import s from '@/components/documents/Documents.module.css';
 import b from './Biens.module.css';
+import EcartsAnnonce from './EcartsAnnonce';
+import { ecartsAnnonce } from '@/lib/controle-montants';
 
 /* ═══ Les champs propres aux biens en vente ═══════════════════════════════
    En plus de ceux des documents juridiques (ChampActe) : les lettres du DPE
@@ -795,6 +797,7 @@ function ChampAnnonce({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
       )}
       <textarea className={s.input} rows={10} disabled={off} value={v} placeholder="Le texte de l’annonce, tel qu’il partira sur les portails."
         onChange={e => maj('annonceTexte', e.target.value)} />
+      <EcartsAnnonce ecarts={ecartsAnnonce(d, v)} />
       <ul className={b.controle}>
         <li className={b.controleT}>{manque ? `Mentions obligatoires : ${manque} à compléter dans la fiche` : 'Mentions obligatoires : tout y est'}</li>
         {ctrl.map(x => (

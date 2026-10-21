@@ -14,13 +14,17 @@ import { LONGUEUR_ANNONCE } from '@/lib/biens-vente';
 import { aererTexte, texteEnBloc } from '@/lib/annonce-texte';
 import { Ic } from '@/components/documents/ApercuActe';
 import { Fenetre } from './FenetresBien';
+import EcartsAnnonce from './EcartsAnnonce';
+import type { Ecart } from '@/lib/controle-montants';
 import s from '@/components/documents/Documents.module.css';
 import a from './FenAnnonce.module.css';
 
 const fr = (n: number) => n.toLocaleString('fr-FR');
 
-export default function FenAnnonce({ titre: titre0, texte: texte0, mentions, mentionsTexte, onReformuler, onEnregistrer, onFiche, onFermer }: {
+export default function FenAnnonce({ titre: titre0, texte: texte0, mentions, mentionsTexte, controler, onReformuler, onEnregistrer, onFiche, onFermer }: {
   titre: string; texte: string;
+  /* Les montants du texte comparés à la fiche, relus à chaque frappe (22 octobre 2026). */
+  controler?: (texte: string) => Ecart[];
   mentions: { ok: boolean; l: string; aide?: string }[];
   /* Les mentions telles qu'elles s'écrivent dans l'annonce (mentionsAnnonce). */
   mentionsTexte?: string;
@@ -43,6 +47,7 @@ export default function FenAnnonce({ titre: titre0, texte: texte0, mentions, men
   const assez = n >= LONGUEUR_ANNONCE;
   const manque = mentions.filter(x => !x.ok);
   const enBloc = texteEnBloc(texte);
+  const ecarts = controler ? controler(texte) : [];
   /* Déjà là : les mentions du CRM, ou celles qu'ImmoFacile avait écrites
      (elles finissent toujours par Géorisques). */
   const mentionsDedans = !!mentionsTexte && (texte.includes(mentionsTexte.split('\n')[0]) || /g[ée]orisques/i.test(texte));
@@ -127,6 +132,8 @@ export default function FenAnnonce({ titre: titre0, texte: texte0, mentions, men
           <span className={a.barre}><i style={{ width: `${Math.min(100, (n / LONGUEUR_ANNONCE) * 100)}%` }} /></span>
           <span>{assez ? `${fr(n)} caractères · les ${fr(LONGUEUR_ANNONCE)} sont atteints` : `${fr(n)} caractères · encore ${fr(LONGUEUR_ANNONCE - n)} pour atteindre ${fr(LONGUEUR_ANNONCE)}`}</span>
         </div>
+
+        <EcartsAnnonce ecarts={ecarts} onCorriger={onFiche} libelle="Revoir la fiche" />
 
         {mentions.length > 0 && (
           <div className={a.mentions}>
