@@ -1,13 +1,18 @@
-/* L'interrupteur de l'espace client. Pas de transform sur le bouton lui-même
-   (AGENTS.md §2.7) : seul le rond intérieur glisse. */
-.inter {
-  display: flex; align-items: flex-start; gap: 12px; width: 100%;
-  padding: 12px 14px; border-radius: 14px; text-align: left; cursor: pointer;
-  background: #fafaf9; border: 1px solid #ebeae8; font: inherit; color: inherit;
+/* L'interrupteur de l'espace client. Pas de transform pour centrer un
+   bouton (AGENTS.md §2.7) : seul le rond intérieur glisse. */
+.cadre {
+  border-radius: 14px; background: #fafaf9; border: 1px solid #ebeae8;
   transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
-.inter:hover { border-color: #dcdad7; }
-.inter[data-on='oui'] { background: #fdf4ec; border-color: #f6c9a3; box-shadow: 0 0 0 3px rgba(240, 140, 66, .08); }
+.cadre[data-on='oui'] { background: #fdf4ec; border-color: #f6c9a3; box-shadow: 0 0 0 3px rgba(240, 140, 66, .08); }
+
+.ligne { display: flex; align-items: flex-start; gap: 6px; padding-right: 10px; }
+
+.inter {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 4px 12px 14px; text-align: left; cursor: pointer;
+  background: none; border: 0; font: inherit; color: inherit;
+}
 .inter:disabled { cursor: progress; opacity: .7; }
 
 .piste {
@@ -15,13 +20,13 @@
   border-radius: 999px; background: #c9c6c2;
   transition: background .28s ease;
 }
-.inter[data-on='oui'] .piste { background: #f08c42; }
+.cadre[data-on='oui'] .piste { background: #f08c42; }
 .bouton {
   position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
   background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .22);
   transition: transform .32s cubic-bezier(.34, 1.56, .64, 1);
 }
-.inter[data-on='oui'] .bouton { transform: translateX(18px); }
+.cadre[data-on='oui'] .bouton { transform: translateX(18px); }
 
 .textes { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .textes b { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: #2e3034; }
@@ -30,9 +35,29 @@
   padding: 2px 8px; border-radius: 999px; background: #eceae7; color: #6b6864;
   transition: background .25s ease, color .25s ease;
 }
-.inter[data-on='oui'] .textes i { background: #f08c42; color: #fff; }
+.cadre[data-on='oui'] .textes i { background: #f08c42; color: #fff; }
 .textes small { font-size: 12.5px; line-height: 1.5; color: #6b6864; }
 
+/* Le « ? » : un rond, à droite, aligné sur le titre. */
+.question {
+  flex: 0 0 auto; width: 26px; height: 26px; margin-top: 12px; border-radius: 50%;
+  border: 1px solid #dcdad7; background: #fff; color: #6b6864; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 800; line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+.question:hover { border-color: #f08c42; color: #c2621c; }
+.question[aria-expanded='true'] { background: #2e3034; border-color: #2e3034; color: #fff; }
+
+.aide {
+  margin: 0 12px 12px; padding: 12px 14px; border-radius: 12px; background: #fff; border: 1px solid #ebeae8;
+  animation: aideEntre .22s ease;
+}
+.aide b { display: block; font-size: 13px; color: #2e3034; margin-bottom: 6px; }
+.aide ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.aide li { font-size: 12.5px; line-height: 1.5; color: #55524e; }
+.aide li::marker { color: #f08c42; }
+@keyframes aideEntre { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .bouton, .piste, .inter, .textes i { transition: none; }
+  .bouton, .piste, .cadre, .textes i { transition: none; }
+  .aide { animation: none; }
 }
