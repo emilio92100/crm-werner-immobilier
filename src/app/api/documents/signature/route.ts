@@ -6,7 +6,7 @@ import { appareilDe } from '@/lib/mandat-serveur';
 import { ecritServeur } from '@/lib/ecritures';
 import {
   lireSignataires, inviter, envoyerCode, validerSignature, sceller, assembler, envoyerExemplaire,
-  classer, lireFichier, nomSig, actif, attendu, emailValide, nomDocument, ALERTES, envoyerMail, gabarit, echappe, lienCrmDocument,
+  classer, lireFichier, nomSig, actif, attendu, emailValide, nomDocument, ALERTES, envoyerMail, gabarit, echappe, lienCrmDocument, bouton,
   offreFinie, ARRETEE, prevenirArret, validerSansCode, signeSansCodeFait, codeValideFait, lancerSignature, auFeminin,
   type DocSigne, type SigDoc, type SignatureDoc,
 } from '@/lib/signature-documents';
@@ -15,6 +15,7 @@ import { signeSansCode } from '@/lib/signature-sans-code';
 import { COOKIE_BADGE, badgeValide } from '@/lib/badge';
 import { solderRelancesSignature } from '@/lib/documents-relances';
 import { avecRemises } from '@/lib/remise-mail';
+import { alerteMailActive } from '@/lib/alertes';
 
 /**
  * La signature en ligne ou sur place d'un document (Documents juridiques).
@@ -120,6 +121,25 @@ async function traiterPost(req: NextRequest) {
       if (doc.modele === 'offre_achat') {
         const pb = await offrePartieEnSignature(sb, doc);
         if (pb) console.error('[documents/signature] offre', pb);
+      }
+      /* Werner (21 octobre 2026) : une reconnaissance d'information partie en
+         ligne, il le reçoit par mail — à qui, pour quel local ; la suite
+         (« Signé par tous », l'adresse) viendra toute seule. */
+      if (doc.modele === 'reconnaissance' && mode === 'en_ligne' && await alerteMailActive(sb, 'reconnaissance_envoyee')) {
+        const qui = r.personnes.map(p => [p.prenom, p.nom].filter(Boolean).join(' ') || p.email).join(', ');
+        const local = [String(d.description || ''), d.reference ? `réf. ${String(d.reference)}` : ''].filter(Boolean).join(' · ');
+        const suite = d.adresseApres === 'main'
+          ? 'Dès qu’il l’aura signée, tu recevras un mail avec le document signé. L’adresse, tu la lui donnes toi-même : « Lui envoyer l’adresse », sur la fiche de l’affaire.'
+          : 'Dès qu’il l’aura signée, tu recevras un mail avec le document signé, et l’adresse du local lui partira toute seule, avec la photo et le lien de sa fiche.';
+        const e = await envoyerMail({
+          a: ALERTES(), deLaPartDe: 'crm',
+          sujet: `📨 Reconnaissance envoyée à ${qui}${d.description ? ` · ${String(d.description)}` : ''}`,
+          texte: `La reconnaissance d'information est partie à ${qui} (${r.personnes.map(p => p.email).join(', ')}).\n\nLe local : ${local}. Le document ne dit pas l'adresse, seulement le secteur.\n\n${suite.replace(/’/g, "'")}\n\n${lienCrmDocument(doc)}`,
+          html: gabarit('Reconnaissance envoyée', `<p>La reconnaissance d’information est partie à <b>${echappe(qui)}</b> (${echappe(r.personnes.map(p => p.email).join(', '))}).</p>
+            <p>Le local : ${echappe(local)}. Le document ne dit pas l’adresse, seulement le secteur.</p>
+            <p>${echappe(suite)}</p>${bouton(lienCrmDocument(doc), 'Ouvrir sa fiche')}`),
+        });
+        if (e) console.error('[documents/signature] alerte reconnaissance', e);
       }
       return NextResponse.json({ ok: true, signataires: r.signataires, signature: r.signature, echecs: r.echecs });
     }

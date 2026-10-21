@@ -522,7 +522,7 @@ async function signerDocument(req: NextRequest, sb: SupabaseClient, jeton: strin
           /* La reconnaissance d'information : où en est l'adresse du local. */
           const reco = m.id === 'reconnaissance'
             ? d.adresseApres === 'main' ? 'Pour lui donner l’adresse du local : sur la fiche de l’affaire, onglet Documents, « Lui envoyer l’adresse ».'
-              : echecs.some(e => e.startsWith('adresse du local')) ? '' : 'L’adresse du local lui est partie toute seule par e-mail, avec le lien de sa fiche (tu en as reçu la copie).'
+              : echecs.some(e => e.startsWith('adresse du local')) ? '' : 'L’adresse du local lui est partie toute seule par e-mail, avec la photo, les informations et le lien de sa fiche. Le mail se relit dans l’historique de l’affaire (« Voir le mail »), et une relance du jour t’attend : l’appeler pour organiser la visite.'
             : '';
           await envoyerMail({
             a: ALERTES(), deLaPartDe: 'crm', ...pj,

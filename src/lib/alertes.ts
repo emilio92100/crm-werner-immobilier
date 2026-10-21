@@ -19,7 +19,7 @@ export const CLE_ALERTES = 'alertes_mail';
 export type CleAlerte =
   | 'visite' | 'visite_offre' | 'visite_avis' | 'offre_espace'
   | 'mandat_question' | 'mandat_numero' | 'mandat_signe' | 'mandat_renonce' | 'mandat_depasse' | 'document_signe'
-  | 'point_auto_recap';
+  | 'reconnaissance_envoyee' | 'point_auto_recap';
 
 export type Alerte = {
   cle: CleAlerte;
@@ -98,6 +98,12 @@ export const ALERTES_MAIL: Alerte[] = [
     quand: 'Tout le monde a signé avec son lien un document de la rubrique Documents (mandat, avenant, offre…) : un seul mail, à la dernière signature, pas un par signataire. Le PDF signé est joint. Rien ne part pour une signature sur place : tu y étais.',
     crm: 'Le document dans Documents, avec qui a signé et qui on attend, et une ligne dans le suivi du client.',
     sauf: 'un signataire n’a pas reçu son exemplaire, ou le document n’a pas pu être mis à jour (même avant la dernière signature).',
+  },
+  {
+    cle: 'reconnaissance_envoyee', groupe: 'mandats', titre: 'Une reconnaissance d’information envoyée',
+    objet: '📨 Reconnaissance envoyée à Julie Martin · Local commercial 55 m²',
+    quand: 'Tu envoies une reconnaissance d’information à signer en ligne, depuis la fiche d’une affaire : à qui, pour quel local, à quelle adresse e-mail. Dès qu’il l’a signée, tu reçois « Signé par tous », et l’adresse du local lui part toute seule.',
+    crm: 'Une ligne dans l’historique de l’affaire et dans le suivi du client.',
   },
   {
     cle: 'point_auto_recap', groupe: 'auto', titre: 'Le récapitulatif du point automatique',

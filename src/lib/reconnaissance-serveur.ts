@@ -10,7 +10,9 @@
        (/api/documents/adresse).
    Le mail : la photo du local, son adresse exacte, ce qu'il est (type,
    surface, montant, référence), le lien de sa fiche, et comment joindre
-   Werner (téléphone, e-mail) ; Werner en reçoit une copie cachée.
+   Werner (téléphone, e-mail). Pas de copie à Werner (Alexandre : « quel
+   intérêt ? ») : son mail « Signé par tous » le lui dit, et le mail
+   lui-même se relit dans l'historique (« Voir le mail »).
    Sans adresse exacte sur l'affaire (le numéro et la rue), rien ne part : il
    est prévenu, et « Lui envoyer l'adresse » l'attend une fois complétée.
    Tout se note, avec le mail lui-même (« Voir le mail ») : dans
@@ -20,7 +22,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { txt, lirePersonnes, type Donnees } from './actes';
-import { envoyerMail, gabarit, echappe, ALERTES } from './mandat-serveur';
+import { envoyerMail, gabarit, echappe } from './mandat-serveur';
 import { lienBienPublic } from './jeton';
 import { euros } from './mandat';
 import { annoncePourSite } from './annonces-site';
@@ -161,7 +163,7 @@ export async function envoyerAdresseReco(sb: SupabaseClient, doc: DocReco, o: { 
   const m = mailAdresse({ prenom: qui.prenom, local, lien });
   const erreur = await envoyerMail({
     a: qui.email, nomA: [qui.prenom, qui.nom].filter(Boolean).join(' ') || undefined,
-    repondreA: MAIL_AGENCE, cci: ALERTES(), sujet: m.sujet, texte: sansCourbes(m.texte), html: m.html,
+    repondreA: MAIL_AGENCE, sujet: m.sujet, texte: sansCourbes(m.texte), html: m.html,
   });
   if (erreur) return echec(`le mail n’est pas parti (${erreur}) — réessaie avec « Lui envoyer l’adresse » (onglet Documents)`);
 

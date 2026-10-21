@@ -437,7 +437,7 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   engagements ». Signée par tous : mail « Signé par tous » avec le
   PDF, ligne dans le suivi du client et dans l'historique de l'affaire (`classer`,
   `signature-documents.ts`). **L'adresse du local** part ensuite toute seule au client, par e-mail
-  (adresse exacte, local, référence, lien de sa fiche ; copie cachée à Werner) — sauf si Werner a
+  (adresse exacte, local, référence, lien de sa fiche ; pas de copie à Werner) — sauf si Werner a
   décoché « Lui envoyer l'adresse tout seul » (`donnees.adresseApres = 'main'`) : alors « Lui
   envoyer l'adresse », d'un clic, sur la ligne « Les reconnaissances » de l'onglet Documents
   (`/api/documents/adresse`). Les deux chemins : `src/lib/reconnaissance-serveur.ts`. Le mail : la
@@ -448,7 +448,10 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   chaque pas (préparée, envoyée, signée, adresse envoyée ou pas partie : `donnees.etape`), à qui, et
   le mail envoyé (« Voir le mail », `EvtBien.message`) ; le suivi du client a la même ligne, en
   `mail_envoye` (« Voir le mail » de la frise). L'onglet Documents compte les demandeurs, les
-  signées et les adresses envoyées. Le mail
+  signées et les adresses envoyées. Werner est prévenu par mail à l'envoi (alerte
+  `reconnaissance_envoyee`, coupable dans Paramètres) et à la signature (« Signé par tous », avec
+  le PDF) ; à la signature, une relance du jour (« Relances », la cloche du menu) dit quoi faire :
+  l'appeler pour la visite, ou d'abord lui donner l'adresse. « C'est fait » la ferme. Le mail
   d'invitation dit pourquoi on lui demande de signer. ⚠️ À faire relire par l'avocat d'Alexandre avant le premier usage.
 - **Le registre des mandats sous la carte RT CONSEILS** — on attend la réponse de Werner sur le
   numéro à reprendre (où en est sa numérotation sous cette carte) ; elle ne doit jamais doubler celle

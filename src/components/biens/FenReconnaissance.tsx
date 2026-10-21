@@ -247,7 +247,7 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
       <Section ic="lieu" c="#0f766e" f="#effaf8" titre="3. Une fois signée, l’adresse">
         <Suite on={auto} onChange={setAuto} ic="mail" c="#0f766e" f="#effaf8"
           t="Lui envoyer l’adresse tout seul, dès qu’il a signé"
-          s="Il reçoit par e-mail l’adresse exacte, la photo et les informations du local, le lien de sa fiche et tes coordonnées. Tu en reçois la copie : rien à faire de ton côté." />
+          s="Il reçoit par e-mail l’adresse exacte, la photo et les informations du local, le lien de sa fiche et tes coordonnées. Toi, tu reçois un mail à l’envoi, puis « Signé par tous » avec le PDF, et une relance du jour pour l’appeler." />
         {sansAdresse && (
           <div className={`${b.ventile} ${b.ventileManque}`}>
             <Ic n="info" t={15} />

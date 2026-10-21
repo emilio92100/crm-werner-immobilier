@@ -771,9 +771,26 @@ export async function classer(sb: SupabaseClient, doc: DocSigne, sd: SignatureDo
   /* Alexandre (21 octobre 2026) : « tout peut être autonome ? ». L'adresse
      du local part toute seule, dès la dernière signature (sauf si Werner a
      choisi de la donner lui-même). */
+  let pbA: string | null = null;
   if (adresseAuto) {
-    const pbA = await envoyerAdresseReco(sb, doc, { auto: true });
+    pbA = await envoyerAdresseReco(sb, doc, { auto: true });
     if (pbA) pbs.push('adresse du local : ' + pbA);
+  }
+  /* Et une relance du jour (la cloche « Relances » du menu) : ce qu'il reste
+     à faire — l'appeler pour la visite, ou d'abord lui donner l'adresse.
+     « C'est fait » la ferme. */
+  if (doc.modele === 'reconnaissance' && doc.client_id) {
+    const qui = (doc.titre || '').replace(/^Reconnaissance\s*·\s*/, '') || 'Le demandeur';
+    const local = [txt(doc.donnees, 'description'), txt(doc.donnees, 'reference') ? `réf. ${txt(doc.donnees, 'reference')}` : ''].filter(Boolean).join(' · ');
+    const partie = adresseAuto && (!pbA || pbA.startsWith('l’adresse est partie'));
+    const aFaire = partie ? 'il a reçu l’adresse du local, l’appeler pour organiser la visite'
+      : adresseAuto ? 'l’adresse du local n’a pas pu partir : la lui envoyer (« Lui envoyer l’adresse », onglet Documents de l’affaire), puis l’appeler pour la visite'
+      : 'lui donner l’adresse (« Lui envoyer l’adresse », onglet Documents de l’affaire), puis l’appeler pour la visite';
+    const { error: eR } = await sb.from('relances').insert({
+      client_id: doc.client_id, recherche_id: doc.recherche_id || null, type: 'rappel_client', statut: 'en_attente', date_echeance: le,
+      note: `${qui} a signé la reconnaissance${local ? ` (${local})` : ''} : ${aFaire}.`,
+    });
+    if (eR) pbs.push('relance : ' + eR.message);
   }
   /* V3.189 : une offre d'achat signée par tous — « Offre signée, à envoyer »
      dans les Relances, le bien « Offre faite », la précédente remplacée. */
