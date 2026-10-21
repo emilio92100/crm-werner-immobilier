@@ -24,6 +24,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { txt, lirePersonnes, type Donnees } from './actes';
 import { envoyerMail, gabarit, echappe } from './mandat-serveur';
 import { lienBienPublic } from './jeton';
+import { codeSuivi, lienBienSuivi } from './bien-suivi';
 import { euros } from './mandat';
 import { annoncePourSite } from './annonces-site';
 import type { BienVente } from './biens-vente';
@@ -126,7 +127,21 @@ export function mailAdresse(o: { prenom: string; local: Local; lien: string }) {
   return { sujet, texte, html };
 }
 
-/* Envoie l'adresse ; rend null, ou ce qui n'a pas marché. */
+/* L'aperçu, avant d'envoyer d'un clic (22 octobre 2026) : le mail tel qu'il
+   partira, sans rien envoyer ni noter. */
+export async function apercuAdresseReco(sb: SupabaseClient, doc: DocReco): Promise<{ a: string; nom: string; sujet: string; html: string } | { erreur: string }> {
+  if (doc.modele !== 'reconnaissance') return { erreur: 'Ce document n’est pas une reconnaissance.' };
+  const qui = await destinataireDe(sb, doc);
+  if (!qui) return { erreur: 'Pas d’adresse e-mail pour lui envoyer l’adresse du local : donne-la-lui de vive voix.' };
+  const local = await localDe(sb, doc);
+  if (!local.rue) return { erreur: 'L’affaire n’a pas d’adresse exacte (le numéro et la rue) : complète-la sur la fiche de l’affaire, puis reviens ici.' };
+  const m = mailAdresse({ prenom: qui.prenom, local, lien: local.bienId ? lienBienPublic(local.bienId) : '' });
+  return { a: qui.email, nom: [qui.prenom, qui.nom].filter(Boolean).join(' '), sujet: m.sujet, html: m.html };
+}
+
+/* Envoie l'adresse ; rend null, ou ce qui n'a pas marché. Le bouton « Voir
+   la fiche du local » porte un code à lui (src/lib/bien-suivi.ts) : quand il
+   l'ouvre, l'historique de l'affaire et son suivi le disent. */
 export async function envoyerAdresseReco(sb: SupabaseClient, doc: DocReco, o: { auto: boolean }): Promise<string | null> {
   if (doc.modele !== 'reconnaissance') return 'ce document n’est pas une reconnaissance';
   const qui = await destinataireDe(sb, doc);
@@ -159,7 +174,8 @@ export async function envoyerAdresseReco(sb: SupabaseClient, doc: DocReco, o: { 
 
   if (!qui) return echec('pas d’adresse e-mail pour la lui envoyer — donne-la-lui de vive voix');
   if (!local.rue) return echec('l’affaire n’a pas d’adresse exacte (le numéro et la rue) — complète-la sur la fiche de l’affaire, puis « Lui envoyer l’adresse » (onglet Documents)');
-  const lien = local.bienId ? lienBienPublic(local.bienId) : '';
+  const code = local.bienId ? codeSuivi() : '';
+  const lien = local.bienId ? lienBienSuivi(local.bienId, code) : '';
   const m = mailAdresse({ prenom: qui.prenom, local, lien });
   const erreur = await envoyerMail({
     a: qui.email, nomA: [qui.prenom, qui.nom].filter(Boolean).join(' ') || undefined,
@@ -169,10 +185,15 @@ export async function envoyerAdresseReco(sb: SupabaseClient, doc: DocReco, o: { 
 
   const pbs: string[] = [];
   if (local.bienId) {
+    /* Une ligne « envoi » : c'est elle que /bien/<id>/vue retrouve par le
+       code, pour noter chaque ouverture de la fiche (`donnees.vues`). */
     const { error } = await sb.from('biens_vente_suivi').insert({
-      bien_id: local.bienId, type: 'note', le, client_id: doc.client_id || null, qui: nomQui,
+      bien_id: local.bienId, type: 'envoi', le, client_id: doc.client_id || null, qui: nomQui,
       commentaire: `${local.ligne} · envoyée à ${qui.email}${o.auto ? ', toute seule, dès sa signature' : ''}`,
-      donnees: { document: doc.id, reconnaissance: true, etape: 'adresse', adresseEnvoyee: true, auto: o.auto, a: qui.email, sujet: m.sujet, texte: m.texte },
+      donnees: {
+        document: doc.id, reconnaissance: true, etape: 'adresse', adresseEnvoyee: true, auto: o.auto, a: qui.email, sujet: m.sujet, texte: m.texte,
+        ...(code ? { codes: { [code]: { email: qui.email, nom: nomQui, client_id: doc.client_id || null } } } : {}),
+      },
     });
     if (error) pbs.push('historique de l’affaire : ' + error.message);
   }

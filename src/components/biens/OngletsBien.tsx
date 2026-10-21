@@ -1222,6 +1222,8 @@ export function SyntheseDocs({ etapes, onOuvrir }: { etapes: EtapeDoc[]; onOuvri
 export type MaillonDoc = {
   id: string; titre: string; detail: string; etat: 'signe' | 'attente' | 'prepa';
   retrait?: boolean; onOuvrir: () => void; onPdf?: () => void;
+  /* Un geste de plus sur la ligne (« Renvoyer l'adresse »…). */
+  action?: { l: string; onClick: () => void };
 };
 export function ChaineDocs({ items }: { items: MaillonDoc[] }) {
   if (!items.length) return null;
@@ -1233,6 +1235,7 @@ export function ChaineDocs({ items }: { items: MaillonDoc[] }) {
           <button type="button" className={o.maillonTx} onClick={x.onOuvrir} title="Ouvrir dans Documents">
             <b>{x.titre}</b><small>{x.detail}</small>
           </button>
+          {x.action && <button type="button" className={o.maillonPdf} onClick={x.action.onClick}><Ic n="mail" t={13} />{x.action.l}</button>}
           {x.onPdf && <button type="button" className={o.maillonPdf} onClick={x.onPdf} title="L’exemplaire signé"><Ic n="doc" t={13} />PDF</button>}
         </li>
       ))}

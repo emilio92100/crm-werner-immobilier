@@ -6,6 +6,7 @@ import { basePublique } from '@/lib/jeton';
 import Depliant from '@/components/shared/Depliant';
 import { PastillePli } from '@/components/shared/Pli';
 import { Ic } from './ApercuActe';
+import ApercuMail, { type MailApercu } from './ApercuMail';
 import { appelSignature, nomSignataire, pagePerimee, type DocumentRow, type SignataireRow } from './outils';
 import s from './Documents.module.css';
 
@@ -193,6 +194,8 @@ export default function SuiviSignature({ suivi, onFait, ouvertAuDebut = false }:
   const [travail, setTravail] = useState('');
   const [msg, setMsg] = useState<{ t: string; ok: boolean } | null>(null);
   const [corrige, setCorrige] = useState<{ id: string; email: string } | null>(null);
+  /* « Renvoyer le lien » : d'abord l'aperçu du mail (22 octobre 2026). */
+  const [apercu, setApercu] = useState<LigneSuivi | null>(null);
   const personnes = suivi.lignes.filter(x => x.etat !== 'agence');
   const alerte = personnes.some(x => x.etat === 'expire');
 
@@ -259,7 +262,7 @@ export default function SuiviSignature({ suivi, onFait, ouvertAuDebut = false }:
                   <span className={s.sigActions}>
                     {l.geste.sorte === 'doc' && (
                       <>
-                        <button type="button" className={s.btnLien} disabled={!!travail} onClick={() => { void geste(l); }}>
+                        <button type="button" className={s.btnLien} disabled={!!travail} onClick={() => { setMsg(null); setApercu(l); }}>
                           {travail === l.id ? 'Envoi…' : l.geste.attendu ? 'Il signera plus tard, par lien' : 'Renvoyer le lien'}
                         </button>
                         <button type="button" className={s.btnLien} disabled={!!travail} onClick={() => setCorrige(corrige?.id === l.id ? null : { id: l.id, email: l.email })}>Corriger l’e-mail</button>
@@ -292,6 +295,17 @@ export default function SuiviSignature({ suivi, onFait, ouvertAuDebut = false }:
           {msg && <div className={msg.ok ? s.note : s.erreur}>{msg.t}</div>}
         </div>
       </Depliant>
+      {apercu && apercu.geste?.sorte === 'doc' && (() => {
+        const g = apercu.geste;
+        return (
+          <ApercuMail titre={g.attendu ? 'Lui envoyer son lien de signature' : 'Renvoyer le lien de signature'}
+            sous={`À ${apercu.nom}. Son lien personnel, avec le bouton pour relire et signer.`}
+            libelle={g.attendu ? 'Envoyer le lien' : 'Renvoyer le lien'}
+            charger={async () => appelSignature<MailApercu>({ action: 'apercu', id: g.docId, sig: g.sigId })}
+            onFermer={() => setApercu(null)}
+            onEnvoyer={async () => { const l = apercu; setApercu(null); await geste(l); }} />
+        );
+      })()}
     </div>
   );
 }

@@ -53,6 +53,7 @@ import { RapprochementBien, lireSeance, resumeSeance } from './RapprochementBien
 import { FenEnvoiLot } from './LotBiens';
 import { DossierBien, type DestPropose } from './DossierBien';
 import FenReconnaissance from './FenReconnaissance';
+import ApercuMail, { type MailApercu } from '@/components/documents/ApercuMail';
 import { PastilleProprio } from './PastilleProprio';
 import { visitePourCarte } from './pour-visite';
 import { OngletVisitesOffres } from './VisitesOffres';
@@ -1087,6 +1088,21 @@ export function evenements(bien: BienVente, det: DetailBien, clients: Record<str
           titre: x.statut === 'acceptee' ? `Offre de ${qui} acceptée à ${euros(m)}` : x.statut === 'refusee' ? `Offre de ${qui} refusée` : d.compromisTombe ? `Offre de ${qui} : accord tombé` : renonce ? `${maj(qui)} renonce après la contre-offre` : `Offre de ${qui} retirée`,
           detail: [x.statut === 'acceptee' && ech.length > 1 && x.montant ? `Offre de départ : ${euros(x.montant)}` : '', h ? ligneHono(h) || '' : '', x.commentaire || ''].filter(Boolean).join('\n') });
       }
+    } else if (x.type === 'envoi' && d.reconnaissance === true) {
+      /* Werner (22 octobre 2026) : l'adresse du local, partie après la
+         reconnaissance signée — le mail lui-même, puis chaque ouverture de la
+         fiche par le bouton du mail (src/lib/reconnaissance-serveur.ts). */
+      const vues = vuesDe(d);
+      const qui = x.qui || 'un demandeur';
+      l.push({ cle: x.id, le: x.le, ic: 'mail', ton: 'ic_vert', genre: 'documents', chez: chezLui(x.client_id),
+        titre: `Adresse du local envoyée à ${qui}`, detail: x.commentaire || '',
+        puce: vues.length ? { l: 'Fiche ouverte', c: '#0f766e', fond: '#f0fdfa', bord: '#99f6e4' } : { l: d.auto === true ? 'Partie toute seule' : 'Envoyée par toi', c: '#15803d', fond: '#f0fdf4', bord: '#bbf7d0' },
+        message: str('texte') ? { objet: str('sujet'), a: str('a'), corps: str('texte') } : undefined });
+      for (const v of vues) {
+        const nom = v.dest.nom || v.dest.email;
+        v.le.forEach((le, i) => l.push({ cle: `${x.id}-v-${v.code}-${i}`, le, ic: 'oeil', ton: 'ic_gris', genre: 'documents', discret: true,
+          titre: `${nom} a ouvert la fiche du local`, detail: i === 0 ? 'Par le bouton du mail de l’adresse' : '', chez: chezLui(v.dest.client_id) }));
+      }
     } else if (x.type === 'envoi') {
       /* Des pièces du dossier envoyées par mail (V3.30). */
       const pieces = Array.isArray(d.pieces) ? (d.pieces as unknown[]).map(String) : [];
@@ -1340,17 +1356,14 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
   }
   const ouvrirDoc = (id: string) => onNavigate('documents', { ouvrir: id });
   /* Une reconnaissance signée : l'adresse du local, d'un clic, par e-mail
-     (/api/documents/adresse). */
-  async function envoyerAdresseReco(x: { id: string }) {
-    setMessage({ t: 'Envoi de l’adresse du local…', ok: true });
-    try {
-      const r = await fetch('/api/documents/adresse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: x.id }) });
-      const j = await r.json().catch(() => null) as { ok?: boolean; erreur?: string; avertissement?: string } | null;
-      if (!r.ok || !j?.ok) throw new Error(j?.erreur || `Erreur ${r.status}`);
-      setMessage(j.avertissement ? { t: j.avertissement, ok: false } : { t: 'L’adresse du local lui est partie par e-mail, avec le lien de sa fiche. Tu en reçois la copie.', ok: true });
-      void apres();
-    } catch (e) { setMessage({ t: (e as Error).message, ok: false }); }
-  }
+     (/api/documents/adresse), après l'aperçu du mail (ApercuMail). */
+  const [apercuAdresse, setApercuAdresse] = useState<{ id: string; nom: string; renvoi: boolean } | null>(null);
+  const appelAdresse = async (id: string, apercu: boolean) => {
+    const r = await fetch('/api/documents/adresse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, apercu }) });
+    const j = await r.json().catch(() => null) as (MailApercu & { ok?: boolean; erreur?: string; avertissement?: string }) | null;
+    if (!r.ok || !j?.ok) throw new Error(j?.erreur || `Erreur ${r.status}`);
+    return j;
+  };
   /* L'exemplaire signé d'un document du CRM (scellé en ligne ou sur place,
      ou le scan d'une signature à la main), à retélécharger (V3.32). */
   async function ouvrirSigne(x: { signe_chemin?: string | null; titre: string | null; signature?: { mode?: string } | null }) {
@@ -2068,7 +2081,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
      sa ligne dans l'historique de l'affaire. */
   const adresseEnvoyee = (id: string) => (detail?.suivi || []).find(x => {
     const dd = (x.donnees || {}) as Record<string, unknown>;
-    return x.type === 'note' && dd.adresseEnvoyee === true && dd.document === id;
+    return (x.type === 'note' || x.type === 'envoi') && dd.adresseEnvoyee === true && dd.document === id;
   }) || null;
   /* Signées, l'adresse pas encore partie : « Lui envoyer l'adresse ». */
   const recosSansAdresse = recos.filter(x => x.statut === 'signe' && !adresseEnvoyee(x.id));
@@ -2187,15 +2200,17 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
           adresses ? `${adresses} adresse${adresses > 1 ? 's' : ''} envoyée${adresses > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
       })() : 'Aucune pour l’instant',
       detail: 'Avant de donner l’adresse : il reconnaît que tu lui as présenté le local, et s’engage à ne pas traiter en direct, ni par une autre agence.',
-      suite: recos.length ? <ChaineDocs items={[...recos].sort(parDate).map(x => {
+      suite: recos.length ? <><ChaineDocs items={[...recos].sort(parDate).map(x => {
         const mm = maillon(x, nomReco(x));
         if (x.statut !== 'signe') return mm;
         const env = adresseEnvoyee(x.id);
-        return { ...mm, detail: `${mm.detail} · ${env ? `adresse envoyée le ${dateCourte(env.le)}` : 'adresse pas encore envoyée'}` };
-      })} /> : undefined,
+        const vue = env ? vuesDe(env.donnees).flatMap(v => v.le).sort()[0] : '';
+        return { ...mm, detail: `${mm.detail} · ${env ? `adresse envoyée le ${dateCourte(env.le)}${vue ? `, fiche ouverte le ${dateCourte(vue)}` : ''}` : 'adresse pas encore envoyée'}`,
+          action: { l: env ? 'Renvoyer l’adresse' : 'Envoyer l’adresse', onClick: () => setApercuAdresse({ id: x.id, nom: nomReco(x), renvoi: !!env }) } };
+      })} />{recos.filter(x => x.statut === 'pret' && suivis[x.id]).map(x => <SuiviSignature key={x.id} suivi={suivis[x.id]!} onFait={() => setTourSuivis(t => t + 1)} />)}</> : undefined,
       actions: <>
         {recosSansAdresse.map(x => (
-          <BoutonAct key={x.id} or onClick={() => { void envoyerAdresseReco(x); }}><Ic n="mail" t={13} />{recosSansAdresse.length > 1 ? `L’adresse à ${nomReco(x)}` : 'Lui envoyer l’adresse'}</BoutonAct>
+          <BoutonAct key={x.id} or onClick={() => setApercuAdresse({ id: x.id, nom: nomReco(x), renvoi: false })}><Ic n="mail" t={13} />{recosSansAdresse.length > 1 ? `L’adresse à ${nomReco(x)}` : 'Lui envoyer l’adresse'}</BoutonAct>
         ))}
         <BtnTuile onClick={() => setFen({ k: 'reconnaissance' })}><Ic n="plus" t={12} e={2.6} />Nouvelle reconnaissance</BtnTuile>
       </>,
@@ -2693,6 +2708,19 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
           commentaire: v.commentaire }))}
         onFermer={() => setFen(null)} onFait={r => { setMessage({ t: 'Le point mandant est noté.', ok: true }); void apres(r); }} />}
       {fen?.k === 'note' && <FenNote bien={bien} onFermer={() => setFen(null)} onFait={() => apres()} />}
+      {apercuAdresse && (
+        <ApercuMail titre={apercuAdresse.renvoi ? 'Renvoyer l’adresse du local' : 'Envoyer l’adresse du local'}
+          sous={`À ${apercuAdresse.nom}, qui a signé la reconnaissance. Le bouton « Voir la fiche du local » te dira quand il l’ouvre.`}
+          libelle={apercuAdresse.renvoi ? 'Renvoyer l’adresse' : 'Envoyer l’adresse'}
+          charger={() => appelAdresse(apercuAdresse.id, true)}
+          onFermer={() => setApercuAdresse(null)}
+          onEnvoyer={async () => {
+            const j = await appelAdresse(apercuAdresse.id, false);
+            setApercuAdresse(null);
+            setMessage(j.avertissement ? { t: j.avertissement, ok: false } : { t: 'L’adresse du local lui est partie par e-mail, avec la photo et le lien de sa fiche.', ok: true });
+            void apres();
+          }} />
+      )}
       {fen?.k === 'reconnaissance' && (
         <FenReconnaissance bien={bien} suggestions={options} deja={vivants(docsDe('reconnaissance'))}
           onFermer={() => setFen(null)}

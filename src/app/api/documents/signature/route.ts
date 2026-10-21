@@ -7,7 +7,7 @@ import { ecritServeur } from '@/lib/ecritures';
 import {
   lireSignataires, inviter, envoyerCode, validerSignature, sceller, assembler, envoyerExemplaire,
   classer, lireFichier, nomSig, actif, attendu, emailValide, nomDocument, ALERTES, envoyerMail, gabarit, echappe, lienCrmDocument, bouton,
-  offreFinie, ARRETEE, prevenirArret, validerSansCode, signeSansCodeFait, codeValideFait, lancerSignature, auFeminin,
+  offreFinie, ARRETEE, prevenirArret, validerSansCode, signeSansCodeFait, codeValideFait, lancerSignature, auFeminin, mailInvitation, finLien,
   type DocSigne, type SigDoc, type SignatureDoc,
 } from '@/lib/signature-documents';
 import { offrePartieEnSignature } from '@/lib/offres-serveur';
@@ -16,6 +16,7 @@ import { COOKIE_BADGE, badgeValide } from '@/lib/badge';
 import { solderRelancesSignature } from '@/lib/documents-relances';
 import { avecRemises } from '@/lib/remise-mail';
 import { alerteMailActive } from '@/lib/alertes';
+import { basePublique } from '@/lib/jeton';
 
 /**
  * La signature en ligne ou sur place d'un document (Documents juridiques).
@@ -205,6 +206,20 @@ async function traiterPost(req: NextRequest) {
 
     if (!sd) return ko('pas_lance', 409);
     const cible = (): SigDoc | null => sigs.find(s => s.id === body.sig && actif(s)) || null;
+
+    /* ── L'aperçu du mail avant de renvoyer un lien (22 octobre 2026) ──
+       Alexandre : « renvoyer le lien, avec un aperçu de ce qui va être
+       renvoyé ; il n'a plus qu'à cliquer ». Le mail tel qu'il partira (le
+       lien réel ne se montre pas : un lien neuf peut être fait à l'envoi). */
+    if (action === 'apercu') {
+      if (doc.statut !== 'pret') return ko('etat', 409);
+      const s = cible();
+      if (!s || !attendu(s)) return ko('signataire', 404);
+      const email = typeof body.email === 'string' && emailValide(body.email.trim()) ? body.email.trim().toLowerCase() : s.personne.email;
+      const expire = s.lien_expire_le && Date.parse(s.lien_expire_le) > Date.now() ? s.lien_expire_le : finLien(m, d, new Date().toISOString());
+      const x = mailInvitation({ s: { ...s, personne: { ...s.personne, email } }, m, d, lien: `${basePublique()}/signer/…`, expire });
+      return NextResponse.json({ ok: true, a: email, nom: nomSig(s), sujet: x.sujet, html: x.html });
+    }
 
     /* ── Renvoyer un lien (ou passer du « sur place » au lien) ───── */
     if (action === 'renvoyer') {

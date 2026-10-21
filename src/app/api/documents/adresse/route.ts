@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { envoyerAdresseReco, type DocReco } from '@/lib/reconnaissance-serveur';
+import { apercuAdresseReco, envoyerAdresseReco, type DocReco } from '@/lib/reconnaissance-serveur';
 
 /* ═══ « Lui envoyer l'adresse » (Werner, 21 octobre 2026) ══════════════════
    Une reconnaissance d'information signée, quand Werner a choisi de donner
@@ -25,6 +25,11 @@ export async function POST(req: NextRequest) {
     if (!doc) return ko('Document introuvable.', 404);
     if (doc.modele !== 'reconnaissance') return ko('Ce document n’est pas une reconnaissance d’information.');
     if (doc.statut !== 'signe') return ko('La reconnaissance n’est pas encore signée : l’adresse part une fois qu’il l’a signée.', 409);
+    /* L'aperçu du mail, sans rien envoyer (22 octobre 2026). */
+    if (body?.apercu === true) {
+      const a = await apercuAdresseReco(sb, doc);
+      return 'erreur' in a ? ko(a.erreur, 409) : NextResponse.json({ ok: true, ...a });
+    }
     const pb = await envoyerAdresseReco(sb, doc, { auto: false });
     /* Parti mais pas noté : on le dit, sans faire croire que rien n'est parti. */
     if (pb && pb.startsWith('l’adresse est partie')) return NextResponse.json({ ok: true, avertissement: pb.charAt(0).toUpperCase() + pb.slice(1) });
