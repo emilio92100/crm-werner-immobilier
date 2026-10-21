@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Logos PROVISOIRES de Werner Immobilier (en attendant son vrai logo).
+"""Les logos de Werner Immobilier : sa signature (le vrai logo, octobre 2026)
+et, pour les icônes, un « W » en attendant mieux.
 
-Écrit, aux mêmes noms et aux mêmes tailles que les logos d'Emilio (le code
-n'a pas à changer) :
+La signature vient de outils/logo-werner-masque.png : la forme du logo
+(son SVG, celui du site wernerimmobilier.com), en niveaux de gris, que ce
+script colore. Écrit, aux mêmes noms et aux mêmes tailles que les logos
+d'Emilio (le code n'a pas à changer) :
   · public/logo_high_resolution.png / _white.png      2625 × 1101
   · public/logos/logo-emilio-800.png / -blanc-800.png   800 × 336
   · public/logos/e-*.png, src/app/apple-icon.png, src/app/favicon.ico
   · les deux logos en base64 de src/lib/mandat-logo.ts (PDF des mandats)
   · l'icône en base64 de src/app/icon.tsx
-
-Pour mettre le vrai logo de Werner : remplacer ce script par ses fichiers,
-aux mêmes noms et tailles, puis régénérer les base64 (voir la fin du script).
 
     python3 outils/logos-werner.py
 """
@@ -19,7 +19,7 @@ import io
 import pathlib
 import re
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 NOIR = (46, 48, 52, 255)       # #2e3034, anthracite
 BLANC = (255, 255, 255, 255)
@@ -32,53 +32,23 @@ def police(chemin, taille):
     return ImageFont.truetype(chemin, taille)
 
 
-def texte_espace(draw, xy, texte, fnt, fill, espacement):
-    """Écrit un texte lettre par lettre avec un espacement (tracking)."""
-    x, y = xy
-    for c in texte:
-        draw.text((x, y), c, font=fnt, fill=fill)
-        x += draw.textlength(c, font=fnt) + espacement
-    return x
+MASQUE = pathlib.Path(__file__).with_name('logo-werner-masque.png')
 
 
-def largeur_espace(draw, texte, fnt, espacement):
-    return sum(draw.textlength(c, font=fnt) for c in texte) + espacement * (len(texte) - 1)
-
-
-def logo(largeur, hauteur, encre):
-    """« WERNER » en grand, un trait orange, « IMMOBILIER » espacé dessous."""
+def logo(largeur, hauteur, encre, marge=0.035):
+    """La signature de Werner, centrée, à la couleur demandée. Le trait est
+    un peu épaissi : ces logos s'affichent souvent petits (mails, PDF)."""
+    m = Image.open(MASQUE).convert('L').filter(ImageFilter.MaxFilter(5))
+    w = int(largeur * (1 - 2 * marge))
+    h = round(w * m.height / m.width)
+    if h > hauteur * (1 - 2 * marge):
+        h = int(hauteur * (1 - 2 * marge))
+        w = round(h * m.width / m.height)
+    alpha = m.resize((w, h), Image.LANCZOS)
+    trace = Image.new('RGBA', (w, h), encre)
+    trace.putalpha(alpha)
     im = Image.new('RGBA', (largeur, hauteur), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    h1 = int(hauteur * 0.40)
-    f1 = police(GRAS, h1)
-    esp1 = int(h1 * 0.06)
-    w1 = largeur_espace(d, 'WERNER', f1, esp1)
-    # si trop large, on réduit
-    while w1 > largeur * 0.9:
-        h1 = int(h1 * 0.95)
-        f1 = police(GRAS, h1)
-        esp1 = int(h1 * 0.06)
-        w1 = largeur_espace(d, 'WERNER', f1, esp1)
-    h2 = int(hauteur * 0.105)
-    f2 = police(MOYEN, h2)
-    esp2 = int(h2 * 0.55)
-    w2 = largeur_espace(d, 'IMMOBILIER', f2, esp2)
-    trait_h = max(2, int(hauteur * 0.022))
-    trait_w = int(w1 * 0.16)
-    # mise en page verticale, centrée
-    bbox1 = d.textbbox((0, 0), 'W', font=f1)
-    haut1 = bbox1[3] - bbox1[1]
-    bbox2 = d.textbbox((0, 0), 'I', font=f2)
-    haut2 = bbox2[3] - bbox2[1]
-    gap1, gap2 = int(hauteur * 0.07), int(hauteur * 0.07)
-    total = haut1 + gap1 + trait_h + gap2 + haut2
-    y0 = (hauteur - total) // 2
-    x1 = (largeur - w1) / 2
-    texte_espace(d, (x1, y0 - bbox1[1]), 'WERNER', f1, encre, esp1)
-    yt = y0 + haut1 + gap1
-    d.rectangle([(largeur - trait_w) / 2, yt, (largeur + trait_w) / 2, yt + trait_h], fill=ORANGE)
-    y2 = yt + trait_h + gap2
-    texte_espace(d, ((largeur - w2) / 2, y2 - bbox2[1]), 'IMMOBILIER', f2, encre, esp2)
+    im.alpha_composite(trace, ((largeur - w) // 2, (hauteur - h) // 2))
     return im
 
 
@@ -141,7 +111,7 @@ def main():
     s = re.sub(r"export const LOGO_MARINE = '[^']*'", "export const LOGO_MARINE = '" + b64(logo(2625, 1101, NOIR), 720) + "'", s)
     s = re.sub(r"export const LOGO_BLANC = '[^']*'", "export const LOGO_BLANC = '" + b64(logo(2625, 1101, BLANC), 720) + "'", s)
     p.write_text(s)
-    print('logos provisoires de Werner écrits')
+    print('logos de Werner écrits')
 
 
 if __name__ == '__main__':

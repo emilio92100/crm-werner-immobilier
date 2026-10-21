@@ -50,8 +50,9 @@ séparés. Les détails techniques anciens sont dans
 - Les coordonnées de Werner (celles de ses annonces SeLoger, validées par
   Alexandre le 21 octobre) : « 01 87 66 06 00 », contact@wernerimmobilier.com.
   Son prénom seul, « Werner », tant que son nom complet n'est pas donné. Son
-  vrai logo remplacera ceux de `outils/logos-werner.py` (mêmes noms, mêmes
-  tailles).
+  logo, sa signature « Werner Immobilier » (21 octobre), est tiré de
+  `outils/logo-werner-masque.png` par `outils/logos-werner.py` (mêmes noms et
+  mêmes tailles que les logos d'origine) ; les icônes gardent un « W ».
 - Ne jamais ouvrir wernerimmobilier.com : le site est piraté (fausse
   vérification Cloudflare, octobre 2026).
 
