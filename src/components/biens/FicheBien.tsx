@@ -1043,6 +1043,24 @@ export function evenements(bien: BienVente, det: DetailBien, clients: Record<str
           detail: `${n} ${n > 1 ? 'recherches ouvertes' : 'recherche ouverte'}${se?.lignes.length ? `, ${se.lignes.length} ${se.lignes.length > 1 ? 'relues' : 'relue'} en détail` : ''} · le détail est dans l’onglet Rapprochement` });
       }
       else if (d.estimation === true) l.push({ cle: x.id, le: x.le, ic: 'etiquette', ton: 'ic_violet', titre: d.avant ? 'Estimation revue' : 'Estimation', detail: sans('Estimation :'), genre: 'etapes' });
+      /* Werner (21 octobre 2026) : la reconnaissance d'information, pas à pas
+         — préparée, envoyée, signée, puis l'adresse du local envoyée (avec le
+         mail lui-même), ou pas partie. Ni supprimables, ni des notes. */
+      else if (d.reconnaissance === true) {
+        const qui = x.qui || 'un demandeur';
+        const et = str('etape');
+        const VERT = { c: '#15803d', fond: '#f0fdf4', bord: '#bbf7d0' };
+        if (d.adresseEnvoyee === true) l.push({ cle: x.id, le: x.le, ic: 'mail', ton: 'ic_vert', genre: 'documents', chez: chezLui(x.client_id),
+          titre: `Adresse du local envoyée à ${qui}`, detail: x.commentaire || '', puce: { l: d.auto === true ? 'Partie toute seule' : 'Envoyée par toi', ...VERT },
+          message: str('texte') ? { objet: str('sujet'), a: str('a'), corps: str('texte') } : undefined });
+        else if (et === 'adresse_echec') l.push({ cle: x.id, le: x.le, ic: 'alarme', ton: 'ic_rouge', genre: 'documents', chez: chezLui(x.client_id),
+          titre: `Adresse du local pas envoyée à ${qui}`, detail: x.commentaire || '', puce: { l: 'À faire', c: '#b91c1c', fond: '#fef2f2', bord: '#fecaca' } });
+        else if (et === 'signee') l.push({ cle: x.id, le: x.le, ic: 'check', ton: 'ic_vert', genre: 'documents', chez: chezLui(x.client_id),
+          titre: `Reconnaissance signée par ${qui}`, detail: x.commentaire || '', puce: { l: 'Signée', ...VERT } });
+        else l.push({ cle: x.id, le: x.le, ic: 'bouclier', ton: 'ic_or', genre: 'documents', chez: chezLui(x.client_id),
+          titre: et === 'envoyee' ? `Reconnaissance envoyée à ${qui}` : et === 'prete' ? `Reconnaissance prête pour ${qui}` : et === 'preparee' ? `Reconnaissance préparée pour ${qui}` : `Reconnaissance · ${qui}`,
+          detail: (x.commentaire || '').replace(/^🛡️\s*/, '') });
+      }
       else l.push({ cle: x.id, le: x.le, ic: 'bulle', ton: 'ic_gris', titre: 'Note', detail: x.commentaire || '', genre: 'notes', suppr: x.id });
     } else if (x.type === 'offre') {
       /* V3.172 (Alexandre : « sur la fiche du bien aussi, avec l'historique
@@ -2164,7 +2182,9 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
       k: 'reconnaissances', ic: 'bouclier', titre: 'Les reconnaissances', etat: recos.length ? (recosSignees === recos.length ? 'fait' : 'encours') : 'libre',
       statut: recos.length ? (() => {
         const aSigner = recos.filter(x => x.statut === 'pret').length, prepa = recos.filter(x => x.statut === 'brouillon').length;
-        return [recosSignees ? `${recosSignees} signée${recosSignees > 1 ? 's' : ''}` : '', aSigner ? `${aSigner} à signer` : '', prepa ? `${prepa} en préparation` : ''].filter(Boolean).join(' · ');
+        const adresses = recos.filter(x => adresseEnvoyee(x.id)).length;
+        return [`${recos.length} demandeur${recos.length > 1 ? 's' : ''}`, recosSignees ? `${recosSignees} signée${recosSignees > 1 ? 's' : ''}` : '', aSigner ? `${aSigner} à signer` : '', prepa ? `${prepa} en préparation` : '',
+          adresses ? `${adresses} adresse${adresses > 1 ? 's' : ''} envoyée${adresses > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
       })() : 'Aucune pour l’instant',
       detail: 'Avant de donner l’adresse : il reconnaît que tu lui as présenté le local, et s’engage à ne pas traiter en direct, ni par une autre agence.',
       suite: recos.length ? <ChaineDocs items={[...recos].sort(parDate).map(x => {
@@ -2676,6 +2696,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
       {fen?.k === 'reconnaissance' && (
         <FenReconnaissance bien={bien} suggestions={options} deja={vivants(docsDe('reconnaissance'))}
           onFermer={() => setFen(null)}
+          onCompleterAdresse={() => { setFen(null); onModifier('bien:@adresse'); }}
           onVoir={id => { setFen(null); ouvrirDoc(id); }}
           onFait={r => {
             setFen(null);

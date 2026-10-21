@@ -155,23 +155,24 @@ export async function faireReconnaissance(x: DemandeReconnaissance): Promise<Res
   if (error || !data) throw new Error('La reconnaissance n’a pas pu être créée : ' + (error?.message || 'rien n’est revenu'));
   const row = data as DocumentRow;
   const qui = [nomClient(client) !== 'Client' ? nomClient(client) : '', societeDe(client) || x.nouveau?.societe.trim() || ''].filter(Boolean).join(', ') || 'Le demandeur';
-  const noter = async (commentaire: string) => {
+  /* `etape` : ce que l'historique de l'affaire en dit (FicheBien, historique). */
+  const noter = async (commentaire: string, etape: 'preparee' | 'prete' | 'envoyee') => {
     try {
-      await ajouterSuivi({ bien_id: x.bien.id, type: 'note', client_id: client.id, qui, commentaire, donnees: { document: row.id, reconnaissance: true } });
+      await ajouterSuivi({ bien_id: x.bien.id, type: 'note', client_id: client.id, qui, commentaire, donnees: { document: row.id, reconnaissance: true, etape } });
     } catch (e) { avert.push((e as Error).message); }
   };
   if (x.relire) {
-    await noter(`🛡️ Reconnaissance d’information préparée pour ${qui} : à relire, puis à faire signer.`);
+    await noter('À relire dans Documents, puis à faire signer.', 'preparee');
     return { id: row.id, client, etat: 'brouillon', avertissements: avert };
   }
   /* Le PDF figé. Raté : le brouillon reste, il s'ouvre dans Documents. */
   try { await finaliser(row, m, donnees); } catch (e) {
     avert.push(`Le document est créé, mais pas encore prêt à signer : ${(e as Error).message}`);
-    await noter(`🛡️ Reconnaissance d’information préparée pour ${qui}.`);
+    await noter('Le document est créé : à terminer dans Documents.', 'preparee');
     return { id: row.id, client, etat: 'brouillon', avertissements: avert };
   }
   if (x.signature === 'sur_place') {
-    await noter(`🛡️ Reconnaissance d’information prête pour ${qui} : à signer sur place.`);
+    await noter('À signer sur place, sur ton écran.', 'prete');
     return { id: row.id, client, etat: 'pret', avertissements: avert };
   }
   try {
@@ -179,9 +180,9 @@ export async function faireReconnaissance(x: DemandeReconnaissance): Promise<Res
     if (r.echecs?.length) avert.push(`La signature est lancée, mais : ${r.echecs.join(' ; ')}`);
   } catch (e) {
     avert.push(`Le document est prêt, mais le lien de signature n’est pas parti : ${(e as Error).message} Envoie-le depuis Documents.`);
-    await noter(`🛡️ Reconnaissance d’information prête pour ${qui} : le lien de signature reste à envoyer.`);
+    await noter('Le lien de signature reste à envoyer, depuis Documents.', 'prete');
     return { id: row.id, client, etat: 'pret', avertissements: avert };
   }
-  await noter(`🛡️ Reconnaissance d’information envoyée à ${qui} (${email}) : il la signe en ligne, avec un code reçu par e-mail. Tu reçois le document signé${x.adresseApres === 'auto' ? ', et l’adresse du local lui part toute seule' : ''}.`);
+  await noter(`À ${email} : signature en ligne, avec un code reçu par e-mail. Tu reçois le document signé${x.adresseApres === 'auto' ? ', et l’adresse du local part toute seule dès la signature' : ''}.`, 'envoyee');
   return { id: row.id, client, etat: 'envoye', avertissements: avert };
 }

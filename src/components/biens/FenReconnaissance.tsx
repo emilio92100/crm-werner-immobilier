@@ -35,7 +35,7 @@ function phraseDeja(x: DocLie): string {
   return `Une reconnaissance est déjà en préparation pour lui, depuis le ${dateCourte(x.created_at)}.`;
 }
 
-export default function FenReconnaissance({ bien, suggestions = [], deja = [], onFermer, onFait, onVoir }: {
+export default function FenReconnaissance({ bien, suggestions = [], deja = [], onFermer, onFait, onVoir, onCompleterAdresse }: {
   bien: BienVente;
   /* Les demandeurs de cette affaire (visites, présentations, rapprochements). */
   suggestions?: OptionAcheteur[];
@@ -44,6 +44,8 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
   onFermer: () => void;
   onFait: (r: ResultatReconnaissance) => void;
   onVoir: (id: string) => void;
+  /* L'affaire n'a pas d'adresse exacte : la compléter (fiche de l'affaire). */
+  onCompleterAdresse?: () => void;
 }) {
   const [clients, setClients] = useState<ClientMini[] | null>(null);
   const [q, setQ] = useState('');
@@ -120,6 +122,8 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
     </Ch>
   );
   const honoraires = honorairesReconnaissance(bien);
+  /* Sans le numéro et la rue sur l'affaire, l'adresse ne peut pas partir. */
+  const sansAdresse = !(typeof bien.donnees?.adresse === 'string' && bien.donnees.adresse.trim());
   const montant = montantReconnaissance(bien);
   const pret = !!choisi || !!nouveau;
   const principal = mode === 'en_ligne' ? 'Envoyer pour signature' : 'Faire signer sur place';
@@ -243,7 +247,17 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
       <Section ic="lieu" c="#0f766e" f="#effaf8" titre="3. Une fois signée, l’adresse">
         <Suite on={auto} onChange={setAuto} ic="mail" c="#0f766e" f="#effaf8"
           t="Lui envoyer l’adresse tout seul, dès qu’il a signé"
-          s="Il reçoit par e-mail l’adresse exacte du local et le lien de sa fiche. Tu en reçois la copie : rien à faire de ton côté." />
+          s="Il reçoit par e-mail l’adresse exacte, la photo et les informations du local, le lien de sa fiche et tes coordonnées. Tu en reçois la copie : rien à faire de ton côté." />
+        {sansAdresse && (
+          <div className={`${b.ventile} ${b.ventileManque}`}>
+            <Ic n="info" t={15} />
+            <span>
+              <b>{'Cette affaire n’a pas encore d’adresse exacte (le numéro et la rue).'}</b>
+              {' Sans elle, rien ne peut lui partir une fois signé. Complète-la maintenant, ou plus tard : « Lui envoyer l’adresse » t’attendra sur la fiche de l’affaire.'}
+              {onCompleterAdresse && <>{' '}<button type="button" className={b.lien} onClick={onCompleterAdresse}>Compléter l’adresse</button></>}
+            </span>
+          </div>
+        )}
         <div className={s.chAide}>{!auto
           ? 'Tu la lui donnes toi-même : une fois signée, un bouton « Lui envoyer l’adresse » t’attend sur la fiche de l’affaire (onglet Documents), ou tu la lui dis de vive voix.'
           : mode === 'sur_place' && !emailOk((nouveau ? nouveau.email : email).trim())

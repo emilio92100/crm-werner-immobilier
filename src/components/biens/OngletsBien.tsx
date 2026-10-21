@@ -1296,6 +1296,8 @@ export type EvtBien = {
      V3.150 : avec `c` et `t`, son avatar (l'acheteur à qui le bien est
      présenté, le visiteur, celui qui a répondu). */
   chez?: { id: string; l: string; c?: Personne; t?: Teinte };
+  /* Werner : un mail envoyé (l'adresse d'un local), replié derrière « Voir le mail ». */
+  message?: { objet: string; a: string; corps: string };
 };
 export type AVenirBien = { cle: string; titre: string; detail?: string; quand: string; genre: 'visites' | 'offres' };
 const GENRES: { k: GenreEvt | 'tout'; l: string; c?: string; fond?: string }[] = [
@@ -1363,6 +1365,7 @@ export function HistoriqueBien({ evts, aVenir, parcours, chiffres, erreur, onNot
   onNote: () => void; onSuppr: (id: string) => void; onFiche?: (clientId: string) => void;
 }) {
   const [g, setG] = useState<GenreEvt | 'tout'>('tout');
+  const [mails, setMails] = useState<Record<string, boolean>>({});
   const vus = evts.filter(e => g === 'tout' || e.genre === g);
   const futur = aVenir.filter(a => g === 'tout' || a.genre === g);
   const mois = (iso: string) => capitale(new Date(iso).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }));
@@ -1441,6 +1444,25 @@ export function HistoriqueBien({ evts, aVenir, parcours, chiffres, erreur, onNot
                       {suppr}
                     </div>
                     {e.detail && <p className={`${f.texte} ${e.genre === 'notes' ? f.citation : ''}`}>{e.detail}</p>}
+                    {e.message && (() => {
+                      const ouvert = !!mails[e.cle];
+                      return (
+                        <>
+                          <button type="button" className={f.voirMail} data-on={ouvert ? 'oui' : 'non'} aria-expanded={ouvert} onClick={() => setMails(m => ({ ...m, [e.cle]: !m[e.cle] }))}>
+                            <Ic n="mail" t={14} e={2.1} />{ouvert ? 'Masquer le mail' : 'Voir le mail'}<Ic n="bas" t={13} e={2.4} />
+                          </button>
+                          <Depliant ouvert={ouvert}>
+                            <div className={f.mail}>
+                              <div className={f.mailTete}>
+                                {e.message.objet && <div><span>Objet</span><b>{e.message.objet}</b></div>}
+                                {e.message.a && <div><span>À</span><em>{e.message.a}</em></div>}
+                              </div>
+                              <p className={f.mailCorps}>{e.message.corps}</p>
+                            </div>
+                          </Depliant>
+                        </>
+                      );
+                    })()}
                     {e.chez && (() => {
                       const q = e.chez;
                       const av = q.c && q.t ? <AvatarContact c={q.c} teinte={q.t} className={o.chezAv} libre /> : <Ic n="personne" t={12} />;

@@ -440,8 +440,15 @@ SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.
   (adresse exacte, local, référence, lien de sa fiche ; copie cachée à Werner) — sauf si Werner a
   décoché « Lui envoyer l'adresse tout seul » (`donnees.adresseApres = 'main'`) : alors « Lui
   envoyer l'adresse », d'un clic, sur la ligne « Les reconnaissances » de l'onglet Documents
-  (`/api/documents/adresse`). Les deux chemins : `src/lib/reconnaissance-serveur.ts`, qui note
-  l'envoi dans l'historique de l'affaire (`donnees.adresseEnvoyee`) et le suivi du client. Le mail
+  (`/api/documents/adresse`). Les deux chemins : `src/lib/reconnaissance-serveur.ts`. Le mail : la
+  photo du local, l'adresse, le type, la surface, le montant (au mois pour une location), la
+  référence, le lien de sa fiche, le téléphone et l'e-mail de Werner. Sans adresse exacte sur
+  l'affaire (numéro et rue), rien ne part : la fenêtre le dit avant (« Compléter l'adresse »), et
+  l'historique de l'affaire et le suivi du client le disent après. L'historique de l'affaire montre
+  chaque pas (préparée, envoyée, signée, adresse envoyée ou pas partie : `donnees.etape`), à qui, et
+  le mail envoyé (« Voir le mail », `EvtBien.message`) ; le suivi du client a la même ligne, en
+  `mail_envoye` (« Voir le mail » de la frise). L'onglet Documents compte les demandeurs, les
+  signées et les adresses envoyées. Le mail
   d'invitation dit pourquoi on lui demande de signer. ⚠️ À faire relire par l'avocat d'Alexandre avant le premier usage.
 - **Le registre des mandats sous la carte RT CONSEILS** — on attend la réponse de Werner sur le
   numéro à reprendre (où en est sa numérotation sous cette carte) ; elle ne doit jamais doubler celle

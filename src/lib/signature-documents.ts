@@ -763,8 +763,8 @@ export async function classer(sb: SupabaseClient, doc: DocSigne, sd: SignatureDo
   if (bienReco) {
     const { error: e4 } = await sb.from('biens_vente_suivi').insert({
       bien_id: bienReco, type: 'note', le, client_id: doc.client_id || null, qui: doc.titre ? doc.titre.replace(/^Reconnaissance\s*·\s*/, '') : null,
-      commentaire: `✍️ Reconnaissance d’information signée ${sd.mode === 'sur_place' ? 'sur place' : 'en ligne'} le ${dateCourte(le)} à ${heureParis(le)}${adresseAuto ? '.' : ' : tu peux lui donner l’adresse (« Lui envoyer l’adresse », onglet Documents).'}`,
-      donnees: { document: doc.id, reconnaissance: true },
+      commentaire: `Signée ${sd.mode === 'sur_place' ? 'sur place' : 'en ligne'} le ${dateCourte(le)} à ${heureParis(le)}${adresseAuto ? ' : l’adresse du local lui part toute seule.' : ' : tu peux lui donner l’adresse (« Lui envoyer l’adresse », onglet Documents).'}`,
+      donnees: { document: doc.id, reconnaissance: true, etape: 'signee' },
     });
     if (e4) pbs.push('historique de l’affaire : ' + e4.message);
   }
