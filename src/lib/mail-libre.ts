@@ -151,6 +151,8 @@ export function personnaliserObjet(t: string, c: PourMail, conseiller: string): 
 }
 
 /* ── L'habillage : ce que le pied et le bandeau disent ── */
+/* `mentions` : une ligne par mention (22 octobre 2026, Alexandre : « la société,
+   puis l'adresse sur sa ligne, puis la carte professionnelle à la ligne »). */
 export type Habillage = { conseiller: string; telephone: string; agence: string; mentions: string; logo: string };
 
 /* « Alexandre ROGELET » → « Alexandre Rogelet » pour le pied. */
@@ -165,7 +167,7 @@ export function habillageDe(reglages: Record<string, string | undefined>, identi
     conseiller: joliNom(conseillerDe(reglages)),
     telephone: (reglages.conseiller_telephone || '').trim() || '01 87 66 06 00',
     agence: id.nom || 'Werner Immobilier',
-    mentions: [`${id.nom} — ${id.societe}${id.forme ? `, ${id.forme}` : ''}`, adresse, id.carte ? `carte professionnelle ${id.carte}` : ''].filter(Boolean).join(' · '),
+    mentions: [`${id.nom} — ${id.societe}${id.forme ? `, ${id.forme}` : ''}`, adresse, id.carte ? `Carte professionnelle ${id.carte}` : ''].filter(Boolean).join('\n'),
     /* V3.198 : le logo depuis IMAGES_MAIL (src/lib/mail-charte.ts), plus depuis `site`. */
     logo: LOGO_BLANC_MAIL,
   };
@@ -189,8 +191,11 @@ export const texteLiens = (liens: LienPiece[], jours: number) => (liens.length
 export function mailLibreHtml(o: { style: StyleMail; corps: string; h: Habillage; liens?: LienPiece[]; jours?: number }): string {
   const corps = `${o.corps}${blocLiens(o.liens || [], o.jours || 7)}`;
   /* Sur un téléphone, le nom et le numéro du pied passent l'un sous l'autre
-     (comme les mails illustrés de send-mail). */
-  const tete = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title>${LIEN_POLICE_MAIL}<style>@media only screen and (max-width:600px){ .pied-nom, .pied-tel { display:block !important; width:100% !important; text-align:left !important; } .pied-tel { padding-top:10px !important; } }</style></head>`;
+     (comme les mails illustrés de send-mail). 22 octobre 2026 (Alexandre :
+     « ça ne prend pas tout l'écran du téléphone, c'est condensé au milieu ») :
+     la carte va d'un bord à l'autre, sans le fond gris autour, comme les
+     sélections (send-mail). */
+  const tete = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title>${LIEN_POLICE_MAIL}<style>@media only screen and (max-width:600px){ .sheet { width:100% !important; } .cadre { padding:0 !important; } .carte { border-radius:0 !important; border-left:0 !important; border-right:0 !important; } .bord { padding-left:18px !important; padding-right:18px !important; } .mentions { padding:14px 18px 22px !important; margin:0 !important; } .pied-nom, .pied-tel { display:block !important; width:100% !important; text-align:left !important; } .pied-tel { padding-top:10px !important; } }</style></head>`;
   if (o.style === 'simple') {
     return `${tete}<body style="margin:0;padding:0;background:#ffffff;">
 <div style="font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14.5px;line-height:1.6;color:#232528;max-width:640px;padding:6px 4px;">${corps}</div>
@@ -199,22 +204,22 @@ export function mailLibreHtml(o: { style: StyleMail; corps: string; h: Habillage
   const h = o.h;
   return `${tete}<body style="margin:0;padding:0;background:#efeeed;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#efeeed;">
-  <tr><td align="center" style="padding:24px 10px;">
-    <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:16px;overflow:hidden;">
-      <tr><td style="background:#2e3034;border-bottom:3px solid #f08c42;padding:12px 26px;">
+  <tr><td align="center" class="cadre" style="padding:24px 10px;">
+    <table role="presentation" width="600" class="sheet carte" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e4e3;border-radius:16px;overflow:hidden;">
+      <tr><td class="bord" style="background:#2e3034;border-bottom:3px solid #f08c42;padding:12px 26px;">
         <img src="${esc(h.logo)}" alt="${esc(h.agence)}" height="${LOGO_MAIL.court}" style="height:${LOGO_MAIL.court}px;width:auto;display:block;border:0;color:#ffffff;font-weight:700;font-size:16px;" />
       </td></tr>
-      <tr><td style="padding:26px 26px 22px;">
+      <tr><td class="bord" style="padding:26px 26px 22px;">
         <div style="font-size:14.5px;line-height:1.7;color:#363533;">${corps}</div>
       </td></tr>
-      <tr><td style="background:#2e3034;padding:16px 26px;">
+      <tr><td class="bord" style="background:#2e3034;padding:16px 26px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-          <td class="pied-nom" style="font-size:14px;font-weight:700;color:#ffffff;">${esc(h.conseiller)}<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,.6);margin-top:3px;">${esc(h.agence)} · Paris &amp; Hauts-de-Seine</div></td>
+          <td class="pied-nom" style="font-size:14px;font-weight:700;color:#ffffff;">${esc(h.conseiller)}<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,.6);margin-top:3px;">${esc(h.agence)} · Immobilier d’entreprise</div></td>
           <td align="right" class="pied-tel" style="font-size:15px;font-weight:700;color:#f7b07a;white-space:nowrap;"><a href="tel:${esc(h.telephone.replace(/[^+0-9]/g, ''))}" style="color:#f7b07a;text-decoration:none;">${esc(h.telephone)}</a></td>
         </tr></table>
       </td></tr>
     </table>
-    <div style="max-width:600px;margin:12px auto 0;font-size:11px;line-height:1.6;color:#aba7a3;text-align:center;">${esc(h.mentions)}</div>
+    <div class="mentions" style="max-width:600px;margin:12px auto 0;font-size:11px;line-height:1.6;color:#aba7a3;text-align:center;">${h.mentions.split('\n').map(l => `<div>${esc(l)}</div>`).join('')}</div>
   </td></tr>
 </table>
 </body></html>`;
