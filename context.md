@@ -238,6 +238,16 @@ fermeture : les quartiers connus de sa ville se choisissent d'un clic, ou « Éc
 les critères d'une recherche (`FicheClient`) et la création d'un demandeur (`Clients`) sans aucun
 secteur (« Ajouter un secteur » ouvre l'étape « Où chercher », ou « Enregistrer / Créer quand même »).
 
+**Les quartiers de référence** (21 octobre 2026, repris du CRM d'Emilio, sa V3.227). `src/lib/quartiers.ts`
+(`QUARTIERS_REF`) : pour chaque arrondissement de Paris ses 4 quartiers administratifs (les 80 de la Ville
+de Paris), sous chacun les noms d'usage dont on est sûr qu'ils sont dedans (`lieux` : Triangle d'or dans les
+Champs-Élysées, Saint-Lazare dans l'Europe, Opéra dans la Chaussée-d'Antin…), et dans `autres` ceux qui
+chevauchent (Sentier, Haut Marais, Marais, Bastille…). Ils se choisissent d'un clic (`shared/ChoixQuartiers.tsx`) :
+dans le champ Quartier d'une affaire (`ChampsBien`, toujours libre à côté), dans le rappel du secteur et
+dans la recherche d'un demandeur (`SecteurPicker`). Le rapprochement (`quartierCouvre`) : un nom contenu
+dans l'autre suffit, sans majuscules, accents, tirets ni petits mots, et un quartier de référence couvre
+ses lieux (le demandeur qui veut les Champs-Élysées correspond à une affaire notée Triangle d'or).
+
 ### Le marché, l'ancienneté d'une annonce
 
 Savoir **depuis quand une annonce est en ligne** se lit dans les données de la page SeLoger Bureaux &
