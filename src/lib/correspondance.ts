@@ -14,6 +14,9 @@ export type BienCorr = {
   prix: number | null; ville?: string | null; quartier?: string | null;
   trajet?: { minutes: number; arret: string | null } | null;
   surface: number | null; pieces: number | null; chambres: number | null; sejour?: number | null;
+  /* V3.226 : le code postal dit l'arrondissement d'une adresse à Paris, Lyon,
+     Marseille (« Paris » + 75008 = Paris 8e). */
+  code_postal?: string | null;
   etage: number | null; etageTotal: number | null; expo: string | null; dpe: string | null; annee: number | null;
   terrasse?: boolean; balcon?: boolean; jardin?: boolean; parking?: boolean; ascenseur?: boolean; cave?: boolean; gardien?: boolean;
   exterieur?: number | null; surfaceTerrasse?: number | null; surfaceBalcon?: number | null;
@@ -65,6 +68,41 @@ const lireSecteur = (label: string) => {
   const m = label.match(/^(.*?)\s*\(([^()]+)\)\s*$/);
   return m ? { quartier: m[1].trim(), ville: m[2].trim() } : { quartier: null as string | null, ville: label.trim() };
 };
+/* ── La même commune ? (V3.226) ─────────────────────────────────────────
+   Alexandre (21 octobre 2026) : « il faut que le rapprochement soit précis ».
+   Une adresse tapée à Paris donne la ville « Paris » (le code postal dit
+   l'arrondissement) ; les clients, eux, choisissent « Paris 8ème ». Comparées
+   lettre à lettre, « Paris » n'était pas « Paris 8ème » — ni même « Paris
+   8e » : le bien sortait « autre secteur » pour TOUS ceux qui cherchent un
+   arrondissement. Ici Paris, Lyon et Marseille se lisent avec leur
+   arrondissement, quelle que soit l'écriture (8, 8e, 8ème, 8e
+   arrondissement) ou, à défaut, avec le code postal. Une ville entière, côté
+   recherche, comprend tous ses arrondissements ; un bien dont on ne sait pas
+   l'arrondissement est « presque » dans celui demandé. */
+const ARRONDIS = /^(paris|lyon|marseille)\s*(\d{1,2})\s*(?:er|e|eme|ieme|em)?(?:\s*arr(?:ondissement)?\.?)?$/;
+function arrondDuCp(base: string, cp: string | null | undefined): number | null {
+  const c = String(cp || '').replace(/\s/g, '');
+  if (base === 'paris' && /^75\d{3}$/.test(c)) { const n = c === '75116' ? 16 : Number(c.slice(3)); return n >= 1 && n <= 20 ? n : null; }
+  if (base === 'lyon' && /^6900[1-9]$/.test(c)) return Number(c.slice(3));
+  if (base === 'marseille' && /^130(0[1-9]|1[0-6])$/.test(c)) return Number(c.slice(3));
+  return null;
+}
+function lireCommune(v: string, cp?: string | null): { base: string; n: number | null } {
+  const s = String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[-–]/g, ' ').replace(/\s+/g, ' ').trim();
+  const m = s.match(ARRONDIS);
+  if (m) return { base: m[1], n: Number(m[2]) };
+  const base = s.replace(/[^a-z0-9]/g, '');
+  return { base, n: arrondDuCp(base, cp) };
+}
+/** La ville d'une recherche face à celle d'un bien : « oui », « presque »
+    (la bonne ville, arrondissement du bien inconnu) ou null (autre ville). */
+export function memeCommune(villeRecherche: string, villeBien: string, cpBien?: string | null): 'oui' | 'presque' | null {
+  const r = lireCommune(villeRecherche), b = lireCommune(villeBien, cpBien);
+  if (!r.base || r.base !== b.base) return null;
+  if (r.n === null || r.n === b.n) return 'oui';
+  return b.n === null ? 'presque' : null;
+}
+
 export const grouperSecteurs = (liste: string[]) => {
   const villes: { ville: string; quartiers: string[] }[] = [];
   for (const s of liste) {
@@ -137,6 +175,9 @@ const EQUIP_ICO: Record<string, string> = {
 export function correspondance(b: BienCorr, c: CriteresCorr | null | undefined): Correspondance | null {
   if (!c) return null;
   const L: LigneCorr[] = [];
+  /* V3.226 : le secteur est à vérifier (hors de ses quartiers, ou
+     arrondissement inconnu) : la note reste sous 70. */
+  let aVerifier = false;
   const ex = c.exigences || {};
   const nb = (v: number) => String(v).replace('.', ',');
   const min = (v: number | string, u = '') => `${v}${u} minimum`;
@@ -181,7 +222,11 @@ export function correspondance(b: BienCorr, c: CriteresCorr | null | undefined):
      de vos quartiers » : les portails ne découpent pas les villes comme nous. */
   if (c.secteurs?.length && b.ville) {
     const villes = grouperSecteurs(c.secteurs);
-    const v = villes.find(x => normVille(x.ville) === normVille(b.ville as string));
+    /* V3.226 : la commune comparée avec son arrondissement (memeCommune). */
+    const rel = villes.map(x => ({ x, r: memeCommune(x.ville, b.ville as string, b.code_postal) })).filter(y => y.r);
+    const exacte = rel.find(y => y.r === 'oui');
+    const v = (exacte || rel[0])?.x;
+    const arrondInconnu = !exacte && !!v;
     const q = v && b.quartier ? v.quartiers.find(x => normVille(x).includes(normVille(b.quartier as string)) || normVille(b.quartier as string).includes(normVille(x))) : null;
     /* « Parchamp-Albert Kahn, Jean-Jaurès-Reine et 3 autres » : le client
        sait combien il en a choisi, au lieu d'un « … » qui ne dit rien. */
@@ -195,8 +240,9 @@ export function correspondance(b: BienCorr, c: CriteresCorr | null | undefined):
        le secteur en « presque » — la ville est la bonne, le quartier non. Un
        début de nom suffit (« Silly » pour « Silly-Gallieni »). Les annonces
        des portails gardent la règle d'avant. */
-    const horsQuartiers = !!(v && b.quartierSur && b.quartier && v.quartiers.length && !q);
-    L.push({ ico: 'lieu', lib: 'Secteur', demande, valeur: horsQuartiers ? `${b.quartier} · hors de ses quartiers` : q || b.quartier || b.ville, etat: !v ? 'non' : horsQuartiers ? 'presque' : 'oui', poids: 2 });
+    const horsQuartiers = !!(v && !arrondInconnu && b.quartierSur && b.quartier && v.quartiers.length && !q);
+    if (horsQuartiers || arrondInconnu) aVerifier = true;
+    L.push({ ico: 'lieu', lib: 'Secteur', demande, valeur: horsQuartiers ? `${b.quartier} · hors de ses quartiers` : arrondInconnu ? `${b.ville} · arrondissement à préciser` : q || b.quartier || b.ville, etat: !v ? 'non' : horsQuartiers || arrondInconnu ? 'presque' : 'oui', poids: 2 });
   }
 
   /* Le trajet : minutes à pied jusqu'à la station, quand l'annonce permet de le dire. */
@@ -290,5 +336,10 @@ export function correspondance(b: BienCorr, c: CriteresCorr | null | undefined):
   if (L.length < 3) return null;
   const total = L.reduce((t, x) => t + x.poids, 0);
   const points = L.reduce((t, x) => t + (x.etat === 'oui' ? x.poids : x.etat === 'presque' ? x.poids / 2 : 0), 0);
-  return { note: Math.round((100 * points) / total), lignes: L };
+  const note = Math.round((100 * points) / total);
+  /* V3.226 (Alexandre : « s'il n'y a aucun lien… c'est à nous de
+     sélectionner ») : hors des quartiers qu'il a choisis, ou sans savoir si
+     le bien est dans son arrondissement, un bien ne « correspond » jamais —
+     au mieux « en partie », sous 70 %. */
+  return { note: aVerifier ? Math.min(note, 69) : note, lignes: L };
 }

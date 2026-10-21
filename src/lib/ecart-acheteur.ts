@@ -11,8 +11,7 @@
    n'écarte personne tant que les annexes (ou l'immeuble) ne sont pas
    remplies. Les villes se comparent comme les communes (« Paris 16e » =
    « Paris 16ème »). */
-import { grouperSecteurs, type BienCorr, type Correspondance, type CriteresCorr } from '@/lib/correspondance';
-import { cleCommune } from '@/lib/communes';
+import { grouperSecteurs, memeCommune, type BienCorr, type Correspondance, type CriteresCorr } from '@/lib/correspondance';
 
 export type RaisonEcart = 'budget' | 'secteur' | 'surface' | 'chambres' | 'indispensable' | 'nature';
 export const RAISONS_ECART: Record<RaisonEcart, string> = {
@@ -35,9 +34,11 @@ export function raisonEcart(corr: Correspondance, b: BienCorr, c: CriteresCorr):
      fonds pour qui veut louer… n'est pas « un peu moins bien », c'est autre
      chose (la ligne « Ce qu'il cherche », poids 3, restait une simple note). */
   if (non('Ce qu’il cherche')) return 'nature';
+  /* V3.226 : la commune avec son arrondissement (« Paris » + 75008 = Paris 8e,
+     memeCommune) : avant, un bien tapé « Paris » écartait tous ceux qui
+     cherchent « Paris 8ème ». */
   if (non('Secteur') && b.ville) {
-    const ville = cleCommune(b.ville);
-    if (!grouperSecteurs(c.secteurs || []).some(v => cleCommune(v.ville) === ville)) return 'secteur';
+    if (!grouperSecteurs(c.secteurs || []).some(v => memeCommune(v.ville, b.ville as string, b.code_postal))) return 'secteur';
   }
   if (c.surfaceMin && b.surface && b.surface < c.surfaceMin * 0.9) return 'surface';
   if (non('Chambres')) return 'chambres';

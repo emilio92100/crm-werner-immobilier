@@ -1235,7 +1235,7 @@ export function versCorrespondance(b: BienVente): BienCorr {
   const imm = liste(d, 'immeuble');
   const eq = liste(d, 'equipements');
   return {
-    prix: argentBien(d).prix, ville: txt(d, 'ville') || null, quartier: txt(d, 'quartier') || null,
+    prix: argentBien(d).prix, ville: txt(d, 'ville') || null, code_postal: txt(d, 'cp') || null, quartier: txt(d, 'quartier') || null,
     surface: nb(d, 'surface'), pieces: null, chambres: null, sejour: null,
     etage: enImmeuble(d) ? nb(d, 'etage') : null, etageTotal: nb(d, 'etages'),
     expo: null, dpe: typeof d.dpe === 'string' && d.dpe ? d.dpe : null, annee: nb(d, 'annee'),
