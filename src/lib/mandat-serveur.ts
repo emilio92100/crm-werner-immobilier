@@ -250,8 +250,10 @@ function contenuDocument(d: Record<string, unknown>): Contenu {
   const types = liste(d, 'types').map(v => (v === 'autre' ? txt(d, 'typeAutre') || 'Autre' : TYPES_BIEN.find(t => t.v === v)?.l || '')).filter(Boolean);
   return {
     recherche: {
-      typeBien: types.join(', ') || null, piecesMin: num(d, 'pieces'), chambresMin: num(d, 'chambres'), surfaceMin: num(d, 'surface'),
+      typeBien: types.join(', ') || null, piecesMin: null, chambresMin: null, surfaceMin: num(d, 'surface'),
       secteurs: txt(d, 'secteurs').split(/\s*[,;\n]\s*/).map(x => x.trim()).filter(Boolean), budget: null, taux, forfait,
+      /* Werner : ce qu'il veut faire, son loyer maximum, son activité. */
+      natures: liste(d, 'natures'), loyerMax: a.loyer, activite: txt(d, 'activite') || null,
     },
     prixMax: a.prix, honoraires: a.honoraires, taux, forfait, duree: DUREE,
   };

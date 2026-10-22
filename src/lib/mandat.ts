@@ -324,15 +324,21 @@ export function versionMandat(r: Recherche): string {
   return `${c.taux}|${c.forfait ?? ''}|${c.prixMax ?? ''}|${r.loyerMax ?? ''}|${decrireRecherche(r)}`;
 }
 
-/* La famille d'un type de bien (V3.56) : « appartement » (un loft, un
-   duplex, un studio en sont), « maison » (villa, pavillon), « terrain »,
-   « autre » (la case « Autre » de l'espace), ou « autre:<texte> » pour un
-   type écrit à la main (« local commercial »). Les mêmes familles que les
-   cases du mandat de Documents (typesDepuis, src/lib/actes/mandat-recherche.ts). */
+/* La famille d'un type de local (V3.56, Werner le 22 octobre 2026) :
+   bureaux, local commercial (boutique, magasin), restaurant (café, bar),
+   local d'activité (atelier), entrepôt (stockage), immeuble, terrain,
+   parking ; « autre » (la case « Autre » de l'espace), ou « autre:<texte> »
+   pour un type écrit à la main. Les mêmes familles que les cases du mandat
+   de Documents (typesDepuis, src/lib/actes/mandat-recherche.ts). */
 export function familleType(t: string): string {
   const x = String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-  if (/appart|studio|duplex|triplex|loft/.test(x)) return 'appartement';
-  if (/maison|villa|pavillon/.test(x)) return 'maison';
+  if (/bureau/.test(x)) return 'bureaux';
+  if (/restau|cafe|\bbar\b|brasserie/.test(x)) return 'restaurant';
+  if (/commerc|boutique|magasin/.test(x)) return 'local';
+  if (/activite|atelier/.test(x)) return 'activite';
+  if (/entrepot|stockage|logistique/.test(x)) return 'entrepot';
+  if (/immeuble/.test(x)) return 'immeuble';
+  if (/parking|\bbox\b/.test(x)) return 'parking';
   if (/terrain/.test(x)) return 'terrain';
   if (x === 'autre' || x === 'autres') return 'autre';
   return 'autre:' + x.replace(/[^a-z0-9]/g, '');
@@ -358,6 +364,9 @@ export function horsMandat(signe: Contenu, r: Recherche): string[] {
   if (pm && signe.prixMax && pm > signe.prixMax) {
     out.push(`Prix maximum : ${euros(signe.prixMax)} sur le mandat, ${euros(pm)} avec son budget de ${euros(r.budget || 0)}`);
   }
+  /* Werner : le loyer annuel maximum signé, et celui de sa recherche. */
+  const lm = signe.recherche.loyerMax;
+  if (lm && r.loyerMax && r.loyerMax > lm) out.push(`Loyer annuel maximum : ${euros(lm)} HT HC sur le mandat, ${euros(r.loyerMax)} dans sa recherche`);
   const avant = (signe.recherche.secteurs || []).map(n);
   if (avant.length) {
     const nouveaux = r.secteurs.filter(x => !avant.includes(n(x)));
@@ -379,7 +388,7 @@ export function horsMandat(signe: Contenu, r: Recherche): string[] {
       const couverte = fAvant.includes(f)
         || (f === 'autre' && fAvant.some(a => a.startsWith('autre')))
         || (f.startsWith('autre:') && fAvant.includes('autre'));
-      const lib = f.startsWith('autre:') ? x.toLowerCase() : f;
+      const lib = x.toLowerCase();
       if (!couverte && !absentes.includes(lib)) absentes.push(lib);
     }
     for (const lib of absentes.sort()) out.push(`Type de local absent du mandat : ${lib}`);
@@ -422,8 +431,10 @@ export function decrireCourt(r: Recherche): { valeur: string; detail: string } {
   const pieces = r.piecesMin ? `${r.piecesMin} espace${r.piecesMin > 1 ? 's' : ''} environ` : '';
   const ou = r.secteurs.length > 2 ? `${r.secteurs.slice(0, 2).join(', ')} et ${r.secteurs.length - 2} autre${r.secteurs.length > 3 ? 's' : ''} secteur${r.secteurs.length > 3 ? 's' : ''}` : r.secteurs.join(', ');
   const surf = r.surfaceMin ? `${r.surfaceMin}\u00a0m² environ` : '';
+  /* « Restaurant ou local commercial » : une majuscule au début seulement. */
+  const q = quoi.toLowerCase();
   return {
-    valeur: [quoi.charAt(0).toUpperCase() + quoi.slice(1), pieces].filter(Boolean).join(' · '),
+    valeur: [q.charAt(0).toUpperCase() + q.slice(1), pieces].filter(Boolean).join(' · '),
     detail: [ou, surf].filter(Boolean).join(' · ') || 'selon les critères de votre espace',
   };
 }
@@ -599,7 +610,13 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
     : 'du prix, hors honoraires, de la cession ou de la vente conclue';
   const honoraires: Bloc[] = forfait
     ? [P(`Honoraires de l’Agence : forfait de ${euros(forfait)} HT (${enLettres(forfait)} euros hors taxes), TVA en sus.`, true)]
-    : [P(`Honoraires de l’Agence : ${tauxTexte(c.taux)} ${base}${ACHETE(r) && prix && hono ? `, soit ${euros(hono)} HT pour un prix de ${euros(prix)}` : ''}${LOUE(r) && r.loyerMax ? `, soit ${euros(Math.round((r.loyerMax * c.taux) / 100))} HT pour un loyer annuel de ${euros(r.loyerMax)}` : ''}, TVA en sus.`, true)];
+    : [P(`Honoraires de l’Agence : ${tauxTexte(c.taux)} ${base}${(() => {
+      const ex = [
+        ACHETE(r) && prix && hono ? `${euros(hono)} HT pour un prix de ${euros(prix)}` : '',
+        LOUE(r) && r.loyerMax ? `${euros(Math.round((r.loyerMax * c.taux) / 100))} HT pour un loyer annuel de ${euros(r.loyerMax)}` : '',
+      ].filter(Boolean).join(' ou ');
+      return ex ? `, soit ${ex}` : '';
+    })()}, TVA en sus.`, true)];
 
   const mandat: Partie = {
     titre: titreMandat(d.numero),
