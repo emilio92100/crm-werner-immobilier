@@ -5,14 +5,15 @@ import { createClient } from '@supabase/supabase-js';
 import { lienBienPublic } from '@/lib/jeton';
 import { etatServeur, alerteHorsMandat, mandatDocumentEnRoute } from '@/lib/mandat-serveur';
 import { alerteMailActive } from '@/lib/alertes';
-import { estIssue, raisonsValides, issueDe, badgeApresVisite, maintenantParis, visitePasseeParis, disposPropres, estRaisonImprevu, ISSUES, type Issue } from '@/lib/visites';
-import { texteCreneau } from '@/lib/suivi-agence';
+import { estIssue, raisonsValides, issueDe, badgeApresVisite, maintenantParis, visitePasseeParis, courtDuBien, disposPropres, estRaisonImprevu, imprevusOuverts, ISSUES, type Issue } from '@/lib/visites';
 import { ecritServeur } from '@/lib/ecritures';
 import { colonneSuspensionAbsente } from '@/lib/suspension';
 import { retracteEnLigne, pourEspaceAcheteur } from '@/lib/documents-espace';
 import { logoMail } from '@/lib/mail-charte';
 import { lireCriteresPro } from '@/lib/correspondance';
 import { prixDuBien } from '@/lib/honoraires-bien';   // V3.145 : le prix de l'annonce, partout
+import { creneauxAChoisir } from '@/lib/suivi-client';
+import { contactDu, contactEnLigne, heureCourte, lireLigneSuivi, texteCreneau } from '@/lib/suivi-agence';
 
 /**
  * Tout ce que l'espace acheteur écrit passe par ici.
@@ -21,6 +22,8 @@ import { prixDuBien } from '@/lib/honoraires-bien';   // V3.145 : le prix de l'a
  *   POST /api/espace/retour    { token, bien_id, avis, commentaire }
  *   POST /api/espace/visite    { token, visite_id, issue, motifs, mot, prix }   son avis après une visite
  *   POST /api/espace/imprevu   { token, visite_id, quoi, motifs, dispos, mot }   un imprévu sur une visite calée (V3.232)
+ *   POST /api/espace/creneau   { token, bien_id, ligne, date, heure }   il choisit un créneau de l'agence (V3.221)
+ *   POST /api/espace/revoir    { token, bien_id, motifs, dispos, mot }   il demande une 2e visite (V3.222)
  *   POST /api/espace/criteres  { token, criteres }
  *   POST /api/espace/message   { token, texte }
  *   POST /api/espace/rappel    { token, creneau }
@@ -224,6 +227,14 @@ async function prevenirVisite(
   });
 }
 
+/* V3.232 : l'imprévu encore ouvert sur cette visite à venir (journal, metadata.imprevu). */
+async function imprevuOuvertServeur(sb: ReturnType<typeof base>, rechercheId: string, v: { id: string; date_visite: string | null; heure: string | null }) {
+  const { data, error } = await sb.from('journal').select('metadata, created_at')
+    .eq('recherche_id', rechercheId).eq('type', 'message_client').eq('metadata->imprevu->>visite_id', v.id);
+  if (error) { console.error('[espace] imprévu', error.message); return null; }
+  return imprevusOuverts((data || []) as { metadata?: unknown; created_at?: string | null }[], [{ ...v, statut: 'a_venir' }])[v.id] || null;
+}
+
 /* V3.232 — Le mail qui prévient Werner d'un imprévu sur une visite calée :
    son demandeur veut la décaler (ses disponibilités) ou l'annuler (sa raison).
    La visite est toujours dans l'agenda : c'est lui qui prévient l'agence ou le
@@ -292,6 +303,74 @@ async function prevenirImprevu(
     }),
   });
   if (!r.ok) console.error('[espace/imprevu] mail', r.status, await r.text().catch(() => ''));
+}
+
+/* V3.221 (repris du CRM d'Emilio) — Le mail qui prévient Werner que son client a choisi un des
+   créneaux de l'agence : la visite est déjà dans son agenda, il lui reste à
+   la confirmer à l'agence. Coupé dans Paramètres → Alertes mail
+   (« visite_creneau ») : la relance du jour suffit. */
+async function prevenirCreneau(
+  supabase: ReturnType<typeof base>, clientId: string,
+  bien: { id: string; titre?: string | null; ville?: string | null; quartier?: string | null; photos?: string[] | null; prix_acquereur?: number | null; prix_vendeur?: number | null },
+  quand: string, plage: string, contact: string, sansMandat: boolean,
+) {
+  const apiKey = process.env.MAILJET_API_KEY, apiSecret = process.env.MAILJET_API_SECRET;
+  if (!apiKey || !apiSecret) return;
+  if (!(await alerteMailActive(supabase, 'visite_creneau'))) return;
+  const { data: client } = await supabase.from('clients').select('id, prenom, nom').eq('id', clientId).maybeSingle();
+  const nom = client ? `${client.prenom || ''} ${client.nom || ''}`.trim() : 'Un client';
+  const echappe = (t: string) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const crm = process.env.NEXT_PUBLIC_CRM_URL || 'https://crm-werner-immobilier.vercel.app';
+  const lien = `${crm}/?page=fiche&client=${encodeURIComponent(clientId)}`;
+  const titre = bien.titre || 'un local';
+  const lieu = [bien.quartier, bien.ville].filter(Boolean).join(', ');
+  const prix = prixDuBien(bien).demande;
+  const photo = Array.isArray(bien.photos) ? bien.photos.filter(Boolean)[0] : null;
+  const mandat = sansMandat ? 'Pense à lui faire signer son mandat de recherche avant la visite.' : '';
+  const html = `<div style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#363533">
+  <div style="background:#2e3034;padding:18px 22px 16px;border-radius:14px 14px 0 0;border-bottom:3px solid #f08c42">
+    ${logoMail('CRM')}
+    <div style="color:#ffffff;font-weight:800;font-size:18px;line-height:1.3;margin-top:12px">${echappe(nom)} a choisi son créneau</div>
+  </div>
+  <div style="border:1px solid #eeeeed;border-top:none;border-radius:0 0 14px 14px;padding:20px 22px">
+    <div style="padding:14px 16px;border-radius:12px;background:#E7F6EE;border:1px solid #BBE5CC">
+      <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#0E6B43;font-weight:800">Visite posée dans ton agenda</div>
+      <div style="margin-top:6px;font-size:18px;font-weight:800;color:#232528">${echappe(quand)}</div>
+      ${plage ? `<div style="margin-top:4px;font-size:13px;color:#363533">${echappe(plage)}</div>` : ''}
+    </div>
+    <div style="margin-top:14px;border:1px solid #eeeeed;border-radius:12px;overflow:hidden;background:#f6f6f7">
+      ${photo ? `<img src="${echappe(photo)}" alt="" width="514" style="width:100%;max-width:514px;height:auto;display:block;border:0" />` : ''}
+      <div style="padding:14px 16px">
+        <div style="font-weight:700;font-size:15px;color:#232528">${echappe(titre)}</div>
+        ${lieu ? `<div style="color:#5B6B80;margin-top:4px;font-size:13px">${echappe(lieu)}</div>` : ''}
+        ${prix ? `<div style="font-weight:800;font-size:17px;color:#232528;margin-top:8px">${Number(prix).toLocaleString('fr-FR')} €</div>` : ''}
+      </div>
+    </div>
+    <div style="margin-top:16px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#aba7a3;font-weight:700">À faire</div>
+    <div style="margin-top:6px;font-size:14px;line-height:1.6;color:#232528">Confirmer le rendez-vous à l’agence${contact ? ` : ${echappe(contact)}` : '.'}</div>
+    ${mandat ? `<div style="margin-top:16px;padding:12px 14px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:13px;line-height:1.55"><b>Pas de mandat signé.</b> ${echappe(mandat)}</div>` : ''}
+    <a href="${lien}" style="display:inline-block;margin-top:18px;background:#f08c42;color:#232528;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:800">Ouvrir sa fiche</a>
+    <div style="margin-top:14px;font-size:12px;color:#aba7a3">La visite est dans ton agenda et dans Visites ; la confirmation à l’agence est dans tes Relances, pour aujourd’hui.</div>
+  </div>
+</div>`;
+  const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
+  const r = await fetch('https://api.mailjet.com/v3.1/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+    body: JSON.stringify({
+      Messages: [{
+        From: { Email: FROM_EMAIL, Name: 'Werner · CRM' },
+        To: [{ Email: process.env.ALERTES_EMAIL || FROM_EMAIL }],
+        Subject: `📅 ${nom} a choisi son créneau · ${quand}`,
+        TextPart: `${nom} a choisi son créneau pour ${titre}${lieu ? ` (${lieu})` : ''} : ${quand}.${plage ? `\n${plage}` : ''}\n\nLa visite est posée dans ton agenda. À faire : la confirmer à l’agence${contact ? ` (${contact})` : ''}.${mandat ? `\n\n⚠️ Pas de mandat signé. ${mandat}` : ''}\n\nOuvrir sa fiche : ${lien}`,
+        HTMLPart: html,
+        /* 64 caractères au plus pour Mailjet (V3.215). */
+        CustomID: `creneau-${bien.id}-${Date.now().toString(36)}`,
+        TrackOpens: 'disabled', TrackClicks: 'disabled',
+      }],
+    }),
+  });
+  if (!r.ok) console.error('[espace/creneau] mail', r.status, await r.text().catch(() => ''));
 }
 
 /* Le mail qui prévient Alexandre de la réponse du client après une visite.
@@ -707,7 +786,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
           return NextResponse.json({ ok: false, error: 'plus_dispo' }, { status: 409 });
         }
 
-        const motifs = raisonsValides(issue, body.motifs);
+        /* V3.222 : « J'aimerais le revoir » porte aussi ses disponibilités
+           (le calendrier de l'espace), rangées avec ses raisons. */
+        const motifs = [...raisonsValides(issue, body.motifs), ...(issue === 'revoir' ? disposPropres(body.dispos) : [])];
         const mot = nettoie(body.mot, 500) || null;
         const p = Number(body.prix);
         const prix = issue === 'offre' && Number.isFinite(p) && p >= 10_000 && p <= 50_000_000 ? Math.round(p) : null;
@@ -952,6 +1033,256 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
         catch (err) { console.error('[espace/imprevu] mail', err); }
         await evt('message', `⚠️ Imprévu sur la visite du ${quand} : ${veut}${detail ? ' · ' + detail : ''}${mot ? ' — ' + mot : ''}`, bien?.id || null);
         return NextResponse.json({ ok: true, quoi, le });
+      }
+
+      /* ── V3.221 (repris du CRM d'Emilio) : il choisit un des créneaux proposés par l'agence ──
+         Alexandre : « s'il le valide, ça crée directement la visite sur mon
+         agenda, dans la catégorie visite ». Les mêmes écritures que
+         « Planifier une visite » (src/lib/planifier-visite.ts) : la visite,
+         l'état du bien, la relance « Veut visiter » soldée, la ligne
+         « Visite planifiée » du Suivi. En plus : une relance du jour pour la
+         confirmer à l'agence, et un mail. Le créneau est revérifié ici avec
+         la règle de l'espace (creneauxAChoisir) : un écran resté ouvert ne
+         fait pas passer un créneau retiré ou dépassé. */
+      case 'creneau': {
+        const bien = await bienDeLaRecherche(body.bien_id);
+        if (!bien) return NextResponse.json({ ok: false, error: 'bien inconnu' }, { status: 404 });
+        /* Un bien de l'agence n'a pas de suivi d'agence : rien à choisir. */
+        if (bien.bien_vente_id) return NextResponse.json({ ok: false, error: 'creneau_ferme' }, { status: 409 });
+        if (['compromis', 'vendu', 'retire', 'suspendu'].includes((await etapeVente(bien)) || '')) {
+          return NextResponse.json({ ok: false, error: 'plus_dispo' }, { status: 409 });
+        }
+        const date = typeof body.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : '';
+        const heure = typeof body.heure === 'string' && /^\d{2}:\d{2}$/.test(body.heure) ? body.heure : '';
+        const ligneId = typeof body.ligne === 'string' && /^[0-9a-f-]{36}$/i.test(body.ligne) ? body.ligne : '';
+        if (!date || !heure || !ligneId) return NextResponse.json({ ok: false, error: 'creneau inconnu' }, { status: 400 });
+
+        const { data: brutes, error: eS } = await supabase.from('suivis_agence').select('*')
+          .eq('bien_id', bien.id).eq('recherche_id', recherche.id).order('created_at', { ascending: false });
+        if (eS) { console.error('[espace/creneau] suivi', eS.message); return NextResponse.json({ ok: false, error: 'lecture' }, { status: 500 }); }
+        const lignes = (brutes || []).map(lireLigneSuivi);
+        const mParis = maintenantParis();
+        /* V3.222 : un bien déjà visité — pour une 2e visite (pas après « Pas
+           pour moi »), et avec les seuls appels d'après elle : la même règle
+           que l'espace (page.tsx, suiviDe). */
+        const { data: vis, error: eV } = await supabase.from('visites').select('id, statut, date_visite, heure, issue, avis_client')
+          .eq('recherche_id', recherche.id).eq('bien_id', bien.id).in('statut', ['a_venir', 'effectuee']);
+        if (eV) { console.error('[espace/creneau] visites', eV.message); return NextResponse.json({ ok: false, error: 'lecture' }, { status: 500 }); }
+        type VisCr = { id: string; statut: string; date_visite: string | null; heure: string | null; issue: string | null; avis_client: string | null };
+        const visCr = ((vis || []) as VisCr[]).slice().sort((a, b2) => `${a.date_visite || ''} ${a.heure || ''}`.localeCompare(`${b2.date_visite || ''} ${b2.heure || ''}`));
+        const passees = visCr.filter(v => v.statut === 'effectuee' || visitePasseeParis(v, mParis));
+        const derniere = passees[passees.length - 1] || null;
+        if (derniere && issueDe(derniere) === 'non') return NextResponse.json({ ok: false, error: 'creneau_ferme' }, { status: 409 });
+        const depuis = derniere ? `${String(derniere.date_visite || '').slice(0, 10)} ${/^\d{2}:\d{2}/.test(String(derniere.heure || '')) ? String(derniere.heure).slice(0, 5) : '00:00'}` : '';
+        /* Déjà une visite à venir sur ce bien (calée entre-temps par
+           Alexandre, ou un deuxième appui) : on n'en pose pas une seconde.
+           V3.232 : sauf s'il y a signalé un imprévu « décaler » — son choix la
+           déplace, parmi les créneaux notés depuis son imprévu. */
+        const prevue = visCr.find(v => v.statut === 'a_venir' && !visitePasseeParis(v, mParis)) || null;
+        const impPrevue = prevue ? await imprevuOuvertServeur(supabase, recherche.id, prevue) : null;
+        if (prevue && impPrevue?.quoi !== 'decaler') return NextResponse.json({ ok: false, error: 'deja', date: prevue.date_visite, heure: prevue.heure }, { status: 409 });
+        const ouverts = creneauxAChoisir(lignes.filter(l => (!depuis || (!!l.created_at && maintenantParis(new Date(l.created_at)) >= depuis)) && (!impPrevue || String(l.created_at || '') > impPrevue.le)).map(l => ({ id: l.id, genre: l.genre, dispo: l.dispo, creneaux: l.creneaux, montrer: l.montrer, created_at: l.created_at })), mParis);
+        const c = ouverts && ouverts.ligne === ligneId ? ouverts.creneaux.find(x => x.date === date && x.heures.includes(heure)) : null;
+        if (!c) return NextResponse.json({ ok: false, error: 'creneau_ferme' }, { status: 409 });
+
+        /* V3.233 — Alexandre : « s'il valide un créneau sans mandat signé, que
+           ça lui demande de le signer d'abord ». La même règle que « Je
+           souhaite le visiter » (route « retour ») : un mandat l'attend — à
+           signer dans son espace, ou préparé dans Documents et pas encore
+           signé par lui — et le créneau attend sa signature. L'espace ouvre
+           la signature, puis renvoie ce créneau. Sans mandat possible (pas de
+           numéro), il passe, et le mail le signale. */
+        {
+          const { data: rm } = await supabase.from('recherches').select('*').eq('id', recherche.id).maybeSingle();
+          const etatM = rm ? await etatServeur(supabase, rm) : 'sans_numero';
+          if (etatM !== 'valide') {
+            const { data: qui } = await supabase.from('clients').select('*').eq('id', recherche.client_id).maybeSingle();
+            const doc = await mandatDocumentEnRoute(supabase, recherche.id, qui);
+            if (doc?.lien && doc.vous !== 'signe') return NextResponse.json({ ok: false, error: 'mandat_document', lien: doc.lien }, { status: 409 });
+            if (!doc && etatM === 'a_signer') return NextResponse.json({ ok: false, error: 'mandat' }, { status: 409 });
+          }
+        }
+
+        /* Il l'a déjà visité : c'est une deuxième visite (comme dans le CRM). */
+        const revu = visCr.some(v => v.id !== prevue?.id);
+
+        const { data: fiche } = await supabase.from('biens').select('*').eq('id', bien.id).maybeSingle();
+        const b = (fiche || bien) as Record<string, unknown>;
+        const contact = contactEnLigne(contactDu(b, lignes));
+        const { data: cl } = await supabase.from('clients').select('prenom, nom').eq('id', recherche.client_id).maybeSingle();
+        const prenom = String(cl?.prenom || '').trim() || 'Le client';
+        const titre = bien.titre || bien.ville || 'Bien';
+        /* « Jeu. 23 oct. à 18 h » ; une plage le dit (« proposée de 14 h à 17 h »). */
+        const quand = texteCreneau({ date, heure }).replace(' · ', ' à ');
+        const plage = c.fin ? `Plage proposée par l’agence : de ${heureCourte(c.heure)} à ${heureCourte(c.fin)}.` : '';
+
+        const { data: posee, error: eI } = prevue
+          ? await supabase.from('visites').update({ date_visite: date, heure, contact_agence: contact || null })
+            .eq('id', prevue.id).eq('statut', 'a_venir').select('id').single()
+          : await supabase.from('visites').insert({
+            client_id: recherche.client_id, recherche_id: recherche.id, bien_id: bien.id, statut: 'a_venir',
+            date_visite: date, heure, contact_agence: contact || null,
+            commentaire: `Créneau choisi par ${prenom} depuis son espace.${plage ? ` ${plage}` : ''} À confirmer à l’agence.`,
+          }).select('id').single();
+        if (eI || !posee) {
+          console.error('[écriture] [espace/creneau] visite', eI?.message || 'aucune ligne');
+          return NextResponse.json({ ok: false, error: 'enregistrement' }, { status: 500 });
+        }
+
+        /* L'état du bien, comme poserVisites : « Veut visiter » s'il n'avait
+           pas encore répondu (c'est lui qui a choisi : retour_par client),
+           une offre faite le reste. */
+        const le = new Date().toISOString();
+        await ecritServeur('[espace/creneau] état du bien', supabase.from('biens')
+          .update({ badge_retour: 'souhaite_visiter', retour_par: 'client', retour_le: le })
+          .eq('id', bien.id).or('badge_retour.is.null,badge_retour.eq.propose'));
+        await ecritServeur('[espace/creneau] état du bien', supabase.from('biens').update({ badge_retour: 'souhaite_visiter' })
+          .eq('id', bien.id).not('badge_retour', 'in', '(propose,offre_faite,souhaite_visiter)'));
+
+        /* Sa demande « Veut visiter » est servie (solderRelancesVisite) ; une
+           2e visite répond aussi à « Veut revoir » et « Il réfléchit ». */
+        const echappe = (t: string) => t.replace(/[\\%_]/g, (x) => '\\' + x);
+        const tetes = ['Veut visiter', ...(revu ? ['Veut revoir', 'Il réfléchit'] : [])];
+        for (const t of tetes) {
+          await ecritServeur(`[espace/creneau] relance « ${t} »`, supabase.from('relances').update({ statut: 'cloturee' })
+            .eq('client_id', recherche.client_id).eq('type', 'rappel_client').eq('statut', 'en_attente')
+            .ilike('note', `${t} — ${echappe(bien.titre || 'un bien')}%`));
+        }
+        /* V3.232 : la visite déplacée après son imprévu — la relance de l'imprévu se ferme. */
+        if (prevue) {
+          await ecritServeur('[espace/creneau] relance de l’imprévu', supabase.from('relances').update({ statut: 'cloturee' })
+            .eq('client_id', recherche.client_id).eq('type', 'rappel_client').eq('statut', 'en_attente')
+            .ilike('note', `Imprévu — ${echappe(bien.titre || bien.ville || 'le local')}%`));
+        }
+
+        /* Le Suivi : la même ligne que « Planifier une visite », pour que la
+           visite s'y range avec les autres (filtre Visites). */
+        const [y, m, j] = date.split('-');
+        await journalServeur(supabase, '[espace/creneau] journal', {
+          client_id: recherche.client_id, recherche_id: recherche.id, bien_id: bien.id, type: 'visite_planifiee',
+          titre: prevue ? `📅 Visite déplacée — ${titre}` : `📅 Visite planifiée — ${titre}`,
+          description: `Le ${j}/${m}/${y} à ${heure}${contact ? ` · Contact : ${contact}` : ''} · Créneau choisi par ${prenom} depuis son espace${prevue ? ', après son imprévu' : ''}`,
+          metadata: { biens: [{ id: bien.id, lib: bien.titre || 'Bien' }], par: 'client', creneau: { date, heure, ...(c.fin ? { de: c.heure, a: c.fin } : {}) } },
+        });
+
+        /* À faire pour Werner : prévenir l'agence. Du jour, en tête. */
+        await ecritServeur('[espace/creneau] relance', supabase.from('relances').insert({
+          client_id: recherche.client_id, recherche_id: recherche.id,
+          type: 'rappel_client', statut: 'en_attente', date_echeance: le,
+          note: `Créneau choisi — ${titre} · ${quand} : confirmer la visite à l’agence${contact ? ` (${contact})` : ''}`.slice(0, 600),
+        }));
+
+        /* Le mail : prévenir aussi s'il n'a pas de mandat signé (un bien
+           trouvé ailleurs ; la visite est posée quand même, comme dans le CRM). */
+        let sansMandat = false;
+        try {
+          const { data: rm } = await supabase.from('recherches').select('*').eq('id', recherche.id).maybeSingle();
+          const etat = rm ? await etatServeur(supabase, rm) : 'sans_numero';
+          if (etat !== 'valide') {
+            const { data: qui } = await supabase.from('clients').select('*').eq('id', recherche.client_id).maybeSingle();
+            const doc = await mandatDocumentEnRoute(supabase, recherche.id, qui);
+            sansMandat = doc?.vous !== 'signe';
+          }
+        } catch { /* le mail part sans la mention */ }
+        try { await prevenirCreneau(supabase, recherche.client_id, bien, quand, plage, contact, sansMandat); } catch { /* le CRM le montre déjà */ }
+
+        await evt('avis', `📅 A choisi son créneau de visite : ${quand}`, bien.id);
+
+        /* Ce que l'espace affiche aussitôt : la même forme que page.tsx (`visites`). */
+        return NextResponse.json({
+          ok: true,
+          visite: {
+            id: posee.id, date, heure, bienId: bien.id,
+            titre: (b.titre as string) || `${(b.type_bien as string) || 'Local'} — ${(b.ville as string) || ''}`,
+            adresse: [b.adresse || b.adresse_probable || b.quartier, b.ville].filter(Boolean).join(', '),
+            photo: (Array.isArray(b.photos) ? (b.photos as string[])[0] : null) || null,
+            court: courtDuBien(b),
+          },
+        });
+      }
+
+      /* ── V3.222 : il demande une 2e visite, d'un bien déjà visité ──
+         Alexandre : « quand il clique sur un bien déjà visité, il souhaite
+         revisiter, il a ses plannings ». Sa dernière visite passe à « À
+         revoir » (s'il avait dit autre chose, c'est sa nouvelle réponse), avec
+         ses raisons et ses disponibilités ; puis comme « J'aimerais le revoir »
+         après une visite (action « visite ») : l'état du bien, une relance du
+         jour « Veut revoir — … » (une seule ouverte par bien), le Suivi, le
+         mail. Le CRM montre alors « Caler la 2e visite » sur cette visite. */
+      case 'revoir': {
+        const bien = await bienDeLaRecherche(body.bien_id);
+        if (!bien) return NextResponse.json({ ok: false, error: 'bien inconnu' }, { status: 404 });
+        if (['compromis', 'vendu', 'retire', 'suspendu'].includes((await etapeVente(bien)) || '')) {
+          return NextResponse.json({ ok: false, error: 'plus_dispo' }, { status: 409 });
+        }
+        const mParis = maintenantParis();
+        const { data: vis, error: eV } = await supabase.from('visites').select('*')
+          .eq('recherche_id', recherche.id).eq('bien_id', bien.id).in('statut', ['a_venir', 'effectuee']);
+        if (eV) { console.error('[espace/revoir] visites', eV.message); return NextResponse.json({ ok: false, error: 'lecture' }, { status: 500 }); }
+        const liste = ((vis || []) as Record<string, any>[]).slice()
+          .sort((a, b2) => `${a.date_visite || ''} ${a.heure || ''}`.localeCompare(`${b2.date_visite || ''} ${b2.heure || ''}`));
+        /* Une 2e visite déjà calée : rien à demander. */
+        const prevue = liste.find(v => v.statut === 'a_venir' && !visitePasseeParis(v, mParis));
+        if (prevue) return NextResponse.json({ ok: false, error: 'deja', date: prevue.date_visite, heure: prevue.heure }, { status: 409 });
+        const passees = liste.filter(v => v.statut === 'effectuee' || visitePasseeParis(v, mParis));
+        const v = passees[passees.length - 1];
+        if (!v) return NextResponse.json({ ok: false, error: 'pas encore' }, { status: 409 });
+
+        const dispos = disposPropres(body.dispos);
+        const mot = nettoie(body.mot, 500) || null;
+        /* Ses raisons : celles qu'il coche maintenant, sinon celles qu'il avait
+           déjà données pour « À revoir ». Ses disponibilités remplacent les
+           anciennes. */
+        const dejaRevoir = issueDe(v) === 'revoir';
+        const anciennes = dejaRevoir ? raisonsValides('revoir', v.motifs) : [];
+        const raisons = raisonsValides('revoir', body.motifs);
+        const motifs = Array.from(new Set([...(raisons.length ? raisons : anciennes), ...dispos]));
+        if (!motifs.length && !mot) return NextResponse.json({ ok: false, error: 'vide' }, { status: 400 });
+        const le = new Date().toISOString();
+
+        const { error: eVis } = await supabase.from('visites').update({
+          issue: 'revoir', issue_par: 'client', issue_le: le, motifs,
+          mot_client: mot || (dejaRevoir ? v.mot_client || null : null), avis_client_le: le, prix_envisage: null,
+        }).eq('id', v.id);
+        if (eVis) {
+          console.error('[écriture] [espace/revoir] visite', eVis.message);
+          return NextResponse.json({ ok: false, error: 'enregistrement' }, { status: 500 });
+        }
+
+        const { data: avant } = await supabase.from('biens').select('badge_retour').eq('id', bien.id).maybeSingle();
+        const e = ISSUES.revoir;
+        const detail = motifs.join(' · ');
+        const retour = [e.crm, detail].filter(Boolean).join(' · ') + (mot ? ` — ${mot}` : '');
+        await ecritServeur('[espace/revoir] bien', supabase.from('biens').update({
+          badge_retour: badgeApresVisite('revoir', avant?.badge_retour), retour_client: retour.slice(0, 600),
+          retour_le: le, retour_par: 'client',
+        }).eq('id', bien.id));
+
+        await journalServeur(supabase, '[espace/revoir] journal', {
+          client_id: recherche.client_id, bien_id: bien.id, recherche_id: recherche.id,
+          type: 'retour_client', titre: `${e.e} Veut le revoir — 2e visite demandée depuis son espace`,
+          description: [detail, mot].filter(Boolean).join(' — ') || null,
+          metadata: { visite_id: v.id, issue: 'revoir', motifs, dispos },
+        });
+
+        /* Une seule relance « Veut revoir » ouverte par bien : l'ancienne
+           (et « Il réfléchit ») se soldent, la nouvelle porte ses dates. */
+        const echappe = (t: string) => t.replace(/[\\%_]/g, (x) => '\\' + x);
+        for (const t of ['Veut revoir', 'Il réfléchit']) {
+          await ecritServeur(`[espace/revoir] relance « ${t} »`, supabase.from('relances').update({ statut: 'cloturee' })
+            .eq('client_id', recherche.client_id).eq('type', 'rappel_client').eq('statut', 'en_attente')
+            .ilike('note', `${t} — ${echappe(bien.titre || 'un bien')}%`));
+        }
+        await ecritServeur('[espace/revoir] relance', supabase.from('relances').insert({
+          client_id: recherche.client_id, recherche_id: recherche.id,
+          type: 'rappel_client', statut: 'en_attente', date_echeance: le,
+          note: `Veut revoir — ${bien.titre || 'un bien'}${detail ? ` · ${detail}` : ''}${mot ? ` · ${mot}` : ''}`.slice(0, 600),
+        }));
+        try { await prevenirApresVisite(supabase, recherche.client_id, bien, 'revoir', motifs, mot, null, v.date_visite || null); }
+        catch (err) { console.error('[espace/revoir] mail', err); }
+
+        await evt('avis_visite', `${e.e} Veut le revoir${detail ? ' · ' + detail : ''}${mot ? ' — ' + mot : ''}`, bien.id);
+        return NextResponse.json({ ok: true, visite_id: v.id, le, motifs, mot: mot || (dejaRevoir ? v.mot_client || null : null) });
       }
 
       /* ── il fait évoluer ses critères ───────────────────────── */
