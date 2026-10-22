@@ -1,0 +1,56 @@
+/* La fenêtre « Ta signature » (22 octobre 2026). */
+.fond { position: fixed; inset: 0; z-index: 9995; display: flex; align-items: center; justify-content: center; padding: 20px; font-family: 'DM Sans', sans-serif; }
+.voile { position: absolute; inset: 0; background: rgba(14, 13, 13, .42); }
+.fenetre {
+  position: relative; width: min(560px, 100%); max-height: calc(100dvh - 40px); overflow-y: auto; box-sizing: border-box;
+  background: #fff; border-radius: 22px; padding: 24px 24px 20px; box-shadow: 0 30px 70px -24px rgba(14, 13, 13, .5);
+  display: flex; flex-direction: column; gap: 12px; color: #5b6472; font-size: 13.5px; line-height: 1.55;
+}
+.fenetre > * { flex-shrink: 0; }
+.ic {
+  width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+  background: #fdf3ec; color: #c2621c;
+}
+.ic[data-ton='ok'] { background: #ecfdf5; color: #0f7a4f; }
+.titre { margin: 0; font: 800 20px/1.25 'Plus Jakarta Sans', sans-serif; color: #232528; letter-spacing: -.2px; }
+.intro { margin: 0; }
+.etapes { margin: 0; padding: 0 0 0 20px; display: flex; flex-direction: column; gap: 6px; }
+.etapes li::marker { color: #c2621c; font-weight: 800; }
+.etapes b, .points b { color: #232528; }
+.points { margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 5px; }
+.points li::marker { color: #f08c42; }
+
+.pad {
+  position: relative; height: clamp(170px, 30vh, 230px); border: 1.5px dashed #f1ad78; border-radius: 16px;
+  background: #fff; overflow: hidden; margin-top: 4px; flex-shrink: 0;
+}
+.pad canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; z-index: 2; }
+.ligne { position: absolute; left: 20px; right: 20px; bottom: 44px; border-bottom: 1.5px solid #eaeae9; pointer-events: none; }
+.x { position: absolute; left: 20px; bottom: 48px; font-size: 19px; color: #94a3b8; pointer-events: none; }
+.aide { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #94a3b8; opacity: .7; pointer-events: none; }
+.nom { position: absolute; left: 20px; bottom: 16px; font-size: 12px; color: #94a3b8; pointer-events: none; }
+
+.apercu {
+  height: 120px; border-radius: 14px; border: 1px solid #eceae8; display: flex; align-items: center; justify-content: center;
+  background: repeating-conic-gradient(#f4f3f2 0% 25%, #fff 0% 50%) 0 0 / 14px 14px;
+}
+.apercu img { max-width: 80%; max-height: 82%; object-fit: contain; }
+
+.erreur { margin: 0; padding: 10px 12px; border-radius: 12px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 13px; }
+.pied { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 4px; }
+.btn, .btnOr {
+  height: 42px; padding: 0 16px; border-radius: 12px; font: 700 13.5px 'DM Sans', sans-serif; cursor: pointer;
+  border: 1px solid #e2e8f0; background: #fff; color: #232528;
+}
+.btnOr { background: #f08c42; border-color: #f08c42; color: #232528; font-weight: 800; }
+.btn:disabled, .btnOr:disabled { opacity: .45; cursor: default; }
+.plusTard { margin: 0; font-size: 12px; color: #94a3b8; text-align: right; }
+
+@media (max-width: 600px) {
+  .fond { align-items: flex-end; padding: 0; }
+  .fenetre { width: 100%; max-height: 92dvh; border-radius: 24px 24px 0 0; padding: 20px 18px calc(18px + env(safe-area-inset-bottom, 0px)); }
+  .titre { font-size: 18px; }
+  .pied { display: grid; grid-template-columns: 1fr 1fr; }
+  .pied .btnOr { grid-column: 1 / -1; grid-row: 1; }
+  .plusTard { text-align: center; }
+}

@@ -9,6 +9,7 @@ import {
 } from '@/lib/agence';
 import { BAREME, BAREME_VENTE, HONORAIRES_TAUX, tauxTexte } from '@/lib/mandat';
 import Aide from '@/components/shared/Aide';
+import FenetreSignatureAgence from '@/components/shared/FenetreSignatureAgence';
 
 /* ═══ Paramètres · Agence ═════════════════════════════════════════════════
    L'identité de l'agence que les documents impriment (src/lib/agence.ts).
@@ -113,6 +114,7 @@ export default function ParamAgence() {
   const [note, setNote] = useState('');
   const [voirHisto, setVoirHisto] = useState(false);
   const [signature, setSignature] = useState<string | null | undefined>(undefined);   // url signée, null = aucune
+  const [dessin, setDessin] = useState(false);
   const fichier = useRef<HTMLInputElement>(null);
   /* 22 octobre 2026 — le mandat type, réglé ici une fois pour toutes. */
   const [approuveLe, setApprouveLe] = useState<string | null>(null);
@@ -293,14 +295,22 @@ export default function ParamAgence() {
           <div style={{ flex: '1 1 220px', minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: NAVY }}>Signature manuscrite</div>
             <div style={{ fontSize: 12.5, color: GRIS, lineHeight: 1.5, marginTop: 3 }}>
-              {'Une image PNG sur fond transparent, rangée dans le dossier privé (jamais dans le code). Elle se pose dans ta case au moment où le client signe.'}
+              {'Dessine-la au doigt ou à la souris, ou dépose une image PNG sur fond transparent. Rangée dans un dossier privé, elle se pose dans ta case au moment où le client signe.'}
             </div>
             <input ref={fichier} type="file" accept="image/png" style={{ display: 'none' }}
               onChange={e => { deposerSignature(e.target.files?.[0]); e.target.value = ''; }} />
-            <button type="button" className={`${styles.btn}`} disabled={enCours === 'signature'} onClick={() => fichier.current?.click()}
-              style={{ marginTop: 10 }}>
-              {enCours === 'signature' ? 'Envoi…' : signature ? 'Remplacer la signature' : 'Déposer ma signature'}
-            </button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+              <button type="button" className={`${styles.btn} ${styles.btnDark}`} disabled={enCours === 'signature'} onClick={() => setDessin(true)}>
+                {signature ? '✍️ La redessiner' : '✍️ Dessiner ma signature'}
+              </button>
+              <button type="button" className={`${styles.btn}`} disabled={enCours === 'signature'} onClick={() => fichier.current?.click()}>
+                {enCours === 'signature' ? 'Envoi…' : 'Déposer une image'}
+              </button>
+            </div>
+            {dessin && (
+              <FenetreSignatureAgence nom={brouillon.signataireNom || 'Werner'} onFermer={() => setDessin(false)}
+                onEnregistree={() => { void chargerSignature(); void charger(); }} />
+            )}
           </div>
         </div>
       ))}

@@ -18,6 +18,7 @@ import PageBiens from '@/components/biens/PageBiens';
 import PageCarte from '@/components/carte/PageCarte';
 import PageDemandesSite from '@/components/demandes/PageDemandesSite';
 import RappelCarte from '@/components/layout/RappelCarte';
+import SignatureBienvenue from '@/components/layout/SignatureBienvenue';
 import NouvelleVersion from '@/components/layout/NouvelleVersion';
 import EnvoiPortails from '@/components/layout/EnvoiPortails';
 import Avertissements from '@/components/layout/Avertissements';
@@ -437,6 +438,8 @@ export default function AppLayout() {
       <NouveauMailPartout />
       {/* « Une nouvelle version est prête — Recharger », après une mise en ligne. */}
       <NouvelleVersion />
+      {/* Ta signature manuscrite, tant qu'elle manque (22 octobre 2026). */}
+      <SignatureBienvenue />
       <EnvoiPortails />
       {/* « … : pas enregistré », quand une écriture échoue (V3.17). */}
       <Avertissements />
