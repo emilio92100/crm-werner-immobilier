@@ -124,6 +124,8 @@ const PREFIXES: { debut: string; o: Origine }[] = [
   { debut: 'Projet de vente — recontacter ', o: { lib: 'Affaire à confier', ico: 'personne' } },
   /* V3.165 : le pense-bête posé à la main (« Nouvelle relance »). */
   { debut: DEBUT_PENSE_BETE, o: { lib: 'Pense-bête', ico: 'note' } },
+  /* V3.221 : il a choisi lui-même un créneau de l'agence dans son espace (api/espace/creneau). */
+  { debut: 'Créneau choisi — ', o: { lib: 'Créneau choisi', ico: 'calendrier', fort: true } },
 ];
 /* Le nom d'un pense-bête sans contact, pour le bandeau « clôturée » (V3.165). */
 const PB = '\u0000pense-bete';
