@@ -27,13 +27,28 @@ import { lirePro, lireStructure } from '@/lib/contacts';
 import { appelSignature, colonnesListe, finaliser, identiteDuJour, type DocumentRow } from '@/components/documents/outils';
 import { ajouterSuivi, creerFicheAcheteur, nomClient, type ClientMini } from './outils';
 
-export type NouveauDestinataire = { prenom: string; nom: string; societe: string; email: string; telephone: string };
+/* Les coordonnées du demandeur, telles que Werner les tape (23 octobre 2026 :
+   civilité, prénom, nom, téléphone et e-mail obligatoires pour que la
+   reconnaissance parte ; l'adresse et la société, s'il y en a). Elles vont
+   dans le document, et complètent sa fiche. */
+export type NouveauDestinataire = { civilite: '' | 'Madame' | 'Monsieur'; prenom: string; nom: string; societe: string; email: string; telephone: string; adresse: string };
+export const COORD_VIDE: NouveauDestinataire = { civilite: '', prenom: '', nom: '', societe: '', email: '', telephone: '', adresse: '' };
+/* Ce qui manque pour que la reconnaissance parte. */
+export function coordManquantes(k: NouveauDestinataire): string[] {
+  const out: string[] = [];
+  if (!k.civilite) out.push('sa civilité');
+  if (!k.prenom.trim()) out.push('son prénom');
+  if (!k.nom.trim()) out.push('son nom');
+  if (k.telephone.replace(/\D/g, '').length < 9) out.push('son téléphone');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(k.email.trim())) out.push('son e-mail');
+  return out;
+}
 export type ModeReco = 'en_ligne' | 'sur_place';
 export type DemandeReconnaissance = {
   bien: BienVente;
+  /* La fiche choisie, ou null : elle se crée avec ces coordonnées. */
   client: ClientMini | null;
-  nouveau: NouveauDestinataire | null;
-  email: string;
+  coord: NouveauDestinataire;
   duree: number;
   signature: ModeReco;
   /* Une fois signée, l'adresse part toute seule (auto), ou Werner la donne. */
@@ -106,7 +121,7 @@ async function donneesDe(x: DemandeReconnaissance, client: ClientMini, p: Person
     bienVenteId: b.id,
     ...(natureDe(d) ? { nature: natureDe(d) } : {}),
     destinataires: [p],
-    societe: societeDe(client) || x.nouveau?.societe.trim() || '',
+    societe: x.coord.societe.trim() || societeDe(client),
     description: descriptionLocal(b),
     adresse: typeof d.adresse === 'string' ? d.adresse : '', cp: typeof d.cp === 'string' ? d.cp : '',
     ville: typeof d.ville === 'string' ? d.ville : '', quartier: typeof d.quartier === 'string' ? d.quartier : '',
@@ -119,33 +134,56 @@ async function donneesDe(x: DemandeReconnaissance, client: ClientMini, p: Person
   };
 }
 
-/* Le client : la fiche choisie (son adresse e-mail ajoutée si elle est
-   nouvelle), ou une fiche créée. */
+/* Le client : la fiche choisie, complétée de ce qui lui manquait (rien
+   n'est écrasé : un téléphone ou un e-mail nouveau s'ajoute aux siens), ou
+   une fiche créée avec ces coordonnées. */
 async function leClient(x: DemandeReconnaissance, avert: string[]): Promise<ClientMini> {
-  const email = x.email.trim().toLowerCase();
+  const k = x.coord;
+  const email = k.email.trim().toLowerCase();
   if (x.client) {
     const c = x.client;
-    if (email && !(c.emails || []).some(e => String(e || '').trim().toLowerCase() === email)) {
-      const emails = [...(c.emails || []), email];
-      const { data, error } = await supabase.from('clients').update({ emails, updated_at: new Date().toISOString() }).eq('id', c.id).select('id');
-      if (error || !data?.length) avert.push(`Son adresse ${email} n’a pas pu être ajoutée à sa fiche${error ? ` (${error.message})` : ''} : ajoute-la à la main.`);
-      else return { ...c, emails };
+    const patch: Record<string, unknown> = {};
+    if (k.civilite && !c.civilite) patch.civilite = k.civilite;
+    if (k.prenom.trim() && !(c.prenom || '').trim()) patch.prenom = k.prenom.trim();
+    if (k.nom.trim() && !(c.nom || '').trim()) patch.nom = k.nom.trim();
+    if (k.adresse.trim() && !(c.adresse || '').trim()) patch.adresse = k.adresse.trim();
+    if (email && !(c.emails || []).some(e => String(e || '').trim().toLowerCase() === email)) patch.emails = [...(c.emails || []), email];
+    const cleTel = (t: string) => String(t || '').replace(/\D/g, '').slice(-9);
+    const tel = k.telephone.trim();
+    if (tel && !(c.telephones || []).some(t => cleTel(t) === cleTel(tel))) patch.telephones = [...(c.telephones || []), tel];
+    const soc = k.societe.trim();
+    if (soc && !societeDe(c)) {
+      const brut = c.pro && typeof c.pro === 'object' && !Array.isArray(c.pro) ? c.pro as Record<string, unknown> : {};
+      const st = brut.structure && typeof brut.structure === 'object' && !Array.isArray(brut.structure) ? brut.structure as Record<string, unknown> : {};
+      patch.pro = { ...brut, structure: { forme: '', rcs: '', siege: '', qualite: '', associes: [], ...st, denomination: soc } };
     }
-    return c;
+    if (!Object.keys(patch).length) return c;
+    const { data, error } = await supabase.from('clients').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', c.id).select('id');
+    if (error || !data?.length) {
+      avert.push(`Sa fiche n’a pas pu être complétée${error ? ` (${error.message})` : ''} : ajoute ses coordonnées à la main. La reconnaissance, elle, les porte.`);
+      return c;
+    }
+    return { ...c, ...patch } as ClientMini;
   }
-  const n = x.nouveau;
-  if (!n || !(n.nom.trim() || n.prenom.trim() || n.societe.trim())) throw new Error('Pour qui est la reconnaissance ? Choisis un contact, ou donne au moins son nom.');
-  const p: Personne = { ...PERSONNE_VIDE, prenom: n.prenom.trim(), nom: n.nom.trim(), email, telephone: n.telephone.trim() };
-  return creerFicheAcheteur(p, n.societe.trim() ? { denomination: n.societe.trim() } : null);
+  if (!(k.nom.trim() || k.prenom.trim())) throw new Error('Pour qui est la reconnaissance ? Choisis un contact, ou donne au moins son nom.');
+  const p: Personne = { ...PERSONNE_VIDE, civilite: k.civilite, prenom: k.prenom.trim(), nom: k.nom.trim(), email, telephone: k.telephone.trim(), adresse: k.adresse.trim() };
+  return creerFicheAcheteur(p, k.societe.trim() ? { denomination: k.societe.trim() } : null);
 }
 
 export async function faireReconnaissance(x: DemandeReconnaissance): Promise<ResultatReconnaissance> {
-  const email = x.email.trim().toLowerCase();
-  if (x.signature === 'en_ligne' && !x.relire && !emailOk(email)) throw new Error('Son adresse e-mail ? Le lien de signature et le code y partent.');
-  if (email && !emailOk(email)) throw new Error(`« ${x.email.trim()} » n’est pas une adresse e-mail valide.`);
+  const email = x.coord.email.trim().toLowerCase();
+  const manque = coordManquantes(x.coord);
+  if (manque.length) throw new Error(`Pour que la reconnaissance parte, il manque ${manque.join(', ').replace(/, ([^,]*)$/, ' et $1')}.`);
+  if (!emailOk(email)) throw new Error(`« ${x.coord.email.trim()} » n’est pas une adresse e-mail valide.`);
   const avert: string[] = [];
   const client = await leClient(x, avert);
-  const p: Personne = { ...personneDepuisClient(client), ...(email ? { email } : {}) };
+  /* Le document porte ce que Werner a tapé (la fiche, elle, n'est que complétée). */
+  const p: Personne = {
+    ...personneDepuisClient(client),
+    civilite: x.coord.civilite || (personneDepuisClient(client).civilite),
+    prenom: x.coord.prenom.trim() || client.prenom || '', nom: x.coord.nom.trim() || client.nom || '',
+    adresse: x.coord.adresse.trim() || client.adresse || '', email, telephone: x.coord.telephone.trim(),
+  };
   const donnees = await donneesDe(x, client, p);
   const m = RECONNAISSANCE;
   const { data, error } = await supabase.from('documents').insert({
@@ -154,7 +192,7 @@ export async function faireReconnaissance(x: DemandeReconnaissance): Promise<Res
   }).select('*').single();
   if (error || !data) throw new Error('La reconnaissance n’a pas pu être créée : ' + (error?.message || 'rien n’est revenu'));
   const row = data as DocumentRow;
-  const qui = [nomClient(client) !== 'Client' ? nomClient(client) : '', societeDe(client) || x.nouveau?.societe.trim() || ''].filter(Boolean).join(', ') || 'Le demandeur';
+  const qui = [nomClient(client) !== 'Client' ? nomClient(client) : '', x.coord.societe.trim() || societeDe(client)].filter(Boolean).join(', ') || 'Le demandeur';
   /* `etape` : ce que l'historique de l'affaire en dit (FicheBien, historique). */
   const noter = async (commentaire: string, etape: 'preparee' | 'prete' | 'envoyee') => {
     try {

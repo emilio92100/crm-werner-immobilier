@@ -2271,6 +2271,8 @@ export async function creerFicheAcheteur(p: Personne, societe?: { denomination: 
   const ligne = {
     ...(denom ? { pro: { structure: { denomination: denom, forme: '', rcs: '', siege: '', qualite: '', associes: [] } } } : {}),
     reference, prenom: p.prenom || '', nom: p.nom || (denom && !p.prenom ? denom : ''), token_espace: jetonEspace(p.prenom, p.nom),
+    /* 23 octobre 2026 : la civilité et l'adresse, quand on les a (reconnaissance d'information). */
+    ...(p.civilite ? { civilite: p.civilite } : {}), ...(p.adresse?.trim() ? { adresse: p.adresse.trim() } : {}),
     emails: p.email ? [p.email.trim().toLowerCase()] : [], telephones: p.telephone ? [p.telephone.trim()] : [],
     statut: 'prospect',
   };

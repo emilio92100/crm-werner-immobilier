@@ -40,7 +40,7 @@ const sousClient = (c: ClientMini) => [typesDe(c).map(k => typeDe(k).lib).join('
 /* « Mandataire IAD · Agence du Parc », sous le nom d'un confrère. */
 const ligneConfrere = (c: ContactConfrere) => ligneContact({ types: ['confrere'], pro: c.pro }) || 'Confrère';
 
-export default function NouveauDocument({ modeleId, clientId, confrereId, onFermer, onCree, onOuvrir }: {
+export default function NouveauDocument({ modeleId, clientId, confrereId, onFermer, onCree, onOuvrir, onReconnaissance }: {
   modeleId?: string | null;
   /* Venu de la fiche d'un client : il est choisi d'avance (on peut changer). */
   clientId?: string | null;
@@ -51,6 +51,10 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
   /* Ouvrir un document existant (« d-<id> ») ou un mandat signé en ligne
      (« r-<id> ») : le mandat déjà en cours (V3.32). */
   onOuvrir?: (cle: string) => void;
+  /* La reconnaissance d'information a sa fenêtre à elle (23 octobre 2026) :
+     l'affaire choisie, les coordonnées obligatoires, la signature, l'adresse
+     envoyée une fois signé. Donnée, elle remplace ce parcours-ci. */
+  onReconnaissance?: () => void;
 }) {
   const [recherches, setRecherches] = useState<RechercheMini[] | null>(null);
   const [recherche, setRecherche] = useState<RechercheMini | null>(null);
@@ -316,7 +320,7 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
           <div className={s.fenCorps}>
             {MODELES.map(x => (
               <button key={x.id} type="button" className={`${s.choix} ${choix === x.id ? s.choixOn : ''}`}
-                onClick={() => { setChoix(x.id); setEtape(2); }}>
+                onClick={() => { if (x.id === 'reconnaissance' && onReconnaissance) { onReconnaissance(); return; } setChoix(x.id); setEtape(2); }}>
                 <span className={s.modeleIc}><Ic n={x.ic} t={19} /></span>
                 <span><b>{x.titre}</b><small>{x.description}</small></span>
               </button>

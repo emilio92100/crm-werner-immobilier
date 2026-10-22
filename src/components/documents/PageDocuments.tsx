@@ -9,6 +9,7 @@ import { Croix, Ic } from './ApercuActe';
 import EditeurDocument from './EditeurDocument';
 import { conseilMandat, mandatRechercheEnCours, mandatVenteEnCours, phraseMandat } from '@/lib/coherence';
 import NouveauDocument from './NouveauDocument';
+import NouvelleReconnaissance from '@/components/biens/NouvelleReconnaissance';
 import { BlocSignature } from './SignatureEnLigne';
 import SignatureSurPlace from './SignatureSurPlace';
 import { CarteHistorique, FenetreProjet, evenementsDocument } from './EnvoiProjet';
@@ -673,6 +674,8 @@ export default function PageDocuments({ onNavigate, intention, onIntention }: {
   };
   const [ouvert, setOuvert] = useState<string | null>(null);
   const [nouveau, setNouveau] = useState<{ modele?: string; clientId?: string; confrereId?: string } | null>(null);
+  /* « Nouveau document › Reconnaissance d'information » : sa fenêtre à elle (23 octobre 2026). */
+  const [reco, setReco] = useState<{ clientId?: string } | null>(null);
   const [edition, setEdition] = useState<DocumentRow | null>(null);
   /* Un mandat de vente annulé ou supprimé : la question de sa fiche (V3.42). */
   const [suiteBien, setSuiteBien] = useState<SuiteBien | null>(null);
@@ -1182,8 +1185,13 @@ export default function PageDocuments({ onNavigate, intention, onIntention }: {
       )}
       {suiteBien && <SuiteMandatBien bien={suiteBien.bien} doc={suiteBien.doc} etaitSigne={suiteBien.etaitSigne} supprime={suiteBien.supprime}
         onFermer={() => setSuiteBien(null)} onFicheBien={id => { setSuiteBien(null); onNavigate('biens', { bien: id }); }} />}
+      {reco && (
+        <NouvelleReconnaissance clientId={reco.clientId} onNavigate={onNavigate}
+          onFermer={() => setReco(null)} onFait={() => { void charger(); }} />
+      )}
       {nouveau && (
         <NouveauDocument modeleId={nouveau.modele} clientId={nouveau.clientId} confrereId={nouveau.confrereId} onFermer={() => setNouveau(null)}
+          onReconnaissance={nouveau.confrereId ? undefined : () => { const c = nouveau.clientId; setNouveau(null); setReco({ clientId: c }); }}
           onCree={r => { majDoc(r); setNouveau(null); setEdition(r); }}
           onOuvrir={cle => {
             /* Le mandat déjà en cours (V3.32) : un brouillon s'ouvre dans l'éditeur, le reste dans sa fiche. */

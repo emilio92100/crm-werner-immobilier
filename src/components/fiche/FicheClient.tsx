@@ -39,6 +39,7 @@ import { bienVisitable, poserVisites } from '@/lib/planifier-visite';
 import { TypesEnLigne } from '@/components/contacts/ChampsContact';
 import { BiensHero, useBiensBandeau } from '@/components/contacts/BiensBandeau';
 import DocumentsDuClient, { compterSignes } from '@/components/documents/DocumentsDuClient';
+import NouvelleReconnaissance from '@/components/biens/NouvelleReconnaissance';
 import { colonneSuspensionAbsente, lireSuspension, dansMois, jourLisible } from '@/lib/suspension';
 import { ajouterMois, jourParis, joursRestants } from '@/lib/mandat';
 import { retracteEnLigne } from '@/lib/documents-espace';
@@ -66,6 +67,15 @@ const CRIT_CHIP_FORT: React.CSSProperties = {
    « position: fixed » : la fenêtre se centrait alors au milieu de toute la
    hauteur de la fiche, donc hors de l'écran — on ne voyait plus que le voile
    gris, sans pouvoir fermer. Le portail supprime le problème à la racine. */
+/* Le bouclier de la reconnaissance d'information (comme sur l'affaire). */
+function IcoReco() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z" /><path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
+
 function Portail({ children }: { children: React.ReactNode }) {
   const [pret, setPret] = useState(false);
   useEffect(() => { setPret(true); }, []);
@@ -1374,6 +1384,9 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
      se replie dans le haut de la page une fois qu'on a défilé (les gestes
      restent à portée, comme avant). */
   const [menuPlus, setMenuPlus] = useState<{ x: number; y: number } | null>(null);
+  /* 23 octobre 2026 : une reconnaissance d'information pour ce demandeur,
+     sur une de tes affaires (menu ⋯). */
+  const [showReco, setShowReco] = useState(false);
   const chevalRef = useRef<HTMLDivElement>(null);
   const [chevalCache, setChevalCache] = useState(false);
   useEffect(() => {
@@ -4133,10 +4146,16 @@ ${signatureMail()}`,
           <div className={`emilio-menu ${styles.menuPlus}`} role="menu" style={{ left: menuPlus.x, top: menuPlus.y }}>
             {/* V3.134 : le raccourci vers une visite, le client déjà choisi. */}
             {estAcheteur(client) && rechercheId && (
+              <button type="button" role="menuitem" className={styles.menuPlusL} onClick={() => { setMenuPlus(null); organiserVisite(); }}>
+                <span className={styles.menuPlusIc}><Icone nom="calendrier" taille={16} epaisseur={2} /></span>
+                <span><b>Organiser une visite</b><small>Ses biens ou tes affaires en cours, la date et l’heure</small></span>
+              </button>
+            )}
+            {estAcheteur(client) && (
               <>
-                <button type="button" role="menuitem" className={styles.menuPlusL} onClick={() => { setMenuPlus(null); organiserVisite(); }}>
-                  <span className={styles.menuPlusIc}><Icone nom="calendrier" taille={16} epaisseur={2} /></span>
-                  <span><b>Organiser une visite</b><small>Ses biens ou tes affaires en cours, la date et l’heure</small></span>
+                <button type="button" role="menuitem" className={styles.menuPlusL} onClick={() => { setMenuPlus(null); setShowReco(true); }}>
+                  <span className={styles.menuPlusIc}><IcoReco /></span>
+                  <span><b>Reconnaissance d’information</b><small>Avant de lui donner l’adresse d’une de tes affaires : il la signe, puis il la reçoit</small></span>
                 </button>
                 <div className={styles.menuPlusSep} />
               </>
@@ -6368,6 +6387,19 @@ ${signatureMail()}`,
           </div>
         </div>
         </Portail>
+      )}
+
+      {showReco && (
+        <NouvelleReconnaissance clientId={client.id} prenom={client.prenom} onNavigate={onNavigate}
+          onFermer={() => setShowReco(false)}
+          onFait={() => {
+            /* Sa fiche a pu être complétée (civilité, téléphone, e-mail…) : on la relit. */
+            void (async () => {
+              const { data } = await supabase.from('clients').select('*').eq('id', client.id).maybeSingle();
+              if (data) setClient(data as Client);
+              loadRef.current();
+            })();
+          }} />
       )}
 
       {showBien && (

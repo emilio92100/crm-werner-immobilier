@@ -15,6 +15,7 @@ import { retracteEnLigne } from '@/lib/documents-espace';
 import s from './Documents.module.css';
 import { Panneau, itemDoc, itemMandat, type Item, type SuiteBien } from './PageDocuments';
 import SuiteMandatBien from './SuiteMandatBien';
+import NouvelleReconnaissance from '@/components/biens/NouvelleReconnaissance';
 import ApercuMail, { type MailApercu } from './ApercuMail';
 
 /* ═══ « Ses documents », sur la fiche d'un client (V3.17, rangés en V3.32) ═
@@ -344,6 +345,8 @@ export default function DocumentsDuClient({ clientId, prenom, onNavigate, confre
   /* L'adresse du local d'une reconnaissance signée (23 octobre 2026). */
   const [apercuAdresse, setApercuAdresse] = useState<{ id: string; nom: string; renvoi: boolean } | null>(null);
   const [okAdresse, setOkAdresse] = useState('');
+  /* « Nouveau document › Reconnaissance d'information » : sa fenêtre à elle. */
+  const [reco, setReco] = useState(false);
 
   useEffect(() => {
     let vivant = true;
@@ -517,10 +520,15 @@ export default function DocumentsDuClient({ clientId, prenom, onNavigate, confre
           setTour(t => t + 1);
         }} />
     )}
+    {reco && (
+      <NouvelleReconnaissance clientId={clientId} prenom={prenom} onNavigate={onNavigate}
+        onFermer={() => setReco(false)} onFait={() => setTour(t => t + 1)} />
+    )}
     {/* Hors du bloc : replié, il ne rend pas ses enfants. */}
     {nouveau && typeof document !== 'undefined' && createPortal(
       <NouveauDocument modeleId={confrere ? 'delegation' : undefined} clientId={confrere ? undefined : clientId} confrereId={confrere ? clientId : undefined}
         onFermer={() => setNouveau(false)}
+        onReconnaissance={confrere ? undefined : () => { setNouveau(false); setReco(true); }}
         onCree={r => { setNouveau(false); onNavigate('documents', { ouvrir: r.id }); }}
         onOuvrir={cle => { setNouveau(false); onNavigate('documents', { ouvrir: cle.startsWith('d-') ? cle.slice(2) : cle }); }} />,
       document.body)}
