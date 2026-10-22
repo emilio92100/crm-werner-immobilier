@@ -10,6 +10,8 @@ import {
   type Creneau, type LigneSuivi, type VisiteCalee,
 } from '@/lib/suivi-agence';
 import { appelsMontres, phraseAppel } from '@/lib/suivi-client';
+import { apresDeplacement } from '@/lib/imprevus';
+import type { ImprevuOuvert } from '@/lib/visites';
 import { messageAgence } from '@/lib/agences-lien';
 import {
   canalLong, envoisPartages, envoisPour, envoyerMailAgence, estMobile, lienMail, lienSms, lireOuCreerJeton, mailValide, messagePourAgence, noterEnvoi, proposesPar, quandEnvoi, surNouvelEnvoi,
@@ -82,8 +84,10 @@ function Chevron({ haut }: { haut?: boolean }) {
   );
 }
 
-export default function SuiviAgence({ b, lignes, absent, visite, clientId, rechercheId, veutVisiter, seul, prenom, onChange, onValider, onIndispo, onBiens, onBien }: {
+export default function SuiviAgence({ b, lignes, absent, visite, clientId, rechercheId, veutVisiter, seul, prenom, onChange, onValider, onIndispo, onBiens, onBien, imprevu }: {
   b: any; lignes: LigneSuivi[]; absent: boolean; visite?: VisiteCalee;
+  /** V3.232 : l'imprévu signalé par le client sur la visite calée. */
+  imprevu?: ImprevuOuvert | null;
   clientId: string; rechercheId: string | null; veutVisiter: boolean;
   /** Le prénom du client, pour « Ce que Didier voit ». */
   prenom?: string | null;
@@ -109,13 +113,19 @@ export default function SuiviAgence({ b, lignes, absent, visite, clientId, reche
   const [lienOuvert, setLienOuvert] = useState(false);
 
   const basculer = () => setOuvert(o => { if (!seul) garderOuvert(b.id, !o); return !o; });
-  const etat = etatSuivi(lignes, visite, veutVisiter);
+  /* V3.232 : un imprévu du client passe devant « Visite calée ». */
+  const etat = imprevu
+    ? { k: 'imprevu', l: imprevu.quoi === 'decaler' ? 'Imprévu : à décaler' : 'Imprévu : à annuler', c: '#9A3412', bg: '#FFEDD5' }
+    : etatSuivi(lignes, visite, veutVisiter);
   const contact = contactDu(b, lignes);
   /* V3.204 : le lien déjà parti à cette agence — une coche verte sur le bouton « Le lien pour… ». */
   const envois = useEnvoisLien(contact.avec === 'agence' ? rechercheId : null);
   const destLien: Destinataire = { nom: contact.nom || 'L’agence', interlocuteur: contact.interlocuteur || null, tel: telPourSms(contact) || null, email: contact.email || null };
   const envoisAg = envois ? envoisPour(envois, destLien) : [];
-  const ouverts = visite ? null : creneauxOuverts(lignes);
+  /* V3.232 : après un imprévu « décaler », les créneaux notés depuis se valident
+     à nouveau — et déplacent la visite calée au lieu d'en poser une 2e. */
+  const aDecaler = !!visite?.id && imprevu?.quoi === 'decaler';
+  const ouverts = visite && !aDecaler ? null : creneauxOuverts(aDecaler && imprevu ? lignes.filter(l => l.created_at > imprevu.le) : lignes);
   const dernier = lignes[0];
   const extrait = dernier
     ? `${quandNote(dernier.created_at).split(',')[0]} · ${dernier.texte || (dernier.genre === 'appel' ? [REPONSES.find(r => r.k === dernier.reponse)?.l, DISPOS.find(d => d.k === dernier.dispo)?.l].filter(Boolean).join(', ') || 'Appel noté' : '')}`
@@ -128,6 +138,18 @@ export default function SuiviAgence({ b, lignes, absent, visite, clientId, reche
   const clientPret = lignes.some(l => l.montrer !== null);
   const horsSuivi = !!lireIndispo(b.indispo) || !!b.bien_vente_id;
   const montres = new Set(clientPret && !horsSuivi ? appelsMontres(lignes).map(x => x.a.id) : []);
+
+  async function deplacerVers(c: Creneau, contactTxt: string) {
+    if (!visite?.id) return;
+    const quand = texteCreneau({ date: c.date, heure: c.heure }).replace(' · ', ' à ');
+    if (!window.confirm(`Déplacer la visite de ${prenomC} au ${quand} ?\n\nSon espace affichera la nouvelle date, et la relance de son imprévu se ferme.`)) return;
+    const ok = await verifie('La visite déplacée', supabase.from('visites').update({ date_visite: c.date, heure: c.heure, ...(contactTxt ? { contact_agence: contactTxt } : {}) })
+      .eq('id', visite.id).eq('statut', 'a_venir').select('id'), { ligne: true });
+    if (!ok) return;
+    await apresDeplacement({ client_id: clientId, recherche_id: rechercheId, bien_id: b.id }, b.titre || b.ville || 'le local', quand);
+    onChange();
+    onBien?.();
+  }
 
   async function ajouterNote() {
     const t = note.trim();
@@ -210,6 +232,25 @@ export default function SuiviAgence({ b, lignes, absent, visite, clientId, reche
             {contact.tel && <a className={contact.telDirect ? s.lien : s.lienFort} href={`tel:${contact.tel.replace(/[^\d+]/g, '')}`} title={contact.telDirect && contact.avec === 'agence' ? 'Le numéro de l’agence' : undefined}><Icone nom={contact.telDirect && contact.avec === 'agence' ? 'immeuble' : 'tel'} taille={14} epaisseur={2.1} />{contact.tel}</a>}
             {contact.email && <a className={s.lien} href={`mailto:${contact.email}`}><Icone nom="mail" taille={14} epaisseur={2.1} />E-mail</a>}
           </div>
+          {imprevu && (
+            <div className={s.imprevu}>
+              <span className={s.imprevuIc}><Icone nom="alerte" taille={16} epaisseur={2.2} /></span>
+              <div className={s.imprevuTx}>
+                <b>{`Imprévu signalé par ${prenomC} · ${quandNote(imprevu.le)}`}</b>
+                <span>{imprevu.quoi === 'decaler' ? 'Veut décaler la visite.' : 'Veut annuler la visite.'}</span>
+                {(imprevu.quoi === 'decaler' ? imprevu.dispos : imprevu.motifs).length > 0 && (
+                  <span className={s.imprevuPuces}>
+                    <i>{imprevu.quoi === 'decaler' ? 'Ses disponibilités :' : 'Sa raison :'}</i>
+                    {(imprevu.quoi === 'decaler' ? imprevu.dispos : imprevu.motifs).map(x => <em key={x}>{x}</em>)}
+                  </span>
+                )}
+                {imprevu.mot && <span className={s.imprevuMot}>{`« ${imprevu.mot} »`}</span>}
+                <small>{imprevu.quoi === 'decaler'
+                  ? 'Appelle l’agence ou le bailleur avec ses dates. Un créneau noté après son imprévu se valide ici (« Déplacer la visite ici ») : la visite est déplacée, pas doublée.'
+                  : 'Préviens l’agence, puis annule la visite (onglet Visites de sa fiche, « Annuler »).'}</small>
+              </div>
+            </div>
+          )}
           {lienOuvert && rechercheId && (
             <PanneauLien bienId={b.id} clientId={clientId} rechercheId={rechercheId} prenom={prenom} dest={destLien} envois={envois}
               onFait={() => { setLienOuvert(false); onChange(); }} onFermer={() => setLienOuvert(false)} />
@@ -287,7 +328,7 @@ export default function SuiviAgence({ b, lignes, absent, visite, clientId, reche
                             return (
                               <span key={cleCreneau(c)} className={s.creneau} data-actif={actifs ? 'oui' : undefined} data-retenu={retenu ? 'oui' : undefined}>
                                 {texteCreneau(c)}
-                                {actifs && <button type="button" className={s.valider} onClick={() => onValider(c, contactEnLigne(contact))}>Valider ce créneau</button>}
+                                {actifs && <button type="button" className={s.valider} onClick={() => (aDecaler ? void deplacerVers(c, contactEnLigne(contact)) : onValider(c, contactEnLigne(contact)))}>{aDecaler ? 'Déplacer la visite ici' : 'Valider ce créneau'}</button>}
                                 {retenu && <span className={s.retenu}><Icone nom="coche" taille={12} epaisseur={2.8} />Visite calée</span>}
                               </span>
                             );

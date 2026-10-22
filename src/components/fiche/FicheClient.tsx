@@ -10,7 +10,7 @@ import { signalerEchec, verifie, verifieTout } from '@/lib/ecritures';
 import { programmerRelance, delaiRelance, solderRelancesAcheteur, cloreRelancesArchive, reporterRelance } from '@/lib/relances';
 import { annulerVisites } from '@/lib/annuler-visites';
 import { lireMontant, ecrireMontant } from '@/lib/montant';
-import { visitePassee } from '@/lib/visites';
+import { visitePassee, imprevusOuverts } from '@/lib/visites';
 import { eurosRonds } from '@/lib/activite';
 import type { Client, Recherche } from '@/lib/supabase';
 import styles from './FicheClient.module.css';
@@ -5334,7 +5334,8 @@ ${signatureMail()}`,
             onBon={(v: any) => { void bonVisite.lancer(departBon(v)); }} bonEnCours={bonVisite.enCours} bonEtat={(v: any) => etatBon(departBon(v))}
             clientId={client.id} offres={offresVisites} onDocument={ouvrirOffreDoc('Visites')} onTransaction={() => setTab('transaction')}
             onBienVente={id => onNavigate('biens', { bien: id })}
-            onPlanifier={(id, pre) => planifierVisite(id, pre)} />
+            onPlanifier={(id, pre) => planifierVisite(id, pre)}
+            imprevus={imprevusOuverts(journal, visites)} />
         )}
 
         {/* ═══ TAB TRANSACTION ═══ */}

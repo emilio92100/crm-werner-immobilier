@@ -299,3 +299,14 @@
   .fNote { flex: 1 1 100%; }
   .fPied .btn, .fPied .btnFort { flex: 1 1 0; }
 }
+
+/* V3.232 : l'imprévu signalé par le client, en tête du suivi. */
+.imprevu { display: flex; gap: 11px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #FFF7ED; border: 1px solid #FED7AA; }
+.imprevuIc { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; background: #FFEDD5; color: #C2410C; display: flex; align-items: center; justify-content: center; }
+.imprevuTx { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 13.5px; color: #13243D; line-height: 1.45; }
+.imprevuTx > b { font-size: 13.5px; font-weight: 800; color: #9A3412; }
+.imprevuTx > small { font-size: 12.5px; color: #7C5A3C; line-height: 1.5; }
+.imprevuPuces { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.imprevuPuces > i { font-style: normal; font-size: 12px; font-weight: 700; color: #9A3412; margin-right: 2px; }
+.imprevuPuces > em { font-style: normal; font-size: 12px; font-weight: 700; color: #9A3412; background: #fff; border: 1px solid #FED7AA; border-radius: 99px; padding: 2px 9px; }
+.imprevuMot { font-weight: 600; color: #46566B; overflow-wrap: anywhere; }

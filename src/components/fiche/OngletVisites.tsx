@@ -2,7 +2,8 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { verifie } from '@/lib/ecritures';
-import { ISSUES, issueDe, apprisDe, visitePassee, type Issue } from '@/lib/visites';
+import { ISSUES, RAISONS_PAS_POUR_LUI, issueDe, apprisDe, visitePassee, type ImprevuOuvert, type Issue } from '@/lib/visites';
+import { apresDeplacement } from '@/lib/imprevus';
 import { type EtatBon } from '@/components/documents/BonDeVisite';
 import Curseur from '@/components/shared/Curseur';
 import Cascade from '@/components/shared/Cascade';
@@ -90,7 +91,7 @@ const IC_ISSUE: Record<Issue, ReactNode> = { offre: IC.euro, revoir: IC.oeil, re
 
 const TON_OFFRE: Record<string, string> = { or: '#c2410c', bleu: '#2e3034', vert: '#15803d', rouge: '#b91c1c', violet: '#5B21B6', gris: '#64748b' };
 
-export default function OngletVisites({ visites, biens, prenom, civilite, couple, masques, rechercheId, onCompteRendu, onAnnuler, onRecharger, onMasques, onOrganiser, onBon, bonEnCours, bonEtat, onDeuxieme, onFiche, recherche, clientId, offres, onDocument, onTransaction, onBienVente, onPlanifier }: {
+export default function OngletVisites({ visites, biens, prenom, civilite, couple, masques, rechercheId, onCompteRendu, onAnnuler, onRecharger, onMasques, onOrganiser, onBon, bonEnCours, bonEtat, onDeuxieme, onFiche, recherche, clientId, offres, onDocument, onTransaction, onBienVente, onPlanifier, imprevus }: {
   visites: any[]; biens: any[]; prenom: string; masques: string[]; rechercheId: string;
   /* V3.169 : pour accorder « Elle y pense », « Pas pour lui »… */
   civilite?: string | null; couple?: boolean;
@@ -117,6 +118,8 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
   onBienVente?: (bienVenteId: string) => void;
   /* V3.210 : « Valider ce créneau » du suivi avec l'agence : « Planifier une visite », rempli. */
   onPlanifier?: (bienId: string, pre: { date: string; heure: string; contact: string }) => void;
+  /* V3.232 : les imprévus signalés par le client, par visite (FicheClient, depuis le journal). */
+  imprevus?: Record<string, ImprevuOuvert>;
 }) {
   const [choisi, setChoisi] = useState<Filtre | null>(null);
   const [deplace, setDeplace] = useState<string | null>(null);
@@ -172,7 +175,15 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
   }
   /* Une visite modifiée sur place (date, heure, contact). */
   async function modifier(id: string, quoi: string, champs: Record<string, string | null>) {
-    await verifie(quoi, supabase.from('visites').update(champs).eq('id', id).select('id'), { ligne: true });
+    return verifie(quoi, supabase.from('visites').update(champs).eq('id', id).select('id'), { ligne: true });
+  }
+  /* V3.232 : déplacée après un imprévu — la relance se ferme, une ligne au Suivi. */
+  async function deplacee(v: any, date: string, heure: string) {
+    if (!imprevus?.[v.id]) return;
+    const b = bienDe(v);
+    const d = enDate(date);
+    const quand = `${d ? maj(d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })) : date}${heure ? ` à ${heure.slice(0, 5).replace(':', ' h ')}` : ''}`;
+    await apresDeplacement(v, b?.titre || b?.ville || 'le local', quand);
   }
 
   const boutonOrganiser = onOrganiser ? (
@@ -251,6 +262,8 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
     const jours = d ? Math.round((d.getTime() - new Date(new Date().toDateString()).getTime() - 12 * 3600_000) / 86_400_000) : null;
     const dans = jours === null ? '' : jours <= 0 ? 'Aujourd’hui' : jours === 1 ? 'Demain' : `Dans ${jours} jours`;
     const suite = i === 'revoir' ? suivante(v) : null;
+    /* V3.232 : l'imprévu qu'il a signalé sur cette visite à venir. */
+    const imp = genre !== 'faite' ? imprevus?.[v.id] || null : null;
     const suiteD = suite ? enDate(suite.date_visite) : null;
     const details = [b?.surface ? `${String(b.surface).replace('.', ',')} m²` : '', b?.nb_pieces ? `${b.nb_pieces} espaces` : '', b?.prix_acquereur ? euros(b.prix_acquereur) : ''].filter(Boolean).join(' · ');
 
@@ -258,7 +271,8 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
     const fil = genre === 'venir' ? [] : filDe(v);
     const courante = fil.length ? offreCourante(fil as unknown as DocOffre[]) : null;
     const etatO = courante ? etatCrmDe(courante.donnees, etatDeOffre(courante)) : null;
-    const etiquette = genre === 'afaire'
+    const etiquette = imp ? { t: imp.quoi === 'decaler' ? 'Imprévu : à décaler' : 'Imprévu : à annuler', c: '#c2410c', ic: IC.agenda }
+      : genre === 'afaire'
       ? { t: 'Compte rendu à faire', c: '#d97706', ic: IC.plume }
       : etatO ? { t: etatO.l, c: TON_OFFRE[etatO.ton], ic: IC.euro }
         : i ? { t: i === 'non' ? m.pas : i === 'offre' && offreFaite ? 'Offre faite' : ISSUES[i].crm, c: COULEUR_ISSUE[i], ic: IC_ISSUE[i] } : null;
@@ -298,6 +312,35 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
             </div>
 
             {genre === 'afaire' && reponse(v)}
+
+            {imp && (
+              <div className={s.imprevu}>
+                <div className={s.imprevuLib}>{`Imprévu signalé par ${qui} · ${new Date(imp.le).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`}</div>
+                <div className={s.imprevuTexte}>
+                  {imp.quoi === 'decaler' ? 'Veut décaler la visite.' : 'Veut annuler la visite.'}
+                  {imp.mot ? <small>{`« ${imp.mot} »`}</small> : null}
+                </div>
+                {(imp.quoi === 'decaler' ? imp.dispos : imp.motifs).length > 0 && (
+                  <div className={s.raisons}>
+                    <span>{imp.quoi === 'decaler' ? 'Ses disponibilités :' : 'Sa raison :'}</span>
+                    {(imp.quoi === 'decaler' ? imp.dispos : imp.motifs).map((x: string) => <span key={x} className={`${s.raison} ${s.raisonImprevu}`}>{x}</span>)}
+                  </div>
+                )}
+                <div className={s.imprevuActions}>
+                  {imp.quoi === 'decaler' ? (
+                    <>
+                      <button type="button" className={`${s.btn} ${s.btnOrange}`} onClick={() => setDeplace(v.id)}><Ic d={IC.agenda} t={14} e={2.2} />Déplacer la visite</button>
+                      {b && <button type="button" className={s.btn} onClick={() => setGrand(v.id)}><Ic d={IC.tel} t={14} e={2.1} />Les créneaux de l’agence</button>}
+                    </>
+                  ) : (
+                    <button type="button" className={`${s.btn} ${s.btnOrange}`} onClick={() => onAnnuler(v)}><Ic d={IC.croix} t={14} e={2.4} />Annuler la visite</button>
+                  )}
+                </div>
+                <div className={s.imprevuNote}>{imp.quoi === 'annuler'
+                  ? (imp.motifs.some(x => RAISONS_PAS_POUR_LUI.includes(x)) ? `Préviens l’agence, puis annule : le local passera « ${m.pas} », avec sa raison.` : 'Préviens l’agence, puis annule : le local garde sa place, tu pourras recaler une date.')
+                  : 'Préviens l’agence ou le bailleur avec ses dates. La relance se ferme dès que la visite est déplacée.'}</div>
+              </div>
+            )}
 
             {genre !== 'faite' && (contact || b?.agence_tel) && (
               <div className={s.agent}>
@@ -347,9 +390,12 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
                   {/* V3.172 : le calendrier de l'agenda, plutôt que le champ date du navigateur. */}
                   <div className={s.deplacerJour}>
                     <ChoixJour date={String(v.date_visite || '').split('T')[0]} etiquette="La date de la visite"
-                      onDate={async k => { await modifier(v.id, 'La date de la visite', { date_visite: k || null }); onRecharger(); }} />
+                      onDate={async k => { if (await modifier(v.id, 'La date de la visite', { date_visite: k || null }) && k) await deplacee(v, k, heureDe(v)); onRecharger(); }} />
                   </div>
-                  <label style={{ flex: '0 1 120px' }}>Heure<input type="time" defaultValue={v.heure || ''} onChange={async e => { await modifier(v.id, 'L’heure de la visite', { heure: e.target.value || null }); }} /></label>
+                  <label style={{ flex: '0 1 120px' }}>Heure<input type="time" defaultValue={v.heure || ''} onChange={async e => {
+                    const h = e.target.value;
+                    if (await modifier(v.id, 'L’heure de la visite', { heure: h || null }) && h && imprevus?.[v.id]) { await deplacee(v, String(v.date_visite || '').slice(0, 10), h); onRecharger(); }
+                  }} /></label>
                   <label style={{ flex: '2 1 180px' }}>Contact<input placeholder="Contact agence" defaultValue={v.contact_agence || ''} onBlur={async e => { if (e.target.value !== (v.contact_agence || '')) await modifier(v.id, 'Le contact de la visite', { contact_agence: e.target.value || null }); }} /></label>
                 </div>
               </Depliant>
@@ -458,7 +504,7 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
                 </div>
               ) : null}
               {suivis && clientId && (
-                <SuiviAgence b={b} lignes={suivis.parBien[b.id] || []} absent={suivis.absent} visite={suivis.visites[b.id]}
+                <SuiviAgence b={b} lignes={suivis.parBien[b.id] || []} absent={suivis.absent} visite={suivis.visites[b.id]} imprevu={suivis.imprevus?.[b.id] || null}
                   clientId={clientId} rechercheId={rechercheId || null} veutVisiter={b.badge_retour === 'souhaite_visiter'} seul prenom={prenom}
                   onChange={() => setTickSuivi(n => n + 1)}
                   onValider={(c, contact) => { if (!onPlanifier) return; setGrand(null); onPlanifier(b.id, { date: c.date, heure: c.heure, contact }); }}

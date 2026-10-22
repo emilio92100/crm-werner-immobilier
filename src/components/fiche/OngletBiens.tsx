@@ -307,7 +307,7 @@ export default function OngletBiens({ clientId, rechercheId, client, mode, onCha
   const suiviDe = (b: any, seul?: boolean) => {
     if (mode !== 'presentes' || !suivis) return null;
     return (
-      <SuiviAgence b={b} lignes={suivis.parBien[b.id] || []} absent={suivis.absent} visite={suivis.visites[b.id]}
+      <SuiviAgence b={b} lignes={suivis.parBien[b.id] || []} absent={suivis.absent} visite={suivis.visites[b.id]} imprevu={suivis.imprevus?.[b.id] || null}
         clientId={clientId} rechercheId={rechercheId} veutVisiter={b.badge_retour === 'souhaite_visiter'} seul={seul} prenom={client?.prenom}
         onChange={() => setTickSuivi(n => n + 1)}
         onValider={(c, contact) => onVisite(b.id, { date: c.date, heure: c.heure, contact })}

@@ -189,3 +189,13 @@
   .pied .btn { flex: 1 1 auto; }
 }
 @media (prefers-reduced-motion: reduce) { .filtre i { transition: none; } }
+
+/* V3.232 : l'imprévu signalé par le client depuis son espace. */
+.imprevu { display: flex; flex-direction: column; gap: 8px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 14px; padding: 12px 14px; }
+.imprevuLib { font-size: 10.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #c2410c; }
+.imprevuTexte { font-size: 15px; font-weight: 700; color: #13243d; line-height: 1.45; overflow-wrap: anywhere; }
+.imprevuTexte small { display: block; font-size: 13px; font-weight: 600; color: #7c5a3c; margin-top: 3px; }
+.raisonImprevu { color: #9a3412; background: #fff; border-color: #fed7aa; }
+.imprevuActions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btnOrange { border: none; background: #ea580c; color: #fff; font-weight: 800; }
+.imprevuNote { font-size: 12.5px; color: #7c5a3c; line-height: 1.5; }
