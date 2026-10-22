@@ -17,7 +17,8 @@ import { pourVisiteVide, visitePourCarte } from '@/components/biens/pour-visite'
 import type { PourVisite } from '@/components/biens/VueBien';
 import { adresseVente } from '@/lib/adresse-vente';
 import { etapeDe, type BienVente } from '@/lib/biens-vente';
-import { copieDe } from '@/components/biens/outils';
+import { copieDe, personneVide } from '@/components/biens/outils';
+import { ETAT_BON, useBonDeVisite, useEtatsBons, type DepartBon, type EtatBon } from '@/components/documents/BonDeVisite';
 
 /**
  * L'agenda du CRM (maquette A : petit calendrier à gauche, semaine au centre).
@@ -96,6 +97,7 @@ const TR: Record<string, string[]> = {
   corbeille: ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12', 'M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2'],
   visio: ['M3.5 7.5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2z', 'm15.5 10.5 5-3v9l-5-3'],
   stylo: ['M4 20l4-1 11-11-3-3L5 16z', 'M14 7l3 3'],
+  bon: ['M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z', 'M14 3v5h5', 'm9 14.5 2.2 2.2L15.5 12'],
   estimer: ['M4 20V10l8-6 8 6v10', 'M9 20v-5h6v5', 'M15 3.5h4v4'],
   lune: ['M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'],
   loupe: ['c:10.5,10.5,6.5', 'M15.5 15.5 20.5 20.5'],
@@ -172,6 +174,34 @@ type Dossier = {
 
 function lieuDuBien(b: any): string {
   return b?.adresse || b?.adresse_probable || [b?.quartier, b?.ville].filter(Boolean).join(', ') || '';
+}
+
+/* ══ Le bon de visite, depuis l'agenda (22 octobre 2026) ═══════════════
+   Le même que le bouton « Bon de visite » de Visites (PageVisites,
+   `departBon`) : la même clé de visite, donc le même bon retrouvé. Une
+   visite d'un demandeur part de sa première ligne (le bon propose ensuite
+   ses autres visites du jour) ; une visite hors CRM, posée depuis la fiche
+   d'une affaire, part de sa ligne de suivi (« s-… »), au nom noté. Un
+   autre rendez-vous n'a pas de bon. */
+function departBonAgenda(ev: Ev): DepartBon | null {
+  const b = ev.biens[0];
+  if (!b) return null;
+  const heure = hhmm(ev.debut);
+  if (ev.source === 'visite') {
+    if (!ev.ids[0]) return null;
+    return {
+      visite: { cle: ev.ids[0], ymd: ev.jour, heure, bienId: b.id || null, bienVenteId: b.venteId || null, titre: b.titre, lieu: b.adresse || ev.lieu },
+      clientId: ev.clientId, rechercheId: ev.rechercheId, qui: ev.qui,
+    };
+  }
+  const suivi = ev.details?.suiviId;
+  if (ev.type !== 'visite' || !b.venteId || typeof suivi !== 'string' || !suivi) return null;
+  const clientId = ev.clientId || (typeof ev.details?.suiviClient === 'string' && ev.details.suiviClient ? ev.details.suiviClient as string : null);
+  return {
+    visite: { cle: `s-${suivi}`, ymd: ev.jour, heure, bienId: null, bienVenteId: b.venteId, titre: b.titre, lieu: b.adresse || ev.lieu },
+    clientId, rechercheId: null, qui: ev.qui,
+    visiteur: clientId ? null : { ...personneVide(ev.qui), telephone: ev.contact },
+  };
 }
 
 /* ══ Les rendez-vous sur plusieurs jours ═════════════════════════
@@ -276,7 +306,7 @@ function construire(visites: any[], rdvs: any[], transactions: any[], recherches
       lieu: r.lieu || '', contact: r.details?.telephone || '', notes: r.notes || '', biens,
       clientId: r.client_id || null, rechercheId: r.recherche_id || null,
       fait: finOk <= maintenant || ligne?.statut === 'faite', crAFaire: finOk <= maintenant && ligne?.statut === 'a_venir',
-      details: { ...(r.details || {}), ...(ligne ? { suiviId: ligne.id } : {}) }, relanceId: r.relance_id || null,
+      details: { ...(r.details || {}), ...(ligne ? { suiviId: ligne.id, suiviClient: ligne.client_id || null } : {}) }, relanceId: r.relance_id || null,
     });
   }
 
@@ -376,7 +406,7 @@ const lireAgenda = () => Promise.all([
   lireClients(),
   /* V3.146 : les visites hors CRM (suivi des biens de l'agence) — leur
      statut dit si le compte rendu est fait. Sans la table, rien. */
-  lire('biens_vente_suivi', 'id, statut, donnees', q => q.eq('type', 'visite')),
+  lire('biens_vente_suivi', 'id, statut, donnees, qui, client_id', q => q.eq('type', 'visite')),
 ]);
 /* Par rendez-vous de l'agenda : la ligne de suivi qui le porte. */
 const libresParRdv = (l: any[]): Record<string, any> => {
@@ -435,6 +465,27 @@ export default function PageAgenda({ onNavigate }: { onNavigate: (page: string, 
   }, []);
   const [modale, setModale] = useState<Modale>(null);
   const [rappelDe, setRappelDe] = useState<string | null>(null);
+  /* Le bon de visite (22 octobre 2026) : il s'ouvre dans Documents, et son
+     bouton retour ramène ici, sur le rendez-vous d'où l'on est parti. La
+     question « ses autres visites du jour » s'affiche sans le détail
+     par-dessus (elle passerait dessous), qui revient si on la ferme. */
+  const bonDe = useRef<string | null>(null);
+  const bon = useBonDeVisite({
+    onOuvrir: id => {
+      const cle = bonDe.current;
+      bonDe.current = null;
+      memoriserRetour(cle);
+      setSelCle(null);
+      onNavigate('documents', { ouvrir: id, retour: { page: 'agenda', data: { retour: true }, lib: 'Agenda' } });
+    },
+  });
+  const etatBon = useEtatsBons();
+  const choixBon = !!bon.fenetre;
+  const pendantChoix = useRef(false);
+  useEffect(() => {
+    if (choixBon) { pendantChoix.current = true; setSelCle(null); }
+    else if (pendantChoix.current) { pendantChoix.current = false; if (bonDe.current) setSelCle(bonDe.current); }
+  }, [choixBon]);
   const [chargement, setChargement] = useState(true);
   const [tableAbsente, setTableAbsente] = useState(false);
   const [brut, setBrut] = useState<{ visites: any[]; rdvs: any[]; relances: any[]; transactions: any[]; recherches: any[]; clients: any[]; ventes: Record<string, any>; libres: Record<string, any> }>({ visites: [], rdvs: [], relances: [], transactions: [], recherches: [], clients: [], ventes: {}, libres: {} });
@@ -528,9 +579,9 @@ export default function PageAgenda({ onNavigate }: { onNavigate: (page: string, 
   };
   /* V3.138 : avant d'ouvrir une fiche, l'adresse de l'agenda dit ce qui
      était à l'écran — le retour y ramène (voir `lireRetourAgenda`). */
-  const memoriserRetour = () => {
-    if (!selCle) return;
-    const q = `?page=agenda&rdv=${encodeURIComponent(selCle)}&jour=${jour}&vue=${vue}`;
+  const memoriserRetour = (cle: string | null = selCle) => {
+    if (!cle) return;
+    const q = `?page=agenda&rdv=${encodeURIComponent(cle)}&jour=${jour}&vue=${vue}`;
     try {
       window.history.replaceState(null, '', `${window.location.pathname}${q}`);
       window.sessionStorage.setItem('emi-retour-agenda', q);
@@ -653,8 +704,13 @@ export default function PageAgenda({ onNavigate }: { onNavigate: (page: string, 
         </div>
       )}
 
+      {bon.fenetre}
       {sel && (
         <Detail ev={sel} etroit={etroit} onFerme={() => setSelCle(null)}
+          bon={(() => {
+            const d = departBonAgenda(sel);
+            return d ? { etat: etatBon(d), enCours: bon.enCours === d.visite.cle, lancer: () => { bonDe.current = sel.cle; void bon.lancer(d); } } : null;
+          })()}
           onModifier={() => { setModale({ mode: 'modifier', ev: sel }); setSelCle(null); }}
           onAnnuler={() => annuler(sel)} onCR={() => compteRendu(sel)} onDossier={() => ouvrirDossier(sel.clientId)}
           onBien={() => ouvrirBien(sel)} onBienVente={ouvrirBienVente} onBienDossier={b => ouvrirBienDossier(sel, b)}
@@ -1369,8 +1425,9 @@ function IndicationsVisite({ p, titre }: { p: PourVisite; titre: string }) {
 }
 
 /* ══ Le détail d'un rendez-vous ════════════════════════════════ */
-function Detail({ ev, etroit, onFerme, onModifier, onAnnuler, onCR, onDossier, onBien, onBienVente, onBienDossier, onRappel }: {
-  ev: Ev; etroit: boolean; onFerme: () => void; onModifier: () => void; onAnnuler: () => void; onCR: () => void; onDossier: () => void; onBien: () => void;
+type BonDuDetail = { etat: EtatBon | null; enCours: boolean; lancer: () => void };
+function Detail({ ev, etroit, bon, onFerme, onModifier, onAnnuler, onCR, onDossier, onBien, onBienVente, onBienDossier, onRappel }: {
+  ev: Ev; etroit: boolean; bon: BonDuDetail | null; onFerme: () => void; onModifier: () => void; onAnnuler: () => void; onCR: () => void; onDossier: () => void; onBien: () => void;
   onBienVente: (id: string) => void; onBienDossier: (b: Ev['biens'][number]) => void; onRappel: () => void;
 }) {
   const [monte, setMonte] = useState(false);
@@ -1489,6 +1546,17 @@ function Detail({ ev, etroit, onFerme, onModifier, onAnnuler, onCR, onDossier, o
           {itineraire && <a className="ag-appui" href={itineraire} target="_blank" rel="noopener noreferrer" style={bouton}><Ic n="route" t={15} />Itinéraire</a>}
           {ev.clientId && !ficheDuNom && <button type="button" className="ag-appui" onClick={onDossier} style={bouton}><Ic n="dossier" t={15} />Sa fiche</button>}
           {ev.source === 'rdv' && bienDuRdv(ev) && !ev.biens.length && <button type="button" className="ag-appui" onClick={onBien} style={bouton}><Ic n="maison" t={15} />Ouvrir l’affaire</button>}
+          {bon && (
+            <button type="button" className="ag-appui" onClick={bon.lancer} disabled={bon.enCours}
+              title={bon.etat ? 'Ouvrir le bon de visite' : 'Le bon de visite, prérempli avec le client et le local'}
+              style={{ ...bouton, opacity: bon.enCours ? .6 : 1 }}>
+              <Ic n="bon" t={15} />
+              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.15, minWidth: 0 }}>
+                <span style={{ whiteSpace: 'nowrap' }}>{bon.enCours ? 'Préparation…' : 'Bon de visite'}</span>
+                {bon.etat && !bon.enCours && <small style={{ color: ETAT_BON[bon.etat].c, fontWeight: 800, fontSize: 11 }}>{`(${ETAT_BON[bon.etat].t})`}</small>}
+              </span>
+            </button>
+          )}
           {!ev.fait && <button type="button" className="ag-appui" onClick={onModifier} style={bouton}><Ic n="crayon" t={15} />Modifier</button>}
           {!ev.fait && <button type="button" className="ag-appui" onClick={onAnnuler} style={{ ...bouton, color: '#b42318' }}><Ic n="corbeille" t={15} />Annuler</button>}
         </div>
