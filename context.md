@@ -574,7 +574,7 @@ Werner, demandée à l'arrivée tant qu'elle manque et dessinée dans le CRM
   Anciens enregistrements, pour revenir en arrière : A @ et A www 217.160.0.153, AAAA @ et AAAA www
   2001:8d8:100f:f000::200 (service WordPress d'IONOS).
 - **L'espace client, au choix de Werner** (21 octobre 2026) — `clients.espace_client`
-  (`outils/sql/espace-client-choix.sql`, **à exécuter dans Supabase**), faux par défaut. Sans espace :
+  (`outils/sql/espace-client-choix.sql`, exécuté : la colonne est là, vérifié le 22 octobre 2026), faux par défaut. Sans espace :
   les locaux envoyés par mail mènent à leur fiche publique `/bien/<id>` (son bouton « Me contacter »
   porte le titre du local en objet), aucun mail ne parle d'espace, le lien d'espace mène à « Ce lien
   n'est plus actif » (`ouvrirEspace`, `src/lib/espace.ts`), et le point automatique, le mail de
@@ -589,6 +589,12 @@ Werner, demandée à l'arrivée tant qu'elle manque et dessinée dans le CRM
   (« J'ai compris », « Ne plus m'expliquer » retenu dans le navigateur) ; un espace qui s'ouvre propose
   le mail de bienvenue (`FenProposerBienvenue`, aussi juste après la création). Dans Contacts : la
   pastille « Espace » sur la ligne, et les filtres « Prospects · sans espace » / « Actifs · avec espace ».
+  **Un conseil avant d'ouvrir un espace** (22 octobre 2026 ; Alexandre : « privilégier cet espace pour
+  les clients qu'il suit de façon intensive : si on lui propose l'espace, le client attendra qu'il soit
+  mis à jour régulièrement ») : `shared/ConseilEspace.tsx`, « Réserve l'espace aux demandeurs que tu suis
+  de près… », sous l'interrupteur quand « Actif » est choisi à la création, dans la fenêtre « Passer en
+  Actif », sur l'onglet « Son espace » d'un demandeur qui n'en a pas, et au changement en lot vers
+  « Actif » (au pluriel). Le « ? » de l'interrupteur le dit aussi.
 - **Mailjet et les clés** — le compte et le domaine d'envoi de Werner, les variables Mailjet,
   `ANTHROPIC_API_KEY`, `CRON_SECRET`, Ringover, les notifications (§1).
 - **Le premier accès de Werner** — aujourd'hui, `/login` ouvre un compte Supabase créé à la main. Le
