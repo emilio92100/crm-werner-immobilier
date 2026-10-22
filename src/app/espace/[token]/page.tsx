@@ -10,7 +10,7 @@ import EspaceEnPreparation from './preparation';
 import { jetonEspace, HOTE_ESPACE } from '@/lib/jeton';
 import { etatMandat, finRetractationPour, rechercheDepuis, masquerEmail, type Mandant, type Societe } from '@/lib/mandat';
 import { lireReserve, mandatDocumentEnRoute, mandatDocumentSigne, mandatDocumentRetracte, renonciationDocument, memeNumero, signeSansNumero } from '@/lib/mandat-serveur';
-import { maintenantParis, visitePasseeParis, issueDe, apprisDe } from '@/lib/visites';
+import { maintenantParis, visitePasseeParis, issueDe, apprisDe, imprevusOuverts } from '@/lib/visites';
 import { lireDocumentsEspace, fichierDe, modeDoc, type DocEspace, type MandatDocEspace } from '@/lib/documents-espace';
 import { ecritServeur } from '@/lib/ecritures';
 import { prixDuBien } from '@/lib/honoraires-bien';
@@ -129,7 +129,7 @@ export default async function PageEspace({ params, searchParams }: {
     await ecritServeur('Le jeton de la recherche', supabase.from('recherches').update({ token_espace: jetonRecherche }).eq('id', recherche.id));
   }
 
-  const [biensRes, passagesRes, totalRes, visitesRes, finRes, coordRes, signRes, reserve, annoncesRes, suivisRes] = await Promise.all([
+  const [biensRes, passagesRes, totalRes, visitesRes, finRes, coordRes, signRes, reserve, annoncesRes, suivisRes, imprevusRes] = await Promise.all([
     supabase.from('biens').select('*').eq('recherche_id', recherche.id).eq('etape', 'presente')
       .order('envoye_le', { ascending: false, nullsFirst: false }),
     /* Les derniers passages : le tout premier dit « la dernière recherche »,
@@ -172,6 +172,11 @@ export default async function PageEspace({ params, searchParams }: {
        l'espace ne montre rien. */
     supabase.from('suivis_agence').select('bien_id, genre, reponse, dispo, creneaux, ensuite, rappel_le, mot_client, montrer, created_at')
       .eq('recherche_id', recherche.id).eq('genre', 'appel').order('created_at', { ascending: true }).limit(400),
+    /* V3.232 : ses « Un imprévu ? » sur une visite calée (journal, type
+       message_client, metadata.imprevu). Soixante jours suffisent : une
+       visite à venir n'est jamais plus loin. */
+    supabase.from('journal').select('metadata, created_at').eq('recherche_id', recherche.id).eq('type', 'message_client')
+      .gte('created_at', new Date(Date.now() - 60 * 86_400_000).toISOString()).order('created_at', { ascending: true }).limit(200),
   ]);
   const tous = totalRes.data || [];
   const totalLues = tous.reduce((t, x) => t + (x.nb_lues || 0), 0);
@@ -302,6 +307,20 @@ export default async function PageEspace({ params, searchParams }: {
     : lignesA.map(a => annoncePourEspace(a as Parameters<typeof annoncePourEspace>[0],
       a.bien_id ? ((biensRes.data || []).find(b => b.id === a.bien_id) || biensHors.get(a.bien_id) || null) : null));
 
+  /* V3.232 (repris du CRM d'Emilio) : « Werner est prévenu » sur une visite à
+     venir où il a signalé un imprévu, tant qu'elle n'a pas bougé (même jour,
+     même heure). Déplacée ou annulée par Werner, la mention s'en va d'elle-même.
+     Par local aussi : « Où en est Werner » le raconte. */
+  const ouvertsImp = imprevusOuverts((imprevusRes.error ? [] : imprevusRes.data || []) as { metadata?: unknown; created_at?: string | null }[],
+    toutesVisites.filter((v) => v.statut === 'a_venir' && !estPassee(v)) as { id: string; statut: string; date_visite: string | null; heure: string | null }[]);
+  const imprevus: Record<string, { quoi: 'decaler' | 'annuler'; le: string }> = {};
+  const imprevuParBien = new Map<string, { quoi: 'decaler' | 'annuler'; le: string }>();
+  for (const [vid, i] of Object.entries(ouvertsImp)) {
+    imprevus[vid] = { quoi: i.quoi, le: i.le };
+    const v = toutesVisites.find((x) => x.id === vid);
+    if (v?.bien_id) imprevuParBien.set(v.bien_id, { quoi: i.quoi, le: i.le });
+  }
+
   /* V3.193 : les appels de chaque bien, pour ses étapes (src/lib/suivi-client.ts). */
   const appelsParBien = new Map<string, AppelVisible[]>();
   for (const a of (suivisRes.error ? [] : suivisRes.data || []) as (AppelVisible & { bien_id: string })[]) {
@@ -317,7 +336,7 @@ export default async function PageEspace({ params, searchParams }: {
     if (b.bien_vente_id || indispoDe(b) || copiesIndispo.has(id) || faiteParBien.has(id)) return null;
     const l = appelsParBien.get(id);
     if (!l?.length) return null;
-    return suiviPourClient(l, { avis: b.badge_retour as string | null, retourLe: b.retour_le as string | null, visite: prevueParBien.get(id) || null });
+    return suiviPourClient(l, { avis: b.badge_retour as string | null, retourLe: b.retour_le as string | null, visite: prevueParBien.get(id) || null, imprevu: imprevuParBien.get(id) || null });
   };
 
   const biens = (biensRes.data || []).map((b) => ({
@@ -769,6 +788,7 @@ export default async function PageEspace({ params, searchParams }: {
       apprisClient={apprisClient}
       annonces={annonces}
       identiteOffre={identiteOffre}
+      imprevus={imprevus}
     />
   );
 }
