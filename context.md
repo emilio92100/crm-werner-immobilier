@@ -273,6 +273,19 @@ reclique, on voit qu'elle a déjà été envoyée ? et des explications étape p
   affaires » ; côté affaire, l'avis d'un demandeur passe sous son nom, sur toute la largeur. La fenêtre
   dit « 2 affaires pour Paul », « affaire cochée », « La mettre dans sa sélection ».
 
+**L'onglet Rapprochement, au repos puis pas à pas** (22 octobre 2026, repris du CRM d'Emilio, sa V3.231).
+Au repos : l'illustration animée (`FicheClient`, `illuRappro` : le demandeur et trois pistes, des traits qui
+défilent, des cartes qui flottent, une étincelle), « Quelles affaires de ta base pourraient plaire à … ? »,
+« Lancer un rapprochement », « Comment ça marche ? », le dernier rapprochement, et un rappel vert quand des
+affaires l'ont fait ressortir depuis leur fiche sans être dans son dossier. Au clic, « Préparer le
+rapprochement » se déplie : ① Où chercher (trois petites cases avec leur nombre et leur « ? » ; la période
+des veilles seulement si elles sont cochées), ② Quoi montrer (après un premier rapprochement : nouveautés ou
+tout revoir, chacun avec son « ? » qui décrit le code), ③ combien de locaux seront comparés, et le bouton.
+Rien de coché : ② et ③ se replient. Le « ? » est `shared/Aide.tsx`. Les rapprochements faits : une carte,
+deux onglets (`OngletsHisto`, « Depuis sa fiche » et « Depuis tes affaires ») ; trois d'abord, puis « Voir
+les plus anciens » ; trois affaires par groupe dans « Depuis tes affaires ». L'ancienne carte « Vu depuis
+tes affaires » du bas n'existe plus.
+
 ### Le marché, l'ancienneté d'une annonce
 
 Savoir **depuis quand une annonce est en ligne** se lit dans les données de la page SeLoger Bureaux &
