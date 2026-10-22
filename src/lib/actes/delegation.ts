@@ -26,29 +26,37 @@
    Jamais montrée au client dans son espace (`interne`) : elle dit comment
    les honoraires se partagent.
 
-   ⚠️ Texte écrit pour Emilio à partir de la loi (loi n° 70-9 du 2 janvier
-   1970, décret n° 72-678 du 20 juillet 1972, articles 1984 et suivants du
-   Code civil), rien n'est repris d'un éditeur de formulaires. À faire
-   relire par l'avocat d'Alexandre avant le premier usage. */
+   Werner (22 octobre 2026) : un mandat de commercialisation (location,
+   droit au bail, fonds, murs : son montant est le loyer ou le prix écrit au
+   mandat, `montant`) ou un mandat de recherche (un loyer et / ou un prix
+   maximum). Les honoraires se disent dans la base du mandat, HT ou TTC
+   (commun.ts) ; le partage se calcule hors taxes.
+
+   ⚠️ Texte écrit à partir de la loi (loi n° 70-9 du 2 janvier 1970, décret
+   n° 72-678 du 20 juillet 1972, articles 1984 et suivants du Code civil),
+   rien n'est repris d'un éditeur de formulaires. À faire relire par
+   l'avocat d'Alexandre avant le premier usage. */
 
 import { euros, type Partie, type Bloc, type Fiche, type Resume } from '@/lib/mandat';
+import { NATURES } from '@/lib/affaires';
 import { lignesMandataire, phraseFonds, type IdentiteAgence } from '@/lib/agence';
 import {
   P, Pp, eurosLettres, pourcent, jourLong, aujourdhui, txt, num, liste, plusMois, couper,
   nomComplet, lirePersonnes, ficheAgence, blocsSignature, manquesSignature, CHAMP_SIGNATURE, HONO_MODES, PERSONNE_VIDE,
+  montantHono, montantHonoCourt, tauxHono, htTtc, selonBase, champsBaseHono,
   type Donnees, type Modele, type Etape, type Contexte, type Repere, type Source, type CaseSignature, type Personne,
 } from './commun';
-import { TYPES as TYPES_VENTE, typeDe, argent as argentVente, registreVente, objetVente } from './mandat-vente';
+import { TYPES as TYPES_VENTE, typeDe, argent as argentVente, registreVente, objetVente, natureMandat, motsDe, titreMandat } from './mandat-vente';
 import { registreRecherche, objetRecherche, argentRecherche } from './mandat-recherche';
 import { lirePro, type Juridique } from '@/lib/contacts';
 
 /* Ce qu'on reprend du mandat, pour le décrire et rappeler ses conditions. */
-const REPRIS_VENTE = ['qui', 'situation', 'lien', 'vendeurs', 'sciNom', 'sciForme', 'sciSiege', 'sciRcs',
-  'adresse', 'cp', 'ville', 'type', 'nature', 'copro', 'description', 'lots', 'tantiemesBase', 'tantiemesTotal',
-  'charge', 'honoMode', 'taux', 'forfait', 'prix', 'duree', 'dureeMode', 'periode', 'dureeMax'];
+const REPRIS_VENTE = ['qui', 'vendeurs', 'sciNom', 'sciForme', 'sciSiege', 'sciRcs', 'sciPouvoir',
+  'adresse', 'cp', 'ville', 'type', 'nature', 'copro', 'description', 'lots', 'activite',
+  'charge', 'honoMode', 'taux', 'forfait', 'prix', 'montant', 'tvaHono', 'baseHono', 'duree', 'dureeMode', 'periode', 'dureeMax'];
 const REPRIS_RECHERCHE = ['qui', 'acquereurs', 'sciNom', 'sciForme', 'sciSiege', 'sciRcs',
-  'types', 'typeAutre', 'pieces', 'chambres', 'surface', 'secteurs', 'criteres', 'usage',
-  'type', 'prixMax', 'honoMode', 'taux', 'forfait', 'duree', 'dureeMode', 'periode', 'dureeMax'];
+  'natures', 'types', 'typeAutre', 'surface', 'secteurs', 'criteres', 'activite',
+  'type', 'prixMax', 'loyerMax', 'honoMode', 'taux', 'forfait', 'tvaHono', 'baseHono', 'duree', 'dureeMode', 'periode', 'dureeMax'];
 
 const vente = (d: Donnees) => d.sorte !== 'recherche';
 const delegataire = (d: Donnees): Personne => lirePersonnes(d.delegataires)[0] || PERSONNE_VIDE;
@@ -56,16 +64,32 @@ const nomConfrere = (d: Donnees) => txt(d, 'confNom') || txt(d, 'confSociete');
 const typeNom = (d: Donnees) => (vente(d) ? TYPES_VENTE[typeDe(d)].nom : d.type === 'exclusif' ? 'exclusif' : 'simple');
 const part = (d: Donnees) => { const n = num(d, 'partage'); return n === null ? null : Math.min(100, Math.max(0, n)); };
 const fmtPart = (n: number) => String(Math.round(n * 100) / 100).replace('.', ',');
+/* Un mandat de commercialisation : sa nature et ses mots (mandat-vente.ts). */
+const estLoc = (d: Donnees) => natureMandat(d) === 'location';
+/* « un preneur », « un cessionnaire », « un acquéreur » ; « du preneur »… */
+const unAutre = (d: Donnees) => { const a = motsDe(d).autreMin; return /^[aeéiouy]/i.test(a) ? `un ${a}` : `un ${a}`; };
+const deLautre = (d: Donnees) => { const a = motsDe(d).autreMin; return /^[aeéiouy]/i.test(a) ? `de l’${a}` : `du ${a}`; };
+const minuscule = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
+/* Le montant écrit au mandat de commercialisation : le loyer, ou le prix
+   (hors honoraires quand l'autre partie les paie en plus). */
+const montantVente = (d: Donnees): number | null => num(d, 'montant') ?? argentVente(d).montant;
+/* Les honoraires du mandat de commercialisation, dans sa base (HT ou TTC). */
+function honoVente(d: Donnees): { h: number | null; taux: number | null; forfait: number | null } {
+  const forfait = d.honoMode === 'forfait' ? num(d, 'forfait') : null;
+  const taux = d.honoMode === 'forfait' ? null : num(d, 'taux');
+  const m = montantVente(d);
+  return { h: forfait !== null ? Math.round(forfait) : m && taux !== null ? Math.round((m * taux) / 100) : null, taux, forfait };
+}
 
 /* Les missions qu'on peut déléguer, et ce que chacune veut dire selon le
    mandat (vendre un bien, ou en trouver un). */
 const MISSIONS: { v: string; l: string; ic: string; vente: string; recherche: string }[] = [
   { v: 'prospecter', l: 'Chercher parmi ses clients', ic: 'groupe',
-    vente: 'rechercher des acquéreurs, notamment parmi sa propre clientèle', recherche: 'rechercher des biens répondant à la recherche du MANDANT' },
+    vente: 'rechercher des candidats à l’opération, notamment parmi sa propre clientèle', recherche: 'rechercher des locaux répondant à la recherche du MANDANT' },
   { v: 'visites', l: 'Faire visiter', ic: 'cle',
-    vente: 'faire visiter le bien aux acquéreurs qu’il présente', recherche: 'organiser les visites des biens qu’il a trouvés, et y accompagner le MANDANT avec l’accord du DÉLÉGANT' },
+    vente: 'faire visiter les locaux aux candidats qu’il présente', recherche: 'organiser les visites des locaux qu’il a trouvés, et y accompagner le MANDANT avec l’accord du DÉLÉGANT' },
   { v: 'offres', l: 'Recevoir les offres', ic: 'euro',
-    vente: 'recueillir les offres de ses acquéreurs et les transmettre au DÉLÉGANT', recherche: 'recueillir les informations sur les biens trouvés (prix, diagnostics, conditions) et les transmettre au DÉLÉGANT' },
+    vente: 'recueillir les offres de ses candidats et les transmettre au DÉLÉGANT', recherche: 'recueillir les informations sur les locaux trouvés (loyer ou prix, bail, conditions) et les transmettre au DÉLÉGANT' },
 ];
 
 /* Ce à quoi le confrère s'engage (toutes cochées d'office). */
@@ -86,12 +110,13 @@ const ETAPES: Etape[] = [
       { t: 'guide', cle: 'g-autorise', si: d => d.autorise === 'non', titre: () => 'Ce mandat ne permet pas de déléguer',
         points: () => [
           { ic: 'plume', x: 'Fais d’abord signer au client un avenant qui t’autorise à déléguer (Avenant › Autre chose) : la délégation se fera ensuite.' },
-          { ic: 'info', x: 'Les mandats faits dans le CRM depuis la V3.18 l’autorisent d’office, comme le mandat de recherche signé en ligne.' },
+          { ic: 'info', x: 'Les mandats faits dans le CRM l’autorisent d’office (« Déléguer à un confrère »), comme le mandat de recherche signé en ligne.' },
         ] },
       { t: 'choix', cle: 'sorte', lib: 'Un mandat de', ic: 'doc', tuiles: true, options: [
-        { v: 'vente', l: 'Vente', aide: 'Un bien à vendre.', ic: 'maison' },
-        { v: 'recherche', l: 'Recherche', aide: 'Un bien à trouver pour un acheteur.', ic: 'loupe' },
+        { v: 'vente', l: 'Commercialisation', aide: 'Une affaire confiée : location, droit au bail, fonds, murs.', ic: 'agence' },
+        { v: 'recherche', l: 'Recherche', aide: 'Un local à trouver pour un demandeur.', ic: 'loupe' },
       ] },
+      { t: 'choix', cle: 'nature', lib: 'Il porte sur', ic: 'immeuble', si: vente, options: NATURES.map(n => ({ v: n.v, l: n.l, ic: n.ic })) },
       { t: 'texte', cle: 'mandatNumero', lib: 'N° du mandat', ic: 'livre', requis: true },
       { t: 'date', cle: 'mandatDate', lib: 'Signé le', ic: 'calendrier', requis: true },
       { t: 'choix', cle: 'type', lib: 'Mandat', ic: 'cadenas', options: [
@@ -104,20 +129,26 @@ const ETAPES: Etape[] = [
     ],
   },
   {
-    id: 'bien', titre: 'Ce que porte le mandat', court: 'Le bien', sous: 'Les mandants, le bien et ses conditions, tels que le confrère les lira.', vers: 'Il est d’abord rappelé que', reperesApres: 'forfait', ic: 'maison',
+    id: 'bien', titre: 'Ce que porte le mandat', court: 'L’affaire', sous: 'Les mandants, l’affaire et ses conditions, tels que le confrère les lira.', vers: 'Il est d’abord rappelé que', reperesApres: 'forfait', ic: 'agence',
     champs: [
-      { t: 'zone', cle: 'mandantsTexte', lib: 'Les mandants', ic: 'personne', large: true, requis: true, exemple: 'Monsieur Paul MARTIN, 12 rue des Lilas, 92100 Boulogne-Billancourt' },
-      { t: 'zone', cle: 'objetTexte', lib: 'Le bien', ic: 'maison', large: true, requis: true, exemple: '12 rue des Lilas, 92100 Boulogne-Billancourt · appartement de 4 pièces au 3e étage',
-        aide: 'Pour un mandat de recherche : le bien recherché (« Recherche : appartement de 3 pièces, Paris 16e… »).' },
-      { t: 'titre', cle: 't-cond', lib: 'Le prix et les honoraires du mandat', ic: 'euro' },
-      { t: 'euros', cle: 'prix', lib: 'Prix de présentation', ic: 'etiquette', requis: true, si: vente },
-      { t: 'euros', cle: 'prixMax', lib: 'Prix d’achat maximum', ic: 'etiquette', si: d => !vente(d), aide: 'Hors honoraires.' },
-      { t: 'choix', cle: 'charge', lib: 'Honoraires à la charge', ic: 'euro', si: vente, options: [
-        { v: 'acquereur', l: 'De l’acquéreur', ic: 'cle' }, { v: 'vendeur', l: 'Du vendeur', ic: 'maison' },
+      { t: 'zone', cle: 'mandantsTexte', lib: 'Les mandants', ic: 'personne', large: true, requis: true, exemple: 'SCI DES LILAS, représentée par Monsieur Paul MARTIN, 12 rue des Lilas, 92100 Boulogne-Billancourt' },
+      { t: 'zone', cle: 'objetTexte', lib: 'L’affaire', ic: 'agence', large: true, requis: true, exemple: 'Location · 12 rue de Lévis, 75017 Paris · boutique de 60 m² en rez-de-chaussée',
+        aide: 'Pour un mandat de recherche : le local recherché (« Recherche : bureaux de 150 m², Paris 8e… »).' },
+      { t: 'titre', cle: 't-cond', lib: 'Le montant et les honoraires du mandat', ic: 'euro' },
+      { t: 'euros', cle: 'montant', lib: 'Loyer annuel', ic: 'etiquette', unite: '€ HT HC / an', requis: true, si: d => vente(d) && estLoc(d) },
+      { t: 'euros', cle: 'montant', lib: 'Prix', ic: 'etiquette', requis: true, si: d => vente(d) && !estLoc(d), aide: 'Celui que le mandat écrit : hors honoraires quand l’autre partie les paie en plus.' },
+      { t: 'euros', cle: 'loyerMax', lib: 'Loyer annuel maximum', ic: 'etiquette', unite: '€ HT HC / an', si: d => !vente(d), question: 'Un loyer maximum (un bail) ?' },
+      { t: 'euros', cle: 'prixMax', lib: 'Prix maximum', ic: 'etiquette', si: d => !vente(d), aide: 'Hors honoraires.', question: 'Un prix maximum (une cession, des murs) ?' },
+      { t: 'choix', cle: 'charge', lib: 'Honoraires à la charge', ic: 'euro', si: d => vente(d) && estLoc(d), options: [
+        { v: 'acquereur', l: 'Du preneur', ic: 'cle' }, { v: 'vendeur', l: 'Du bailleur', ic: 'immeuble' },
+      ] },
+      { t: 'choix', cle: 'charge', lib: 'Honoraires à la charge', ic: 'euro', si: d => vente(d) && !estLoc(d), options: [
+        { v: 'acquereur', l: 'De l’acquéreur ou du cessionnaire', ic: 'cle' }, { v: 'vendeur', l: 'Du mandant', ic: 'immeuble' },
       ] },
       { t: 'choix', cle: 'honoMode', lib: 'Honoraires', ic: 'euro', options: HONO_MODES },
-      { t: 'nombre', cle: 'taux', lib: 'Taux', ic: 'pourcent', unite: '% TTC', si: d => d.honoMode !== 'forfait' },
-      { t: 'euros', cle: 'forfait', lib: 'Forfait', ic: 'euro', unite: '€ TTC', si: d => d.honoMode === 'forfait' },
+      ...champsBaseHono(),
+      ...selonBase({ t: 'nombre', cle: 'taux', lib: 'Taux', ic: 'pourcent', si: d => d.honoMode !== 'forfait' }, b => `% ${b}`),
+      ...selonBase({ t: 'euros', cle: 'forfait', lib: 'Forfait', ic: 'euro', si: d => d.honoMode === 'forfait' }, b => `€ ${b}`),
     ],
   },
   {
@@ -166,13 +197,13 @@ const ETAPES: Etape[] = [
       { t: 'titre', cle: 't-eng', lib: 'Ses engagements', ic: 'etoile' },
       { t: 'cases', cle: 'engagements', lib: 'Le confrère s’engage à', ic: 'etoile', options: ENGAGEMENTS },
       { t: 'choix', cle: 'publicite', lib: 'Les annonces', ic: 'megaphone', si: vente, options: [
-        { v: 'non', l: 'Pas d’annonce', aide: 'Il présente le bien à ses propres acquéreurs.', ic: 'croix' },
+        { v: 'non', l: 'Pas d’annonce', aide: 'Il présente l’affaire à ses propres clients.', ic: 'croix' },
         { v: 'oui', l: 'Annonces validées par toi', aide: 'Il te soumet chaque annonce avant de la diffuser.', ic: 'megaphone' },
       ] },
     ],
   },
   {
-    id: 'honoraires', titre: 'Le partage des honoraires', court: 'Les honoraires', sous: 'Ce qui revient au confrère quand l’acquéreur vient de lui, et qui encaisse.', vers: 'Honoraires', reperesApres: 'encaisse', ic: 'euro',
+    id: 'honoraires', titre: 'Le partage des honoraires', court: 'Les honoraires', sous: 'Ce qui revient au confrère quand le client vient de lui, et qui encaisse.', vers: 'Honoraires', reperesApres: 'encaisse', ic: 'euro',
     champs: [
       { t: 'nombre', cle: 'partage', lib: 'Part du confrère', ic: 'pourcent', unite: '% des honoraires HT', requis: true, rapides: [30, 40, 50], aide: 'Le reste te revient. 50 % est l’usage le plus courant.' },
       { t: 'choix', cle: 'encaisse', lib: 'Qui encaisse les honoraires ?', ic: 'banque', tuiles: true, options: [
@@ -193,18 +224,23 @@ const ETAPES: Etape[] = [
 
 /* ══ Le texte ═══════════════════════════════════════════════════════════ */
 
-/* Le prix et les honoraires du mandat, en une phrase. */
+/* Le montant et les honoraires du mandat, en une phrase. */
 function conditions(d: Donnees): string {
   if (vente(d)) {
-    const a = argentVente(d);
-    const hono = a.forfait ? `un forfait de ${euros(a.forfait)} TTC`
-      : a.taux !== null ? `${pourcent(a.taux)} TTC du ${a.charge === 'acquereur' ? 'prix net vendeur' : 'prix de vente'}` : 'montant à préciser';
-    if (!a.prix) return `Le Mandat prévoit des honoraires de ${hono}, à la charge ${a.charge === 'acquereur' ? 'de l’acquéreur' : 'du MANDANT'}.`;
-    return `Le Mandat prévoit un prix de présentation de ${eurosLettres(a.prix)}${a.charge === 'acquereur' ? `, honoraires compris${a.net ? `, soit un prix net vendeur de ${euros(a.net)}` : ''}` : ''}, et des honoraires de ${hono}${a.honoraires !== null ? `, soit ${euros(a.honoraires)} TTC à ce prix` : ''}, à la charge ${a.charge === 'acquereur' ? 'de l’acquéreur' : 'du MANDANT'}.`;
+    const loc = estLoc(d);
+    const m = montantVente(d);
+    const { h, taux, forfait } = honoVente(d);
+    const qui = d.charge === 'vendeur' ? 'du MANDANT' : deLautre(d);
+    const hono = forfait !== null ? `un forfait de ${montantHono(d, forfait)}`
+      : taux !== null ? `${tauxHono(d, taux)} ${loc ? 'du loyer annuel HT HC' : 'du prix'}` : 'montant à préciser';
+    if (!m) return `Le Mandat prévoit des honoraires de ${hono}, à la charge ${qui}.`;
+    return `Le Mandat prévoit ${loc ? `un loyer annuel de ${eurosLettres(m)} hors taxes et hors charges` : `un prix de ${eurosLettres(m)}${d.charge !== 'vendeur' ? ', hors honoraires' : ''}`}, et des honoraires de ${hono}${h !== null && forfait === null ? `, soit ${montantHonoCourt(d, h)} ${loc ? 'pour ce loyer' : 'à ce prix'}` : ''}, à la charge ${qui}.`;
   }
   const a = argentRecherche(d);
-  const hono = a.forfait ? `un forfait de ${euros(a.forfait)} TTC` : a.taux !== null ? `${pourcent(a.taux)} TTC du prix d’achat` : 'montant à préciser';
-  return `Le Mandat prévoit ${a.prix ? `un prix d’achat maximum de ${eurosLettres(a.prix)} hors honoraires, et ` : ''}des honoraires de ${hono}${a.honoraires !== null && a.prix ? `, soit ${euros(a.honoraires)} TTC au prix maximum` : ''}, à la charge du MANDANT.`;
+  const budget = [a.loyer ? `un loyer annuel maximum de ${euros(a.loyer)} hors taxes et hors charges` : '', a.prix ? `un prix maximum de ${eurosLettres(a.prix)} hors honoraires` : ''].filter(Boolean).join(' ou ');
+  const hono = a.forfait ? `un forfait de ${montantHono(d, a.forfait)}`
+    : a.taux !== null ? `${tauxHono(d, a.taux)} du loyer annuel HT HC de la première année pour un bail, ou du prix pour une cession ou une vente` : 'montant à préciser';
+  return `Le Mandat prévoit ${budget ? `${budget}, et ` : ''}des honoraires de ${hono}, à la charge du MANDANT.`;
 }
 
 function ficheConfrere(d: Donnees): Fiche {
@@ -237,7 +273,7 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
       ficheConfrere(d),
     ] }] },
     { titre: 'Il est d’abord rappelé que', ic: 'doc', blocs: [
-      P(`Le DÉLÉGANT est titulaire d’un mandat ${v ? 'de vente' : 'de recherche'} ${typeNom(d)} n° ${numero || '……'}, signé le ${txt(d, 'mandatDate') ? jourLong(txt(d, 'mandatDate')) : '……………'}, inscrit sous ce numéro à son registre des mandats${finM ? ` et valable jusqu’au ${jourLong(finM)}` : ''} (ci-après « le Mandat »), par lequel ${txt(d, 'mandantsTexte') || '……………'} (ci-après « le MANDANT ») lui a confié la mission ${v ? `de rechercher un acquéreur pour le bien suivant : ${txt(d, 'objetTexte') || '……………'}` : `de rechercher pour son compte un bien répondant à la description suivante : ${txt(d, 'objetTexte').replace(/^Recherche\s*:\s*/i, '') || '……………'}`}.`, true),
+      P(`Le DÉLÉGANT est titulaire d’un ${v ? minuscule(titreMandat(d)) : `mandat de recherche ${typeNom(d)}`} n° ${numero || '……'}, signé le ${txt(d, 'mandatDate') ? jourLong(txt(d, 'mandatDate')) : '……………'}, inscrit sous ce numéro à son registre des mandats${finM ? ` et valable jusqu’au ${jourLong(finM)}` : ''} (ci-après « le Mandat »), par lequel ${txt(d, 'mandantsTexte') || '……………'} (ci-après « le MANDANT ») lui a confié la mission ${v ? `de rechercher ${unAutre(d)} pour l’affaire suivante : ${txt(d, 'objetTexte') || '……………'}` : `de rechercher pour son compte un local répondant à la description suivante : ${txt(d, 'objetTexte').replace(/^Recherche\s*:\s*/i, '') || '……………'}`}.`, true),
       P(conditions(d)),
       P('Le Mandat autorise expressément le DÉLÉGANT à déléguer tout ou partie de sa mission à un autre professionnel titulaire de la carte « Transactions sur immeubles et fonds de commerce ». Le DÉLÉGANT demeure responsable envers le MANDANT de la personne qu’il se substitue (article 1994 du Code civil).'),
       P('Le DÉLÉGATAIRE reconnaît avoir reçu une copie du Mandat et en connaître toutes les conditions.'),
@@ -258,9 +294,9 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
 
   /* ── La durée ── */
   sections.push({ titre: 'Durée', ic: 'calendrier', blocs: [
-    P(`La délégation prend effet à sa signature et prend fin le ${txt(d, 'fin') ? jourLong(txt(d, 'fin')) : '……………'}. Elle prend fin de plein droit et sans indemnité si le Mandat lui-même prend fin plus tôt, pour quelque cause que ce soit : arrivée de son terme, résiliation, révocation, ${v ? 'vente conclue par le MANDANT lui-même ou par un autre intermédiaire' : 'acquisition réalisée par le MANDANT sans l’intervention du DÉLÉGATAIRE'}. Le DÉLÉGANT en informe alors le DÉLÉGATAIRE sans délai.`, true),
+    P(`La délégation prend effet à sa signature et prend fin le ${txt(d, 'fin') ? jourLong(txt(d, 'fin')) : '……………'}. Elle prend fin de plein droit et sans indemnité si le Mandat lui-même prend fin plus tôt, pour quelque cause que ce soit : arrivée de son terme, résiliation, révocation, ${v ? 'opération conclue par le MANDANT lui-même ou par un autre intermédiaire' : 'bail, reprise ou acquisition conclu par le MANDANT sans l’intervention du DÉLÉGATAIRE'}. Le DÉLÉGANT en informe alors le DÉLÉGATAIRE sans délai.`, true),
     P('Chaque partie peut aussi y mettre fin à tout moment, par lettre recommandée avec avis de réception ou par courrier électronique avec accusé de réception, moyennant un préavis de quinze jours.'),
-    P('Toute modification du Mandat (avenant sur le prix, les honoraires ou la durée) est portée par écrit à la connaissance du DÉLÉGATAIRE et s’impose à lui dès qu’il en a été informé.'),
+    P('Toute modification du Mandat (avenant sur le loyer, le prix, les honoraires ou la durée) est portée par écrit à la connaissance du DÉLÉGATAIRE et s’impose à lui dès qu’il en a été informé.'),
   ] });
 
   /* ── Les engagements ── */
@@ -268,39 +304,39 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
     'exercer la mission dans le respect de la loi n° 70-9 du 2 janvier 1970, de son décret d’application, du code de déontologie des professionnels de l’immobilier et des règles de lutte contre le blanchiment, et justifier à première demande de sa carte professionnelle, de sa garantie financière et de son assurance de responsabilité civile professionnelle en cours de validité ;',
   ];
   if (engage(d, 'prix')) eng.push(v
-    ? 'respecter le prix, les honoraires et les conditions du Mandat, et ne proposer ni n’accepter aucune autre condition sans l’accord écrit du DÉLÉGANT ;'
-    : 'respecter les critères, le prix maximum et les honoraires du Mandat, et ne proposer au MANDANT aucun bien qui s’en écarte sans l’accord écrit du DÉLÉGANT ;');
+    ? 'respecter le loyer ou le prix, les honoraires et les conditions du Mandat, et ne proposer ni n’accepter aucune autre condition sans l’accord écrit du DÉLÉGANT ;'
+    : 'respecter les critères, le loyer ou le prix maximum et les honoraires du Mandat, et ne proposer au MANDANT aucun local qui s’en écarte sans l’accord écrit du DÉLÉGANT ;');
   if (engage(d, 'bons')) eng.push(v
-    ? 'faire signer un bon de visite à chaque visiteur, mentionnant le numéro du Mandat et le nom du DÉLÉGANT, et en adresser copie au DÉLÉGANT dans les quarante-huit heures ;'
-    : 'faire signer un bon de visite pour chaque bien visité, mentionnant le numéro du Mandat et le nom du DÉLÉGANT, et en adresser copie au DÉLÉGANT dans les quarante-huit heures ;');
+    ? 'faire signer un bon de visite ou une reconnaissance d’information à chaque visiteur, mentionnant le numéro du Mandat et le nom du DÉLÉGANT, et en adresser copie au DÉLÉGANT dans les quarante-huit heures ;'
+    : 'faire signer un bon de visite pour chaque local visité, mentionnant le numéro du Mandat et le nom du DÉLÉGANT, et en adresser copie au DÉLÉGANT dans les quarante-huit heures ;');
   if (engage(d, 'offres')) eng.push(v
     ? 'transmettre sans délai au DÉLÉGANT, par écrit, toute offre ou proposition reçue, que seul le DÉLÉGANT présente au MANDANT ;'
-    : 'signaler sans délai au DÉLÉGANT, par écrit, tout bien trouvé et toute information utile, le DÉLÉGANT restant seul à les présenter au MANDANT ;');
+    : 'signaler sans délai au DÉLÉGANT, par écrit, tout local trouvé et toute information utile, le DÉLÉGANT restant seul à les présenter au MANDANT ;');
   if (engage(d, 'sous')) eng.push('ne pas déléguer à son tour tout ou partie de la mission ;');
   if (engage(d, 'contact')) eng.push('ne pas entrer en relation directe avec le MANDANT, sauf accord écrit du DÉLÉGANT ;');
   if (v) eng.push(d.publicite === 'oui'
-    ? 'ne diffuser d’annonce du bien qu’après l’accord écrit du DÉLÉGANT sur son texte, en y faisant figurer le prix, les honoraires et leur charge, ainsi que les mentions obligatoires, notamment le classement énergétique ;'
-    : 'ne diffuser aucune annonce du bien, sur quelque support que ce soit ;');
+    ? 'ne diffuser d’annonce de l’affaire qu’après l’accord écrit du DÉLÉGANT sur son texte, en y faisant figurer le loyer ou le prix, les honoraires et leur charge, ainsi que les mentions obligatoires, notamment le classement énergétique ;'
+    : 'ne diffuser aucune annonce de l’affaire, sur quelque support que ce soit ;');
   eng.push('ne recevoir de quiconque aucun versement, effet ou valeur à l’occasion de l’opération ;',
-    'garder confidentielles les informations reçues sur le MANDANT et sur le bien, ne les utiliser que pour la mission déléguée, et les effacer à la fin de la délégation, sauf obligation légale de conservation.');
+    'garder confidentielles les informations reçues sur le MANDANT et sur l’affaire, ne les utiliser que pour la mission déléguée, et les effacer à la fin de la délégation, sauf obligation légale de conservation.');
   sections.push({ titre: 'Engagements du DÉLÉGATAIRE', ic: 'etoile', blocs: [P('Le DÉLÉGATAIRE s’engage à :', true), { t: 'l', items: eng }] });
   sections.push({ titre: 'Engagements du DÉLÉGANT', ic: 'agence', blocs: [
     P('Le DÉLÉGANT s’engage à :', true),
     { t: 'l', items: [
-      `remettre au DÉLÉGATAIRE une copie du Mandat et les éléments utiles à la mission (${v ? 'description du bien, photographies, diagnostics' : 'description précise de la recherche'}) ;`,
-      `l’informer sans délai de toute modification du Mandat, de toute ${v ? 'offre acceptée' : 'acquisition en cours'} et de la fin du Mandat ;`,
+      `remettre au DÉLÉGATAIRE une copie du Mandat et les éléments utiles à la mission (${v ? 'description de l’affaire, photographies, bail, diagnostics' : 'description précise de la recherche'}) ;`,
+      `l’informer sans délai de toute modification du Mandat, de toute ${v ? 'offre acceptée' : 'opération en cours'} et de la fin du Mandat ;`,
       'lui verser sa part des honoraires dans les conditions ci-dessous.',
     ] },
   ] });
 
   /* ── Les honoraires ── */
-  const qui = v ? 'avec un acquéreur présenté par le DÉLÉGATAIRE' : 'sur un bien trouvé par le DÉLÉGATAIRE';
+  const qui = v ? 'avec un candidat présenté par le DÉLÉGATAIRE' : 'sur un local trouvé par le DÉLÉGATAIRE';
   sections.push({ titre: 'Honoraires', ic: 'euro', blocs: [
-    P('Les honoraires restent ceux prévus au Mandat. Ils ne sont dus qu’après la signature de l’acte authentique constatant l’opération, et aucune somme ne peut être exigée ni reçue auparavant (article 6 de la loi du 2 janvier 1970, article 74 du décret du 20 juillet 1972).', true),
+    P('Les honoraires restent ceux prévus au Mandat. Ils ne sont dus qu’après la conclusion effective de l’opération (signature du bail, de l’acte de cession ou de l’acte de vente), et aucune somme ne peut être exigée ni reçue auparavant (article 6 de la loi du 2 janvier 1970, article 74 du décret du 20 juillet 1972).', true),
     P(`Si l’opération est conclue ${qui}, les honoraires effectivement encaissés sont partagés comme suit : ${pc === null ? '…… %' : `${fmtPart(pc)} %`} pour le DÉLÉGATAIRE et ${pc === null ? '…… %' : `${fmtPart(100 - pc)} %`} pour le DÉLÉGANT, calculés hors taxes ; chaque partie facture sa part, TVA en sus s’il y a lieu.`),
     P(v
-      ? 'Un acquéreur est présenté par le DÉLÉGATAIRE lorsqu’il a visité le bien avec lui, bon de visite à l’appui, ou lorsque le DÉLÉGATAIRE a transmis son offre au DÉLÉGANT.'
-      : 'Un bien est trouvé par le DÉLÉGATAIRE lorsqu’il l’a signalé par écrit au DÉLÉGANT avant que celui-ci ou le MANDANT en ait eu connaissance par une autre voie.'),
+      ? 'Un candidat est présenté par le DÉLÉGATAIRE lorsqu’il a visité les locaux avec lui, bon de visite ou reconnaissance d’information à l’appui, ou lorsque le DÉLÉGATAIRE a transmis son offre au DÉLÉGANT.'
+      : 'Un local est trouvé par le DÉLÉGATAIRE lorsqu’il l’a signalé par écrit au DÉLÉGANT avant que celui-ci ou le MANDANT en ait eu connaissance par une autre voie.'),
     P(d.encaisse === 'delegataire'
       ? 'Le DÉLÉGATAIRE encaisse les honoraires pour le compte du DÉLÉGANT et lui verse sa part, sur présentation de sa facture, dans les quinze jours de leur encaissement.'
       : 'Le DÉLÉGANT encaisse les honoraires et verse au DÉLÉGATAIRE sa part, sur présentation de sa facture, dans les quinze jours de leur encaissement.'),
@@ -320,7 +356,7 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
   return [{
     titre: `Délégation du mandat${numero ? ` n° ${numero}` : ''}`,
     court: 'La délégation',
-    sous: `Mandat ${v ? 'de vente' : 'de recherche'} ${typeNom(d)}${txt(d, 'mandatDate') ? ` du ${jourLong(txt(d, 'mandatDate'))}` : ''}`,
+    sous: `${v ? titreMandat(d) : `Mandat de recherche ${typeNom(d)}`}${txt(d, 'mandatDate') ? ` du ${jourLong(txt(d, 'mandatDate'))}` : ''}`,
     ic: 'accord',
     sections,
   }];
@@ -339,7 +375,7 @@ export function casesDelegation(d: Donnees, A?: IdentiteAgence): CaseSignature[]
 function resume(d: Donnees): Resume {
   const pc = part(d);
   return [
-    { titre: 'Le mandat', valeur: txt(d, 'mandatNumero') ? `N° ${txt(d, 'mandatNumero')}` : 'À compléter', detail: `${vente(d) ? 'vente' : 'recherche'} ${typeNom(d)}${txt(d, 'finActuelle') ? `, jusqu’au ${jourLong(txt(d, 'finActuelle'))}` : ''}` },
+    { titre: 'Le mandat', valeur: txt(d, 'mandatNumero') ? `N° ${txt(d, 'mandatNumero')}` : 'À compléter', detail: `${vente(d) ? minuscule(titreMandat(d)).replace(/^mandat /, '') : `recherche ${typeNom(d)}`}${txt(d, 'finActuelle') ? `, jusqu’au ${jourLong(txt(d, 'finActuelle'))}` : ''}` },
     { titre: 'Le confrère', valeur: nomConfrere(d) || 'À compléter', detail: txt(d, 'confCarte') ? `carte n° ${txt(d, 'confCarte')}` : '—' },
     { titre: 'La mission', valeur: d.portee === 'partielle' ? 'Une partie' : 'Toute la mission', detail: txt(d, 'fin') ? `jusqu’au ${jourLong(txt(d, 'fin'))}` : '—' },
     { titre: 'Les honoraires', valeur: pc === null ? 'À compléter' : `${fmtPart(pc)} % pour le confrère`, detail: d.encaisse === 'delegataire' ? 'encaissés par le confrère' : 'encaissés par l’agence' },
@@ -354,11 +390,13 @@ function reperes(d: Donnees, etape: string): Repere[] {
   }
   if (etape === 'honoraires') {
     const pc = part(d);
-    const h = vente(d) ? argentVente(d).honoraires : argentRecherche(d).honoraires;
+    const h = vente(d) ? honoVente(d).h : argentRecherche(d).honoraires;
     if (pc !== null && h) {
-      out.push({ l: 'Honoraires du mandat', v: `${euros(h)} TTC` });
-      out.push({ l: `Au confrère (${fmtPart(pc)} %)`, v: `${euros(Math.round((h * pc) / 100))} TTC` });
-      out.push({ l: `À toi (${fmtPart(100 - pc)} %)`, v: `${euros(h - Math.round((h * pc) / 100))} TTC`, ton: 'ok' });
+      /* Le partage se calcule hors taxes (le texte le dit) : chacun facture sa part, TVA en sus. */
+      const ht = htTtc(d, h).ht;
+      out.push({ l: 'Honoraires du mandat', v: montantHonoCourt(d, h) });
+      out.push({ l: `Au confrère (${fmtPart(pc)} %)`, v: `${euros(Math.round((ht * pc) / 100))} HT` });
+      out.push({ l: `À toi (${fmtPart(100 - pc)} %)`, v: `${euros(ht - Math.round((ht * pc) / 100))} HT`, ton: 'ok' });
     }
     if (pc !== null && (pc <= 0 || pc >= 100)) out.push({ l: 'Le partage', v: 'Entre 1 et 99 % pour le confrère.', ton: 'alerte' });
   }
@@ -371,8 +409,8 @@ function manques(d: Donnees): string[] {
   if (d.autorise !== 'oui') out.push('Un mandat qui autorise la délégation : sinon, fais d’abord signer un avenant qui l’ajoute');
   if (!txt(d, 'finActuelle')) out.push('La date de fin du mandat');
   if (!txt(d, 'mandantsTexte')) out.push('Les mandants');
-  if (!txt(d, 'objetTexte')) out.push(vente(d) ? 'Le bien' : 'Le bien recherché');
-  if (vente(d) && !num(d, 'prix')) out.push('Le prix de présentation');
+  if (!txt(d, 'objetTexte')) out.push(vente(d) ? 'L’affaire' : 'Le local recherché');
+  if (vente(d) && !montantVente(d)) out.push(estLoc(d) ? 'Le loyer annuel du mandat' : 'Le prix du mandat');
   if (!nomConfrere(d) || !txt(d, 'confSociete') || !txt(d, 'confSiege')) out.push('Le nom, la société et le siège du confrère');
   if (!txt(d, 'confCarte') || !txt(d, 'confCci')) out.push('Sa carte professionnelle (numéro et CCI)');
   if (d.confFonds !== 'aucun' && !txt(d, 'confGarant')) out.push('Sa garantie financière');
@@ -393,7 +431,7 @@ function manques(d: Donnees): string[] {
 function defaut(c: Contexte): Donnees {
   return {
     sorte: 'vente', mandatNumero: '', mandatDate: '', type: 'exclusif', finActuelle: '', autorise: 'oui',
-    mandantsTexte: '', objetTexte: '', prix: null, charge: 'acquereur', honoMode: 'taux', taux: null, forfait: null, prixMax: null,
+    nature: '', mandantsTexte: '', objetTexte: '', prix: null, montant: null, charge: 'acquereur', honoMode: 'taux', taux: null, forfait: null, prixMax: null, loyerMax: null,
     confNom: '', confSociete: '', confForme: '', confCapital: '', confSiege: '', confRcs: '', confCarte: '', confCci: '',
     confFonds: 'garantie', confGarant: '', confRcp: '', delegataires: [{ ...PERSONNE_VIDE }], confQualite: '',
     portee: 'totale', missions: [], fin: '', engagements: ENGAGEMENTS.map(e => e.v), publicite: 'non',
@@ -478,7 +516,7 @@ export const DELEGATION: Modele = {
   resume,
   garde: d => ({
     titre: 'Délégation',
-    sous: `de mandat ${vente(d) ? 'de vente' : 'de recherche'}`,
+    sous: `de mandat ${vente(d) ? 'de commercialisation' : 'de recherche'}`,
     etiquette: txt(d, 'mandatNumero') ? `MANDAT N° ${txt(d, 'mandatNumero')}` : 'DÉLÉGATION DE MANDAT',
     pour: 'CONVENUE AVEC',
     ics: ['accord', 'doc', 'euro', 'plume'],

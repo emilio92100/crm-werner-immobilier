@@ -461,8 +461,36 @@ function useMailsOuverts(items: LigneSuivi[]): (j: { metadata?: Record<string, u
    src/lib/bien-suivi.ts), quel que soit le filtre choisi. Une lecture ratée
    ne montre rien de plus : la ligne reste comme avant. */
 type BienAgence = { id: string; titre: string | null; ville: string | null; photo: string | null };
+/* Alexandre (23 octobre 2026) : une ligne d'une reconnaissance d'information
+   (envoyée, signée, l'adresse du local) montre son affaire, en photo, et un
+   clic ouvre sa fiche. L'affaire est notée dans `metadata.bien_vente_id`. */
+const affaireReco = (j: { metadata?: Record<string, unknown> | null } | null | undefined): string =>
+  (j?.metadata?.reconnaissance === true && typeof j.metadata.bien_vente_id === 'string' ? j.metadata.bien_vente_id : '');
+function AffaireLiee({ id, bien, lus, onOuvrir }: { id: string; bien: BienAgence | null; lus: boolean; onOuvrir?: (id: string) => void }) {
+  const absent = lus && !bien;
+  const contenu = (
+    <>
+      {bien?.photo
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img src={bien.photo} alt="" />
+        : <span className={s.bpIc}><IcSuivi n="maison" t={20} /></span>}
+      <span className={s.bpTxt}>
+        <b>{bien?.titre || 'L’affaire'}</b>
+        <span>{absent ? 'plus dans les affaires' : [bien?.ville, 'Reconnaissance d’information'].filter(Boolean).join(' · ')}</span>
+      </span>
+      {onOuvrir && !absent && <IcSuivi n="droite" t={15} e={2.4} />}
+    </>
+  );
+  return (
+    <div className={s.bp}>
+      {onOuvrir && !absent
+        ? <button type="button" className={s.bpBien} onClick={() => onOuvrir(id)} title="Ouvrir la fiche de l’affaire">{contenu}</button>
+        : <div className={s.bpBien}>{contenu}</div>}
+    </div>
+  );
+}
 function useMailsSimples(items: LigneSuivi[]) {
-  const lignes = items.filter(it => it.kind === 'event' && estMailSimple(it.data));
+  const lignes = items.filter(it => it.kind === 'event' && (estMailSimple(it.data) || !!affaireReco(it.data)));
   const ids = [...new Set(lignes.map(it => String(it.data.metadata.bien_vente_id)))].sort();
   const cle = `${ids.join(',')}|${lignes.length}`;
   const [biensAg, setBiensAg] = useState<Record<string, BienAgence> | null>(null);
@@ -853,6 +881,7 @@ export default function FriseSuivi({ items, filtre, comptes, onFiltre, enPlus, a
                       {actions}
                     </div>
                     {j.description && <p className={s.discreteTexte}>{j.description}</p>}
+                    {affaireReco(j) && <AffaireLiee id={affaireReco(j)} bien={biensAg?.[affaireReco(j)] || null} lus={!!biensAg} onOuvrir={onBienAgence} />}
                     {etiquettes}
                   </div>
                 </li>
@@ -879,6 +908,7 @@ export default function FriseSuivi({ items, filtre, comptes, onFiltre, enPlus, a
                         ouvert={!!mailsOuverts[cle]} onBasculer={() => basculerMail(cle)} />
                     </>
                   ) : j.description && <p className={`${s.texte} ${famK === 'message' ? s.citation : ''}`}>{j.description}</p>}
+                  {!estMailSimple(j) && affaireReco(j) && <AffaireLiee id={affaireReco(j)} bien={biensAg?.[affaireReco(j)] || null} lus={!!biensAg} onOuvrir={onBienAgence} />}
                   {etiquettes}
                 </div>
               </li>

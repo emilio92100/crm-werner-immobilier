@@ -1296,7 +1296,7 @@ export function CarteDossier({ recus, demandes, nc, total, children }: { recus: 
 }
 
 /* ══ HISTORIQUE ═════════════════════════════════════════════════════════ */
-export type GenreEvt = 'visites' | 'offres' | 'acheteurs' | 'contacts' | 'etapes' | 'documents' | 'notes';
+export type GenreEvt = 'visites' | 'offres' | 'acheteurs' | 'contacts' | 'etapes' | 'reconnaissances' | 'documents' | 'notes';
 export type EvtBien = {
   cle: string; le: string; ic: string; ton: string; titre: string; detail?: string; genre: GenreEvt; suppr?: string;
   /* Une ligne discrète (ce que le CRM note tout seul) plutôt qu'une carte. */
@@ -1320,6 +1320,9 @@ const GENRES: { k: GenreEvt | 'tout'; l: string; c?: string; fond?: string }[] =
   { k: 'acheteurs', l: 'Envois', c: '#0d9488', fond: '#f0fdfa' },
   { k: 'contacts', l: 'Contacts', c: '#2563eb', fond: '#eff6ff' },
   { k: 'etapes', l: 'Étapes et prix', c: '#2e3034', fond: '#f4f3f2' },
+  /* Alexandre (23 octobre 2026) : un filtre à part, dès la première
+     reconnaissance d'information, pour les voir toutes d'un coup d'œil. */
+  { k: 'reconnaissances', l: 'Reconnaissances d’information', c: '#0f766e', fond: '#effaf8' },
   { k: 'documents', l: 'Documents', c: '#64748b', fond: '#f1f5f9' },
   { k: 'notes', l: 'Notes', c: '#475569', fond: '#f3f2f2' },
 ];

@@ -751,7 +751,8 @@ export async function classer(sb: SupabaseClient, doc: DocSigne, sd: SignatureDo
         /* V3.145 : une offre d'achat — son total et ses honoraires, pour lui seul. */
         + (doc.modele === 'offre_achat' && noteOffre(doc.donnees) ? `\n💶 ${noteOffre(doc.donnees)}` : '')
         + ([...(o.echecs || []), ...pbs].length ? `\n⚠️ ${[...(o.echecs || []), ...pbs].join(' ; ')}` : ''),
-      metadata: { document_id: doc.id, ...(biensBon ? { biens: biensBon } : {}) },
+      metadata: { document_id: doc.id, ...(biensBon ? { biens: biensBon } : {}),
+        ...(doc.modele === 'reconnaissance' && typeof doc.donnees?.bienVenteId === 'string' ? { bien_vente_id: doc.donnees.bienVenteId, reconnaissance: true } : {}) },
     });
     if (e3) pbs.push('suivi du client : ' + e3.message);
   }

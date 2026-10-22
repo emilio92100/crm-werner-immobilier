@@ -60,6 +60,8 @@ export type ElementDoc = {
      sur la fiche du contact — l'adresse du local est-elle partie, et quand
      (null : pas encore) ; « Lui envoyer l'adresse du local » sinon. */
   adresse?: { envoyee: string | null; nom: string };
+  /* Et l'affaire de la reconnaissance, en photo : un clic ouvre sa fiche. */
+  affaire?: { id: string; titre: string; ville: string | null; photo: string | null };
 };
 const RATTACHES = ['avenant_vente', 'avenant_recherche', 'courrier_reconduction', 'delegation'];
 
@@ -144,7 +146,7 @@ const dateHeure = (iso: string) => {
   const x = new Date(iso);
   return Number.isNaN(x.getTime()) ? '' : `${x.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à ${x.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}`;
 };
-function Ligne({ el, onOuvrir, ouvre, onSigne, onDeposer, onAdresse, enSignature = false }: { el: ElementDoc; onOuvrir: (cle: string) => void; ouvre: string; onSigne: (el: ElementDoc) => void; onDeposer?: (d: DocumentRow) => void; onAdresse?: (el: ElementDoc) => void; enSignature?: boolean }) {
+function Ligne({ el, onOuvrir, ouvre, onSigne, onDeposer, onAdresse, onAffaire, enSignature = false }: { el: ElementDoc; onOuvrir: (cle: string) => void; ouvre: string; onSigne: (el: ElementDoc) => void; onDeposer?: (d: DocumentRow) => void; onAdresse?: (el: ElementDoc) => void; onAffaire?: (id: string) => void; enSignature?: boolean }) {
   const dedans = (
     <>
       <span className={`${s.dcCat} ${s['dcCat_' + el.categorie] || ''}`}><Ic n={CAT_IC[el.categorie] || 'doc'} t={15} /></span>
@@ -164,16 +166,29 @@ function Ligne({ el, onOuvrir, ouvre, onSigne, onDeposer, onAdresse, enSignature
       )}
     </div>
   );
-  if (el.adresse && !el.aDeposer) {
+  if ((el.adresse || el.affaire) && !el.aDeposer) {
     const ad = el.adresse;
+    const af = el.affaire;
     return (
       <div className={s.dcAvecDepot} data-enfant={el.enfant ? 'oui' : undefined}>
         {ligne}
-        <div className={s.dcDepot} style={ad.envoyee ? { background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534' } : undefined}>
-          <Ic n={ad.envoyee ? 'check' : 'lieu'} t={13} />
-          <span>{ad.envoyee ? `Adresse du local envoyée le ${dateHeure(ad.envoyee)}` : 'L’adresse du local ne lui est pas encore partie.'}</span>
-          {onAdresse && <button type="button" className={s.dcDepotBtn} onClick={() => onAdresse(el)}>{ad.envoyee ? 'Renvoyer' : 'Envoyer l’adresse'}</button>}
-        </div>
+        {af && (
+          <button type="button" className={s.dcAffaire} onClick={() => onAffaire?.(af.id)} disabled={!onAffaire} title="Ouvrir la fiche de l’affaire">
+            {af.photo
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={af.photo} alt="" />
+              : <span className={s.dcAffaireIc}><Ic n="agence" t={16} /></span>}
+            <span className={s.dcAffaireTx}><b>{af.titre}</b><small>{[af.ville, 'l’affaire de cette reconnaissance'].filter(Boolean).join(' · ')}</small></span>
+            {onAffaire && <Ic n="droite" t={14} e={2.4} />}
+          </button>
+        )}
+        {ad && (
+          <div className={s.dcDepot} style={ad.envoyee ? { background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534' } : undefined}>
+            <Ic n={ad.envoyee ? 'check' : 'lieu'} t={13} />
+            <span>{ad.envoyee ? `Adresse du local envoyée le ${dateHeure(ad.envoyee)}` : 'L’adresse du local ne lui est pas encore partie.'}</span>
+            {onAdresse && <button type="button" className={s.dcDepotBtn} onClick={() => onAdresse(el)}>{ad.envoyee ? 'Renvoyer' : 'Envoyer l’adresse'}</button>}
+          </div>
+        )}
       </div>
     );
   }
@@ -192,11 +207,13 @@ function Ligne({ el, onOuvrir, ouvre, onSigne, onDeposer, onAdresse, enSignature
 }
 
 /* ── La liste rangée par état : fiche d'un contact, onglet Documents d'un bien ── */
-export function DocsParEtat({ elements, suivis, onOuvrir, onFait, onAdresse }: {
+export function DocsParEtat({ elements, suivis, onOuvrir, onFait, onAdresse, onAffaire }: {
   elements: ElementDoc[]; suivis: Record<string, Suivi>;
   onOuvrir: (cle: string) => void;
   /* Une reconnaissance signée : lui envoyer l'adresse du local (fiche du contact). */
   onAdresse?: (el: ElementDoc) => void;
+  /* Ouvrir l'affaire d'une reconnaissance. */
+  onAffaire?: (id: string) => void;
   /* Après un geste sur un signataire : relire. */
   onFait?: () => void;
 }) {
@@ -230,7 +247,7 @@ export function DocsParEtat({ elements, suivis, onOuvrir, onFait, onAdresse }: {
   const signes = enChaine(elements.filter(x => x.statut === 'signe'));
   const annules = elements.filter(x => x.statut === 'annule');
   const caches = [...signes.slice(SIGNES_VISIBLES), ...annules];
-  const ligne = (el: ElementDoc) => <Ligne key={el.cle} el={el} onOuvrir={onOuvrir} ouvre={ouvre} onSigne={x => { void ouvrirSigne(x); }} onDeposer={setDepot} onAdresse={onAdresse} enSignature={!!suivis[el.cle]} />;
+  const ligne = (el: ElementDoc) => <Ligne key={el.cle} el={el} onOuvrir={onOuvrir} ouvre={ouvre} onSigne={x => { void ouvrirSigne(x); }} onDeposer={setDepot} onAdresse={onAdresse} onAffaire={onAffaire} enSignature={!!suivis[el.cle]} />;
 
   return (
     <div className={s.dcListe}>
@@ -373,6 +390,15 @@ export default function DocumentsDuClient({ clientId, prenom, onNavigate, confre
       /* Les reconnaissances signées : l'adresse du local est-elle partie ?
          Son mail est noté dans le suivi du client (reconnaissance-serveur.ts). */
       const recos = docsRows.filter(d => d.modele === 'reconnaissance' && d.statut === 'signe');
+      /* L'affaire de chaque reconnaissance (pas annulée), en photo. */
+      const idsAff = [...new Set(docsRows.filter(d => d.modele === 'reconnaissance' && d.statut !== 'annule' && typeof d.donnees?.bienVenteId === 'string')
+        .map(d => String(d.donnees!.bienVenteId)))];
+      const affaires: Record<string, { id: string; titre: string | null; ville: string | null; photo: string | null }> = {};
+      if (idsAff.length && !confrere) {
+        const r = await supabase.from('biens_vente').select('id, titre, ville, photo').in('id', idsAff);
+        if (!vivant) return;
+        for (const x of (r.error ? [] : r.data || []) as { id: string; titre: string | null; ville: string | null; photo: string | null }[]) affaires[x.id] = x;
+      }
       const envoyees: Record<string, string> = {};
       if (recos.length && !confrere) {
         const j = await supabase.from('journal').select('created_at, metadata').eq('client_id', clientId).eq('type', 'mail_envoye').order('created_at', { ascending: true }).limit(200);
@@ -383,8 +409,13 @@ export default function DocumentsDuClient({ clientId, prenom, onNavigate, confre
       }
       const elements = [...docsRows.map(d => {
         const el = depuisDoc(d);
-        if (d.modele !== 'reconnaissance' || d.statut !== 'signe') return el;
-        return { ...el, adresse: { envoyee: envoyees[d.id] || null, nom: (d.titre || '').replace(/^Reconnaissance\s*·\s*/, '') || prenom || 'le demandeur' } };
+        if (d.modele !== 'reconnaissance' || d.statut === 'annule') return el;
+        const a = typeof d.donnees?.bienVenteId === 'string' ? affaires[String(d.donnees.bienVenteId)] : undefined;
+        return {
+          ...el,
+          ...(a ? { affaire: { id: a.id, titre: a.titre || 'L’affaire', ville: a.ville, photo: a.photo } } : {}),
+          ...(d.statut === 'signe' ? { adresse: { envoyee: envoyees[d.id] || null, nom: (d.titre || '').replace(/^Reconnaissance\s*·\s*/, '') || prenom || 'le demandeur' } } : {}),
+        };
       }), ...mandatsRows.map(depuisMandat), ...propositions.map(depuisProposition)]
         .sort((p, q) => q.date.localeCompare(p.date));
       let lus: Record<string, Suivi> = {};
@@ -446,7 +477,8 @@ export default function DocumentsDuClient({ clientId, prenom, onNavigate, confre
       {liste.length ? (
         <>
           <DocsParEtat elements={liste} suivis={suivis} onOuvrir={ouvrirIci} onFait={() => setTour(t => t + 1)}
-            onAdresse={el => { setOkAdresse(''); setApercuAdresse({ id: el.cle, nom: el.adresse?.nom || prenom || 'le demandeur', renvoi: !!el.adresse?.envoyee }); }} />
+            onAdresse={el => { setOkAdresse(''); setApercuAdresse({ id: el.cle, nom: el.adresse?.nom || prenom || 'le demandeur', renvoi: !!el.adresse?.envoyee }); }}
+            onAffaire={id => onNavigate('biens', { bien: id })} />
           {okAdresse && <div className={s.dcVide} role="status" style={{ background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534' }}>{okAdresse}</div>}
           {erreur && <div className={s.dcVide}>{erreur}</div>}
         </>

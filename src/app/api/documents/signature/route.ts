@@ -94,7 +94,9 @@ async function traiterPost(req: NextRequest) {
     if (!m || !m.cases) return ko('modele');
     const d = doc.donnees;
     const journal = (titre: string, description: string) => (doc.client_id ? ecritServeur('L’historique du client', sb.from('journal').insert({
-      client_id: doc.client_id, type: 'mandat', titre, description, metadata: { document_id: doc.id },
+      client_id: doc.client_id, type: 'mandat', titre, description,
+      /* Une reconnaissance d'information : son affaire, en photo dans le Suivi (23 octobre 2026). */
+      metadata: { document_id: doc.id, ...(doc.modele === 'reconnaissance' && typeof d.bienVenteId === 'string' ? { bien_vente_id: d.bienVenteId, reconnaissance: true } : {}) },
     })) : Promise.resolve(true));
     const ip = (req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '').split(',')[0].trim();
     const appareil = appareilDe(req.headers.get('user-agent') || '');

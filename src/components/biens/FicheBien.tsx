@@ -1052,10 +1052,10 @@ export function evenements(bien: BienVente, det: DetailBien, clients: Record<str
         const qui = x.qui || 'un demandeur';
         const et = str('etape');
         const VERT = { c: '#15803d', fond: '#f0fdf4', bord: '#bbf7d0' };
-        if (d.adresseEnvoyee === true) l.push({ cle: x.id, le: x.le, ic: 'mail', ton: 'ic_vert', genre: 'documents', chez: chezLui(x.client_id),
+        if (d.adresseEnvoyee === true) l.push({ cle: x.id, le: x.le, ic: 'mail', ton: 'ic_vert', genre: 'reconnaissances', chez: chezLui(x.client_id),
           titre: `Adresse du local envoyée à ${qui}`, detail: x.commentaire || '', puce: { l: d.auto === true ? 'Partie toute seule' : 'Envoyée par toi', ...VERT },
           message: str('texte') ? { objet: str('sujet'), a: str('a'), corps: str('texte') } : undefined });
-        else if (et === 'adresse_echec') l.push({ cle: x.id, le: x.le, ic: 'alarme', ton: 'ic_rouge', genre: 'documents', chez: chezLui(x.client_id),
+        else if (et === 'adresse_echec') l.push({ cle: x.id, le: x.le, ic: 'alarme', ton: 'ic_rouge', genre: 'reconnaissances', chez: chezLui(x.client_id),
           titre: `Adresse du local pas envoyée à ${qui}`, detail: x.commentaire || '', puce: { l: 'À faire', c: '#b91c1c', fond: '#fef2f2', bord: '#fecaca' } });
         else if (et === 'signee') {
           /* Alexandre (23 octobre 2026) : « à côté de Signé, un petit bouton
@@ -1067,11 +1067,11 @@ export function evenements(bien: BienVente, det: DetailBien, clients: Record<str
           }).map(y => y.le).sort();
           const dernier = envois[envois.length - 1];
           const fait = dernier ? `Adresse envoyée le ${new Date(dernier).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à ${new Date(dernier).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}` : undefined;
-          l.push({ cle: x.id, le: x.le, ic: 'check', ton: 'ic_vert', genre: 'documents', chez: chezLui(x.client_id),
+          l.push({ cle: x.id, le: x.le, ic: 'check', ton: 'ic_vert', genre: 'reconnaissances', chez: chezLui(x.client_id),
             titre: `Reconnaissance signée par ${qui}`, detail: x.commentaire || '', puce: { l: 'Signée', ...VERT },
             ...(docId ? { action: { cle: `adresse:${docId}`, l: dernier ? 'Renvoyer l’adresse' : 'Lui envoyer l’adresse du local', ic: 'mail', fait } } : {}) });
         }
-        else l.push({ cle: x.id, le: x.le, ic: 'bouclier', ton: 'ic_or', genre: 'documents', chez: chezLui(x.client_id),
+        else l.push({ cle: x.id, le: x.le, ic: 'bouclier', ton: 'ic_or', genre: 'reconnaissances', chez: chezLui(x.client_id),
           titre: et === 'envoyee' ? `Reconnaissance envoyée à ${qui}` : et === 'prete' ? `Reconnaissance prête pour ${qui}` : et === 'preparee' ? `Reconnaissance préparée pour ${qui}` : `Reconnaissance · ${qui}`,
           detail: (x.commentaire || '').replace(/^🛡️\s*/, '') });
       }
@@ -1107,13 +1107,13 @@ export function evenements(bien: BienVente, det: DetailBien, clients: Record<str
          fiche par le bouton du mail (src/lib/reconnaissance-serveur.ts). */
       const vues = vuesDe(d);
       const qui = x.qui || 'un demandeur';
-      l.push({ cle: x.id, le: x.le, ic: 'mail', ton: 'ic_vert', genre: 'documents', chez: chezLui(x.client_id),
+      l.push({ cle: x.id, le: x.le, ic: 'mail', ton: 'ic_vert', genre: 'reconnaissances', chez: chezLui(x.client_id),
         titre: `Adresse du local envoyée à ${qui}`, detail: x.commentaire || '',
         puce: vues.length ? { l: 'Fiche ouverte', c: '#0f766e', fond: '#f0fdfa', bord: '#99f6e4' } : { l: d.auto === true ? 'Partie toute seule' : 'Envoyée par toi', c: '#15803d', fond: '#f0fdf4', bord: '#bbf7d0' },
         message: str('texte') ? { objet: str('sujet'), a: str('a'), corps: str('texte') } : undefined });
       for (const v of vues) {
         const nom = v.dest.nom || v.dest.email;
-        v.le.forEach((le, i) => l.push({ cle: `${x.id}-v-${v.code}-${i}`, le, ic: 'oeil', ton: 'ic_gris', genre: 'documents', discret: true,
+        v.le.forEach((le, i) => l.push({ cle: `${x.id}-v-${v.code}-${i}`, le, ic: 'oeil', ton: 'ic_gris', genre: 'reconnaissances', discret: true,
           titre: `${nom} a ouvert la fiche du local`, detail: i === 0 ? 'Par le bouton du mail de l’adresse' : '', chez: chezLui(v.dest.client_id) }));
       }
     } else if (x.type === 'envoi') {

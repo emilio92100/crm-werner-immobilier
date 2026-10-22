@@ -164,7 +164,8 @@ export async function envoyerAdresseReco(sb: SupabaseClient, doc: DocReco, o: { 
       if (doc.client_id) {
         const { error } = await sb.from('journal').insert({
           client_id: doc.client_id, type: 'mandat', titre: '⚠️ Adresse du local pas envoyée',
-          description: `La reconnaissance est signée, mais l’adresse n’a pas pu partir : ${raison}.`, metadata: { document_id: doc.id },
+          description: `La reconnaissance est signée, mais l’adresse n’a pas pu partir : ${raison}.`,
+          metadata: { document_id: doc.id, reconnaissance: true, ...(local.bienId ? { bien_vente_id: local.bienId } : {}) },
         });
         if (error) console.error('[reconnaissance] noter l’échec chez le client', error.message);
       }
@@ -203,7 +204,7 @@ export async function envoyerAdresseReco(sb: SupabaseClient, doc: DocReco, o: { 
     const { error } = await sb.from('journal').insert({
       client_id: doc.client_id, type: 'mail_envoye', titre: `📍 Adresse du local envoyée — ${m.sujet}`,
       description: `À : ${qui.email}\n\n${m.texte}`,
-      metadata: { document_id: doc.id, reconnaissance: true, auto: o.auto },
+      metadata: { document_id: doc.id, reconnaissance: true, auto: o.auto, ...(local.bienId ? { bien_vente_id: local.bienId } : {}) },
     });
     if (error) pbs.push('suivi du client : ' + error.message);
   }
