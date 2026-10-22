@@ -15,6 +15,7 @@ import { retracteEnLigne } from '@/lib/documents-espace';
 import s from './Documents.module.css';
 import { Panneau, itemDoc, itemMandat, type Item, type SuiteBien } from './PageDocuments';
 import SuiteMandatBien from './SuiteMandatBien';
+import ApercuMail, { type MailApercu } from './ApercuMail';
 
 /* ═══ « Ses documents », sur la fiche d'un client (V3.17, rangés en V3.32) ═
    Tout ce qui est rattaché à ce client : les documents de la rubrique
@@ -55,6 +56,10 @@ export type ElementDoc = {
   /* V3.55 : signé à la main, son exemplaire signé pas encore déposé : le
      document (pour le déposer d'ici) et la phrase du rappel. */
   aDeposer?: { doc: DocumentRow; phrase: string };
+  /* Alexandre (23 octobre 2026) : une reconnaissance d'information signée,
+     sur la fiche du contact — l'adresse du local est-elle partie, et quand
+     (null : pas encore) ; « Lui envoyer l'adresse du local » sinon. */
+  adresse?: { envoyee: string | null; nom: string };
 };
 const RATTACHES = ['avenant_vente', 'avenant_recherche', 'courrier_reconduction', 'delegation'];
 
@@ -134,7 +139,12 @@ function depuisProposition(p: Proposition): ElementDoc {
 /* Une ligne : l'ouvrir dans Documents, et son exemplaire signé à côté.
    V3.55 : signé à la main sans son exemplaire, un rappel dessous, avec
    « Déposer » (la même fenêtre que dans Documents). */
-function Ligne({ el, onOuvrir, ouvre, onSigne, onDeposer, enSignature = false }: { el: ElementDoc; onOuvrir: (cle: string) => void; ouvre: string; onSigne: (el: ElementDoc) => void; onDeposer?: (d: DocumentRow) => void; enSignature?: boolean }) {
+/* « 23 octobre à 10 h 12 » */
+const dateHeure = (iso: string) => {
+  const x = new Date(iso);
+  return Number.isNaN(x.getTime()) ? '' : `${x.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à ${x.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}`;
+};
+function Ligne({ el, onOuvrir, ouvre, onSigne, onDeposer, onAdresse, enSignature = false }: { el: ElementDoc; onOuvrir: (cle: string) => void; ouvre: string; onSigne: (el: ElementDoc) => void; onDeposer?: (d: DocumentRow) => void; onAdresse?: (el: ElementDoc) => void; enSignature?: boolean }) {
   const dedans = (
     <>
       <span className={`${s.dcCat} ${s['dcCat_' + el.categorie] || ''}`}><Ic n={CAT_IC[el.categorie] || 'doc'} t={15} /></span>
@@ -154,6 +164,19 @@ function Ligne({ el, onOuvrir, ouvre, onSigne, onDeposer, enSignature = false }:
       )}
     </div>
   );
+  if (el.adresse && !el.aDeposer) {
+    const ad = el.adresse;
+    return (
+      <div className={s.dcAvecDepot} data-enfant={el.enfant ? 'oui' : undefined}>
+        {ligne}
+        <div className={s.dcDepot} style={ad.envoyee ? { background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534' } : undefined}>
+          <Ic n={ad.envoyee ? 'check' : 'lieu'} t={13} />
+          <span>{ad.envoyee ? `Adresse du local envoyée le ${dateHeure(ad.envoyee)}` : 'L’adresse du local ne lui est pas encore partie.'}</span>
+          {onAdresse && <button type="button" className={s.dcDepotBtn} onClick={() => onAdresse(el)}>{ad.envoyee ? 'Renvoyer' : 'Envoyer l’adresse'}</button>}
+        </div>
+      </div>
+    );
+  }
   if (!el.aDeposer) return ligne;
   const a = el.aDeposer;
   return (
@@ -169,9 +192,11 @@ function Ligne({ el, onOuvrir, ouvre, onSigne, onDeposer, enSignature = false }:
 }
 
 /* ── La liste rangée par état : fiche d'un contact, onglet Documents d'un bien ── */
-export function DocsParEtat({ elements, suivis, onOuvrir, onFait }: {
+export function DocsParEtat({ elements, suivis, onOuvrir, onFait, onAdresse }: {
   elements: ElementDoc[]; suivis: Record<string, Suivi>;
   onOuvrir: (cle: string) => void;
+  /* Une reconnaissance signée : lui envoyer l'adresse du local (fiche du contact). */
+  onAdresse?: (el: ElementDoc) => void;
   /* Après un geste sur un signataire : relire. */
   onFait?: () => void;
 }) {
@@ -205,7 +230,7 @@ export function DocsParEtat({ elements, suivis, onOuvrir, onFait }: {
   const signes = enChaine(elements.filter(x => x.statut === 'signe'));
   const annules = elements.filter(x => x.statut === 'annule');
   const caches = [...signes.slice(SIGNES_VISIBLES), ...annules];
-  const ligne = (el: ElementDoc) => <Ligne key={el.cle} el={el} onOuvrir={onOuvrir} ouvre={ouvre} onSigne={x => { void ouvrirSigne(x); }} onDeposer={setDepot} enSignature={!!suivis[el.cle]} />;
+  const ligne = (el: ElementDoc) => <Ligne key={el.cle} el={el} onOuvrir={onOuvrir} ouvre={ouvre} onSigne={x => { void ouvrirSigne(x); }} onDeposer={setDepot} onAdresse={onAdresse} enSignature={!!suivis[el.cle]} />;
 
   return (
     <div className={s.dcListe}>
@@ -299,6 +324,9 @@ export default function DocumentsDuClient({ clientId, prenom, onNavigate, confre
   const [lignes, setLignes] = useState<{ docs: DocumentRow[]; mandats: MandatRecherche[] }>({ docs: [], mandats: [] });
   const [panneau, setPanneau] = useState<Item | null>(null);
   const [suiteBien, setSuiteBien] = useState<SuiteBien | null>(null);
+  /* L'adresse du local d'une reconnaissance signée (23 octobre 2026). */
+  const [apercuAdresse, setApercuAdresse] = useState<{ id: string; nom: string; renvoi: boolean } | null>(null);
+  const [okAdresse, setOkAdresse] = useState('');
 
   useEffect(() => {
     let vivant = true;
@@ -342,7 +370,22 @@ export default function DocumentsDuClient({ clientId, prenom, onNavigate, confre
           rappels: lignesJ.filter(x => x.metadata?.rappelMandat === r.mandat_propose_le).map(x => x.created_at),
         }));
       }
-      const elements = [...docsRows.map(depuisDoc), ...mandatsRows.map(depuisMandat), ...propositions.map(depuisProposition)]
+      /* Les reconnaissances signées : l'adresse du local est-elle partie ?
+         Son mail est noté dans le suivi du client (reconnaissance-serveur.ts). */
+      const recos = docsRows.filter(d => d.modele === 'reconnaissance' && d.statut === 'signe');
+      const envoyees: Record<string, string> = {};
+      if (recos.length && !confrere) {
+        const j = await supabase.from('journal').select('created_at, metadata').eq('client_id', clientId).eq('type', 'mail_envoye').order('created_at', { ascending: true }).limit(200);
+        if (!vivant) return;
+        for (const x of (j.error ? [] : j.data || []) as { created_at: string; metadata: { document_id?: string; reconnaissance?: boolean } | null }[]) {
+          if (x.metadata?.reconnaissance && x.metadata.document_id) envoyees[x.metadata.document_id] = x.created_at;
+        }
+      }
+      const elements = [...docsRows.map(d => {
+        const el = depuisDoc(d);
+        if (d.modele !== 'reconnaissance' || d.statut !== 'signe') return el;
+        return { ...el, adresse: { envoyee: envoyees[d.id] || null, nom: (d.titre || '').replace(/^Reconnaissance\s*·\s*/, '') || prenom || 'le demandeur' } };
+      }), ...mandatsRows.map(depuisMandat), ...propositions.map(depuisProposition)]
         .sort((p, q) => q.date.localeCompare(p.date));
       let lus: Record<string, Suivi> = {};
       try { lus = await lireSuivis({ docs: docsRows, mandats: mandatsRows, propositions }); }
@@ -376,6 +419,14 @@ export default function DocumentsDuClient({ clientId, prenom, onNavigate, confre
     onNavigate('fiche', data);
   }
 
+  /* /api/documents/adresse : l'aperçu du mail, puis l'envoi (comme la fiche de l'affaire). */
+  async function appelAdresse(id: string, apercu: boolean) {
+    const r = await fetch('/api/documents/adresse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, apercu }) });
+    const j = await r.json().catch(() => null) as (MailApercu & { ok?: boolean; erreur?: string; avertissement?: string }) | null;
+    if (!r.ok || !j?.ok) throw new Error(j?.erreur || `Erreur ${r.status}`);
+    return j;
+  }
+
   if (!liste || (erreur && !liste.length)) return null;
   const signes = liste.filter(x => x.statut === 'signe').length;
   const aSigner = liste.filter(x => x.statut === 'pret' && !x.courrier).length;
@@ -394,7 +445,9 @@ export default function DocumentsDuClient({ clientId, prenom, onNavigate, confre
         : <button type="button" className={s.dcLien} onClick={() => setNouveau(true)}><svg className={s.dcPlus} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Nouveau<span className={s.rpLong}>{' '}document</span></button>}>
       {liste.length ? (
         <>
-          <DocsParEtat elements={liste} suivis={suivis} onOuvrir={ouvrirIci} onFait={() => setTour(t => t + 1)} />
+          <DocsParEtat elements={liste} suivis={suivis} onOuvrir={ouvrirIci} onFait={() => setTour(t => t + 1)}
+            onAdresse={el => { setOkAdresse(''); setApercuAdresse({ id: el.cle, nom: el.adresse?.nom || prenom || 'le demandeur', renvoi: !!el.adresse?.envoyee }); }} />
+          {okAdresse && <div className={s.dcVide} role="status" style={{ background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534' }}>{okAdresse}</div>}
           {erreur && <div className={s.dcVide}>{erreur}</div>}
         </>
       ) : (
@@ -419,6 +472,19 @@ export default function DocumentsDuClient({ clientId, prenom, onNavigate, confre
       <SuiteMandatBien bien={suiteBien.bien} doc={suiteBien.doc} etaitSigne={suiteBien.etaitSigne} supprime={suiteBien.supprime}
         onFermer={() => setSuiteBien(null)} onFicheBien={id => { setSuiteBien(null); onNavigate('biens', { bien: id }); }} />,
       document.body)}
+    {apercuAdresse && (
+      <ApercuMail titre={apercuAdresse.renvoi ? 'Renvoyer l’adresse du local' : 'Envoyer l’adresse du local'}
+        sous={`À ${apercuAdresse.nom}, qui a signé la reconnaissance d’information.`}
+        libelle={apercuAdresse.renvoi ? 'Renvoyer l’adresse' : 'Envoyer l’adresse'}
+        charger={() => appelAdresse(apercuAdresse.id, true) as Promise<MailApercu>}
+        onFermer={() => setApercuAdresse(null)}
+        onEnvoyer={async () => {
+          const j = await appelAdresse(apercuAdresse.id, false);
+          setApercuAdresse(null);
+          setOkAdresse(j.avertissement ? String(j.avertissement) : 'L’adresse du local lui est partie par e-mail, avec la photo et le lien de sa fiche.');
+          setTour(t => t + 1);
+        }} />
+    )}
     {/* Hors du bloc : replié, il ne rend pas ses enfants. */}
     {nouveau && typeof document !== 'undefined' && createPortal(
       <NouveauDocument modeleId={confrere ? 'delegation' : undefined} clientId={confrere ? undefined : clientId} confrereId={confrere ? clientId : undefined}

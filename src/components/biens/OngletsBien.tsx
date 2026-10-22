@@ -1307,6 +1307,10 @@ export type EvtBien = {
   chez?: { id: string; l: string; c?: Personne; t?: Teinte };
   /* Werner : un mail envoyé (l'adresse d'un local), replié derrière « Voir le mail ». */
   message?: { objet: string; a: string; corps: string };
+  /* Alexandre (23 octobre 2026) : sur « Reconnaissance signée », « Lui
+     envoyer l'adresse du local », et, une fois partie, quand. `cle` est
+     rendue à onAction. */
+  action?: { cle: string; l: string; ic?: string; fait?: string };
 };
 export type AVenirBien = { cle: string; titre: string; detail?: string; quand: string; genre: 'visites' | 'offres' };
 const GENRES: { k: GenreEvt | 'tout'; l: string; c?: string; fond?: string }[] = [
@@ -1368,10 +1372,11 @@ export function parcoursDe(bien: BienVente, suivi: SuiviVente[]): PasParcours[] 
   return pas;
 }
 
-export function HistoriqueBien({ evts, aVenir, parcours, chiffres, erreur, onNote, onSuppr, onFiche }: {
+export function HistoriqueBien({ evts, aVenir, parcours, chiffres, erreur, onNote, onSuppr, onFiche, onAction }: {
   evts: EvtBien[]; aVenir: AVenirBien[]; parcours: PasParcours[];
   chiffres: { titre: string; l: { n: number; l: string }[]; note?: string } | null; erreur?: string;
   onNote: () => void; onSuppr: (id: string) => void; onFiche?: (clientId: string) => void;
+  onAction?: (cle: string) => void;
 }) {
   const [g, setG] = useState<GenreEvt | 'tout'>('tout');
   const [mails, setMails] = useState<Record<string, boolean>>({});
@@ -1453,6 +1458,16 @@ export function HistoriqueBien({ evts, aVenir, parcours, chiffres, erreur, onNot
                       {suppr}
                     </div>
                     {e.detail && <p className={`${f.texte} ${e.genre === 'notes' ? f.citation : ''}`}>{e.detail}</p>}
+                    {e.action && (
+                      <div className={o.histoAction} data-fait={e.action.fait ? 'oui' : 'non'}>
+                        {e.action.fait && <span className={o.histoFait}><Ic n="check" t={13} e={2.6} />{e.action.fait}</span>}
+                        {onAction && (
+                          <button type="button" className={o.histoBtn} data-sec={e.action.fait ? 'oui' : undefined} onClick={() => onAction(e.action!.cle)}>
+                            <Ic n={e.action.ic || 'mail'} t={14} e={2.2} />{e.action.l}
+                          </button>
+                        )}
+                      </div>
+                    )}
                     {e.message && (() => {
                       const ouvert = !!mails[e.cle];
                       return (

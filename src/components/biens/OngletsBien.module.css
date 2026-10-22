@@ -673,3 +673,14 @@ i.aRenseigner { cursor: default; text-decoration: none; color: #94a3b8; }
   .offre { padding-left: 14px; padding-right: 14px; }
   .histo > :first-child { padding: 0 4px; }
 }
+
+/* « Lui envoyer l'adresse du local » sur une reconnaissance signée (23 octobre 2026). */
+.histoAction { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
+.histoFait { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: #15803d; }
+.histoBtn {
+  display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border-radius: 10px; cursor: pointer;
+  border: 1px solid #f08c42; background: #f08c42; color: #232528; font: 800 12.5px 'DM Sans', sans-serif;
+}
+.histoBtn:hover { background: #ec7f2f; }
+.histoBtn[data-sec='oui'] { height: 30px; background: #fff; border-color: #e2e8f0; color: #475569; font-weight: 700; }
+.histoBtn[data-sec='oui']:hover { background: #f8fafc; }

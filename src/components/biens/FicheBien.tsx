@@ -1057,8 +1057,20 @@ export function evenements(bien: BienVente, det: DetailBien, clients: Record<str
           message: str('texte') ? { objet: str('sujet'), a: str('a'), corps: str('texte') } : undefined });
         else if (et === 'adresse_echec') l.push({ cle: x.id, le: x.le, ic: 'alarme', ton: 'ic_rouge', genre: 'documents', chez: chezLui(x.client_id),
           titre: `Adresse du local pas envoyée à ${qui}`, detail: x.commentaire || '', puce: { l: 'À faire', c: '#b91c1c', fond: '#fef2f2', bord: '#fecaca' } });
-        else if (et === 'signee') l.push({ cle: x.id, le: x.le, ic: 'check', ton: 'ic_vert', genre: 'documents', chez: chezLui(x.client_id),
-          titre: `Reconnaissance signée par ${qui}`, detail: x.commentaire || '', puce: { l: 'Signée', ...VERT } });
+        else if (et === 'signee') {
+          /* Alexandre (23 octobre 2026) : « à côté de Signé, un petit bouton
+             Lui envoyer l'adresse du local », et quand elle est partie. */
+          const docId = str('document');
+          const envois = det.suivi.filter(y => {
+            const dy = (y.donnees || {}) as Record<string, unknown>;
+            return (y.type === 'envoi' || y.type === 'note') && dy.adresseEnvoyee === true && dy.document === docId;
+          }).map(y => y.le).sort();
+          const dernier = envois[envois.length - 1];
+          const fait = dernier ? `Adresse envoyée le ${new Date(dernier).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à ${new Date(dernier).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ')}` : undefined;
+          l.push({ cle: x.id, le: x.le, ic: 'check', ton: 'ic_vert', genre: 'documents', chez: chezLui(x.client_id),
+            titre: `Reconnaissance signée par ${qui}`, detail: x.commentaire || '', puce: { l: 'Signée', ...VERT },
+            ...(docId ? { action: { cle: `adresse:${docId}`, l: dernier ? 'Renvoyer l’adresse' : 'Lui envoyer l’adresse du local', ic: 'mail', fait } } : {}) });
+        }
         else l.push({ cle: x.id, le: x.le, ic: 'bouclier', ton: 'ic_or', genre: 'documents', chez: chezLui(x.client_id),
           titre: et === 'envoyee' ? `Reconnaissance envoyée à ${qui}` : et === 'prete' ? `Reconnaissance prête pour ${qui}` : et === 'preparee' ? `Reconnaissance préparée pour ${qui}` : `Reconnaissance · ${qui}`,
           detail: (x.commentaire || '').replace(/^🛡️\s*/, '') });
@@ -2637,7 +2649,13 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
       )}
 
       {onglet === 'historique' && (
-        <HistoriqueBien evts={evts} aVenir={aVenirHisto} parcours={parcoursDe(bien, detail?.suivi || [])} chiffres={chiffresVente}
+        <HistoriqueBien evts={evts} aVenir={aVenirHisto}
+          onAction={cle => {
+            if (!cle.startsWith('adresse:')) return;
+            const id = cle.slice(8);
+            const doc = recos.find(x => x.id === id);
+            setApercuAdresse({ id, nom: doc ? nomReco(doc) : 'le demandeur', renvoi: !!adresseEnvoyee(id) });
+          }} parcours={parcoursDe(bien, detail?.suivi || [])} chiffres={chiffresVente}
           erreur={detail?.erreurJournal} onFiche={id => { void ouvrirClient(id); }}
           onNote={() => setFen({ k: 'note' })}
           onSuppr={async id => {

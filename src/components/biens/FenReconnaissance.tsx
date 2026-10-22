@@ -306,7 +306,7 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
           </div>
         )}
         <div className={s.chAide}>{!auto
-          ? 'Tu la lui donnes toi-même : une fois signée, un bouton « Lui envoyer l’adresse » t’attend sur la fiche de l’affaire (onglet Documents), ou tu la lui dis de vive voix.'
+          ? 'Décoché, c’est toi qui la lui envoies, quand tu veux, une fois qu’il a signé. « Lui envoyer l’adresse du local » t’attend à deux endroits : dans l’historique de l’affaire, sur la ligne « Reconnaissance signée », et sur sa fiche, onglet Documents. Un aperçu du mail, puis un clic : la date de l’envoi s’affiche ensuite au même endroit.'
           : mode === 'sur_place' && !emailOk((nouveau ? nouveau.email : email).trim())
             ? 'Sans son adresse e-mail, elle ne peut pas lui partir : donne-la-lui de vive voix, devant le local.'
             : 'Le document, lui, ne dit jamais l’adresse : seulement le secteur.'}</div>
