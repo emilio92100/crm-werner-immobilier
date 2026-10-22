@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { verifie } from '@/lib/ecritures';
+import type { ImprevuOuvert } from '@/lib/visites';
+import { chargerImprevus } from '@/lib/imprevus';
 
 /* ═══ Le suivi avec l'agence, sous chaque bien présenté (V3.182) ═══════════
    Alexandre : « un truc interne pour moi : qui je dois contacter, le compte
@@ -34,13 +36,15 @@ export type LigneSuivi = {
   mot_client: string | null;
   created_at: string;
 };
-export type VisiteCalee = { date_visite: string; heure: string | null };
+export type VisiteCalee = { date_visite: string; heure: string | null; id?: string };
 export type Suivis = {
   /** La table n'existe pas encore : le SQL n'a pas été passé. */
   absent: boolean;
   parBien: Record<string, LigneSuivi[]>;
   /** La prochaine visite à venir de chaque bien. */
   visites: Record<string, VisiteCalee>;
+  /** V3.232 : l'imprévu signalé par le client sur cette visite, par bien. */
+  imprevus?: Record<string, ImprevuOuvert>;
 };
 
 export const SUIVIS_VIDES: Suivis = { absent: false, parBien: {}, visites: {} };
@@ -79,14 +83,18 @@ export async function chargerSuivis(bienIds: string[]): Promise<Suivis> {
   if (!bienIds.length) return SUIVIS_VIDES;
   const [s, v] = await Promise.all([
     supabase.from('suivis_agence').select('*').in('bien_id', bienIds).order('created_at', { ascending: false }),
-    supabase.from('visites').select('bien_id, date_visite, heure').in('bien_id', bienIds).eq('statut', 'a_venir').order('date_visite', { ascending: true }),
+    supabase.from('visites').select('id, bien_id, date_visite, heure').in('bien_id', bienIds).eq('statut', 'a_venir').order('date_visite', { ascending: true }),
   ]);
   const visites: Record<string, VisiteCalee> = {};
-  (v.data || []).forEach((x: any) => { if (x.bien_id && !visites[x.bien_id]) visites[x.bien_id] = { date_visite: x.date_visite, heure: x.heure || null }; });
-  if (s.error) return { absent: tableAbsente(s.error), parBien: {}, visites };
+  (v.data || []).forEach((x: any) => { if (x.bien_id && !visites[x.bien_id]) visites[x.bien_id] = { date_visite: x.date_visite, heure: x.heure || null, id: x.id }; });
+  /* V3.232 : les imprévus signalés sur ces visites, rangés par bien. */
+  const parVisite = await chargerImprevus(Object.values(visites).filter(x => !!x.id).map(x => ({ id: x.id as string, statut: 'a_venir', date_visite: x.date_visite, heure: x.heure })));
+  const imprevus: Record<string, ImprevuOuvert> = {};
+  for (const [bienId, x] of Object.entries(visites)) if (x.id && parVisite[x.id]) imprevus[bienId] = parVisite[x.id];
+  if (s.error) return { absent: tableAbsente(s.error), parBien: {}, visites, imprevus };
   const parBien: Record<string, LigneSuivi[]> = {};
   (s.data || []).forEach((x: any) => { const l = lire(x); (parBien[l.bien_id] ||= []).push(l); });
-  return { absent: false, parBien, visites };
+  return { absent: false, parBien, visites, imprevus };
 }
 
 /* V3.193 : les deux colonnes de ce que le client voit. Avant le SQL, une

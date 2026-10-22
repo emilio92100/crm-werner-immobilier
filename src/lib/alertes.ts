@@ -17,7 +17,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export const CLE_ALERTES = 'alertes_mail';
 
 export type CleAlerte =
-  | 'visite' | 'visite_offre' | 'visite_avis' | 'offre_espace'
+  | 'visite' | 'visite_imprevu' | 'visite_offre' | 'visite_avis' | 'offre_espace'
   | 'mandat_question' | 'mandat_numero' | 'mandat_signe' | 'mandat_renonce' | 'mandat_depasse' | 'document_signe'
   | 'reconnaissance_envoyee' | 'point_auto_recap';
 
@@ -40,6 +40,13 @@ export const ALERTES_MAIL: Alerte[] = [
     objet: '👀 Paul Martin veut visiter · Boutique 60 m²…',
     quand: 'Il clique sur « Je veux visiter » depuis son espace. Une seule fois par bien.',
     crm: 'Une relance du jour dans Relances et sur le tableau de bord, et une ligne dans son suivi.',
+  },
+  /* V3.232 : un imprévu sur une visite calée, depuis son espace (« Un imprévu ? »). */
+  {
+    cle: 'visite_imprevu', groupe: 'clients', titre: 'Un imprévu sur une visite',
+    objet: '⚠️ Paul Martin a un imprévu · visite du sam. 31 oct. à 12 h',
+    quand: 'Une visite est calée : depuis son espace, il demande à la décaler (avec ses disponibilités) ou à l’annuler (avec sa raison). La visite reste dans ton agenda : c’est toi qui préviens l’agence ou le bailleur, puis la décales ou l’annules.',
+    crm: 'Une relance du jour, en tête de Relances, et une ligne dans son suivi.',
   },
   {
     cle: 'visite_offre', groupe: 'clients', titre: 'Un client veut faire une offre',

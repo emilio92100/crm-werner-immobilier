@@ -78,6 +78,8 @@ export function appelsMontres(appels: AppelVisible[]): { a: AppelVisible; p: { t
     appel montré). */
 export function suiviPourClient(appels: AppelVisible[], o: {
   avis?: string | null; retourLe?: string | null; visite?: { date: string; heure?: string | null } | null;
+  /** V3.232 : l'imprévu qu'il a signalé sur la visite calée (décaler ou annuler, et quand). */
+  imprevu?: { quoi: 'decaler' | 'annuler'; le: string } | null;
 }): SuiviClient | null {
   const vus = appelsMontres(appels);
   /* Sans appel montré, rien : une visite calée a déjà son bloc sur la fiche. */
@@ -94,6 +96,8 @@ export function suiviPourClient(appels: AppelVisible[], o: {
   if (o.visite) {
     const quand = [jour(o.visite.date), o.visite.heure ? `à ${heure(o.visite.heure)}` : ''].filter(Boolean).join(' ');
     etapes.push({ t: 'La visite est calée', sous: quand ? `${quand.charAt(0).toUpperCase()}${quand.slice(1)}.` : undefined, etat: 'fait' });
+    /* V3.232 (repris du CRM d'Emilio) : son imprévu, en dernière étape. */
+    if (o.imprevu) etapes.push({ t: o.imprevu.quoi === 'decaler' ? 'Vous avez demandé à la décaler' : 'Vous avez demandé à l’annuler', le: o.imprevu.le, etat: 'encours', sous: 'Werner prévient le propriétaire.' });
   } else {
     etapes.push({ t: 'La visite est calée', sous: 'Elle s’ajoutera ici et dans « Vos visites ».', etat: 'avenir' });
   }

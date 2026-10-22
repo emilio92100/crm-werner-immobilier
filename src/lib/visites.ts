@@ -180,3 +180,58 @@ export function libelleVisites(faites: number, prevues: number): string {
   const p = prevues ? (faites ? `${prevues} prévue${s(prevues)}` : `${prevues} visite${s(prevues)} prévue${s(prevues)}`) : '';
   return [f, p].filter(Boolean).join(' · ');
 }
+
+/* ── V3.232 : « Un imprévu ? » sur une visite calée ──────────────────────
+   Les raisons qu'il peut cocher quand il veut annuler (l'espace les montre,
+   /api/espace/imprevu n'accepte qu'elles). */
+export const RAISONS_IMPREVU: { i: string; n: string }[] = [
+  { i: 'calendrier', n: 'Un empêchement' },
+  { i: 'croix', n: 'Le local ne m’intéresse plus' },
+  { i: 'maison', n: 'J’ai trouvé un autre local' },
+];
+/** Ses disponibilités (« Dès que possible », « Sam. 7 nov. de 10 h à 12 h »…) : des phrases courtes, sans doublon. */
+export function disposPropres(l: unknown): string[] {
+  if (!Array.isArray(l)) return [];
+  const t = l.filter((x): x is string => typeof x === 'string')
+    .map(x => x.replace(/\s+/g, ' ').trim().slice(0, 80)).filter(Boolean);
+  return Array.from(new Set(t)).slice(0, 12);
+}
+export const estRaisonImprevu = (m: unknown): m is string => typeof m === 'string' && RAISONS_IMPREVU.some(r => r.n === m);
+/** Ce qu'il a signalé sur une visite à venir : décaler ou annuler, et quand. */
+export type ImprevuVisite = { quoi: 'decaler' | 'annuler'; le: string };
+/** L'imprévu porté par une ligne du journal (`metadata.imprevu`, écrit par /api/espace/imprevu). */
+export type ImprevuNote = { visite_id: string; quoi: 'decaler' | 'annuler'; date: string | null; heure: string | null; motifs: string[]; dispos: string[]; mot: string | null };
+export type ImprevuOuvert = ImprevuNote & { le: string };
+export function imprevuDeMeta(meta: unknown): ImprevuNote | null {
+  const m = meta && typeof meta === 'object' ? (meta as Record<string, unknown>).imprevu : null;
+  if (!m || typeof m !== 'object') return null;
+  const x = m as Record<string, unknown>;
+  if (typeof x.visite_id !== 'string' || (x.quoi !== 'decaler' && x.quoi !== 'annuler')) return null;
+  const liste = (l: unknown) => (Array.isArray(l) ? l.filter((y): y is string => typeof y === 'string') : []);
+  return {
+    visite_id: x.visite_id, quoi: x.quoi, date: typeof x.date === 'string' ? x.date : null, heure: typeof x.heure === 'string' ? x.heure : null,
+    motifs: liste(x.motifs), dispos: liste(x.dispos), mot: typeof x.mot === 'string' && x.mot.trim() ? x.mot : null,
+  };
+}
+/** Un imprévu vaut tant que la visite n'a pas bougé : toujours à venir, même jour, même heure.
+    Déplacée ou annulée, il est réglé de lui-même. */
+export function imprevuTient(i: ImprevuNote, v: { statut?: string | null; date_visite?: string | null; heure?: string | null }): boolean {
+  if (v.statut && v.statut !== 'a_venir') return false;
+  return String(v.date_visite || '').slice(0, 10) === String(i.date || '').slice(0, 10)
+    && String(v.heure || '').slice(0, 5) === String(i.heure || '').slice(0, 5);
+}
+/** Les imprévus encore ouverts, par visite (le plus récent l'emporte). */
+export function imprevusOuverts(lignes: { metadata?: unknown; created_at?: string | null }[], visites: { id: string; statut?: string | null; date_visite?: string | null; heure?: string | null }[]): Record<string, ImprevuOuvert> {
+  const r: Record<string, ImprevuOuvert> = {};
+  for (const j of lignes) {
+    const i = imprevuDeMeta(j.metadata);
+    if (!i) continue;
+    const v = visites.find(x => x.id === i.visite_id);
+    if (!v || !imprevuTient(i, v)) continue;
+    const le = String(j.created_at || '');
+    if (!r[i.visite_id] || r[i.visite_id].le < le) r[i.visite_id] = { ...i, le };
+  }
+  return r;
+}
+/** Les raisons d'annuler qui font passer le local « Pas pour lui » quand Werner annule. */
+export const RAISONS_PAS_POUR_LUI = ['Le local ne m’intéresse plus', 'J’ai trouvé un autre local'];

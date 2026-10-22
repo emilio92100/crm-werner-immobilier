@@ -1,5 +1,7 @@
 import { addJournal, supabase } from '@/lib/supabase';
 import { signalerEchec } from '@/lib/ecritures';
+import { chargerImprevus, solderImprevu } from '@/lib/imprevus';
+import { RAISONS_PAS_POUR_LUI } from '@/lib/visites';
 
 /* ═══ Annuler une visite : une seule façon de faire (V3.50) ═══════════════
    Avant, chaque écran annulait à sa manière : l'agenda fermait le rappel et
@@ -52,6 +54,24 @@ export async function annulerVisites(ids: string[], o: { pourquoi?: string; jour
     }
     const annulees = aAnnuler.filter(v => faites.has(v.id));
 
+    /* V3.232 : un imprévu signalé par le client sur ces visites. Sa relance
+       se ferme ; s'il ne veut plus du bien (« Le bien ne m'intéresse plus »,
+       « J'ai trouvé un autre bien »), le bien passe « Pas pour lui » — chez
+       lui « Pas pour moi » — avec sa raison. Sinon, il garde sa place : le
+       rendez-vous tombe, pas son envie. */
+    const imprevus = await chargerImprevus(aAnnuler.map(v => ({ id: v.id, statut: 'a_venir', date_visite: v.date_visite, heure: v.heure })));
+    for (const v of annulees) {
+      const i = imprevus[v.id];
+      if (!i) continue;
+      await solderImprevu(v.client_id, v.biens?.titre || v.biens?.ville || 'le local');
+      if (i.quoi === 'annuler' && v.bien_id && i.motifs.some(m => RAISONS_PAS_POUR_LUI.includes(m))) {
+        const retour = ['Pas pour moi', ...i.motifs].join(' · ') + (i.mot ? ` — ${i.mot}` : '');
+        const r = await supabase.from('biens').update({ badge_retour: 'refuse', retour_client: retour.slice(0, 600), retour_le: new Date().toISOString(), retour_par: 'client' })
+          .eq('id', v.bien_id).select('id');
+        if (r.error) signalerEchec('Le bien « Pas pour lui »', r.error.message);
+      }
+    }
+
     /* Les rappels : fermés quand plus aucune visite prévue ne s'en sert. */
     const rappels = Array.from(new Set(annulees.map(v => v.rappel_relance_id).filter((x): x is string => !!x)));
     if (rappels.length) {
@@ -72,8 +92,10 @@ export async function annulerVisites(ids: string[], o: { pourquoi?: string; jour
       for (const v of annulees) {
         if (!v.client_id) continue;
         const titre = v.biens?.titre || v.biens?.ville || 'le local';
+        const i = imprevus[v.id];
+        const sienne = i ? `À sa demande, depuis son espace${i.motifs.length ? ` : ${i.motifs.join(', ')}` : ''}.` : '';
         await addJournal(v.client_id, 'visite_annulee', `✕ Visite annulée — ${titre}`,
-          [quand(v), o.pourquoi || ''].filter(Boolean).join(' '), undefined,
+          [quand(v), o.pourquoi || sienne].filter(Boolean).join(' '), undefined,
           { rechercheId: v.recherche_id, bienId: v.bien_id });
       }
     }
