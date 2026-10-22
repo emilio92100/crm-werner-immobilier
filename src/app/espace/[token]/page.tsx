@@ -10,7 +10,7 @@ import EspaceEnPreparation from './preparation';
 import { jetonEspace, HOTE_ESPACE } from '@/lib/jeton';
 import { etatMandat, finRetractationPour, rechercheDepuis, masquerEmail, type Mandant, type Societe } from '@/lib/mandat';
 import { lireReserve, mandatDocumentEnRoute, mandatDocumentSigne, mandatDocumentRetracte, renonciationDocument, memeNumero, signeSansNumero } from '@/lib/mandat-serveur';
-import { maintenantParis, visitePasseeParis, issueDe, apprisDe, imprevusOuverts } from '@/lib/visites';
+import { maintenantParis, visitePasseeParis, issueDe, apprisDe, imprevusOuverts, courtDuBien } from '@/lib/visites';
 import { lireDocumentsEspace, fichierDe, modeDoc, type DocEspace, type MandatDocEspace } from '@/lib/documents-espace';
 import { ecritServeur } from '@/lib/ecritures';
 import { prixDuBien } from '@/lib/honoraires-bien';
@@ -170,7 +170,7 @@ export default async function PageEspace({ params, searchParams }: {
        `contact` (l'agence, son numéro). Avant le SQL
        (outils/sql/suivis-agence-client.sql), la lecture échoue sans bruit et
        l'espace ne montre rien. */
-    supabase.from('suivis_agence').select('bien_id, genre, reponse, dispo, creneaux, ensuite, rappel_le, mot_client, montrer, created_at')
+    supabase.from('suivis_agence').select('id, bien_id, genre, reponse, dispo, creneaux, ensuite, rappel_le, mot_client, montrer, created_at')
       .eq('recherche_id', recherche.id).eq('genre', 'appel').order('created_at', { ascending: true }).limit(400),
     /* V3.232 : ses « Un imprévu ? » sur une visite calée (journal, type
        message_client, metadata.imprevu). Soixante jours suffisent : une
@@ -326,17 +326,39 @@ export default async function PageEspace({ params, searchParams }: {
   for (const a of (suivisRes.error ? [] : suivisRes.data || []) as (AppelVisible & { bien_id: string })[]) {
     if (!a.bien_id) continue;
     const l = appelsParBien.get(a.bien_id) || [];
-    l.push({ genre: a.genre, reponse: a.reponse, dispo: a.dispo, creneaux: a.creneaux, ensuite: a.ensuite, rappel_le: a.rappel_le, mot_client: a.mot_client, montrer: a.montrer, created_at: a.created_at });
+    l.push({ id: a.id, genre: a.genre, reponse: a.reponse, dispo: a.dispo, creneaux: a.creneaux, ensuite: a.ensuite, rappel_le: a.rappel_le, mot_client: a.mot_client, montrer: a.montrer, created_at: a.created_at });
     appelsParBien.set(a.bien_id, l);
   }
   /* Rien pour un bien de l'agence, un bien plus disponible, ou déjà visité :
      ces fiches ont déjà leur propre bloc. */
+  /* V3.222 : sauf une 2e visite. Un bien visité (pas « Pas pour moi »)
+     qu'Alexandre a rappelé APRÈS la visite retrouve « Où en est Alexandre »,
+     avec les seuls appels d'après elle — et donc les créneaux de l'agence à
+     choisir, comme pour la première. L'heure d'un appel se lit à Paris, comme
+     celle de la visite. */
+  const derniereFaite = new Map<string, Record<string, unknown>>();
+  toutesVisites
+    .filter((v) => v.statut === 'effectuee' || (v.statut === 'a_venir' && estPassee(v)))
+    .forEach((v) => { if (v.bien_id) derniereFaite.set(v.bien_id, v); });   // la dernière l'emporte (tri par date)
   const suiviDe = (b: Record<string, unknown>) => {
     const id = b.id as string;
-    if (b.bien_vente_id || indispoDe(b) || copiesIndispo.has(id) || faiteParBien.has(id)) return null;
+    if (b.bien_vente_id || indispoDe(b) || copiesIndispo.has(id)) return null;
+    const vf = faiteParBien.has(id) ? derniereFaite.get(id) : null;
+    if (vf) {
+      const issueVf = issueDe(vf as Parameters<typeof issueDe>[0]);
+      if (issueVf === 'non') return null;
+      const depuis = `${String(vf.date_visite || '').slice(0, 10)} ${/^\d{2}:\d{2}/.test(String(vf.heure || '')) ? String(vf.heure).slice(0, 5) : '00:00'}`;
+      const apres = (appelsParBien.get(id) || []).filter(a => !!a.created_at && maintenantParis(new Date(a.created_at)) >= depuis);
+      if (!apres.length) return null;
+      return suiviPourClient(apres, {
+        avis: issueVf, retourLe: (vf.avis_client_le as string) || (vf.issue_le as string) || null,
+        visite: prevueParBien.get(id) || null, maintenant, revisite: true, imprevu: imprevuParBien.get(id) || null,
+      });
+    }
     const l = appelsParBien.get(id);
     if (!l?.length) return null;
-    return suiviPourClient(l, { avis: b.badge_retour as string | null, retourLe: b.retour_le as string | null, visite: prevueParBien.get(id) || null, imprevu: imprevuParBien.get(id) || null });
+    /* V3.221 (repris du CRM d'Emilio) : `maintenant` — les créneaux qu'il peut encore choisir lui-même. */
+    return suiviPourClient(l, { avis: b.badge_retour as string | null, retourLe: b.retour_le as string | null, visite: prevueParBien.get(id) || null, maintenant, imprevu: imprevuParBien.get(id) || null });
   };
 
   const biens = (biensRes.data || []).map((b) => ({
@@ -408,15 +430,8 @@ export default async function PageEspace({ params, searchParams }: {
   /* Les rendez-vous à venir, et eux seuls. Une visite passée n'est plus « votre
      prochaine visite » : son bien est rangé dans « Visités » (voir faiteParBien),
      et la section « Déjà visités » de l'onglet Visites le montre. */
-  /* « Boutique 60 m² · Paris », « Bureaux 120 m² · Paris », « 3 espaces 80 m² · Paris » :
-     le type du local d'abord, le nombre d'espaces quand il n'est pas connu. */
-  const courtDuBien = (b: any): string | null => {
-    if (!b) return null;
-    const n = Number(b.nb_pieces) || 0, s = Number(b.surface) || 0;
-    const quoi = String(b.type_bien || '').trim() || (n > 1 ? `${n} espaces` : n === 1 ? '1 espace' : '');
-    const bien = [quoi ? quoi.charAt(0).toUpperCase() + quoi.slice(1) : '', s ? `${String(s).replace('.', ',')} m²` : ''].filter(Boolean).join(' ');
-    return [bien, b.ville].filter(Boolean).join(' · ') || null;
-  };
+  /* « Boutique 60 m² · Paris » : courtDuBien, dans src/lib/visites.ts depuis
+     la V3.221 (la route qui pose une visite choisie par le client s'en sert aussi). */
   const visites = toutesVisites
     .filter((v) => v.statut === 'a_venir' && v.date_visite && !estPassee(v) && !copiesIndispo.has(v.bien_id))
     .map((v) => {
