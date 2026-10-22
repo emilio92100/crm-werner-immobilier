@@ -460,7 +460,7 @@ import BoutonCarte from '@/components/carte/BoutonCarte';
 import { BarreOnglets, CorpsOnglet } from '@/components/shared/OngletsGlissants';
 import Cascade from '@/components/shared/Cascade';
 import GardeHauteur from '@/components/shared/GardeHauteur';
-import Rapprochement, { GuideRapprochement, RapprochementsFaits, VuDepuisBiens, rapproAReprendre, type DepartRappro } from './Rapprochement';
+import Rapprochement, { GuideRapprochement, OngletsHisto, RapprochementsFaits, VuDepuisBiens, rapproAReprendre, type DepartRappro, type OngletHisto } from './Rapprochement';
 import { mandatsPour, poserVenteEnSelection, vusDepuisBiens, type EtatDossier, type LigneHistoVu, type MandatOk, type VuDepuisBien } from '@/lib/rapprochement';
 import { ListeCoordonnees, lignesDe, nettoyer } from '@/components/shared/ListeCoordonnees';
 import { ChoixQuand } from '@/components/pages/PageAgenda';
@@ -1580,6 +1580,8 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
      l'onglet Rapprochement (« Vu depuis tes biens ») et le Suivi. */
   const [vusBiens, setVusBiens] = useState<{ liste: VuDepuisBien[]; historique: LigneHistoVu[] } | null>(null);
   const [poseVu, setPoseVu] = useState<string | null>(null);
+  /* V3.231 : l'historique des rapprochements, depuis sa fiche ou depuis tes affaires. */
+  const [ongletHisto, setOngletHisto] = useState<OngletHisto | null>(null);
   const idRechercheActive = rechercheActive ? String(rechercheActive.id) : '';
   useEffect(() => {
     if (!idRechercheActive) { setVusBiens(null); return; }
@@ -4045,16 +4047,22 @@ ${signatureMail()}`,
      GuideRapprochement) ; l'illustration de l'ancien bandeau y reste. Les
      biens déjà montrés (`vus`) servent à « Seulement les nouveautés ». */
   const vusRappro = rapprochements.flatMap(j => (Array.isArray(j.metadata?.vus) ? (j.metadata.vus as string[]) : []));
+  /* V3.231 — L'illustration du rapprochement : le demandeur au milieu de ses
+     pistes (tes affaires en cours, tes estimations, tes veilles), reliées par
+     des traits qui défilent ; les cartes flottent, une étincelle scintille. */
   const illuRappro = (
-    <svg className={styles.rapproIllu} width="150" height="76" viewBox="0 0 150 76" aria-hidden="true">
-      <rect width="150" height="76" rx="14" fill="#fbf0e9" />
-      <path className={styles.rapproTrait} d="M40 38 C 62 28, 78 20, 96 20" fill="none" stroke="#f08c42" strokeWidth="1.6" />
-      <path className={styles.rapproTrait} d="M40 38 C 62 48, 78 56, 96 56" fill="none" stroke="#f08c42" strokeWidth="1.6" />
-      <circle className={styles.rapproOnde} cx="36" cy="38" r="19" fill="none" stroke="#f08c42" strokeWidth="2" />
-      <circle cx="36" cy="38" r="19" fill="#26282c" />
-      <foreignObject x="19" y="21" width="34" height="34"><AvatarContact c={client as never} teinte={{ bg: '#26282c', fg: '#f7b07a' }} taille={34} /></foreignObject>
-      <g className={styles.rapproFlotte1}><rect x="94" y="8" width="44" height="24" rx="8" fill="#fff" stroke="#eaeae9" /><path d="M108 22l6-5 6 5M110 21v5h8v-5" fill="none" stroke="#2e3034" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></g>
-      <g className={styles.rapproFlotte2}><rect x="94" y="44" width="44" height="24" rx="8" fill="#fff" stroke="#eaeae9" /><circle cx="114" cy="55" r="4.2" fill="none" stroke="#c2621c" strokeWidth="1.6" /><path d="M117.2 58.2l2.8 2.8" stroke="#c2621c" strokeWidth="1.6" strokeLinecap="round" /></g>
+    <svg className={styles.rapproIllu} width="176" height="92" viewBox="0 0 176 92" aria-hidden="true">
+      <rect width="176" height="92" rx="16" fill="#fbf0e9" />
+      <path className={styles.rapproTrait} d="M60 40 C 82 30, 94 16, 114 16" fill="none" stroke="#f08c42" strokeWidth="1.6" />
+      <path className={styles.rapproTrait} d="M62 46 L 114 46" fill="none" stroke="#f08c42" strokeWidth="1.6" />
+      <path className={styles.rapproTrait} d="M60 52 C 82 62, 94 76, 114 76" fill="none" stroke="#f08c42" strokeWidth="1.6" />
+      <circle className={styles.rapproOnde} cx="38" cy="46" r="21" fill="none" stroke="#f08c42" strokeWidth="2" />
+      <circle cx="38" cy="46" r="21" fill="#26282c" />
+      <foreignObject x="20" y="28" width="36" height="36"><AvatarContact c={client as never} teinte={{ bg: '#26282c', fg: '#f7b07a' }} taille={36} /></foreignObject>
+      <path className={styles.rapproEtoile} d="M62 13l1.5 3.8 3.8 1.5-3.8 1.5-1.5 3.8-1.5-3.8-3.8-1.5 3.8-1.5z" fill="#f08c42" />
+      <g className={styles.rapproFlotte1}><rect x="114" y="5" width="50" height="22" rx="8" fill="#fff" stroke="#eaeae9" /><path d="M133 17l6-5 6 5M135 16v5h8v-5" fill="none" stroke="#2e3034" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></g>
+      <g className={styles.rapproFlotte2}><rect x="114" y="35" width="50" height="22" rx="8" fill="#fff" stroke="#eaeae9" /><path d="M133 41.5h6.5l5.5 5-6 5.5-6-5.5z" fill="none" stroke="#7c5cd6" strokeWidth="1.6" strokeLinejoin="round" /><circle cx="136" cy="44.5" r="1.2" fill="#7c5cd6" /></g>
+      <g className={styles.rapproFlotte3}><rect x="114" y="65" width="50" height="22" rx="8" fill="#fff" stroke="#eaeae9" /><circle cx="138" cy="75" r="4.2" fill="none" stroke="#c2621c" strokeWidth="1.6" /><path d="M141.2 78.2l2.8 2.8" stroke="#c2621c" strokeWidth="1.6" strokeLinecap="round" /></g>
     </svg>
   );
 
@@ -4678,74 +4686,81 @@ ${signatureMail()}`,
           <div className={styles.ens}>
             {!rechercheActive ? <div className={styles.carteEns}><p className={styles.situNotes}>Le rapprochement part d’une recherche : ouvre-lui en une d’abord.</p></div> : (
               <>
-                <GuideRapprochement client={client} recherche={rechercheActive as unknown as Record<string, unknown>} illu={illuRappro}
-                  dernier={dernierRappro ? { le: dernierRappro.created_at, n: Number(dernierRappro.metadata?.n ?? 0) } : null}
-                  onLancer={o => { setRapproDepart(o); setRappro(true); }} />
-                <div className={styles.ensCols}>
-                  <div className={styles.ensCol}>
-                    <div className={styles.carteEns}>
-                      <div className={styles.carteEnsT}>
-                        <span className={styles.carteEnsIc}><Icone nom="maison" taille={15} epaisseur={2} /></span>
-                        <b>Vos affaires qui lui correspondent</b>
-                        {!!mandatsOk?.liste.length && (
-                          <button type="button" onClick={() => { setRapproDepart({ source: 'mandats', cocher: mandatsOk.liste.map(m => m.id) }); setRappro(true); }}>Les lui proposer</button>
-                        )}
-                      </div>
-                      {mandatsOk === null ? <p className={styles.situNotes}>Recherche dans vos affaires…</p> : mandatsOk.liste.length ? (
-                        <div className={styles.rapproMandats}>
-                          {mandatsOk.liste.map(m => (
-                            <button key={m.id} type="button" className={styles.rapproMandat} onClick={() => onNavigate('biens', { bien: m.id })}>
-                              <span className={styles.rapproMandatIc}><Icone nom="maison" taille={15} epaisseur={2} /></span>
-                              <span className={styles.rapproMandatTx}><b>{m.titre}</b>{m.ville ? <small>{m.ville}</small> : null}</span>
-                              <span className={styles.rapproNote}>{`${m.note} %`}</span>
-                            </button>
-                          ))}
+                {(() => {
+                  /* V3.231 — Alexandre : « que ce soit plus joli, plus optimisé, qu'on
+                     comprenne bien ». Le guide (trois pas), puis deux colonnes : ses
+                     mandats qui lui correspondent, et les rapprochements faits — depuis
+                     sa fiche, ou depuis tes affaires (l'ancienne carte « Vu depuis tes
+                     affaires », devenue un onglet ; un rappel en haut quand il y a à faire). */
+                  const dossierVentes: Record<string, EtatDossier> = Object.fromEntries(biens.filter((b: any) => b.bien_vente_id).map((b: any) => [String(b.bien_vente_id), { etape: String(b.etape || 'selection'), envoye_le: b.envoye_le || null, badge: b.badge_retour || null, le: b.created_at || null } as EtatDossier]));
+                  const aProposer = (vusBiens?.liste || []).filter(v => v.v !== 'non' && !v.ecarte && !!v.bien && !v.bien.archive && !dossierVentes[v.bienId]).length;
+                  const onglet: OngletHisto = ongletHisto ?? (rapprochements.length || !vusBiens?.liste.length ? 'fiche' : 'biens');
+                  return (
+                    <>
+                      <GuideRapprochement client={client} recherche={rechercheActive as unknown as Record<string, unknown>} illu={illuRappro}
+                        dernier={dernierRappro ? { le: dernierRappro.created_at, n: Number(dernierRappro.metadata?.n ?? 0) } : null}
+                        onLancer={o => { setRapproDepart(o); setRappro(true); }}
+                        vusBiens={aProposer ? { n: aProposer, onVoir: () => { setOngletHisto('biens'); document.getElementById('rappro-histo')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } } : null} />
+                      <div className={styles.ensCols}>
+                        <div className={styles.ensCol}>
+                          <div className={styles.carteEns}>
+                            <div className={styles.carteEnsT}>
+                              <span className={styles.carteEnsIc}><Icone nom="maison" taille={15} epaisseur={2} /></span>
+                              <b>Vos affaires qui lui correspondent</b>
+                              {!!mandatsOk?.liste.length && (
+                                <button type="button" onClick={() => { setRapproDepart({ source: 'mandats', cocher: mandatsOk.liste.map(m => m.id) }); setRappro(true); }}>Les lui proposer</button>
+                              )}
+                            </div>
+                            {mandatsOk === null ? <p className={styles.situNotes}>Recherche dans vos affaires…</p> : mandatsOk.liste.length ? (
+                              <div className={styles.rapproMandats}>
+                                {mandatsOk.liste.map(m => (
+                                  <button key={m.id} type="button" className={styles.rapproMandat} onClick={() => onNavigate('biens', { bien: m.id })}>
+                                    <span className={styles.rapproMandatIc}><Icone nom="maison" taille={15} epaisseur={2} /></span>
+                                    <span className={styles.rapproMandatTx}><b>{m.titre}</b>{m.ville ? <small>{m.ville}</small> : null}</span>
+                                    <span className={styles.rapproNote}>{`${m.note} %`}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            ) : <p className={styles.situNotes}>{`Aucune de vos affaires en cours ne lui correspond assez (70 % de ses critères) pour l’instant. Le rapprochement cherche aussi dans les biens de vos veilles.`}</p>}
+                          </div>
                         </div>
-                      ) : <p className={styles.situNotes}>{`Aucune de vos affaires en cours ne lui correspond assez (70 % de ses critères) pour l’instant. Le rapprochement cherche aussi dans les biens de vos veilles.`}</p>}
-                    </div>
-                  </div>
-                  <div className={styles.ensCol}>
-                    <div className={styles.carteEns}>
-                      <div className={styles.carteEnsT}>
-                        <span className={styles.carteEnsIc}><Icone nom="horloge" taille={15} epaisseur={2} /></span>
-                        <b>Les rapprochements faits</b>
-                        {rapprochements.length > 0 && <i className={styles.rapproCompte}>{rapprochements.length}</i>}
+                        <div className={styles.ensCol}>
+                          <div className={styles.carteEns} id="rappro-histo">
+                            <div className={styles.carteEnsT}>
+                              <span className={styles.carteEnsIc}><Icone nom="horloge" taille={15} epaisseur={2} /></span>
+                              <b>Les rapprochements faits</b>
+                            </div>
+                            <OngletsHisto onglet={onglet} onChange={setOngletHisto} nFiche={rapprochements.length} nBiens={vusBiens?.liste.length || 0} prenom={client.prenom || 'ce client'} />
+                            <Cascade cle={onglet}>
+                              {onglet === 'fiche' ? (rapprochements.length
+                                /* V3.126 : chaque rapprochement se déplie sur ce qui a été proposé. */
+                                ? <RapprochementsFaits liste={rapprochements.slice(0, 60)} prenom={client.prenom || 'ce client'} onBien={id => onNavigate('biens', { bien: id })} />
+                                : <p className={styles.situNotes}>{`Aucun pour l’instant. Le premier compare la recherche de ${client.prenom || 'ce client'} avec vos affaires en cours et les biens trouvés par vos veilles.`}</p>
+                              ) : vusBiens === null ? <p className={styles.situNotes}>Lecture…</p> : vusBiens.liste.length ? (
+                                <VuDepuisBiens liste={vusBiens.liste} prenom={client.prenom || 'ce client'} pose={poseVu} etroit={true}
+                                  dossier={dossierVentes}
+                                  onBien={id => onNavigate('biens', { bien: id })}
+                                  onProposer={async v => {
+                                    if (!v.bien || poseVu) return;
+                                    setPoseVu(v.bienId);
+                                    try {
+                                      await poserVenteEnSelection(v.bien, rechercheActive as unknown as Record<string, unknown>, client.id);
+                                      await load();
+                                      setVersionBiens(x => x + 1);
+                                      setTab('selection');
+                                    } catch (e) {
+                                      alert((e as Error).message);
+                                    }
+                                    setPoseVu(null);
+                                  }} />
+                              ) : <p className={styles.situNotes}>{'Aucun pour l’instant. Depuis la fiche d’une affaire, onglet Rapprochement, « Lancer le rapprochement » : s’il en ressort, il apparaîtra ici.'}</p>}
+                            </Cascade>
+                          </div>
+                        </div>
                       </div>
-                      {rapprochements.length ? (
-                        /* V3.126 : chaque rapprochement se déplie sur ce qui a été proposé. */
-                        <RapprochementsFaits liste={rapprochements.slice(0, 8)} prenom={client.prenom || 'ce client'} onBien={id => onNavigate('biens', { bien: id })} />
-                      ) : <p className={styles.situNotes}>{`Aucun pour l’instant. Le premier compare la recherche de ${client.prenom || 'ce client'} avec vos affaires en cours et les biens trouvés par vos veilles.`}</p>}
-                    </div>
-                  </div>
-                </div>
-                {/* V3.228 — Vu depuis tes affaires : les rapprochements lancés depuis la
-                    fiche d'une affaire, où il est ressorti (le même avis que sur l'affaire). */}
-                <div className={styles.carteEns}>
-                  <div className={styles.carteEnsT}>
-                    <span className={styles.carteEnsIc}><Icone nom="maison" taille={15} epaisseur={2} /></span>
-                    <b>Vu depuis tes affaires</b>
-                    {!!vusBiens?.liste.length && <i className={styles.rapproCompte}>{vusBiens.liste.length}</i>}
-                  </div>
-                  <p className={styles.situNotes}>{`Quand tu lances un rapprochement depuis la fiche d’une de tes affaires et que ${client.prenom || 'ce client'} en ressort, c’est ici : le dernier avis par affaire, le même que sur la fiche de l’affaire, et où il en est.`}</p>
-                  {vusBiens === null ? <p className={styles.situNotes}>Lecture…</p> : vusBiens.liste.length ? (
-                    <VuDepuisBiens liste={vusBiens.liste} prenom={client.prenom || 'ce client'} pose={poseVu}
-                      dossier={Object.fromEntries(biens.filter((b: any) => b.bien_vente_id).map((b: any) => [String(b.bien_vente_id), { etape: String(b.etape || 'selection'), envoye_le: b.envoye_le || null, badge: b.badge_retour || null, le: b.created_at || null } as EtatDossier]))}
-                      onBien={id => onNavigate('biens', { bien: id })}
-                      onProposer={async v => {
-                        if (!v.bien || poseVu) return;
-                        setPoseVu(v.bienId);
-                        try {
-                          await poserVenteEnSelection(v.bien, rechercheActive as unknown as Record<string, unknown>, client.id);
-                          await load();
-                          setVersionBiens(x => x + 1);
-                          setTab('selection');
-                        } catch (e) {
-                          alert((e as Error).message);
-                        }
-                        setPoseVu(null);
-                      }} />
-                  ) : <p className={styles.situNotes}>{'Aucun pour l’instant. Depuis la fiche d’une affaire, onglet Rapprochement, « Lancer le rapprochement » : s’il en ressort, il apparaîtra ici.'}</p>}
-                </div>
+                    </>
+                  );
+                })()}
               </>
             )}
           </div>

@@ -526,8 +526,12 @@ a.coLien:hover { color: #25272b; }
 @keyframes rapproTrait { to { stroke-dashoffset: -20; } }
 .rapproOnde { transform-box: fill-box; transform-origin: center; animation: rapproOnde 2.4s ease-out infinite; }
 @keyframes rapproOnde { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(1.45); opacity: 0; } }
-.rapproFlotte1, .rapproFlotte2 { animation: rapproFlotte 4.2s ease-in-out infinite; }
-.rapproFlotte2 { animation-delay: -2.1s; }
+.rapproFlotte1, .rapproFlotte2, .rapproFlotte3 { animation: rapproFlotte 4.2s ease-in-out infinite; }
+.rapproFlotte2 { animation-delay: -1.4s; }
+.rapproFlotte3 { animation-delay: -2.8s; }
+/* V3.231 : l'étincelle qui scintille. */
+.rapproEtoile { transform-box: fill-box; transform-origin: center; animation: rapproEtoile 2.6s ease-in-out infinite; }
+@keyframes rapproEtoile { 0%, 100% { transform: scale(.6) rotate(0deg); opacity: .35; } 50% { transform: scale(1.1) rotate(45deg); opacity: 1; } }
 @keyframes rapproFlotte { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .rapproTx { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .rapproTitre { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -605,7 +609,7 @@ a.coLien:hover { color: #25272b; }
   .coDeplie { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .teteEspaceOn, .coDeplie, .rapproTrait, .rapproOnde, .rapproFlotte1, .rapproFlotte2, .rapproNouveau i, .rapproCta, .toastRappro, .toastRapproIc { animation: none; }
+  .teteEspaceOn, .coDeplie, .rapproTrait, .rapproOnde, .rapproFlotte1, .rapproFlotte2, .rapproFlotte3, .rapproEtoile, .rapproNouveau i, .rapproCta, .toastRappro, .toastRapproIc { animation: none; }
   .toastSort { animation: none; opacity: 0; }
 }
 
