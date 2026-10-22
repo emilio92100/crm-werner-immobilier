@@ -139,7 +139,7 @@ export function itemMandat(x: MandatRecherche, noms: Record<string, string>): It
   return {
     cle: 'r-' + x.id, categorie: 'mandats_recherche', statut,
     titre: `Mandat de recherche · ${nom}`,
-    sous: [x.numero ? `N° ${x.numero}` : '', x.statut === 'partiel' ? 'en ligne, une signature attendue' : x.statut === 'en_cours' ? 'en ligne, signature en cours' : 'signé en ligne'].filter(Boolean).join(' · '),
+    sous: [x.numero ? `N° ${x.numero}` : '', x.statut === 'partiel' ? 'en ligne, une signature attendue' : x.statut === 'en_cours' ? 'en ligne, signature en cours' : x.statut === 'termine' ? 'signé en ligne, terminé' : 'signé en ligne'].filter(Boolean).join(' · '),
     badge: 'En ligne', date: x.retracte_le || x.signe_le || x.created_at, mandat: x,
     enSignature: !x.retracte_le && (x.statut === 'partiel' || x.statut === 'en_cours'),
   };

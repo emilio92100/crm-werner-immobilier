@@ -1073,6 +1073,16 @@ const ORDRE_VUES: VueFiche[] = ['ensemble', 'recherche', 'rapprochement', 'espac
 const DUREES_VISITE = [{ v: 30, lib: '30 min' }, { v: 45, lib: '45 min' }, { v: 60, lib: '1 h' }, { v: 90, lib: '1 h 30' }];
 const QUAND_VISITE = () => ({ date: jourParis(), heure: '18:00', duree: 45 });
 
+/* Un mandat signé et pas encore expiré, porté par la recherche : la même
+   règle que MandatEnLigne (`valide`). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mandatEnCours(r: any): boolean {
+  if (!r?.mandat_date_signature) return false;
+  const exp = r.mandat_date_expiration ? String(r.mandat_date_expiration).slice(0, 10) : '';
+  const auj = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  return !exp || exp >= auj;
+}
+
 export default function FicheClient({ client: init, onBack, onNavigate, retourVers }: Props) {
   /* Arrivée « au bon endroit » (depuis une relance) : l'onglet, le filtre du
      Suivi, la recherche, et l'action à surligner. Voir src/lib/intentions.ts. */
@@ -1266,6 +1276,11 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
      étape (le choix d'affichage enregistré, lui, ne bouge pas). */
   const ouvrirEtapeCrit = (id: string) => { setModeCrit('etapes'); ouvrirCriteres(Math.max(0, ORDRE_ETAPES_CRIT.indexOf(id))); };
   const [showMandat, setShowMandat] = useState(false);
+  /* Un mandat signé : sa saisie est fermée (ses honoraires ne se changent
+     plus ici, voir MandatEnLigne). Rouverte seulement pour corriger une
+     faute de frappe dans un mandat noté à la main. */
+  const [corrigerSaisie, setCorrigerSaisie] = useState(false);
+  useEffect(() => { if (!showMandat) setCorrigerSaisie(false); }, [showMandat]);
   /* La dernière signature en ligne de la recherche affichée. Une
      rétractation se voit sur le bouton du mandat (en rouge, avec une pastille
      « 1 » tant qu'Alexandre n'a pas ouvert la fenêtre) : c'est une
@@ -6251,7 +6266,11 @@ ${signatureMail()}`,
               <MandatEnLigne recherche={cr} client={client}
                 onMaj={(d) => setRecherches(rs => rs.map(r => r.id === d.id ? (d as Recherche) : r))}
                 onClient={(c) => setClient(c as Client)}
-                onAvenant={() => { setShowMandat(false); onNavigate('documents', { avenantRecherche: cr.id }); }} />
+                onAvenant={() => { setShowMandat(false); onNavigate('documents', { avenantRecherche: cr.id }); }}
+                onOuvrirDocument={id => { setShowMandat(false); onNavigate('documents', { ouvrir: id }); }}
+                onCorrigerSaisie={() => setCorrigerSaisie(true)} />
+              {(!mandatEnCours(cr) || corrigerSaisie) && <>
+              {corrigerSaisie && <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#92400e', lineHeight: 1.5 }}>{'Corrige seulement ce que tu as mal noté : le mandat signé, lui, ne change pas. Pour de nouveaux honoraires, un avenant ou un nouveau mandat.'}</div>}
               <div><label className={styles.lbl}>Date de signature</label><input className={styles.inp} type="date" value={mandat.date_signature} onChange={e => setMandat(f => ({ ...f, date_signature: e.target.value }))} /></div>
               <div className={styles.formRow}>
                 <div><label className={styles.lbl}>Durée</label><select className={styles.inp} value={mandat.duree} onChange={e => setMandat(f => ({ ...f, duree: e.target.value }))}><option value="1">1 mois</option><option value="2">2 mois</option><option value="3">3 mois</option><option value="6">6 mois</option><option value="12">12 mois</option></select></div>
@@ -6259,6 +6278,7 @@ ${signatureMail()}`,
               </div>
               <div><label className={styles.lbl}>Honoraires convenus</label><input className={styles.inp} value={mandat.honoraires} onChange={e => setMandat(f => ({ ...f, honoraires: e.target.value }))} placeholder="2,5% HT ou 5 000€ HT" /></div>
               {mandat.date_signature && mandat.duree && !mandat.date_expiration && <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#1d4ed8' }}>💡 Expiration calculée : {ajouterMois(String(mandat.date_signature).slice(0, 10), parseInt(mandat.duree)).split('-').reverse().join('/')}</div>}
+              </>}
             </div>
             <div className={styles.modalFooter} style={{ justifyContent: 'space-between' }}>
               {cr.mandat_date_signature || cr.mandat_date_expiration ? (
@@ -6266,8 +6286,8 @@ ${signatureMail()}`,
                   style={{ color: '#b91c1c', borderColor: '#fecaca', background: '#fff' }}>🗑️ Supprimer le mandat</button>
               ) : <span />}
               <span style={{ display: 'flex', gap: 8 }}>
-                <button className={styles.btn} onClick={() => setShowMandat(false)}>Annuler</button>
-                <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={saveMandat} disabled={saving}>{saving ? '...' : '✓ Sauvegarder'}</button>
+                <button className={styles.btn} onClick={() => setShowMandat(false)}>{!mandatEnCours(cr) || corrigerSaisie ? 'Annuler' : 'Fermer'}</button>
+                {(!mandatEnCours(cr) || corrigerSaisie) && <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={saveMandat} disabled={saving}>{saving ? '...' : '✓ Sauvegarder'}</button>}
               </span>
             </div>
           </div>

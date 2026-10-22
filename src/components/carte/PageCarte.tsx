@@ -17,6 +17,7 @@ import { Ic } from '@/components/documents/ApercuActe';
 import AvatarContact, { type Teinte } from '@/components/contacts/AvatarContact';
 import { createRoot, type Root } from 'react-dom/client';
 import { Icone } from '@/components/fiche/ParcoursBien';
+import Aide from '@/components/shared/Aide';
 import { signalerFicheOuverte } from '@/components/layout/FichesOuvertes';
 import s from './Carte.module.css';
 
@@ -336,7 +337,6 @@ export default function PageCarte({ onNavigate, onMenu }: {
   const [ouverts, setOuverts] = useState({ filtres: true, liste: true });
   /* « Qui est sur la carte ? » : une phrase derrière le ⓘ, au téléphone
      comme sur ordinateur (V3.28). */
-  const [voirSans, setVoirSans] = useState(false);
   /* Téléphone (V3.28) : les filtres rangés sous deux boutons, « Contacts » et
      « Biens » ; un seul panneau ouvert à la fois. */
   const [pliTel, setPliTel] = useState<null | 'contacts' | 'biens'>(null);
@@ -841,7 +841,6 @@ export default function PageCarte({ onNavigate, onMenu }: {
     const t = setTimeout(() => setMessage(null), typeof message === 'string' ? 6000 : 9000);
     return () => clearTimeout(t);
   }, [message]);
-  const basculerInfo = () => { setPliTel(null); setVoirSans(v => !v); };
 
   /* Ouvrir une fiche depuis la carte : la carte prend place dans la barre
      des fiches ouvertes, et un clic sur ce bloc la rouvre là où on l'a
@@ -895,24 +894,19 @@ export default function PageCarte({ onNavigate, onMenu }: {
      le nombre et la liste de ceux qui manquent restait affiché sous les
      filtres de l'ordinateur — Alexandre n'en voyait pas l'intérêt. */
   /* Le « ? » de la carte (22 octobre 2026) — Alexandre : « il faut qu'on
-     comprenne mieux, avec un point d'interrogation ». Comment les pastilles
-     se combinent, ce que dit leur chiffre, qui est sur la carte. */
-  const rappelAdresses = (
-    <div className={s.rappel}>
-      <span className={s.rappelIc}><b style={{ fontSize: 13, fontWeight: 800 }}>?</b></span>
-      <div className={s.rappelTxt}>
-        <b className={s.rappelTitre}>Comment marche la carte</b>
-        <ul className={s.rappelListe}>
-          <li><b>{'Dans une rubrique, les pastilles s’additionnent. '}</b>{'Plus tu en allumes, plus il y a de points : « À louer » et « Droit au bail » montrent les deux.'}</li>
-          <li><b>{'D’une rubrique à l’autre, tout doit correspondre. '}</b>{'Une affaire s’affiche si son étape (Affaires en cours…), sa nature et son type de local sont tous allumés.'}</li>
-          <li>{'Les contacts s’ajoutent aux affaires. La nature et le type de local ne trient que les affaires.'}</li>
-          <li>{'Le chiffre d’une pastille : combien il y en a sur la carte. « Toutes » ou « Aucune », en haut d’une rubrique, allume ou éteint tout d’un coup.'}</li>
-          <li>{'Seuls les contacts et les affaires dont l’adresse est connue sont sur la carte.'}</li>
-        </ul>
-      </div>
-      <button type="button" className={s.rappelFermer} onClick={() => setVoirSans(false)} aria-label="Fermer">×</button>
-      {tableAbsente && <small className={s.sql}>Les adresses sont recherchées à chaque ouverture tant que le fichier outils/sql/carte.sql n’a pas été passé dans Supabase.</small>}
-    </div>
+     comprenne mieux, avec un point d'interrogation, un joli pop-up ».
+     Comment les pastilles se combinent, ce que dit leur chiffre, qui est sur
+     la carte. La même fenêtre que les « ? » du reste du CRM (Aide). */
+  const aideCarte = (classe: string) => (
+    <Aide titre="Comment marchent les filtres" label="Comment marche la carte" classe={classe}>
+      <span><b>{'Une pastille allumée (en couleur) s’affiche sur la carte. '}</b>{'Un appui l’allume ou l’éteint, même la dernière.'}</span>
+      <span><b>{'Dans une rubrique, elles s’additionnent. '}</b>{'« À louer » et « Droit au bail » allumées : la carte montre les deux.'}</span>
+      <span><b>{'D’une rubrique à l’autre, tout doit correspondre. '}</b>{'Une affaire s’affiche si son étape (Affaires en cours…), sa nature et son type de local sont allumés tous les trois. Exemple : seulement « Murs à vendre » et seulement « Local commercial » montrent les murs à vendre qui sont des locaux commerciaux.'}</span>
+      <span>{'Les contacts (demandeurs, bailleurs…) s’ajoutent aux affaires, dès qu’ils ont une adresse. La nature et le type de local ne trient que les affaires.'}</span>
+      <span>{'Le chiffre d’une pastille : combien il y en a sur la carte. « Toutes » ou « Aucune », en haut d’une rubrique, allume ou éteint tout d’un coup. Plus rien à l’écran : la carte dit pourquoi, avec « Tout rallumer ».'}</span>
+      <span>{'Seuls les contacts et les affaires dont l’adresse est connue sont sur la carte.'}</span>
+      {tableAbsente && <span>{'Les adresses sont recherchées à chaque ouverture tant que le fichier outils/sql/carte.sql n’a pas été passé dans Supabase.'}</span>}
+    </Aide>
   );
 
   const carteDeVisite = (p: Place, compacte = false) => {
@@ -1021,16 +1015,12 @@ export default function PageCarte({ onNavigate, onMenu }: {
                   <span>{charge ? 'Chargement…' : `${nbPlaces} adresse${nbPlaces > 1 ? 's' : ''} sur la carte`}</span>
                 </div>
                 {!charge && (
-                  <button type="button" className={`${s.replier} ${voirSans ? s.replierOn : ''}`} aria-expanded={voirSans}
-                    onClick={basculerInfo} aria-label="Comment marche la carte" title="Comment marche la carte ?">
-                    <b style={{ fontSize: 14, fontWeight: 800, lineHeight: 1 }}>?</b>
-                  </button>
+                  aideCarte(`${s.replier} ${s.replierQ}`)
                 )}
                 <button type="button" className={s.replier} onClick={() => basculerPanneau('filtres')} aria-label="Replier les filtres" title="Replier">
                   <Ic n="gauche" t={16} e={2.2} />
                 </button>
               </div>
-              {voirSans && !charge && <div className={s.infoPc}>{rappelAdresses}</div>}
               {charge ? (
                 <div className={s.squelettes}>{[0, 1, 2, 3, 4].map(i => <span key={i} className="sq-barre" style={{ width: `${60 + (i * 17) % 40}%` }} />)}</div>
               ) : erreur ? <div className={s.erreur}>{erreur}</div> : (
@@ -1147,10 +1137,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
                 {recherche && <button type="button" onClick={() => setRecherche('')} aria-label="Effacer">×</button>}
               </label>
               {/* Qui est sur la carte, et qui n'y est pas : un appui (V3.28). */}
-              <button type="button" className={`${s.infoTel} ${voirSans ? s.infoTelOn : ''}`} onClick={basculerInfo}
-                aria-expanded={voirSans} aria-label="Comment marche la carte">
-                <b style={{ fontSize: 18, fontWeight: 800, lineHeight: 1 }}>?</b>
-              </button>
+              {aideCarte(`${s.infoTel} ${s.infoTelQ}`)}
             </div>
             {/* Deux boutons plutôt qu'une bande à faire défiler : chacun
                 déplie ses filtres, rangés sur plusieurs lignes. */}
@@ -1161,7 +1148,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
                   const n = visibles.filter(p => (k === 'biens') === (p.genre === 'bien')).length;
                   return (
                     <button key={k} type="button" className={`${s.groupeTel} ${k === 'biens' ? s.groupeBiens : ''} ${pliTel === k ? s.groupeTelOn : ''}`}
-                      aria-expanded={pliTel === k} onClick={() => { setVoirSans(false); setPliTel(x => (x === k ? null : k)); }}>
+                      aria-expanded={pliTel === k} onClick={() => setPliTel(x => (x === k ? null : k))}>
                       <span className={s.groupeIc}><Ic n={ico} t={17} e={2} /></span>
                       <span className={s.groupeLib}>{lib}<small>{`${n} sur la carte`}</small></span>
                       <span className={s.groupeCv}><Icone nom="chevron" taille={14} epaisseur={2.1} /></span>
@@ -1190,7 +1177,6 @@ export default function PageCarte({ onNavigate, onMenu }: {
                 </div>
               );
             })()}
-            {voirSans && <div className={s.sansTel}>{rappelAdresses}</div>}
           </div>
 
           <div className={s.outilsTel}>

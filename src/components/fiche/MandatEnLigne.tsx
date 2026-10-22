@@ -143,7 +143,7 @@ type Retrait = {
   emails: string[]; informe: string | null;
 };
 
-export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAvenant }: {
+export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAvenant, onOuvrirDocument, onCorrigerSaisie }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   recherche: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -155,6 +155,10 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
   onClient?: (c: any) => void;
   /* « Préparer un avenant » : la fiche ouvre Documents sur cette recherche. */
   onAvenant?: () => void;
+  /* Un mandat signé dans Documents : l'y ouvrir (pour y mettre fin). */
+  onOuvrirDocument?: (id: string) => void;
+  /* Un mandat noté à la main : rouvrir sa saisie, pour une faute de frappe. */
+  onCorrigerSaisie?: () => void;
 }) {
   const [avenants, setAvenants] = useState<AvenantMini[]>([]);
   const [sig, setSig] = useState<Sig | null>(null);
@@ -176,6 +180,10 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
   const [copie, setCopie] = useState(false);
   const [voirReserve, setVoirReserve] = useState(false);
   const [fenRetrait, setFenRetrait] = useState<Retrait | null>(null);
+  /* Les honoraires d'un mandat signé : pourquoi ils ne bougent plus, et les
+     deux façons de les changer (22 octobre 2026). */
+  const [changerHono, setChangerHono] = useState(false);
+  const [fenFin, setFenFin] = useState(false);
   /* Le registre des mandats du CRM (V3.18) : démarré, il donne le numéro au
      moment où le client demande son code ; plus de réserve à tenir. */
   const [registre, setRegistre] = useState<{ prochain: number; premier: number; numero: EtatNumero } | null>(null);
@@ -271,6 +279,12 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
   const valide = !!recherche?.mandat_date_signature
     && (!recherche?.mandat_date_expiration || String(recherche.mandat_date_expiration).slice(0, 10) >= jourParis());
   const signeEnLigne = sig?.statut === 'signe' || sig?.statut === 'partiel';
+  /* D'où vient le mandat en cours : signé dans l'espace, dans Documents, ou
+     noté à la main (signé ailleurs). */
+  const sourceSigne: 'ligne' | 'document' | 'saisie' = signeEnLigne && (!String(recherche?.mandat_numero || '').trim() || memeNumero(recherche?.mandat_numero, sig?.numero))
+    ? 'ligne' : docSigne ? 'document' : 'saisie';
+  const honoSigne = String(recherche?.mandat_honoraires || '').trim() || (sig?.contenu ? honorairesCourt({ taux: sig.contenu.taux, forfait: sig.contenu.forfait }) : '');
+  const finSig = sig?.statut === 'termine' ? [...(sig.deroule || [])].reverse().find(x => /^Fin du mandat/.test(x.x))?.t || null : null;
   const ecarts = sig && (sig.statut === 'signe' || sig.statut === 'partiel' || sig.statut === 'en_cours') ? ecartsDe(sig.mandant, client) : [];
   const attendus = cos.filter(c => c.statut === 'invite');
   const nomP = `${sig?.mandant?.prenom || ''} ${sig?.mandant?.nom || ''}`.trim();
@@ -644,6 +658,45 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
       : 'Enregistré, mais sans ton approbation du mandat type : les clients ne pourront pas signer seuls.', ok: approuve });
   }
 
+  /* ── Mettre fin au mandat signé en ligne (22 octobre 2026) ──
+     Alexandre : « si le mandat est signé et qu'il veut changer lui-même les
+     honoraires, dire que ce n'est pas possible : soit annuler le mandat, ce
+     qui forcera à en renvoyer un nouveau, soit un avenant ». La ligne de
+     signature passe « termine » (comme « abandonne », sans contrainte en
+     base : l'espace ne reprend qu'une ligne en cours, signée ou partielle),
+     le bloc Mandat de la recherche se vide, le registre note la fin. Le PDF
+     signé reste dans Documents. Un nouveau mandat prendra un nouveau numéro. */
+  async function terminer() {
+    if (!sig || !recherche?.id) return;
+    setTravail('fin'); setMsg(null);
+    const fin = (m: { t: string; ok: boolean }) => { setTravail(''); setFenFin(false); setChangerHono(false); setMsg(m); };
+    const le = new Date().toISOString();
+    const { data: lu, error: eL } = await supabase.from('mandats_signatures').select('statut, deroule').eq('id', sig.id).maybeSingle();
+    if (eL || !lu) { fin({ t: 'Le mandat n’a pas pu être relu, rien n’a changé : ' + (eL?.message || 'introuvable'), ok: false }); return; }
+    const deroule = Array.isArray((lu as { deroule?: unknown }).deroule) ? (lu as { deroule: { t: string; x: string }[] }).deroule : (sig.deroule || []);
+    const { data: ferme, error: eF } = await supabase.from('mandats_signatures')
+      .update({ statut: 'termine', deroule: [...deroule, { t: le, x: 'Fin du mandat d’un commun accord, notée par l’agence' }] })
+      .eq('id', sig.id).in('statut', ['signe', 'partiel']).select('id');
+    if (eF) { fin({ t: 'Le mandat n’a pas pu être terminé : ' + eF.message, ok: false }); return; }
+    if (!ferme?.length) { fin({ t: 'Le mandat a changé entre-temps (rétracté, ou déjà terminé) : rien n’a été fait. Recharge la fiche.', ok: false }); await charger(); return; }
+    const { data, error } = await supabase.from('recherches').update({
+      mandat_date_signature: null, mandat_duree: null, mandat_honoraires: null, mandat_date_expiration: null,
+      sans_mandat: true, mandat_numero: null, mandat_propose_le: null, updated_at: le,
+    }).eq('id', recherche.id).select().single();
+    if (error) { fin({ t: `Le mandat est terminé, mais le bloc Mandat de sa recherche n’a pas pu être vidé (${error.message}) : clique « Supprimer le mandat », en bas de cette fenêtre.`, ok: false }); await charger(); return; }
+    onMaj(data); setNumero('');
+    const n = sig.numero;
+    await addJournal(client.id, 'mandat', `🏁 Fin du mandat de recherche n° ${n}`,
+      `Terminé d’un commun accord, noté le ${quand(le)}${honoSigne ? ` · honoraires signés : ${honoSigne}` : ''}. Un nouveau mandat peut lui être proposé.`,
+      { signature_id: sig.id, numero: n }, { rechercheId: recherche.id });
+    const pbReg = await observer(supabase, { signature_id: sig.id, numeroSinon: n || null, type: 'fin', texte: `Fin du mandat d’un commun accord, notée dans le CRM le ${quand(le)}.` });
+    await charger();
+    fin({
+      t: `Mandat n° ${n} terminé. ${pbReg ? `Le registre des mandats n’a pas pu le noter (${pbReg}) : note-le à la main. ` : 'C’est noté dans le registre des mandats. '}Choisis maintenant ses nouveaux honoraires ci-dessous, puis « Proposer au client » : il aura un nouveau mandat à signer, avec un nouveau numéro.`,
+      ok: !pbReg,
+    });
+  }
+
   async function deposerSignature(f: File | undefined) {
     if (!f) return;
     if (f.type !== 'image/png') { setMsg({ t: 'La signature doit être une image PNG (fond transparent).', ok: false }); return; }
@@ -745,6 +798,74 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
           </div>
         </div>
       )}
+      {/* Les honoraires d'un mandat signé : ils ne se changent plus ici. */}
+      {valide && (
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14 }}>
+          <div style={{ ...titreBloc, display: 'flex', alignItems: 'center' }}>
+            Honoraires du mandat signé
+            <Aide titre="Changer les honoraires d’un mandat signé">
+              <span>{'Un mandat signé engage le client et l’agence tel qu’il a été signé. Changer le taux sur la fiche ne changerait rien à ce qu’il a signé : c’est pour ça que les honoraires sont fermés ici.'}</span>
+              <span><b>{'Un avenant (conseillé). '}</b>{'Il reprend son identité, sa société, sa recherche et le numéro du mandat. Tu indiques les nouveaux honoraires, il signe l’avenant, et le mandat continue avec eux.'}</span>
+              <span><b>{'Mettre fin au mandat. '}</b>{'Le mandat s’arrête d’un commun accord (noté dans le registre). Tu choisis ensuite les nouveaux honoraires et tu lui proposes un nouveau mandat, avec un nouveau numéro, qu’il signe de nouveau.'}</span>
+            </Aide>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--emilio)', flex: '1 1 160px', minWidth: 0 }}>{honoSigne || 'Non précisés sur la fiche'}</span>
+            <button type="button" style={btn} aria-expanded={changerHono} onClick={() => setChangerHono(v => !v)}>{changerHono ? 'Fermer' : '✏️ Changer les honoraires'}</button>
+          </div>
+          {changerHono && (
+            <div style={{ ...boite('#fff7ed', '#fed7aa', '#7c2d12'), marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div>
+                <b>{`🔒 Pas possible ici : le mandat${recherche?.mandat_numero ? ` n° ${recherche.mandat_numero}` : ''} est signé`}</b>
+                <div style={{ marginTop: 2 }}>{`Il engage ${client?.prenom || 'le client'} et l’agence avec ces honoraires. Pour les changer, deux façons :`}</div>
+              </div>
+              <div style={{ background: '#fff', border: '1px solid #fed7aa', borderRadius: 10, padding: '10px 12px', color: 'var(--emilio)' }}>
+                <b>{'1. Un avenant'}</b><small style={{ color: '#15803d', fontWeight: 800, marginLeft: 6 }}>{'conseillé'}</small>
+                <div style={{ fontSize: 12.5, color: '#475569', marginTop: 2 }}>{'Il reprend son identité, sa société, sa recherche et le numéro du mandat : tu indiques les nouveaux honoraires, il signe l’avenant (en ligne ou sur place). Le mandat continue.'}</div>
+                {onAvenant
+                  ? <button type="button" style={{ ...btnOr, marginTop: 8 }} onClick={onAvenant}>{avenantEnCours ? '📝 Ouvrir l’avenant en cours' : '📝 Préparer l’avenant'}</button>
+                  : <div style={{ fontSize: 12.5, marginTop: 6 }}>{'Documents › Créer un document › Avenant au mandat de recherche.'}</div>}
+              </div>
+              <div style={{ background: '#fff', border: '1px solid #fed7aa', borderRadius: 10, padding: '10px 12px', color: 'var(--emilio)' }}>
+                <b>{'2. Mettre fin au mandat, puis en signer un nouveau'}</b>
+                <div style={{ fontSize: 12.5, color: '#475569', marginTop: 2 }}>{'Le mandat s’arrête d’un commun accord, c’est noté dans le registre. Tu choisis ensuite les nouveaux honoraires et tu lui proposes un nouveau mandat, qu’il signe de nouveau. Préviens-le avant.'}</div>
+                {sourceSigne === 'ligne' && (attendus.length
+                  ? <div style={{ fontSize: 12.5, marginTop: 6 }}>{`Pas tant que ${attendus.map(nomCo).join(' et ')} n’a pas signé ou que son invitation n’est pas close (plus haut).`}</div>
+                  : <button type="button" style={{ ...btn, marginTop: 8, color: '#b91c1c', borderColor: '#fecaca' }} disabled={travail === 'fin'} onClick={() => setFenFin(true)}>{'Mettre fin au mandat…'}</button>)}
+                {sourceSigne === 'document' && docSigne && (
+                  <>
+                    <div style={{ fontSize: 12.5, marginTop: 6 }}>{'Il a été signé dans Documents : ouvre-le, puis « Marquer annulé » › « Fin du mandat ».'}</div>
+                    {onOuvrirDocument && <button type="button" style={{ ...btn, marginTop: 8 }} onClick={() => onOuvrirDocument(docSigne.id)}>{'📄 Ouvrir le mandat dans Documents'}</button>}
+                  </>
+                )}
+                {sourceSigne === 'saisie' && <div style={{ fontSize: 12.5, marginTop: 6 }}>{'Il a été noté à la main : « Supprimer le mandat », en bas de cette fenêtre, le retire de la fiche.'}</div>}
+              </div>
+              {sourceSigne === 'saisie' && onCorrigerSaisie && (
+                <button type="button" onClick={() => { setChangerHono(false); onCorrigerSaisie(); }}
+                  style={{ alignSelf: 'flex-start', background: 'none', border: 'none', padding: 0, color: '#c2621c', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, fontFamily: 'inherit' }}>
+                  {'Une faute de frappe dans ce que tu as noté ? Corriger la saisie'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      {fenFin && sig && (
+        <FenetreConfirmer ic="croix" ton="danger" titre={`Mettre fin au mandat n°\u00a0${sig.numero}\u00a0?`} bouton="Mettre fin au mandat"
+          intro={`Mandat de recherche signé en ligne${sig.signe_le ? ` le ${quand(sig.signe_le)}` : ''}${honoSigne ? ` · ${honoSigne}` : ''}`}
+          points={[
+            { ic: 'croix', ton: 'alerte', t: `Le mandat s’arrête aujourd’hui, d’un commun accord : ces honoraires n’engagent plus ${client?.prenom || 'le client'}.` },
+            { ic: 'doc', t: 'C’est noté dans le registre des mandats (« Fin du mandat »). Le mandat signé reste dans Documents.' },
+            { ic: 'mail', ton: 'alerte', t: `Aucun e-mail ne part : préviens ${client?.prenom || 'le client'} toi-même avant.` },
+            { ic: 'check', t: 'Le reste ne bouge pas : sa recherche, ses locaux et ses visites continuent.' },
+          ]}
+          ensuite={[
+            { ic: 'euro', t: 'Choisis les nouveaux honoraires dans « Faire signer le mandat », qui revient ici.' },
+            { ic: 'mail', t: '« Proposer au client », puis « Envoyer par e-mail » : il signe le nouveau mandat, avec un nouveau numéro.' },
+          ]}
+          conseil="Tu veux seulement changer les honoraires et garder le mandat ? Un avenant suffit : rien ne s’arrête."
+          onFermer={() => setFenFin(false)} onConfirmer={() => terminer()} />
+      )}
       {depot && docSigne && typeof document !== 'undefined' && createPortal(
         <FenetreSigne doc={docSigne} onFermer={() => setDepot(false)} onFait={r => { setDepot(false); setDocSigne(r); setMsg({ t: 'Exemplaire signé déposé : il le retrouve dans son espace.', ok: true }); }} />,
         document.body)}
@@ -786,6 +907,13 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
         <div style={boite('#fef2f2', '#fecaca', '#991b1b')}>
           <b>{`↩️ Mandat n° ${sig.numero} rétracté`}</b>
           <div>{`Le client a renoncé en ligne le ${sig.retracte_le ? quand(sig.retracte_le) : '—'}. ${registre && Number(sig.numero) >= registre.premier ? 'C’est noté tout seul dans le registre des mandats.' : 'Note-le dans le registre où ce numéro a été réservé.'}`}</div>
+          {sig.pdf_chemin && <button type="button" style={{ ...btn, marginTop: 10 }} onClick={voirPdf}>📄 Voir le mandat signé</button>}
+        </div>
+      )}
+      {sig?.statut === 'termine' && (
+        <div style={boite('#f8fafc', '#e2e8f0', '#475569')}>
+          <b style={{ color: 'var(--emilio)' }}>{`🏁 Mandat n° ${sig.numero} terminé`}</b>
+          <div>{`Signé en ligne le ${sig.signe_le ? quand(sig.signe_le) : '—'}, terminé d’un commun accord le ${finSig ? quand(finSig) : '—'}. C’est noté dans le registre des mandats.`}</div>
           {sig.pdf_chemin && <button type="button" style={{ ...btn, marginTop: 10 }} onClick={voirPdf}>📄 Voir le mandat signé</button>}
         </div>
       )}

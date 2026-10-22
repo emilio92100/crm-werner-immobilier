@@ -115,7 +115,7 @@ function depuisMandat(x: MandatRecherche): ElementDoc {
     cle: 'r-' + x.id, ouvrir: 'r-' + x.id, categorie: 'mandats_recherche', statut, courrier: false,
     titre: 'Mandat de recherche',
     sous: [x.numero ? `N° ${x.numero}` : '',
-      x.retracte_le ? `Rétracté le ${jour(x.retracte_le)}` : x.signe_le ? `Signé le ${jour(x.signe_le)}, dans son espace` : 'Signature en cours dans son espace'].filter(Boolean).join(' · '),
+      x.retracte_le ? `Rétracté le ${jour(x.retracte_le)}` : x.statut === 'termine' ? `Signé le ${jour(x.signe_le || x.created_at)}, terminé depuis` : x.signe_le ? `Signé le ${jour(x.signe_le)}, dans son espace` : 'Signature en cours dans son espace'].filter(Boolean).join(' · '),
     date: x.retracte_le || x.signe_le || x.created_at,
     signe: x.statut === 'signe' && !x.retracte_le && x.pdf_chemin ? { chemin: x.pdf_chemin, mandat: true } : undefined,
     numero: x.numero,
@@ -322,7 +322,7 @@ export default function DocumentsDuClient({ clientId, prenom, onNavigate, confre
       if (a.error) { setErreur(a.error.message); setListe([]); return; }
       const docsRows = (a.data || []) as DocumentRow[];
       const mandatsRows = b.error ? [] : ((b.data || []) as (MandatRecherche & SigEspace)[])
-        .filter(x => x.statut === 'signe' || x.statut === 'partiel' || x.retracte_le || x.statut === 'en_cours');
+        .filter(x => x.statut === 'signe' || x.statut === 'partiel' || x.statut === 'termine' || x.retracte_le || x.statut === 'en_cours');
       const recs = (c.error ? [] : c.data || []) as { id: string; mandat_propose_le?: string | null; mandat_date_signature?: string | null; mandat_numero?: string | null }[];
       const proposees = recs.filter(r => r.mandat_propose_le && !r.mandat_date_signature
         && !mandatsRows.some(m => m.recherche_id === r.id && (m.statut === 'en_cours' || m.statut === 'signe' || m.statut === 'partiel')));

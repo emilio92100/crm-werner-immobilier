@@ -200,7 +200,9 @@ export type MandatRecherche = {
    (« partiel »), il attend encore une signature : « En attente de
    signature », pas « Signé ». */
 export function etatMandatEnLigne(x: Pick<MandatRecherche, 'statut' | 'retracte_le'>): Statut {
-  return x.retracte_le ? 'annule' : x.statut === 'signe' ? 'signe' : 'pret';
+  /* « termine » (22 octobre 2026) : signé, puis terminé d'un commun accord
+     depuis la fiche du client (MandatEnLigne, « Mettre fin au mandat »). */
+  return x.retracte_le || x.statut === 'termine' ? 'annule' : x.statut === 'signe' ? 'signe' : 'pret';
 }
 
 /* La table n'existe pas encore (outils/sql/documents.sql pas encore passé). */

@@ -107,10 +107,6 @@
   display: flex; align-items: center; justify-content: center; background: #fde7d8; color: #c2621c;
 }
 .rappelTxt { flex: 1; min-width: 0; margin: 3px 0 0; }
-.rappelTitre { display: block; font: 800 13.5px/1.3 'Plus Jakarta Sans', sans-serif; color: var(--navy); margin-bottom: 4px; }
-.rappelListe { margin: 0; padding: 0 0 0 16px; display: flex; flex-direction: column; gap: 5px; }
-.rappelListe li::marker { color: #f08c42; }
-.rappelListe b { color: var(--navy); font-weight: 700; }
 .rappelFermer {
   flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; border: none; padding: 0; cursor: pointer;
   background: transparent; color: #94a3b8; font-size: 18px; line-height: 1;
@@ -371,6 +367,11 @@
   transition: background .2s, color .2s;
 }
 .infoTelOn { background: #fdf3ec; color: #8b3e0b; }
+/* Le « ? » de la carte (22 octobre 2026) : le même bouton, un « ? » orange,
+   allumé tant que sa fenêtre est ouverte. */
+.infoTelQ, .replierQ { font: 800 17px/1 'DM Sans', sans-serif; color: #c2621c; padding: 0; }
+.replierQ { font-size: 14px; }
+.infoTelQ[aria-expanded='true'], .replierQ[aria-expanded='true'] { background: #f08c42; border-color: #f08c42; color: #fff; }
 /* Les filtres du téléphone (V3.28) : « Mes contacts » et « Mes biens », côte
    à côte au milieu, sous la recherche ; chacun déplie ses pastilles. */
 .groupesTel { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 12px; }
