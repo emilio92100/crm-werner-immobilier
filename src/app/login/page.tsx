@@ -1,8 +1,12 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import PremierAcces from '@/components/acces/PremierAcces';
+import MotDePasseOublie from '@/components/acces/MotDePasseOublie';
+import { appelAcces } from '@/components/acces/connexion';
+import a from '@/components/acces/Acces.module.css';
 
 /**
  * La porte du CRM.
@@ -44,6 +48,25 @@ function FormulaireAcces() {
   const [motDePasse, setMotDePasse] = useState('');
   const [erreur, setErreur] = useState('');
   const [envoi, setEnvoi] = useState(false);
+  /* 22 octobre 2026 : la première connexion de Werner et le mot de passe
+     oublié (src/components/acces/). « ?premier=1 » ouvre directement la
+     première connexion : c'est le lien à lui donner. */
+  const [vue, setVue] = useState<'connexion' | 'premier' | 'oubli'>(
+    params.get('premier') ? 'premier' : params.get('oubli') ? 'oubli' : 'connexion');
+  const [premier, setPremier] = useState<{ ouvert: boolean; mail: string } | null>(null);
+  const [dejaCree, setDejaCree] = useState(false);
+  useEffect(() => {
+    let vivant = true;
+    appelAcces('etat').then(r => {
+      if (!vivant) return;
+      const ouvert = r.ok === true && r.ouvert === true;
+      setPremier({ ouvert, mail: typeof r.mail === 'string' ? r.mail : '' });
+      /* Le lien « première connexion » ouvert après la création : on le dit. */
+      if (!ouvert && r.ok === true && params.get('premier')) setDejaCree(true);
+    });
+    return () => { vivant = false; };
+  }, [params]);
+  const premierOuvert = !!premier?.ouvert && !!premier.mail;
 
   const pret = mail.trim().includes('@') && motDePasse.length > 0;
 
@@ -160,96 +183,119 @@ function FormulaireAcces() {
           </div>
         </div>
 
-        <form
-          onSubmit={valider}
-          style={{
-            background: '#ffffff',
-            borderRadius: 18,
-            padding: '28px 26px',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
-          }}
-        >
-          <label htmlFor="mail" style={etiquette}>
-            Adresse mail
-          </label>
-          <input
-            id="mail"
-            type="email"
-            value={mail}
-            onChange={(e) => setMail(e.target.value)}
-            autoFocus
-            autoComplete="username"
-            placeholder="Votre adresse mail"
-            style={champ}
-          />
-
-          <label htmlFor="mdp" style={{ ...etiquette, marginTop: 16 }}>
-            Mot de passe
-          </label>
-          <input
-            id="mdp"
-            type="password"
-            value={motDePasse}
-            onChange={(e) => setMotDePasse(e.target.value)}
-            autoComplete="current-password"
-            placeholder="Votre mot de passe"
-            style={{ ...champ, letterSpacing: 3 }}
-          />
-
-          {erreur && (
-            <div
-              style={{
-                marginTop: 12,
-                background: '#fef2f2',
-                border: '1px solid #fecaca',
-                borderRadius: 10,
-                padding: '9px 13px',
-                fontSize: 13,
-                color: '#b91c1c',
-                fontWeight: 600,
-              }}
-            >
-              {erreur}
-            </div>
-          )}
-
-          {erreurConfig && !erreur && (
-            <div
-              style={{
-                marginTop: 12,
-                background: '#fffbeb',
-                border: '1px solid #fde68a',
-                borderRadius: 10,
-                padding: '9px 13px',
-                fontSize: 13,
-                color: '#92400e',
-                fontWeight: 600,
-              }}
-            >
-              La connexion n&apos;est pas encore configurée sur le serveur (clés Supabase sur Vercel).
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={envoi || !pret}
+        {vue === 'premier' && premierOuvert ? (
+          <PremierAcces mail={premier!.mail} onRetour={() => setVue('connexion')}
+            onDejaCree={() => { setDejaCree(true); setPremier(p => (p ? { ...p, ouvert: false } : p)); setVue('connexion'); }} />
+        ) : vue === 'oubli' ? (
+          <MotDePasseOublie mailInitial={mail} onRetour={() => setVue('connexion')} />
+        ) : (
+        <>
+          <form
+            onSubmit={valider}
             style={{
-              width: '100%',
-              marginTop: 18,
-              background: envoi || !pret ? '#f4bd92' : '#f08c42',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: 11,
-              padding: '13px 0',
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: envoi || !pret ? 'default' : 'pointer',
-              fontFamily: 'inherit',
+              background: '#ffffff',
+              borderRadius: 18,
+              padding: '28px 26px',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
             }}
           >
-            {envoi ? 'Vérification…' : 'Entrer'}
-          </button>
-        </form>
+            <label htmlFor="mail" style={etiquette}>
+              Adresse mail
+            </label>
+            <input
+              id="mail"
+              type="email"
+              value={mail}
+              onChange={(e) => setMail(e.target.value)}
+              autoFocus
+              autoComplete="username"
+              placeholder="Votre adresse mail"
+              style={champ}
+            />
+
+            <label htmlFor="mdp" style={{ ...etiquette, marginTop: 16 }}>
+              Mot de passe
+            </label>
+            <input
+              id="mdp"
+              type="password"
+              value={motDePasse}
+              onChange={(e) => setMotDePasse(e.target.value)}
+              autoComplete="current-password"
+              placeholder="Votre mot de passe"
+              style={{ ...champ, letterSpacing: 3 }}
+            />
+
+            {erreur && (
+              <div
+                style={{
+                  marginTop: 12,
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: 10,
+                  padding: '9px 13px',
+                  fontSize: 13,
+                  color: '#b91c1c',
+                  fontWeight: 600,
+                }}
+              >
+                {erreur}
+              </div>
+            )}
+
+            {erreurConfig && !erreur && (
+              <div
+                style={{
+                  marginTop: 12,
+                  background: '#fffbeb',
+                  border: '1px solid #fde68a',
+                  borderRadius: 10,
+                  padding: '9px 13px',
+                  fontSize: 13,
+                  color: '#92400e',
+                  fontWeight: 600,
+                }}
+              >
+                La connexion n&apos;est pas encore configurée sur le serveur (clés Supabase sur Vercel).
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={envoi || !pret}
+              style={{
+                width: '100%',
+                marginTop: 18,
+                background: envoi || !pret ? '#f4bd92' : '#f08c42',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: 11,
+                padding: '13px 0',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: envoi || !pret ? 'default' : 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              {envoi ? 'Vérification…' : 'Entrer'}
+            </button>
+            <button type="button" className={a.lien} onClick={() => { setErreur(''); setVue('oubli'); }}>
+              Mot de passe oublié ?
+            </button>
+          </form>
+          {dejaCree && (
+            <div className={a.succes} style={{ marginTop: 14 }}>
+              {'Votre accès est déjà créé : entrez votre adresse et votre mot de passe ci-dessus, ou « Mot de passe oublié ? ».'}
+            </div>
+          )}
+          {premierOuvert && (
+            <div className={a.premiere}>
+              <span><b>{'Première connexion ?'}</b><br />{'Créez votre accès : votre nom, un code reçu par mail, votre mot de passe.'}</span>
+              <button type="button" onClick={() => { setErreur(''); setVue('premier'); }}>Créer mon accès</button>
+            </div>
+          )}
+        </>
+        )}
 
         <div
           style={{

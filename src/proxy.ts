@@ -30,6 +30,8 @@ import { COOKIE_BADGE, badgeValide, codeAcces } from '@/lib/badge';
  *  - /api/site/annonces et /api/site/demande (le site wernerimmobilier.com, dépôt
  *                                   werner-immobilier-site : ses annonces, sans rien de privé,
  *                                   et le dépôt de ses formulaires, tout vérifié dans la route)
+ *  - /mot-de-passe et /api/acces/... (le premier accès de Werner et le mot de passe oublié,
+ *                                   22 octobre 2026 : tout est borné dans src/lib/acces-serveur.ts)
  *  - les fichiers statiques
  */
 
@@ -41,8 +43,8 @@ const COOKIE = COOKIE_BADGE;
 /* /api/ringover/contact : Ringover demande qui est le numéro d'un appel
    (V3.141) ; /api/ringover/recherche : il cherche un contact du CRM (V3.143).
    Leur serrure : la signature de Ringover (lib/ringover-serveur.ts). */
-const PUBLIC_PATHS = ['/login', '/api/login', '/api/point-auto/envoi', '/api/mandat/relances', '/api/signer', '/api/demandes-site/notifier', '/api/flux-site', '/api/flux-site/sitemap', '/api/diffusion/portails', '/api/seloger/contacts', '/api/ringover/contact', '/api/ringover/recherche', '/api/site/annonces', '/api/site/demande'];
-const PUBLIC_PREFIXES = ['/bien/', '/espace/', '/api/espace/', '/signer/', '/proposer/', '/api/agences/'];
+const PUBLIC_PATHS = ['/login', '/api/login', '/api/point-auto/envoi', '/api/mandat/relances', '/api/signer', '/api/demandes-site/notifier', '/api/flux-site', '/api/flux-site/sitemap', '/api/diffusion/portails', '/api/seloger/contacts', '/api/ringover/contact', '/api/ringover/recherche', '/api/site/annonces', '/api/site/demande', '/mot-de-passe'];
+const PUBLIC_PREFIXES = ['/bien/', '/espace/', '/api/espace/', '/signer/', '/proposer/', '/api/agences/', '/api/acces/'];
 
 /* Le sous-domaine de l'espace acheteur. Tout le monde vit sur le même projet
    Vercel : c'est le nom d'hôte qui décide de ce qu'on sert. */

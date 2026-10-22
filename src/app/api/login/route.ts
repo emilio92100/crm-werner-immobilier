@@ -91,6 +91,10 @@ export async function POST(req: NextRequest) {
     .filter(Boolean);
 
   if (autorises.length > 0) {
+    /* Le compte de Werner, créé par son premier accès (src/lib/acces-serveur.ts),
+       entre toujours : la liste ne doit pas lui fermer la porte qu'on vient de
+       lui ouvrir. */
+    autorises.push((process.env.WERNER_MAIL_COMPTE || 'contact@wernerimmobilier.com').trim().toLowerCase());
     const mail = (utilisateur.email || '').toLowerCase();
     if (!autorises.includes(mail)) {
       return NextResponse.json(
