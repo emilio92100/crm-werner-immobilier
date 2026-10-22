@@ -1,0 +1,15 @@
+/* Le conseil avant d'ouvrir un espace client : sobre, une ampoule, l'orange
+   de Werner en filet. Pas de flex sur le texte lui-même (AGENTS.md §2.2). */
+.conseil {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: 12px;
+  background: #fffaf5; border: 1px solid #f6d9bf;
+}
+.ic {
+  flex: 0 0 auto; width: 28px; height: 28px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  background: #fdebd9; color: #c2621c;
+}
+.tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tx > b { font-size: 12.5px; font-weight: 800; color: #c2621c; }
+.tx > span { font-size: 12.5px; line-height: 1.5; color: #55524e; }

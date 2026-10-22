@@ -13,7 +13,7 @@ const AIDE = [
   'Une page privée, rien qu’à lui, qu’il ouvre avec un lien. Pas de mot de passe, rien à installer.',
   'Il y retrouve tous les locaux que tu lui proposes, avec les photos et la fiche complète.',
   'Il te répond en un clic : « ça m’intéresse », « je souhaite le visiter », ou non avec son motif. Tu vois tout sur sa fiche.',
-  'C’est pour les clients que tu suis vraiment, ceux pour qui tu cherches avec un mandat de recherche.',
+  'C’est pour les clients que tu suis de près, ceux pour qui tu cherches avec un mandat de recherche : ils s’attendent à voir leur espace vivre, avec de nouveaux locaux et tes retours.',
   'Pour un simple contact ou une demande ponctuelle, laisse sur Non : tu peux quand même lui envoyer des locaux par mail, ils mèneront à leur fiche publique.',
 ];
 
