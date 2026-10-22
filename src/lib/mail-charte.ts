@@ -26,8 +26,15 @@ export const LIEN_POLICE_MAIL = '<link href="https://fonts.googleapis.com/css2?f
    de Werner, celui qui envoie, plutôt que depuis l'adresse technique du CRM
    (…vercel.app) : un domaine partagé par beaucoup de sites, dont les filtres
    anti-spam se méfient. NEXT_PUBLIC_MAIL_IMAGES_URL le dira quand l'espace
-   aura son domaine ; en attendant, les images viennent du CRM. */
-export const IMAGES_MAIL = (process.env.NEXT_PUBLIC_MAIL_IMAGES_URL || 'https://crm-werner-immobilier.vercel.app').replace(/\/+$/, '');
+   aura son domaine ; en attendant, les images viennent du CRM.
+   22 octobre 2026 : seules les adresses de CE projet Vercel servent ces
+   images (vérifié : crm., espace. et l'adresse vercel.app). Le site
+   wernerimmobilier.com est un autre projet, sans elles : une variable qui y
+   pointerait casserait le logo de tous les mails. Elle n'est donc suivie que
+   si elle désigne une de ces adresses ; sinon, crm.wernerimmobilier.com. */
+const IMAGES_BRUT = (process.env.NEXT_PUBLIC_MAIL_IMAGES_URL || '').trim().replace(/\/+$/, '');
+export const IMAGES_MAIL = /^https:\/\/(?:(?:crm|espace)\.wernerimmobilier\.com|crm-werner-immobilier\.vercel\.app)$/i.test(IMAGES_BRUT)
+  ? IMAGES_BRUT : 'https://crm.wernerimmobilier.com';
 export const LOGO_BLANC_MAIL = `${IMAGES_MAIL}/logo_high_resolution_white.png`;
 
 /* La hauteur du logo dans les en-têtes : `grand` pour les mails illustrés
