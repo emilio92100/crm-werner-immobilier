@@ -114,11 +114,13 @@ const TOUTES = [...CATS_CONTACTS, ...CATS_BIENS, ...CATS_NATURES, ...CATS_TYPES]
 const actifsParDefaut = () => Object.fromEntries(TOUTES.map(c => [c.k, !c.eteint]));
 /* 22 octobre 2026 — Alexandre : « rien n'est coché et je vois des chiffres sur
    la carte, je ne comprends pas ». Ce qui est coché est exactement ce qui se
-   voit : une section de filtres (nature, type de local) ne reste jamais vide —
-   décocher sa dernière pastille les recoche toutes —, et si plus rien n'est
-   coché dans les contacts ni dans les affaires, les affaires d'office
-   reviennent (toutes sauf conclues et retirées). Avant, une section vide
-   vidait la carte sans rien dire. */
+   voit.
+   Puis, le même soir : « quand il n'en reste qu'un et que je clique dessus,
+   tout se rallume ; et Affaires en cours, on ne peut pas l'enlever ». Une
+   pastille s'allume ou s'éteint toujours, même la dernière : une section
+   vide vide la carte, qui le dit (« Aucune nature cochée ») avec « Tout
+   rallumer ». `completer` ne sert plus qu'à l'ouverture : des filtres gardés
+   d'une visite d'avant qui ne montreraient rien repartent pleins. */
 function completer(a: Record<string, boolean>, nb: Record<string, number>): Record<string, boolean> {
   const n = { ...a };
   const existe = (c: Cat) => (nb[c.k] || 0) > 0;
@@ -437,14 +439,13 @@ export default function PageCarte({ onNavigate, onMenu }: {
     } catch { /* sans mémoire : la carte s'ouvre sur sa dernière vue */ }
     return () => mq.removeEventListener('change', maj);
   }, []);
-  /* Ce que le CRM contient par filtre (nbCrm, plus bas), pour completer(). */
-  const nbRef = useRef<Record<string, number>>({});
-  const basculerCat = (k: string) => setActifs(a => { const n = completer({ ...a, [k]: !a[k] }, nbRef.current); ecrire('carte.filtres', JSON.stringify(n)); return n; });
+  const basculerCat = (k: string) => setActifs(a => { const n = { ...a, [k]: !a[k] }; ecrire('carte.filtres', JSON.stringify(n)); return n; });
   const toutSection = (cats: Cat[], v: boolean) => setActifs(a => {
-    const n = completer({ ...a, ...Object.fromEntries(cats.map(c => [c.k, v])) }, nbRef.current);
+    const n = { ...a, ...Object.fromEntries(cats.map(c => [c.k, v])) };
     ecrire('carte.filtres', JSON.stringify(n));
     return n;
   });
+  const toutRallumer = () => { const n = actifsParDefaut(); setActifs(n); ecrire('carte.filtres', JSON.stringify(n)); };
   const basculerPanneau = (k: 'filtres' | 'liste') => setOuverts(o => { const n = { ...o, [k]: !o[k] }; ecrire('carte.panneaux', JSON.stringify(n)); return n; });
 
   /* ── Les données, puis leurs positions ── */
@@ -530,6 +531,19 @@ export default function PageCarte({ onNavigate, onMenu }: {
   }, [places]);
   const visibles = useMemo(() => places.filter(p => p.cats.some(k => actifs[k]) && (p.filtres || []).every(k => actifs[k] !== false)
     && (!q || normer(`${p.titre} ${p.sous} ${p.adresse} ${p.etiquette}`).includes(q))), [places, actifs, q]);
+  /* Plus rien à l'écran à cause des filtres : pourquoi, en une phrase. */
+  const pourquoiVide = useMemo((): { titre: string; texte: string } | null => {
+    if (q || visibles.length || !places.length) return null;
+    const existe = (cats: Cat[]) => cats.some(c => nbCat[c.k]);
+    const on = (cats: Cat[]) => cats.some(c => nbCat[c.k] && actifs[c.k]);
+    if (!on([...CATS_CONTACTS, ...CATS_BIENS])) return {
+      titre: 'Rien de coché',
+      texte: existe(CATS_CONTACTS) ? 'Coche des contacts ou des affaires pour les voir sur la carte.' : 'Coche « Affaires en cours » pour revoir les affaires sur la carte.',
+    };
+    if (existe(CATS_NATURES) && !on(CATS_NATURES)) return { titre: 'Aucune nature cochée', texte: 'Coche au moins une nature (à louer, droit au bail…) pour voir les affaires.' };
+    if (existe(CATS_TYPES) && !on(CATS_TYPES)) return { titre: 'Aucun type de local coché', texte: 'Coche au moins un type de local (bureaux, local commercial…) pour voir les affaires.' };
+    return { titre: 'Aucune affaire pour ces filtres', texte: 'Aucune affaire ne réunit ce qui est coché à la fois dans la nature et dans le type de local.' };
+  }, [q, visibles.length, places.length, nbCat, actifs]);
   /* Ce que le CRM contient, placé ou non (V3.28) : un filtre s'affiche dès
      que sa catégorie existe, même si aucun n'a d'adresse — il montre alors
      « 0 », en pâle, et un appui dit pourquoi. Avant, les mandats sans
@@ -540,11 +554,12 @@ export default function PageCarte({ onNavigate, onMenu }: {
     for (const x of sansAdresse) for (const k of x.cats) n[k] = (n[k] || 0) + 1;
     return n;
   }, [points, sansAdresse]);
-  nbRef.current = nbCrm;
-  /* Les filtres gardés d'une visite d'avant (ou d'avant cette règle) : une
-     section vide se recoche, comme au clic. */
+  /* Les filtres gardés d'une visite d'avant : une section vide se recoche,
+     une fois, à l'ouverture (jamais au clic). */
+  const normalise = useRef(false);
   useEffect(() => {
-    if (!Object.keys(nbCrm).length) return;
+    if (!Object.keys(nbCrm).length || normalise.current) return;
+    normalise.current = true;
     setActifs(a => {
       const n = completer(a, nbCrm);
       if (Object.keys(n).every(k => n[k] === a[k])) return a;
@@ -879,10 +894,22 @@ export default function PageCarte({ onNavigate, onMenu }: {
   /* Qui est sur la carte : une phrase, au ⓘ (V3.28). Avant, un bloc avec
      le nombre et la liste de ceux qui manquent restait affiché sous les
      filtres de l'ordinateur — Alexandre n'en voyait pas l'intérêt. */
+  /* Le « ? » de la carte (22 octobre 2026) — Alexandre : « il faut qu'on
+     comprenne mieux, avec un point d'interrogation ». Comment les pastilles
+     se combinent, ce que dit leur chiffre, qui est sur la carte. */
   const rappelAdresses = (
     <div className={s.rappel}>
-      <span className={s.rappelIc}><Icone nom="info" taille={15} epaisseur={2} /></span>
-      <p className={s.rappelTxt}>Seuls les contacts et les biens dont l’adresse est connue sont sur la carte.</p>
+      <span className={s.rappelIc}><b style={{ fontSize: 13, fontWeight: 800 }}>?</b></span>
+      <div className={s.rappelTxt}>
+        <b className={s.rappelTitre}>Comment marche la carte</b>
+        <ul className={s.rappelListe}>
+          <li><b>{'Dans une rubrique, les pastilles s’additionnent. '}</b>{'Plus tu en allumes, plus il y a de points : « À louer » et « Droit au bail » montrent les deux.'}</li>
+          <li><b>{'D’une rubrique à l’autre, tout doit correspondre. '}</b>{'Une affaire s’affiche si son étape (Affaires en cours…), sa nature et son type de local sont tous allumés.'}</li>
+          <li>{'Les contacts s’ajoutent aux affaires. La nature et le type de local ne trient que les affaires.'}</li>
+          <li>{'Le chiffre d’une pastille : combien il y en a sur la carte. « Toutes » ou « Aucune », en haut d’une rubrique, allume ou éteint tout d’un coup.'}</li>
+          <li>{'Seuls les contacts et les affaires dont l’adresse est connue sont sur la carte.'}</li>
+        </ul>
+      </div>
       <button type="button" className={s.rappelFermer} onClick={() => setVoirSans(false)} aria-label="Fermer">×</button>
       {tableAbsente && <small className={s.sql}>Les adresses sont recherchées à chaque ouverture tant que le fichier outils/sql/carte.sql n’a pas été passé dans Supabase.</small>}
     </div>
@@ -953,6 +980,14 @@ export default function PageCarte({ onNavigate, onMenu }: {
     <div ref={pageRef} className={`${s.page} ${tel ? s.pageTel : ''}`}>
       <FondCarte className={s.fond} surPrete={surPrete} mention={tel ? 'sous-filtres' : 'bas-gauche'}
         centre={CENTRE} zoom={12.6} surErreur={m => setErreur(m)} />
+      {fini && pourquoiVide && (
+        <div className={s.carteVide} role="status">
+          <span className={s.carteVideIc}><Icone nom="info" taille={18} epaisseur={2} /></span>
+          <b>{pourquoiVide.titre}</b>
+          <span>{pourquoiVide.texte}</span>
+          <button type="button" onClick={toutRallumer}>Tout rallumer</button>
+        </div>
+      )}
 
       {progres && (
         <div className={s.progres} role="status">
@@ -987,8 +1022,8 @@ export default function PageCarte({ onNavigate, onMenu }: {
                 </div>
                 {!charge && (
                   <button type="button" className={`${s.replier} ${voirSans ? s.replierOn : ''}`} aria-expanded={voirSans}
-                    onClick={basculerInfo} aria-label="Qui est sur la carte" title="Qui est sur la carte ?">
-                    <Icone nom="info" taille={16} epaisseur={2} />
+                    onClick={basculerInfo} aria-label="Comment marche la carte" title="Comment marche la carte ?">
+                    <b style={{ fontSize: 14, fontWeight: 800, lineHeight: 1 }}>?</b>
                   </button>
                 )}
                 <button type="button" className={s.replier} onClick={() => basculerPanneau('filtres')} aria-label="Replier les filtres" title="Replier">
@@ -1010,24 +1045,25 @@ export default function PageCarte({ onNavigate, onMenu }: {
                   </div>}
                   {CATS_BIENS.some(c => nbCrm[c.k]) && <div className={s.section}>
                     <div className={s.sectionTete}><span>Affaires</span>
-                      {/* « Aucune » seulement quand des contacts restent cochés : sans eux, la carte se viderait (completer). */}
-                      {(!CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]) || CATS_CONTACTS.some(c => nbCat[c.k] && actifs[c.k])) && (
-                        <button type="button" onClick={() => toutSection(CATS_BIENS, !CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]))}>
-                          {CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucune' : 'Toutes'}
-                        </button>
-                      )}
+                      <button type="button" onClick={() => toutSection(CATS_BIENS, !CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]))}>
+                        {CATS_BIENS.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucune' : 'Toutes'}
+                      </button>
                     </div>
                     <div className={s.puces}>{puces(CATS_BIENS)}</div>
                   </div>}
                   {CATS_NATURES.some(c => nbCrm[c.k]) && <div className={s.section}>
                     <div className={s.sectionTete}><span>Nature de l’affaire</span>
-                      {!CATS_NATURES.every(c => !nbCat[c.k] || actifs[c.k]) && <button type="button" onClick={() => toutSection(CATS_NATURES, true)}>Toutes</button>}
+                      <button type="button" onClick={() => toutSection(CATS_NATURES, !CATS_NATURES.every(c => !nbCat[c.k] || actifs[c.k]))}>
+                        {CATS_NATURES.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucune' : 'Toutes'}
+                      </button>
                     </div>
                     <div className={s.puces}>{puces(CATS_NATURES)}</div>
                   </div>}
                   {CATS_TYPES.some(c => nbCrm[c.k]) && <div className={s.section}>
                     <div className={s.sectionTete}><span>Type de local</span>
-                      {!CATS_TYPES.every(c => !nbCat[c.k] || actifs[c.k]) && <button type="button" onClick={() => toutSection(CATS_TYPES, true)}>Tous</button>}
+                      <button type="button" onClick={() => toutSection(CATS_TYPES, !CATS_TYPES.every(c => !nbCat[c.k] || actifs[c.k]))}>
+                        {CATS_TYPES.every(c => !nbCat[c.k] || actifs[c.k]) ? 'Aucun' : 'Tous'}
+                      </button>
                     </div>
                     <div className={s.puces}>{puces(CATS_TYPES)}</div>
                   </div>}
@@ -1112,8 +1148,8 @@ export default function PageCarte({ onNavigate, onMenu }: {
               </label>
               {/* Qui est sur la carte, et qui n'y est pas : un appui (V3.28). */}
               <button type="button" className={`${s.infoTel} ${voirSans ? s.infoTelOn : ''}`} onClick={basculerInfo}
-                aria-expanded={voirSans} aria-label="Qui est sur la carte">
-                <Icone nom="info" taille={19} epaisseur={1.9} />
+                aria-expanded={voirSans} aria-label="Comment marche la carte">
+                <b style={{ fontSize: 18, fontWeight: 800, lineHeight: 1 }}>?</b>
               </button>
             </div>
             {/* Deux boutons plutôt qu'une bande à faire défiler : chacun
