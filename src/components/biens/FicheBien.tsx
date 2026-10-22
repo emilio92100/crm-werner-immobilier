@@ -1793,7 +1793,9 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
       if (!g) return;
       if (!el.dataset.serre) {
         const long = el.querySelector<HTMLElement>('[data-dlong]')?.offsetWidth || 0;
-        largeurGestes.current = { plein: g.scrollWidth + (st ? st.scrollWidth + 12 : 0), gain: Math.max(0, long - 60) };
+        /* « Reconnaissance d’information » redevient « Reconnaissance » au premier cran (23 octobre 2026). */
+        const reco = el.querySelector<HTMLElement>('[data-rlong]')?.offsetWidth || 0;
+        largeurGestes.current = { plein: g.scrollWidth + (st ? st.scrollWidth + 12 : 0), gain: Math.max(0, long - 60) + Math.max(0, reco - 108) };
       }
       const { plein, gain } = largeurGestes.current;
       /* La pastille du propriétaire garde son nom entier tant qu'il tient en
@@ -2213,7 +2215,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
         {recosSansAdresse.map(x => (
           <BoutonAct key={x.id} or onClick={() => setApercuAdresse({ id: x.id, nom: nomReco(x), renvoi: false })}><Ic n="mail" t={13} />{recosSansAdresse.length > 1 ? `L’adresse à ${nomReco(x)}` : 'Lui envoyer l’adresse'}</BoutonAct>
         ))}
-        <BtnTuile onClick={() => setFen({ k: 'reconnaissance' })}><Ic n="plus" t={12} e={2.6} />Nouvelle reconnaissance</BtnTuile>
+        <BtnTuile onClick={() => setFen({ k: 'reconnaissance' })}><Ic n="plus" t={12} e={2.6} />Nouvelle reconnaissance d’information</BtnTuile>
       </>,
     },
     avant ? { k: 'bons', ic: 'calendrier', titre: 'Les bons de visite', etat: 'plustard', statut: 'Après le mandat', detail: 'Prérempli avec le demandeur et le local, et ses autres visites du jour s’il le faut : il protège tes honoraires.' } : {
@@ -2360,7 +2362,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
             {/* Werner (21 octobre 2026) : avant de donner l'adresse, la
                 reconnaissance d'information à faire signer. Au téléphone,
                 elle est en tête de « ⋯ ». */}
-            <button type="button" className={`${b.geste} ${b.gesteReco}`} onClick={() => setFen({ k: 'reconnaissance' })} aria-label="Faire signer une reconnaissance d’information"><Ic n="bouclier" t={15} /><span className={b.gesteTx}>Reconnaissance</span></button>
+            <button type="button" className={`${b.geste} ${b.gesteReco}`} onClick={() => setFen({ k: 'reconnaissance' })} aria-label="Faire signer une reconnaissance d’information"><Ic n="bouclier" t={15} /><span className={b.gesteTx}><span className={b.recoLong} data-rlong="">Reconnaissance d’information</span><span className={b.recoCourt}>Reconnaissance</span></span></button>
             {/* La note, en un clic (V3.81) ; Visite et Point vendeur sont dans « ⋯ ». */}
             <button type="button" className={`${b.geste} ${b.gesteNote}`} onClick={() => setFen({ k: 'note' })} aria-label="Ajouter une note"><Ic n="bulle" t={15} /><span className={b.gesteTx}>Note</span></button>
             <button type="button" className={`${b.geste} ${b.gestePlus}`} aria-label="Plus d’actions" aria-haspopup="menu" aria-expanded={menu === 'plus'} onClick={() => setMenu(menu === 'plus' ? null : 'plus')}><Ic n="points" t={16} e={2.6} /></button>

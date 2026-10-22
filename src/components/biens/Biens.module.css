@@ -1752,6 +1752,10 @@ nav.sousOnglets { background: transparent; border: none; padding: 0; border-radi
 .gesteEnvoi > svg { color: #d86d1b; }
 /* Werner : « Reconnaissance », avant de donner l'adresse (le bouclier). */
 .gesteReco > svg { color: #2e3034; }
+/* Le libellé long, puis court quand la barre se serre (23 octobre 2026). */
+.recoCourt { display: none; }
+.chevalCourt .recoLong { display: none; }
+.chevalCourt .recoCourt { display: inline; }
 .chevalCourt .statutDiff .diffLong { display: none; }
 .chevalCourt .statutDiff .diffCourt { display: inline; }
 .chevalSerre .gesteTx, .chevalSerre .statutEtape .etLong { display: none; }

@@ -6,7 +6,7 @@ import type { BienVente } from '@/lib/biens-vente';
 import { Ic } from '@/components/documents/ApercuActe';
 import { lireClients } from './ChampsBien';
 import { Ch, Erreur, Fenetre, Option, Pills, Section, Suite, sansAccent, type OptionAcheteur } from './FenetresBien';
-import { doublonsContact, nomClient, type ClientMini, type DocLie } from './outils';
+import { creerFicheAcheteur, doublonsContact, nomClient, type ClientMini, type DocLie } from './outils';
 import {
   descriptionLocal, faireReconnaissance, honorairesReconnaissance, lieuReconnaissance, montantReconnaissance, societeDe,
   type ModeReco, type NouveauDestinataire, type ResultatReconnaissance,
@@ -60,6 +60,9 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
   const [duree, setDuree] = useState('12');
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState('');
+  /* Alexandre (23 octobre 2026) : « ajouter le contact s'il n'est pas créé,
+     un truc rapide, enregistré, contact enregistré ». */
+  const [enregistre, setEnregistre] = useState('');
 
   useEffect(() => {
     let vivant = true;
@@ -84,12 +87,40 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
   }, [clients, suggestions]);
 
   const choisir = (c: ClientMini | null) => {
-    setChoisi(c); setNouveau(null); setDoublons([]); setErreur(''); setQ('');
+    setChoisi(c); setNouveau(null); setDoublons([]); setErreur(''); setQ(''); setEnregistre('');
     setEmail(c?.emails?.find(Boolean) || '');
   };
   const changerMode = (m: ModeReco) => { setMode(m); setErreur(''); };
   const dejaPourLui = choisi ? deja.filter(x => x.client_id === choisi.id) : [];
   const n = Number(duree) || 12;
+
+  /* Enregistrer le nouveau contact tout de suite, sans attendre l'envoi :
+     sa fiche existe, la reconnaissance s'y rangera. Les doublons d'abord. */
+  async function enregistrerContact(quandMeme = false) {
+    if (!nouveau) return;
+    setErreur('');
+    if (!(nouveau.nom.trim() || nouveau.prenom.trim() || nouveau.societe.trim())) { setErreur('Son nom, ou celui de sa société ?'); return; }
+    const mail = nouveau.email.trim();
+    if (mail && !emailOk(mail)) { setErreur(`« ${mail} » n’est pas une adresse e-mail valide.`); return; }
+    const p = { ...PERSONNE_VIDE, prenom: nouveau.prenom.trim(), nom: nouveau.nom.trim(), email: mail, telephone: nouveau.telephone.trim() };
+    const soc = nouveau.societe.trim();
+    if (!quandMeme) {
+      const l = doublonsContact(clients || [], p).concat(soc ? (clients || []).filter(c => sansAccent(societeDe(c)) === sansAccent(soc)) : []);
+      const uniques = l.filter((c, i) => l.findIndex(x => x.id === c.id) === i);
+      if (uniques.length) { setDoublons(uniques); return; }
+    }
+    setOccupe(true);
+    try {
+      const c = await creerFicheAcheteur(p, soc ? { denomination: soc } : null);
+      setClients(l => [c, ...(l || [])]);
+      choisir(c);
+      setEnregistre('Contact enregistré dans tes contacts, en demandeur « non filtré » : sa recherche se complète plus tard, depuis sa fiche.');
+    } catch (e) {
+      setErreur((e as Error).message);
+    } finally {
+      setOccupe(false);
+    }
+  }
 
   async function valider(relire: boolean, quandMeme = false) {
     setErreur('');
@@ -142,6 +173,16 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
         </button>
       </>}>
 
+      {/* Alexandre (23 octobre 2026) : « un petit message qui explique comment ça se passe ». */}
+      <div className={b.groupe}>
+        <div className={b.groupeT}><Ic n="info" t={14} />Comment ça se passe</div>
+        <div className={b.reste} style={{ background: '#fff', borderColor: '#eeeeed' }}>
+          <div style={{ color: '#334155' }}><Ic n="personne" t={14} /><span>{'Tu choisis le demandeur dans tes contacts, ou tu l’enregistres ici en quelques secondes.'}</span></div>
+          <div style={{ color: '#334155' }}><Ic n="plume" t={14} /><span>{'Il signe : sur son téléphone, avec un lien et un code reçus par e-mail, ou sur ton écran, devant le local. Le document ne dit jamais l’adresse, seulement le secteur.'}</span></div>
+          <div style={{ color: '#334155' }}><Ic n="mail" t={14} /><span>{'Dès sa signature, il reçoit l’adresse et la fiche du local ; toi, le document signé, et une relance pour l’appeler et caler la visite. Tout est rangé sur sa fiche et sur l’affaire.'}</span></div>
+        </div>
+      </div>
+
       <Section ic="personne" c="#2e3034" f="#f4f4f5" titre="1. Pour qui ?">
         {choisi ? (
           <div className={b.qui}>
@@ -150,6 +191,7 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
               <div><b>{[societeDe(choisi), nomClient(choisi)].filter(Boolean).filter((x, i, l) => l.indexOf(x) === i).join(' · ')}</b><small>{[choisi.telephones?.[0], choisi.emails?.[0]].filter(Boolean).join(' · ') || 'Fiche du CRM'}</small></div>
               <button type="button" className={b.notaireChanger} disabled={occupe} onClick={() => choisir(null)}>Changer</button>
             </div>
+            {enregistre && <div className={b.ventile} role="status"><Ic n="check" t={15} /><span>{enregistre}</span></div>}
           </div>
         ) : nouveau ? (
           <>
@@ -160,8 +202,13 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
               {champ('email', mode === 'en_ligne' ? 'E-mail (pour signer)' : 'E-mail (facultatif)', { mode: 'email' })}
               {champ('telephone', 'Téléphone', { mode: 'tel' })}
             </div>
-            <div className={s.chAide}>{'Sa fiche se crée dans tes contacts, en demandeur « non filtré » : sa recherche (surface, budget, secteurs) se complète plus tard, depuis sa fiche.'}</div>
-            <button type="button" className={b.lien} disabled={occupe} onClick={() => { setNouveau(null); setDoublons([]); setErreur(''); }}>Chercher plutôt dans mes contacts</button>
+            <div className={s.chAide}>{'Enregistre-le maintenant : sa fiche se crée dans tes contacts, en demandeur « non filtré », et la reconnaissance s’y rangera, avec tout son historique. Sa recherche (surface, budget, secteurs) se complète plus tard, depuis sa fiche.'}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+              <button type="button" className={b.notaireAjout} disabled={occupe} onClick={() => { void enregistrerContact(doublons.length > 0); }}>
+                <Ic n="check" t={13} e={2.6} />{occupe ? 'Enregistrement…' : doublons.length ? 'L’enregistrer quand même' : 'Enregistrer le contact'}
+              </button>
+              <button type="button" className={b.lien} disabled={occupe} onClick={() => { setNouveau(null); setDoublons([]); setErreur(''); }}>Chercher plutôt dans mes contacts</button>
+            </div>
           </>
         ) : (
           <>
