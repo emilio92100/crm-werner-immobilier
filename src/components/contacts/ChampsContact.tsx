@@ -15,6 +15,8 @@ import { Ic } from '@/components/documents/ApercuActe';
 import BlocRepliable from '@/components/documents/BlocRepliable';
 import AvatarContact from './AvatarContact';
 import SaisieAdresse from '@/components/shared/SaisieAdresse';
+import RechercheSociete from '@/components/shared/RechercheSociete';
+import { qualiteDe, rcsCourt, sirenAere } from '@/lib/entreprises';
 import { CaseLigne, CaseTout, STYLE_CHOISI } from '@/components/shared/Selection';
 import sd from '@/components/documents/Documents.module.css';
 import c from './Contacts.module.css';
@@ -190,7 +192,11 @@ const enSonNom = (t: TypeContact[]) => {
    une SAS d'abord, c'est le cas le plus courant. */
 const SOCIETE_VIDE = { denomination: '', forme: 'SAS', rcs: '', siege: '', qualite: '' };
 
-export function ChampsPro({ types, pro, onChange, cls }: { types: TypeContact[]; pro: InfosPro; onChange: (p: InfosPro) => void; cls: Cls }) {
+export function ChampsPro({ types, pro, onChange, cls, prenom = '', nom = '' }: {
+  types: TypeContact[]; pro: InfosPro; onChange: (p: InfosPro) => void; cls: Cls;
+  /* Son nom : s'il est parmi les dirigeants de la société retrouvée, sa fonction se remplit. */
+  prenom?: string; nom?: string;
+}) {
   const set = (k: keyof InfosPro) => (x: string) => onChange({ ...pro, [k]: x });
   const bloc = cls.bloc || ((titre: string, enfants: ReactNode) => <div className={c.groupe}><div className={c.groupeT}>{titre}</div>{enfants}</div>);
   return (
@@ -256,6 +262,14 @@ export function ChampsPro({ types, pro, onChange, cls }: { types: TypeContact[];
           </div>
           {pro.structure && (
             <>
+              {/* 23 octobre 2026 : le nom ou le SIREN, et le registre remplit le reste. */}
+              <RechercheSociete classeChamp={cls.input}
+                aide="Son nom, sa forme, son SIREN et son siège sont remplis : vérifie-les. L’enseigne et l’activité, c’est toi."
+                onChoisir={x => onChange({ ...pro, structure: {
+                  ...pro.structure!, denomination: x.denomination, forme: FORMES_SOCIETE.includes(x.forme) ? x.forme : pro.structure!.forme,
+                  siren: sirenAere(x.siren), rcs: rcsCourt(x), siege: x.siege || pro.structure!.siege,
+                  qualite: pro.structure!.qualite || qualiteDe(x, prenom, nom) || '',
+                } })} />
               <div className={cls.row}>
                 <Champ cls={cls} lib="Nom de la société" ph="SAS Boulangerie Léa" v={pro.structure.denomination} onV={x => onChange({ ...pro, structure: { ...pro.structure!, denomination: x } })} />
                 <Champ cls={cls} lib="Enseigne · facultatif" ph="Boulangerie Léa" v={pro.structure.enseigne || ''} onV={x => onChange({ ...pro, structure: { ...pro.structure!, enseigne: x } })} />

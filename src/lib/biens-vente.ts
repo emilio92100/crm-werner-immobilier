@@ -1378,7 +1378,9 @@ export function versMandatVente(b: BienVente, base: Donnees): Donnees {
     bienVenteId: b.id,
     ...(nat ? { nature: nat } : {}),
     qui, conso: qui === 'sci' ? 'non' : 'oui',
-    ...(qui === 'sci' ? { sciNom: txt(d, 'sciNom') } : {}),
+    /* 23 octobre 2026 : sa forme, son siège, son immatriculation, quand la
+       fiche de l'affaire les a (retrouvés dans le registre national). */
+    ...(qui === 'sci' ? { sciNom: txt(d, 'sciNom'), ...garder('sciForme'), ...garder('sciSiege'), ...garder('sciRcs') } : {}),
     vendeurs: vs.length ? vs : base.vendeurs,
     adresse: txt(d, 'adresse'), cp: txt(d, 'cp'), ville: txt(d, 'ville'), description,
     copro: d.copro === 'oui' ? 'oui' : 'non',

@@ -2,7 +2,9 @@
 import { lireMontant } from '@/lib/montant';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { enLettres } from '@/lib/mandat';
-import { PERSONNE_VIDE, type Champ, type ChampSimple, type Donnees, type Personne } from '@/lib/actes';
+import { PERSONNE_VIDE, lirePersonnes, type Champ, type ChampSimple, type Donnees, type Personne } from '@/lib/actes';
+import RechercheSociete from '@/components/shared/RechercheSociete';
+import { formeLongue, immatriculation, qualiteDe, type SocieteTrouvee } from '@/lib/entreprises';
 import { Croix, Ic } from './ApercuActe';
 import AjoutBien from './ChoixBienCrm';
 import SaisieAdresse, { adresseProposee, type AdresseChoisie } from '@/components/shared/SaisieAdresse';
@@ -349,10 +351,32 @@ function partiesAdresse(p: AdresseChoisie, cases: string[]): Record<string, stri
   return x;
 }
 
+/* Une société retrouvée dans le registre (23 octobre 2026), rangée dans les
+   cases d'un document : sa raison sociale, sa forme (le capital, le registre
+   ne le donne pas), son siège, son immatriculation ; et la qualité de celui
+   qui signe pour elle, s'il en est le dirigeant et qu'elle n'est pas écrite. */
+function sciDuRegistre(x: SocieteTrouvee, d: Donnees): Record<string, string> {
+  const out: Record<string, string> = { sciNom: x.denomination, sciRcs: immatriculation(x) };
+  const forme = formeLongue(x);
+  if (forme) out.sciForme = forme;
+  if (x.siege) out.sciSiege = x.siege;
+  const qui = lirePersonnes(d.vendeurs ?? d.acquereurs ?? d.destinataires)[0];
+  const pouvoir = typeof d.sciPouvoir === 'string' ? d.sciPouvoir.trim() : '';
+  if (qui && !pouvoir) {
+    const q = qualiteDe(x, qui.prenom, qui.nom);
+    const elle = qui.civilite === 'Madame';
+    if (q) out.sciPouvoir = (elle ? ({ 'Gérant': 'gérante', 'Président': 'présidente', 'Directeur général': 'directrice générale' } as Record<string, string>)[q] : '') || q.toLowerCase();
+  }
+  return out;
+}
+
 /* ── La saisie d'une question simple (V3.154) ──
    Partagée par les questions d'une étape et celles d'une carte « groupes ». */
-function SaisieSimple({ c, id, v, manque, off, onChange, onAdresse }: {
+function SaisieSimple({ c, id, v, manque, off, onChange, onAdresse, onSociete }: {
   c: ChampSimple; id: string; v: unknown; manque: boolean; off: boolean; onChange: (x: unknown) => void;
+  /* 23 octobre 2026 : la raison sociale se retrouve dans le registre ; le
+     choix remplit aussi la forme, le siège et l'immatriculation. */
+  onSociete?: (x: SocieteTrouvee) => void;
   /* V3.175 : l'adresse d'un bien (« adresse », avec « cp » et « ville » à
      côté) se propose pendant la frappe ; le choix remplit les trois cases. */
   onAdresse?: (p: AdresseChoisie) => void;
@@ -361,6 +385,17 @@ function SaisieSimple({ c, id, v, manque, off, onChange, onAdresse }: {
     return (
       <SaisieAdresse id={id} v={typeof v === 'string' ? v : ''} off={off} etiquette={c.lib} onChange={onChange} onChoisir={onAdresse}
         classeChamp={`${s.input} ${manque ? s.inputManque : ''}`} placeholder={c.exemple ? `Ex : ${c.exemple} — tape le début` : 'Tape le début : 12 rue de Silly…'} />
+    );
+  }
+  if (c.t === 'texte' && c.cle === 'sciNom' && onSociete) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
+        <RechercheSociete classeChamp={s.input} off={off} onChoisir={onSociete}
+          aide="Raison sociale, forme, siège et immatriculation sont remplis : ajoute le capital à la forme, et vérifie." />
+        <input id={id} className={`${s.input} ${manque ? s.inputManque : ''}`} disabled={off} autoComplete="off"
+          value={typeof v === 'string' ? v : ''} placeholder={c.exemple ? `Ou écris-la : ${c.exemple}` : 'Ou écris-la'}
+          onChange={e => onChange(e.target.value)} />
+      </div>
     );
   }
   if (c.t === 'zone') return <ZoneTexte id={id} v={typeof v === 'string' ? v : ''} manque={manque} off={off} exemple={c.exemple} onChange={onChange} />;
@@ -507,6 +542,7 @@ export function ChampActe({ c, d, maj, off, bloc = false, sansLib = false, voisi
   let controle: React.ReactNode = null;
   if (c.t === 'texte' || c.t === 'date' || c.t === 'heure' || c.t === 'zone' || c.t === 'nombre' || c.t === 'euros') {
     controle = <SaisieSimple c={c} id={id} v={v} manque={manque} off={off} onChange={x => maj(c.cle, x)}
+      onSociete={c.cle === 'sciNom' ? x => { for (const [k, y] of Object.entries(sciDuRegistre(x, d))) maj(k, y); } : undefined}
       onAdresse={voisins ? p => { for (const [k, x] of Object.entries(partiesAdresse(p, voisins))) maj(k, x); } : undefined} />;
   } else if (c.t === 'groupes') {
     controle = <ChampGroupes c={c} d={d} v={v} off={off} onChange={x => maj(c.cle, x)} />;

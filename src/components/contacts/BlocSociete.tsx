@@ -6,6 +6,8 @@ import { Ic } from '@/components/documents/ApercuActe';
 import { FORMES_SOCIETE, ROLES_SOCIETE, lireStructure, type Associe, type Structure } from '@/lib/contacts';
 import { lireClients } from '@/components/biens/ChampsBien';
 import type { ClientMini } from '@/components/biens/outils';
+import RechercheSociete from '@/components/shared/RechercheSociete';
+import { fonctionCourte, nomDirigeant, qualiteDe, rcsCourt, sirenAere } from '@/lib/entreprises';
 import c from './Contacts.module.css';
 
 /* ═══ « Sa société » (V3.30) ════════════════════════════════════════════════
@@ -115,6 +117,16 @@ export default function BlocSociete({ client, notes, onEnregistrer, onFiche, ouv
             <span><b>Reprendre ce qui est noté dans « À savoir »</b><small>{[suggestion.denomination, suggestion.associes.length ? `${suggestion.associes.length} associé${suggestion.associes.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ')} : tu vérifies avant d’enregistrer.</small></span>
           </button>
         )}
+        {/* 23 octobre 2026 : le nom ou le SIREN ; le registre remplit le reste,
+            et ses dirigeants deviennent les associés s'il n'y en a pas encore. */}
+        <RechercheSociete classeChamp={c.in}
+          aide="Nom, forme, RCS et siège sont remplis, et ses dirigeants ajoutés aux associés s’il n’y en avait pas. Vérifie, puis « Enregistrer »."
+          onChoisir={x => setEditBrut(e => (e ? {
+            ...e, denomination: x.denomination, forme: FORMES_SOCIETE.includes(x.forme) ? x.forme : e.forme,
+            rcs: rcsCourt(x), siege: x.siege || e.siege, siren: sirenAere(x.siren),
+            qualite: e.qualite || qualiteDe(x, client.prenom || '', client.nom || '') || '',
+            associes: e.associes.length ? e.associes : x.dirigeants.slice(0, 6).map(d => ({ id: idNeuf(), nom: nomDirigeant(d), role: fonctionCourte(d.qualite), tel: '', email: '' })),
+          } : e))} />
         <div className={c.g2}>
           <label className={c.ch}><span>Nom de la société</span><input className={c.in} value={edit.denomination} placeholder="SCI AVIENA" onChange={e => setEdit({ ...edit, denomination: e.target.value })} /></label>
           <div className={c.ch}>

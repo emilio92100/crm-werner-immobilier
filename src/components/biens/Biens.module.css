@@ -2041,3 +2041,54 @@ nav.sousOnglets > span[aria-hidden="true"] { border-radius: 13px; }
 
 /* V3.227 — Les quartiers proposés sous le champ Quartier. */
 .qChoix { margin-top: 10px; }
+
+/* ══ 23 octobre 2026 — La reconnaissance depuis la fiche d'un contact ══════
+   « Pour quelle affaire ? » : rien n'est listé tant qu'il ne tape rien (une
+   adresse, une ville, une référence, un montant) ; il coche, puis continue.
+   Et le formulaire des coordonnées du demandeur (ce qui manque se colore). */
+.recoAff {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 7px 12px 7px 7px; box-sizing: border-box;
+  border: 1.5px solid #eaeae9; border-radius: 14px; background: #fff; text-align: left; font: inherit; color: inherit; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.recoAff:hover:not([data-fige]) { border-color: #cbd5e1; }
+.recoAff[data-fige] { cursor: default; border-color: #f9cca9; background: #fbf4ef; }
+.recoAffOn, .recoAffOn:hover:not([data-fige]) { border-color: #f08c42; background: #fbf4ef; }
+.recoAff img, .recoAffIc {
+  width: 64px; height: 48px; border-radius: 9px; object-fit: cover; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; background: #f4f4f5; color: #64748b;
+}
+.recoAffTx { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.recoAffTx b { font-size: 14px; color: var(--emilio); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recoAffTx small { font-size: 12.5px; color: #64748b; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recoAffTx small:last-child { white-space: normal; }
+.recoAffTx em { font-style: normal; font-weight: 700; color: #c2621c; }
+.recoCoche {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid #d4d4d8; background: #fff;
+  display: flex; align-items: center; justify-content: center; color: transparent; transition: background .15s, border-color .15s;
+}
+.recoAffOn .recoCoche { background: #f08c42; border-color: #f08c42; color: #fff; }
+.recoListe { display: flex; flex-direction: column; gap: 8px; }
+.recoEtape { display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #f4f4f5; color: #475569; }
+.recoNouveau { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; font-size: 13.5px; font-weight: 700; color: var(--emilio); }
+.recoNouveau > svg { color: #c2621c; }
+.recoNouveau > button { margin-left: auto; }
+.recoManque [role='radio'][aria-checked='false'] { border-color: #f4c39d; background: #fff9f5; }
+.recoFait { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 8px 4px 4px; }
+.recoFaitRond {
+  width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;
+}
+.recoFait h4 { margin: 0; font: 800 18px/1.3 'Plus Jakarta Sans', sans-serif; color: var(--emilio); }
+.recoFait p { margin: 0; font-size: 13.5px; line-height: 1.55; color: #475569; max-width: 520px; }
+
+/* « Ajouter le propriétaire » : son interlocuteur, parmi les dirigeants
+   de la société retrouvée dans le registre (23 octobre 2026). */
+.dirigeants { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 12.5px; color: #64748b; }
+.dirigeants > span { flex-basis: 100%; }
+.dirigeant {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1.5px solid #eaeae9; background: #fff;
+  font: 700 12.5px 'DM Sans', sans-serif; color: var(--emilio); cursor: pointer;
+}
+.dirigeant:hover:not(:disabled) { border-color: #f2b383; background: #fffaf6; }
+.dirigeant > svg { color: #c2621c; }

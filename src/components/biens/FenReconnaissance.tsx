@@ -1,14 +1,18 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AvatarContact, { personneDe } from '@/components/contacts/AvatarContact';
 import { PERSONNE_VIDE } from '@/lib/actes';
 import type { BienVente } from '@/lib/biens-vente';
 import { Ic } from '@/components/documents/ApercuActe';
 import { lireClients } from './ChampsBien';
-import { Ch, Erreur, Fenetre, Option, Pills, Section, Suite, sansAccent, type OptionAcheteur } from './FenetresBien';
+import { titreBien } from '@/lib/biens-vente';
+import SaisieAdresse from '@/components/shared/SaisieAdresse';
+import RechercheSociete from '@/components/shared/RechercheSociete';
+import { rcsCourt, sirenAere } from '@/lib/entreprises';
+import { Ch, ChG, Erreur, Fenetre, Option, Pills, Section, Suite, sansAccent, type OptionAcheteur } from './FenetresBien';
 import { creerFicheAcheteur, doublonsContact, nomClient, type ClientMini, type DocLie } from './outils';
 import {
-  descriptionLocal, faireReconnaissance, honorairesReconnaissance, lieuReconnaissance, montantReconnaissance, societeDe,
+  COORD_VIDE, coordManquantes, descriptionLocal, faireReconnaissance, honorairesReconnaissance, lieuReconnaissance, montantReconnaissance, societeDe,
   type ModeReco, type NouveauDestinataire, type ResultatReconnaissance,
 } from './reconnaissance';
 import s from '@/components/documents/Documents.module.css';
@@ -22,9 +26,23 @@ import b from './Biens.module.css';
    signe, ce que devient l'adresse une fois signé (elle part toute seule,
    d'office), combien de temps il s'engage. Le reste (le local, son secteur —
    jamais l'adresse —, le montant, les honoraires) vient de l'affaire, et se
-   lit dans l'aperçu avant d'envoyer. La suite : reconnaissance.ts. */
+   lit dans l'aperçu avant d'envoyer. La suite : reconnaissance.ts.
 
-const VIDE: NouveauDestinataire = { prenom: '', nom: '', societe: '', email: '', telephone: '' };
+   23 octobre 2026 — Alexandre : « l'obliger à mettre ces éléments pour que
+   la reconnaissance parte, et comme ça le contact a un peu plus d'info :
+   civilité, nom, prénom, numéro, mail ; l'adresse s'il y en a, et la société
+   s'il veut faire l'affaire au nom d'une société ». Un seul formulaire, qu'il
+   choisisse un contact (rempli depuis sa fiche) ou qu'il en crée un : ce qui y
+   est tapé va dans le document, et ce qui manquait sur la fiche s'y ajoute. */
+
+/* Une liste lisible : « sa civilité, son téléphone et son e-mail ». */
+const enListe = (l: string[]) => (l.length > 1 ? `${l.slice(0, -1).join(', ')} et ${l[l.length - 1]}` : l[0] || '');
+/* Les coordonnées d'une fiche, pour remplir le formulaire. */
+const coordDe = (c: ClientMini): NouveauDestinataire => ({
+  civilite: c.civilite === 'Madame' || c.civilite === 'Monsieur' ? c.civilite : '',
+  prenom: c.prenom || '', nom: c.nom || '', societe: societeDe(c),
+  email: (c.emails || []).find(Boolean) || '', telephone: (c.telephones || []).find(Boolean) || '', adresse: c.adresse || '',
+});
 const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
 const dateCourte = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
 
@@ -35,8 +53,12 @@ function phraseDeja(x: DocLie): string {
   return `Une reconnaissance est déjà en préparation pour lui, depuis le ${dateCourte(x.created_at)}.`;
 }
 
-export default function FenReconnaissance({ bien, suggestions = [], deja = [], onFermer, onFait, onVoir, onCompleterAdresse }: {
+export default function FenReconnaissance({ bien, pour, suggestions = [], deja = [], onRetour, onFermer, onFait, onVoir, onCompleterAdresse }: {
   bien: BienVente;
+  /* Venu de la fiche d'un contact : il est choisi d'avance (l'id de sa fiche). */
+  pour?: string;
+  /* Venu de la fiche d'un contact : revenir au choix de l'affaire. */
+  onRetour?: () => void;
   /* Les demandeurs de cette affaire (visites, présentations, rapprochements). */
   suggestions?: OptionAcheteur[];
   /* Les reconnaissances de cette affaire déjà faites (pas annulées). */
@@ -50,9 +72,12 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
   const [clients, setClients] = useState<ClientMini[] | null>(null);
   const [q, setQ] = useState('');
   const [choisi, setChoisi] = useState<ClientMini | null>(null);
-  const [nouveau, setNouveau] = useState<NouveauDestinataire | null>(null);
+  /* Un contact à créer : le formulaire, sans fiche derrière. */
+  const [nouveau, setNouveau] = useState(false);
+  const [coord, setCoord] = useState<NouveauDestinataire>(COORD_VIDE);
+  /* Une fois qu'il a tenté d'envoyer, ce qui manque se colore. */
+  const [essaye, setEssaye] = useState(false);
   const [doublons, setDoublons] = useState<ClientMini[]>([]);
-  const [email, setEmail] = useState('');
   const [mode, setMode] = useState<ModeReco>('en_ligne');
   /* Alexandre : « est-ce que tout peut être autonome ? ». Oui, d'office :
      l'adresse part toute seule dès sa signature. */
@@ -64,9 +89,26 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
      un truc rapide, enregistré, contact enregistré ». */
   const [enregistre, setEnregistre] = useState('');
 
+  /* Relues fraîches : une fiche complétée par une reconnaissance précédente
+     doit se montrer complète. Le contact venu de sa fiche est choisi d'emblée. */
+  const pourId = useRef(pour);
+  /* Le formulaire : ce qui manque y est montré (défilé jusqu'au premier champ). */
+  const refQui = useRef<HTMLDivElement>(null);
+  const montrerManque = () => requestAnimationFrame(() => {
+    const el = refQui.current?.querySelector<HTMLElement>('[data-manque], [aria-invalid="true"]');
+    if (!el) return;
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const champ = el.matches('input') ? el : el.querySelector<HTMLElement>('button');
+    champ?.focus({ preventScroll: true });
+  });
   useEffect(() => {
     let vivant = true;
-    lireClients().then(l => { if (vivant) setClients(l); }).catch(e => { if (vivant) { setClients([]); setErreur((e as Error).message); } });
+    lireClients(true).then(l => {
+      if (!vivant) return;
+      setClients(l);
+      const c = pourId.current ? l.find(x => x.id === pourId.current) : null;
+      if (c) { setChoisi(c); setCoord(coordDe(c)); }
+    }).catch(e => { if (vivant) { setClients([]); setErreur((e as Error).message); } });
     return () => { vivant = false; };
   }, []);
 
@@ -87,33 +129,51 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
   }, [clients, suggestions]);
 
   const choisir = (c: ClientMini | null) => {
-    setChoisi(c); setNouveau(null); setDoublons([]); setErreur(''); setQ(''); setEnregistre('');
-    setEmail(c?.emails?.find(Boolean) || '');
+    setChoisi(c); setNouveau(false); setDoublons([]); setErreur(''); setQ(''); setEnregistre(''); setEssaye(false);
+    setCoord(c ? coordDe(c) : COORD_VIDE);
   };
+  const manque = coordManquantes(coord);
+  /* Ce que sa fiche n'a pas encore, et qui s'y ajoutera. */
+  const aCompleter = choisi ? coordManquantes(coordDe(choisi)) : [];
   const changerMode = (m: ModeReco) => { setMode(m); setErreur(''); };
   const dejaPourLui = choisi ? deja.filter(x => x.client_id === choisi.id) : [];
   const n = Number(duree) || 12;
+
+  /* Les doublons possibles d'un contact à créer (nom, téléphone, e-mail, société). */
+  const doublonsDe = (k: NouveauDestinataire) => {
+    const p = { ...PERSONNE_VIDE, prenom: k.prenom.trim(), nom: k.nom.trim(), email: k.email.trim(), telephone: k.telephone.trim() };
+    const soc = k.societe.trim();
+    const l = doublonsContact(clients || [], p).concat(soc ? (clients || []).filter(c => sansAccent(societeDe(c)) === sansAccent(soc)) : []);
+    return l.filter((c, i) => l.findIndex(x => x.id === c.id) === i);
+  };
+  /* Ce qui empêche de partir, dit en clair (ou rien). */
+  const bloque = (): string => {
+    if (manque.length) return `Pour que la reconnaissance parte, il manque ${enListe(manque)}.`;
+    if (!emailOk(coord.email)) return `« ${coord.email.trim()} » n’est pas une adresse e-mail valide.`;
+    return '';
+  };
 
   /* Enregistrer le nouveau contact tout de suite, sans attendre l'envoi :
      sa fiche existe, la reconnaissance s'y rangera. Les doublons d'abord. */
   async function enregistrerContact(quandMeme = false) {
     if (!nouveau) return;
     setErreur('');
-    if (!(nouveau.nom.trim() || nouveau.prenom.trim() || nouveau.societe.trim())) { setErreur('Son nom, ou celui de sa société ?'); return; }
-    const mail = nouveau.email.trim();
-    if (mail && !emailOk(mail)) { setErreur(`« ${mail} » n’est pas une adresse e-mail valide.`); return; }
-    const p = { ...PERSONNE_VIDE, prenom: nouveau.prenom.trim(), nom: nouveau.nom.trim(), email: mail, telephone: nouveau.telephone.trim() };
-    const soc = nouveau.societe.trim();
+    const motif = bloque();
+    if (motif) { setEssaye(true); setErreur(motif); montrerManque(); return; }
     if (!quandMeme) {
-      const l = doublonsContact(clients || [], p).concat(soc ? (clients || []).filter(c => sansAccent(societeDe(c)) === sansAccent(soc)) : []);
-      const uniques = l.filter((c, i) => l.findIndex(x => x.id === c.id) === i);
-      if (uniques.length) { setDoublons(uniques); return; }
+      const d = doublonsDe(coord);
+      if (d.length) { setDoublons(d); return; }
     }
     setOccupe(true);
     try {
-      const c = await creerFicheAcheteur(p, soc ? { denomination: soc } : null);
+      const soc = coord.societe.trim();
+      const p = { ...PERSONNE_VIDE, civilite: coord.civilite, prenom: coord.prenom.trim(), nom: coord.nom.trim(), email: coord.email.trim().toLowerCase(), telephone: coord.telephone.trim(), adresse: coord.adresse.trim() };
+      const inf = coord.societeInfos || {};
+      const c = await creerFicheAcheteur(p, soc ? { denomination: soc, ...inf } : null);
       setClients(l => [c, ...(l || [])]);
+      const garde = coord;
       choisir(c);
+      setCoord(garde);
       setEnregistre('Contact enregistré dans tes contacts, en demandeur « non filtré » : sa recherche se complète plus tard, depuis sa fiche.');
     } catch (e) {
       setErreur((e as Error).message);
@@ -125,20 +185,15 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
   async function valider(relire: boolean, quandMeme = false) {
     setErreur('');
     if (!choisi && !nouveau) { setErreur('Pour qui ? Choisis un contact, ou crée sa fiche.'); return; }
-    if (nouveau && !(nouveau.nom.trim() || nouveau.prenom.trim() || nouveau.societe.trim())) { setErreur('Son nom, ou celui de sa société ?'); return; }
-    const mail = (nouveau ? nouveau.email : email).trim();
-    if (mode === 'en_ligne' && !relire && !emailOk(mail)) { setErreur('Son adresse e-mail ? C’est là que partent le lien de signature et son code.'); return; }
-    if (mail && !emailOk(mail)) { setErreur(`« ${mail} » n’est pas une adresse e-mail valide.`); return; }
+    const motif = bloque();
+    if (motif) { setEssaye(true); setErreur(motif); montrerManque(); return; }
     if (nouveau && !quandMeme) {
-      const p = { ...PERSONNE_VIDE, prenom: nouveau.prenom, nom: nouveau.nom, email: mail, telephone: nouveau.telephone };
-      const soc = nouveau.societe.trim();
-      const l = doublonsContact(clients || [], p).concat(soc ? (clients || []).filter(c => sansAccent(societeDe(c)) === sansAccent(soc)) : []);
-      const uniques = l.filter((c, i) => l.findIndex(x => x.id === c.id) === i);
-      if (uniques.length) { setDoublons(uniques); return; }
+      const d = doublonsDe(coord);
+      if (d.length) { setDoublons(d); return; }
     }
     setOccupe(true);
     try {
-      const r = await faireReconnaissance({ bien, client: choisi, nouveau, email: mail, duree: n, signature: mode, adresseApres: auto ? 'auto' : 'main', relire });
+      const r = await faireReconnaissance({ bien, client: choisi, coord, duree: n, signature: mode, adresseApres: auto ? 'auto' : 'main', relire });
       onFait(r);
     } catch (e) {
       setErreur((e as Error).message);
@@ -146,17 +201,62 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
     }
   }
 
-  const champ = (k: keyof NouveauDestinataire, lib: string, o: { auto?: boolean; mode?: 'tel' | 'email'; large?: boolean; exemple?: string } = {}) => (
-    <Ch lib={lib} large={o.large}>
-      <input className={s.input} value={nouveau ? nouveau[k] : ''} autoFocus={o.auto} inputMode={o.mode} autoComplete="off" placeholder={o.exemple}
-        onChange={e => { if (nouveau) setNouveau({ ...nouveau, [k]: e.target.value }); setDoublons([]); setErreur(''); }} />
-    </Ch>
+  /* Un champ du formulaire (une fonction, pas un composant : le champ garde
+     son curseur à chaque lettre, AGENTS.md §2.4). */
+  const champ = (k: Exclude<keyof NouveauDestinataire, 'civilite' | 'societeInfos'>, lib: string, o: { auto?: boolean; mode?: 'tel' | 'email'; large?: boolean; exemple?: string; liste?: string[]; requis?: boolean } = {}) => {
+    const vide = o.requis && essaye && (k === 'email' ? !emailOk(coord.email) : k === 'telephone' ? coord.telephone.replace(/\D/g, '').length < 9 : !coord[k].trim());
+    const idListe = o.liste && o.liste.length > 1 ? `reco-${k}` : undefined;
+    return (
+      <Ch lib={lib} large={o.large}>
+        <input className={`${s.input} ${vide ? s.inputManque : ''}`} value={coord[k]} autoFocus={o.auto} inputMode={o.mode} autoComplete="off" placeholder={o.exemple} list={idListe}
+          aria-invalid={vide || undefined}
+          onChange={e => { setCoord(x => ({ ...x, [k]: e.target.value })); setDoublons([]); setErreur(''); }} />
+        {idListe && <datalist id={idListe}>{(o.liste || []).map(x => <option key={x} value={x} />)}</datalist>}
+      </Ch>
+    );
+  };
+  /* Le formulaire des coordonnées : le même pour un contact choisi et pour un nouveau. */
+  const formulaire = (
+    <>
+      <ChG lib={essaye && !coord.civilite ? 'Civilité : à choisir' : 'Civilité'}>
+        <div className={essaye && !coord.civilite ? b.recoManque : undefined} data-manque={essaye && !coord.civilite ? '' : undefined}>
+          <Pills options={[{ v: 'Monsieur' as const, l: 'Monsieur' }, { v: 'Madame' as const, l: 'Madame' }]} v={coord.civilite}
+            onChange={v => { setCoord(x => ({ ...x, civilite: v })); setErreur(''); }} />
+        </div>
+      </ChG>
+      <div className={b.g2}>
+        {champ('prenom', 'Prénom', { auto: nouveau && !coord.prenom, requis: true })}
+        {champ('nom', 'Nom', { requis: true })}
+        {champ('telephone', 'Téléphone', { mode: 'tel', requis: true, exemple: '06 12 34 56 78', liste: choisi?.telephones?.filter(Boolean) })}
+        {champ('email', 'E-mail', { mode: 'email', requis: true, exemple: 'adresse@exemple.fr', liste: choisi?.emails?.filter(Boolean) })}
+        {/* Alexandre : « pour l'adresse, il faut que ça fasse l'API, comme
+            partout » : la base adresse nationale, proposée pendant la frappe. */}
+        <div className={b.chF} style={{ gridColumn: '1 / -1' }}>
+          <span>Son adresse (s’il en a une)</span>
+          <SaisieAdresse v={coord.adresse} classeChamp={s.input} etiquette="Son adresse" placeholder="Tape le début : 12 rue de Rivoli…"
+            onChange={x => { setCoord(c => ({ ...c, adresse: x })); setErreur(''); }} />
+        </div>
+        {/* 23 octobre 2026 : retrouvée dans le registre (nom ou SIREN), ou écrite à la main. */}
+        <div className={b.chF} style={{ gridColumn: '1 / -1' }}>
+          <span>Sa société (s’il fait l’affaire au nom d’une société)</span>
+          <RechercheSociete classeChamp={s.input} off={occupe} etiquette=""
+            aide="Son nom et son immatriculation iront dans le document ; sa forme, son SIREN et son siège, sur sa fiche."
+            onChoisir={x => {
+              setCoord(c => ({ ...c, societe: x.denomination, societeInfos: { forme: x.forme, siren: sirenAere(x.siren), rcs: rcsCourt(x), siege: x.siege } }));
+              setErreur('');
+            }} />
+          <input className={s.input} value={coord.societe} autoComplete="off" aria-label="Nom de sa société"
+            placeholder={coord.societeInfos ? '' : 'Ou écris son nom : SARL Le Comptoir, en cours de création'}
+            onChange={e => { const v = e.target.value; setCoord(c => ({ ...c, societe: v, ...(v.trim() ? {} : { societeInfos: null }) })); setErreur(''); }} />
+        </div>
+      </div>
+    </>
   );
   const honoraires = honorairesReconnaissance(bien);
   /* Sans le numéro et la rue sur l'affaire, l'adresse ne peut pas partir. */
   const sansAdresse = !(typeof bien.donnees?.adresse === 'string' && bien.donnees.adresse.trim());
   const montant = montantReconnaissance(bien);
-  const pret = !!choisi || !!nouveau;
+  const pret = !!choisi || nouveau;
   const principal = mode === 'en_ligne' ? 'Envoyer pour signature' : 'Faire signer sur place';
 
   return (
@@ -183,32 +283,57 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
         </div>
       </div>
 
+      {onRetour && (
+        <div className={b.recoAff} data-fige="">
+          {bien.photo
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={bien.photo} alt="" />
+            : <span className={b.recoAffIc}><Ic n="agence" t={18} /></span>}
+          <span className={b.recoAffTx}>
+            <b>{bien.titre || titreBien(bien.donnees || {})}</b>
+            <small>{[bien.adresse || (typeof bien.donnees?.adresse === 'string' ? bien.donnees.adresse : ''), bien.ville].filter(Boolean).join(', ') || 'L’affaire choisie'}</small>
+          </span>
+          <button type="button" className={b.notaireChanger} disabled={occupe} onClick={onRetour}>Changer</button>
+        </div>
+      )}
+
+      <div ref={refQui} style={{ display: 'contents' }}>
       <Section ic="personne" c="#2e3034" f="#f4f4f5" titre="1. Pour qui ?">
-        {choisi ? (
-          <div className={b.qui}>
-            <div className={`${b.quiL} ${b.quiOn}`}>
-              <AvatarContact c={personneDe(nomClient(choisi) || societeDe(choisi))} teinte={{ bg: '', fg: '#f4bc92' }} className={`${b.avatar} ${b.avatarPetit}`} libre />
-              <div><b>{[societeDe(choisi), nomClient(choisi)].filter(Boolean).filter((x, i, l) => l.indexOf(x) === i).join(' · ')}</b><small>{[choisi.telephones?.[0], choisi.emails?.[0]].filter(Boolean).join(' · ') || 'Fiche du CRM'}</small></div>
-              <button type="button" className={b.notaireChanger} disabled={occupe} onClick={() => choisir(null)}>Changer</button>
-            </div>
-            {enregistre && <div className={b.ventile} role="status"><Ic n="check" t={15} /><span>{enregistre}</span></div>}
-          </div>
-        ) : nouveau ? (
+        {choisi || nouveau ? (
           <>
-            <div className={b.g2}>
-              {champ('prenom', 'Prénom', { auto: true })}
-              {champ('nom', 'Nom')}
-              {champ('societe', 'Sa société (s’il y en a une)', { large: true, exemple: 'Ex : SARL Le Comptoir' })}
-              {champ('email', mode === 'en_ligne' ? 'E-mail (pour signer)' : 'E-mail (facultatif)', { mode: 'email' })}
-              {champ('telephone', 'Téléphone', { mode: 'tel' })}
-            </div>
-            <div className={s.chAide}>{'Enregistre-le maintenant : sa fiche se crée dans tes contacts, en demandeur « non filtré », et la reconnaissance s’y rangera, avec tout son historique. Sa recherche (surface, budget, secteurs) se complète plus tard, depuis sa fiche.'}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-              <button type="button" className={b.notaireAjout} disabled={occupe} onClick={() => { void enregistrerContact(doublons.length > 0); }}>
-                <Ic n="check" t={13} e={2.6} />{occupe ? 'Enregistrement…' : doublons.length ? 'L’enregistrer quand même' : 'Enregistrer le contact'}
-              </button>
-              <button type="button" className={b.lien} disabled={occupe} onClick={() => { setNouveau(null); setDoublons([]); setErreur(''); }}>Chercher plutôt dans mes contacts</button>
-            </div>
+            {choisi ? (
+              <div className={b.qui}>
+                <div className={`${b.quiL} ${b.quiOn}`}>
+                  <AvatarContact c={personneDe(nomClient(choisi) || societeDe(choisi))} teinte={{ bg: '', fg: '#f4bc92' }} className={`${b.avatar} ${b.avatarPetit}`} libre />
+                  <div><b>{[societeDe(choisi), nomClient(choisi)].filter(Boolean).filter((x, i, l) => l.indexOf(x) === i).join(' · ')}</b><small>{[choisi.telephones?.[0], choisi.emails?.[0]].filter(Boolean).join(' · ') || 'Fiche du CRM'}</small></div>
+                  <button type="button" className={b.notaireChanger} disabled={occupe} onClick={() => choisir(null)}>Changer</button>
+                </div>
+              </div>
+            ) : (
+              <div className={b.recoNouveau}>
+                <Ic n="plus" t={13} e={2.6} /><span>{'Un nouveau contact'}</span>
+                <button type="button" className={b.lien} disabled={occupe} onClick={() => { setNouveau(false); setCoord(COORD_VIDE); setDoublons([]); setErreur(''); setEssaye(false); }}>Chercher plutôt dans mes contacts</button>
+              </div>
+            )}
+            {enregistre && <div className={b.ventile} role="status"><Ic n="check" t={15} /><span>{enregistre}</span></div>}
+            {choisi && aCompleter.length > 0 && !enregistre && (
+              <div className={`${b.ventile} ${b.ventileManque}`}>
+                <Ic n="info" t={15} />
+                <span>{`Sur sa fiche, il manque ${enListe(aCompleter)}. Complète ici : c’est obligatoire pour que la reconnaissance parte, et ça s’ajoutera à sa fiche.`}</span>
+              </div>
+            )}
+            {formulaire}
+            <div className={s.chAide}>{choisi
+              ? 'Repris de sa fiche. Ce que tu tapes ici est écrit dans le document ; ce qui manquait sur sa fiche s’y ajoute, sans rien y remplacer.'
+              : 'Civilité, prénom, nom, téléphone et e-mail sont obligatoires : ils sont écrits dans le document, et sa fiche se crée avec, en demandeur « non filtré ». Sa recherche (surface, budget, secteurs) se complète plus tard, depuis sa fiche.'}</div>
+            {nouveau && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+                <button type="button" className={b.notaireAjout} disabled={occupe} onClick={() => { void enregistrerContact(doublons.length > 0); }}>
+                  <Ic n="check" t={13} e={2.6} />{occupe ? 'Enregistrement…' : doublons.length ? 'L’enregistrer quand même' : 'Enregistrer le contact'}
+                </button>
+                <span className={s.chAide} style={{ margin: 0 }}>{'Ou envoie directement : sa fiche se crée à l’envoi.'}</span>
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -243,7 +368,8 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
               const brut = q.trim();
               const mail = emailOk(brut) ? brut : '';
               const mots = mail ? [] : brut.split(/\s+/).filter(Boolean);
-              setNouveau({ ...VIDE, email: mail, prenom: mots.length > 1 ? mots[0] : '', nom: mots.length > 1 ? mots.slice(1).join(' ') : mots[0] || '' });
+              setNouveau(true); setEssaye(false);
+              setCoord({ ...COORD_VIDE, email: mail, prenom: mots.length > 1 ? mots[0] : '', nom: mots.length > 1 ? mots.slice(1).join(' ') : mots[0] || '' });
               setErreur('');
             }}><Ic n="plus" t={13} e={2.6} />Un nouveau contact</button>
             <div className={s.chAide}>{'Pas encore dans le CRM ? Sa fiche se crée ici, en demandeur.'}</div>
@@ -273,22 +399,16 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
           </div>
         )}
       </Section>
+      </div>
 
       <Section ic="plume" c="#c2621c" f="#fdf3ec" titre="2. Comment signe-t-il ?">
         <Option nom="reco-mode" on={mode === 'en_ligne'} onChange={() => changerMode('en_ligne')} ic="mail" c="#c2621c" f="#fdf3ec"
           t="Par e-mail, sur son téléphone" s="Il reçoit un lien, puis un code pour signer. Tu reçois le document signé par e-mail, et il est rangé dans ses documents." />
         <Option nom="reco-mode" on={mode === 'sur_place'} onChange={() => changerMode('sur_place')} ic="tablette" c="#2e3034" f="#f4f4f5"
           t="Sur place, sur ton écran" s="Devant le local : il signe au doigt sur ton téléphone ou ta tablette, sans code. Documents s’ouvre, prêt à signer." />
-        {choisi && (
-          <Ch lib={mode === 'en_ligne' ? 'Son adresse e-mail' : 'Son adresse e-mail (facultative)'}>
-            <input className={s.input} value={email} inputMode="email" autoComplete="off" list="reco-emails" placeholder="adresse@exemple.fr"
-              onChange={e => { setEmail(e.target.value); setErreur(''); }} />
-            {(choisi.emails || []).length > 1 && <datalist id="reco-emails">{(choisi.emails || []).map(x => <option key={x} value={x} />)}</datalist>}
-          </Ch>
-        )}
-        {choisi && <div className={s.chAide}>{mode === 'en_ligne'
-          ? 'Le lien de signature et son code y partent, puis son exemplaire signé. Une adresse nouvelle s’ajoute à sa fiche.'
-          : 'Elle sert seulement à lui envoyer son exemplaire signé. Sans adresse, tu le gardes dans le CRM.'}</div>}
+        <div className={s.chAide}>{mode === 'en_ligne'
+          ? `Le lien de signature et son code partent à ${emailOk(coord.email) ? coord.email.trim() : 'son e-mail (ci-dessus)'}, puis son exemplaire signé.`
+          : 'Son e-mail sert ensuite à lui envoyer son exemplaire signé, et l’adresse du local.'}</div>
       </Section>
 
       <Section ic="lieu" c="#0f766e" f="#effaf8" titre="3. Une fois signée, l’adresse">
@@ -307,9 +427,7 @@ export default function FenReconnaissance({ bien, suggestions = [], deja = [], o
         )}
         <div className={s.chAide}>{!auto
           ? 'Décoché, c’est toi qui la lui envoies, quand tu veux, une fois qu’il a signé. « Lui envoyer l’adresse du local » t’attend à deux endroits : dans l’historique de l’affaire, sur la ligne « Reconnaissance signée », et sur sa fiche, onglet Documents. Un aperçu du mail, puis un clic : la date de l’envoi s’affiche ensuite au même endroit.'
-          : mode === 'sur_place' && !emailOk((nouveau ? nouveau.email : email).trim())
-            ? 'Sans son adresse e-mail, elle ne peut pas lui partir : donne-la-lui de vive voix, devant le local.'
-            : 'Le document, lui, ne dit jamais l’adresse : seulement le secteur.'}</div>
+          : 'Le document, lui, ne dit jamais l’adresse : seulement le secteur.'}</div>
       </Section>
 
       <Section ic="bouclier" c="#475569" f="#f8fafc" titre="4. Combien de temps s’engage-t-il ?">
