@@ -6,6 +6,7 @@ import Cascade from '@/components/shared/Cascade';
 import ParamPointAuto from './ParamPointAuto';
 import ParamAlertes from './ParamAlertes';
 import ParamAgence from './ParamAgence';
+import ParamSecurite from './ParamSecurite';
 import { signatureDe, texteModele, VARIABLES_MAIL } from '@/lib/mail-variables';
 import Curseur from '@/components/shared/Curseur';
 
@@ -170,27 +171,11 @@ export default function PageParametres() {
           {/* ALERTES MAIL — les mails « Emilio · CRM » qu'Alexandre reçoit */}
           {activeSection === 'alertes' && <ParamAlertes />}
 
-          {/* SÉCURITÉ */}
-          {activeSection === 'securite' && (
-            <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 24 }}>
-              <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: 16, color: 'var(--emilio)', marginBottom: 16 }}>🔒 Sécurité & Accès</div>
-              {/* L'identifiant et le « nouveau mot de passe » sont partis
-                  (V3.20) : ils s'écrivaient en clair dans la base, et ne
-                  changeaient rien — la connexion passe par Supabase. */}
-              <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6 }}>
-                {'La connexion au CRM passe par ton compte Supabase : l’adresse et le mot de passe que tu tapes sur la page de connexion. Le mot de passe se gère dans Supabase (Authentication › Users), plus ici.'}
-              </div>
-              <div style={{ marginTop: 20, padding: 16, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, color: '#166534', marginBottom: 6 }}>✅ À propos de la sécurité</div>
-                <div style={{ fontSize: 12, color: '#166534', lineHeight: 1.6 }}>
-                  • Vos données sont stockées sur Supabase (chiffrement AES-256)<br/>
-                  • Connexion HTTPS uniquement<br/>
-                  • Hébergé sur Vercel (infrastructure sécurisée)<br/>
-                  • Aucune donnée partagée avec des tiers
-                </div>
-              </div>
-            </div>
-          )}
+          {/* SÉCURITÉ — ton compte et ton mot de passe (22 octobre 2026).
+              L'identifiant et le « nouveau mot de passe » d'avant (partis à la
+              V3.20) s'écrivaient en clair dans la base ; celui-ci passe par
+              Supabase (ParamSecurite.tsx). */}
+          {activeSection === 'securite' && <ParamSecurite />}
         </Cascade>
       </div>
     </div>
