@@ -6,13 +6,12 @@
 }
 .q[aria-expanded='true'] { background: #f08c42; border-color: #f08c42; color: #fff; }
 .bulle {
-  position: absolute; top: calc(100% + 8px); left: -10px; z-index: 1300; width: min(320px, 80vw);
-  display: flex; flex-direction: column; gap: 5px; padding: 12px 14px; border-radius: 14px;
+  position: fixed; z-index: 30000; display: block; border-radius: 14px;
   background: #2e3034; color: #f3f2f1; box-shadow: 0 16px 36px rgba(23, 23, 22, .28);
   font: 500 12.5px/1.55 'DM Sans', sans-serif; text-align: left; white-space: normal; text-transform: none; letter-spacing: normal;
 }
-.bulle::before { content: ''; position: absolute; top: -5px; left: 16px; width: 10px; height: 10px; background: #2e3034; transform: rotate(45deg); }
-.droite { left: auto; right: -10px; }
-.droite::before { left: auto; right: 16px; }
-.bulle > b { font: 800 13px 'Plus Jakarta Sans', sans-serif; color: #f7b07a; }
+.bulle::before { content: ''; position: absolute; top: -5px; left: var(--fleche, 14px); width: 10px; height: 10px; background: #2e3034; transform: rotate(45deg); }
+.dessus::before { top: auto; bottom: -5px; }
+.defile { display: flex; flex-direction: column; gap: 5px; padding: 12px 14px; border-radius: inherit; overflow-y: auto; overscroll-behavior: contain; }
+.defile > b { font: 800 13px 'Plus Jakarta Sans', sans-serif; color: #f7b07a; }
 .texte { display: flex; flex-direction: column; gap: 6px; }

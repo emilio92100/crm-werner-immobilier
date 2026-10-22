@@ -149,8 +149,8 @@ export default function ParamAgence() {
     if (error) { setNoteMandat({ t: 'Pas enregistré : ' + error.message, ok: false }); return; }
     setApprouveLe(valeur || null);
     setNoteMandat(approuve
-      ? { t: 'Enregistré. Un demandeur sans mandat peut maintenant signer seul le mandat type, depuis son espace, quand il demande une visite : 2,5 % HT, ou le taux que tu as mis sur sa fiche. Tu reçois un mail à chaque signature.', ok: true }
-      : { t: 'Enregistré. Les demandeurs ne signent plus seuls : tu leur proposes le mandat depuis leur fiche.', ok: true });
+      ? { t: 'Enregistré. Désormais, un demandeur sans mandat signe le mandat de recherche avant que sa demande de visite parte : 2,5 % HT, ou les honoraires mis sur sa fiche. Tes propres affaires se visitent toujours sans mandat. Tu reçois un mail à chaque signature.', ok: true }
+      : { t: 'Enregistré. Les demandeurs peuvent de nouveau demander une visite sans mandat ; ceux qui l’ont signé le gardent. Pour en faire signer un, propose-le depuis sa fiche.', ok: true });
   }
 
   const erreurs = useMemo(() => aRevoir(brouillon), [brouillon]);
@@ -326,16 +326,19 @@ export default function ParamAgence() {
           <Aide titre="Changer les honoraires d’un demandeur">
             <span>{'Ouvre sa fiche, puis sa recherche, puis « Mandat de recherche ». Choisis « Pourcentage » (2,5 %, 5 %, 10 %, 15 % ou le taux que tu tapes) ou « Forfait » (un montant en euros HT).'}</span>
             <span>{'« Proposer au client » : il voit aussitôt « Votre mandat est prêt » dans son espace, avec ces honoraires. Déjà proposé ? « Mettre à jour », puis renvoie-lui le mail.'}</span>
+            <span>{'Ces honoraires passent avant les 2,5 % par défaut, que le mandat type soit coché ou non. Une fois le mandat signé, ils ne changent plus que par un avenant (Documents › Créer un document).'}</span>
           </Aide>
         </div>
 
         <div style={{ borderTop: `1px solid ${TRAIT}`, marginTop: 16, paddingTop: 14 }}>
           <div style={{ fontSize: 13.5, fontWeight: 800, color: NAVY, display: 'flex', alignItems: 'center' }}>
             {'Le mandat type, signé seul par le demandeur'}
-            <Aide titre="Le mandat type">
-              <span>{'Sans lui, un demandeur ne signe un mandat que si tu le lui as proposé depuis sa fiche.'}</span>
-              <span>{'Avec lui : quand un demandeur sans mandat clique « Je souhaite le visiter » dans son espace, on lui propose de signer le mandat de recherche simple, au taux par défaut (ou celui de sa fiche). Il remplit son identité ou celle de sa société, reçoit un code par mail et signe. Le numéro vient du registre commun ; tu reçois un mail.'}</span>
-              <span>{'Ton approbation vaut signature de l’offre au nom de l’agence pour ces mandats-là. Tu peux la retirer à tout moment.'}</span>
+            <Aide titre="Ce que change le mandat type">
+              <span><b>{'Non coché (au départ). '}</b>{'Un demandeur peut demander une visite sans signer de mandat : tu reçois sa demande, et tu décides. Seul un demandeur à qui tu as proposé le mandat depuis sa fiche doit le signer avant que sa demande parte.'}</span>
+              <span><b>{'Coché. '}</b>{'Tout demandeur sans mandat qui clique « Je souhaite le visiter » doit d’abord signer le mandat de recherche : il remplit son identité ou celle de sa société, reçoit un code par mail, signe, et sa demande part juste après. Le numéro vient du registre commun ; tu reçois un mail.'}</span>
+              <span><b>{'Les honoraires restent à toi, client par client. '}</b>{'2,5 % HT n’est que le taux par défaut. Un autre pourcentage ou un forfait mis sur la fiche d’un demandeur passe avant, coché ou non. Une fois le mandat signé, ils ne changent plus que par un avenant (Documents).'}</span>
+              <span><b>{'Jamais pour tes affaires. '}</b>{'Un local dont tu as le mandat du bailleur ou du cédant se visite toujours sans mandat de recherche.'}</span>
+              <span>{'Ton approbation vaut signature de l’offre au nom de l’agence pour ces mandats-là. Tu peux la retirer quand tu veux : les mandats déjà signés restent valables.'}</span>
             </Aide>
           </div>
           <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, color: NAVY, lineHeight: 1.5, cursor: 'pointer', marginTop: 10 }}>

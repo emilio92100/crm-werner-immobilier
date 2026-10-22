@@ -829,6 +829,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
               <span>{'1. Choisis les honoraires juste en dessous (2,5 % par défaut).'}</span>
               <span>{'2. « Proposer au client » : le mandat se génère avec ces honoraires et sa recherche, et apparaît aussitôt dans son espace (« Votre mandat est prêt »). « Aperçu » te montre le PDF exact avant.'}</span>
               <span>{'3. « Envoyer par e-mail » lui donne le lien. Il relit, remplit son identité ou celle de sa société, reçoit un code et signe. Tu reçois un mail, le mandat signé arrive ici et dans Documents.'}</span>
+              <span>{'Une fois proposé, il doit le signer avant que sa demande de visite parte. Sans proposition, et sans le mandat type coché dans Paramètres › Agence, il peut demander une visite sans signer.'}</span>
             </Aide>
           </div>
           {docMandat && (
@@ -847,7 +848,9 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
               <span>{'Pourcentage : 2,5 % par défaut. Il s’applique au loyer annuel HT HC de la première année pour un bail, ou au prix pour une cession de droit au bail, un fonds ou des murs. Tape un autre taux si besoin.'}</span>
               <span>{'Forfait : un montant fixe en euros HT, quel que soit le loyer ou le prix.'}</span>
               <span>{'Rien n’est dû si le local est proposé par une autre agence qui partage ses honoraires ; sinon, ils sont payés à la signature du bail ou de l’acte, jamais avant.'}</span>
+              <span>{'Ce que tu choisis ici passe avant les 2,5 % par défaut, y compris quand il signe seul le mandat type.'}</span>
               <span>{'Déjà proposé ? Change ici, « Mettre à jour », puis renvoie-lui le mail : il relira la nouvelle version avant de signer.'}</span>
+              <span>{'Une fois signé, les honoraires ne changent plus que par un avenant (Documents).'}</span>
             </Aide>
           </label>
           <div style={{ display: 'flex', width: 'fit-content', marginTop: 5, border: '1px solid #e2e8f0', borderRadius: 10, padding: 3, gap: 3, background: '#f8fafc' }}>
@@ -976,7 +979,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
             {registre ? (
               <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.55 }}>
-                {'Le registre des mandats est démarré : un client qui clique « Je souhaite le visiter » sans mandat préparé prend le numéro suivant du registre et signe tout de suite. Plus de réserve à tenir, rien à reporter ailleurs. Il faut seulement ton approbation du mandat type, ci-dessous.'}
+                {'Coché, tout demandeur sans mandat qui clique « Je souhaite le visiter » doit d’abord signer le mandat type, aux honoraires de sa fiche (2,5 % sinon) : il prend le numéro suivant du registre commun et signe tout de suite, puis sa demande part. Non coché, il peut demander une visite sans mandat. Tes propres affaires se visitent toujours sans mandat de recherche.'}
               </div>
             ) : (
               <>

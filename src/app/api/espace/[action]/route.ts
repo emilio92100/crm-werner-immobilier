@@ -163,7 +163,7 @@ async function prevenirVisite(
   const crm = process.env.NEXT_PUBLIC_CRM_URL || 'https://crm-werner-immobilier.vercel.app';
   const lien = `${crm}/?page=fiche&client=${encodeURIComponent(clientId)}`;
   const mandatTexte = pasDeMandat === 'sans'
-    ? 'Il n’a pas pu signer depuis son espace : aucun numéro n’était prêt pour lui. Ajoute des numéros d’avance dans le CRM (bloc Mandat), ou fais-lui signer le sien avant de caler la visite.'
+    ? 'Il n’a pas de mandat de recherche signé : rien ne le lui demandait (pas de mandat proposé depuis sa fiche, mandat type non coché dans Paramètres › Agence). Tu peux caler la visite sans, ou lui proposer le mandat depuis sa fiche avant.'
     : pasDeMandat === 'prepare'
       ? 'Son mandat de recherche est en préparation dans Documents : envoie-le-lui à signer avant de caler la visite.'
       : pasDeMandat === 'pret'
