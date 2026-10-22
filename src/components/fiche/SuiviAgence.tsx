@@ -246,7 +246,7 @@ export default function SuiviAgence({ b, lignes, absent, visite, clientId, reche
                 )}
                 {imprevu.mot && <span className={s.imprevuMot}>{`« ${imprevu.mot} »`}</span>}
                 <small>{imprevu.quoi === 'decaler'
-                  ? 'Appelle l’agence ou le bailleur avec ses dates. Un créneau noté après son imprévu se valide ici (« Déplacer la visite ici ») : la visite est déplacée, pas doublée.'
+                  ? `Appelle l’agence ou le bailleur avec ses dates. Un créneau noté après son imprévu se valide ici (« Déplacer la visite ici ») ; montré à ${prenomC}, il le choisit dans son espace. Dans les deux cas, la visite est déplacée.`
                   : 'Préviens l’agence, puis annule la visite (onglet Visites de sa fiche, « Annuler »).'}</small>
               </div>
             </div>

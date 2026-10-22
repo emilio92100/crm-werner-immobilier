@@ -40,6 +40,16 @@ import s from './OngletVisites.module.css';
      sans bon et en créait un — Alexandre : « aucun rapport ».
    · « Caler la 2e visite » (À revoir) : la fenêtre du rendez-vous s'ouvre,
      le client et le bien déjà choisis (`onDeuxieme`).
+     V3.222 — Alexandre : « quand je suis dans Compte rendu à faire, il y a
+     Faire le compte rendu, ou sinon un petit bouton Caler une 2e visite ;
+     soit je la cale tout de suite, soit je lui propose des créneaux et ça
+     arrive dans son espace ». Le bouton est aussi sur « Compte rendu à
+     faire » (en bleu si le client a dit « À revoir », discret sinon), et sur
+     toute visite faite qui n'est pas « Pas pour lui », tant qu'aucune visite
+     suivante n'est calée. Il déplie deux chemins : caler la date maintenant
+     (`onDeuxieme`), ou ouvrir le bien en grand, où sont l'historique avec
+     l'agence et « Noter un appel » avec ses créneaux — montrés au client, il
+     choisit le sien dans son espace (V3.221).
    · La photo et le nom du bien ouvrent le bien en grand (FenetreBien, comme
      dans la Sélection et les Présentés), avec la visite en tête et son
      parcours — Alexandre : « on ne peut plus revoir le bien ».
@@ -123,6 +133,8 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
 }) {
   const [choisi, setChoisi] = useState<Filtre | null>(null);
   const [deplace, setDeplace] = useState<string | null>(null);
+  /* V3.222 : la visite dont « Caler la 2e visite » est déplié. */
+  const [deuxOuvert, setDeuxOuvert] = useState<string | null>(null);
   /* La visite dont le bien est ouvert en grand. */
   const [grand, setGrand] = useState<string | null>(null);
   /* V3.210 — Alexandre : « depuis Visites, le pop-up s'affiche, mais je n'ai pas
@@ -264,6 +276,15 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
     const suite = i === 'revoir' ? suivante(v) : null;
     /* V3.232 : l'imprévu qu'il a signalé sur cette visite à venir. */
     const imp = genre !== 'faite' ? imprevus?.[v.id] || null : null;
+    /* V3.222 : « Caler la 2e visite » — tant qu'aucune visite suivante n'est calée. */
+    const peutDeux = !!onDeuxieme && !suivante(v) && (genre === 'afaire' || (genre === 'faite' && i !== 'non'));
+    const deuxFort = genre === 'afaire' ? v.issue === 'revoir' : i === 'revoir';
+    const boutonDeux = peutDeux ? (
+      <button type="button" className={`${s.btn} ${deuxFort ? s.btnBleu : ''}`} aria-expanded={deuxOuvert === v.id}
+        onClick={() => setDeuxOuvert(x => (x === v.id ? null : v.id))}>
+        <Ic d={IC.agenda} t={14} e={2.2} />{deuxOuvert === v.id ? 'Fermer' : 'Caler la 2e visite'}
+      </button>
+    ) : null;
     const suiteD = suite ? enDate(suite.date_visite) : null;
     const details = [b?.surface ? `${String(b.surface).replace('.', ',')} m²` : '', b?.nb_pieces ? `${b.nb_pieces} espaces` : '', b?.prix_acquereur ? euros(b.prix_acquereur) : ''].filter(Boolean).join(' · ');
 
@@ -403,6 +424,7 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
 
             <div className={s.pied}>
               {genre === 'afaire' && <button type="button" className={`${s.btn} ${s.btnPlein}`} onClick={() => onCompteRendu(v)}><Ic d={IC.plume} t={14} e={2.2} />Faire le compte rendu</button>}
+              {genre === 'afaire' && boutonDeux}
               {bonUi(v, genre === 'faite')}
               {genre === 'faite' && <span className={s.etoiles}>{v.note_etoiles ? <>{'★'.repeat(v.note_etoiles)}<span>{'★'.repeat(Math.max(0, 5 - v.note_etoiles))}</span></> : null}</span>}
               <span className={s.ressort} />
@@ -410,8 +432,28 @@ export default function OngletVisites({ visites, biens, prenom, civilite, couple
               {genre !== 'faite' && <button type="button" className={`${s.btn} ${s.btnTexte}`} onClick={() => setDeplace(x => (x === v.id ? null : v.id))} aria-expanded={deplace === v.id}>{deplace === v.id ? 'Fermer' : 'Déplacer'}</button>}
               {genre !== 'faite' && <button type="button" className={`${s.btn} ${s.btnRouge}`} onClick={() => onAnnuler(v)} title="La visite ne se fera pas : elle sort de l’agenda et de l’espace du client">{genre === 'afaire' ? 'Pas eu lieu' : 'Annuler'}</button>}
               {genre === 'faite' && <button type="button" className={s.btn} onClick={() => onCompteRendu(v)}><Ic d={IC.plume} t={14} e={2.1} />{i ? 'Modifier le compte rendu' : 'Préciser l’issue'}</button>}
-              {genre === 'faite' && i === 'revoir' && !suite && onDeuxieme && <button type="button" className={`${s.btn} ${s.btnBleu}`} onClick={() => onDeuxieme(v)}>Caler la 2e visite</button>}
+              {genre === 'faite' && boutonDeux}
             </div>
+            {peutDeux && onDeuxieme && (
+              <Depliant ouvert={deuxOuvert === v.id} ecart={0}>
+                <div className={s.deuxChoix}>
+                  <button type="button" className={s.deuxC} onClick={() => { setDeuxOuvert(null); onDeuxieme(v); }}>
+                    <span className={s.deuxIc}><Ic d={IC.agenda} t={17} e={2.1} /></span>
+                    <span className={s.deuxX}>
+                      <b>Caler la date maintenant</b>
+                      <small>{`Tu choisis le jour et l’heure : la visite part dans ton agenda et dans l’espace de ${qui}.`}</small>
+                    </span>
+                  </button>
+                  <button type="button" className={s.deuxC} onClick={() => { setDeuxOuvert(null); setGrand(v.id); }}>
+                    <span className={`${s.deuxIc} ${s.deuxIcAgence}`}><Ic d={IC.tel} t={17} e={2.1} /></span>
+                    <span className={s.deuxX}>
+                      <b>Proposer les créneaux de l’agence</b>
+                      <small>{`Note ton appel et ses créneaux, « Lui montrer » coché : ${qui} choisit le sien dans son espace. L’historique avec l’agence ou le bailleur est là aussi.`}</small>
+                    </span>
+                  </button>
+                </div>
+              </Depliant>
+            )}
             {fil.length > 0 && offres && onDocument && clientId && (
               <div className={s.offre}>
                 <SonOffre fil={fil} bienId={v.bien_id} client={{ id: clientId, prenom, civilite, couple }}
