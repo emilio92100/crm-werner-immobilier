@@ -19,6 +19,7 @@
    Navigateur (Documents) et serveur (l'espace du client). */
 
 import { argentBien, honorairesPour, nomProprioActe, type Donnees } from './biens-vente';
+import { natureDe } from './affaires';
 import { num, txt } from './actes';
 
 export type VentePourOffre = { id: string; ville?: string | null; adresse?: string | null; donnees?: Donnees | null };
@@ -29,8 +30,16 @@ export function champsOffreAgence(v: VentePourOffre, agence: string, prix?: numb
   const adresse = txt(d, 'adresse') || v.adresse || '';
   const ville = txt(d, 'ville') || v.ville || '';
   const forfait = d.honoMode === 'forfait';
+  /* Werner (23 octobre 2026) : ce qui est proposé (une location : l'offre
+     parle d'un loyer, ses honoraires s'y calculent sans rien en retirer), la
+     surface, et le bail de l'affaire. */
+  const nature = natureDe(d);
   return {
     bienVenteId: v.id,
+    ...(nature ? { nature } : {}),
+    ...(num(d, 'surface') ? { surface: num(d, 'surface') } : {}),
+    ...(nature === 'location' ? { bailType: txt(d, 'bailType') || 'commercial', pret: null, saisi: 'prix', total: null, ...(num(d, 'depotMois') ? { depotMois: num(d, 'depotMois') } : {}) } : {}),
+    ...(nature === 'fonds' && txt(d, 'activite') ? { activite: txt(d, 'activite') } : {}),
     vendeurNom: nomProprioActe(d),
     agenceVendeur: agence,
     ...(adresse ? { adresse } : {}),

@@ -64,7 +64,16 @@ type ClientBon = { id: string; prenom?: string | null; nom?: string | null; civi
 
 const COLS_DOC = 'id, statut, bien_id, client_id, created_at, donnees';
 /* Les colonnes du bien d'un acheteur, celles que « Nouveau document » lit déjà. */
-export const COLS_BIEN = 'id, titre, adresse, code_postal, ville, quartier, type_bien, surface, nb_pieces, etage, prix_acquereur, prix_vendeur, agence_nom, recherche_id, commission_type, commission_val, bien_vente_id, est_particulier';
+/* Werner (23 octobre 2026) : plus `pro`, où la copie d'une affaire chez un
+   demandeur garde sa nature (une location, un droit au bail, un fonds, des
+   murs) : le bon de visite dit « Loyer annoncé » ou « Prix du fonds ». */
+export const COLS_BIEN = 'id, titre, adresse, code_postal, ville, quartier, type_bien, surface, nb_pieces, etage, prix_acquereur, prix_vendeur, agence_nom, recherche_id, commission_type, commission_val, bien_vente_id, est_particulier, pro';
+/* Sans la colonne `pro` (outils/sql/werner-commerce.sql pas encore passé) : relire sans elle. */
+const sansColonnePro = (e: { message?: string } | null | undefined) => !!e && /\bpro\b/.test(e.message || '') && /column|schema cache/i.test(e.message || '');
+export async function avecPro<R extends { error: { message?: string } | null }>(lire: (cols: string) => PromiseLike<R>, cols: string = COLS_BIEN): Promise<R> {
+  const r = await lire(cols);
+  return sansColonnePro(r.error) ? lire(cols.replace(/,\s*pro\b/, '')) : r;
+}
 const sansAccent = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
 /* Ce bon porte-t-il cette visite ? Par son identifiant de visite ; un bien
@@ -181,7 +190,7 @@ async function lireBiens(vs: VisiteBon[], deja?: BienVente | null) {
   const ids = [...new Set(vs.map(v => v.bienId).filter((x): x is string => !!x))];
   const copies: Record<string, CopieBien> = {};
   if (ids.length) {
-    const { data, error } = await supabase.from('biens').select(COLS_BIEN).in('id', ids);
+    const { data, error } = await avecPro(cols => supabase.from('biens').select(cols).in('id', ids));
     if (error) throw new Error('Les biens visités n’ont pas pu être lus : ' + error.message);
     for (const b of (data || []) as unknown as CopieBien[]) copies[b.id] = b;
   }
@@ -208,7 +217,7 @@ export function valeursBien(copie: CopieBien | null, bv: BienVente | null): Reco
   return {
     adresse: x.adresse || bv?.adresse || '', ville: x.ville || bv?.ville || '',
     description: desc && desc !== 'autre' ? desc : (bv?.titre || copie?.titre || '').toLowerCase(),
-    prix: x.prix ?? bv?.prix ?? null,
+    prix: x.prix ?? bv?.prix ?? null, nature: x.nature || '',
     reference: bv?.reference || '', agenceVendeur: bv ? '' : x.agenceVendeur || '',
     bienId: copie?.id || '', bienVenteId: bv?.id || copie?.bien_vente_id || '',
   };
@@ -228,7 +237,7 @@ export async function creerBonDeVisite(o: DepartBon, autres: VisiteBon[]): Promi
     const bien: Contexte['bien'] = bv ? { ...contexteDocument(bv), id: copie?.id || '', bien_vente_id: bv.id } : copie;
     const x = m.defaut({ identite, client: null, bien, visite: { date_visite: v.ymd || null, heure: v.heure || null } });
     return {
-      adresse: x.adresse, ville: x.ville, description: x.description, prix: x.prix, reference: bv?.reference || '',
+      adresse: x.adresse, ville: x.ville, description: x.description, prix: x.prix, nature: x.nature || '', reference: bv?.reference || '',
       agenceVendeur: bv ? '' : x.agenceVendeur, dateVisite: x.dateVisite, heure: x.heure,
       bienId: v.bienId || '', bienVenteId: bv?.id || v.bienVenteId || '', visiteId: v.cle,
     };

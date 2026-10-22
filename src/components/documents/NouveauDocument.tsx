@@ -15,6 +15,7 @@ import { champsOffreAgence } from '@/lib/offre-agence';
 import { conseilMandat, mandatRechercheEnCours, mandatVenteEnCours, phraseMandat, type MandatEnCours } from '@/lib/coherence';
 import { cleRecherche, colonnesListe, identiteDuJour, mandatsPour, preparerDepuis, tableAbsente, type DocumentRow, type MandatChoix } from './outils';
 import s from './Documents.module.css';
+import { avecPro, COLS_BIEN } from './BonDeVisite';
 
 /* ═══ Nouveau document ════════════════════════════════════════════════════
    1. Le modèle.
@@ -172,12 +173,11 @@ export default function NouveauDocument({ modeleId, clientId, confrereId, onFerm
   useEffect(() => {
     setBien(null); setBiens(null);
     if (!client || lien !== 'bien' || pourVendre) return;
-    supabase.from('biens')
-      .select('id, titre, adresse, code_postal, ville, quartier, type_bien, surface, nb_pieces, etage, prix_acquereur, prix_vendeur, agence_nom, recherche_id, commission_type, commission_val, bien_vente_id, est_particulier, photos, etape')
-      .eq('client_id', client.id).order('created_at', { ascending: false }).limit(150)
+    /* Werner : avec `pro` (la nature de l'affaire), relu sans elle si la colonne manque. */
+    avecPro(cols => supabase.from('biens').select(cols).eq('client_id', client.id).order('created_at', { ascending: false }).limit(150), `${COLS_BIEN}, photos, etape`)
       .then(({ data, error }) => {
         if (error) { setErreur('Ses biens n’ont pas pu être lus : ' + error.message); setBiens([]); return; }
-        setBiens((data || []) as BienMini[]);
+        setBiens((data || []) as unknown as BienMini[]);
       });
   }, [client, lien, pourVendre]);
 

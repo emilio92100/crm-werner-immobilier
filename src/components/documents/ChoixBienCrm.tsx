@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { etapeDe, nomProprio, type BienVente, type Donnees } from '@/lib/biens-vente';
-import { valeursBien, COLS_BIEN, type CopieBien } from './BonDeVisite';
+import { avecPro, valeursBien, COLS_BIEN, type CopieBien } from './BonDeVisite';
 import { Ic } from './ApercuActe';
 import s from './Documents.module.css';
 
@@ -74,7 +74,7 @@ export default function AjoutBien({ clientId, plein, onAjouter }: {
   useEffect(() => {
     if (chemin !== 'dossier' || copies || !clientId) return;
     let vivant = true;
-    supabase.from('biens').select(`${COLS_BIEN}, photos`).eq('client_id', clientId).order('created_at', { ascending: false }).limit(150)
+    avecPro(cols => supabase.from('biens').select(cols).eq('client_id', clientId).order('created_at', { ascending: false }).limit(150), `${COLS_BIEN}, photos`)
       .then(({ data, error }) => {
         if (!vivant) return;
         if (error) { setErreur('Ses biens n’ont pas pu être lus : ' + error.message); setCopies([]); return; }
@@ -107,7 +107,7 @@ export default function AjoutBien({ clientId, plein, onAjouter }: {
       if (error || !data) throw new Error(error?.message || 'introuvable');
       let copie: CopieBien | null = null;
       if (clientId) {
-        const r = await supabase.from('biens').select(COLS_BIEN).eq('client_id', clientId).eq('bien_vente_id', v.id).limit(1);
+        const r = await avecPro(cols => supabase.from('biens').select(cols).eq('client_id', clientId).eq('bien_vente_id', v.id).limit(1));
         if (!r.error) copie = ((r.data || []) as unknown as CopieBien[])[0] || null;
       }
       onAjouter(valeursBien(copie, data as BienVente));
