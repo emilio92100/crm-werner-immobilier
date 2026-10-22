@@ -112,8 +112,10 @@ export function AvecScore({ children, s, v, forme = 'rond', legende = 'potentiel
    Que des <span> : il se pose aussi dans un bouton (la fiche d'un acheteur).
    `sansMot` : dans un groupe « Oui », le mot « Oui » n'apprend rien.
    `avant` : le bien dont il parle, quand la ligne en porte plusieurs.
-   `compact` : les plus et les moins en pastilles, sur une ligne. */
-export function AvisDetail({ avis, sansMot, avant, compact }: { avis: AvisIA; sansMot?: boolean; avant?: string; compact?: boolean }) {
+   `compact` : les plus et les moins en pastilles, sur une ligne.
+   `deuxCol` (V3.228) : les plus et les moins côte à côte dès qu'il y a la
+   place, même au téléphone (la carte d'un bien va d'un bord à l'autre). */
+export function AvisDetail({ avis, sansMot, avant, compact, deuxCol }: { avis: AvisIA; sansMot?: boolean; avant?: string; compact?: boolean; deuxCol?: boolean }) {
   const p = avis.p || [], m = avis.m || [];
   return (
     <span className={`${a.avis} ${compact ? a.avisCompact : ''}`} data-v={avis.v}>
@@ -127,7 +129,7 @@ export function AvisDetail({ avis, sansMot, avant, compact }: { avis: AvisIA; sa
           {m.map(t => <span key={`m${t}`} className={a.pMoins}><IcoP d={TIRET} t={11} e={3} />{fr(t)}</span>)}
         </span>
       ) : (
-        <span className={a.pm}>
+        <span className={`${a.pm} ${deuxCol ? a.pmDeux : ''}`}>
           <span className={a.col} data-k="plus">
             <i className={a.colT}><IcoP d={POUCE} t={12} e={2.4} />{'Les plus'}</i>
             {p.length ? p.map(t => <span key={t} className={a.pt}><IcoP d={COCHE} t={12} e={3} /><span>{fr(t)}</span></span>) : <span className={a.rien}>{'Aucun en particulier'}</span>}

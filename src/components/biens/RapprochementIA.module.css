@@ -95,3 +95,6 @@
   .barre i { animation: none; }
   .prog { animation: none; }
 }
+
+/* V3.228 : côte à côte dès que la carte a la place (132 px chacun), même au téléphone. */
+.pm.pmDeux { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 8px; }

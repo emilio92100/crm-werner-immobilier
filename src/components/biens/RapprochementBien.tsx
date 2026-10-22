@@ -38,6 +38,7 @@ import {
   RAISONS_CACHE, STATUT_ACHETEUR, acheteurChoisi, ajouterSuivi, estPasPourLui, nomClient, supprimerSuivi,
   type Acheteur, type Cache, type Copie, type RaisonCache, type TriBien,
 } from './outils';
+import { BoutonAideRappro } from '@/components/shared/AideRapprochement';
 import r from './RapprochementBien.module.css';
 
 const presente = (c: Copie | null | undefined) => !!c && c.etape !== 'selection';
@@ -89,7 +90,6 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
     const t = String(bien.donnees?.typeBien || '');
     return t === 'maison' ? 'ce local' : t === 'appartement' || t === 'studio' || t === 'duplex' || t === 'loft' ? 'ce local' : t === 'terrain' ? 'ce terrain' : 'cette affaire';
   })();
-  const [aide, setAide] = useState(false);
 
   /* V3.121 : de retour d'une fiche client, les rapprochements dépliés et les
      cases cochées sont ceux qu'on avait laissés (lib/place-fiche.ts) — tant
@@ -257,17 +257,21 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
             <Ic n="check" t={13} e={3.2} />
           </button>
         )}
-        <AvecScore s={l.s} v={l.v}><AvatarContact c={x?.client || { prenom: l.nom }} teinte={{ bg: tt.f, fg: tt.t }} libre /></AvecScore>
+        <span className={r.av}><AvecScore s={l.s} v={l.v}><AvatarContact c={x?.client || { prenom: l.nom }} teinte={{ bg: tt.f, fg: tt.t }} libre /></AvecScore></span>
+        {/* V3.228 : le nom et où il en est à côté de l'avatar ; l'avis dessous,
+            sur toute la largeur (au téléphone, plus de bande vide à gauche). */}
         <div className={r.qui}>
           <div className={r.quiL1}>
             <button type="button" className={r.nom} onClick={() => onFiche(l.c)}>{nom}</button>
             {statut && <span className={r.tag}>{statut}</span>}
-            {x?.recherche.budget_max ? <span className={r.budget}><Ic n="euro" t={13} />{`jusqu’à ${euros(x.recherche.budget_max)}`}</span> : null}
             {ecarte && <span className={r.tagEcarte}>{'Pas pour lui'}</span>}
           </div>
-          <AvisDetail avis={{ v: l.v, r: l.t, s: l.s, p: l.p, m: l.m }} sansMot />
+          {x?.recherche.budget_max ? <span className={r.budget}><Ic n="euro" t={13} />{`jusqu’à ${euros(x.recherche.budget_max)}`}</span> : null}
           {et && <span className={et.ton === 'nouveau' ? r.etatNouveau : r.etat}>{et.ton === 'nouveau' && <i className={r.ping} />}{et.t}</span>}
           {!x && <span className={r.parti}>{'Sa recherche est fermée, ou ne passe plus le premier tri.'}</span>}
+        </div>
+        <div className={r.avisC}>
+          <AvisDetail avis={{ v: l.v, r: l.t, s: l.s, p: l.p, m: l.m }} sansMot deuxCol />
         </div>
         {x && (
           <div className={r.actions}>
@@ -394,9 +398,8 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
             <button type="button" className={r.lancerBtn} disabled={!peutLancer} onClick={() => { void lancer(); }}>
               <IcoP d={ETINCELLE} t={18} e={2} />{derniere ? 'Relancer le rapprochement' : 'Lancer le rapprochement'}
             </button>
-            <button type="button" className={r.aideBtn} aria-expanded={aide} onClick={() => setAide(a => !a)}>
-              <Ic n="info" t={15} />{aide ? 'Fermer' : 'Comment ça marche ?'}
-            </button>
+            {/* V3.228 : l'explication dans une fenêtre, étape par étape (AideRapprochement). */}
+            <BoutonAideRappro depuis="bien" />
             <span className={r.indice}>{fr(tri.vide
               ? 'Renseigne au moins le type de local ou le montant : sans eux, rien à comparer.'
               : !tri.total
@@ -409,16 +412,6 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
           </div>
         )}
 
-        {aide && !en && (
-          <div className={r.aide}>
-            <ol className={r.aideEtapes}>
-              <li><b>{'Le premier tri'}</b><span>{'Les recherches ouvertes de tes demandeurs (actifs, prospects, en pause), du même type de local. Écartées d’office : loyer ou prix dépassé de plus de 10 %, pas ce qu’ils cherchent (une location pour qui veut acheter…), ville hors de leurs secteurs, surface sous 90 % de leur minimum, un indispensable qui manque.'}</span></li>
-              <li><b>{'La relecture'}</b><span>{'Chaque dossier qui passe est relu comme tu le ferais : ses indispensables, ses précisions, son parcours, ses comptes rendus de visite, ce qu’il a dit des biens montrés, face à toute la fiche de l’affaire et ta visite sur place. Ni nom, ni téléphone, ni adresse ne sont lus.'}</span></li>
-              <li><b>{'Le résultat'}</b><span>{'Pour chacun, un avis : Oui, À voir ou Non, et une note de potentiel sur 100 : ses chances d’être intéressé. Puis une phrase, ses plus et ses moins. Jusqu’à 7 % au-dessus de son budget, ça se négocie : ce n’est pas un non.'}</span></li>
-              <li><b>{'Gardé, daté'}</b><span>{'Chaque rapprochement reste ici, avec sa date, et dans l’historique de l’affaire. Relancé, il ne relit que ce qui a changé : un nouveau demandeur, une recherche modifiée, l’affaire ou son montant.'}</span></li>
-            </ol>
-          </div>
-        )}
         {souci.erreur && <p className={r.erreur}>{souci.erreur}</p>}
         {souci.info && <p className={r.info}><Ic n="info" t={14} /><span>{souci.info}</span></p>}
         {!peutEnvoyer && (

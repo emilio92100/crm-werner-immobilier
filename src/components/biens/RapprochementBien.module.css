@@ -235,3 +235,21 @@
 @media (max-width: 760px) {
   /* V3.163 : arrondis de nouveau (la fiche garde 10 px de chaque côté). */
 }
+
+/* ══ V3.228 — Une personne : une carte d'un bord à l'autre ══════════════
+   Alexandre : « que ça prenne l'entièreté de l'écran, en mode rectangle ».
+   En haut l'avatar et sa note, le nom, le budget, où il en est ; l'avis
+   dessous, sur toute la largeur ; les boutons à droite (ordinateur) ou en
+   bas (téléphone). */
+.carte { grid-template-columns: 64px minmax(0, 1fr) auto; grid-template-areas: 'av qui act' 'avis avis act'; gap: 12px 16px; align-items: start; }
+.carteEnvoi { grid-template-columns: 26px 64px minmax(0, 1fr) auto; grid-template-areas: 'coche av qui act' 'coche avis avis act'; }
+.carte > .coche { grid-area: coche; }
+.carte > .qui { grid-area: qui; gap: 5px; align-self: center; }
+.carte > .avisC { grid-area: avis; min-width: 0; }
+.carte > .actions { grid-area: act; }
+.carte > .av { grid-area: av; display: flex; justify-content: center; }
+@media (max-width: 760px) {
+  .carte { grid-template-columns: 64px minmax(0, 1fr); grid-template-areas: 'av qui' 'avis avis' 'act act'; }
+  .carteEnvoi { grid-template-columns: 24px 64px minmax(0, 1fr); grid-template-areas: 'coche av qui' 'avis avis avis' 'act act act'; }
+  .carte > .avisC { padding-top: 10px; border-top: 1px solid #f5f4f4; }
+}
