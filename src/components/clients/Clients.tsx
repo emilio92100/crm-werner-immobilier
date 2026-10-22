@@ -40,6 +40,7 @@ import { retirerFicheOuverte, signalerFicheOuverte } from '@/components/layout/F
 import { lireParcours, parcoursVide } from '@/lib/parcours';
 import { colonneEspaceAbsente, espaceSelonStatut, marquerBienvenue } from '@/lib/espace-choix';
 import InterrupteurEspace from '@/components/shared/InterrupteurEspace';
+import ConseilEspace from '@/components/shared/ConseilEspace';
 
 const STATUTS = [
   { key: 'tous',        label: 'Tous',       color: '' },
@@ -1807,6 +1808,8 @@ export default function Clients({ onNavigate, fenetre }: {
                           sous={form.statut === 'actif'
                             ? 'Une page à lui avec les locaux proposés, où il répond en un clic. Sa fiche te proposera ensuite de lui envoyer le mail de bienvenue.'
                             : 'Sans espace, les locaux que tu lui envoies mènent à leur fiche publique. Tu pourras l’ouvrir plus tard depuis sa fiche.'} />
+                        {/* Le conseil, dès qu'il lui ouvre son espace (22 octobre 2026). */}
+                        {form.statut === 'actif' && <ConseilEspace />}
                       </Bloc>}
 
                       {/* Werner : pas de « Sa situation aujourd’hui » (logement actuel,
@@ -2405,6 +2408,7 @@ export default function Clients({ onNavigate, fenetre }: {
             : statutLot.statut === 'suspendu' ? 'Leur dossier se met en pause, sans date de reprise (elle se met depuis leur fiche). La veille s’arrête. Une ligne dans leur suivi.'
               : 'Ils repassent « Prospect » : leur espace client se ferme (le lien qu’ils ont reçu ne s’ouvre plus ; rien n’est perdu s’ils repassent Actif). La veille s’arrête. Une ligne dans leur suivi.'}
           liste={statutLot.cibles.map(c => nomFoyer(c) || 'Sans nom')} ignores={statutLot.ignores}
+          enPlus={statutLot.statut === 'actif' && <ConseilEspace plusieurs={statutLot.cibles.length !== 1} />}
           libValider={`Passer « ${STATUTS_LOT.find(x => x.k === statutLot.statut)?.lib} » (${statutLot.cibles.length})`}
           avancement={statutLot.avancement} onValider={() => { void faireStatut(); }} onFermer={() => setStatutLot(null)} />
       )}
