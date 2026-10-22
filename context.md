@@ -300,9 +300,28 @@ l'encadré orange sur la visite (onglet Visites : « Déplacer la visite », « 
 de « Mon suivi avec l'agence » (« Imprévu : à décaler ») ; un créneau noté après l'imprévu y devient
 « Déplacer la visite ici ». Déplacée, la relance se ferme et le Suivi note « Visite déplacée ». Annulée :
 la relance se ferme ; « Le local ne m'intéresse plus » ou « J'ai trouvé un autre local » font passer le
-local « Pas pour lui ». `src/lib/imprevus.ts`, `imprevusOuverts` dans `src/lib/visites.ts`. Ici, le
-demandeur ne choisit pas encore lui-même un nouveau créneau dans son espace (la V3.221 d'Emilio n'a pas été
-reprise).
+local « Pas pour lui ». `src/lib/imprevus.ts`, `imprevusOuverts` dans `src/lib/visites.ts`. Depuis le
+paragraphe suivant, le demandeur choisit aussi lui-même le nouveau créneau dans son espace.
+
+**Le demandeur choisit lui-même son créneau, la 2e visite, et le mandat d'abord** (22 octobre 2026, repris
+du CRM d'Emilio, ses V3.221, V3.222 et V3.233). Un appel noté avec des créneaux et « Lui montrer » coché :
+le demandeur les voit dans son espace — en tête de l'accueil (« Un créneau de visite à choisir »), en haut
+de « Vos visites » et sous « Où en est Werner » sur la fiche du local (`ChoixCreneau` : une carte par
+créneau, une plage se découpe de demi-heure en demi-heure) — et en choisit un. `/api/espace/creneau` pose
+la visite comme « Planifier une visite » (agenda, Visites, Suivi « Visite planifiée »), avec une relance du
+jour « Créneau choisi — … : confirmer la visite à l'agence » et un mail (alerte « visite_creneau »). Même
+règle à l'écran et au serveur (`creneauxAChoisir`, `src/lib/suivi-client.ts`). Après un imprévu « décaler »,
+les créneaux notés depuis se choisissent aussi (« Choisir mon créneau » sur la carte de la visite) : la
+visite est déplacée, pas doublée, et la relance de l'imprévu se ferme. **La 2e visite** suit le même
+chemin : dans le CRM, « Caler la 2e visite » dès « Compte rendu à faire » (deux chemins : caler la date
+maintenant, ou proposer les créneaux de l'agence) ; dans l'espace, « Je souhaite le revoir » sur un local
+déjà visité (ses raisons, ses disponibilités, un mot ; `/api/espace/revoir`), puis « Où en est Werner »
+avec les créneaux d'après la visite. **Le mandat d'abord** : comme « Je souhaite le visiter », un créneau
+choisi alors qu'un mandat l'attend (à signer dans l'espace, ou préparé dans Documents) ouvre d'abord la
+signature ; le créneau part tout seul une fois signé, et le serveur fait la même vérification (réponse
+`mandat`). S'il a choisi d'attendre ses 14 jours de réflexion, un créneau avant la fin n'est pas posé.
+Seule une visite posée par Werner dans le CRM s'en passe. `courtDuBien` (« Boutique 60 m² · Paris ») est
+dans `src/lib/visites.ts`.
 
 ### Le marché, l'ancienneté d'une annonce
 
