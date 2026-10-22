@@ -248,6 +248,31 @@ dans la recherche d'un demandeur (`SecteurPicker`). Le rapprochement (`quartierC
 dans l'autre suffit, sans majuscules, accents, tirets ni petits mots, et un quartier de référence couvre
 ses lieux (le demandeur qui veut les Champs-Élysées correspond à une affaire notée Triangle d'or).
 
+**Le rapprochement relié des deux côtés** (22 octobre 2026, repris du CRM d'Emilio, sa V3.230).
+Alexandre : « depuis une affaire et depuis un demandeur, est-ce que c'est synchronisé ? quand on
+reclique, on voit qu'elle a déjà été envoyée ? et des explications étape par étape, jolies, fiables ».
+- **Vu depuis tes affaires** (`lib/rapprochement.ts`, `vusDepuisBiens` ; `fiche/Rapprochement.tsx`,
+  `VuDepuisBiens`) : l'onglet Rapprochement d'un demandeur relit les séances gardées sur les affaires
+  (`biens_vente_suivi`, type « note », `donnees.rapprochement`, la ligne de SA recherche). Le dernier avis
+  par affaire (« ressortie N fois »), Oui et À voir d'abord, Non replié ; où elle en est (« Dans sa
+  sélection », « Présentée le … · intéressé », « Pas pour lui », plus proposée) ou « La mettre dans sa
+  sélection ». Le Suivi du demandeur montre « Rapprochement depuis l'affaire · Oui · 84/100 » à chaque
+  séance où l'avis change : construit à la lecture, rien n'est écrit en base.
+- **Déjà dans son dossier** : `rapprocher` rend ces affaires (`deja`, `EtatDossier`) ; la fenêtre les
+  range à part, repliées, sans case, avec ce qui en a été fait.
+- **Mes estimations** (côté demandeur, décochée d'office) : les étapes `estimation` et `a_suivre` sont
+  aussi cherchées, étiquette « Ton estimation » ; posée chez lui, elle part sans montant.
+- **L'aide** (`shared/AideRapprochement.tsx`, « Comment marche le rapprochement ») : quatre étapes, une
+  version depuis une affaire et une depuis un demandeur, aux règles de Werner (loyer ou prix, nature,
+  type de local, jamais le mandant). Bouton « Comment ça marche ? » dans l'onglet d'une affaire et dans
+  le guide d'un demandeur ; un « i » dans la fenêtre. ⚠️ Chaque phrase y décrit le code : une règle qui
+  change change aussi là.
+- **Les cartes** : chaque affaire trouvée est une carte d'un bord à l'autre (`.bc`) — la photo et sa
+  note, le titre, le lieu, le montant ; la case et l'œil à droite ; l'avis à côté (ordinateur) ou
+  dessous sur toute la largeur (téléphone). Même carte pour « Déjà dans son dossier » et « Vu depuis tes
+  affaires » ; côté affaire, l'avis d'un demandeur passe sous son nom, sur toute la largeur. La fenêtre
+  dit « 2 affaires pour Paul », « affaire cochée », « La mettre dans sa sélection ».
+
 ### Le marché, l'ancienneté d'une annonce
 
 Savoir **depuis quand une annonce est en ligne** se lit dans les données de la page SeLoger Bureaux &
