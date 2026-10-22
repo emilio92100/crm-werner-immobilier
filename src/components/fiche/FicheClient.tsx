@@ -117,6 +117,7 @@ export function FenExpliquerEspace({ vers, prenom, onAnnuler, onValider }: {
                 </div>
               ))}
             </div>
+            {actif && <ConseilEspace />}
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: '#6b6864', cursor: 'pointer' }}>
               <input type="checkbox" checked={retenir} onChange={e => setRetenir(e.target.checked)} />
               {'Ne plus m’expliquer'}
@@ -447,6 +448,7 @@ import type { SuiviVente } from '@/lib/biens-vente';
 import { useBonDeVisite, useEtatsBons, type DepartBon } from '@/components/documents/BonDeVisite';
 import CompteRenduVisite, { enregistrerCompteRendu, type ValeursCR } from '@/components/shared/CompteRenduVisite';
 import { Onglets, StylesEmilio, Icone, LienEspace } from './ParcoursBien';
+import ConseilEspace from '@/components/shared/ConseilEspace';
 import { annoncerSucces } from '@/lib/succes';
 import { texteCreneau, reporterAdresseVeille } from '@/lib/suivi-agence';
 import FriseSuivi, { ISSUES_APPEL, estMailSimple, filtreDe, filtreSuiviNet } from './FriseSuivi';
@@ -4776,6 +4778,7 @@ ${signatureMail()}`,
               <p className={styles.situNotes}>{`Les locaux que tu envoies à ${client.prenom || 'ce client'} mènent à leur fiche publique : photos, description, et tes coordonnées pour te répondre. Aucun mail ne lui parle d’espace.`}</p>
               <p className={styles.situNotes}>{'Avec un espace, il retrouve tous les locaux proposés sur une page à lui, répond « ça m’intéresse », demande une visite ou dit non, et tu vois ses réponses ici. Le point automatique et le mail de bienvenue passent aussi par l’espace.'}</p>
               {client.statut === 'prospect' && <p className={styles.situNotes}>{'Lui ouvrir son espace, c’est le passer « Actif ».'}</p>}
+              <ConseilEspace />
               <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} style={{ alignSelf: 'flex-start' }} onClick={() => basculerEspaceClient(true)} disabled={basculeEspace}>
                 {basculeEspace ? 'Ouverture…' : client.statut === 'prospect' ? 'Ouvrir son espace (passer Actif)' : 'Ouvrir son espace'}
               </button>
