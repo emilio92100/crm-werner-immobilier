@@ -460,8 +460,8 @@ import BoutonCarte from '@/components/carte/BoutonCarte';
 import { BarreOnglets, CorpsOnglet } from '@/components/shared/OngletsGlissants';
 import Cascade from '@/components/shared/Cascade';
 import GardeHauteur from '@/components/shared/GardeHauteur';
-import Rapprochement, { GuideRapprochement, RapprochementsFaits, rapproAReprendre, type DepartRappro } from './Rapprochement';
-import { mandatsPour, type MandatOk } from '@/lib/rapprochement';
+import Rapprochement, { GuideRapprochement, RapprochementsFaits, VuDepuisBiens, rapproAReprendre, type DepartRappro } from './Rapprochement';
+import { mandatsPour, poserVenteEnSelection, vusDepuisBiens, type EtatDossier, type LigneHistoVu, type MandatOk, type VuDepuisBien } from '@/lib/rapprochement';
 import { ListeCoordonnees, lignesDe, nettoyer } from '@/components/shared/ListeCoordonnees';
 import { ChoixQuand } from '@/components/pages/PageAgenda';
 import FenetreIndispo from './FenetreIndispo';
@@ -1575,6 +1575,20 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
       .then(r => { if (vivant) setMandatsOk(r); }).catch(() => { if (vivant) setMandatsOk(null); });
     return () => { vivant = false; };
   }, [rechercheActive, client.id, versionBiens]);
+  /* V3.228 — Les rapprochements lancés depuis la fiche de ses biens, où cette
+     recherche est ressortie (src/lib/rapprochement.ts, vusDepuisBiens) :
+     l'onglet Rapprochement (« Vu depuis tes biens ») et le Suivi. */
+  const [vusBiens, setVusBiens] = useState<{ liste: VuDepuisBien[]; historique: LigneHistoVu[] } | null>(null);
+  const [poseVu, setPoseVu] = useState<string | null>(null);
+  const idRechercheActive = rechercheActive ? String(rechercheActive.id) : '';
+  useEffect(() => {
+    if (!idRechercheActive) { setVusBiens(null); return; }
+    let vivant = true;
+    vusDepuisBiens(idRechercheActive)
+      .then(r => { if (vivant) setVusBiens({ liste: r.liste, historique: r.historique }); })
+      .catch(() => { if (vivant) setVusBiens({ liste: [], historique: [] }); });
+    return () => { vivant = false; };
+  }, [idRechercheActive, versionBiens]);
   /* Ouverte depuis la fiche d'un bien (« Envoyer par mail… ») : le mail
      d'envoi habituel s'ouvre sur ce bien dès qu'il est chargé. Depuis une
      alerte : le rapprochement part tout seul (V3.29). */
@@ -3923,10 +3937,24 @@ ${signatureMail()}`,
   const horsDoublons = (j: { type: string; created_at?: string; bien_id?: string | null; metadata?: Record<string, unknown> | null }) =>
     (j.type === 'mail_envoye' ? !aSonEnvoi(j) : !COMM_JOURNAL_TYPES.includes(j.type)) || estMailSimple(j);
   const nbAutresRecherches = journal.filter(j => horsDoublons(j) && autreRecherche(j) && j.id !== ligneVisee).length;
-  const suiviEvents = journal
-    .filter(horsDoublons)
-    .filter(j => suiviToutes || !autreRecherche(j) || j.id === ligneVisee)
-    .map(j => ({ kind: 'event' as const, ts: j.created_at, data: j }));
+  const MOT_VU: Record<string, string> = { oui: 'Oui', a_voir: 'À voir', non: 'Non' };
+  const suiviEvents = [
+    ...journal
+      .filter(horsDoublons)
+      .filter(j => suiviToutes || !autreRecherche(j) || j.id === ligneVisee)
+      .map(j => ({ kind: 'event' as const, ts: j.created_at, data: j })),
+    /* V3.228 : les rapprochements lancés depuis la fiche d'un bien, où il est
+       ressorti — lus sur le bien, rien n'est écrit en base. */
+    ...(vusBiens?.historique || []).map(h => ({
+      kind: 'event' as const, ts: h.le,
+      data: {
+        id: h.id, type: 'rapprochement_bien', created_at: h.le, recherche_id: rechercheId, bien_id: null,
+        titre: `Rapprochement depuis l’affaire · ${MOT_VU[h.v] || h.v}${h.s != null ? ` · ${h.s}/100` : ''}`,
+        description: `${h.titre}${h.t ? ` : ${h.t}` : ''}`,
+        metadata: { bien_vente_id: h.bienId, depuisBien: true },
+      },
+    })),
+  ];
   /* Les filtres du Suivi (V3.214) : chaque ligne a le sien, d'après la même
      règle que la fiche d'un contact (filtreDe, dans FriseSuivi). */
   const suiviTous = [...suiviComms, ...suiviEvents];
@@ -4689,6 +4717,34 @@ ${signatureMail()}`,
                       ) : <p className={styles.situNotes}>{`Aucun pour l’instant. Le premier compare la recherche de ${client.prenom || 'ce client'} avec vos affaires en cours et les biens trouvés par vos veilles.`}</p>}
                     </div>
                   </div>
+                </div>
+                {/* V3.228 — Vu depuis tes affaires : les rapprochements lancés depuis la
+                    fiche d'une affaire, où il est ressorti (le même avis que sur l'affaire). */}
+                <div className={styles.carteEns}>
+                  <div className={styles.carteEnsT}>
+                    <span className={styles.carteEnsIc}><Icone nom="maison" taille={15} epaisseur={2} /></span>
+                    <b>Vu depuis tes affaires</b>
+                    {!!vusBiens?.liste.length && <i className={styles.rapproCompte}>{vusBiens.liste.length}</i>}
+                  </div>
+                  <p className={styles.situNotes}>{`Quand tu lances un rapprochement depuis la fiche d’une de tes affaires et que ${client.prenom || 'ce client'} en ressort, c’est ici : le dernier avis par affaire, le même que sur la fiche de l’affaire, et où il en est.`}</p>
+                  {vusBiens === null ? <p className={styles.situNotes}>Lecture…</p> : vusBiens.liste.length ? (
+                    <VuDepuisBiens liste={vusBiens.liste} prenom={client.prenom || 'ce client'} pose={poseVu}
+                      dossier={Object.fromEntries(biens.filter((b: any) => b.bien_vente_id).map((b: any) => [String(b.bien_vente_id), { etape: String(b.etape || 'selection'), envoye_le: b.envoye_le || null, badge: b.badge_retour || null, le: b.created_at || null } as EtatDossier]))}
+                      onBien={id => onNavigate('biens', { bien: id })}
+                      onProposer={async v => {
+                        if (!v.bien || poseVu) return;
+                        setPoseVu(v.bienId);
+                        try {
+                          await poserVenteEnSelection(v.bien, rechercheActive as unknown as Record<string, unknown>, client.id);
+                          await load();
+                          setVersionBiens(x => x + 1);
+                          setTab('selection');
+                        } catch (e) {
+                          alert((e as Error).message);
+                        }
+                        setPoseVu(null);
+                      }} />
+                  ) : <p className={styles.situNotes}>{'Aucun pour l’instant. Depuis la fiche d’une affaire, onglet Rapprochement, « Lancer le rapprochement » : s’il en ressort, il apparaîtra ici.'}</p>}
                 </div>
               </>
             )}
