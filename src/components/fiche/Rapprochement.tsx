@@ -37,11 +37,14 @@ import { createPortal } from 'react-dom';
 import { Icone } from './ParcoursBien';
 import {
   compterSources, rapprocher, poserEnSelection, presenterDansEspace, noterRapprochement, PERIODES,
-  type LigneRappro, type SourceRappro, type PeriodeVeille, type Trouve,
+  type EtatDossier, type LigneRappro, type SourceRappro, type PeriodeVeille, type Trouve, type VuDepuisBien,
 } from '@/lib/rapprochement';
+import AideRapprochement, { BoutonAideRappro } from '@/components/shared/AideRapprochement';
+import { modeAcheteurs } from '@/components/biens/AcheteursBien';
+import { etapeDe, lirePhotos, titreBien } from '@/lib/biens-vente';
 import { SEUIL_CORRESPOND, suiteEnvoi } from '@/components/biens/outils';
 import { supabase } from '@/lib/supabase';
-import { AvecScore, AvisDetail, IconeAvis, MOT_IA, Progression, analyserIA, compareIA, dateRappro, type AvisIA, type AvisParBien } from '@/components/biens/RapprochementIA';
+import { AvisDetail, IconeAvis, MOT_IA, Progression, analyserIA, compareIA, dateRappro, type AvisIA, type AvisParBien } from '@/components/biens/RapprochementIA';
 import s from './Rapprochement.module.css';
 import Curseur from '@/components/shared/Curseur';
 
@@ -57,6 +60,8 @@ function ecart(t: Trouve): { texte: string; ok: boolean } {
   if (!l) return { texte: `Tout correspond : ${t.corr.lignes.slice(0, 4).map(x => x.lib.toLowerCase()).join(', ')}`, ok: true };
   return { texte: `${l.lib} : ${l.valeur}, demandé ${l.demande}`, ok: false };
 }
+/* « 92 m² » ne se coupe pas en fin de ligne (V3.228). */
+const insec = (x: string) => x.replace(/(\d) (m²|pièces?|ch\.)/g, '$1\u00a0$2');
 const ancien = (t: Trouve) => !!t.le && Date.now() - new Date(t.le).getTime() > 60 * 86400000;
 const jourCourt = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '');
 
@@ -72,19 +77,40 @@ function Note({ n }: { n: number }) {
   );
 }
 
-function Photo({ t, grande }: { t: Trouve; grande?: boolean }) {
+function Photo({ src, grande }: { src?: string | null; grande?: boolean }) {
   const [ko, setKo] = useState(false);
   return (
     <span className={grande ? s.photoG : s.photo}>
-      {t.photo && !ko
+      {src && !ko
         // eslint-disable-next-line @next/next/no-img-element
-        ? <img src={t.photo} alt="" onError={() => setKo(true)} />
+        ? <img src={src} alt="" onError={() => setKo(true)} />
         : <Icone nom="maison" taille={grande ? 34 : 22} epaisseur={1.8} />}
     </span>
   );
 }
 
+/* V3.228 — La photo de l'affaire, sa note posée juste dessous (comme l'avatar
+   d'un acheteur, côté bien) et ce qu'elle mesure : son potentiel quand le
+   bien a été relu, sinon la part de ses critères. */
+function PhotoNote({ photo, n, v, legende }: { photo?: string | null; n: number | null; v: AvisIA['v'] | null; legende: 'potentiel' | 'critères' }) {
+  const x = n === null ? null : Math.max(0, Math.min(100, Math.round(n)));
+  return (
+    <span className={s.pn} data-v={v || 'aucun'} title={x === null ? undefined : `${legende === 'potentiel' ? 'Potentiel' : 'Ses critères'} : ${x} sur 100`}>
+      <Photo src={photo} />
+      {x !== null && <span className={s.pnNote}><b>{x}</b><small>{'/100'}</small></span>}
+      {x !== null && <small className={s.pnLeg}>{legende}</small>}
+    </span>
+  );
+}
+
+/* Un bien pas relu (une annonce de veille) : ce qui ne colle pas, ou « tout correspond ». */
+function Ecart({ t }: { t: Trouve }) {
+  const e = ecart(t);
+  return <span className={e.ok ? s.ecOk : s.ecKo}><Icone nom={e.ok ? 'coche' : 'alerte'} taille={14} epaisseur={2.4} /><span>{e.texte}</span></span>;
+}
+
 function Source({ t }: { t: Trouve }) {
+  if (t.avant) return <span className={`${s.src} ${s.srcEstim}`} title="Pas encore proposée : elle partira sans montant"><Icone nom="etiquette" taille={12} epaisseur={2.2} />Ton estimation</span>;
   return t.source === 'mandat'
     ? <span className={`${s.src} ${s.srcMandat}`}><Icone nom="etiquette" taille={12} epaisseur={2.2} />Ton affaire</span>
     : <span className={`${s.src} ${s.srcVeille}`} title={t.pour ? `Trouvé par la veille de ${t.pour}` : undefined}>
@@ -92,7 +118,18 @@ function Source({ t }: { t: Trouve }) {
     </span>;
 }
 
-export type DepartRappro = { source: SourceRappro; cocher?: string[]; periode?: PeriodeVeille; nouveautes?: boolean };
+export type DepartRappro = { source: SourceRappro; cocher?: string[]; periode?: PeriodeVeille; nouveautes?: boolean; estimations?: boolean; ventes?: boolean };
+
+/* V3.228 (repris du CRM d'Emilio) : une affaire déjà dans son dossier, et ce qui en a été fait. */
+const REPONSE: Record<string, string> = {
+  interesse: 'intéressé', souhaite_visiter: 'souhaite visiter', visite: 'visité', offre_faite: 'offre faite', refuse: 'il a dit non',
+};
+export function etatDossier(d?: EtatDossier | null): string {
+  if (!d) return '';
+  if (d.etape !== 'presente') return 'Dans sa sélection';
+  const quand = d.envoye_le ? ` le ${new Date(d.envoye_le).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}` : '';
+  return `Présentée${quand}${d.badge && REPONSE[d.badge] ? ` · ${REPONSE[d.badge]}` : ' · pas encore de réponse'}`;
+}
 
 /* V3.128 — « Fiche du bien », puis retour sur la fiche du client : le
    rapprochement reprend là où il était (Alexandre : « quand je reviens sur la
@@ -101,10 +138,10 @@ export type DepartRappro = { source: SourceRappro; cocher?: string[]; periode?: 
    mémoire de la page, le temps d'y revenir. Rien en base : la ligne du Suivi
    garde déjà ce qui a été proposé. */
 type Garde = {
-  le: number; depart: DepartRappro | null; source: SourceRappro; periode: PeriodeVeille;
-  res: { trouves: Trouve[]; compares: number; dejaLa: number }; choisis: string[]; filtre: 'tout' | 'mandat' | 'veille';
+  le: number; depart: DepartRappro | null; source: SourceRappro; periode: PeriodeVeille; estim?: boolean; ventes?: boolean;
+  res: { trouves: Trouve[]; compares: number; dejaLa: number; deja?: Trouve[] }; choisis: string[]; filtre: 'tout' | 'mandat' | 'veille';
   ia: AvisParBien; iaEtat: { fait: number; total: number; erreur: string; info: string; manquent: number; trouves: number; mandats: number };
-  voirNon: boolean; voirAnciens: boolean; pasPour: number; apercu: string | null; vus?: string[]; dernierLe?: string | null;
+  voirNon: boolean; voirAnciens: boolean; pasPour: number; apercu: string | null; vus?: string[]; dernierLe?: string | null; voirDeja?: boolean;
 };
 const gardes = new Map<string, Garde>();
 const GARDE_MS = 30 * 60_000; // comme la place de la fiche (src/lib/place-fiche.ts)
@@ -143,11 +180,15 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
   const [etape, setEtape] = useState<'choix' | 'cherche' | 'resultats'>(g0 ? 'resultats' : 'choix');
   const [source, setSource] = useState<SourceRappro>(g0?.source || dep?.source || 'deux');
   const [periode, setPeriode] = useState<PeriodeVeille>(g0?.periode ?? dep?.periode ?? 90);
+  /* V3.228 : ses estimations (sur demande) et ses affaires en cours. */
+  const [estim, setEstim] = useState<boolean>(g0?.estim ?? !!dep?.estimations);
+  const [ventes, setVentes] = useState<boolean>(g0?.ventes ?? dep?.ventes !== false);
+  const [voirDeja, setVoirDeja] = useState<boolean>(g0?.voirDeja ?? false);
   const nouveautes = !!dep?.nouveautes && !!vus?.length;
   const vusSet = useMemo(() => new Set(vus || []), [vus]);
   const [voirAnciens, setVoirAnciens] = useState(g0?.voirAnciens ?? false);
-  const [comptes, setComptes] = useState<{ mandats: number; veilles: Record<number, number> } | null>(null);
-  const [res, setRes] = useState<{ trouves: Trouve[]; compares: number; dejaLa: number } | null>(g0?.res ?? null);
+  const [comptes, setComptes] = useState<{ mandats: number; estimations?: number; veilles: Record<number, number> } | null>(null);
+  const [res, setRes] = useState<{ trouves: Trouve[]; compares: number; dejaLa: number; deja?: Trouve[] } | null>(g0?.res ?? null);
   const [erreur, setErreur] = useState('');
   const [choisis, setChoisis] = useState<Set<string>>(() => new Set(g0?.choisis || []));
   const [filtre, setFiltre] = useState<'tout' | 'mandat' | 'veille'>(g0?.filtre ?? 'tout');
@@ -166,11 +207,12 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
   /* « Fiche du bien » : on garde tout, puis on y va. */
   const versFiche = (bienId: string) => {
     if (res) gardes.set(String(recherche.id), {
-      le: Date.now(), depart: dep, source, periode, res, choisis: [...choisis], filtre, ia, iaEtat, voirNon, voirAnciens, pasPour, apercu: apercu?.cle || null, vus, dernierLe,
+      le: Date.now(), depart: dep, source, periode, estim, ventes, res, choisis: [...choisis], filtre, ia, iaEtat, voirNon, voirAnciens, pasPour, apercu: apercu?.cle || null, vus, dernierLe, voirDeja,
     });
     onFicheBien?.(bienId);
   };
   const avisDe = (t: Trouve) => (t.vente ? ia[t.vente.id]?.[String(recherche.id)] || null : null);
+  const [aide, setAide] = useState(false);
 
   useEffect(() => {
     let vivant = true;
@@ -196,14 +238,15 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
   }, [depart]);
 
   const nbVeilles = comptes?.veilles[periode] ?? null;
-  const aComparer = comptes ? (source === 'mandats' ? comptes.mandats : source === 'veilles' ? (nbVeilles || 0) : comptes.mandats + (nbVeilles || 0)) : null;
+  const nbBiens = comptes ? (ventes ? comptes.mandats : 0) + (estim ? comptes.estimations || 0 : 0) : 0;
+  const aComparer = comptes ? (source === 'mandats' ? nbBiens : source === 'veilles' ? (nbVeilles || 0) : nbBiens + (nbVeilles || 0)) : null;
 
   async function lancer(src: SourceRappro = source) {
     setErreur(''); setEtape('cherche'); setChoisis(new Set()); setFiltre('tout'); setPhase('tri'); setIa({}); setVoirNon(false);
     setIaEtat({ fait: 0, total: 0, erreur: '', info: '', manquent: 0, trouves: 0, mandats: 0 });
     const debut = Date.now();
     try {
-      const r0 = await rapprocher(recherche, client.id, src, periode);
+      const r0 = await rapprocher(recherche, client.id, src, periode, { ventes, estimations: estim });
       /* V3.126 : les biens où Alexandre l'a écarté (« Pas pour lui », depuis
          la fiche du bien) ne remontent pas. Une lecture qui échoue n'empêche rien. */
       const { data: pas } = await supabase.from('biens_vente_suivi').select('bien_id').eq('recherche_id', String(recherche.id)).eq('type', 'note').contains('donnees', { pasPourLui: true });
@@ -240,7 +283,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
           ...(a ? { v: a.v, s: a.s, t: a.r, p: a.p || [], m: a.m || [] } : {}),
         };
       });
-      noterRapprochement(client.id, recherche.id, r.trouves.length, src, periode, r.trouves.map(t => t.cle), lignes);
+      noterRapprochement(client.id, recherche.id, r.trouves.length, src, periode, r.trouves.map(t => t.cle), lignes, { ventes, estimations: estim });
     } catch (e) {
       setErreur((e as Error).message);
       setEtape('choix');
@@ -261,7 +304,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
       if (r.n) await suiteEnvoi(String(client.id), String(recherche.id), r.n);
     }
     setPose('');
-    if (erreurs.length) alert(`${erreurs.length} bien${erreurs.length > 1 ? 's' : ''} n’${erreurs.length > 1 ? 'ont' : 'a'} pas pu être ajouté${erreurs.length > 1 ? 's' : ''} :\n\n${erreurs.join('\n')}`);
+    if (erreurs.length) alert(`${erreurs.length} affaire${erreurs.length > 1 ? 's' : ''} n’${erreurs.length > 1 ? 'ont' : 'a'} pas pu être ajoutée${erreurs.length > 1 ? 's' : ''} :\n\n${erreurs.join('\n')}`);
     if (ids.length) onFini(quoi, ids);
   }
 
@@ -280,41 +323,61 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
   const nbM = nouveaux.filter(t => t.source === 'mandat').length;
   const nbV = nouveaux.filter(t => t.source === 'veille').length;
 
+  /* V3.228 — Une affaire trouvée : une carte d'un bord à l'autre (Alexandre : « que
+     ça prenne l'entièreté de l'écran, en mode rectangle »). En haut, la photo
+     et sa note, le titre, le lieu, le prix ; à droite, le choix et l'œil ; et
+     l'avis du rapprochement à côté (ordinateur) ou dessous, sur toute la
+     largeur (téléphone). */
+  const enTete = (t: Trouve, v: AvisIA['v'] | null, n: number, legende: 'potentiel' | 'critères') => (
+    <button type="button" className={s.bcBien} onClick={() => setApercu(t)} title="Voir cette affaire">
+      <PhotoNote photo={t.photo} n={n} v={v} legende={legende} />
+      <span className={s.bcTx}>
+        <b className={s.bcTitre}>{insec(t.titre)}</b>
+        {t.lieu && <span className={s.bcLieu}><Icone nom="lieu" taille={13} epaisseur={2.2} /><span>{t.lieu}</span></span>}
+        <span className={s.bcPrix}><b>{EUR(t.prix) || 'Montant non indiqué'}</b><Source t={t} /></span>
+      </span>
+    </button>
+  );
+  const oeil = (t: Trouve) => (
+    <button type="button" className={s.oeil} aria-label="Voir cette affaire" title="Voir cette affaire" onClick={() => setApercu(t)}>
+      <Icone nom="oeil" taille={17} epaisseur={2} />
+    </button>
+  );
+
   const ligne = (t: Trouve, i: number) => {
     const on = choisis.has(t.cle);
-    const e = ecart(t);
     const av = avisDe(t);
+    const note = av && typeof av.s === 'number' ? av.s : null;
     return (
-      <div key={t.cle} className={`${s.ligne} ${on ? s.ligneOn : ''}`} style={{ animationDelay: `${Math.min(i, 8) * 0.05}s` }}>
-        <button type="button" className={`${s.coche} ${on ? s.cocheOn : ''}`} aria-pressed={on} aria-label={on ? 'Retirer ce bien du choix' : 'Choisir ce bien'} onClick={() => basculer(t.cle)}>
-          <Icone nom="coche" taille={14} epaisseur={3.2} />
-        </button>
-        <button type="button" className={s.ligneCorps} onClick={() => setApercu(t)}>
-          {/* V3.125 : la note juste sous la photo — de potentiel quand le bien a été relu, sinon de critères. */}
-          {av && typeof av.s === 'number'
-            ? <AvecScore s={av.s} v={av.v} forme="carre"><Photo t={t} /></AvecScore>
-            : <AvecScore s={t.corr.note} v={null} forme="carre" legende="critères"><Photo t={t} /></AvecScore>}
-          <span className={s.ligneTx}>
-            <b>{t.titre}</b>
-            {t.lieu && <span>{t.lieu}</span>}
-            {av ? (
-              <>
-                <AvisDetail avis={av} sansMot />
-              </>
-            ) : <span className={e.ok ? s.ecartOk : s.ecartKo}>{e.texte}</span>}
-          </span>
-          <span className={s.ligneD}>
-            <b>{EUR(t.prix) || 'Prix non indiqué'}</b>
-            <Source t={t} />
-            {ancien(t) && <span className={s.vieux}>À vérifier : annonce ancienne</span>}
-          </span>
-        </button>
-        <button type="button" className={s.oeil} aria-label="Voir ce bien" title="Voir ce bien" onClick={() => setApercu(t)}>
-          <Icone nom="oeil" taille={18} epaisseur={2} />
-        </button>
-      </div>
+      <article key={t.cle} className={`${s.bc} ${on ? s.bcOn : ''}`} data-v={av?.v || 'aucun'} style={{ animationDelay: `${Math.min(i, 8) * 0.05}s` }}>
+        {enTete(t, note !== null ? av!.v : null, note ?? t.corr.note, note !== null ? 'potentiel' : 'critères')}
+        <div className={s.bcAct}>
+          <button type="button" className={`${s.coche} ${on ? s.cocheOn : ''}`} aria-pressed={on} aria-label={on ? 'Retirer cette affaire du choix' : 'Choisir cette affaire'} title={on ? 'Retirer cette affaire du choix' : 'Choisir cette affaire'} onClick={() => basculer(t.cle)}>
+            <Icone nom="coche" taille={15} epaisseur={3.2} />
+          </button>
+          {oeil(t)}
+        </div>
+        <div className={s.bcAvis}>
+          {av ? <AvisDetail avis={av} sansMot deuxCol /> : <Ecart t={t} />}
+          {ancien(t) && <span className={s.vieux}><Icone nom="horloge" taille={13} epaisseur={2.2} /><span>{'À vérifier : annonce ancienne'}</span></span>}
+        </div>
+      </article>
     );
   };
+
+  /* V3.228 : une affaire déjà dans son dossier — rien à cocher, ce qui en a été fait. */
+  const ligneDeja = (t: Trouve, i: number) => (
+    <article key={`d-${t.cle}`} className={`${s.bc} ${s.bcDeja}`} data-v="aucun" style={{ animationDelay: `${Math.min(i, 8) * 0.05}s` }}>
+      {enTete(t, null, t.corr.note, 'critères')}
+      <div className={s.bcAct}>
+        <span className={s.dejaIc} title="Déjà dans son dossier"><Icone nom="dossier" taille={14} epaisseur={2.2} /></span>
+        {oeil(t)}
+      </div>
+      <div className={s.bcAvis}>
+        <span className={s.dejaEtat}><Icone nom="coche" taille={14} epaisseur={2.8} /><span>{etatDossier(t.dossier)}</span></span>
+      </div>
+    </article>
+  );
 
   const fenetre = (
     <div className={s.voile} onMouseDown={e => { if (e.target === e.currentTarget && !pose) onFermer(); }}>
@@ -325,14 +388,14 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
             {etape === 'resultats' && res ? (
               <>
                 <h2>{nouveautes
-                  ? (nouveaux.length ? `${nouveaux.length} ${pl(nouveaux.length, 'nouveau bien', 'nouveaux biens')} pour ${prenom}` : `Rien de nouveau pour ${prenom}`)
-                  : (res.trouves.length ? `${res.trouves.length} bien${res.trouves.length > 1 ? 's' : ''} pour ${prenom}` : `Rien pour ${prenom} cette fois`)}</h2>
+                  ? (nouveaux.length ? `${nouveaux.length} ${pl(nouveaux.length, 'nouvelle affaire', 'nouvelles affaires')} pour ${prenom}` : `Rien de nouveau pour ${prenom}`)
+                  : (res.trouves.length ? `${res.trouves.length} affaire${res.trouves.length > 1 ? 's' : ''} pour ${prenom}` : `Rien pour ${prenom} cette fois`)}</h2>
                 <p>{[
                   nouveautes && dernierLe ? `depuis le ${jourLong(dernierLe)}` : '',
                   source !== 'veilles' ? `${nbM} de tes affaires` : '',
                   source !== 'mandats' ? `${nbV} bien${nbV > 1 ? 's' : ''} de tes veilles` : '',
                   anciens.length ? `${anciens.length} déjà ${pl(anciens.length, 'vu, replié', 'vus, repliés')}` : '',
-                  res.dejaLa ? `${res.dejaLa} déjà dans son dossier, mis de côté` : '',
+                  res.dejaLa ? `${res.dejaLa} déjà dans son dossier, ${pl(res.dejaLa, 'rangée', 'rangées')} à part` : '',
                 ].filter(Boolean).join(' · ')}</p>
               </>
             ) : (
@@ -342,7 +405,9 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
               </>
             )}
           </div>
-          {etape === 'resultats' && <button type="button" className={s.btnLeger} onClick={() => setEtape('choix')}>Refaire</button>}
+          {/* V3.228 : l'explication, étape par étape, toujours à portée. */}
+          <button type="button" className={s.aideTete} aria-label="Comment marche le rapprochement" title="Comment marche le rapprochement" onClick={() => setAide(true)}><Icone nom="info" taille={17} epaisseur={2.2} /></button>
+          {etape === 'resultats' && <button type="button" className={`${s.btnLeger} ${s.refaire}`} aria-label="Refaire le rapprochement" title="Refaire le rapprochement" onClick={() => setEtape('choix')}><Icone nom="remettre" taille={16} epaisseur={2.2} /><span>Refaire</span></button>}
           <button type="button" className={s.fermer} aria-label="Fermer" onClick={onFermer} disabled={!!pose}><Icone nom="fermer" taille={16} epaisseur={2.2} /></button>
         </div>
 
@@ -356,7 +421,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                   { k: 'veilles', ic: 'loupe', t: 'Les biens de mes veilles', d: 'Ceux trouvés pour vos autres clients.', n: nbVeilles == null ? '…' : `${nbVeilles} bien${nbVeilles > 1 ? 's' : ''}` },
                   { k: 'deux', ic: 'etoile', t: 'Les deux', d: 'Vos affaires d’abord, puis les veilles.', n: aComparer == null ? '…' : `${aComparer} bien${aComparer > 1 ? 's' : ''} à comparer` },
                 ] as const).map(c => (
-                  <button key={c.k} type="button" className={`${s.choix} ${source === c.k ? s.choixOn : ''}`} aria-pressed={source === c.k} onClick={() => setSource(c.k)}>
+                  <button key={c.k} type="button" className={`${s.choix} ${source === c.k ? s.choixOn : ''}`} aria-pressed={source === c.k} onClick={() => { setSource(c.k); if (c.k !== 'veilles') setVentes(true); }}>
                     {source === c.k && <span className={s.choixCoche}><Icone nom="coche" taille={13} epaisseur={3} /></span>}
                     <span className={s.choixIc}><Icone nom={c.ic} taille={20} epaisseur={2} /></span>
                     <b>{c.t}</b>
@@ -365,6 +430,16 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                   </button>
                 ))}
               </div>
+              {source !== 'veilles' && (
+                <label className={`${s.estim} ${estim ? s.estimOn : ''}`}>
+                  <input type="checkbox" checked={estim} onChange={e => setEstim(e.target.checked)} />
+                  <span className={s.estimIc}><Icone nom="etiquette" taille={16} epaisseur={2} /></span>
+                  <span className={s.estimTx}>
+                    <b>{`Ajouter mes estimations${comptes ? ` · ${comptes.estimations || 0}` : ''}`}</b>
+                    <small>{'Pas encore proposées (estimation, à suivre). S’il en reçoit une, il la reçoit sans montant, jusqu’à la signature du mandat.'}</small>
+                  </span>
+                </label>
+              )}
               {source !== 'mandats' && (
                 <div className={s.periode}>
                   <div>
@@ -379,7 +454,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                   </div>
                 </div>
               )}
-              <p className={s.info}><Icone nom="info" taille={16} epaisseur={2} /><span>{`Seuls les biens qui respectent au moins la moitié de ses critères sont montrés. Ceux déjà dans son dossier (sélection ou présentés) sont mis de côté.`}</span></p>
+              <p className={s.info}><Icone nom="info" taille={16} epaisseur={2} /><span>{`Seuls les biens qui respectent au moins la moitié de ses critères sont montrés. Ceux déjà dans son dossier (sélection ou présentés) sont rangés à part, avec ce qui en a été fait.`}</span></p>
               {erreur && <p className={s.erreur}>{erreur}</p>}
             </div>
             <div className={s.pied}>
@@ -397,8 +472,8 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
               { t: 'Le premier tri', etat: phase === 'tri' ? 'en' : 'fait',
                 d: phase === 'tri'
                   ? (aComparer != null ? `Je compare ${aComparer} bien${aComparer > 1 ? 's' : ''} avec les critères de ${prenom}…` : `Je compare tes biens avec les critères de ${prenom}…`)
-                  : `${iaEtat.trouves} bien${iaEtat.trouves > 1 ? 's' : ''} à 50 % et plus, dont ${iaEtat.mandats} de tes affaires en cours.` },
-              { t: 'La relecture de tes affaires en cours', etat: phase === 'tri' ? 'attente' : phase === 'relit' && iaEtat.total ? 'en' : 'fait', fait: iaEtat.fait, total: iaEtat.total,
+                  : `${iaEtat.trouves} bien${iaEtat.trouves > 1 ? 's' : ''} à 50 % et plus, dont ${iaEtat.mandats} de tes affaires${estim ? '' : ' en cours'}.` },
+              { t: estim ? 'La relecture de tes affaires' : 'La relecture de tes affaires en cours', etat: phase === 'tri' ? 'attente' : phase === 'relit' && iaEtat.total ? 'en' : 'fait', fait: iaEtat.fait, total: iaEtat.total,
                 d: phase === 'tri' ? `Ses indispensables, son parcours, ses comptes rendus de visite, face à chaque fiche.`
                   : !iaEtat.total ? 'Rien à relire : les annonces des veilles ont déjà été lues par la veille.'
                     : phase === 'relit' ? `${Math.min(iaEtat.fait, iaEtat.total)} sur ${iaEtat.total} relu${iaEtat.total > 1 ? 's' : ''}…` : `${iaEtat.total} relu${iaEtat.total > 1 ? 's' : ''}.` },
@@ -443,7 +518,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                 </div>
               ) : (
                 <>
-                  {relus.length > 0 && <span className={s.sur}>{`Tes affaires en cours · relues pour ${prenom}`}</span>}
+                  {relus.length > 0 && <span className={s.sur}>{`Tes affaires${estim ? '' : ' en cours'} · relues pour ${prenom}`}</span>}
                   {(['oui', 'a_voir', 'non'] as const).map(v => {
                     const l = relus.filter(y => groupeDe(y.a) === v);
                     if (!l.length) return null;
@@ -469,6 +544,17 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                   {veillesL.map((t, i) => ligne(t, i))}
                 </>
               )}
+              {/* V3.228 : ce qui est déjà dans son dossier, avec ce qui en a été fait. */}
+              {!!res.deja?.length && (
+                <>
+                  <button type="button" className={s.anciens} aria-expanded={voirDeja} onClick={() => setVoirDeja(v => !v)}>
+                    <span className={voirDeja ? s.chevOuvert : s.chev}><Icone nom="chevron" taille={16} epaisseur={2.2} /></span>
+                    <b>{`Déjà dans son dossier · ${res.deja.length}`}</b>
+                    <span>{voirDeja ? 'Replier' : 'Elles correspondent toujours, mais il les a déjà : un clic pour voir ce qui en a été fait.'}</span>
+                  </button>
+                  {voirDeja && res.deja.map((t, i) => ligneDeja(t, i))}
+                </>
+              )}
               {anciens.length > 0 && (
                 <>
                   <button type="button" className={s.anciens} aria-expanded={voirAnciens} onClick={() => setVoirAnciens(v => !v)}>
@@ -483,29 +569,29 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
             {res.trouves.length > 0 && (
               <div className={s.piedChoix}>
                 <div className={s.piedChoixT}>
-                  <span className={s.piedN}><b>{choisis.size}</b>{choisis.size > 1 ? ' biens cochés' : ' bien coché'}</span>
-                  <span className={s.piedQ}>{`Que faire ${pl(choisis.size, 'du bien coché', 'des biens cochés')} ? Dans tous les cas, son Suivi le note.`}</span>
+                  <span className={s.piedN}><b>{choisis.size}</b>{choisis.size > 1 ? ' affaires cochées' : ' affaire cochée'}</span>
+                  <span className={s.piedQ}>{`Que faire ${pl(choisis.size, 'de l’affaire cochée', 'des affaires cochées')} ? Dans tous les cas, son Suivi le note.`}</span>
                 </div>
                 <div className={s.opts}>
                   <button type="button" className={s.opt} onClick={() => poser('selection')} disabled={!choisis.size || !!pose}>
                     <span className={s.optIc}><Icone nom="liste" taille={19} epaisseur={2.1} /></span>
                     <span className={s.optTx}>
-                      <b><span className={s.optLong}>{pose === 'selection' ? 'Ajout…' : choisis.size > 1 ? 'Les mettre dans sa sélection' : 'Le mettre dans sa sélection'}</span><span className={s.optCourt}>{pose === 'selection' ? 'Ajout…' : 'Sélection'}<i>{'rien ne part'}</i></span></b>
+                      <b><span className={s.optLong}>{pose === 'selection' ? 'Ajout…' : choisis.size > 1 ? 'Les mettre dans sa sélection' : 'La mettre dans sa sélection'}</span><span className={s.optCourt}>{pose === 'selection' ? 'Ajout…' : 'Sélection'}<i>{'rien ne part'}</i></span></b>
                       <small>{`Onglet Sélection de ${prenom}. Rien ne part : tu l’enverras plus tard, quand tu voudras.`}</small>
                     </span>
                   </button>
                   <button type="button" className={s.opt} onClick={() => poser('espace')} disabled={!choisis.size || !!pose}>
                     <span className={s.optIc}><Icone nom="maison" taille={19} epaisseur={2.1} /></span>
                     <span className={s.optTx}>
-                      <b><span className={s.optLong}>{pose === 'espace' ? 'Présentation…' : choisis.size > 1 ? 'Les mettre dans son espace' : 'Le mettre dans son espace'}</span><span className={s.optCourt}>{pose === 'espace' ? 'Présentation…' : 'Son espace'}<i>{'sans mail'}</i></span></b>
-                      <small>{`Sans mail : le bien passe dans Présentés et ${prenom} le voit dans son espace. Son téléphone le prévient s’il a accepté les alertes.`}</small>
+                      <b><span className={s.optLong}>{pose === 'espace' ? 'Présentation…' : choisis.size > 1 ? 'Les mettre dans son espace' : 'La mettre dans son espace'}</span><span className={s.optCourt}>{pose === 'espace' ? 'Présentation…' : 'Son espace'}<i>{'sans mail'}</i></span></b>
+                      <small>{`Sans mail : l’affaire passe dans Présentés et ${prenom} la voit dans son espace. Son téléphone le prévient s’il a accepté les alertes.`}</small>
                     </span>
                   </button>
                   <button type="button" className={`${s.opt} ${s.optOr}`} onClick={() => poser('mail')} disabled={!choisis.size || !!pose}>
                     <span className={s.optIc}><Icone nom="envoyer" taille={19} epaisseur={2.1} /></span>
                     <span className={s.optTx}>
-                      <b><span className={s.optLong}>{pose === 'mail' ? 'Préparation…' : choisis.size > 1 ? 'Les lui envoyer par mail' : 'Le lui envoyer par mail'}</span><span className={s.optCourt}>{pose === 'mail' ? 'Préparation…' : 'Par mail'}<i>{'tu le relis'}</i></span></b>
-                      <small>{`Le mail habituel s’ouvre, tu le relis, il part. Le bien passe dans Présentés, et ${prenom} le voit dans son espace.`}</small>
+                      <b><span className={s.optLong}>{pose === 'mail' ? 'Préparation…' : choisis.size > 1 ? 'Les lui envoyer par mail' : 'La lui envoyer par mail'}</span><span className={s.optCourt}>{pose === 'mail' ? 'Préparation…' : 'Par mail'}<i>{'tu le relis'}</i></span></b>
+                      <small>{`Le mail habituel s’ouvre, tu le relis, il part. L’affaire passe dans Présentés, et ${prenom} la voit dans son espace.`}</small>
                     </span>
                   </button>
                 </div>
@@ -519,7 +605,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
         <div className={s.voileApercu} onMouseDown={e => { if (e.target === e.currentTarget) setApercu(null); }}>
           <div className={s.apercu} role="dialog" aria-modal="true" aria-label={apercu.titre}>
             <button type="button" className={s.fermerA} aria-label="Fermer l’aperçu" onClick={() => setApercu(null)}><Icone nom="fermer" taille={16} epaisseur={2.2} /></button>
-            <Photo t={apercu} grande />
+            <Photo src={apercu.photo} grande />
             {apercu.photos.length > 1 && (
               <div className={s.vignettes}>
                 {apercu.photos.slice(1, 5).map((u, i) => (
@@ -566,13 +652,18 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
             </div>
             <div className={s.apercuPied}>
               {apercu.url && <a className={s.btn} href={apercu.url} target="_blank" rel="noopener noreferrer"><Icone nom="lien" taille={15} epaisseur={2.1} />Voir l’annonce</a>}
+              {apercu.avant && <span className={s.dejaEtat}>{'Pas encore proposée : elle partira sans montant.'}</span>}
               {apercu.source === 'mandat' && apercu.vente && onFicheBien && (
                 <button type="button" className={s.btn} onClick={() => versFiche(apercu.vente!.id)}><Icone nom="maison" taille={15} epaisseur={2.1} />Fiche de l’affaire</button>
               )}
               <span style={{ flexGrow: 1 }} />
-              <button type="button" className={`${s.btn} ${choisis.has(apercu.cle) ? '' : s.btnOr}`} onClick={() => basculer(apercu.cle)}>
-                <Icone nom={choisis.has(apercu.cle) ? 'fermer' : 'coche'} taille={15} epaisseur={2.4} />{choisis.has(apercu.cle) ? 'Retirer du choix' : 'Choisir ce bien'}
-              </button>
+              {apercu.dossier
+                ? <span className={s.dejaEtat}>{`Déjà dans son dossier · ${etatDossier(apercu.dossier)}`}</span>
+                : (
+                  <button type="button" className={`${s.btn} ${choisis.has(apercu.cle) ? '' : s.btnOr}`} onClick={() => basculer(apercu.cle)}>
+                    <Icone nom={choisis.has(apercu.cle) ? 'fermer' : 'coche'} taille={15} epaisseur={2.4} />{choisis.has(apercu.cle) ? 'Retirer du choix' : 'Choisir cette affaire'}
+                  </button>
+                )}
             </div>
           </div>
         </div>
@@ -580,7 +671,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
     </div>
   );
 
-  return typeof document === 'undefined' ? null : createPortal(fenetre, document.body);
+  return typeof document === 'undefined' ? null : createPortal(<>{fenetre}{aide && <AideRapprochement depuis="client" onFermer={() => setAide(false)} />}</>, document.body);
 }
 
 /* ══ L'onglet Rapprochement d'un acheteur : le guide (V3.112) ═══════════════
@@ -598,17 +689,20 @@ export function GuideRapprochement({ client, recherche, illu, dernier, onLancer 
   const prenom = client.prenom || 'ce client';
   const [mandats, setMandats] = useState(true);
   const [veilles, setVeilles] = useState(true);
+  /* V3.228 : ses estimations, sur demande. */
+  const [estim, setEstim] = useState(false);
   const [periode, setPeriode] = useState<PeriodeVeille>(90);
   const [nouveautes, setNouveautes] = useState(true);
-  const [comptes, setComptes] = useState<{ mandats: number; veilles: Record<number, number> } | null>(null);
+  const [comptes, setComptes] = useState<{ mandats: number; estimations?: number; veilles: Record<number, number> } | null>(null);
   useEffect(() => {
     let vivant = true;
     compterSources(String(recherche.id), String(client.id)).then(c => { if (vivant) setComptes(c); }).catch(() => { if (vivant) setComptes({ mandats: 0, veilles: {} }); });
     return () => { vivant = false; };
   }, [recherche.id, client.id]);
   const nbV = comptes ? comptes.veilles[periode] ?? 0 : null;
-  const source: SourceRappro = mandats && veilles ? 'deux' : mandats ? 'mandats' : 'veilles';
-  const rien = !mandats && !veilles;
+  const biens = mandats || estim;
+  const source: SourceRappro = biens && veilles ? 'deux' : biens ? 'mandats' : 'veilles';
+  const rien = !mandats && !veilles && !estim;
 
   return (
     <section className={s.guide} aria-label={`Rapprochement pour ${prenom}`}>
@@ -616,24 +710,33 @@ export function GuideRapprochement({ client, recherche, illu, dernier, onLancer 
         {illu}
         <div className={s.guideTx}>
           <h2>{`Quels biens de ta base pourraient plaire à ${prenom} ?`}</h2>
-          <p>{'On compare sa recherche avec '}<b>{'tes affaires en cours'}</b>{' et avec '}<b>{'les annonces que tes veilles ont trouvées pour tes autres clients'}</b>{'. Puis le rapprochement relit en détail tes affaires face à tout son dossier : pour chacun, un avis, une note de potentiel sur 100, ses plus et ses moins.'}</p>
+          <p>{'On compare sa recherche avec '}<b>{'tes affaires en cours'}</b>{' (et tes estimations, si tu veux) et avec '}<b>{'les annonces que tes veilles ont trouvées pour tes autres clients'}</b>{'. Puis le rapprochement relit en détail tes affaires face à tout son dossier : pour chacune, un avis, une note de potentiel sur 100, ses plus et ses moins.'}</p>
+          <BoutonAideRappro depuis="client" className={s.guideAide} />
         </div>
       </div>
       <ol className={s.temps}>
-        <li><i>1</i><span><b>{'Coche où chercher'}</b>{' : tes affaires, tes veilles, ou les deux'}</span></li>
+        <li><i>1</i><span><b>{'Coche où chercher'}</b>{' : tes affaires en cours, tes estimations, tes veilles'}</span></li>
         <li><i>2</i><span><b>{'Lance le rapprochement'}</b>{' : il trie, puis relit tes affaires'}</span></li>
         <li><i>3</i><span><b>{'Coche ceux qui lui iraient'}</b>{' : dans sa sélection, ou par mail'}</span></li>
       </ol>
 
       <div className={s.ou}>
-        <div className={s.ouT}><i>1</i><h3>{'Où chercher ?'}</h3><span>{'Coche l’un, l’autre, ou les deux.'}</span></div>
+        <div className={s.ouT}><i>1</i><h3>{'Où chercher ?'}</h3><span>{'Coche ce que tu veux.'}</span></div>
         <div className={s.sources}>
           <label className={`${s.source} ${mandats ? s.sourceOn : ''}`}>
             <input type="checkbox" checked={mandats} onChange={e => setMandats(e.target.checked)} />
             <span className={s.sourceIc}><Icone nom="maison" taille={18} epaisseur={2} /></span>
             <span className={s.sourceTx}>
               <span className={s.sourceL1}><b>{'Mes affaires en cours'}</b><strong>{comptes ? comptes.mandats : '…'}</strong></span>
-              <small>{'Tes affaires à l’étape « Disponible ». Ni les estimations, ni les affaires déjà sous offre ou en signature.'}</small>
+              <small>{'Tes affaires à l’étape « Disponible ». Pas celles déjà sous offre ou en signature.'}</small>
+            </span>
+          </label>
+          <label className={`${s.source} ${estim ? s.sourceOn : ''}`}>
+            <input type="checkbox" checked={estim} onChange={e => setEstim(e.target.checked)} />
+            <span className={s.sourceIc}><Icone nom="etiquette" taille={18} epaisseur={2} /></span>
+            <span className={s.sourceTx}>
+              <span className={s.sourceL1}><b>{'Mes estimations'}</b><strong>{comptes ? comptes.estimations || 0 : '…'}</strong></span>
+              <small>{'Pas encore proposées (estimation, à suivre). S’il en reçoit une, il la reçoit sans montant, jusqu’à la signature du mandat.'}</small>
             </span>
           </label>
           <label className={`${s.source} ${veilles ? s.sourceOn : ''}`}>
@@ -664,11 +767,11 @@ export function GuideRapprochement({ client, recherche, illu, dernier, onLancer 
               <label><input type="radio" name="rappro-quoi" checked={!nouveautes} onChange={() => setNouveautes(false)} />{'Tout revoir'}</label>
             </span>
           )}
-          <button type="button" className={`${s.btn} ${s.btnOr}`} disabled={rien} onClick={() => onLancer({ source, periode, nouveautes: !!dernier && nouveautes })}>
+          <button type="button" className={`${s.btn} ${s.btnOr}`} disabled={rien} onClick={() => onLancer({ source, periode, nouveautes: !!dernier && nouveautes, estimations: estim, ventes: mandats })}>
             <Icone nom="loupe" taille={17} epaisseur={2.2} />{'Lancer le rapprochement'}
           </button>
         </div>
-        {rien && <p className={s.info}><Icone nom="info" taille={16} epaisseur={2} /><span>{'Coche au moins une des deux cases.'}</span></p>}
+        {rien && <p className={s.info}><Icone nom="info" taille={16} epaisseur={2} /><span>{'Coche au moins une case.'}</span></p>}
       </div>
     </section>
   );
@@ -749,4 +852,88 @@ export function RapprochementsFaits({ liste, prenom, onBien }: { liste: LigneJou
       })}
     </div>
   );
+}
+
+/* ══ Vu depuis tes biens (V3.228) ═══════════════════════════════════════════
+   Alexandre : « si depuis la fiche d'un bien on fait un rapprochement et que
+   ça trouve un client, est-ce que sur sa fiche ça l'indique ? » Les
+   rapprochements lancés depuis la fiche d'une affaire, où cette recherche est
+   ressortie (src/lib/rapprochement.ts, vusDepuisBiens) : le dernier avis par
+   bien, le même que sur la fiche du bien. Pour chacun, où il en est : dans
+   son dossier (sélection, présenté le…, sa réponse), « Pas pour lui », plus
+   en vente — ou « La mettre dans sa sélection ». Oui et À voir d'abord, Non
+   replié. */
+export function VuDepuisBiens({ liste, prenom, dossier, onBien, onProposer, pose }: {
+  liste: VuDepuisBien[]; prenom: string;
+  /* Ses biens déjà dans son dossier, par bien en vente. */
+  dossier: Record<string, EtatDossier>;
+  onBien: (bienVenteId: string) => void;
+  onProposer: (v: VuDepuisBien) => void;
+  /* Le bien en cours d'ajout. */
+  pose: string | null;
+}) {
+  const [voirNon, setVoirNon] = useState(false);
+  const ligne = (v: VuDepuisBien) => {
+    const b = v.bien;
+    const titre = b ? b.titre || titreBien(b.donnees || {}) : 'Une affaire supprimée';
+    const lieu = b ? [b.quartier, b.ville].filter(Boolean).join(' · ') : '';
+    const mode = b && !b.archive ? modeAcheteurs(b.etape) : 'fini';
+    const d = dossier[v.bienId];
+    const etat = d ? etatDossier(d)
+      : v.ecarte ? 'Pas pour lui (posé depuis l’affaire)'
+        : !b ? 'Cette affaire n’existe plus'
+          : b.archive ? 'Affaire archivée'
+            : mode === 'fini' ? `${etapeDe(b.etape).lib} : plus proposée`
+              : mode === 'pause' ? 'Vente en pause' : '';
+    const peut = !d && !v.ecarte && !!b && (mode === 'vente' || mode === 'avant');
+    const photo = b ? (lirePhotos((b.donnees || {}).photos).map(p => p.url).filter(Boolean)[0] || b.photo || null) : null;
+    const note = typeof v.s === 'number' ? v.s : v.n;
+    /* V3.228 : la même carte que dans la fenêtre du rapprochement. */
+    return (
+      <article key={v.bienId} className={`${s.bc} ${s.bcVu}`} data-v={v.v}>
+        <button type="button" className={s.bcBien} disabled={!b} title={b ? 'Ouvrir la fiche de l’affaire' : undefined} onClick={() => onBien(v.bienId)}>
+          <PhotoNote photo={photo} n={note} v={typeof v.s === 'number' ? v.v : null} legende={typeof v.s === 'number' ? 'potentiel' : 'critères'} />
+          <span className={s.bcTx}>
+            <b className={s.bcTitre}>{insec(titre)}</b>
+            {lieu && <span className={s.bcLieu}><Icone nom="lieu" taille={13} epaisseur={2.2} /><span>{lieu}</span></span>}
+            {(b?.prix || mode === 'avant') && (
+              <span className={s.bcPrix}>
+                {b?.prix ? <b>{EUR(b.prix)}</b> : null}
+                {mode === 'avant' && <span className={`${s.src} ${s.srcEstim}`} title="Pas encore proposée : elle partirait sans montant"><Icone nom="etiquette" taille={12} epaisseur={2.2} />{'Estimation, sans montant pour lui'}</span>}
+              </span>
+            )}
+            <span className={s.bcMeta}><Icone nom="calendrier" taille={13} epaisseur={2.2} /><span>{`Rapprochement du ${jourLong(v.le)}${v.fois > 1 ? ` · ressorti ${v.fois} fois` : ''}`}</span></span>
+          </span>
+        </button>
+        <div className={s.bcAvis}>
+          {v.t ? <AvisDetail avis={{ v: v.v, r: v.t, s: v.s ?? undefined, p: v.p, m: v.m }} sansMot={true} deuxCol={true} /> : null}
+          {(etat || peut) && (
+            <span className={s.vuD}>
+              {etat && <span className={d ? s.vuEtatOk : s.vuEtat}>{d && <Icone nom="coche" taille={12} epaisseur={3} />}<span>{etat}</span></span>}
+              {peut && (
+                <button type="button" className={s.vuBtn} disabled={!!pose} onClick={() => onProposer(v)}>
+                  <Icone nom="liste" taille={14} epaisseur={2.2} />{pose === v.bienId ? 'Ajout…' : 'La mettre dans sa sélection'}
+                </button>
+              )}
+            </span>
+          )}
+        </div>
+      </article>
+    );
+  };
+  const groupe = (av: AvisIA['v']) => {
+    const l = liste.filter(x => x.v === av);
+    if (!l.length) return null;
+    const replie = av === 'non' && !voirNon;
+    const tete = <><IconeAvis v={av} t={18} /><b>{MOT_IA[av]}</b><i>{l.length}</i></>;
+    return (
+      <div key={av} className={s.rfGroupe}>
+        {av === 'non'
+          ? <button type="button" className={`${s.rfGroupeT} ${s.vuNon}`} aria-expanded={!replie} onClick={() => setVoirNon(o => !o)}>{tete}<em>{replie ? 'Voir pourquoi' : 'Replier'}</em></button>
+          : <span className={s.rfGroupeT}>{tete}<em>{av === 'oui' ? `Ils peuvent plaire à ${prenom}.` : 'Un point à vérifier avec lui.'}</em></span>}
+        {!replie && l.map(ligne)}
+      </div>
+    );
+  };
+  return <div className={s.vu}>{(['oui', 'a_voir', 'non'] as const).map(groupe)}</div>;
 }

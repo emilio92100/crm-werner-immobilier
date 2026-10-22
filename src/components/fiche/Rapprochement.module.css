@@ -361,3 +361,155 @@ div.rfBien { cursor: default; }
 @media (max-width: 760px) {
   /* V3.163 : arrondi de nouveau (la fiche garde 10 px de chaque côté). */
 }
+
+/* ══ V3.228 ══════════════════════════════════════════════════════════════ */
+/* Le « ? » de la fenêtre, et le bouton d'aide du guide. */
+.aideTete {
+  width: 38px; height: 38px; flex-shrink: 0; border-radius: 11px; border: 1px solid #f9c8a3; background: #fff7f0; color: #c2621c;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.guideAide { align-self: flex-start; margin-top: 2px; }
+/* Une estimation, dans la liste. */
+.srcEstim { background: #f3edff; color: #6d3fd1; }
+/* « Ajouter mes estimations », dans la fenêtre. */
+.estim {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-top: 10px; border-radius: 16px; cursor: pointer;
+  border: 1.5px solid #eef1f6; background: #f8fafc; transition: border-color .15s, background .15s;
+}
+.estim input { width: 18px; height: 18px; accent-color: #e0894a; flex-shrink: 0; margin: 0; }
+.estimOn { border-color: #f9c8a3; background: #fff9f4; }
+.estimIc { width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: #f3edff; color: #6d3fd1; }
+.estimTx { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.estimTx b { font: 800 14px 'Plus Jakarta Sans', sans-serif; color: #25272b; }
+.estimTx small { font-size: 12.5px; line-height: 1.45; color: #64748b; }
+/* Une affaire trouvée : une carte, d'un bord à l'autre (« en mode rectangle »).
+   Ordinateur : le bien | son avis | le choix et l'œil, sur une seule bande.
+   Téléphone : le bien et le choix en haut, l'avis dessous, sur toute la largeur. */
+.liste { gap: 8px; }
+.groupe { gap: 8px; }
+.bc {
+  display: grid; grid-template-columns: minmax(0, 24rem) minmax(0, 1fr) auto; grid-template-areas: 'bien avis act';
+  gap: 12px 20px; align-items: center; padding: 14px 14px 14px 16px; border-radius: 18px; min-width: 0;
+  border: 1.5px solid #ebeae9; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+  transition: border-color .15s, background .15s, box-shadow .15s; animation: entre .45s cubic-bezier(.16, 1, .3, 1) backwards;
+}
+.bc[data-v='oui'] { border-left: 4px solid #16a34a; }
+.bc[data-v='a_voir'] { border-left: 4px solid #d97706; }
+.bc[data-v='non'] { border-left: 4px solid #fca5a5; background: #fffdfd; }
+.bcOn { border-color: #f08c42; background: #fff9f4; box-shadow: 0 0 0 3px rgba(240, 140, 66, .16); }
+.bcBien {
+  grid-area: bien; display: flex; align-items: flex-start; gap: 14px; min-width: 0; padding: 0; border: none; background: none;
+  text-align: left; cursor: pointer; font-family: inherit; color: inherit;
+}
+.bcTx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding-top: 2px; }
+.bcTitre {
+  font: 800 15px/1.3 'Plus Jakarta Sans', sans-serif; color: #25272b;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.bcLieu { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: 13px; color: #64748b; }
+.bcLieu svg { color: #c2621c; }
+.bcLieu > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bcPrix { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 3px; }
+.bcPrix > b { font: 800 16px 'Plus Jakarta Sans', sans-serif; color: #c2621c; white-space: nowrap; }
+.bcAvis { grid-area: avis; min-width: 0; align-self: stretch; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding-left: 20px; border-left: 1px solid #f5f4f4; }
+.bcAct { grid-area: act; align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 8px; }
+.bcAct > .coche { width: 28px; height: 28px; border-radius: 8px; }
+.bcAct > .oeil { width: 36px; height: 36px; }
+/* La photo, sa note juste dessous, et ce qu'elle mesure. */
+.pn { flex-shrink: 0; display: inline-flex; flex-direction: column; align-items: center; }
+.pn .photo { width: 112px; height: 84px; border-radius: 14px; box-shadow: 0 0 0 2.5px #fff, 0 0 0 4.5px #e2e8f0; }
+.pnNote {
+  position: relative; z-index: 1; margin-top: -12px; display: inline-flex; align-items: baseline; gap: 1px; height: 24px; padding: 0 9px;
+  border-radius: 99px; border: 2px solid #fff; box-sizing: border-box; line-height: 20px; background: #64748b; color: #fff;
+  box-shadow: 0 4px 10px -6px rgba(15, 23, 42, .6);
+}
+.pnNote b { font: 800 13px 'Plus Jakarta Sans', sans-serif; }
+.pnNote small { font: 700 9.5px 'Plus Jakarta Sans', sans-serif; opacity: .85; }
+.pnLeg { margin-top: 2px; font: 800 8.5px 'Plus Jakarta Sans', sans-serif; letter-spacing: .5px; text-transform: uppercase; color: #94a3b8; white-space: nowrap; }
+.pn[data-v='oui'] .photo { box-shadow: 0 0 0 2.5px #fff, 0 0 0 4.5px #16a34a; }
+.pn[data-v='a_voir'] .photo { box-shadow: 0 0 0 2.5px #fff, 0 0 0 4.5px #d97706; }
+.pn[data-v='non'] .photo { box-shadow: 0 0 0 2.5px #fff, 0 0 0 4.5px #fca5a5; }
+.pn[data-v='oui'] .pnNote { background: #16a34a; }
+.pn[data-v='a_voir'] .pnNote { background: #d97706; }
+.pn[data-v='non'] .pnNote { background: #dc2626; }
+/* Pas relu : ce qui ne colle pas, ou « tout correspond ». */
+.ecOk, .ecKo { display: flex; align-items: flex-start; gap: 8px; padding: 9px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; line-height: 1.45; }
+.ecOk { background: #f0fdf4; color: #166534; }
+.ecKo { background: #fff7ed; color: #9a3412; }
+.ecOk svg, .ecKo svg { margin-top: 2px; }
+.bcAvis > .vieux { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; white-space: normal; }
+/* Déjà dans son dossier : rien à cocher, ce qui en a été fait. */
+.bcDeja { background: #fcfcfb; border-style: dashed; }
+.dejaIc {
+  width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+  background: #e2f5e8; color: #15803d;
+}
+.dejaEtat {
+  display: inline-flex; align-items: flex-start; gap: 7px; align-self: flex-start; padding: 8px 13px; border-radius: 12px;
+  background: #e9f8ee; color: #15803d; font-size: 13px; font-weight: 700; line-height: 1.4;
+}
+.dejaEtat svg { margin-top: 1px; }
+/* « Vu depuis tes affaires », dans la fiche : la même carte, sans case à cocher. */
+.bcVu { grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); grid-template-areas: 'bien avis'; }
+.bcVu .bcTitre { text-decoration: underline; text-decoration-color: #f8be91; text-underline-offset: 3px; }
+.bcBien:disabled { cursor: default; }
+.bcBien:disabled .bcTitre { text-decoration: none; }
+.bcMeta { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: 12px; color: #94a3b8; }
+.bcMeta svg { color: #b8c2d0; }
+.bcAvis > .vuD { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 8px; max-width: none; width: auto; padding: 0; }
+.bcAvis .vuEtat, .bcAvis .vuEtatOk { text-align: left; }
+/* « Refaire » : le mot à l'ordinateur, la flèche seule au téléphone. */
+.refaire { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex-shrink: 0; }
+@media (hover: hover) {
+  .bc:not(.bcOn):hover { border-color: #dad9d8; box-shadow: 0 12px 26px -20px rgba(15, 23, 42, .45); }
+  .bcBien:hover .bcTitre { color: #c2621c; }
+}
+@media (max-width: 720px) {
+  .bc { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'bien act' 'avis avis'; gap: 12px 10px; padding: 12px; align-items: start; }
+  .bcBien { gap: 12px; }
+  .pn .photo { width: 96px; height: 74px; border-radius: 13px; }
+  .bcTitre { font-size: 14.5px; }
+  .bcPrix > b { font-size: 15px; }
+  .bcAvis { padding: 12px 0 0; border-left: none; border-top: 1px solid #f5f4f4; }
+  .bcAct { justify-content: flex-start; }
+  .bcAct > .oeil { display: inline-flex; width: 34px; height: 34px; }
+  .bcVu { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'bien' 'avis'; }
+  .refaire { width: 38px; padding: 0; }
+  .refaire > span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .bc { animation: none; } }
+/* Vu depuis tes biens. */
+.vu { display: flex; flex-direction: column; gap: 12px; }
+.vuL {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 13px; border: 1px solid #eef1f6; background: #fafbfd;
+  animation: entre .45s cubic-bezier(.16, 1, .3, 1) backwards;
+}
+.vuTx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.vuTitre {
+  align-self: flex-start; max-width: 100%; padding: 0; border: none; background: none; cursor: pointer; text-align: left;
+  font: 800 13.5px 'Plus Jakarta Sans', sans-serif; color: #25272b; text-decoration: underline; text-decoration-color: #f3c9a8; text-underline-offset: 3px;
+}
+.vuTx > b { font: 800 13.5px 'Plus Jakarta Sans', sans-serif; color: #25272b; }
+.vuTx > small { font-size: 12px; line-height: 1.45; color: #64748b; }
+.vuD { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 46%; }
+.vuEtat, .vuEtatOk {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 99px; text-align: right;
+  font: 700 12px/1.35 'DM Sans', sans-serif;
+}
+.vuEtat { background: #f1f5f9; color: #64748b; }
+.vuEtatOk { background: #e9f8ee; color: #15803d; }
+.vuBtn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 10px; cursor: pointer; white-space: nowrap;
+  border: 1px solid #f9c8a3; background: #fff7f0; color: #b4561a; font: 700 12.5px 'DM Sans', sans-serif;
+}
+.vuBtn:disabled { opacity: .55; cursor: default; }
+.vuNon { border: none; background: none; cursor: pointer; font-family: inherit; text-align: left; width: 100%; }
+.rfGroupeT em { margin-left: auto; font-style: normal; font-size: 12px; color: #94a3b8; }
+@media (hover: hover) {
+  .aideTete:hover { background: #fde6d4; }
+  .vuBtn:not(:disabled):hover { background: #fde6d4; border-color: #f2b48a; }
+}
+@media (max-width: 640px) {
+  .vuL { flex-wrap: wrap; }
+  .vuD { max-width: none; width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; padding-left: 44px; }
+}
