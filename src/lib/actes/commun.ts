@@ -179,6 +179,10 @@ export type Contexte = {
     prix_acquereur?: number | null; prix_vendeur?: number | null; agence_nom?: string | null; description?: string | null;
     /* V3.145 : ses honoraires et son vendeur (l'offre d'achat les reprend). */
     commission_type?: string | null; commission_val?: number | null; bien_vente_id?: string | null; est_particulier?: boolean | null;
+    /* Werner (22 octobre 2026) : la nature de l'affaire (location, droit au
+       bail, fonds, murs) — celle d'une affaire de l'agence, ou celle que
+       porte la copie chez un demandeur (biens.pro). */
+    nature?: string | null; pro?: { nature?: unknown } | null;
   } | null;
   visite?: { date_visite?: string | null; heure?: string | null } | null;
   /* La recherche choisie (une ligne de `recherches`), pour un mandat de
@@ -468,6 +472,62 @@ export const eurosLettres = (n: number) => `${euros(n)} (${enLettres(n)} euros)`
 /* « 12 » → « douze (12) » */
 export const nbLettres = (n: number) => `${enLettres(n)} (${n})`;
 export const pourcent = (n: number) => `${String(Math.round(n * 100) / 100).replace('.', ',')} %`;
+
+/* ── Les honoraires, en HT ou en TTC (22 octobre 2026) ───────────────────
+   Alexandre : « qu'il puisse afficher en hors taxes ou en TTC, qu'il donne
+   ses éléments, ses chiffres, qu'il ait une maîtrise totale du mandat ».
+   Une seule règle pour tous les documents qui parlent d'honoraires :
+     · `baseHono` : la base dans laquelle Werner tape son taux ou son forfait,
+       'ht' (par défaut : l'usage de l'immobilier d'entreprise) ou 'ttc' ;
+     · `tvaHono` : le taux de TVA, 20 % par défaut.
+   Le taux s'applique au loyer ou au prix et donne des honoraires dans cette
+   base ; le document écrit toujours les deux montants, le sien d'abord
+   (« 12 000 € HT, soit 14 400 € TTC »). La fiche d'une affaire, elle, reste
+   en HT (pourAffaire, mandat-vente.ts). */
+export type BaseHono = 'ht' | 'ttc';
+export const baseHono = (d: Donnees): BaseHono => (d.baseHono === 'ttc' ? 'ttc' : 'ht');
+/* « HT » ou « TTC », pour la base choisie. */
+export const motBase = (d: Donnees) => (baseHono(d) === 'ttc' ? 'TTC' : 'HT');
+export const tvaDe = (d: Donnees): number => { const t = num(d, 'tvaHono'); return t !== null && t >= 0 && t < 100 ? t : 20; };
+/* Un montant tapé dans sa base, en HT et en TTC (arrondis à l'euro). */
+export function htTtc(d: Donnees, m: number): { ht: number; ttc: number } {
+  const k = 1 + tvaDe(d) / 100;
+  return baseHono(d) === 'ttc' ? { ht: Math.round(m / k), ttc: Math.round(m) } : { ht: Math.round(m), ttc: Math.round(m * k) };
+}
+/* Un taux de sa base, ramené en HT (la fiche d'une affaire compte en HT). */
+export const tauxHT = (d: Donnees, t: number) => (baseHono(d) === 'ttc' ? Math.round((t / (1 + tvaDe(d) / 100)) * 1000) / 1000 : t);
+/* « 12 000 € HT, soit 14 400 € TTC » ; `lettres` : le premier montant aussi
+   en toutes lettres (« douze mille euros HT (12 000 € HT), soit… »). */
+export function montantHono(d: Donnees, m: number, lettres = false): string {
+  const { ht, ttc } = htTtc(d, m);
+  const [a, ua, b, ub] = baseHono(d) === 'ttc' ? [ttc, 'TTC', ht, 'HT'] : [ht, 'HT', ttc, 'TTC'];
+  return `${lettres ? `${enLettres(a)} euros ${ua} (${euros(a)} ${ua})` : `${euros(a)} ${ua}`}, soit ${euros(b)} ${ub}`;
+}
+/* La forme courte, entre parenthèses : « 5 000 € HT (6 000 € TTC) ». */
+export function montantHonoCourt(d: Donnees, m: number): string {
+  const { ht, ttc } = htTtc(d, m);
+  return baseHono(d) === 'ttc' ? `${euros(ttc)} TTC (${euros(ht)} HT)` : `${euros(ht)} HT (${euros(ttc)} TTC)`;
+}
+/* « TVA en sus » ou « TVA comprise », selon la base. */
+export const mentionTva = (d: Donnees) => (baseHono(d) === 'ttc' ? 'TVA comprise' : 'TVA en sus');
+/* « 2,5 % HT » */
+export const tauxHono = (d: Donnees, t: number) => `${pourcent(t)} ${motBase(d)}`;
+/* La même question, une fois par base, avec l'unité qui dit HT ou TTC ;
+   l'éditeur ne montre que celle de la base choisie. */
+export function selonBase<C extends ChampSimple>(c: C, unite: (base: 'HT' | 'TTC') => string): C[] {
+  return (['ht', 'ttc'] as const).map(b => ({ ...c, unite: unite(b === 'ttc' ? 'TTC' : 'HT'), si: (d: Donnees) => baseHono(d) === b && (c.si ? c.si(d) : true) }));
+}
+/* Les deux questions, à poser juste avant le taux ou le forfait. */
+export function champsBaseHono(si?: (d: Donnees) => boolean): Champ[] {
+  return [
+    { t: 'choix', cle: 'baseHono', lib: 'Tes chiffres d’honoraires sont…', ic: 'fiscal', si, options: [
+      { v: 'ht', l: 'Hors taxes (HT)', aide: 'TVA en sus : l’usage pour les professionnels.', ic: 'euro' },
+      { v: 'ttc', l: 'Toutes taxes comprises (TTC)', aide: 'TVA comprise : ce que paiera le client.', ic: 'fiscal' },
+    ] },
+    { t: 'nombre', cle: 'tvaHono', lib: 'Taux de TVA', ic: 'fiscal', unite: '%', si, question: 'Un autre taux de TVA que 20 % ?',
+      aide: 'Le document écrit les deux montants, HT et TTC, le tien en premier.' },
+  ];
+}
 /* « JJ/MM/AAAA » depuis « AAAA-MM-JJ ». */
 export const jour = (ymd: string) => jourFr(ymd);
 /* « 27 septembre 2026 » depuis « AAAA-MM-JJ », sans fuseau. */
@@ -483,7 +543,7 @@ export const aujourdhui = () => new Intl.DateTimeFormat('fr-CA', { timeZone: 'Eu
    quelle base, qui les reçoit, combien de temps, quels droits. Un seul
    paragraphe, pour que le document reste lisible. */
 export function blocDonnees(id: IdentiteAgence): Bloc {
-  return P(`Données personnelles : l’Agence, responsable du traitement, utilise les informations recueillies ici pour exécuter le présent document et remplir ses obligations légales (registre des mandats, lutte contre le blanchiment). Elles ne sont communiquées qu’aux personnes qui interviennent dans l’opération (notaires, diagnostiqueurs, confrères, établissements de crédit) et sont conservées cinq ans après la fin de la relation, dix ans pour le registre des mandats. Chacun peut y accéder, les faire rectifier ou effacer, en limiter l’usage, s’y opposer ou en demander une copie, en écrivant à ${id.mail}, et saisir la CNIL (www.cnil.fr).`);
+  return P(`Données personnelles : l’Agence, responsable du traitement, utilise les informations recueillies ici pour exécuter le présent document et remplir ses obligations légales (registre des mandats, lutte contre le blanchiment). Elles ne sont communiquées qu’aux personnes qui interviennent dans l’opération (avocats, notaires, diagnostiqueurs, confrères, établissements de crédit) et sont conservées cinq ans après la fin de la relation, dix ans pour le registre des mandats. Chacun peut y accéder, les faire rectifier ou effacer, en limiter l’usage, s’y opposer ou en demander une copie, en écrivant à ${id.mail}, et saisir la CNIL (www.cnil.fr).`);
 }
 
 /* La section « Informations » : réclamations et médiateur, données,

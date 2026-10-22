@@ -1351,6 +1351,7 @@ export function contexteDocument(b: BienVente) {
     id: '', titre: b.titre, adresse: txt(d, 'adresse') || null, code_postal: txt(d, 'cp') || null, ville: txt(d, 'ville') || null,
     quartier: txt(d, 'quartier') || null, type_bien: typeRecherche(d.typeBien), surface: nb(d, 'surface'), nb_pieces: nb(d, 'pieces'),
     etage: nb(d, 'etage'), prix_acquereur: argentBien(d).prix, prix_vendeur: argentBien(d).net, agence_nom: 'Werner Immobilier', description: null,
+    nature: natureDe(d),
   };
 }
 /* Le mandat de commercialisation prérempli depuis l'affaire : le mandant,

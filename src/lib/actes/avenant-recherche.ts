@@ -35,6 +35,7 @@ import {
   P, Pp, eurosLettres, nbLettres, pourcent, jourLong, aujourdhui, txt, num, liste, plusMois, couper,
   lirePersonnes, nomComplet, nomsCourts, fichePersonne, ficheAgence, blocDonnees, PERSONNE_VIDE,
   blocsSignature, manquesSignature, CHAMP_SIGNATURE, HONO_MODES,
+  motBase, montantHono, montantHonoCourt, mentionTva, tauxHono, tauxHT, htTtc, selonBase, champsBaseHono,
   type Donnees, type Modele, type Etape, type Contexte, type Personne, type Repere, type Source, type CaseSignature,
 } from './commun';
 import { TYPES_BIEN, NATURES_R, typesDepuis } from './mandat-recherche';
@@ -184,9 +185,10 @@ const ETAPES: Etape[] = [
         exemple: 'Paris 8e, Paris 17e, Levallois-Perret', aide: 'Tous les secteurs, anciens et nouveaux, séparés par des virgules : la liste remplace celle du mandat.' },
       { t: 'titre', cle: 't-hono', lib: 'Les honoraires', ic: 'euro', si: d => change(d, 'honoraires') },
       { t: 'choix', cle: 'honoMode2', lib: 'Honoraires', ic: 'euro', si: d => change(d, 'honoraires'), options: HONO_MODES },
-      { t: 'nombre', cle: 'taux2', lib: 'Nouveau taux', ic: 'pourcent', unite: '% HT', si: d => change(d, 'honoraires') && d.honoMode2 !== 'forfait',
-        aide: 'Du loyer annuel HT HC de la première année pour un bail, du prix pour une cession ou des murs. TVA en sus.' },
-      { t: 'euros', cle: 'forfait2', lib: 'Nouveau forfait', ic: 'euro', unite: '€ HT', si: d => change(d, 'honoraires') && d.honoMode2 === 'forfait', aide: 'Un montant fixe, hors taxes. TVA en sus.' },
+      ...champsBaseHono(d => change(d, 'honoraires')),
+      ...selonBase({ t: 'nombre', cle: 'taux2', lib: 'Nouveau taux', ic: 'pourcent', si: d => change(d, 'honoraires') && d.honoMode2 !== 'forfait',
+        aide: 'Du loyer annuel HT HC de la première année pour un bail, du prix pour une cession ou des murs.' }, b => `% ${b}`),
+      ...selonBase({ t: 'euros', cle: 'forfait2', lib: 'Nouveau forfait', ic: 'euro', si: d => change(d, 'honoraires') && d.honoMode2 === 'forfait', aide: 'Un montant fixe, quel que soit le loyer ou le prix.' }, b => `€ ${b}`),
       { t: 'titre', cle: 't-duree', lib: 'La durée', ic: 'calendrier', si: d => change(d, 'duree') },
       { t: 'date', cle: 'finActuelle', lib: 'Il devait finir le', ic: 'calendrier', si: d => change(d, 'duree') },
       { t: 'date', cle: 'finNouvelle', lib: 'Il finira le', ic: 'chrono', requis: true, si: d => change(d, 'duree') },
@@ -255,16 +257,16 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
     if (prixChange && ap.prix) {
       const verbe = av.prix && ap.prix < av.prix ? 'ramené' : 'porté';
       blocs.push(P(`Le prix maximum d’une cession ou d’une acquisition, hors honoraires${av.prix ? `, ${fixe} ${euros(av.prix)},` : ''} est ${verbe} à ${eurosLettres(ap.prix)}.`, true));
-      if (ap.total) blocs.push(P(`Avec les honoraires de l’Agence (hors TVA), le budget du MANDANT pour une cession ou une acquisition est donc de ${euros(ap.total)} au plus.`));
+      if (ap.total) blocs.push(P(`Avec les honoraires de l’Agence (${motBase(d) === 'TTC' ? 'TVA comprise' : 'hors TVA'}), le budget du MANDANT pour une cession ou une acquisition est donc de ${euros(ap.total)} au plus.`));
     }
     if (!blocs.length) blocs.push(P('Nouveau loyer ou prix maximum : à compléter.', true));
     else if (!change(d, 'honoraires') && ap.honoraires !== null) {
       blocs.push(P(ap.forfait
-        ? `Les honoraires restent ceux du mandat : un forfait de ${euros(ap.forfait)} HT, TVA en sus.`
+        ? `Les honoraires restent ceux du mandat : un forfait de ${montantHono(d, ap.forfait)}.`
         : `Les honoraires restent calculés comme prévu au mandat, soit ${[
-          prixChange && ap.honoPrix !== null ? `${euros(ap.honoPrix)} HT à ce prix maximum` : '',
-          loyerChange && ap.honoLoyer !== null ? `${euros(ap.honoLoyer)} HT pour ce loyer` : '',
-        ].filter(Boolean).join(', ou ')}, TVA en sus.`));
+          prixChange && ap.honoPrix !== null ? `${montantHonoCourt(d, ap.honoPrix)} à ce prix maximum` : '',
+          loyerChange && ap.honoLoyer !== null ? `${montantHonoCourt(d, ap.honoLoyer)} pour ce loyer` : '',
+        ].filter(Boolean).join(', ou ')}.`));
     }
     sections.push({ titre: 'Budget', ic: 'etiquette', blocs });
   }
@@ -295,13 +297,13 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
     const blocs: Bloc[] = [];
     const n = naturesApres(d);
     if (ap.forfait) {
-      blocs.push(P(`Les honoraires de l’Agence sont désormais un forfait de ${eurosLettres(ap.forfait)} HT, TVA en sus, à la charge du MANDANT, en plus du loyer ou du prix.`, true));
+      blocs.push(P(`Les honoraires de l’Agence sont désormais un forfait de ${montantHono(d, ap.forfait, true)}, à la charge du MANDANT, en plus du loyer ou du prix.`, true));
     } else {
       const exemples = [
-        acheteN(n) && ap.prix && ap.honoPrix !== null ? `${euros(ap.honoPrix)} HT pour un prix de ${euros(ap.prix)}` : '',
-        loueN(n) && ap.loyer && ap.honoLoyer !== null ? `${euros(ap.honoLoyer)} HT pour un loyer annuel de ${euros(ap.loyer)}` : '',
+        acheteN(n) && ap.prix && ap.honoPrix !== null ? `${montantHonoCourt(d, ap.honoPrix)} pour un prix de ${euros(ap.prix)}` : '',
+        loueN(n) && ap.loyer && ap.honoLoyer !== null ? `${montantHonoCourt(d, ap.honoLoyer)} pour un loyer annuel de ${euros(ap.loyer)}` : '',
       ].filter(Boolean).join(' ou ');
-      blocs.push(P(`Les honoraires de l’Agence sont désormais de ${ap.taux !== null ? `${tauxTexte(ap.taux)} ${baseN(n)}${exemples ? `, soit ${exemples}` : ''}, TVA en sus` : '……'}.`, true));
+      blocs.push(P(`Les honoraires de l’Agence sont désormais de ${ap.taux !== null ? `${tauxHono(d, ap.taux)} ${baseN(n)}${exemples ? `, soit ${exemples}` : ''}, ${mentionTva(d)}` : '……'}.`, true));
       blocs.push(P('Ils sont à la charge du MANDANT, en plus du loyer ou du prix.'));
     }
     blocs.push(P('Ils restent dus dans les conditions prévues au mandat. Lorsqu’ils sont dus, ils sont payés le jour de la signature du bail, ou de l’acte de cession ou de vente : aucune somme n’est due, ni ne peut être versée à l’Agence, avant (article 6 de la loi du 2 janvier 1970).'));
@@ -371,7 +373,7 @@ function changements(d: Donnees): string[] {
     const ecart = [plus.length ? `+ ${plus.join(', ')}` : '', moins.length ? `− ${moins.join(', ')}` : ''].filter(Boolean).join(' ; ');
     out.push(`Secteurs : ${couper(ecart || apres.join(', '), 48) || '…'}`);
   }
-  if (change(d, 'honoraires')) out.push(`Honoraires : ${ap.forfait ? `${euros(ap.forfait)} HT` : ap.taux !== null ? tauxTexte(ap.taux) : '…'}`);
+  if (change(d, 'honoraires')) out.push(`Honoraires : ${ap.forfait ? `${euros(ap.forfait)} ${motBase(d)}` : ap.taux !== null ? tauxHono(d, ap.taux) : '…'}`);
   if (change(d, 'duree')) out.push(`Fin : ${txt(d, 'finNouvelle') ? jourLong(txt(d, 'finNouvelle')) : '…'}`);
   if (change(d, 'clause')) out.push('Une clause particulière');
   return out;
@@ -394,11 +396,11 @@ function reperes(d: Donnees, etape: string): Repere[] {
   if (etape !== 'changements') return out;
   const ap = argentApres(d);
   if (change(d, 'prix') || change(d, 'honoraires')) {
-    const lib = ap.forfait ? 'Honoraires (forfait)' : `Honoraires (${tauxTexte(ap.taux || 0)})`;
+    const lib = ap.forfait ? 'Honoraires (forfait)' : `Honoraires (${tauxHono(d, ap.taux || 0)})`;
     if (ap.loyer) out.push({ l: 'Loyer annuel maximum', v: `${euros(ap.loyer)} HT HC` });
-    if (ap.loyer && ap.honoLoyer !== null) out.push({ l: `${lib}, sur ce loyer`, v: `${euros(ap.honoLoyer)} HT` });
+    if (ap.loyer && ap.honoLoyer !== null) out.push({ l: `${lib}, sur ce loyer`, v: montantHonoCourt(d, ap.honoLoyer) });
     if (ap.prix) out.push({ l: 'Prix maximum, hors honoraires', v: euros(ap.prix) });
-    if (ap.prix && ap.honoPrix !== null) out.push({ l: `${lib}, sur ce prix`, v: `${euros(ap.honoPrix)} HT` });
+    if (ap.prix && ap.honoPrix !== null) out.push({ l: `${lib}, sur ce prix`, v: montantHonoCourt(d, ap.honoPrix) });
     if (ap.total) out.push({ l: 'Son budget, honoraires compris', v: euros(ap.total), ton: 'ok' });
     const budget = num(d, 'budgetFiche');
     if (ap.total && budget && ap.total > budget) out.push({ l: 'Au-dessus de sa fiche', v: `Son budget enregistré est de ${euros(budget)}, honoraires compris.`, ton: 'alerte' });
@@ -453,7 +455,7 @@ function manques(d: Donnees): string[] {
   if (change(d, 'honoraires')) {
     const ap = argentApres(d);
     if (d.honoMode2 === 'forfait' ? !ap.forfait : ap.taux === null) out.push('Les nouveaux honoraires');
-    else if (!ap.forfait && ap.taux !== null && ap.taux > BAREME) out.push(`Un taux de ${pourcent(BAREME)} HT au plus (vérifie la saisie)`);
+    else if (!ap.forfait && ap.taux !== null && ap.taux > BAREME) out.push(`Un taux de ${pourcent(BAREME)} au plus (vérifie la saisie)`);
   }
   if (change(d, 'duree') && !txt(d, 'finActuelle')) out.push('La date de fin actuelle du mandat');
   if (change(d, 'duree') && !txt(d, 'finNouvelle')) out.push('La nouvelle date de fin');
@@ -512,7 +514,7 @@ function defaut(c: Contexte): Donnees {
 /* Les réponses « actuelles », reprises d'un mandat de recherche papier. */
 const REPRIS_PAPIER = ['type', 'qui', 'acquereurs', 'sciNom', 'sciForme', 'sciSiege', 'sciRcs', 'sciPouvoir',
   'natures', 'types', 'typeAutre', 'surface', 'activite', 'secteurs', 'criteres',
-  'prixMax', 'loyerMax', 'honoMode', 'taux', 'forfait', 'dureeMode'];
+  'prixMax', 'loyerMax', 'honoMode', 'taux', 'forfait', 'dureeMode', 'baseHono', 'tvaHono'];
 
 function deriver(src: Source): Donnees {
   const s = src.donnees || {};
@@ -650,7 +652,9 @@ export function contenuApresAvenants(c: Contenu, avenants: Donnees[]): Contenu {
     if (ch('prix') && num(a, 'nouveauLoyerMax')) r.loyerMax = num(a, 'nouveauLoyerMax');
     if (ch('secteurs')) r.secteurs = decoupe(txt(a, 'secteurs2'));
     const hono = ch('honoraires')
-      ? { taux: a.honoMode2 === 'forfait' ? x.taux : tauxDe(a.taux2), forfait: a.honoMode2 === 'forfait' ? forfaitDe(a.forfait2) : null }
+      /* En HT, comme le mandat en ligne (un avenant tapé en TTC est ramené). */
+      ? { taux: a.honoMode2 === 'forfait' ? x.taux : tauxDe(num(a, 'taux2') !== null ? tauxHT(a, num(a, 'taux2') as number) : a.taux2),
+        forfait: a.honoMode2 === 'forfait' ? forfaitDe(num(a, 'forfait2') !== null ? htTtc(a, num(a, 'forfait2') as number).ht : a.forfait2) : null }
       : { taux: x.taux, forfait: x.forfait ?? null };
     x = { ...x, recherche: r, taux: hono.taux, forfait: hono.forfait, prixMax: ch('prix') && num(a, 'nouveauPrixMax') ? num(a, 'nouveauPrixMax') : x.prixMax };
   }

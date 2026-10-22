@@ -53,6 +53,7 @@ import {
   lirePersonnes, nomComplet, nomsCourts, fichePersonne,
   PERSONNE_VIDE, plusMois, veille, annexeL215, blocsSignature, manquesSignature, lieuDe, modeSignature, electronique, CHAMP_SIGNATURE, MANQUE_EXECUTION,
   ouiNon, IC_RYTHME, HONO_MODES, personneRegistre,
+  baseHono, motBase, htTtc, montantHono, tauxHono, tauxHT, selonBase, champsBaseHono,
   type Donnees, type Champ, type Modele, type Etape, type Contexte, type Personne, type Repere, type Echeance, type CaseSignature,
 } from './commun';
 
@@ -201,13 +202,15 @@ const INDICES_TEXTE: Record<string, string> = {
    honoraires se calculent sur le loyer annuel et se paient à part ; une
    cession ou une vente à la charge de l'acquéreur, `prix` les comprend et le
    taux s'applique au prix hors honoraires ; à la charge du mandant, ils se
-   prélèvent sur le prix. Arrondis à l'euro, hors taxes. */
+   prélèvent sur le prix. Arrondis à l'euro.
+   22 octobre 2026 : `honoraires` est dans la base choisie (`baseHono`, HT
+   par défaut, commun.ts) ; `ht` et `ttc` donnent les deux. */
 export type Argent = {
   prix: number | null; net: number | null; honoraires: number | null; taux: number | null; forfait: number | null; charge: 'acquereur' | 'vendeur';
   /* Ce que le mandat écrit : le loyer, ou le prix hors honoraires en sus. */
   montant: number | null;
-  /* Les honoraires TTC, au taux de TVA du mandat. */
-  ttc: number | null; tva: number;
+  /* Les honoraires HT et TTC, au taux de TVA du mandat. */
+  ht: number | null; ttc: number | null; tva: number;
 };
 export function argent(d: Donnees): Argent {
   const prix = num(d, 'prix');
@@ -215,8 +218,8 @@ export function argent(d: Donnees): Argent {
   const forfait = d.honoMode === 'forfait' ? num(d, 'forfait') : null;
   const taux = d.honoMode === 'forfait' ? null : num(d, 'taux');
   const tva = num(d, 'tvaHono') ?? 20;
-  const ttcDe = (h: number | null) => (h === null ? null : Math.round(h * (1 + tva / 100)));
-  if (!prix || prix <= 0) return { prix: null, net: null, honoraires: forfait, taux, forfait, charge, montant: null, ttc: ttcDe(forfait), tva };
+  const deux = (h: number | null) => (h === null ? { ht: null, ttc: null } : htTtc(d, h));
+  if (!prix || prix <= 0) return { prix: null, net: null, honoraires: forfait, taux, forfait, charge, montant: null, ...deux(forfait), tva };
   let honoraires: number | null = null, net: number | null = null, montant: number | null = null;
   if (estLoc(d)) {
     net = prix; montant = prix;
@@ -231,7 +234,30 @@ export function argent(d: Donnees): Argent {
     else if (taux !== null && taux >= 0) honoraires = Math.round((prix * taux) / 100);
     net = honoraires !== null ? prix - honoraires : null;
   }
-  return { prix, net, honoraires, taux, forfait, charge, montant, ttc: ttcDe(honoraires), tva };
+  return { prix, net, honoraires, taux, forfait, charge, montant, ...deux(honoraires), tva };
+}
+
+/* Ce que la fiche de l'affaire reçoit à la signature (mandat-bien.ts), en
+   HT comme toute la fiche : le prix (au sens de l'affaire), qui paie, et le
+   taux ou le forfait ramenés en HT quand le mandat compte en TTC. Pour une
+   cession payée par l'acquéreur, le prix affiché est refait avec les
+   honoraires HT, comme la fiche les calcule (argentBien). */
+export function pourAffaire(d: Donnees): Donnees {
+  const forfait = d.honoMode === 'forfait';
+  const f = forfait ? num(d, 'forfait') : null;
+  const t = forfait ? null : num(d, 'taux');
+  const fHT = f === null ? null : htTtc(d, f).ht;
+  const tHT = t === null ? null : tauxHT(d, t);
+  const charge = d.charge === 'vendeur' ? 'vendeur' : 'acquereur';
+  const a = argent(d);
+  let prix = num(d, 'prix');
+  if (baseHono(d) === 'ttc' && !estLoc(d) && charge === 'acquereur' && a.montant) {
+    prix = fHT !== null ? a.montant + fHT : tHT !== null ? Math.round(a.montant * (1 + tHT / 100)) : prix;
+  }
+  return {
+    ...(prix ? { prix } : {}), charge, honoMode: forfait ? 'forfait' : 'taux',
+    ...(forfait ? { forfait: fHT } : { taux: tHT }),
+  };
 }
 /* Le `prix` (au sens de l'affaire) à partir de ce que Werner écrit. */
 function prixDepuisMontant(d: Donnees, montant: number): number {
@@ -482,14 +508,14 @@ const ETAPES: Etape[] = [
         { v: 'vendeur', l: 'Du mandant', aide: 'Prélevés sur le prix, le jour de l’acte.', ic: 'immeuble' },
       ] },
       { t: 'choix', cle: 'honoMode', lib: 'Tes honoraires', ic: 'euro', options: HONO_MODES },
-      { t: 'nombre', cle: 'taux', lib: 'Taux', ic: 'pourcent', unite: '% HT du loyer annuel', si: d => d.honoMode !== 'forfait' && estLoc(d) },
-      { t: 'nombre', cle: 'taux', lib: 'Taux', ic: 'pourcent', unite: '% HT du prix', si: d => d.honoMode !== 'forfait' && !estLoc(d) },
-      { t: 'euros', cle: 'forfait', lib: 'Forfait', ic: 'euro', unite: '€ HT', si: d => d.honoMode === 'forfait' },
-      { t: 'nombre', cle: 'tvaHono', lib: 'Taux de TVA', ic: 'fiscal', unite: '%', question: 'Un autre taux de TVA que 20 % ?', aide: 'Le mandat écrit le montant HT et le montant TTC.' },
+      ...champsBaseHono(),
+      ...selonBase({ t: 'nombre', cle: 'taux', lib: 'Taux', ic: 'pourcent', si: d => d.honoMode !== 'forfait' && estLoc(d) }, b => `% ${b} du loyer annuel`),
+      ...selonBase({ t: 'nombre', cle: 'taux', lib: 'Taux', ic: 'pourcent', si: d => d.honoMode !== 'forfait' && !estLoc(d) }, b => `% ${b} du prix`),
+      ...selonBase({ t: 'euros', cle: 'forfait', lib: 'Forfait', ic: 'euro', si: d => d.honoMode === 'forfait' }, b => `€ ${b}`),
       { t: 'choix', cle: 'semiDirect', lib: 'S’il traite lui-même, en direct', ic: 'bouclier', si: d => d.type === 'semi', options: [
         { v: 'aucun', l: 'Aucun honoraire', ic: 'ouvert' }, { v: 'reduits', l: 'Des honoraires réduits', ic: 'pourcent' },
       ] },
-      { t: 'euros', cle: 'semiMontant', lib: 'Honoraires réduits', ic: 'euro', unite: '€ HT', si: d => d.type === 'semi' && d.semiDirect === 'reduits' },
+      ...selonBase({ t: 'euros', cle: 'semiMontant', lib: 'Honoraires réduits', ic: 'euro', si: d => d.type === 'semi' && d.semiDirect === 'reduits' }, b => `€ ${b}`),
       { t: 'zone', cle: 'honoNote', lib: 'Précision sur les honoraires', ic: 'plume', large: true, question: 'Une précision sur les honoraires ?',
         aide: 'Imprimée juste sous les honoraires. Par exemple : un partage entre le preneur et le bailleur. Une ligne par paragraphe.' },
     ],
@@ -722,8 +748,8 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
   const h = a.honoraires;
   const baseTaux = loc ? 'du loyer annuel HT HC' : 'du prix';
   const combien = h !== null
-    ? `${montantLettres(h, 'HT')}, soit ${montantLettres(a.ttc || 0, 'TTC')}${a.forfait === null && a.taux !== null ? `, représentant ${pourcent(a.taux)} HT ${baseTaux}` : ''}`
-    : a.taux !== null ? `${pourcent(a.taux)} HT ${baseTaux}` : 'à préciser';
+    ? `${montantHono(d, h, true)}${a.forfait === null && a.taux !== null ? `, représentant ${tauxHono(d, a.taux)} ${baseTaux}` : ''}`
+    : a.taux !== null ? `${tauxHono(d, a.taux)} ${baseTaux}` : 'à préciser';
   const payeur = a.charge === 'acquereur' ? `au ${A_}` : 'au MANDANT';
   hono.push(P(`En cas de réalisation de l’opération, le MANDATAIRE aura droit à des honoraires d’un montant de ${combien}.`, true));
   hono.push(P(`Le paiement de ces honoraires incombera ${payeur}.${!loc && a.charge === 'acquereur' ? ` Les honoraires à la charge du ${A_} ne sont pas inclus dans le prix indiqué ci-dessus.` : ''}${!loc && a.charge === 'vendeur' ? ' Ils sont compris dans le prix indiqué ci-dessus et seront prélevés sur celui-ci le jour de l’acte.' : ''}`));
@@ -734,7 +760,7 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
   if (loc) hono.push(P('Si le présent mandat porte sur la location de plusieurs biens distincts, il est convenu que les honoraires dus au MANDATAIRE seront exigibles dès que la location de l’un d’entre eux aura été effectivement conclue et constatée dans un seul acte écrit contenant l’engagement des parties.'));
   else hono.push(P(`En cas d’exercice d’un droit de préemption ou d’une faculté de substitution, son bénéficiaire sera subrogé dans tous les droits et obligations du ${A_}. À ce titre, il sera notamment tenu de régler ces honoraires si leur paiement lui incombe.`));
   if (type === 'semi') hono.push(P(d.semiDirect === 'reduits' && num(d, 'semiMontant')
-    ? `Si le MANDANT traite lui-même, directement, avec une personne qui ne lui a été présentée par aucun intermédiaire, les honoraires sont ramenés à ${euros(num(d, 'semiMontant') || 0)} HT.`
+    ? `Si le MANDANT traite lui-même, directement, avec une personne qui ne lui a été présentée par aucun intermédiaire, les honoraires sont ramenés à ${montantHono(d, num(d, 'semiMontant') || 0)}.`
     : 'Si le MANDANT traite lui-même, directement, avec une personne qui ne lui a été présentée par aucun intermédiaire, aucun honoraire n’est dû.'));
   hono.push(P(`${pouvoirs.includes('redaction') ? 'Dans l’hypothèse où le MANDATAIRE ne serait pas le rédacteur des actes, le' : 'Le'} MANDANT se porte fort de mentionner la rémunération du MANDATAIRE et ses modalités de paiement dans l’acte constatant ${M.operation} objet des présentes, et il s’engage à remettre au MANDATAIRE une copie de cet acte ou un courrier reprenant les principales caractéristiques de l’opération.`));
 
@@ -920,8 +946,8 @@ export function infoPrecontractuelle(d: Donnees, A: IdentiteAgence): Partie {
   const retr = retractation(d);
   const duree = num(d, 'duree') ?? 3;
   const combien = a.honoraires !== null
-    ? `${euros(a.honoraires)} HT, soit ${euros(a.ttc || 0)} TTC${a.forfait === null && a.taux !== null ? ` (${pourcent(a.taux)} HT ${estLoc(d) ? 'du loyer annuel' : 'du prix'})` : ''}`
-    : a.taux !== null ? `${pourcent(a.taux)} HT ${estLoc(d) ? 'du loyer annuel' : 'du prix'}` : 'À préciser';
+    ? `${montantHono(d, a.honoraires)}${a.forfait === null && a.taux !== null ? ` (${tauxHono(d, a.taux)} ${estLoc(d) ? 'du loyer annuel' : 'du prix'})` : ''}`
+    : a.taux !== null ? `${tauxHono(d, a.taux)} ${estLoc(d) ? 'du loyer annuel' : 'du prix'}` : 'À préciser';
   return {
     titre: 'Information précontractuelle',
     court: 'Information précontractuelle',
@@ -998,7 +1024,7 @@ function resume(d: Donnees): Resume {
     { titre: 'L’affaire', valeur: txt(d, 'adresse') || 'À compléter', detail: couper([nat?.l || '', txt(d, 'ville'), txt(d, 'activite')].filter(Boolean).join(' · '), 110) || '—' },
     { titre: loc ? 'Loyer annuel' : nat?.prix || 'Prix', valeur: a.montant ? `${euros(a.montant)}${loc ? ' HT HC' : ''}` : 'À compléter',
       detail: loc && a.montant ? `soit ${euros(Math.round(a.montant / 12))} HT HC par mois` : !loc && a.charge === 'acquereur' ? 'honoraires en sus' : !loc ? 'honoraires compris' : '—' },
-    { titre: 'Honoraires', valeur: a.honoraires !== null ? `${euros(a.honoraires)} HT` : a.taux !== null ? `${pourcent(a.taux)} HT` : 'À compléter',
+    { titre: 'Honoraires', valeur: a.honoraires !== null ? `${euros(a.honoraires)} ${motBase(d)}` : a.taux !== null ? tauxHono(d, a.taux) : 'À compléter',
       detail: `à la charge ${a.charge === 'acquereur' ? `du ${M.autreMin}` : 'du mandant'} · dus à la conclusion` },
     { titre: 'Durée', valeur: `${duree} mois`, detail: d.dureeMode === 'prorogation' ? `puis par périodes, ${num(d, 'dureeMax') ?? 6} mois au plus` : 'sans reconduction · fin possible après 3 mois' },
   ];
@@ -1013,7 +1039,7 @@ function reperes(d: Donnees, etape: string): Repere[] {
     const loc = estLoc(d);
     if (a.montant) out.push({ l: loc ? 'Loyer annuel HT HC' : 'Prix écrit au mandat', v: euros(a.montant) });
     if (loc && a.montant) out.push({ l: 'Soit par mois', v: `${euros(Math.round(a.montant / 12))} HT HC` });
-    if (a.honoraires !== null && (a.montant || a.forfait !== null)) out.push({ l: a.forfait !== null ? 'Honoraires (forfait)' : `Honoraires (${pourcent(a.taux || 0)} HT)`, v: `${euros(a.honoraires)} HT · ${euros(a.ttc || 0)} TTC` });
+    if (a.honoraires !== null && (a.montant || a.forfait !== null)) out.push({ l: a.forfait !== null ? 'Honoraires (forfait)' : `Honoraires (${tauxHono(d, a.taux || 0)})`, v: `${euros(a.ht || 0)} HT · ${euros(a.ttc || 0)} TTC` });
     if (!loc && a.charge === 'acquereur' && a.prix && a.honoraires !== null) out.push({ l: 'Affiché dans l’annonce, honoraires compris', v: euros(a.prix), ton: 'ok' });
     if (!loc && a.charge === 'vendeur' && a.net !== null) out.push({ l: 'Net pour le mandant', v: euros(a.net), ton: 'ok' });
   }

@@ -12,6 +12,7 @@ import { modele, aujourdhui, lirePersonnes, PERSONNE_VIDE, type Personne } from 
 import { correspondance, criteresDepuisRecherche, grouperSecteurs, lireCriteresPro, type Correspondance } from '@/lib/correspondance';
 import { raisonEcart, type RaisonEcart } from '@/lib/ecart-acheteur';
 import { conjointDe } from '@/lib/foyer';
+import { estLocation } from '@/lib/affaires';
 import { ETAPES_EN_VENTE, TYPES_CONTACT, acheteurEnCours, colonneContactAbsente, typesDe, typesSelonBiens } from '@/lib/contacts';
 import {
   ETAPES_BIEN, apresReponse, argentBien, avantMandat, colonnesBien, contexteDocument, dateLongue, lirePhotos, montantActuel, nomProprioActe, personneDepuisClient, prixCopie, referenceSuivante, tableAbsente, titreBien,
@@ -210,10 +211,16 @@ export async function creerAvenantVente(b: BienVente, mandatId: string, x: {
   const identite = await identiteDuJour();
   const base = await preparerDepuis(m, choix, identite);
   const objets = [...(x.prix ? ['prix'] : []), ...(x.hono ? ['honoraires'] : [])];
+  /* Werner (22 octobre 2026) : l'avenant écrit le MONTANT du mandat (le
+     loyer, ou le prix hors honoraires quand l'autre partie les paie) ; la
+     fiche, elle, garde le prix honoraires compris dans ce cas. */
+  const bd = { ...(b.donnees || {}), ...(x.hono ? { charge: x.hono.charge, honoMode: x.hono.honoMode, taux: x.hono.taux, forfait: x.hono.forfait } : {}) };
+  const montant = x.prix && !estLocation(bd) && bd.charge !== 'vendeur' ? (argentBien({ ...bd, prix: x.prix }).net ?? x.prix) : x.prix;
   const donnees = {
     ...base, bienVenteId: b.id, objets: objets.length ? objets : ['prix'],
-    ...(x.prix ? { nouveauPrix: x.prix } : {}),
-    ...(x.hono ? { charge2: x.hono.charge, honoMode2: x.hono.honoMode, taux2: x.hono.taux ?? null, forfait2: x.hono.forfait ?? null } : {}),
+    ...(montant ? { nouveauPrix: montant } : {}),
+    /* Les honoraires de la fiche sont en HT : l'avenant les écrit en HT. */
+    ...(x.hono ? { charge2: x.hono.charge, honoMode2: x.hono.honoMode, taux2: x.hono.taux ?? null, forfait2: x.hono.forfait ?? null, baseHono: 'ht' } : {}),
   };
   const { data, error } = await supabase.from('documents').insert({
     modele: m.id, categorie: m.categorie, statut: 'brouillon', donnees, ...colonnesListe(m, donnees),

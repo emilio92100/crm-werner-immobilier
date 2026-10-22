@@ -26,7 +26,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { etatMandat, horsMandat, rechercheDepuis, jourParis, forfaitDe, tauxDe, finRetractationPour, memeNumero, DUREE, HONORAIRES_TAUX, type EtatMandat, type Contenu } from './mandat';
 import { contenuApresAvenants } from './actes/avenant-recherche';
 import { argentRecherche, TYPES_BIEN } from './actes/mandat-recherche';
-import { num, txt, liste, plusMois } from './actes/commun';
+import { num, txt, liste, plusMois, htTtc, tauxHT } from './actes/commun';
 import {
   signatairesEspace, laSienne, retracteEnLigne, modeDoc, COLONNES_SIGNATAIRES,
   type FicheEspace, type LigneSignataire, type SignataireEspace, type EtatSignataire, type ModeDoc,
@@ -243,8 +243,9 @@ export { memeNumero };
    surRecherche l'écrit dans la recherche. */
 function contenuDocument(d: Record<string, unknown>): Contenu {
   const a = argentRecherche(d);
-  const forfait = forfaitDe(a.forfait);
-  const taux = forfait ? HONORAIRES_TAUX : tauxDe(a.taux);
+  /* En HT, comme le mandat en ligne : un mandat tapé en TTC est ramené. */
+  const forfait = forfaitDe(a.forfait !== null ? htTtc(d, a.forfait).ht : null);
+  const taux = forfait ? HONORAIRES_TAUX : tauxDe(a.taux !== null ? tauxHT(d, a.taux) : null);
   /* « Autre » coché sans précision reste « Autre » (V3.56) : la case « Autre »
      de l'espace y entre, au lieu d'être signalée hors mandat. */
   const types = liste(d, 'types').map(v => (v === 'autre' ? txt(d, 'typeAutre') || 'Autre' : TYPES_BIEN.find(t => t.v === v)?.l || '')).filter(Boolean);

@@ -23,6 +23,7 @@ import { euros } from '@/lib/mandat';
 import { lireMontant } from '@/lib/montant';
 import { argentBien, colonnesBien, type BienVente } from '@/lib/biens-vente';
 import { bienDuMandat, prixChezAcheteurs } from '@/lib/mandat-bien';
+import { affaireApresAvenant } from '@/lib/actes/avenant-vente';
 
 export type DocAvenant = { id: string; modele: string; numero: string | null; donnees: Donnees | null };
 
@@ -37,22 +38,32 @@ type Changements = { prix: number | null; hono: Donnees | null; fin: string | nu
 export function changementsAvenant(a: Donnees): Changements {
   const objets = liste(a, 'objets');
   const illisible: string[] = [];
-  let prix: number | null = null;
+  /* Werner (22 octobre 2026) : `nouveauPrix` est le nouveau MONTANT écrit au
+     mandat (le loyer, ou le prix hors honoraires quand l'autre partie les
+     paie) ; la fiche de l'affaire reçoit le prix à son sens à elle et les
+     honoraires en HT (affaireApresAvenant, actes/avenant-vente.ts). */
   if (objets.includes('prix')) {
     const p = lireMontant(a.nouveauPrix);
-    if (p && p > 0) prix = p; else illisible.push('le nouveau montant');
+    if (!p || p <= 0) illisible.push('le nouveau montant');
   }
-  let hono: Donnees | null = null;
   if (objets.includes('honoraires')) {
     const forfait = a.honoMode2 === 'forfait';
-    const charge = a.charge2 === 'vendeur' ? 'vendeur' : a.charge2 === 'acquereur' ? 'acquereur' : null;
+    const charge = a.charge2 === 'vendeur' || a.charge2 === 'acquereur';
     const f = forfait ? lireMontant(a.forfait2) : null;
     const t = forfait ? null : num(a, 'taux2');
-    const lisible = !!charge && (forfait ? !!f && f > 0 : t !== null && t >= 0 && t <= 30);
-    if (lisible) hono = { charge, honoMode: forfait ? 'forfait' : 'taux', ...(forfait ? { forfait: f, taux: null } : { taux: t, forfait: null }) };
-    else illisible.push('les nouveaux honoraires');
+    const lisible = charge && (forfait ? !!f && f > 0 : t !== null && t >= 0 && t <= 30);
+    if (!lisible) illisible.push('les nouveaux honoraires');
   }
-  if (illisible.length) { prix = null; hono = null; }
+  let prix: number | null = null;
+  let hono: Donnees | null = null;
+  if (!illisible.length && (objets.includes('prix') || objets.includes('honoraires'))) {
+    const aff = affaireApresAvenant(a);
+    const p = num(aff, 'prix');
+    if (p && p > 0) prix = p;
+    if (objets.includes('honoraires')) {
+      hono = { charge: aff.charge, honoMode: aff.honoMode, ...(aff.honoMode === 'forfait' ? { forfait: aff.forfait ?? null, taux: null } : { taux: aff.taux ?? null, forfait: null }) };
+    }
+  }
   let fin: string | null = null;
   if (objets.includes('duree')) {
     const f = txt(a, 'finNouvelle');

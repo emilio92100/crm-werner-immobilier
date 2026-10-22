@@ -20,6 +20,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { num, plusMois, txt, type Donnees } from '@/lib/actes';
+import { pourAffaire } from '@/lib/actes/mandat-vente';
 import { colonnesBien, prixCopie, type BienVente, type EtapeVente, type SuiviVente } from '@/lib/biens-vente';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -88,19 +89,19 @@ export async function mandatSigneSurBien(sb: SupabaseClient, doc: DocMandat, jou
   const type = dm.type === 'semi' || dm.type === 'exclusif' ? dm.type : 'simple';
   const numero = (doc.numero || txt(dm, 'numero')).trim();
   const fin = finDuMandat(dm, jour);
-  const prix = num(dm, 'prix');
+  /* 22 octobre 2026 : le prix et les honoraires tels que la fiche les compte
+     (en HT, même si le mandat les écrit en TTC). */
+  const aff = pourAffaire(dm);
+  const prix = num(aff, 'prix');
   /* V3.130 : une annonce type dont le mandat est signé passe « En vente ». */
   const passe = ['a_suivre', 'estimation', 'retire', 'annonce_type'].includes(b.etape) || (b.etape === 'mandat' && !txt(bd, 'mandatDate'));
   /* Déjà noté (un second passage) : rien à refaire. */
   if (!passe && txt(bd, 'mandatDate') === jour && txt(bd, 'mandatNumero') === numero) return null;
   const avantVente = b.etape === 'a_suivre' || b.etape === 'estimation' || (b.etape === 'retire' && !b.en_vente_le);
   const conseille = num(bd, 'prixConseille') ?? (avantVente ? num(bd, 'prix') : null);
-  const forfait = dm.honoMode === 'forfait';
   const d: Donnees = {
     ...bd, mandatType: type, mandatNumero: numero, mandatDate: jour, mandatFin: fin,
-    ...(prix ? { prix } : {}),
-    charge: dm.charge === 'vendeur' ? 'vendeur' : 'acquereur', honoMode: forfait ? 'forfait' : 'taux',
-    ...(forfait ? { forfait: num(dm, 'forfait') } : { taux: num(dm, 'taux') }),
+    ...aff,
     ...(conseille ? { prixConseille: conseille } : {}),
   };
   const maintenant = new Date().toISOString();

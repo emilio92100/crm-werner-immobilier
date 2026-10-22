@@ -42,6 +42,7 @@ import {
 import { TYPES_LOCAL } from '@/lib/affaires';
 import { lignesMandataire, phraseFonds, type IdentiteAgence } from '@/lib/agence';
 import {
+  motBase, montantHono, montantHonoCourt, mentionTva, tauxHono, selonBase, champsBaseHono,
   P, Pp, paragraphes, eurosLettres, nbLettres, pourcent, jourLong, aujourdhui, txt, num, liste, vrai, plusMois, couper,
   lirePersonnes, nomComplet, nomsCourts, fichePersonne, lignesPersonne, blocsInformations, ficheAgence, formulaireType, annexeL215,
   PERSONNE_VIDE, blocsSignature, manquesSignature, lieuDe, modeSignature, electronique, CHAMP_SIGNATURE, MANQUE_EXECUTION,
@@ -102,7 +103,7 @@ export const loueR = (d: Donnees) => { const n = liste(d, 'natures'); return !n.
 export const acheteR = (d: Donnees) => { const n = liste(d, 'natures'); return !n.length || n.some(x => x !== 'location'); };
 const verbeR = (d: Donnees) => (loueR(d) && acheteR(d) ? 'à prendre à bail, à reprendre ou à acquérir' : loueR(d) ? 'à prendre à bail' : 'à reprendre ou à acquérir');
 /* La base des honoraires, selon ce qu'il cherche (la même que le mandat en ligne). */
-const baseHono = (d: Donnees) => (loueR(d) && acheteR(d)
+const assiette = (d: Donnees) => (loueR(d) && acheteR(d)
   ? 'du loyer annuel hors taxes et hors charges de la première année pour un bail, ou du prix hors honoraires pour une cession de droit au bail, de fonds de commerce ou une vente'
   : loueR(d) ? 'du loyer annuel hors taxes et hors charges de la première année du bail conclu'
     : 'du prix, hors honoraires, de la cession ou de la vente conclue');
@@ -284,9 +285,10 @@ const ETAPES: Etape[] = [
       ] },
       { t: 'titre', cle: 't-hono', lib: 'Tes honoraires', ic: 'euro' },
       { t: 'choix', cle: 'honoMode', lib: 'Honoraires', ic: 'euro', options: HONO_MODES },
-      { t: 'nombre', cle: 'taux', lib: 'Taux', ic: 'pourcent', unite: '% HT', si: d => d.honoMode !== 'forfait',
-        aide: `Par défaut : ${String(HONORAIRES_TAUX).replace('.', ',')} % HT, du loyer annuel HT HC de la première année pour un bail, du prix pour une cession ou des murs. TVA en sus.` },
-      { t: 'euros', cle: 'forfait', lib: 'Forfait', ic: 'euro', unite: '€ HT', si: d => d.honoMode === 'forfait', aide: 'Un montant fixe, hors taxes, quel que soit le loyer ou le prix. TVA en sus.' },
+      ...champsBaseHono(),
+      ...selonBase({ t: 'nombre', cle: 'taux', lib: 'Taux', ic: 'pourcent', si: d => d.honoMode !== 'forfait',
+        aide: `Par défaut : ${String(HONORAIRES_TAUX).replace('.', ',')} % HT, du loyer annuel HT HC de la première année pour un bail, du prix pour une cession ou des murs.` }, b => `% ${b}`),
+      ...selonBase({ t: 'euros', cle: 'forfait', lib: 'Forfait', ic: 'euro', si: d => d.honoMode === 'forfait', aide: 'Un montant fixe, quel que soit le loyer ou le prix.' }, b => `€ ${b}`),
     ],
   },
   {
@@ -404,13 +406,13 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
   /* ── Les honoraires ── */
   const hono: Bloc[] = [];
   if (a.forfait) {
-    hono.push(P(`Honoraires de l’Agence : un forfait de ${eurosLettres(a.forfait)} HT, TVA en sus.`, true));
+    hono.push(P(`Honoraires de l’Agence : un forfait de ${montantHono(d, a.forfait, true)}.`, true));
   } else {
     const exemples = [
-      acheteR(d) && a.prix && a.honoPrix ? `${euros(a.honoPrix)} HT pour un prix de ${euros(a.prix)}` : '',
-      loueR(d) && a.loyer && a.honoLoyer ? `${euros(a.honoLoyer)} HT pour un loyer annuel de ${euros(a.loyer)}` : '',
+      acheteR(d) && a.prix && a.honoPrix ? `${montantHonoCourt(d, a.honoPrix)} pour un prix de ${euros(a.prix)}` : '',
+      loueR(d) && a.loyer && a.honoLoyer ? `${montantHonoCourt(d, a.honoLoyer)} pour un loyer annuel de ${euros(a.loyer)}` : '',
     ].filter(Boolean).join(' ou ');
-    hono.push(P(`Honoraires de l’Agence : ${a.taux !== null ? `${tauxTexte(a.taux)} ${baseHono(d)}${exemples ? `, soit ${exemples}` : ''}, TVA en sus` : 'à préciser'}.`, true));
+    hono.push(P(`Honoraires de l’Agence : ${a.taux !== null ? `${tauxHono(d, a.taux)} ${assiette(d)}${exemples ? `, soit ${exemples}` : ''}, ${mentionTva(d)}` : 'à préciser'}.`, true));
   }
   /* Les deux cas (V3.144), comme le mandat en ligne (src/lib/mandat.ts). */
   hono.push(P('Ils ne sont dus que si le bail, la cession ou la vente se conclut par l’entremise de l’Agence, et selon l’un des deux cas suivants :'));
@@ -551,8 +553,8 @@ function infoPrecontractuelle(d: Donnees, A: IdentiteAgence): Partie {
   const retr = retractation(d);
   const duree = num(d, 'duree') ?? 3;
   const combien = a.forfait
-    ? `Un forfait de ${euros(a.forfait)} HT (TVA en sus)`
-    : a.taux !== null ? `${tauxTexte(a.taux)} ${baseHono(d)} (TVA en sus)` : 'À préciser';
+    ? `Un forfait de ${montantHonoCourt(d, a.forfait)}`
+    : a.taux !== null ? `${tauxHono(d, a.taux)} ${assiette(d)} (${mentionTva(d)})` : 'À préciser';
   return {
     titre: 'Information précontractuelle',
     court: 'Information précontractuelle',
@@ -614,7 +616,7 @@ function resume(d: Donnees): Resume {
   return [
     { titre: 'Le local recherché', valeur: r.typeBien || r.natures?.length ? court.valeur : 'À compléter', detail: r.secteurs.length || r.surfaceMin ? court.detail : '—' },
     { titre: loueR(d) && !acheteR(d) ? 'Loyer maximum' : acheteR(d) && !loueR(d) ? 'Prix maximum' : 'Budget', ...budget },
-    { titre: 'Honoraires', valeur: a.forfait ? `${euros(a.forfait)} HT, au forfait` : a.taux !== null ? `${tauxTexte(a.taux)} ${sur}` : 'À compléter', detail: HONO_DETAIL },
+    { titre: 'Honoraires', valeur: a.forfait ? `${euros(a.forfait)} ${motBase(d)}, au forfait` : a.taux !== null ? `${tauxHono(d, a.taux)} ${sur}` : 'À compléter', detail: HONO_DETAIL },
     { titre: 'Durée', valeur: `${duree} mois`, detail: d.dureeMode === 'prorogation' ? `puis par périodes, ${num(d, 'dureeMax') ?? 12} mois au plus` : typeDe(d) === 'exclusif' ? 'sans reconduction · fin possible après 3 mois' : 'sans reconduction · fin possible à tout moment' },
   ];
 }
@@ -623,11 +625,11 @@ function reperes(d: Donnees, etape: string): Repere[] {
   const out: Repere[] = [];
   if (etape === 'prix') {
     const a = argent(d);
-    const lib = a.forfait ? 'Honoraires (forfait)' : `Honoraires (${tauxTexte(a.taux || 0)})`;
+    const lib = a.forfait ? 'Honoraires (forfait)' : `Honoraires (${tauxHono(d, a.taux || 0)})`;
     if (a.loyer) out.push({ l: 'Loyer annuel maximum', v: `${euros(a.loyer)} HT HC` });
-    if (a.loyer && a.honoLoyer !== null) out.push({ l: `${lib}, sur ce loyer`, v: `${euros(a.honoLoyer)} HT` });
+    if (a.loyer && a.honoLoyer !== null) out.push({ l: `${lib}, sur ce loyer`, v: montantHonoCourt(d, a.honoLoyer) });
     if (a.prix) out.push({ l: 'Prix maximum, hors honoraires', v: euros(a.prix) });
-    if (a.prix && a.honoPrix !== null) out.push({ l: `${lib}, sur ce prix`, v: `${euros(a.honoPrix)} HT` });
+    if (a.prix && a.honoPrix !== null) out.push({ l: `${lib}, sur ce prix`, v: montantHonoCourt(d, a.honoPrix) });
     if (a.total) out.push({ l: 'Son budget, honoraires compris', v: euros(a.total), ton: 'ok' });
     const budget = num(d, 'budgetFiche');
     if (a.total && budget && a.total > budget) out.push({ l: 'Au-dessus de sa fiche', v: `Son budget enregistré est de ${euros(budget)}, honoraires compris.`, ton: 'alerte' });
