@@ -390,11 +390,28 @@ d'entreprise sur la fiche d'un demandeur ; le retrait des écrans d'import ImmoF
 SeLoger sur les affaires ; le README, les règles de travail, l'ancien `context.md` rangé dans
 `docs/historique-code-origine.md` et ce fichier.
 
+**22 octobre 2026** — le registre commun avec Emilio (numérotation partagée, numéros des trous en
+gris) ; le contrôle des montants d'une annonce avant diffusion (`src/lib/controle-montants.ts` :
+un loyer mensuel écrit « annuel », un loyer au m² trop bas) ; les formulaires sans case seule sur sa
+ligne (`src/components/shared/colonnes.ts`) ; le mandat de recherche en ligne en version
+commerciale (`src/lib/mandat.ts` : 2,5 % HT par défaut, réglable par demandeur, `BAREME` 30 % n'est
+qu'un garde-fou de saisie) et le mandat type dans Paramètres › Agence ; les « ? » (`Aide`, une
+petite fenêtre, feuille du bas au téléphone) ; le bon de visite depuis l'agenda ; la carte (chaque
+pastille s'allume et s'éteint, même la dernière ; carte vide expliquée ; « ? » des filtres) ; les
+honoraires d'un mandat signé fermés (avenant, ou « Mettre fin au mandat » : ligne
+`mandats_signatures.statut = 'termine'`, registre « Fin du mandat ») ; la signature manuscrite de
+Werner, demandée à l'arrivée tant qu'elle manque et dessinée dans le CRM
+(`src/lib/signature-agence.ts`, `SignatureBienvenue`).
+
 ---
 
 ## 6. Ce qui reste à faire
 
 - **La relecture des textes** — en cours. Aucun mot du résidentiel (AGENTS.md §0), honoraires HT.
+- **Les mandats et avenants de recherche de la rubrique Documents** (`src/lib/actes/mandat-recherche.ts`,
+  `avenant-recherche.ts`) : encore les textes de l'origine (acquéreur, prix maximum…). Le mandat en
+  ligne est fait ; l'avenant, qui sert à changer les honoraires d'un mandat signé, est à reprendre,
+  puis à faire relire par l'avocat.
 - **La relecture visuelle de chaque mail** — les gabarits de l'origine, aux couleurs converties : un
   par un, en 390 et 1280 px, quand Mailjet sera branché.
 - **Les modules propres à l'origine sont retirés** (21 octobre 2026) : plus de route ni d'écran
