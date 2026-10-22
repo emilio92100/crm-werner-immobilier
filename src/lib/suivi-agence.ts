@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { verifie } from '@/lib/ecritures';
-import type { ImprevuOuvert } from '@/lib/visites';
+import { visitePassee, type ImprevuOuvert } from '@/lib/visites';
 import { chargerImprevus } from '@/lib/imprevus';
 
 /* ═══ Le suivi avec l'agence, sous chaque bien présenté (V3.182) ═══════════
@@ -78,6 +78,10 @@ function lire(x: any): LigneSuivi {
   };
 }
 
+/** V3.221 : la même lecture, pour la route de l'espace qui pose la visite
+    choisie par le client (le contact de la visite, comme dans le CRM). */
+export const lireLigneSuivi = lire;
+
 /** Les notes et les appels de ces biens, du plus récent au plus ancien, et leurs visites à venir. */
 export async function chargerSuivis(bienIds: string[]): Promise<Suivis> {
   if (!bienIds.length) return SUIVIS_VIDES;
@@ -86,7 +90,14 @@ export async function chargerSuivis(bienIds: string[]): Promise<Suivis> {
     supabase.from('visites').select('id, bien_id, date_visite, heure').in('bien_id', bienIds).eq('statut', 'a_venir').order('date_visite', { ascending: true }),
   ]);
   const visites: Record<string, VisiteCalee> = {};
-  (v.data || []).forEach((x: any) => { if (x.bien_id && !visites[x.bien_id]) visites[x.bien_id] = { date_visite: x.date_visite, heure: x.heure || null, id: x.id }; });
+  /* V3.222 : seulement celles qui ne sont pas encore passées. Une visite
+     passée, compte rendu pas encore fait, restait « Visite calée » et
+     cachait « Valider ce créneau » — on ne pouvait pas caler la 2e visite
+     avec les créneaux de l'agence. */
+  const maintenant = new Date();
+  (v.data || []).forEach((x: any) => {
+    if (x.bien_id && !visites[x.bien_id] && !visitePassee(x, maintenant)) visites[x.bien_id] = { date_visite: x.date_visite, heure: x.heure || null, id: x.id };
+  });
   /* V3.232 : les imprévus signalés sur ces visites, rangés par bien. */
   const parVisite = await chargerImprevus(Object.values(visites).filter(x => !!x.id).map(x => ({ id: x.id as string, statut: 'a_venir', date_visite: x.date_visite, heure: x.heure })));
   const imprevus: Record<string, ImprevuOuvert> = {};

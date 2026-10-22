@@ -17,7 +17,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export const CLE_ALERTES = 'alertes_mail';
 
 export type CleAlerte =
-  | 'visite' | 'visite_imprevu' | 'visite_offre' | 'visite_avis' | 'offre_espace'
+  | 'visite' | 'visite_creneau' | 'visite_imprevu' | 'visite_offre' | 'visite_avis' | 'offre_espace'
   | 'mandat_question' | 'mandat_numero' | 'mandat_signe' | 'mandat_renonce' | 'mandat_depasse' | 'document_signe'
   | 'reconnaissance_envoyee' | 'point_auto_recap';
 
@@ -40,6 +40,13 @@ export const ALERTES_MAIL: Alerte[] = [
     objet: '👀 Paul Martin veut visiter · Boutique 60 m²…',
     quand: 'Il clique sur « Je veux visiter » depuis son espace. Une seule fois par bien.',
     crm: 'Une relance du jour dans Relances et sur le tableau de bord, et une ligne dans son suivi.',
+  },
+  /* V3.221 : il choisit lui-même un des créneaux proposés par l'agence. */
+  {
+    cle: 'visite_creneau', groupe: 'clients', titre: 'Un client a choisi son créneau',
+    objet: '📅 Paul Martin a choisi son créneau · jeu. 23 oct. à 18 h…',
+    quand: 'Tu as noté un appel avec des créneaux de l’agence, montré au client : il en choisit un depuis son espace. La visite est posée dans ton agenda, comme si tu l’avais planifiée.',
+    crm: 'La visite dans l’agenda et dans Visites, une relance du jour « Confirmer à l’agence », et une ligne dans son suivi.',
   },
   /* V3.232 : un imprévu sur une visite calée, depuis son espace (« Un imprévu ? »). */
   {

@@ -82,6 +82,21 @@ export function raisonsValides(issue: Issue, l: unknown): string[] {
   return Array.from(new Set(l.filter((x): x is string => typeof x === 'string' && ok.has(x))));
 }
 
+/** V3.222 — Ses disponibilités pour une 2e visite, telles que le calendrier
+    de l'espace les écrit (« Le week-end », « Sam. 8 nov. de 14 h à 17 h »).
+    Elles se rangent avec ses raisons dans `visites.motifs` (pas de colonne
+    de plus) : le CRM les montre en pastilles sur la visite, le mail et la
+    relance les citent. Du texte court, douze au plus. Rien ne s'en sert pour
+    la recherche (apprisDe ne lit que les raisons d'un « non »). */
+export function disposPropres(l: unknown): string[] {
+  if (!Array.isArray(l)) return [];
+  const t = l.filter((x): x is string => typeof x === 'string')
+    .map(x => x.replace(/\s+/g, ' ').trim().slice(0, 80)).filter(Boolean);
+  return Array.from(new Set(t)).slice(0, 12);
+}
+/** Les pastilles d'une visite qui ne sont pas des raisons : ses disponibilités. */
+export const estRaison = (issue: Issue, m: string) => RAISONS[issue].some(r => r.n === m);
+
 /* Les visites d'avant cette colonne n'ont que l'avis du compte rendu
    (tres_interesse, interesse, a_voir, pas_interesse, elimine) : on en déduit
    l'issue, pour que l'historique se range lui aussi. */
@@ -163,6 +178,18 @@ export function maintenantParis(d = new Date()): string {
   }).formatToParts(d).map((p) => [p.type, p.value]));
   return `${m.year}-${m.month}-${m.day} ${m.hour}:${m.minute}`;
 }
+/** « Boutique 60 m² · Paris », « Bureaux 120 m² · Paris », « 3 espaces 80 m² · Paris » :
+    le local en court, pour ses prochaines visites : le type du local d'abord,
+    le nombre d'espaces quand il n'est pas connu. Sorti de la page de
+    l'espace à la V3.221 : la visite qu'il choisit lui-même s'affiche pareil. */
+export function courtDuBien(b: { nb_pieces?: unknown; surface?: unknown; type_bien?: unknown; ville?: unknown } | null | undefined): string | null {
+  if (!b) return null;
+  const n = Number(b.nb_pieces) || 0, s = Number(b.surface) || 0;
+  const quoi = String(b.type_bien || '').trim() || (n > 1 ? `${n} espaces` : n === 1 ? '1 espace' : '');
+  const bien = [quoi ? quoi.charAt(0).toUpperCase() + quoi.slice(1) : '', s ? `${String(s).replace('.', ',')} m²` : ''].filter(Boolean).join(' ');
+  return [bien, b.ville ? String(b.ville) : ''].filter(Boolean).join(' · ') || null;
+}
+
 export function visitePasseeParis(v: { date_visite?: string | null; heure?: string | null }, maintenant = maintenantParis()): boolean {
   if (!v.date_visite) return false;
   const h = /^\d{2}:\d{2}/.test(String(v.heure || '')) ? String(v.heure).slice(0, 5) : '23:59';
@@ -189,13 +216,6 @@ export const RAISONS_IMPREVU: { i: string; n: string }[] = [
   { i: 'croix', n: 'Le local ne m’intéresse plus' },
   { i: 'maison', n: 'J’ai trouvé un autre local' },
 ];
-/** Ses disponibilités (« Dès que possible », « Sam. 7 nov. de 10 h à 12 h »…) : des phrases courtes, sans doublon. */
-export function disposPropres(l: unknown): string[] {
-  if (!Array.isArray(l)) return [];
-  const t = l.filter((x): x is string => typeof x === 'string')
-    .map(x => x.replace(/\s+/g, ' ').trim().slice(0, 80)).filter(Boolean);
-  return Array.from(new Set(t)).slice(0, 12);
-}
 export const estRaisonImprevu = (m: unknown): m is string => typeof m === 'string' && RAISONS_IMPREVU.some(r => r.n === m);
 /** Ce qu'il a signalé sur une visite à venir : décaler ou annuler, et quand. */
 export type ImprevuVisite = { quoi: 'decaler' | 'annuler'; le: string };
