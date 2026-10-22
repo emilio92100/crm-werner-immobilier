@@ -684,7 +684,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
               {/* V3.174 (Alexandre) : un notaire se présente par son étude — « Son
                   étude » d'abord, puis qui le joindre ; et pas de « D'où vient ce
                   contact ? ». */}
-              {notaireEdit && <ChampsPro types={edit.types} pro={edit.pro} onChange={p => setEdit({ ...edit, pro: p })} cls={cls} />}
+              {notaireEdit && <ChampsPro types={edit.types} pro={edit.pro} onChange={p => setEdit({ ...edit, pro: p })} cls={cls} prenom={edit.prenom} nom={edit.nom} />}
               <div className={c.groupe}>
                 <div className={c.groupeT}>{edit.couple && !estPro(edit.types) ? 'Personne 1 · contact principal' : 'Qui, et comment le joindre'}</div>
                 <div className={c.pills}>
@@ -715,7 +715,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
                   </div>
                 </div>
               )}
-              {!notaireEdit && <ChampsPro types={edit.types} pro={edit.pro} onChange={p => setEdit({ ...edit, pro: p })} cls={cls} />}
+              {!notaireEdit && <ChampsPro types={edit.types} pro={edit.pro} onChange={p => setEdit({ ...edit, pro: p })} cls={cls} prenom={edit.prenom} nom={edit.nom} />}
               {!sansSourceEdit && (
                 <div className={c.groupe}>
                   <div className={c.groupeT}>{'D’où vient ce contact ?'}<em className={c.facult} style={{ textTransform: 'none', letterSpacing: 0 }}>{' · facultatif'}</em></div>

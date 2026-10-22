@@ -2081,3 +2081,14 @@ nav.sousOnglets > span[aria-hidden="true"] { border-radius: 13px; }
 }
 .recoFait h4 { margin: 0; font: 800 18px/1.3 'Plus Jakarta Sans', sans-serif; color: var(--emilio); }
 .recoFait p { margin: 0; font-size: 13.5px; line-height: 1.55; color: #475569; max-width: 520px; }
+
+/* « Ajouter le propriétaire » : son interlocuteur, parmi les dirigeants
+   de la société retrouvée dans le registre (23 octobre 2026). */
+.dirigeants { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 12.5px; color: #64748b; }
+.dirigeants > span { flex-basis: 100%; }
+.dirigeant {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1.5px solid #eaeae9; background: #fff;
+  font: 700 12.5px 'DM Sans', sans-serif; color: var(--emilio); cursor: pointer;
+}
+.dirigeant:hover:not(:disabled) { border-color: #f2b383; background: #fffaf6; }
+.dirigeant > svg { color: #c2621c; }

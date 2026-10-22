@@ -20,7 +20,9 @@ import { aererTexte, texteEnBloc } from '@/lib/annonce-texte';
 import { ChampActe, manquesEtape } from '@/components/documents/ChampsActe';
 import { Croix, Ic } from '@/components/documents/ApercuActe';
 import { Picto, pictoChoix } from './Pictos';
-import { creerFicheProprio, deposerPhoto, deposerPiece, doublonsContact, marquerVendeur, nomClient, ouvrirPiece, retirerPhoto, retirerPiece, type ClientMini } from './outils';
+import { creerFicheProprio, deposerPhoto, deposerPiece, doublonsContact, marquerVendeur, nomClient, ouvrirPiece, retirerPhoto, retirerPiece, sciDepuisStructure, type ClientMini } from './outils';
+import RechercheSociete from '@/components/shared/RechercheSociete';
+import { rcsCourt, sirenAere } from '@/lib/entreprises';
 import ChoixQuartiers from '@/components/shared/ChoixQuartiers';
 import { coupable, useColonnes } from '@/components/shared/colonnes';
 import { communeDeVille, communeDuCp, memeNom, titreQuartiers } from '@/lib/quartiers';
@@ -582,7 +584,7 @@ function ChampProprio({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
     const st = lireStructure(lirePro(c.pro).structure);
     if (st?.denomination && !(d.qui === 'sci' && txt(d, 'sciNom')) && confirm(`${nomClient(c)} représente ${st.denomination}. C’est la société qui confie l’affaire ?`)) {
       maj('qui', 'sci');
-      maj('sciNom', st.denomination);
+      for (const [k, x] of Object.entries(sciDepuisStructure(st))) maj(k, x);
     }
     setQ('');
     setEnChange(false);
@@ -1031,10 +1033,32 @@ function ChampQuartier({ exemple, d, maj, off }: { exemple: string; d: Donnees; 
   );
 }
 
+/* ── « Nom de la société » du mandant (23 octobre 2026) ──
+   Werner : « il tape le début du nom, ou le numéro, et il clique ». Le
+   registre national remplit son nom, sa forme, son siège et son
+   immatriculation : ce que le mandat écrira (« sciForme », « sciSiege »,
+   « sciRcs »). Le nom reste modifiable à la main. */
+function ChampSociete({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
+  const v = txt(d, 'sciNom');
+  const repris = [txt(d, 'sciForme'), txt(d, 'sciRcs'), txt(d, 'sciSiege') ? `siège ${txt(d, 'sciSiege')}` : ''].filter(Boolean).join(' · ');
+  return (
+    <div className={`${s.ch} ${s.large}`} data-champ="sciNom" data-cle="sciNom">
+      <label className={s.chLib} htmlFor="ch-sciNom"><span className={s.chIc}><Ic n="immeuble" t={14} /></span><span>Nom de la société</span></label>
+      <RechercheSociete classeChamp={s.input} off={off}
+        aide="Son nom, sa forme, son siège et son immatriculation sont notés : le mandat les reprendra."
+        onChoisir={x => { for (const [k, y] of Object.entries(sciDepuisStructure({ denomination: x.denomination, forme: x.forme, siege: x.siege, rcs: rcsCourt(x), siren: sirenAere(x.siren) }))) maj(k, y); }} />
+      <input id="ch-sciNom" className={s.input} disabled={off} autoComplete="off" value={v} placeholder="Ou écris son nom : SCI Les Tilleuls"
+        onChange={e => maj('sciNom', e.target.value)} />
+      {repris && v && <div className={s.chAide}>{repris}</div>}
+    </div>
+  );
+}
+
 export function ChampBien({ c, d, maj, off, bienId }: { c: ChampBien; d: Donnees; maj: Maj; off: boolean; bienId: string }) {
   /* V3.107 : enveloppe transparente (display: contents, la grille ne bouge
      pas), pour que l'éditeur trouve le champ par sa clé (`data-champ`). */
   if (c.t === 'choix' || c.t === 'cases') return <ChampVignettes c={c} d={d} maj={maj} off={off} />;
+  if (c.cle === 'sciNom') return c.si && !c.si(d) ? null : <ChampSociete d={d} maj={maj} off={off} />;
   if (c.cle === 'quartier') return <ChampQuartier exemple={'exemple' in c && typeof c.exemple === 'string' ? c.exemple : ''} d={d} maj={maj} off={off} />;
   if (estChampActe(c)) return <div data-champ={c.cle} style={{ display: 'contents' }}><ChampActe c={c} d={d} maj={maj} off={off} /></div>;
   if (c.si && !c.si(d)) return null;

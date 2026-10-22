@@ -31,6 +31,12 @@ const API = 'https://recherche-entreprises.api.gouv.fr/search';
 /* La forme, depuis le code de catégorie juridique de l'INSEE. */
 export function formeDe(code: string): string {
   const c = String(code || '');
+  /* Werner (23 octobre 2026) : les sociétés d'un local d'entreprise sont plus
+     variées qu'un mandat de recherche ; on nomme aussi la SA, l'association,
+     l'entrepreneur individuel. */
+  if (c === '1000') return 'Entreprise individuelle';
+  if (c.startsWith('55') || c.startsWith('56')) return 'SA';
+  if (c.startsWith('92')) return 'Association';
   if (c.startsWith('654')) return 'SCI';
   if (c === '5498') return 'EURL';
   if (c.startsWith('54')) return 'SARL';
@@ -107,3 +113,32 @@ export function qualiteDe(s: SocieteTrouvee, prenom: string, nom: string): strin
   if (q.includes('directeur g')) return 'Directeur général';
   return null;
 }
+
+/* ── Ce que le CRM range d'une société retrouvée (23 octobre 2026) ──
+   Werner, pour un contact, un propriétaire, un demandeur ou un document :
+   « il tape le début du nom de la société, ou son numéro, et il clique ». */
+export const sirenAere = (t: string) => String(t || '').replace(/\s/g, '').replace(/^(\d{3})(\d{3})(\d{3})$/, '$1 $2 $3');
+const FORMES_LONGUES: Record<string, string> = {
+  SAS: 'Société par actions simplifiée', SASU: 'Société par actions simplifiée unipersonnelle', SARL: 'Société à responsabilité limitée',
+  EURL: 'Entreprise unipersonnelle à responsabilité limitée', SCI: 'Société civile immobilière', SNC: 'Société en nom collectif', SA: 'Société anonyme',
+};
+/* « Société par actions simplifiée (SAS) » : la forme écrite dans un acte (le capital, le registre ne le donne pas). */
+export const formeLongue = (x: Pick<SocieteTrouvee, 'forme'>) => (FORMES_LONGUES[x.forme] ? `${FORMES_LONGUES[x.forme]} (${x.forme})` : '');
+/* « RCS Paris 732 829 320 » (la fiche d'un contact), ou le SIREN seul quand le greffe n'est pas sûr. */
+export const rcsCourt = (x: Pick<SocieteTrouvee, 'siren' | 'rcsVille'>) => (x.rcsVille ? `RCS ${x.rcsVille} ${sirenAere(x.siren)}` : `SIREN ${sirenAere(x.siren)}`);
+/* « RCS de Paris n° 732 829 320 » (un document juridique). */
+export const immatriculation = (x: Pick<SocieteTrouvee, 'siren' | 'rcsVille'>) => (x.rcsVille ? `RCS de ${x.rcsVille} n° ${sirenAere(x.siren)}` : `SIREN n° ${sirenAere(x.siren)}`);
+/* « Gérant », « Président »… : la fonction d'un dirigeant, lisible. */
+export function fonctionCourte(q: string): string {
+  const t = String(q || '').toLowerCase();
+  if (t.startsWith('g')) return 'Gérant';
+  if (t.startsWith('pr')) return 'Président';
+  if (t.includes('directeur g')) return 'Directeur général';
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
+}
+/* « Jean Dupont » : un dirigeant, prénom d'usage d'abord. */
+export const nomDirigeant = (d: SocieteTrouvee['dirigeants'][number]) => {
+  const joliNom = (x: string) => x.toLowerCase().replace(/(^|[\s-])\p{L}/gu, m => m.toUpperCase());
+  return [joliNom((d.prenoms || '').split(/\s+/)[0] || ''), joliNom(d.nom || '')].filter(Boolean).join(' ');
+};
+

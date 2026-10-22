@@ -31,7 +31,11 @@ import { ajouterSuivi, creerFicheAcheteur, nomClient, type ClientMini } from './
    civilité, prénom, nom, téléphone et e-mail obligatoires pour que la
    reconnaissance parte ; l'adresse et la société, s'il y en a). Elles vont
    dans le document, et complètent sa fiche. */
-export type NouveauDestinataire = { civilite: '' | 'Madame' | 'Monsieur'; prenom: string; nom: string; societe: string; email: string; telephone: string; adresse: string };
+export type NouveauDestinataire = {
+  civilite: '' | 'Madame' | 'Monsieur'; prenom: string; nom: string; societe: string; email: string; telephone: string; adresse: string;
+  /* La société retrouvée dans le registre : sa forme, son SIREN, son RCS, son siège (sur sa fiche). */
+  societeInfos?: { forme?: string; siren?: string; rcs?: string; siege?: string } | null;
+};
 export const COORD_VIDE: NouveauDestinataire = { civilite: '', prenom: '', nom: '', societe: '', email: '', telephone: '', adresse: '' };
 /* Ce qui manque pour que la reconnaissance parte. */
 export function coordManquantes(k: NouveauDestinataire): string[] {
@@ -121,7 +125,10 @@ async function donneesDe(x: DemandeReconnaissance, client: ClientMini, p: Person
     bienVenteId: b.id,
     ...(natureDe(d) ? { nature: natureDe(d) } : {}),
     destinataires: [p],
-    societe: x.coord.societe.trim() || societeDe(client),
+    /* « SAS Le Comptoir (RCS Paris 732 829 320) » quand elle vient du registre. */
+    societe: x.coord.societe.trim()
+      ? `${x.coord.societe.trim()}${x.coord.societeInfos?.rcs ? ` (${x.coord.societeInfos.rcs})` : ''}`
+      : societeDe(client),
     description: descriptionLocal(b),
     adresse: typeof d.adresse === 'string' ? d.adresse : '', cp: typeof d.cp === 'string' ? d.cp : '',
     ville: typeof d.ville === 'string' ? d.ville : '', quartier: typeof d.quartier === 'string' ? d.quartier : '',
@@ -152,10 +159,19 @@ async function leClient(x: DemandeReconnaissance, avert: string[]): Promise<Clie
     const tel = k.telephone.trim();
     if (tel && !(c.telephones || []).some(t => cleTel(t) === cleTel(tel))) patch.telephones = [...(c.telephones || []), tel];
     const soc = k.societe.trim();
-    if (soc && !societeDe(c)) {
-      const brut = c.pro && typeof c.pro === 'object' && !Array.isArray(c.pro) ? c.pro as Record<string, unknown> : {};
-      const st = brut.structure && typeof brut.structure === 'object' && !Array.isArray(brut.structure) ? brut.structure as Record<string, unknown> : {};
-      patch.pro = { ...brut, structure: { forme: '', rcs: '', siege: '', qualite: '', associes: [], ...st, denomination: soc } };
+    const brut = c.pro && typeof c.pro === 'object' && !Array.isArray(c.pro) ? c.pro as Record<string, unknown> : {};
+    const st = brut.structure && typeof brut.structure === 'object' && !Array.isArray(brut.structure) ? brut.structure as Record<string, unknown> : {};
+    const net = (x: unknown) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    /* Sa fiche n'a pas de société ; ou c'est la même, retrouvée dans le
+       registre, et sa fiche n'en avait pas encore le SIREN. */
+    const memeSansSiren = !!k.societeInfos?.siren && net(st.denomination) === net(soc) && !st.siren;
+    if (soc && (!societeDe(c) || memeSansSiren)) {
+      const inf = k.societeInfos || {};
+      patch.pro = { ...brut, structure: {
+        forme: '', rcs: '', siege: '', qualite: '', associes: [], ...st, denomination: soc,
+        ...(inf.forme && inf.forme !== 'Autre' ? { forme: inf.forme } : {}), ...(inf.rcs ? { rcs: inf.rcs } : {}),
+        ...(inf.siege ? { siege: inf.siege } : {}), ...(inf.siren ? { siren: inf.siren } : {}),
+      } };
     }
     if (!Object.keys(patch).length) return c;
     const { data, error } = await supabase.from('clients').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', c.id).select('id');
@@ -167,7 +183,7 @@ async function leClient(x: DemandeReconnaissance, avert: string[]): Promise<Clie
   }
   if (!(k.nom.trim() || k.prenom.trim())) throw new Error('Pour qui est la reconnaissance ? Choisis un contact, ou donne au moins son nom.');
   const p: Personne = { ...PERSONNE_VIDE, civilite: k.civilite, prenom: k.prenom.trim(), nom: k.nom.trim(), email, telephone: k.telephone.trim(), adresse: k.adresse.trim() };
-  return creerFicheAcheteur(p, k.societe.trim() ? { denomination: k.societe.trim() } : null);
+  return creerFicheAcheteur(p, k.societe.trim() ? { denomination: k.societe.trim(), ...(k.societeInfos || {}) } : null);
 }
 
 export async function faireReconnaissance(x: DemandeReconnaissance): Promise<ResultatReconnaissance> {

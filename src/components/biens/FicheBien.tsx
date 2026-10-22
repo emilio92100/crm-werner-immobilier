@@ -25,7 +25,7 @@ import {
 import type { ChoixGuide } from './FenetresBien';
 import {
   SEUIL_CORRESPOND, SEUIL_LISTE, acheteursTries, fiable, recherchesRappro, annulerVisiteCRM, annulerVisiteLibre, chargerFiche, cloreRelanceOffre, creerAvenantVente, creerDocument, enregistrerBien,
-  MESSAGE_VENDU_SUPPR, cloreRelancesEstimation, creerFicheAcheteur, creerFicheProprio, deposerPiece, donneesProprio, doublonsContact, ficheClient, personneVide, joindreCompromis, joindreOffreSignee, ligneHono, ligneNotaires, lireHono, lireNotaire, lireNotairesDossier, majBien, majSuivi, marquerVendeur, nomClient, noterAcceptationAnnulee, noterNegociation, noterOffreAcceptee, retirerAutresAcceptees,
+  MESSAGE_VENDU_SUPPR, cloreRelancesEstimation, creerFicheAcheteur, creerFicheProprio, sciDepuisStructure, deposerPiece, donneesProprio, doublonsContact, ficheClient, personneVide, joindreCompromis, joindreOffreSignee, ligneHono, ligneNotaires, lireHono, lireNotaire, lireNotairesDossier, majBien, majSuivi, marquerVendeur, nomClient, noterAcceptationAnnulee, noterNegociation, noterOffreAcceptee, retirerAutresAcceptees,
   donneesHono, donneesNotaires, aDesNotaires, notaireAJour, ouvrirPiece, supprimerBien, triBien, supprimerSuivi,
   type Acheteur, type ClientMini, type Copie, type DetailBien, type DocLie, type ListeBiens, type NotaireChoisi, type PourDocument, type VisiteRow,
 } from './outils';
@@ -1914,7 +1914,9 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
     const avantD = bien.donnees || {};
     const base = donneesProprio(c);
     const patch: Donnees = st?.denomination
-      ? { ...base, qui: 'sci', sciNom: st.denomination }
+      /* 23 octobre 2026 : sa forme, son siège, son immatriculation suivent
+         jusqu'au mandat (src/lib/biens-vente.ts, contexteDocument). */
+      ? { ...base, qui: 'sci', ...sciDepuisStructure(st) }
       : { ...base, qui: base.qui === 'couple' ? 'indivision' : 'personne', sciNom: '' };
     const donnees: Donnees = { ...avantD, ...patch, proprioNouveau: false, proprioSans: false };
     setBien(prev => ({ ...prev, client_id: c.id, donnees }));

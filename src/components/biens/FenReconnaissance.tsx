@@ -7,6 +7,8 @@ import { Ic } from '@/components/documents/ApercuActe';
 import { lireClients } from './ChampsBien';
 import { titreBien } from '@/lib/biens-vente';
 import SaisieAdresse from '@/components/shared/SaisieAdresse';
+import RechercheSociete from '@/components/shared/RechercheSociete';
+import { rcsCourt, sirenAere } from '@/lib/entreprises';
 import { Ch, ChG, Erreur, Fenetre, Option, Pills, Section, Suite, sansAccent, type OptionAcheteur } from './FenetresBien';
 import { creerFicheAcheteur, doublonsContact, nomClient, type ClientMini, type DocLie } from './outils';
 import {
@@ -166,7 +168,8 @@ export default function FenReconnaissance({ bien, pour, suggestions = [], deja =
     try {
       const soc = coord.societe.trim();
       const p = { ...PERSONNE_VIDE, civilite: coord.civilite, prenom: coord.prenom.trim(), nom: coord.nom.trim(), email: coord.email.trim().toLowerCase(), telephone: coord.telephone.trim(), adresse: coord.adresse.trim() };
-      const c = await creerFicheAcheteur(p, soc ? { denomination: soc } : null);
+      const inf = coord.societeInfos || {};
+      const c = await creerFicheAcheteur(p, soc ? { denomination: soc, ...inf } : null);
       setClients(l => [c, ...(l || [])]);
       const garde = coord;
       choisir(c);
@@ -200,7 +203,7 @@ export default function FenReconnaissance({ bien, pour, suggestions = [], deja =
 
   /* Un champ du formulaire (une fonction, pas un composant : le champ garde
      son curseur à chaque lettre, AGENTS.md §2.4). */
-  const champ = (k: Exclude<keyof NouveauDestinataire, 'civilite'>, lib: string, o: { auto?: boolean; mode?: 'tel' | 'email'; large?: boolean; exemple?: string; liste?: string[]; requis?: boolean } = {}) => {
+  const champ = (k: Exclude<keyof NouveauDestinataire, 'civilite' | 'societeInfos'>, lib: string, o: { auto?: boolean; mode?: 'tel' | 'email'; large?: boolean; exemple?: string; liste?: string[]; requis?: boolean } = {}) => {
     const vide = o.requis && essaye && (k === 'email' ? !emailOk(coord.email) : k === 'telephone' ? coord.telephone.replace(/\D/g, '').length < 9 : !coord[k].trim());
     const idListe = o.liste && o.liste.length > 1 ? `reco-${k}` : undefined;
     return (
@@ -233,7 +236,19 @@ export default function FenReconnaissance({ bien, pour, suggestions = [], deja =
           <SaisieAdresse v={coord.adresse} classeChamp={s.input} etiquette="Son adresse" placeholder="Tape le début : 12 rue de Rivoli…"
             onChange={x => { setCoord(c => ({ ...c, adresse: x })); setErreur(''); }} />
         </div>
-        {champ('societe', 'Sa société (s’il fait l’affaire au nom d’une société)', { large: true, exemple: 'Ex : SARL Le Comptoir' })}
+        {/* 23 octobre 2026 : retrouvée dans le registre (nom ou SIREN), ou écrite à la main. */}
+        <div className={b.chF} style={{ gridColumn: '1 / -1' }}>
+          <span>Sa société (s’il fait l’affaire au nom d’une société)</span>
+          <RechercheSociete classeChamp={s.input} off={occupe} etiquette=""
+            aide="Son nom et son immatriculation iront dans le document ; sa forme, son SIREN et son siège, sur sa fiche."
+            onChoisir={x => {
+              setCoord(c => ({ ...c, societe: x.denomination, societeInfos: { forme: x.forme, siren: sirenAere(x.siren), rcs: rcsCourt(x), siege: x.siege } }));
+              setErreur('');
+            }} />
+          <input className={s.input} value={coord.societe} autoComplete="off" aria-label="Nom de sa société"
+            placeholder={coord.societeInfos ? '' : 'Ou écris son nom : SARL Le Comptoir, en cours de création'}
+            onChange={e => { const v = e.target.value; setCoord(c => ({ ...c, societe: v, ...(v.trim() ? {} : { societeInfos: null }) })); setErreur(''); }} />
+        </div>
       </div>
     </>
   );

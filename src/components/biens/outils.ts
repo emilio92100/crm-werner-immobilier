@@ -12,7 +12,8 @@ import { modele, aujourdhui, lirePersonnes, PERSONNE_VIDE, type Personne } from 
 import { correspondance, criteresDepuisRecherche, grouperSecteurs, lireCriteresPro, type Correspondance } from '@/lib/correspondance';
 import { raisonEcart, type RaisonEcart } from '@/lib/ecart-acheteur';
 import { conjointDe } from '@/lib/foyer';
-import { ETAPES_EN_VENTE, TYPES_CONTACT, acheteurEnCours, colonneContactAbsente, typesDe, typesSelonBiens } from '@/lib/contacts';
+import { ETAPES_EN_VENTE, TYPES_CONTACT, acheteurEnCours, colonneContactAbsente, typesDe, typesSelonBiens, type Structure } from '@/lib/contacts';
+import { formeLongue, sirenAere } from '@/lib/entreprises';
 import {
   ETAPES_BIEN, apresReponse, argentBien, avantMandat, colonnesBien, contexteDocument, dateLongue, lirePhotos, montantActuel, nomProprioActe, personneDepuisClient, prixCopie, referenceSuivante, tableAbsente, titreBien,
   typeCompatible, versBienAcheteur, versCorrespondance, versMandatVente,
@@ -2239,14 +2240,36 @@ export async function estimationMiseDeCote(b: BienVente, raison: string, reprise
    `marquerVendeur`) — et pas un acheteur « actif » : il ne cherche rien.
    Avant le SQL des types de contact, la colonne `types` manque : on crée
    sans elle. */
-export async function creerFicheProprio(p: Personne, societe?: { denomination: string; forme?: string } | null): Promise<ClientMini> {
+/* Une société saisie à la création d'une fiche : son nom, et ce que le
+   registre en a dit quand Werner l'y a retrouvée (23 octobre 2026). */
+export type SocieteSaisie = { denomination: string; forme?: string; siren?: string; rcs?: string; siege?: string; qualite?: string };
+const structureSaisie = (x: SocieteSaisie, denom: string): Structure => ({
+  denomination: denom, forme: x.forme && x.forme !== 'Autre' ? x.forme : '', rcs: x.rcs || '', siege: x.siege || '', qualite: x.qualite || '', associes: [],
+  ...(x.siren ? { siren: x.siren } : {}),
+});
+/* La société d'un mandant telle que les documents la lisent (« sciNom »,
+   « sciForme », « sciSiege », « sciRcs ») : seulement ce qu'on sait. */
+export function sciDepuisStructure(st: Pick<Structure, 'denomination' | 'forme' | 'siege' | 'rcs' | 'siren'>): Record<string, string> {
+  const out: Record<string, string> = { sciNom: st.denomination };
+  const forme = formeLongue({ forme: st.forme }) || (st.forme && st.forme !== 'Autre' ? st.forme : '');
+  if (forme) out.sciForme = forme;
+  if (st.siege?.trim()) out.sciSiege = st.siege.trim();
+  const m = (st.rcs || '').match(/^RCS\s+(?:de\s+)?(.+?)\s+(?:n°\s*)?(\d{3}\s?\d{3}\s?\d{3})$/i);
+  const siren = (st.siren || '').replace(/\D/g, '') || ((st.rcs || '').match(/\d{3}\s?\d{3}\s?\d{3}/)?.[0] || '').replace(/\D/g, '');
+  if (m) out.sciRcs = `RCS de ${m[1]} n° ${sirenAere(m[2])}`;
+  else if (siren.length === 9) out.sciRcs = `SIREN n° ${sirenAere(siren)}`;
+  else if (st.rcs?.trim()) out.sciRcs = st.rcs.trim();
+  return out;
+}
+
+export async function creerFicheProprio(p: Personne, societe?: SocieteSaisie | null): Promise<ClientMini> {
   const reference = await genererReference();
   /* Werner : un propriétaire est souvent une société (SCI, foncière…) ; elle
      va dans « Sa société » (clients.pro.structure), lui en interlocuteur. */
   const denom = societe?.denomination?.trim() || '';
   const ligne = {
     reference, prenom: p.prenom || '', nom: p.nom || (denom && !p.prenom ? denom : ''),
-    ...(denom ? { pro: { structure: { denomination: denom, forme: societe?.forme || '', rcs: '', siege: '', qualite: '', associes: [] } } } : {}),
+    ...(denom && societe ? { pro: { structure: structureSaisie(societe, denom) } } : {}),
     ...(p.civilite ? { civilite: p.civilite } : {}),
     token_espace: jetonEspace(p.prenom, p.nom),
     adresse: p.adresse || null,
@@ -2262,14 +2285,14 @@ export async function creerFicheProprio(p: Personne, societe?: { denomination: s
 /* La fiche d'un visiteur venu hors du CRM (V3.50, « Créer sa fiche » sur sa
    visite) : le minimum, comme pour un propriétaire, mais acheteur et
    prospect — sa recherche s'ouvrira depuis sa fiche. */
-export async function creerFicheAcheteur(p: Personne, societe?: { denomination: string } | null): Promise<ClientMini> {
+export async function creerFicheAcheteur(p: Personne, societe?: SocieteSaisie | null): Promise<ClientMini> {
   const reference = await genererReference();
   /* Werner : un demandeur signe souvent pour sa société (créée ou à créer) :
      elle va dans « Sa société » (clients.pro.structure), comme pour un
      propriétaire. */
   const denom = societe?.denomination?.trim() || '';
   const ligne = {
-    ...(denom ? { pro: { structure: { denomination: denom, forme: '', rcs: '', siege: '', qualite: '', associes: [] } } } : {}),
+    ...(denom && societe ? { pro: { structure: structureSaisie(societe, denom) } } : {}),
     reference, prenom: p.prenom || '', nom: p.nom || (denom && !p.prenom ? denom : ''), token_espace: jetonEspace(p.prenom, p.nom),
     /* 23 octobre 2026 : la civilité et l'adresse, quand on les a (reconnaissance d'information). */
     ...(p.civilite ? { civilite: p.civilite } : {}), ...(p.adresse?.trim() ? { adresse: p.adresse.trim() } : {}),

@@ -1451,7 +1451,7 @@ export default function Clients({ onNavigate, fenetre }: {
            notaire… Juste après l'identité pour un professionnel (c'est ce
            qui compte), après les coordonnées pour un particulier. */
         const champsPro = (
-          <ChampsPro types={form.types} pro={form.pro} onChange={x => setForm({ ...form, pro: x })}
+          <ChampsPro types={form.types} pro={form.pro} onChange={x => setForm({ ...form, pro: x })} prenom={form.prenom} nom={form.nom}
             cls={{ row: styles.formRow, group: styles.formGroup, label: styles.label, input: styles.input, bloc: (titre, enfants) => <Bloc key={titre} ic={IC_PRO[titre] || 'dossier'} titre={titre} petit={`ce qui est propre à un ${typeDe(form.types.find(k => k !== 'acheteur') || form.types[0]).lib.toLowerCase()}`} teinte={teinte}>{enfants}</Bloc> }} />
         );
         const GRANDES: { cle: 'type' | 'contact' | 'recherche' | 'mandat'; ico: string; nom: string; sous: string }[] = [

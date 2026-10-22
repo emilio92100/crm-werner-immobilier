@@ -16,6 +16,8 @@ import { SaisieNombre, lireClients } from './ChampsBien';
 import { CalendrierJour, ChoixQuand } from '@/components/pages/PageAgenda';
 import { ListeCoordonnees, lignesDe, nettoyer } from '@/components/shared/ListeCoordonnees';
 import SaisieAdresse from '@/components/shared/SaisieAdresse';
+import RechercheSociete from '@/components/shared/RechercheSociete';
+import { fonctionCourte, nomDirigeant, qualiteDe, rcsCourt, sirenAere, type SocieteTrouvee } from '@/lib/entreprises';
 import { annoncerSucces } from '@/lib/succes';
 import { signalerMaj } from '@/lib/intentions';
 import {
@@ -670,6 +672,9 @@ export function FenAjoutProprio({ titre, onFermer, onFait }: { titre?: string; o
   const [q, setQ] = useState('');
   const [sorte, setSorte] = useState<'societe' | 'personne'>('societe');
   const [f, setF] = useState({ societe: '', civilite: '' as '' | 'Monsieur' | 'Madame', prenom: '', nom: '', tel: '', email: '' });
+  /* 23 octobre 2026 : la société retrouvée dans le registre (son SIREN, son
+     siège, sa forme vont sur la fiche créée). */
+  const [registre, setRegistre] = useState<SocieteTrouvee | null>(null);
   const [doublons, setDoublons] = useState<ClientMini[]>([]);
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState('');
@@ -700,7 +705,11 @@ export function FenAjoutProprio({ titre, onFermer, onFait }: { titre?: string; o
     }
     setOccupe(true); setErreur('');
     try {
-      const c = await creerFicheProprio(p, soc ? { denomination: soc } : null);
+      const r = registre;
+      const c = await creerFicheProprio(p, soc ? {
+        denomination: soc,
+        ...(r ? { forme: r.forme, siren: sirenAere(r.siren), rcs: rcsCourt(r), siege: r.siege, qualite: qualiteDe(r, p.prenom, p.nom) || '' } : {}),
+      } : null);
       await onFait(c);
     } catch (e) { setErreur((e as Error).message); setOccupe(false); }
   };
@@ -740,8 +749,27 @@ export function FenAjoutProprio({ titre, onFermer, onFait }: { titre?: string; o
           <button type="button" aria-pressed={sorte === 'societe'} onClick={() => { setSorte('societe'); setDoublons([]); }}>Une société</button>
           <button type="button" aria-pressed={sorte === 'personne'} onClick={() => { setSorte('personne'); setDoublons([]); }}>Une personne</button>
         </div>
+        {sorte === 'societe' && (
+          <RechercheSociete classeChamp={s.input} off={occupe}
+            aide="Son nom est écrit dessous ; son SIREN, sa forme et son siège iront sur sa fiche. Ajoute son interlocuteur."
+            onChoisir={x => { setRegistre(x); setF(v => ({ ...v, societe: x.denomination })); setDoublons([]); setErreur(''); }} />
+        )}
+        {/* Son interlocuteur est souvent son dirigeant : d'un clic. */}
+        {sorte === 'societe' && registre && registre.dirigeants.length > 0 && !f.prenom.trim() && !f.nom.trim() && (
+          <div className={b.dirigeants}>
+            <span>{'Son interlocuteur est un de ses dirigeants ?'}</span>
+            {registre.dirigeants.slice(0, 3).map((x, i) => {
+              const [prenom, ...reste] = nomDirigeant(x).split(' ');
+              return (
+                <button key={i} type="button" className={b.dirigeant} disabled={occupe} onClick={() => { setF(v => ({ ...v, prenom, nom: reste.join(' ') })); setDoublons([]); }}>
+                  <Ic n="personne" t={13} />{`${nomDirigeant(x)}${x.qualite ? `, ${fonctionCourte(x.qualite).toLowerCase()}` : ''}`}
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div className={b.g2}>
-          {sorte === 'societe' && champ('societe', 'Nom de la société', { auto: true, large: true })}
+          {sorte === 'societe' && champ('societe', registre ? 'Nom de la société' : 'Ou écris son nom', { large: true })}
           {sorte === 'personne' && (
             <ChG lib="Civilité">
               <Pills options={[{ v: 'Monsieur' as const, l: 'Monsieur' }, { v: 'Madame' as const, l: 'Madame' }]} v={f.civilite} onChange={x => setF({ ...f, civilite: f.civilite === x ? '' : x })} />
