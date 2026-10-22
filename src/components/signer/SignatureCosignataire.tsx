@@ -258,7 +258,7 @@ export default function SignatureCosignataire({ d }: { d: DonneesSigner }) {
         <div className="mdt-sceau"><Ic n="plume" t={28} /></div>
         <div className="mdt-invite"><span className="de">{`Bonjour ${m.prenom}`}</span><span className="att">Votre signature est attendue</span></div>
         <h3>{`${p} vous invite à signer votre mandat de recherche`}</h3>
-        <p className="mdt-p">{`${nomP} a signé le ${dateLongue(d.premierLe)} le mandat de recherche confié à Werner, d’Werner Immobilier, pour votre projet d’achat. ${d.premier.civilite === 'Madame' ? 'Elle' : 'Il'} vous a ${f ? 'indiquée' : 'indiqué'} comme co-demandeur : le mandat sera complet avec votre signature.`}</p>
+        <p className="mdt-p">{`${nomP} a signé le ${dateLongue(d.premierLe)} le mandat de recherche confié à Werner Immobilier pour votre recherche de local. ${d.premier.civilite === 'Madame' ? 'Elle' : 'Il'} vous a ${f ? 'indiquée' : 'indiqué'} comme co-demandeur : le mandat sera complet avec votre signature.`}</p>
         <div className="mdt-puces">
           <span><span className="k"><Ic n="check" t={14} /></span><span><b>Relisez le mandat</b>{` en entier, tel que ${p} l’a signé.`}</span></span>
           <span><span className="k"><Ic n="check" t={14} /></span><span>Vérifiez vos informations, corrigez-les si besoin.</span></span>
@@ -266,7 +266,7 @@ export default function SignatureCosignataire({ d }: { d: DonneesSigner }) {
           <span><span className="k"><Ic n="check" t={14} /></span><span>{`${RETRACTATION_JOURS} jours pour changer d’avis, comme ${p}.`}</span></span>
         </div>
         <button type="button" className="btn or mdt-plein" onClick={() => setEtape('recap')}>Commencer · 2 min</button>
-        {!decliner && <button type="button" className="mdt-lien fin" onClick={() => setDecliner(true)}>{`Je ne suis pas ${f ? 'concernée' : 'concerné'} par cet achat`}</button>}
+        {!decliner && <button type="button" className="mdt-lien fin" onClick={() => setDecliner(true)}>{`Je ne suis pas ${f ? 'concernée' : 'concerné'} par cette recherche`}</button>}
         {decliner && (
           <div className="mdt-rappel" style={{ textAlign: 'left', width: '100%', maxWidth: 440 }}>
             <Ic n="info" t={19} />

@@ -119,7 +119,7 @@ function mailParDefaut(p: Record<string, string>): { objet: string; corps: strin
 
 Suite à votre projet de recherche, je vous présente ci-dessous ce qui pourrait répondre à vos critères.
 
-Vous trouverez le détail de chaque bien, avec un bouton pour consulter sa fiche complète.
+Vous trouverez le détail de chaque local, avec un bouton pour consulter sa fiche complète.
 
 N'hésitez pas à me solliciter pour organiser une visite, à m'appeler si vous avez la moindre question, ou à me faire un retour afin d'affiner votre recherche.
 
@@ -173,7 +173,7 @@ function mailLibre(p: Record<string, string>, plusieurs: boolean): { objet: stri
     objet: plusieurs ? 'Des locaux qui pourraient vous intéresser' : 'Un local qui pourrait vous intéresser',
     corps: `Bonjour {{prénom}},
 
-Suite à notre échange, je vous transmets ${plusieurs ? 'ces biens qui pourraient' : 'ce bien qui pourrait'} vous intéresser. Vous trouverez ci-dessous ${plusieurs ? 'leurs photos et leurs' : 'sa photo et ses'} principales informations.
+Suite à notre échange, je vous transmets ${plusieurs ? 'ces locaux qui pourraient' : 'ce local qui pourrait'} vous intéresser. Vous trouverez ci-dessous ${plusieurs ? 'leurs photos et leurs' : 'sa photo et ses'} principales informations.
 
 Je reste à votre disposition pour organiser une visite ou répondre à vos questions.
 

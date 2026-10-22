@@ -219,7 +219,7 @@ export function Bandeau({ bien, detail, surCarte, cote }: { bien: BienVente; det
         <div className={b.heroPrix}>
           <b>{prix.t}</b>
           {avantMandat(bien.etape) && a.prix && (num(d, 'estimBasse') || num(d, 'estimHaute')) ? <span>{`montant conseillé ${euros(a.prix)}`}</span>
-            : a.prix && a.hono !== null && a.net ? <span>{a.acq ? `honoraires ${euros(a.hono)} HT inclus · net vendeur ${euros(a.net)}` : `honoraires ${euros(a.hono)} HT à la charge du mandant · net vendeur ${euros(a.net)}`}</span> : null}
+            : a.prix && a.hono !== null && a.net ? <span>{a.acq ? `honoraires ${euros(a.hono)} HT inclus · net mandant ${euros(a.net)}` : `honoraires ${euros(a.hono)} HT à la charge du mandant · net mandant ${euros(a.net)}`}</span> : null}
         </div>
         {cote}
         {i >= 0 && (
@@ -860,7 +860,7 @@ export function OngletBien({ bien, vue = 'tout', onModifier, onSurfaces, onEstim
     { l: 'Montant conseillé', v: conseille ? `${euros(conseille)}${ecart !== null ? ` · affiché ${ecart > 0 ? '+' : '−'}${pourcent(Math.abs(ecart))}` : ''}` : '' },
     { l: 'Le mandant espérait', v: eur(num(d, 'prixSouhaite')) },
   ].filter(x => x.v);
-  const quiPaie = loc ? (a.acq ? 'du preneur' : 'du bailleur') : (a.acq ? 'de l’acquéreur' : estMurs(d) ? 'du vendeur' : 'du cédant');
+  const quiPaie = loc ? (a.acq ? 'du preneur' : 'du bailleur') : (a.acq ? (estMurs(d) ? 'de l’acquéreur' : 'du cessionnaire') : estMurs(d) ? 'du vendeur' : 'du cédant');
   const prix = (
     /* Avant le mandat, « Modifier » ouvre la fenêtre de l'estimation (rendez-vous,
        fourchette, montant conseillé, avis de valeur), et non tout l'éditeur (V3.31). */

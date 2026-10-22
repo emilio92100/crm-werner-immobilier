@@ -168,7 +168,7 @@ function Entete({ titre, sous, cote, salut }: { titre: string; sous: string; cot
           <div className="ag-marque"><span>WERNER IMMOBILIER</span><span className="ag-marque-d">Recherche pour un demandeur</span></div>
           <div className="ag-moi">
             <span className="ag-av" aria-hidden="true">W</span>
-            <span className="ag-moi-t"><b>Werner</b><small>Werner Immobilier · Paris</small></span>
+            <span className="ag-moi-t"><b>Werner</b><small>Werner Immobilier · Paris et l’Ouest parisien</small></span>
           </div>
           {salut && <span className="ag-salut">{salut}</span>}
           <h1>{titre}</h1>

@@ -654,7 +654,7 @@ export default function PageImportVeille() {
       const titre = !nouvelUrl
         ? `Annonce retirée — ${ancienneAgence || 'l’agence'} ne la diffuse plus`
         : changeAgence
-          ? `Lien mis à jour — annonce ${ancienneAgence || 'd’origine'} retirée, toujours en vente chez ${nouvelleAgence}`
+          ? `Lien mis à jour — annonce ${ancienneAgence || 'd’origine'} retirée, toujours en ligne chez ${nouvelleAgence}`
           : `Lien mis à jour — ${nouvelleAgence || 'l’agence'} a remis l’annonce en ligne`;
       const journal = b.client_id
         ? await addJournal(b.client_id, 'bien_modifie', titre, undefined, {

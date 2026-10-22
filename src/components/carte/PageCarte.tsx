@@ -941,7 +941,7 @@ export default function PageCarte({ onNavigate, onMenu }: {
             const autre = parId.get(p.perso ? p.id.replace(/:bien$/, '') : `${p.id}:bien`);
             return autre ? (
               <button type="button" className={s.ficheSaut} onClick={() => choisir(autre.id, { voler: true })}>
-                <Ic n={p.perso ? 'personne' : 'cle'} t={13} /><span>{p.perso ? 'Voir son domicile' : `Voir son bien · ${rue(autre.adresse)}`}</span>
+                <Ic n={p.perso ? 'personne' : 'cle'} t={13} /><span>{p.perso ? 'Voir son adresse' : `Voir son local · ${rue(autre.adresse)}`}</span>
               </button>
             ) : null;
           })()}

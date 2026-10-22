@@ -1163,9 +1163,9 @@ export function mentionsAnnonce(d: Donnees): string {
       legal.push(...l);
     } else {
       const mot = estCessionBail(d) ? 'Prix du droit au bail' : estFonds(d) ? 'Prix du fonds' : 'Prix';
-      if (a.acq && a.net && a.hono !== null && a.taux !== null) legal.push(`${mot} : ${fmt(a.prix)} honoraires inclus, dont ${pourcent(a.taux)} HT à la charge de l’acquéreur (${fmt(a.net)} hors honoraires).`);
+      if (a.acq && a.net && a.hono !== null && a.taux !== null) legal.push(`${mot} : ${fmt(a.prix)} honoraires inclus, dont ${pourcent(a.taux)} HT à la charge ${estMurs(d) ? 'de l’acquéreur' : 'du repreneur'} (${fmt(a.net)} hors honoraires).`);
       else if (d.charge === 'vendeur') legal.push(`${mot} : ${fmt(a.prix)}, honoraires à la charge du ${estMurs(d) ? 'vendeur' : 'cédant'}.`);
-      else legal.push(`${mot} : ${fmt(a.prix)} honoraires inclus (le pourcentage à la charge de l’acquéreur est à compléter).`);
+      else legal.push(`${mot} : ${fmt(a.prix)} honoraires inclus (le pourcentage à la charge ${estMurs(d) ? 'de l’acquéreur' : 'du repreneur'} est à compléter).`);
       if (bailEnCours(d) && nb(d, 'loyerAn')) legal.push(`Loyer du bail en cours : ${fmt(nb(d, 'loyerAn') as number)} HT HC par an.${estMursOccupes(d) ? ` Rentabilité brute : ${rentabilite(nb(d, 'loyerAn'), a.prix)}.` : ''}`);
       if (bailEnCours(d) && d.bailType) legal.push(`${TYPES_BAIL.find(x => x.v === d.bailType)?.l || 'Bail'}${txt(d, 'bailFin') ? ` jusqu’au ${dateCourte(txt(d, 'bailFin'))}` : ''}.`);
       if (estFonds(d) && nb(d, 'stock')) legal.push(`Stock en sus, à sa valeur au jour de la cession.`);

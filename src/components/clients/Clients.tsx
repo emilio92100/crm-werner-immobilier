@@ -1072,7 +1072,7 @@ export default function Clients({ onNavigate, fenetre }: {
     e.preventDefault();
     /* Un double clic ne crée pas deux fiches (V3.50). */
     if (saving) return;
-    if (!form.types.length) { setError('Choisissez qui est ce contact : demandeur, mandant, notaire…'); setStep(0); return; }
+    if (!form.types.length) { setError('Choisis qui est ce contact : demandeur, mandant, notaire ou avocat…'); setStep(0); return; }
     if (!form.prenom.trim() && !form.nom.trim()) { setError('Renseignez au moins un prénom ou un nom'); setStep(1); return; }
     const acheteur = form.types.includes('acheteur');
     /* V3.226 : sa recherche sans secteur — le rappel, une fois. */
@@ -1454,7 +1454,7 @@ export default function Clients({ onNavigate, fenetre }: {
             cls={{ row: styles.formRow, group: styles.formGroup, label: styles.label, input: styles.input, bloc: (titre, enfants) => <Bloc key={titre} ic={IC_PRO[titre] || 'dossier'} titre={titre} petit={`ce qui est propre à un ${typeDe(form.types.find(k => k !== 'acheteur') || form.types[0]).lib.toLowerCase()}`} teinte={teinte}>{enfants}</Bloc> }} />
         );
         const GRANDES: { cle: 'type' | 'contact' | 'recherche' | 'mandat'; ico: string; nom: string; sous: string }[] = [
-          { cle: 'type', ico: '🏷️', nom: 'Qui est-ce', sous: 'Demandeur, mandant, notaire, confrère… plusieurs à la fois si besoin' },
+          { cle: 'type', ico: '🏷️', nom: 'Qui est-ce', sous: 'Demandeur, mandant, notaire ou avocat, confrère… plusieurs à la fois si besoin' },
           { cle: 'contact', ico: '👤', nom: pro ? 'Ses coordonnées' : 'Le contact', sous: pro ? 'Qui il est, où il travaille, comment le joindre' : 'Qui il est, comment le joindre' },
           ...(acheteur ? [
             { cle: 'recherche' as const, ico: '🎯', nom: 'Sa recherche', sous: 'Ce qu\'il cherche, et où' },

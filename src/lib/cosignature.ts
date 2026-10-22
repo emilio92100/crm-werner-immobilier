@@ -120,7 +120,7 @@ export function mailInvitation(o: { co: Mandant; premier: Mandant; premierLe: st
       <p>C’est notre <b>dernier rappel</b> : votre lien de signature est valable <b>${echappe(encore)}</b>. Passé cette date, il ne fonctionnera plus.</p>`
     : o.rappel
     ? `<p>${echappe(pn)} a signé votre mandat de recherche${echappe(signeLe)}. Il ne manque plus que votre signature pour qu’il soit complet.</p>`
-    : `<p><b>${echappe(pn)}</b> a signé aujourd’hui le mandat de recherche qu’${il} confie à Werner, de Werner Immobilier, pour votre projet. ${Il} vous a ${indiquee} comme co-demandeur : le mandat sera complet avec votre signature.</p>`;
+    : `<p><b>${echappe(pn)}</b> a signé aujourd’hui le mandat de recherche qu’${il} confie à Werner Immobilier, pour votre projet. ${Il} vous a ${indiquee} comme co-demandeur : le mandat sera complet avec votre signature.</p>`;
   /* Au dernier rappel, la date est déjà dite plus haut. */
   const valable = o.rappel === 2 ? '' : ` et valable jusqu’au ${fin}`;
   return {

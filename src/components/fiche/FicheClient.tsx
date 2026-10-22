@@ -3349,7 +3349,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
   function openEnvoiBien(bienId: string) {
     const b = biens.find(x => x.id === bienId);
     const emails = client.emails?.filter(Boolean) || [];
-    const titre = b?.titre || `${b?.type_bien||'Bien'} — ${b?.ville||''}`;
+    const titre = b?.titre || `${b?.type_bien||'Local'} — ${b?.ville||''}`;
     setEnvoiBienId(bienId);
     setEnvoiBienIds([bienId]);
     setEnvoiPool(null);
@@ -3359,7 +3359,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
       objet: `Un local pour vous — ${titre}`,
       corps: `Bonjour ${client.prenom},
 
-Suite à votre projet de recherche, je suis heureux de vous présenter un bien susceptible de répondre à vos critères.
+Suite à votre projet de recherche, je suis heureux de vous présenter un local susceptible de répondre à vos critères.
 
 Vous trouverez ci-dessous l'aperçu et le bouton pour consulter la fiche complète.
 
@@ -3406,11 +3406,11 @@ ${signatureMail()}`,
       objet: (rg.template_email_objet || '').trim() ? pourLui(rg.template_email_objet) : `Sélection de locaux — Votre recherche`,
       corps: modele ? avecSignature(pourLui(modele)) : `Bonjour ${client.prenom},
 
-Suite à votre projet de recherche, je suis heureux de vous présenter une sélection de biens susceptibles de répondre à vos critères.
+Suite à votre projet de recherche, je suis heureux de vous présenter une sélection de locaux susceptibles de répondre à vos critères.
 
 ${phraseDetail}
 
-N'hésitez pas à me solliciter pour organiser une visite, à m'appeler si vous avez des questions, ou à me faire un retour afin d'affiner votre recherche si certains biens ne vous conviennent pas.
+N'hésitez pas à me solliciter pour organiser une visite, à m'appeler si vous avez des questions, ou à me faire un retour afin d'affiner votre recherche si certains locaux ne vous conviennent pas.
 
 ${signatureMail()}`,
     });
@@ -3470,7 +3470,7 @@ ${signatureMail()}`,
           const prix = Number(b?.prix_acquereur) || Number(b?.prix_vendeur) || 0;
           const hono = prix - (Number(b?.prix_vendeur) || 0);
           /* V3.50 : sur un mandat de l'agence, ce sont ses honoraires à elle. */
-          const deQui = b?.bien_vente_id ? 'de l’agence' : 'de chasse';
+          const deQui = b?.bien_vente_id ? 'de l’agence' : 'de recherche';
           await verifie('L’historique du client', supabase.from('journal').insert({
             client_id: client.id, bien_id: id, recherche_id: rechercheId || null, type: 'envoi_bien',
             titre: neuf ? 'Envoyé au client · mail' : 'Renvoyé au client · mail',
@@ -5287,7 +5287,7 @@ ${signatureMail()}`,
                       ))}
                       {visites_.length > 0 && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 13, color: '#64748b' }}>
-                          <span>{`Et sur un bien de chasse (${visites_.length} visité${visites_.length > 1 ? 's' : ''}) :`}</span>
+                          <span>{`Et sur un local trouvé pour lui (${visites_.length} visité${visites_.length > 1 ? 's' : ''}) :`}</span>
                           <button className={styles.btn} disabled={saving} onClick={() => setShowChoixTx('creer')}>+ Créer une transaction</button>
                         </div>
                       )}
@@ -5640,7 +5640,7 @@ ${signatureMail()}`,
                               </div>
                               {hono !== null && (
                                 <div className="tx-alerte" data-ton="vert">
-                                  💰 Honoraires TTC : <b>{eur(Math.round(hono * 1.2 * 100) / 100)}</b>
+                                  💰 Honoraires : <b>{eur(hono)} HT</b>{` · ${eur(Math.round(hono * 1.2 * 100) / 100)} TTC`}
                                 </div>
                               )}
                               {enCours && (

@@ -548,7 +548,7 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
             <span style={{ fontFamily: JAKARTA, fontWeight: 800, color: OR }}>Werner Immobilier</span>
             <span style={{ color: 'rgba(255,255,255,.4)' }}> — RT Conseils (SAS)</span>
             <br />
-            <span style={{ color: 'rgba(255,255,255,.4)' }}>Paris &amp; Hauts-de-Seine · Carte professionnelle CPI 9201 2020 000 045 344</span>
+            <span style={{ color: 'rgba(255,255,255,.4)' }}>Paris et l’Ouest parisien · Carte professionnelle de RT CONSEILS CPI 9201 2020 000 045 344</span>
           </div>
         </div>
       </footer>

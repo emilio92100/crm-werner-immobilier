@@ -85,7 +85,7 @@ export function honorairesReconnaissance(b: BienVente): string {
   if (estLocation(d)) {
     return `${euros(a.hono)} HT${a.taux !== null ? `, soit ${pourcent(a.taux)} du loyer annuel HT HC` : ''}, à la charge du ${d.charge === 'vendeur' ? 'bailleur' : 'preneur'}`;
   }
-  return `${euros(a.hono)} HT${a.taux !== null ? `, soit ${pourcent(a.taux)}` : ''}, à la charge ${d.charge === 'vendeur' ? (estMurs(d) ? 'du vendeur' : 'du cédant') : 'de l’acquéreur'}`;
+  return `${euros(a.hono)} HT${a.taux !== null ? `, soit ${pourcent(a.taux)}` : ''}, à la charge ${d.charge === 'vendeur' ? (estMurs(d) ? 'du vendeur' : 'du cédant') : (estMurs(d) ? 'de l’acquéreur' : 'du cessionnaire')}`;
 }
 
 /* Ce que le document dira du lieu (le secteur, jamais l'adresse), pour

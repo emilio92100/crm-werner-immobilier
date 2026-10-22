@@ -1153,11 +1153,13 @@ export function ApercuPrixClient({ bien, e, mandat, prenom }: { bien: any; e: Et
     <div style={{ paddingTop: 14, borderTop: `2px solid ${BORD}` }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12, fontWeight: 800, color: NAVY, textTransform: 'uppercase', letterSpacing: .8 }}>{`Ce que ${prenom || 'ton client'} verra`}</span>
-        <span style={{ fontSize: 26, fontWeight: 800, color: OR, letterSpacing: -.6 }}>{c.base > 0 ? `${c.base.toLocaleString('fr-FR')} €` : '—'}</span>
+        <span style={{ fontSize: 26, fontWeight: 800, color: OR, letterSpacing: -.6 }}>{c.base > 0 ? `${c.base.toLocaleString('fr-FR')} €${estLoc(bien) ? ' / an' : ''}` : '—'}</span>
       </div>
       <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4, textAlign: 'right' }}>
         {c.hono > 0 && c.base > 0
-          ? `+ ${c.hono.toLocaleString('fr-FR')} € HT de nos honoraires, soit ${c.total.toLocaleString('fr-FR')} € honoraires compris`
+          ? (estLoc(bien)
+            ? `+ ${c.hono.toLocaleString('fr-FR')} € HT de nos honoraires, une fois, à la signature du bail`
+            : `+ ${c.hono.toLocaleString('fr-FR')} € HT de nos honoraires, soit ${c.total.toLocaleString('fr-FR')} € honoraires compris`)
           : 'le montant de l’annonce, rien ne s’ajoute'}
       </div>
     </div>
@@ -1168,21 +1170,26 @@ export function ApercuPrixClient({ bien, e, mandat, prenom }: { bien: any; e: Et
    qu'il a déjà vu sans. */
 export function messagePrevenir(bien: any, client: any, e: EtatHono, mandat: HonoMandat | null): { sujet: string; texte: string } {
   const c = calculHono(bien, e, mandat);
-  const nom = bien?.titre || [bien?.type_bien, bien?.ville].filter(Boolean).join(' à ') || 'ce bien';
+  const nom = bien?.titre || [bien?.type_bien, bien?.ville].filter(Boolean).join(' à ') || 'ce local';
   const pourquoi = e.cas === 'particulier'
     ? 'il est proposé directement par son propriétaire'
     : 'l’agence qui le propose ne partage pas ses honoraires avec nous';
   return {
     sujet: `Une précision sur « ${nom} »`,
-    texte: `Bonjour ${client?.prenom || ''},\n\nUne précision sur « ${nom} » : ${pourquoi}. Nos honoraires s’ajoutent donc : ${c.hono.toLocaleString('fr-FR')} € HT, soit ${c.total.toLocaleString('fr-FR')} € honoraires compris (hors frais d’acte).\n\nC’est indiqué sur le bien, dans votre espace. N’hésitez pas si vous avez une question.`.replace('Bonjour ,', 'Bonjour,'),
+    texte: `Bonjour ${client?.prenom || ''},\n\nUne précision sur « ${nom} » : ${pourquoi}. Nos honoraires s’ajoutent donc : ${c.hono.toLocaleString('fr-FR')} € HT, ${estLoc(bien) ? 'une fois, à la signature du bail' : `soit ${c.total.toLocaleString('fr-FR')} € honoraires compris (hors frais d’acte)`}.\n\nC’est indiqué sur le local, dans votre espace. N’hésitez pas si vous avez une question.`.replace('Bonjour ,', 'Bonjour,'),
   };
 }
 
 /* La ligne du prix dans un message WhatsApp : le prix de l'annonce, et ses
-   honoraires seulement s'ils s'ajoutent. */
-export function prixWhatsapp(prix: number, hono: number): string {
+   honoraires seulement s'ils s'ajoutent. Werner : un loyer s'écrit à l'année,
+   ses honoraires une fois, à la signature du bail. */
+const estLoc = (b: any) => b?.pro?.nature === 'location'; // eslint-disable-line @typescript-eslint/no-explicit-any
+export function prixWhatsapp(prix: number, hono: number, loc = false): string {
   if (!(prix > 0)) return '';
   const f = (n: number) => n.toLocaleString('fr-FR');
+  if (loc) return hono > 0
+    ? `Loyer : ${f(prix)} € HT HC / an (+ ${f(hono)} € HT de nos honoraires, une fois, à la signature du bail)`
+    : `Loyer : ${f(prix)} € HT HC / an`;
   return hono > 0
     ? `Prix : ${f(prix)} € (+ ${f(hono)} € HT de nos honoraires, soit ${f(prix + hono)} € honoraires compris)`
     : `Prix : ${f(prix)} €`;
@@ -2749,7 +2756,7 @@ export function ModaleEnvoi({ bien, clientId, client, onFerme, onEnvoye, onMail,
   const lien = lienBienPublic(bien.id);
 
   async function viaWhatsapp() {
-    const txt = `Bonjour ${client?.prenom || ''}, voici un bien qui correspond à votre recherche :\n\n${bien.titre || ''}\n${bien.surface ? bien.surface + ' m²' : ''}${bien.nb_pieces ? ' · ' + bien.nb_pieces + ' espaces' : ''}\n${prixWhatsapp(prixVu, agence ? 0 : honoraires)}\n\n${lien}`;
+    const txt = `Bonjour ${client?.prenom || ''}, voici un local qui correspond à votre recherche :\n\n${bien.titre || ''}\n${bien.surface ? bien.surface + ' m²' : ''}${bien.nb_pieces ? ' · ' + bien.nb_pieces + ' espaces' : ''}\n${prixWhatsapp(prixVu, agence ? 0 : honoraires, estLoc(bien))}\n\n${lien}`;
     if (bloque) return;
     /* WhatsApp s'ouvre dans le geste du clic : sur iPhone, une fenêtre
        ouverte après une attente est bloquée. */
@@ -2971,10 +2978,10 @@ export function ModaleEnvoiGroupe({ biens, clientId, client, recherche, onFerme,
     const corps = biens.map((b, i) => {
       const { vu, h, agence } = calc(b);
       const specs = [b.surface && `${b.surface} m²`, b.nb_pieces && `${b.nb_pieces} espaces`].filter(Boolean).join(' · ');
-      const prix = prixWhatsapp(vu, agence ? 0 : h);
-      return `${i + 1}. ${b.titre || b.ville || 'Bien'}${specs ? `\n${specs}` : ''}${prix ? `\n${prix}` : ''}\n${lienBienPublic(b.id)}`;
+      const prix = prixWhatsapp(vu, agence ? 0 : h, estLoc(b));
+      return `${i + 1}. ${b.titre || b.ville || 'Local'}${specs ? `\n${specs}` : ''}${prix ? `\n${prix}` : ''}\n${lienBienPublic(b.id)}`;
     }).join('\n\n');
-    const txt = `Bonjour ${client?.prenom || ''}, voici ${n} biens qui correspondent à votre recherche :\n\n${corps}`;
+    const txt = `Bonjour ${client?.prenom || ''}, voici ${n} locaux qui correspondent à votre recherche :\n\n${corps}`;
     /* WhatsApp s'ouvre tout de suite, dans le geste du clic : sur iPhone, une
        fenêtre ouverte après une attente est bloquée. */
     window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');

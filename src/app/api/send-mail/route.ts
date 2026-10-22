@@ -175,7 +175,11 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
   const prixOf = (b: BienLite) => prixDuBien(b).demande;
   const honoOf = (b: BienLite) => {
     const p = prixDuBien(b);
-    return p.hono && p.total ? `+ ${fmt(p.hono)} € HT de nos honoraires, soit ${fmt(p.total)} € honoraires compris` : '';
+    if (!p.hono || !p.total) return '';
+    /* Werner : sur un loyer, les honoraires se paient une fois, au bail ; les ajouter au loyer de l'année ne veut rien dire. */
+    return natureDe(b) === 'location'
+      ? `+ ${fmt(p.hono)} € HT de nos honoraires, une fois, à la signature du bail`
+      : `+ ${fmt(p.hono)} € HT de nos honoraires, soit ${fmt(p.total)} € honoraires compris`;
   };
   const etageOf = (b: BienLite) => {
     const e = (b as { etage?: number | null }).etage;
@@ -354,8 +358,7 @@ ${LIEN_POLICE_MAIL}
           <table role="presentation" width="100%"><tr>
             <td class="pied-nom">
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
-              <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
-              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris &amp; Hauts-de-Seine</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris et l’Ouest parisien</div>
             </td>
             <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>
@@ -536,8 +539,7 @@ ${LIEN_POLICE_MAIL}
           <table role="presentation" width="100%"><tr>
             <td class="pied-nom">
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
-              <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
-              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris &amp; Hauts-de-Seine</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris et l’Ouest parisien</div>
             </td>
             <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>
@@ -697,8 +699,7 @@ ${LIEN_POLICE_MAIL}
           <table role="presentation" width="100%"><tr>
             <td class="pied-nom">
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
-              <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
-              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris &amp; Hauts-de-Seine</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris et l’Ouest parisien</div>
             </td>
             <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>
@@ -827,8 +828,7 @@ ${LIEN_POLICE_MAIL}
           <table role="presentation" width="100%"><tr>
             <td class="pied-nom">
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
-              <!-- ⚠️ Jamais « chasse » ni « chasseur » dans un texte que le client lit. -->
-              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris &amp; Hauts-de-Seine</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris et l’Ouest parisien</div>
             </td>
             <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>

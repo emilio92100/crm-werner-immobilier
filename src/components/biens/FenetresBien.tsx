@@ -1301,7 +1301,7 @@ function ChoixNotaire({ lib, couleur, v, onChange, notaires, onCree }: {
       setOccupe(true); setErreur('');
       try {
         await completerFicheNotaire(v.id, n);
-        annoncerSucces({ titre: 'Fiche du notaire mise à jour', detail: `${n.nom} — les nouveaux numéros et e-mails y sont`, ic: 'balance' });
+        annoncerSucces({ titre: 'Fiche du notaire ou de l’avocat mise à jour', detail: `${n.nom} — les nouveaux numéros et e-mails y sont`, ic: 'balance' });
         signalerMaj();
       } catch (e) { setErreur((e as Error).message); setOccupe(false); return; }
       setOccupe(false);
@@ -1319,13 +1319,13 @@ function ChoixNotaire({ lib, couleur, v, onChange, notaires, onCree }: {
     const deja = (notaires || []).find(c => sansAccent(`${c.prenom || ''} ${c.nom || ''}`.trim()) === nomN
       || (!!mail && (c.emails || []).some(e => (e || '').toLowerCase() === mail))
       || nouveau.tels.some(x => (c.telephones || []).some(y => memeNumero(x, y || ''))));
-    if (deja) { setErreur(`${nomClient(deja)} est déjà dans tes notaires : choisis-le dans la liste.`); return; }
+    if (deja) { setErreur(`${nomClient(deja)} est déjà dans tes notaires et avocats : choisis-le dans la liste.`); return; }
     setOccupe(true); setErreur('');
     try {
       const c = await creerNotaire(nouveau); onCree(c); onChange(notaireDepuisContact(c)); setNouveau(null); setQ('');
       /* V3.174 : la petite carte « C'est fait » en haut à droite, et la
          recherche du haut le trouve tout de suite (par son nom ou son étude). */
-      annoncerSucces({ titre: 'Nouveau contact notaire créé', detail: `${[nomClient(c), nouveau.etude.trim()].filter(Boolean).join(' · ')} — dans tes contacts`, ic: 'balance' });
+      annoncerSucces({ titre: 'Nouveau contact créé (notaire ou avocat)', detail: `${[nomClient(c), nouveau.etude.trim()].filter(Boolean).join(' · ')} — dans tes contacts`, ic: 'balance' });
       signalerMaj();
     }
     catch (e) { setErreur((e as Error).message); }
@@ -1348,7 +1348,7 @@ function ChoixNotaire({ lib, couleur, v, onChange, notaires, onCree }: {
             exemples={{ premier: 'Le standard de l’étude', autres: 'Une ligne directe' }} />
           <ListeCoordonnees genre="mail" etiquette="E-mails" valeurs={edition.emails} onChange={x => majE({ emails: x })}
             classeBloc={b.notaireTels} classeEtiquette={b.notaireLib} classeChamp={s.input}
-            exemples={{ premier: 'Ex : m.durand@notaires.fr', autres: 'Ex : le clerc qui suit le dossier' }} />
+            exemples={{ premier: 'Ex : m.durand@cabinet-durand.fr', autres: 'Ex : le clerc qui suit le dossier' }} />
           {v.id && (
             <label className={b.caseL}><input type="checkbox" checked={edition.fiche} onChange={e => majE({ fiche: e.target.checked })} />Ajouter aussi les nouveaux numéros et e-mails à sa fiche de contact</label>
           )}
@@ -1379,7 +1379,7 @@ function ChoixNotaire({ lib, couleur, v, onChange, notaires, onCree }: {
         </div>
       ) : nouveau ? (
         <div className={b.notaireNouveau}>
-          <div className={b.notaireNouveauT}><Ic n="plus" t={13} e={2.6} />Nouveau notaire<small>il rejoint tes contacts</small></div>
+          <div className={b.notaireNouveauT}><Ic n="plus" t={13} e={2.6} />Nouveau notaire ou avocat<small>il rejoint tes contacts</small></div>
           <Ch lib="L’étude"><input className={s.input} value={nouveau.etude} onChange={e => majN({ etude: e.target.value })} placeholder="Ex : Étude Durand & Associés" autoFocus /></Ch>
           <div className={b.chF}>
             <span>Adresse de l’étude</span>
@@ -1392,7 +1392,7 @@ function ChoixNotaire({ lib, couleur, v, onChange, notaires, onCree }: {
           <ListeCoordonnees genre="tel" etiquette="Téléphone" valeurs={nouveau.tels} onChange={x => majN({ tels: x })}
             classeBloc={b.notaireTels} classeEtiquette={b.notaireLib} classeChamp={s.input}
             exemples={{ premier: 'Le standard de l’étude', autres: 'Une ligne directe' }} />
-          <Ch lib="E-mail"><input className={s.input} value={nouveau.email} inputMode="email" type="email" onChange={e => majN({ email: e.target.value })} placeholder="Ex : m.durand@notaires.fr" /></Ch>
+          <Ch lib="E-mail"><input className={s.input} value={nouveau.email} inputMode="email" type="email" onChange={e => majN({ email: e.target.value })} placeholder="Ex : m.durand@cabinet-durand.fr" /></Ch>
           <Erreur t={erreur} />
           <div className={b.notaireBtns}>
             <button type="button" className={s.btn} disabled={occupe} onClick={() => { setNouveau(null); setErreur(''); }}>Annuler</button>
@@ -1401,7 +1401,7 @@ function ChoixNotaire({ lib, couleur, v, onChange, notaires, onCree }: {
         </div>
       ) : (
         <>
-          <input className={s.cherche} value={q} onChange={e => setQ(e.target.value)} placeholder={notaires === null ? 'Chargement des notaires…' : 'Chercher dans tes notaires…'} aria-label={`Chercher : ${lib}`} />
+          <input className={s.cherche} value={q} onChange={e => setQ(e.target.value)} placeholder={notaires === null ? 'Chargement des notaires et avocats…' : 'Chercher dans tes notaires et avocats…'} aria-label={`Chercher : ${lib}`} />
           <div className={b.qui}>
             {liste.map(c => {
               const n = notaireDepuisContact(c);
@@ -1412,9 +1412,9 @@ function ChoixNotaire({ lib, couleur, v, onChange, notaires, onCree }: {
                 </button>
               );
             })}
-            {notaires !== null && !liste.length && <div className={b.vide}>{t ? 'Aucun notaire à ce nom dans tes contacts.' : 'Aucun notaire dans tes contacts pour l’instant.'}</div>}
+            {notaires !== null && !liste.length && <div className={b.vide}>{t ? 'Aucun notaire ni avocat à ce nom dans tes contacts.' : 'Aucun notaire ni avocat dans tes contacts pour l’instant.'}</div>}
           </div>
-          <button type="button" className={b.notaireAjout} onClick={() => setNouveau({ prenom: '', nom: q.trim(), etude: '', adresse: '', tels: [''], email: '' })}><Ic n="plus" t={13} e={2.6} />Nouveau notaire</button>
+          <button type="button" className={b.notaireAjout} onClick={() => setNouveau({ prenom: '', nom: q.trim(), etude: '', adresse: '', tels: [''], email: '' })}><Ic n="plus" t={13} e={2.6} />Nouveau notaire ou avocat</button>
         </>
       )}
     </div>

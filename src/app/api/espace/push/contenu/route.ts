@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       titre: `${n} nouveaux locaux vous attendent`,
-      corps: `Dont ${decrire(liste[0])}.`,
+      corps: `Dont ${(t => t.charAt(0).toLowerCase() + t.slice(1))(decrire(liste[0]))}.`,
       url: vers,
       pastille: n,
     });

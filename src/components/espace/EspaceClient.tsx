@@ -199,6 +199,8 @@ const EUR = (n?: number | null) =>
 /* V3.113 : le prix d'un BIEN. Un bien de l'agence présenté avant le mandat
    arrive sans prix (prixCopie) : « Prix à venir », pas un tiret. */
 const PRIX = (n?: number | null) => (n ? EUR(n) : 'Montant à venir');
+/* L'offre préparée seul dans l'espace (FaireOffre) : coupée pour Werner, voir peutOffrir. */
+const OFFRE_EN_LIGNE = false;
 /* Werner : un loyer s'écrit « par an » (biens.pro : la nature de l'affaire). */
 const PRIXB = (b: { prix?: number | null; pro?: { nature?: string | null } | null }) => `${PRIX(b.prix ?? null)}${b.prix && b.pro?.nature === 'location' ? ' / an' : ''}`;
 /* V3.145 : sous le prix d'un bien, quand ses honoraires ne sont pas partagés
@@ -1702,6 +1704,11 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
      offre de lui sur la fiche du bien, encore en cours ou acceptée. */
   const visiteFaitePour = (b: Bien) => !!b.visiteFaite || mesV.some(v => v.bienId === b.id && v.passee);
   function peutOffrir(b: Bien): boolean {
+    /* Werner (22 octobre 2026) : l'offre préparée seul dans l'espace parle
+       encore d'achat (total honoraires compris, prêt, arrondi au millier).
+       Tant qu'elle n'existe pas pour un bail ou une reprise, « Je veux faire
+       une offre » passe par son conseiller, qui la prépare avec lui. */
+    if (!OFFRE_EN_LIGNE) return false;
     if (indispo(b) || b.vente || !visiteFaitePour(b)) return false;
     const o = b.offreSuivi;
     if (!o) {
@@ -2449,8 +2456,8 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
           <div className="pied-sig">{'Imaginé et créé par '}<b>Werner Immobilier</b>{', '}<span className="insecable">{'rien que pour vous '}<svg className="pied-coeur" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 20.6s-7.6-4.6-9.4-9.3C1.3 7.9 3.4 4.4 6.9 4.4c2 0 3.6 1.1 5.1 3 1.5-1.9 3.1-3 5.1-3 3.5 0 5.6 3.5 4.3 6.9-1.8 4.7-9.4 9.3-9.4 9.3z" fill="currentColor" /></svg></span></div>
           <div className="pied-trait" />
           <b>Werner Immobilier</b><br />
-          Numéro de carte professionnelle&nbsp;: <span className="insecable">CPI 9201 2020 000 045 344</span><br />
-          Immobilier d’entreprise · Paris &amp; Hauts-de-Seine
+          Carte professionnelle de RT CONSEILS&nbsp;: <span className="insecable">CPI 9201 2020 000 045 344</span><br />
+          Immobilier d’entreprise · Paris et l’Ouest parisien
         </div>
       </div>
 
@@ -3316,7 +3323,7 @@ function ModaleCorrespondance({ b, r, onFermer }: { b: Bien; r: Correspondance; 
               <div className="puces">
                 <span><span className="k"><Ico n="check" t={15} /></span><span>Elle compare ce local à chacun de vos critères&nbsp;: budget, secteur, trajet jusqu’à la station, surfaces, espaces, étage, énergie, exposition et équipements. Rien d’autre&nbsp;: ni le marché, ni les autres locaux.</span></span>
                 <span><span className="k"><Ico n="check" t={15} /></span><span>Vos indispensables comptent trois fois plus&nbsp;; le budget, le secteur, le trajet et la surface, deux fois. Un critère presque atteint compte pour moitié.</span></span>
-                <span><span className="k"><Ico n="check" t={15} /></span><span>Elle ne juge pas ce qui se découvre sur place&nbsp;: la lumière, le calme, l’état. C’est pour ça que votre conseiller vous présente aussi des locaux qui ne cochent pas toutes les cases.</span></span>
+                <span><span className="k"><Ico n="check" t={15} /></span><span>Elle ne juge pas ce qui se découvre sur place&nbsp;: la lumière, le passage, l’état. C’est pour ça que votre conseiller vous présente aussi des locaux qui ne cochent pas toutes les cases.</span></span>
               </div>
             </div>
           </div>
@@ -5284,7 +5291,7 @@ function ModaleBientot({ onFermer, onPartager }: { onFermer: () => void; onParta
           <p>{'Cette fonction est en cours de développement. Vous pourrez très bientôt télécharger la fiche du local, directement ici.'}</p>
           <div className="bt-astuce">
             <Ico n="partage" t={18} />
-            <span>{'En attendant, le bouton «\u00a0Partager\u00a0», juste à gauche, vous permet déjà d’envoyer ce local à vos proches.'}</span>
+            <span>{'En attendant, le bouton «\u00a0Partager\u00a0», juste à gauche, vous permet déjà d’envoyer ce local à vos associés ou à vos proches.'}</span>
           </div>
           <div className="bt-actions">
             <button type="button" className="btn or" onClick={onPartager}>

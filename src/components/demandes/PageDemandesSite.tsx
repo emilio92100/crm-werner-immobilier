@@ -100,7 +100,7 @@ const nb = (t: string) => t.replace(/« /g, '«\u00a0').replace(/ »/g, '\u00a0�
 /* L'objet du mail, selon ce que le client a demandé. */
 function sujetMail(d: DemandeSite): string {
   switch (cleCategorie(d)) {
-    case 'estimation': return 'Votre demande d’estimation';
+    case 'estimation': return 'Votre local à nous confier';
     case 'mandat_recherche': return 'Votre recherche de local';
     case 'rappel_bien': return d.property_title ? `Votre demande sur le local « ${d.property_title} »` : 'Votre demande sur l’un de nos locaux';
     default: return 'Votre message sur wernerimmobilier.com';

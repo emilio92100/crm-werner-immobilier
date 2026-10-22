@@ -1456,12 +1456,18 @@ export function ligneHono(a: AccordHono): string | null {
 }
 
 export async function lireNotaires(): Promise<ContactNotaire[]> {
-  const { data, error } = await supabase.from('clients').select('id, prenom, nom, emails, telephones, pro, types, adresse').contains('types', ['notaire']).order('nom').limit(300);
+  const cols = 'id, prenom, nom, emails, telephones, pro, types, adresse';
+  const { data, error } = await supabase.from('clients').select(cols).contains('types', ['notaire']).order('nom').limit(300);
   if (error) {
     if (colonneContactAbsente(error.message)) return [];
     throw new Error('Les notaires et avocats n’ont pas pu être lus : ' + error.message);
   }
-  return (data || []) as ContactNotaire[];
+  /* Werner (22 octobre 2026) : un avocat rangé en Partenaire (métier
+     « Avocat ») est proposé aussi. Une lecture ratée ici ne bloque rien :
+     les contacts « Notaire, avocat » restent là. */
+  const av = await supabase.from('clients').select(cols).eq('pro->>metier', 'Avocat').order('nom').limit(300);
+  const tous = [...(data || []), ...(av.error ? [] : av.data || [])] as ContactNotaire[];
+  return tous.filter((x, i) => tous.findIndex(y => y.id === x.id) === i).sort((a, b) => String(a.nom || '').localeCompare(String(b.nom || ''), 'fr'));
 }
 /* « Créer le contact » : un vrai contact du CRM (type « Notaire »), dans
    Contacts, proposé ensuite sur toutes les ventes. V3.173 : l'adresse de

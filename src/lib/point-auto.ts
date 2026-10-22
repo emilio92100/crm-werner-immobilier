@@ -472,7 +472,7 @@ ${LIEN_POLICE_MAIL}
           <table role="presentation" width="100%"><tr>
             <td class="pied-nom">
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
-              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris &amp; Hauts-de-Seine</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris et l’Ouest parisien</div>
             </td>
             <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
           </tr></table>

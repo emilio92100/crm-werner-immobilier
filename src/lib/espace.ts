@@ -279,7 +279,11 @@ export function resumerRecherche(r: RechercheEspace): string {
   const bouts: string[] = [];
   if (r.nb_pieces_min) bouts.push(`${r.nb_pieces_min} espace${r.nb_pieces_min > 1 ? 's' : ''} et plus`);
   else if (r.surface_min) bouts.push(`à partir de ${r.surface_min} m²`);
-  if (r.budget_max) bouts.push(`jusqu'à ${Number(r.budget_max).toLocaleString('fr-FR').replace(/[  ]/g, ' ')} €`);
+  /* Werner : un loyer annuel maximum (criteres_pro.loyerMax) d'abord, sinon le budget. */
+  const pro = r.criteres_pro && typeof r.criteres_pro === 'object' ? r.criteres_pro as { loyerMax?: unknown } : {};
+  const loyer = Number(pro.loyerMax) || 0;
+  if (loyer > 0) bouts.push(`loyer jusqu'à ${loyer.toLocaleString('fr-FR').replace(/[  ]/g, ' ')} € HT HC / an`);
+  else if (r.budget_max) bouts.push(`jusqu'à ${Number(r.budget_max).toLocaleString('fr-FR').replace(/[  ]/g, ' ')} €`);
   const secteurs = (r.secteurs || []) as string[];
   if (!bouts.length && secteurs.length) bouts.push(secteurs.slice(0, 2).join(', '));
   return bouts.join(' · ');

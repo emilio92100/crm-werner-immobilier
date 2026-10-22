@@ -889,7 +889,7 @@ export function DossierBien({ bienId, d, maj, destinataires, lieu, onMessage, et
 function messageType(prenom: string, lieu: string, titres: string[], signature: string) {
   const liste = titres.map(t => `– ${t}`).join('\n');
   const un = titres.length === 1;
-  return `Bonjour${prenom ? ` ${prenom}` : ''},\n\n${un ? 'Voici le document' : 'Voici les documents'} concernant ${lieu || 'le bien'} :\n${liste}\n\nN’hésitez pas à revenir vers moi si vous avez la moindre question.\n\n${signature}`;
+  return `Bonjour${prenom ? ` ${prenom}` : ''},\n\n${un ? 'Voici le document' : 'Voici les documents'} concernant ${lieu || 'le local'} :\n${liste}\n\nN’hésitez pas à revenir vers moi si vous avez la moindre question.\n\n${signature}`;
 }
 
 export function FenEnvoiDocuments({ bienId, pieces, depart, destinataires, lieu, onFermer, onFait }: {
@@ -899,7 +899,7 @@ export function FenEnvoiDocuments({ bienId, pieces, depart, destinataires, lieu,
   const [choix, setChoix] = useState<string[]>(() => (depart.length ? depart : pieces.map(p => p.chemin)));
   const [dests, setDests] = useState<string[]>(() => (destinataires[0] ? [destinataires[0].cle] : []));
   const [autre, setAutre] = useState('');
-  const [objet, setObjet] = useState(() => `Documents · ${lieu ? lieu.charAt(0).toUpperCase() + lieu.slice(1) : 'votre bien'}`);
+  const [objet, setObjet] = useState(() => `Documents · ${lieu ? lieu.charAt(0).toUpperCase() + lieu.slice(1) : 'votre local'}`);
   const [signature, setSignature] = useState(() => signatureDe({}));
   const [texte, setTexte] = useState<string | null>(null);
   const [en, setEn] = useState(false);
@@ -1026,19 +1026,19 @@ export function FenEnvoiDocuments({ bienId, pieces, depart, destinataires, lieu,
    notée dans l'historique du bien et le Suivi du propriétaire. */
 type Motif = 'estimation' | 'vente' | 'compromis';
 const MOTIFS: Record<Motif, { l: string; pour: string; objet: string }> = {
-  estimation: { l: 'L’estimation', pour: 'l’estimation', objet: 'Les documents pour l’estimation de votre bien' },
-  vente: { l: 'La mise sur le marché', pour: 'la mise sur le marché', objet: 'Les documents pour la mise sur le marché de votre bien' },
+  estimation: { l: 'L’estimation', pour: 'l’estimation', objet: 'Les documents pour l’estimation de votre local' },
+  vente: { l: 'La mise sur le marché', pour: 'la mise sur le marché', objet: 'Les documents pour la mise sur le marché de votre local' },
   compromis: { l: 'La signature', pour: 'la préparation de la signature', objet: 'Les documents pour la signature' },
 };
 const motifDe = (etape: string): Motif => (etape === 'a_suivre' || etape === 'estimation' ? 'estimation' : etape === 'compromis' || etape === 'offre' ? 'compromis' : 'vente');
 function messageDemande(prenom: string, motif: Motif, lieu: string, titres: string[], signature: string) {
   const un = titres.length === 1;
-  return `Bonjour${prenom ? ` ${prenom}` : ''},\n\nSuite à nos échanges, voici ${un ? 'le document dont j’aurais besoin' : 'les documents dont j’aurais besoin'} pour ${MOTIFS[motif].pour} de ${lieu || 'votre bien'} :\n${titres.map(t => `– ${t}`).join('\n')}\n\nVous pouvez ${un ? 'me l’envoyer' : 'me les envoyer'} en réponse à ce mail : un scan ou une photo bien lisible suffit.\n\nJe reste à votre disposition si vous avez la moindre question.\n\n${signature}`;
+  return `Bonjour${prenom ? ` ${prenom}` : ''},\n\nSuite à nos échanges, voici ${un ? 'le document dont j’aurais besoin' : 'les documents dont j’aurais besoin'} pour ${MOTIFS[motif].pour} de ${lieu || 'votre local'} :\n${titres.map(t => `– ${t}`).join('\n')}\n\nVous pouvez ${un ? 'me l’envoyer' : 'me les envoyer'} en réponse à ce mail : un scan ou une photo bien lisible suffit.\n\nJe reste à votre disposition si vous avez la moindre question.\n\n${signature}`;
 }
 /* V3.90 : relancer une demande restée sans réponse. */
 function messageRelance(prenom: string, lieu: string, titres: string[], signature: string) {
   const un = titres.length === 1;
-  return `Bonjour${prenom ? ` ${prenom}` : ''},\n\nJe reviens vers vous au sujet ${un ? 'du document' : 'des documents'} pour ${lieu || 'votre bien'} : je n’ai pas encore reçu ${un ? 'celui-ci' : 'ceux-ci'} :\n${titres.map(t => `– ${t}`).join('\n')}\n\nVous pouvez ${un ? 'me l’envoyer' : 'me les envoyer'} en réponse à ce mail : un scan ou une photo bien lisible suffit.\n\nMerci d’avance, et je reste à votre disposition si besoin.\n\n${signature}`;
+  return `Bonjour${prenom ? ` ${prenom}` : ''},\n\nJe reviens vers vous au sujet ${un ? 'du document' : 'des documents'} pour ${lieu || 'votre local'} : je n’ai pas encore reçu ${un ? 'celui-ci' : 'ceux-ci'} :\n${titres.map(t => `– ${t}`).join('\n')}\n\nVous pouvez ${un ? 'me l’envoyer' : 'me les envoyer'} en réponse à ce mail : un scan ou une photo bien lisible suffit.\n\nMerci d’avance, et je reste à votre disposition si besoin.\n\n${signature}`;
 }
 type Extra = { l: string; g: LigneDossier['groupe'] };
 /* `a` (V3.90) : à qui la demande est partie, pour la ligne « Demandé … à Paul ». */

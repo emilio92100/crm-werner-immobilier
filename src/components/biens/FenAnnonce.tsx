@@ -85,7 +85,7 @@ export default function FenAnnonce({ titre: titre0, texte: texte0, mentions, men
       <div className={a.corps}>
         <label className={a.champ}>
           <span>Titre de l’annonce</span>
-          <input className={s.input} value={titre} onChange={e => { setTitre(e.target.value); setQuitter(false); }} placeholder="Ex. : Appartement familial lumineux avec balcon" maxLength={140} />
+          <input className={s.input} value={titre} onChange={e => { setTitre(e.target.value); setQuitter(false); }} placeholder="Ex. : Boutique 80 m² avec vitrine, rue passante" maxLength={140} />
         </label>
 
         <div className={a.outils}>

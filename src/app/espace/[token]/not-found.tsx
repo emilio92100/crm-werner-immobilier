@@ -119,7 +119,7 @@ export default function LienInactif() {
         fontSize: 12, color: 'rgba(255,255,255,.34)', textAlign: 'center',
         animation: 'emilio-pose .5s .26s cubic-bezier(.16,1,.3,1) both',
       }}>
-        Werner · Paris et Hauts-de-Seine
+        Werner Immobilier · Paris et l’Ouest parisien
       </div>
     </div>
   );

@@ -150,7 +150,7 @@ async function telecharger(u: string): Promise<{ octets: Uint8Array } | 'refuse'
     const x = await adresseSure(adresse);
     if (!x) return 'refuse';
     const res = await fetch(x.toString(), {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; EmilioImmo/1.0)', Accept: 'image/*' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WernerImmoCRM/1.0)', Accept: 'image/*' },
       redirect: 'manual',
       signal: AbortSignal.timeout(10000),
     });

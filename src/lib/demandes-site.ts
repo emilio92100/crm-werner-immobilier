@@ -89,7 +89,7 @@ export const CATEGORIES: {
 }[] = [
   /* V3.137 : une demande d'estimation fait un Propriétaire ; il devient
      Vendeur quand son bien passe en mandat (src/lib/contacts.ts). */
-  { k: 'estimation', lib: 'Estimation', court: 'Estimation', pluriel: 'Estimations', ic: 'euro', c: '#c2621c', fond: '#fbf0e9', trait: '#f9c8a3', type: 'proprietaire' },
+  { k: 'estimation', lib: 'Local à confier', court: 'À confier', pluriel: 'Locaux à confier', ic: 'euro', c: '#c2621c', fond: '#fbf0e9', trait: '#f9c8a3', type: 'proprietaire' },
   { k: 'mandat_recherche', lib: 'Accompagnement demandeur', court: 'Demandeur', pluriel: 'Accompagnements', ic: 'loupe', c: '#0f7a4f', fond: '#ecfdf5', trait: '#bfe8d3', type: 'acheteur' },
   { k: 'rappel_bien', lib: 'Info sur un local', court: 'Info local', pluriel: 'Infos sur un local', ic: 'maison', c: '#76716c', fond: '#f7f6f6', trait: '#e3e0de', type: 'acheteur' },
   { k: 'contact', lib: 'Demande générale', court: 'Message', pluriel: 'Messages', ic: 'bulle', c: '#2e3034', fond: '#f4f3f2', trait: '#e0dedd', type: null },

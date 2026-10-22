@@ -521,7 +521,7 @@ export async function POST(req: NextRequest) {
           /* Le registre avant tout : Alexandre doit reporter ce numéro dans
              ImmoFacile, avec la date d'aujourd'hui. */
           const reste = pris.restants <= RESERVE_ALERTE
-            ? `<p style="color:#c05d12"><b>Il ne te reste que ${pris.restants} numéro${pris.restants > 1 ? 's' : ''} d'avance.</b> Pense à en réserver d'autres dans ImmoFacile et à les ajouter dans le CRM.</p>` : '';
+            ? `<p style="color:#c05d12"><b>Il ne te reste que ${pris.restants} numéro${pris.restants > 1 ? 's' : ''} d'avance.</b> Pense à en réserver d'autres dans ton registre des mandats et à les ajouter dans le CRM.</p>` : '';
           /* Une trace dans son suivi : si l'alerte mail est coupée (Paramètres
              → Alertes mail), c'est là qu'Alexandre voit qu'un numéro de sa
              réserve est parti. Le mail, lui, part quand même s'il y a un
@@ -529,17 +529,17 @@ export async function POST(req: NextRequest) {
           const { error: eJN } = await sb.from('journal').insert({
             client_id: recherche.client_id, recherche_id: recherche.id, type: 'mandat',
             titre: `🔢 N° ${numero} attribué, signature en cours`,
-            description: `Pris dans ta réserve. À reporter dans le registre ImmoFacile ; s'il ne va pas au bout, le marquer « clos sans suite ».`,
+            description: `Pris dans ta réserve. À reporter dans ton registre des mandats ; s'il ne va pas au bout, le marquer « clos sans suite ».`,
             metadata: { numero },
           });
           if (eJN) console.error('[mandat] numéro attribué, journal', eJN.message);
           if (eNum || pris.restants <= RESERVE_ALERTE || await alerteMailActive(sb, 'mandat_numero')) await envoyerMail({
             a: ALERTES(), deLaPartDe: 'crm',
             sujet: `N° ${numero} attribué à ${nomClient} (signature en cours)`,
-            texte: `Le numéro ${numero} de ta réserve vient d'être attribué au mandat de recherche de ${nomClient}, qui est en train de le signer depuis son espace. Reporte-le dans le registre ImmoFacile. S'il ne signe pas, marque-le « clos sans suite ».${eNum ? `\n\n⚠️ La fiche n'a pas pu garder le numéro : ${eNum.message}` : ''}\n\n${lienCrm}`,
+            texte: `Le numéro ${numero} de ta réserve vient d'être attribué au mandat de recherche de ${nomClient}, qui est en train de le signer depuis son espace. Reporte-le dans ton registre des mandats. S'il ne signe pas, marque-le « clos sans suite ».${eNum ? `\n\n⚠️ La fiche n'a pas pu garder le numéro : ${eNum.message}` : ''}\n\n${lienCrm}`,
             html: gabarit(`N° ${numero} attribué à ${nomClient}`,
               `<p>Le numéro <b>${echappe(numero)}</b> de ta réserve vient d'être attribué au mandat de recherche de <b>${echappe(nomClient)}</b>, qui est en train de le signer depuis son espace.</p>
-               <p><b>Reporte-le dans le registre ImmoFacile.</b> S'il ne va pas au bout, marque-le « clos sans suite ».</p>${reste}
+               <p><b>Reporte-le dans ton registre des mandats.</b> S'il ne va pas au bout, marque-le « clos sans suite ».</p>${reste}
                ${eNum ? `<p style="color:#b91c1c">⚠️ La fiche n'a pas pu garder le numéro : ${echappe(eNum.message)}</p>` : ''}
                <a href="${lienCrm}" style="display:inline-block;margin-top:8px;background:#f08c42;color:#232528;text-decoration:none;padding:11px 16px;border-radius:10px;font-weight:800">Ouvrir sa fiche</a>`),
           });
@@ -776,11 +776,11 @@ export async function POST(req: NextRequest) {
           if (eP || eFicheP || echecs.length || ficheSouci) await envoyerMail({
             a: ALERTES(), deLaPartDe: 'crm', pj: pjP,
             sujet: `✍️ ${nom} a signé son mandat (n° ${l.numero}) · en attente de ${autres}`,
-            texte: `${nom} vient de signer son mandat de recherche n° ${l.numero} depuis son espace, le ${dateCourte(le)} à ${heureParis(le)}.\nIl signe avec ${autres}, qui ${cos.length > 1 ? 'ont' : 'a'} reçu son lien personnel. Le mandat l'engage déjà ; il sera complet à leur signature.\n${execution ? 'Il a demandé que la recherche commence tout de suite.' : 'Il préfère attendre la fin des 14 jours.'}${contenu.source === 'reserve' ? '\nNuméro pris dans ta réserve : reporte-le dans ImmoFacile.' : ''}${fiche ? `\n👥 ${fiche}` : ''}${echecs.length ? `\n⚠️ Lien non envoyé : ${echecs.join(' ; ')}. Renvoie-le depuis sa fiche.` : ''}${eP ? `\n⚠️ Sa copie n'a pas pu lui être envoyée (${eP}).` : ''}${eFicheP ? `\n⚠️ La fiche n'a pas pu être mise à jour (${eFicheP.message}).` : ''}\n\n${lienCrm}`,
+            texte: `${nom} vient de signer son mandat de recherche n° ${l.numero} depuis son espace, le ${dateCourte(le)} à ${heureParis(le)}.\nIl signe avec ${autres}, qui ${cos.length > 1 ? 'ont' : 'a'} reçu son lien personnel. Le mandat l'engage déjà ; il sera complet à leur signature.\n${execution ? 'Il a demandé que la recherche commence tout de suite.' : 'Il préfère attendre la fin des 14 jours.'}${contenu.source === 'reserve' ? '\nNuméro pris dans ta réserve : reporte-le dans ton registre des mandats.' : ''}${fiche ? `\n👥 ${fiche}` : ''}${echecs.length ? `\n⚠️ Lien non envoyé : ${echecs.join(' ; ')}. Renvoie-le depuis sa fiche.` : ''}${eP ? `\n⚠️ Sa copie n'a pas pu lui être envoyée (${eP}).` : ''}${eFicheP ? `\n⚠️ La fiche n'a pas pu être mise à jour (${eFicheP.message}).` : ''}\n\n${lienCrm}`,
             html: gabarit(`${nom} a signé son mandat`, `<p><b>${echappe(nom)}</b> vient de signer son mandat de recherche <b>n° ${echappe(l.numero)}</b> depuis son espace, le ${dateCourte(le)} à ${heureParis(le)}.</p>
               <p>Il signe avec <b>${echappe(autres)}</b>, qui ${cos.length > 1 ? 'ont' : 'a'} reçu son lien personnel. Le mandat l’engage déjà ; il sera complet à leur signature.</p>
               <p>${execution ? 'Il a demandé que la recherche commence <b>tout de suite</b>.' : 'Il préfère attendre la fin des 14 jours.'}</p>
-              ${contenu.source === 'reserve' ? '<p>Numéro pris dans ta réserve : <b>reporte-le dans ImmoFacile</b>.</p>' : ''}
+              ${contenu.source === 'reserve' ? '<p>Numéro pris dans ta réserve : <b>reporte-le dans ton registre des mandats</b>.</p>' : ''}
               ${fiche ? `<p style="color:#2a2927">👥 ${echappe(fiche)}</p>` : ''}
               ${echecs.length ? `<p style="color:#b91c1c">⚠️ Lien non envoyé : ${echappe(echecs.join(' ; '))}. Renvoie-le depuis sa fiche.</p>` : ''}
               ${eP ? `<p style="color:#b91c1c">⚠️ Sa copie n’a pas pu lui être envoyée (${echappe(eP)}).</p>` : ''}
@@ -899,18 +899,22 @@ export async function POST(req: NextRequest) {
             <p>À très vite,<br>Werner Immobilier</p>`,
             `Le mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours (jusqu’au ${dateLongue(limite)} inclus) et la façon de l’exercer.`),
         });
-        const prix = contenu.prixMax ? `${euros(contenu.prixMax)} hors honoraires` : 'selon son budget';
+        /* Werner : son loyer annuel maximum et/ou son prix maximum. */
+        const prix = [
+          contenu.recherche?.loyerMax ? `loyer annuel ${euros(contenu.recherche.loyerMax)} HT HC` : '',
+          contenu.prixMax ? `prix ${euros(contenu.prixMax)} hors honoraires` : '',
+        ].filter(Boolean).join(', ') || 'selon son budget';
         /* Coupé dans les Paramètres, il part quand même s'il y a quelque
            chose à rattraper : copie du client, fiche, recherche hors mandat. */
         if (eClient || eFiche || ecarts.length || await alerteMailActive(sb, 'mandat_signe')) await envoyerMail({
           a: ALERTES(), deLaPartDe: 'crm', pj,
           sujet: `✍️ ${nom} a signé son mandat (n° ${l.numero})`,
-          texte: `${nom} vient de signer son mandat de recherche n° ${l.numero} depuis son espace, le ${dateCourte(le)} à ${heureParis(le)}.\nPrix maximum : ${prix}. Honoraires : ${honorairesCourt(contenu)}.\n${execution ? 'Il a demandé que la recherche commence tout de suite.' : 'Il préfère attendre la fin de ses 14 jours : pas de visite avant le ' + dateCourte(limite) + '.'}\n${contenu.source === 'reserve' ? `\nNuméro pris dans ta réserve : reporte-le dans ImmoFacile.` : ''}${ecarts.map(e => `\n⚠️ ${e}`).join('')}${eClient ? `\n⚠️ Sa copie n'a pas pu lui être envoyée (${eClient}) : envoie-lui le PDF ci-joint.` : ''}${eFiche ? `\n⚠️ La fiche n'a pas pu être mise à jour (${eFiche.message}) : remplis le bloc Mandat à la main.` : ''}\n\n${lienCrm}`,
+          texte: `${nom} vient de signer son mandat de recherche n° ${l.numero} depuis son espace, le ${dateCourte(le)} à ${heureParis(le)}.\nBudget maximum : ${prix}. Honoraires : ${honorairesCourt(contenu)}.\n${execution ? 'Il a demandé que la recherche commence tout de suite.' : 'Il préfère attendre la fin de ses 14 jours : pas de visite avant le ' + dateCourte(limite) + '.'}\n${contenu.source === 'reserve' ? `\nNuméro pris dans ta réserve : reporte-le dans ton registre des mandats.` : ''}${ecarts.map(e => `\n⚠️ ${e}`).join('')}${eClient ? `\n⚠️ Sa copie n'a pas pu lui être envoyée (${eClient}) : envoie-lui le PDF ci-joint.` : ''}${eFiche ? `\n⚠️ La fiche n'a pas pu être mise à jour (${eFiche.message}) : remplis le bloc Mandat à la main.` : ''}\n\n${lienCrm}`,
           html: gabarit(`${nom} a signé son mandat`, `<p><b>${echappe(nom)}</b> vient de signer son mandat de recherche <b>n° ${echappe(l.numero)}</b> depuis son espace, le ${dateCourte(le)} à ${heureParis(le)}.</p>
-            <p>Prix maximum : ${echappe(prix)} · Honoraires : ${echappe(honorairesCourt(contenu))}</p>
+            <p>Budget maximum : ${echappe(prix)} · Honoraires : ${echappe(honorairesCourt(contenu))}</p>
             ${soc ? `<p>🏢 Pour la société <b>${echappe(soc.denomination)}</b> (${echappe(soc.forme)}, SIREN ${echappe(soc.siren)}, RCS ${echappe(soc.rcsVille)}), dont il est ${echappe(soc.qualite.toLowerCase())}${l.kbis_chemin ? ' · Kbis joint (dans le dossier privé)' : ' · pas de Kbis joint'}.</p>` : ''}
             <p>${execution ? 'Il a demandé que la recherche commence <b>tout de suite</b>.' : `Il préfère attendre la fin de ses 14 jours : <b>pas de visite avant le ${dateCourte(limite)}</b>.`}</p>
-            ${contenu.source === 'reserve' ? '<p>Numéro pris dans ta réserve : <b>reporte-le dans ImmoFacile</b>.</p>' : ''}
+            ${contenu.source === 'reserve' ? '<p>Numéro pris dans ta réserve : <b>reporte-le dans ton registre des mandats</b>.</p>' : ''}
             ${ecarts.map(e => `<p style="color:#c05d12">⚠️ ${echappe(e)}</p>`).join('')}
             ${eClient ? `<p style="color:#b91c1c">⚠️ Sa copie n’a pas pu lui être envoyée (${echappe(eClient)}) : envoie-lui le PDF ci-joint.</p>` : ''}
             ${eFiche ? `<p style="color:#b91c1c">⚠️ La fiche n’a pas pu être mise à jour (${echappe(eFiche.message)}) : remplis le bloc Mandat à la main.</p>` : ''}
@@ -963,7 +967,7 @@ export async function POST(req: NextRequest) {
           auRegistre = !!lr?.length;
         }
         const registreTexte = l.contenu?.source === 'reserve'
-          ? 'Le noter dans le registre ImmoFacile.'
+          ? 'Le noter dans ton registre des mandats.'
           : !auRegistre ? 'Ce mandat n’a pas de ligne dans le registre des mandats du CRM : note la rétractation dans le registre où il est inscrit.'
             : pbRegR ? 'Le registre des mandats du CRM n’a pas pu le noter : ajoute « Rétracté » à la main (Documents › Registre des mandats).'
               : 'C’est déjà noté « Rétracté » dans le registre des mandats du CRM.';
