@@ -45,7 +45,21 @@ export type Trouve = {
   /* Veille : pour qui elle l'a trouvé, et quand. */
   pour?: string;
   le?: string;
+  /* V3.228 : un bien pas encore en vente (estimation, à suivre) : il part
+     sans prix (prixCopie). */
+  avant?: boolean;
+  /* V3.228 : déjà dans son dossier — ce qui en a été fait. */
+  dossier?: EtatDossier;
 };
+/* V3.228 : un bien déjà dans le dossier de l'acheteur, et où il en est. */
+export type EtatDossier = { etape: string; envoye_le: string | null; badge: string | null; le: string | null };
+
+/* V3.228 — Alexandre : « depuis un client, est-ce qu'il cherche aussi dans
+   mes estimations ? » Les biens pas encore en vente se cherchent sur
+   demande (une case, décochée d'office). */
+const ETAPES_VENTE_RAPPRO = ['mandat'];
+const ETAPES_ESTIMATION = ['estimation', 'a_suivre'];
+export type OptionsRappro = { ventes?: boolean; estimations?: boolean };
 
 const nb = (v: unknown): number | null => {
   const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() ? Number(v.replace(',', '.')) : NaN;
@@ -122,10 +136,10 @@ export function bienDepuisProposition(p: Ligne, clientId: string, rechercheId: s
 }
 
 /* Combien il y a à comparer : pour les cartes de la fenêtre de choix. */
-export async function compterSources(rechercheId: string, clientId: string): Promise<{ mandats: number; veilles: Record<number, number> }> {
+export async function compterSources(rechercheId: string, clientId: string): Promise<{ mandats: number; estimations: number; veilles: Record<number, number> }> {
   const veilles: Record<number, number> = {};
   const [m, ...v] = await Promise.all([
-    supabase.from('biens_vente').select('id, client_id').eq('archive', false).eq('etape', 'mandat'),
+    supabase.from('biens_vente').select('id, client_id, etape').eq('archive', false).in('etape', [...ETAPES_VENTE_RAPPRO, ...ETAPES_ESTIMATION]),
     ...PERIODES.map(p => {
       let q = supabase.from('veille_propositions').select('id', { count: 'exact', head: true })
         .neq('recherche_id', rechercheId).in('statut', ['nouveau', 'retenu']);
@@ -135,8 +149,10 @@ export async function compterSources(rechercheId: string, clientId: string): Pro
     }),
   ]);
   PERIODES.forEach((p, i) => { veilles[p.k] = (v[i] as { count: number | null }).count ?? 0; });
-  const mandats = ((m.data || []) as { client_id: string | null }[]).filter(x => x.client_id !== clientId).length;
-  return { mandats, veilles };
+  const autres = ((m.data || []) as { client_id: string | null; etape: string }[]).filter(x => x.client_id !== clientId);
+  const mandats = autres.filter(x => ETAPES_VENTE_RAPPRO.includes(x.etape)).length;
+  const estimations = autres.filter(x => ETAPES_ESTIMATION.includes(x.etape)).length;
+  return { mandats, estimations, veilles };
 }
 
 /* Les mandats en cours qui lui correspondent (70 % et plus) : pour le
@@ -160,25 +176,33 @@ export async function mandatsPour(recherche: Ligne, clientId: string): Promise<{
   return { n: liste.length, meilleure: liste[0]?.note || 0, liste };
 }
 
-async function dejaDansLeDossier(rechercheId: string): Promise<{ urls: Set<string>; ventes: Set<string> }> {
-  const { data } = await supabase.from('biens').select('id, url, bien_vente_id').eq('recherche_id', rechercheId);
-  const urls = new Set<string>(), ventes = new Set<string>();
-  for (const x of (data || []) as Ligne[]) {
-    if (x.url) urls.add(String(x.url));
-    if (x.bien_vente_id) ventes.add(String(x.bien_vente_id));
+/* V3.228 : avec ce qui en a été fait (sélection, présenté le…, sa réponse),
+   pour le dire au lieu de le cacher. */
+async function dejaDansLeDossier(rechercheId: string): Promise<{ urls: Map<string, EtatDossier>; ventes: Map<string, EtatDossier> }> {
+  let r: { data: Ligne[] | null; error: { message: string } | null } = await supabase.from('biens').select('id, url, bien_vente_id, etape, envoye_le, badge_retour, created_at').eq('recherche_id', rechercheId);
+  if (r.error) r = await supabase.from('biens').select('id, url, bien_vente_id').eq('recherche_id', rechercheId);
+  const urls = new Map<string, EtatDossier>(), ventes = new Map<string, EtatDossier>();
+  for (const x of (r.data || []) as Ligne[]) {
+    const e: EtatDossier = { etape: String(x.etape || 'selection'), envoye_le: x.envoye_le || null, badge: x.badge_retour || null, le: x.created_at || null };
+    if (x.url) urls.set(String(x.url), e);
+    if (x.bien_vente_id) ventes.set(String(x.bien_vente_id), e);
   }
   return { urls, ventes };
 }
 
-export async function rapprocher(recherche: Ligne, clientId: string, source: SourceRappro, periode: PeriodeVeille)
-  : Promise<{ trouves: Trouve[]; compares: number; dejaLa: number }> {
+export async function rapprocher(recherche: Ligne, clientId: string, source: SourceRappro, periode: PeriodeVeille, o: OptionsRappro = {})
+  : Promise<{ trouves: Trouve[]; compares: number; dejaLa: number; deja: Trouve[] }> {
   const crit = criteresDepuisRecherche(recherche);
   const deja = await dejaDansLeDossier(recherche.id);
   const trouves: Trouve[] = [];
-  let compares = 0, dejaLa = 0;
+  /* V3.228 : ce qui est déjà dans son dossier n'est plus seulement compté :
+     il est rendu à part, avec ce qui en a été fait. */
+  const dejaL: Trouve[] = [];
+  let compares = 0;
+  const etapes = [...(o.ventes === false ? [] : ETAPES_VENTE_RAPPRO), ...(o.estimations ? ETAPES_ESTIMATION : [])];
 
-  if (source !== 'veilles') {
-    const { data, error } = await supabase.from('biens_vente').select('*').eq('archive', false).eq('etape', 'mandat');
+  if (source !== 'veilles' && etapes.length) {
+    const { data, error } = await supabase.from('biens_vente').select('*').eq('archive', false).in('etape', etapes);
     if (error) throw new Error(`Les mandats n’ont pas pu être lus : ${error.message}`);
     for (const b of (data || []) as BienVente[]) {
       if (b.client_id === clientId) continue;
@@ -187,15 +211,18 @@ export async function rapprocher(recherche: Ligne, clientId: string, source: Sou
       const bc = versCorrespondance(b);
       const corr = correspondance(bc, crit);
       if (!corr || corr.note < SEUIL_LISTE || raisonEcart(corr, bc, crit)) continue;
-      if (deja.ventes.has(b.id)) { dejaLa++; continue; }
       const d = b.donnees || {};
       const photos = lirePhotos(d.photos).map(p => p.url).filter(Boolean);
-      trouves.push({
+      const t: Trouve = {
         cle: `m-${b.id}`, source: 'mandat', vente: b,
         titre: b.titre || titreBien(d), lieu: [b.quartier, b.ville].filter(Boolean).join(' · '),
         prix: b.prix, photo: photos[0] || b.photo || null, photos, url: null,
         surface: b.surface, pieces: b.nb_pieces, chambres: b.nb_chambres, corr,
-      });
+        ...(ETAPES_ESTIMATION.includes(b.etape) ? { avant: true } : {}),
+      };
+      const dd = deja.ventes.get(b.id);
+      if (dd) { dejaL.push({ ...t, dossier: dd }); continue; }
+      trouves.push(t);
     }
   }
 
@@ -235,9 +262,10 @@ export async function rapprocher(recherche: Ligne, clientId: string, source: Sou
       const bcA = corrDepuisAnnonce(p);
       const corr = correspondance(bcA, crit);
       if (!corr || corr.note < SEUIL_LISTE || raisonEcart(corr, bcA, crit)) continue;
-      if (p.url && deja.urls.has(String(p.url))) { dejaLa++; continue; }
       const photos = (Array.isArray(p.photos) ? p.photos : []).filter((x: unknown) => typeof x === 'string' && x);
-      trouves.push({
+      const dd = p.url ? deja.urls.get(String(p.url)) : undefined;
+      (dd ? dejaL : trouves).push({
+        ...(dd ? { dossier: dd } : {}),
         /* V3.112 : une clé qui ne change pas d'une fois sur l'autre (l'adresse
            de l'annonce), pour reconnaître ce qui a déjà été vu. */
         cle: `v-${p.url || p.yanport_id || p.id}`, source: 'veille', prop: p,
@@ -251,7 +279,8 @@ export async function rapprocher(recherche: Ligne, clientId: string, source: Sou
   }
 
   trouves.sort((a, b) => b.corr.note - a.corr.note || (a.source === b.source ? 0 : a.source === 'mandat' ? -1 : 1));
-  return { trouves, compares, dejaLa };
+  dejaL.sort((a, b) => String(b.dossier?.envoye_le || b.dossier?.le || '').localeCompare(String(a.dossier?.envoye_le || a.dossier?.le || '')));
+  return { trouves, compares, dejaLa: dejaL.length, deja: dejaL };
 }
 
 /* Poser un bien trouvé dans le dossier de l'acheteur, à l'étape Sélection.
@@ -334,13 +363,96 @@ export type LigneRappro = {
   bien?: string; url?: string | null; n: number;
   v?: 'oui' | 'a_voir' | 'non'; s?: number; t?: string; p?: string[]; m?: string[];
 };
-export async function noterRapprochement(clientId: string, rechercheId: string, n: number, source: SourceRappro, periode: PeriodeVeille, vus: string[] = [], lignes: LigneRappro[] = []): Promise<void> {
-  const ou = source === 'mandats' ? 'vos mandats' : source === 'veilles' ? 'les veilles' : 'vos mandats et les veilles';
+export async function noterRapprochement(clientId: string, rechercheId: string, n: number, source: SourceRappro, periode: PeriodeVeille, vus: string[] = [], lignes: LigneRappro[] = [], o: OptionsRappro = {}): Promise<void> {
+  const biens = [o.ventes === false ? '' : 'vos mandats', o.estimations ? 'vos estimations' : ''].filter(Boolean).join(' et ');
+  const ou = source === 'mandats' ? biens : source === 'veilles' ? 'les veilles' : `${biens} et les veilles`;
   const p = source === 'mandats' ? '' : ` (${PERIODES.find(x => x.k === periode)?.l.toLowerCase() || ''})`;
   const { error } = await supabase.from('journal').insert({
     client_id: clientId, recherche_id: rechercheId, type: 'rapprochement',
     titre: `Rapprochement · ${n} bien${n > 1 ? 's' : ''} trouvé${n > 1 ? 's' : ''}`,
-    description: `Dans ${ou}${p}.`, metadata: { source, periode, n, vus, ...(lignes.length ? { lignes } : {}) },
+    description: `Dans ${ou}${p}.`, metadata: { source, periode, n, vus, ...(o.estimations ? { estimations: true } : {}), ...(lignes.length ? { lignes } : {}) },
   });
   if (error) signalerEchec('Le rapprochement est fait, mais son historique', error.message);
+}
+
+/* ══ Vu depuis tes biens (V3.228) ═══════════════════════════════════════════
+   Alexandre : « si depuis la fiche d'un bien on fait un rapprochement et que
+   ça trouve un client, est-ce que sur sa fiche ça indique qu'il y a eu un
+   rapprochement sur ce bien ? » Chaque rapprochement lancé depuis un bien
+   est gardé dans l'historique du bien (`biens_vente_suivi`, type « note »,
+   `donnees.rapprochement`, une ligne par recherche : r, v, s, t, p, m, n —
+   RapprochementBien.tsx). On les relit ici, pour UNE recherche : le dernier
+   avis par bien (pas de doublon), combien de fois il est ressorti, le bien
+   tel qu'il est aujourd'hui, et « Pas pour lui » s'il a été posé.
+   `historique` donne une ligne par séance où l'avis a changé : le Suivi du
+   client les montre, sans rien écrire en base. */
+export type AvisVu = 'oui' | 'a_voir' | 'non';
+export type VuDepuisBien = {
+  suivi: string; bienId: string; le: string;
+  v: AvisVu; s: number | null; t: string; p: string[]; m: string[]; n: number | null;
+  fois: number; bien: BienVente | null; ecarte: boolean;
+};
+export type LigneHistoVu = { id: string; le: string; bienId: string; titre: string; v: AvisVu; s: number | null; t: string };
+const AVIS_VU: AvisVu[] = ['oui', 'a_voir', 'non'];
+export async function vusDepuisBiens(rechercheId: string): Promise<{ liste: VuDepuisBien[]; historique: LigneHistoVu[]; erreur: string }> {
+  const cols = 'id, bien_id, le, donnees';
+  /* Les séances où cette recherche figure (jsonb @>) ; sinon toutes, triées ici. */
+  let r = await supabase.from('biens_vente_suivi').select(cols).eq('type', 'note')
+    .contains('donnees', { rapprochement: true, lignes: [{ r: rechercheId }] }).order('le', { ascending: false }).limit(300);
+  if (r.error) r = await supabase.from('biens_vente_suivi').select(cols).eq('type', 'note')
+    .contains('donnees', { rapprochement: true }).order('le', { ascending: false }).limit(600);
+  if (r.error) return { liste: [], historique: [], erreur: r.error.message };
+  type Seance = { id: string; bien_id: string; le: string; donnees: Ligne | null };
+  const seances: { s: Seance; l: Ligne }[] = [];
+  for (const s of (r.data || []) as Seance[]) {
+    const lignes = Array.isArray(s.donnees?.lignes) ? (s.donnees!.lignes as Ligne[]) : [];
+    const l = lignes.find(x => x && x.r === rechercheId && AVIS_VU.includes(x.v));
+    if (l) seances.push({ s, l });
+  }
+  if (!seances.length) return { liste: [], historique: [], erreur: '' };
+  const ids = [...new Set(seances.map(x => x.s.bien_id))];
+  const [b, pas] = await Promise.all([
+    supabase.from('biens_vente').select('*').in('id', ids),
+    supabase.from('biens_vente_suivi').select('bien_id').eq('recherche_id', rechercheId).eq('type', 'note').contains('donnees', { pasPourLui: true }),
+  ]);
+  const biens = new Map(((b.data || []) as BienVente[]).map(x => [x.id, x] as const));
+  const ecartes = new Set(((pas.data || []) as { bien_id: string }[]).map(x => x.bien_id));
+  const parBien = new Map<string, VuDepuisBien>();
+  for (const { s, l } of seances) {
+    const deja = parBien.get(s.bien_id);
+    if (deja) { deja.fois++; continue; }
+    parBien.set(s.bien_id, {
+      suivi: s.id, bienId: s.bien_id, le: s.le, v: l.v as AvisVu, s: typeof l.s === 'number' ? l.s : null,
+      t: String(l.t || ''), p: Array.isArray(l.p) ? l.p.map(String) : [], m: Array.isArray(l.m) ? l.m.map(String) : [],
+      n: typeof l.n === 'number' ? l.n : null, fois: 1, bien: biens.get(s.bien_id) || null, ecarte: ecartes.has(s.bien_id),
+    });
+  }
+  /* Le Suivi : une ligne quand l'avis change (ou bouge d'au moins 10 points). */
+  const historique: LigneHistoVu[] = [];
+  const precedent = new Map<string, { v: string; s: number | null }>();
+  for (const { s, l } of [...seances].reverse()) {
+    const av = precedent.get(s.bien_id);
+    const sc = typeof l.s === 'number' ? l.s : null;
+    const change = !av || av.v !== l.v || (sc != null && av.s != null && Math.abs(sc - av.s) >= 10);
+    precedent.set(s.bien_id, { v: l.v, s: sc });
+    if (!change) continue;
+    const bv = biens.get(s.bien_id);
+    historique.push({ id: `vu-${s.id}`, le: s.le, bienId: s.bien_id, titre: bv ? bv.titre || titreBien(bv.donnees || {}) : 'Une de tes affaires', v: l.v as AvisVu, s: sc, t: String(l.t || '') });
+  }
+  const ordre = (v: AvisVu) => AVIS_VU.indexOf(v);
+  const liste = [...parBien.values()].sort((a, c) => ordre(a.v) - ordre(c.v) || (c.s ?? 0) - (a.s ?? 0) || c.le.localeCompare(a.le));
+  return { liste, historique, erreur: '' };
+}
+
+/* « Le mettre dans sa sélection », depuis « Vu depuis tes biens » : la même
+   ligne que le rapprochement (poserEnSelection), le même Suivi. */
+export async function poserVenteEnSelection(b: BienVente, recherche: Ligne, clientId: string): Promise<string> {
+  const bc = versCorrespondance(b);
+  const corr = correspondance(bc, criteresDepuisRecherche(recherche)) || { note: 0, lignes: [] };
+  const d = b.donnees || {};
+  const photos = lirePhotos(d.photos).map(p => p.url).filter(Boolean);
+  return poserEnSelection({
+    cle: `m-${b.id}`, source: 'mandat', vente: b, titre: b.titre || titreBien(d), lieu: [b.quartier, b.ville].filter(Boolean).join(' · '),
+    prix: b.prix, photo: photos[0] || b.photo || null, photos, url: null, surface: b.surface, pieces: b.nb_pieces, chambres: b.nb_chambres, corr,
+  }, clientId, String(recherche.id));
 }
