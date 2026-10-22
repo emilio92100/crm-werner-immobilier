@@ -47,6 +47,8 @@ import { supabase } from '@/lib/supabase';
 import { AvisDetail, IconeAvis, MOT_IA, Progression, analyserIA, compareIA, dateRappro, type AvisIA, type AvisParBien } from '@/components/biens/RapprochementIA';
 import s from './Rapprochement.module.css';
 import Curseur from '@/components/shared/Curseur';
+import Cascade from '@/components/shared/Cascade';
+import Aide from '@/components/shared/Aide';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Ligne = Record<string, any>;
@@ -674,106 +676,247 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
   return typeof document === 'undefined' ? null : createPortal(<>{fenetre}{aide && <AideRapprochement depuis="client" onFermer={() => setAide(false)} />}</>, document.body);
 }
 
-/* ══ L'onglet Rapprochement d'un acheteur : le guide (V3.112) ═══════════════
-   Maquette C : ce que fait le rapprochement, en trois temps, puis « Où
-   chercher ? » (deux cases à cocher : ses mandats, les veilles), le dernier
-   rapprochement, « Seulement les nouveautés » ou « Tout revoir », et
-   « Lancer le rapprochement » — la fenêtre s'ouvre sur la recherche. */
-export function GuideRapprochement({ client, recherche, illu, dernier, onLancer }: {
+/* ══ Le guide de l'onglet Rapprochement (V3.231) ══════════════════════════════
+   Alexandre : « le où chercher, c'est écrit en gros… des petites cases, plus
+   jolies, plus condensées, et pas déplié d'office », puis : « j'aimais bien
+   la petite animation, quels biens de ta base pourraient plaire à Fanny ;
+   et c'est quand on fait Lancer que ça demande où chercher, quoi montrer…
+   tout se déplie en fonction de ce que je choisis ».
+   Au repos : l'illustration animée, la question, « Lancer un rapprochement »,
+   le dernier rapprochement. Au clic, les réglages se déplient, pas à pas :
+   Repris du CRM d'Emilio (sa V3.231), avec les mots de Werner.
+   ① Où chercher — trois petites cases, chacune avec son « ? » ; la période
+     des veilles n'apparaît que si elles sont cochées.
+   ② Quoi montrer — seulement s'il y a déjà eu un rapprochement : les
+     nouveautés ou tout revoir, chacun avec son « ? » (FicheClient passe
+     `vus`, les clés de tout ce qui est déjà ressorti, à la fenêtre).
+   ③ Lancer — combien de biens seront comparés.
+   Rien de coché : ② et ③ se replient, il le dit. */
+export function GuideRapprochement({ client, recherche, illu, dernier, onLancer, vusBiens }: {
   client: Ligne; recherche: Ligne;
-  /* L'illustration de la fiche (l'acheteur et ses biens). */
+  /* L'illustration de la fiche (l'acheteur et ses biens), animée. */
   illu?: ReactNode;
   dernier: { le: string; n: number } | null;
   onLancer: (o: DepartRappro) => void;
+  /* Les biens où il est ressorti depuis leur fiche, pas encore dans son
+     dossier (« Depuis tes affaires ») : un rappel, et de quoi y aller. */
+  vusBiens?: { n: number; onVoir: () => void } | null;
 }) {
   const prenom = client.prenom || 'ce client';
+  const [pret, setPret] = useState(false);
   const [mandats, setMandats] = useState(true);
   const [veilles, setVeilles] = useState(true);
-  /* V3.228 : ses estimations, sur demande. */
   const [estim, setEstim] = useState(false);
   const [periode, setPeriode] = useState<PeriodeVeille>(90);
   const [nouveautes, setNouveautes] = useState(true);
   const [comptes, setComptes] = useState<{ mandats: number; estimations?: number; veilles: Record<number, number> } | null>(null);
+  const panneau = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let vivant = true;
     compterSources(String(recherche.id), String(client.id)).then(c => { if (vivant) setComptes(c); }).catch(() => { if (vivant) setComptes({ mandats: 0, veilles: {} }); });
     return () => { vivant = false; };
   }, [recherche.id, client.id]);
+  /* Déplié : les réglages viennent à l'écran (au téléphone, ils sont dessous). */
+  useEffect(() => {
+    if (!pret) return;
+    const t = setTimeout(() => panneau.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+    return () => clearTimeout(t);
+  }, [pret]);
   const nbV = comptes ? comptes.veilles[periode] ?? 0 : null;
   const biens = mandats || estim;
   const source: SourceRappro = biens && veilles ? 'deux' : biens ? 'mandats' : 'veilles';
   const rien = !mandats && !veilles && !estim;
+  const total = comptes ? (mandats ? comptes.mandats : 0) + (estim ? comptes.estimations || 0 : 0) + (veilles ? nbV || 0 : 0) : null;
+
+  const SOURCES = [
+    {
+      k: 'm', ic: 'maison', nom: 'Mes affaires en cours', d: 'Tes affaires « Disponible »', n: comptes ? comptes.mandats : null, on: mandats, set: setMandats,
+      aide: <>
+        <span>{'Tes affaires à l’étape « Disponible ». Pas celles sous offre, en signature ou conclues.'}</span>
+        <span>{`Jamais une affaire dont ${prenom} est le mandant.`}</span>
+        <span>{'Celles qui passent le tri sont relues en détail face à tout son dossier, 24 au plus : un avis, une note de potentiel, ses plus et ses moins.'}</span>
+      </>,
+    },
+    {
+      k: 'e', ic: 'etiquette', nom: 'Mes estimations', d: 'Pas encore proposées, sans montant', n: comptes ? comptes.estimations || 0 : null, on: estim, set: setEstim,
+      aide: <>
+        <span>{'Tes affaires à l’étape « Estimation » ou « À suivre » : pas encore sous mandat. Décoché d’office.'}</span>
+        <span>{'Relues comme tes affaires en cours, avec l’étiquette « Ton estimation ».'}</span>
+        <span>{`S’il en reçoit une, ${prenom} la reçoit sans montant : le montant arrive chez lui à la signature du mandat.`}</span>
+      </>,
+    },
+    {
+      k: 'v', ic: 'loupe', nom: 'Les annonces de mes veilles', d: 'Trouvées pour tes autres clients', n: nbV, on: veilles, set: setVeilles,
+      aide: <>
+        <span>{'Les annonces que tes veilles ont trouvées pour tes autres clients, sur la période choisie, hors celles que tu as écartées. Une annonce trouvée pour plusieurs clients compte une fois.'}</span>
+        <span>{`Celles trouvées pour ${prenom} sont déjà dans sa Veille : elles n’y sont pas.`}</span>
+        <span>{'Elles ne sont pas relues (la veille les a déjà lues) : elles gardent leur note de critères. Plus c’est ancien, plus l’annonce risque d’être vendue : vérifie son lien avant de l’envoyer.'}</span>
+      </>,
+    },
+  ];
+  const QUOI = [
+    {
+      k: true, ic: 'etoile', t: 'Seulement les nouveautés', d: `Ce qui n’est jamais ressorti pour ${prenom}`,
+      aide: <>
+        <span>{'Il cherche partout où tu as coché, comme d’habitude.'}</span>
+        <span>{`Puis il met de côté les affaires déjà ressorties pour ${prenom} dans un rapprochement précédent lancé depuis sa fiche, même si elles n’avaient pas été retenues. Elles restent en bas, repliées (« Déjà vus »), un clic pour les revoir.`}</span>
+        <span>{'Reste ce qui n’est encore jamais ressorti : une affaire arrivée depuis, ou une affaire qui passe le tri maintenant (loyer ou prix baissé, recherche modifiée). Seules celles-là sont relues en détail.'}</span>
+        <span>{'Une affaire déjà dans son dossier (sélection ou présentées) est toujours rangée à part ; une affaire « Pas pour lui » ne revient jamais.'}</span>
+      </>,
+    },
+    {
+      k: false, ic: 'remettre', t: 'Tout revoir', d: 'Tout ce qui passe le tri, comme la première fois',
+      aide: <>
+        <span>{'Tout ce qui passe le tri est montré, même les affaires déjà ressorties les fois d’avant.'}</span>
+        <span>{`Tes affaires sont relues, 24 au plus. Un avis déjà donné est repris tel quel si ni la fiche de l’affaire ni le dossier de ${prenom} n’ont changé : c’est rapide, et l’avis reste le même des deux côtés.`}</span>
+        <span>{'Utile quand sa recherche a changé, ou pour tout revoir d’un coup.'}</span>
+        <span>{'Une affaire déjà dans son dossier est toujours rangée à part ; une affaire « Pas pour lui » ne revient jamais.'}</span>
+      </>,
+    },
+  ];
+  const numero = (n: number) => <span className={s.pasN}>{n}</span>;
 
   return (
     <section className={s.guide} aria-label={`Rapprochement pour ${prenom}`}>
       <div className={s.guideTete}>
         {illu}
         <div className={s.guideTx}>
-          <h2>{`Quels biens de ta base pourraient plaire à ${prenom} ?`}</h2>
+          <h2>{`Quelles affaires de ta base pourraient plaire à ${prenom} ?`}</h2>
           <p>{'On compare sa recherche avec '}<b>{'tes affaires en cours'}</b>{' (et tes estimations, si tu veux) et avec '}<b>{'les annonces que tes veilles ont trouvées pour tes autres clients'}</b>{'. Puis le rapprochement relit en détail tes affaires face à tout son dossier : pour chacune, un avis, une note de potentiel sur 100, ses plus et ses moins.'}</p>
-          <BoutonAideRappro depuis="client" className={s.guideAide} />
+          <div className={s.guideActions}>
+            {!pret && (
+              <button type="button" className={`${s.btn} ${s.btnOr} ${s.guideGo}`} onClick={() => setPret(true)}>
+                <Icone nom="etoile" taille={17} epaisseur={2.2} />{'Lancer un rapprochement'}
+              </button>
+            )}
+            <BoutonAideRappro depuis="client" />
+          </div>
+          <div className={s.guideInfos}>
+            <span className={s.guideDernier}>
+              <Icone nom="horloge" taille={14} epaisseur={2.2} />
+              {dernier
+                ? <span><b>{`Dernier rapprochement le ${jourLong(dernier.le)}`}</b>{` : ${dernier.n} ${pl(dernier.n, 'bien trouvé', 'biens trouvés')}.`}</span>
+                : <span>{`Aucun rapprochement encore pour ${prenom}.`}</span>}
+            </span>
+            {!!vusBiens?.n && (
+              <button type="button" className={s.guideVu} onClick={vusBiens.onVoir}>
+                <span className={s.guideVuIc}><Icone nom="maison" taille={13} epaisseur={2.2} /></span>
+                <span>{`${vusBiens.n} ${pl(vusBiens.n, 'affaire', 'affaires')} où ${prenom} ressort, depuis ${pl(vusBiens.n, 'sa fiche', 'leur fiche')}`}</span>
+                <b>{'Voir'}</b>
+              </button>
+            )}
+          </div>
         </div>
       </div>
-      <ol className={s.temps}>
-        <li><i>1</i><span><b>{'Coche où chercher'}</b>{' : tes affaires en cours, tes estimations, tes veilles'}</span></li>
-        <li><i>2</i><span><b>{'Lance le rapprochement'}</b>{' : il trie, puis relit tes affaires'}</span></li>
-        <li><i>3</i><span><b>{'Coche ceux qui lui iraient'}</b>{' : dans sa sélection, ou par mail'}</span></li>
-      </ol>
 
-      <div className={s.ou}>
-        <div className={s.ouT}><i>1</i><h3>{'Où chercher ?'}</h3><span>{'Coche ce que tu veux.'}</span></div>
-        <div className={s.sources}>
-          <label className={`${s.source} ${mandats ? s.sourceOn : ''}`}>
-            <input type="checkbox" checked={mandats} onChange={e => setMandats(e.target.checked)} />
-            <span className={s.sourceIc}><Icone nom="maison" taille={18} epaisseur={2} /></span>
-            <span className={s.sourceTx}>
-              <span className={s.sourceL1}><b>{'Mes affaires en cours'}</b><strong>{comptes ? comptes.mandats : '…'}</strong></span>
-              <small>{'Tes affaires à l’étape « Disponible ». Pas celles déjà sous offre ou en signature.'}</small>
-            </span>
-          </label>
-          <label className={`${s.source} ${estim ? s.sourceOn : ''}`}>
-            <input type="checkbox" checked={estim} onChange={e => setEstim(e.target.checked)} />
-            <span className={s.sourceIc}><Icone nom="etiquette" taille={18} epaisseur={2} /></span>
-            <span className={s.sourceTx}>
-              <span className={s.sourceL1}><b>{'Mes estimations'}</b><strong>{comptes ? comptes.estimations || 0 : '…'}</strong></span>
-              <small>{'Pas encore proposées (estimation, à suivre). S’il en reçoit une, il la reçoit sans montant, jusqu’à la signature du mandat.'}</small>
-            </span>
-          </label>
-          <label className={`${s.source} ${veilles ? s.sourceOn : ''}`}>
-            <input type="checkbox" checked={veilles} onChange={e => setVeilles(e.target.checked)} />
-            <span className={s.sourceIc}><Icone nom="loupe" taille={18} epaisseur={2} /></span>
-            <span className={s.sourceTx}>
-              <span className={s.sourceL1}><b>{'Les annonces de mes veilles'}</b><strong>{nbV == null ? '…' : nbV}</strong></span>
-              <small>{`Trouvées pour tes autres clients, hors celles que tu as écartées. Celles de ${prenom} sont déjà dans sa Veille.`}</small>
-              <span className={s.periodes} role="group" aria-label="Trouvées depuis">
-                {PERIODES.map(x => (
-                  <button key={x.k} type="button" className={periode === x.k ? s.periodeOn : ''} aria-pressed={periode === x.k}
-                    onClick={e => { e.preventDefault(); setPeriode(x.k); setVeilles(true); }}>{x.l}</button>
+      {pret && (
+        <div ref={panneau} className={s.lanceur}>
+          <div className={s.lanceurT}>
+            <span className={s.lanceurIc}><Icone nom="reglages" taille={16} epaisseur={2.2} /></span>
+            <b>{'Préparer le rapprochement'}</b>
+            <button type="button" className={s.lanceurFermer} onClick={() => setPret(false)}><Icone nom="fermer" taille={13} epaisseur={2.4} /><span>{'Annuler'}</span></button>
+          </div>
+
+          {/* ① Où chercher */}
+          <Cascade cle="p1" arrivee className={s.pas}>
+            {numero(1)}
+            <div className={s.pasCorps}>
+              <div className={s.pasTete2}><b>{'Où chercher'}</b><span>{'Coche ce que tu veux.'}</span></div>
+              <div className={s.srcs}>
+                {SOURCES.map(x => (
+                  <div key={x.k} className={`${s.srcCase} ${x.on ? s.srcOn : ''}`}>
+                    <button type="button" role="checkbox" aria-checked={x.on} className={s.srcHaut} onClick={() => x.set(!x.on)}>
+                      <span className={s.srcCoche}><Icone nom="coche" taille={12} epaisseur={3.2} /></span>
+                      <span className={s.srcIc}><Icone nom={x.ic} taille={16} epaisseur={2} /></span>
+                      <span className={s.srcNom}><b>{x.nom}</b><small>{x.d}</small></span>
+                      <strong className={s.srcN}>{x.n ?? '…'}</strong>
+                    </button>
+                    <span className={s.srcQ}><Aide titre={x.nom}>{x.aide}</Aide></span>
+                  </div>
                 ))}
-              </span>
-            </span>
-          </label>
-        </div>
-        <div className={s.lancer}>
-          <span className={s.dernier}>
-            <Icone nom="horloge" taille={16} epaisseur={2} />
-            {dernier
-              ? <span><b>{`Dernier rapprochement le ${jourLong(dernier.le)}`}</b>{` : ${dernier.n} ${pl(dernier.n, 'bien trouvé', 'biens trouvés')}.`}</span>
-              : <span>{`Aucun rapprochement encore pour ${prenom}.`}</span>}
-          </span>
-          {dernier && (
-            <span className={s.radios} role="radiogroup" aria-label="Quoi montrer">
-              <label><input type="radio" name="rappro-quoi" checked={nouveautes} onChange={() => setNouveautes(true)} />{'Seulement les nouveautés'}</label>
-              <label><input type="radio" name="rappro-quoi" checked={!nouveautes} onChange={() => setNouveautes(false)} />{'Tout revoir'}</label>
-            </span>
+                {veilles && (
+                  <Cascade cle="per" arrivee className={s.srcPer}>
+                    <span><Icone nom="horloge" taille={13} epaisseur={2.2} />{'Annonces des veilles trouvées depuis'}</span>
+                    <span className={s.periodes} role="group" aria-label="Trouvées depuis">
+                      {PERIODES.map(p => (
+                        <button key={p.k} type="button" className={periode === p.k ? s.periodeOn : ''} aria-pressed={periode === p.k}
+                          onClick={() => setPeriode(p.k)}>{p.l}</button>
+                      ))}
+                    </span>
+                  </Cascade>
+                )}
+              </div>
+            </div>
+          </Cascade>
+
+          {rien && <p className={s.alerte}><Icone nom="info" taille={15} epaisseur={2} /><span>{'Coche au moins un endroit où chercher : la suite se déplie.'}</span></p>}
+
+          {/* ② Quoi montrer : seulement s'il y a déjà eu un rapprochement. */}
+          {!rien && dernier && (
+            <Cascade cle="p2" arrivee className={s.pas}>
+              {numero(2)}
+              <div className={s.pasCorps}>
+                <div className={s.pasTete2}>
+                  <b>{'Quoi montrer'}</b>
+                  <span>{`Le dernier : le ${jourLong(dernier.le)}`}</span>
+                </div>
+                <div className={s.quoi} role="radiogroup" aria-label="Quoi montrer">
+                  {QUOI.map(o => (
+                    <div key={String(o.k)} className={`${s.quoiCase} ${nouveautes === o.k ? s.quoiOn : ''}`}>
+                      <button type="button" role="radio" aria-checked={nouveautes === o.k} className={s.quoiBtn} onClick={() => setNouveautes(o.k)}>
+                        <span className={s.quoiRond} aria-hidden="true" />
+                        <span className={s.quoiTx}><b><Icone nom={o.ic} taille={14} epaisseur={2.2} /><span>{o.t}</span></b><small>{o.d}</small></span>
+                      </button>
+                      <span className={s.quoiQ}><Aide titre={o.t}>{o.aide}</Aide></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Cascade>
           )}
-          <button type="button" className={`${s.btn} ${s.btnOr}`} disabled={rien} onClick={() => onLancer({ source, periode, nouveautes: !!dernier && nouveautes, estimations: estim, ventes: mandats })}>
-            <Icone nom="loupe" taille={17} epaisseur={2.2} />{'Lancer le rapprochement'}
-          </button>
+
+          {/* ③ Lancer */}
+          {!rien && (
+            <Cascade cle="p3" arrivee className={`${s.pas} ${s.pasGo}`}>
+              {numero(dernier ? 3 : 2)}
+              <div className={s.lancerL}>
+                <span className={s.lancerTx}>
+                  <b>{total == null ? 'Je compte tes affaires…' : `${total} ${pl(total, 'local à comparer', 'locaux à comparer')} avec sa recherche`}</b>
+                  <small>{`${dernier && nouveautes ? `D’abord ceux jamais ressortis pour ${prenom}.` : 'Tout ce qui passe le tri sera montré.'} Rien ne part tout seul : tu choisis ensuite.`}</small>
+                </span>
+                <button type="button" className={`${s.btn} ${s.btnOr}`} onClick={() => onLancer({ source, periode, nouveautes: !!dernier && nouveautes, estimations: estim, ventes: mandats })}>
+                  <Icone nom="loupe" taille={17} epaisseur={2.2} />{'Lancer le rapprochement'}
+                </button>
+              </div>
+            </Cascade>
+          )}
         </div>
-        {rien && <p className={s.info}><Icone nom="info" taille={16} epaisseur={2} /><span>{'Coche au moins une case.'}</span></p>}
-      </div>
+      )}
     </section>
+  );
+}
+
+/* Les deux historiques, dans la même carte (V3.231) : ceux lancés depuis sa
+   fiche, et ceux lancés depuis la fiche d'un bien où il est ressorti. */
+export type OngletHisto = 'fiche' | 'biens';
+export function OngletsHisto({ onglet, onChange, nFiche, nBiens, prenom }: {
+  onglet: OngletHisto; onChange: (o: OngletHisto) => void; nFiche: number; nBiens: number; prenom: string;
+}) {
+  return (
+    <div className={s.histo}>
+      <div className={s.histoO} role="tablist" aria-label="Les rapprochements faits">
+        <Curseur cle={onglet} />
+        <button type="button" role="tab" aria-selected={onglet === 'fiche'} aria-pressed={onglet === 'fiche'} onClick={() => onChange('fiche')}>
+          <Icone nom="personne" taille={14} epaisseur={2.2} /><span>{'Depuis sa fiche'}</span><i>{nFiche}</i>
+        </button>
+        <button type="button" role="tab" aria-selected={onglet === 'biens'} aria-pressed={onglet === 'biens'} onClick={() => onChange('biens')}>
+          <Icone nom="maison" taille={14} epaisseur={2.2} /><span>{'Depuis tes affaires'}</span><i>{nBiens}</i>
+        </button>
+      </div>
+      <p className={s.histoD}>{onglet === 'fiche'
+        ? `Lancés ici, depuis la fiche de ${prenom}. Le plus récent est déplié ; un clic sur une ligne la déplie ou la replie.`
+        : `Lancés depuis la fiche d’une de tes affaires, où ${prenom} est ressorti : le dernier avis par affaire, le même des deux côtés, et où il en est.`}</p>
+    </div>
   );
 }
 
@@ -785,8 +928,12 @@ export function GuideRapprochement({ client, recherche, illu, dernier, onLancer 
    nombre de biens. */
 type LigneJournal = { id: string; created_at: string; description?: string | null; metadata?: Record<string, unknown> | null };
 const lignesDe = (j: LigneJournal): LigneRappro[] => (Array.isArray(j.metadata?.lignes) ? (j.metadata!.lignes as LigneRappro[]).filter(l => l && typeof l.cle === 'string') : []);
+/* V3.231 : trois d'abord (« pas 40 d'un coup ») ; « Voir les plus anciens » en
+   ajoute cinq à chaque fois, « Replier » revient aux trois derniers. */
+const PREMIERS = 3, ENCORE = 5;
 export function RapprochementsFaits({ liste, prenom, onBien }: { liste: LigneJournal[]; prenom: string; onBien?: (bienVenteId: string) => void }) {
   const [ouverts, setOuverts] = useState<string[] | null>(null);
+  const [nb, setNb] = useState(PREMIERS);
   const premier = liste.find(j => lignesDe(j).length)?.id;
   const estOuvert = (id: string) => (ouverts === null ? id === premier : ouverts.includes(id));
   const basculer = (id: string) => setOuverts(o => { const base = o ?? (premier ? [premier] : []); return base.includes(id) ? base.filter(x => x !== id) : [...base, id]; });
@@ -810,7 +957,7 @@ export function RapprochementsFaits({ liste, prenom, onBien }: { liste: LigneJou
   };
   return (
     <div className={s.rf}>
-      {liste.map(j => {
+      {liste.slice(0, nb).map(j => {
         const l = lignesDe(j);
         const n = Number(j.metadata?.n ?? 0);
         const ouvert = l.length > 0 && estOuvert(j.id);
@@ -850,6 +997,20 @@ export function RapprochementsFaits({ liste, prenom, onBien }: { liste: LigneJou
           </div>
         );
       })}
+      {liste.length > PREMIERS && (
+        <div className={s.plusMoins}>
+          {liste.length > nb && (
+            <button type="button" onClick={() => setNb(n => n + ENCORE)}>
+              <Icone nom="chevron" taille={14} epaisseur={2.4} />{`Voir les plus anciens · ${liste.length - nb}`}
+            </button>
+          )}
+          {nb > PREMIERS && (
+            <button type="button" className={s.plusMoinsR} onClick={() => setNb(PREMIERS)}>
+              <Icone nom="chevron" taille={14} epaisseur={2.4} />{'Replier'}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -863,7 +1024,7 @@ export function RapprochementsFaits({ liste, prenom, onBien }: { liste: LigneJou
    son dossier (sélection, présenté le…, sa réponse), « Pas pour lui », plus
    en vente — ou « La mettre dans sa sélection ». Oui et À voir d'abord, Non
    replié. */
-export function VuDepuisBiens({ liste, prenom, dossier, onBien, onProposer, pose }: {
+export function VuDepuisBiens({ liste, prenom, dossier, onBien, onProposer, pose, etroit }: {
   liste: VuDepuisBien[]; prenom: string;
   /* Ses biens déjà dans son dossier, par bien en vente. */
   dossier: Record<string, EtatDossier>;
@@ -871,8 +1032,12 @@ export function VuDepuisBiens({ liste, prenom, dossier, onBien, onProposer, pose
   onProposer: (v: VuDepuisBien) => void;
   /* Le bien en cours d'ajout. */
   pose: string | null;
+  /* Dans une colonne (l'historique) : la carte s'empile, l'avis dessous. */
+  etroit?: boolean;
 }) {
   const [voirNon, setVoirNon] = useState(false);
+  /* V3.231 : trois par groupe, puis « Voir les N autres ». */
+  const [tous, setTous] = useState<string[]>([]);
   const ligne = (v: VuDepuisBien) => {
     const b = v.bien;
     const titre = b ? b.titre || titreBien(b.donnees || {}) : 'Une affaire supprimée';
@@ -931,9 +1096,16 @@ export function VuDepuisBiens({ liste, prenom, dossier, onBien, onProposer, pose
         {av === 'non'
           ? <button type="button" className={`${s.rfGroupeT} ${s.vuNon}`} aria-expanded={!replie} onClick={() => setVoirNon(o => !o)}>{tete}<em>{replie ? 'Voir pourquoi' : 'Replier'}</em></button>
           : <span className={s.rfGroupeT}>{tete}<em>{av === 'oui' ? `Ils peuvent plaire à ${prenom}.` : 'Un point à vérifier avec lui.'}</em></span>}
-        {!replie && l.map(ligne)}
+        {!replie && (tous.includes(av) ? l : l.slice(0, PREMIERS)).map(ligne)}
+        {!replie && l.length > PREMIERS && (
+          <div className={s.plusMoins}>
+            {tous.includes(av)
+              ? <button type="button" className={s.plusMoinsR} onClick={() => setTous(x => x.filter(y => y !== av))}><Icone nom="chevron" taille={14} epaisseur={2.4} />{'Replier'}</button>
+              : <button type="button" onClick={() => setTous(x => [...x, av])}><Icone nom="chevron" taille={14} epaisseur={2.4} />{`Voir ${pl(l.length - PREMIERS, 'l’autre', `les ${l.length - PREMIERS} autres`)}`}</button>}
+          </div>
+        )}
       </div>
     );
   };
-  return <div className={s.vu}>{(['oui', 'a_voir', 'non'] as const).map(groupe)}</div>;
+  return <div className={`${s.vu} ${etroit ? s.vuEtroit : ''}`}>{(['oui', 'a_voir', 'non'] as const).map(groupe)}</div>;
 }

@@ -513,3 +513,134 @@ div.rfBien { cursor: default; }
   .vuL { flex-wrap: wrap; }
   .vuD { max-width: none; width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; padding-left: 44px; }
 }
+
+/* ══ V3.231 — L'onglet Rapprochement : trois pas, « Où chercher » replié ══════
+   Alexandre : « le où chercher, c'est écrit en gros… des petites cases, plus
+   jolies, plus condensées, pas déplié d'office ». */
+.guideActions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.guideVu {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 4px 4px 4px 5px; border-radius: 99px; cursor: pointer; text-align: left;
+  border: 1px solid #bbf7d0; background: #f0fdf4; color: #166534; font: 700 12.5px/1.35 'DM Sans', sans-serif;
+}
+.guideVuIc { width: 24px; height: 24px; flex-shrink: 0; border-radius: 99px; background: #16a34a; color: #fff; display: inline-flex; align-items: center; justify-content: center; }
+.guideVu > b { flex-shrink: 0; padding: 4px 11px; border-radius: 99px; background: #fff; color: #15803d; font-weight: 800; }
+.guideGo { height: 44px; padding: 0 18px; }
+.guideInfos { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-top: 2px; }
+.guideDernier { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: #64748b; }
+.guideDernier svg { color: #c2621c; flex-shrink: 0; }
+.guideDernier b { color: #25272b; }
+.lanceur { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid #f5f4f4; scroll-margin: 90px; }
+.lanceurT { display: flex; align-items: center; gap: 10px; }
+.lanceurT > b { flex: 1; min-width: 0; font: 800 16px 'Plus Jakarta Sans', sans-serif; color: #25272b; }
+.lanceurIc { width: 32px; height: 32px; flex-shrink: 0; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: #25272b; color: #f9c69f; }
+.lanceurFermer {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 10px; cursor: pointer;
+  border: 1px solid #eaeae9; background: #fff; color: #475569; font: 700 12.5px 'DM Sans', sans-serif;
+}
+/* Voir les plus anciens, replier. */
+.plusMoins { display: flex; flex-wrap: wrap; gap: 8px; }
+.plusMoins > button {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 10px; cursor: pointer;
+  border: 1px dashed #cbd5e1; background: #fafaf9; color: #2e3034; font: 700 12.5px 'DM Sans', sans-serif;
+}
+.plusMoins > .plusMoinsR svg { transform: rotate(180deg); }
+.pas { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; transition: opacity .2s; }
+.pasN {
+  width: 28px; height: 28px; margin-top: 9px; border-radius: 99px; display: inline-flex; align-items: center; justify-content: center;
+  background: #25272b; color: #f9c69f; font: 800 13px 'Plus Jakarta Sans', sans-serif;
+}
+.pasCorps { min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 4px; border-radius: 16px; border: 1px solid #efeeed; background: #fcfcfb; }
+/* Les trois petites cases. */
+.srcs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 0 4px 4px; }
+.srcCase {
+  position: relative; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; border: 1.5px solid #eaeae9; background: #fff;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.srcOn { border-color: #f08c42; background: #fff9f4; box-shadow: 0 0 0 3px rgba(240, 140, 66, .12); }
+.srcHaut {
+  display: grid; grid-template-columns: 20px 30px minmax(0, 1fr) auto; align-items: center; gap: 9px; width: 100%; padding: 0 26px 0 0;
+  border: none; background: none; cursor: pointer; text-align: left; font-family: inherit; color: inherit;
+}
+.srcCoche {
+  width: 20px; height: 20px; box-sizing: border-box; border-radius: 6px; border: 1.8px solid #cbd5e1; background: #fff; color: transparent;
+  display: inline-flex; align-items: center; justify-content: center; transition: background .15s, border-color .15s, color .15s;
+}
+.srcOn .srcCoche { background: #f08c42; border-color: #f08c42; color: #fff; }
+.srcIc { width: 30px; height: 30px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: #f4f3f2; color: #2e3034; transition: background .15s, color .15s; }
+.srcOn .srcIc { background: #25272b; color: #f9c69f; }
+.srcNom { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.srcNom b { font: 800 13.5px/1.25 'Plus Jakarta Sans', sans-serif; color: #25272b; }
+.srcNom small { font-size: 12px; line-height: 1.35; color: #64748b; }
+.srcN { font: 800 17px 'Plus Jakarta Sans', sans-serif; color: #25272b; }
+.srcQ, .quoiQ { position: absolute; top: 8px; right: 8px; display: inline-flex; }
+.srcQ > span, .quoiQ > span { margin-left: 0; }
+.srcPer { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; padding: 2px 4px 2px 6px; }
+.srcPer > span:first-child { display: inline-flex; align-items: center; gap: 6px; font: 700 12.5px 'DM Sans', sans-serif; color: #475569; }
+.srcPer > span:first-child svg { color: #c2621c; }
+/* Quoi montrer. */
+.pasTete2 { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; padding: 8px 10px 0; }
+.pasTete2 > b { font: 800 14.5px 'Plus Jakarta Sans', sans-serif; color: #25272b; white-space: nowrap; }
+.pasTete2 > span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #64748b; }
+.pasTete2 > span svg { color: #c2621c; }
+.quoi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 0 4px 4px; }
+.quoiCase { position: relative; border-radius: 14px; border: 1.5px solid #eaeae9; background: #fff; transition: border-color .15s, background .15s, box-shadow .15s; }
+.quoiOn { border-color: #f08c42; background: #fff9f4; box-shadow: 0 0 0 3px rgba(240, 140, 66, .12); }
+.quoiBtn {
+  display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 11px 38px 11px 12px; border: none; border-radius: inherit; background: none;
+  cursor: pointer; text-align: left; font-family: inherit; color: inherit;
+}
+.quoiBtn:disabled { cursor: default; }
+.quoiRond { flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px; box-sizing: border-box; border-radius: 50%; border: 1.8px solid #cbd5e1; background: #fff; transition: border .15s; }
+.quoiOn .quoiRond { border: 5.5px solid #f08c42; }
+.quoiTx { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.quoiTx b { display: flex; align-items: center; gap: 6px; font: 800 13.5px 'Plus Jakarta Sans', sans-serif; color: #25272b; }
+.quoiTx b svg { color: #c2621c; }
+.quoiTx small { font-size: 12px; line-height: 1.4; color: #64748b; }
+/* Lancer. */
+.pasGo .pasN { background: #f08c42; color: #25272b; }
+.lancerL {
+  min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; padding: 10px 10px 10px 14px; border-radius: 16px;
+  border: 1px solid #f9c8a3; background: linear-gradient(120deg, #fff7f0, #fbf0e9);
+}
+.lancerTx { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lancerTx b { font: 800 14.5px 'Plus Jakarta Sans', sans-serif; color: #25272b; }
+.lancerTx small { font-size: 12.5px; line-height: 1.45; color: #7c4a26; }
+/* Les rapprochements faits : depuis sa fiche, depuis tes biens. */
+.histo { display: flex; flex-direction: column; gap: 8px; }
+.histoO { position: relative; display: flex; gap: 4px; padding: 4px; border-radius: 13px; background: #f4f3f2; }
+.histoO > button {
+  position: relative; z-index: 1; flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; padding: 0 10px;
+  border: none; border-radius: 10px; background: transparent; color: #64748b; cursor: pointer; font: 700 13px 'DM Sans', sans-serif; white-space: nowrap;
+}
+.histoO > button[aria-pressed='true'] { background: #fff; color: #25272b; box-shadow: 0 6px 14px -8px rgba(15, 23, 42, .35); }
+.histoO i {
+  font-style: normal; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 99px; display: inline-flex; align-items: center; justify-content: center;
+  background: #eaeae9; color: #475569; font: 800 11.5px 'Plus Jakarta Sans', sans-serif;
+}
+.histoO > button[aria-pressed='true'] i { background: #f08c42; color: #fff; }
+.histoD { margin: 0; font-size: 12.5px; line-height: 1.5; color: #64748b; }
+.vuEtroit .bcVu { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'bien' 'avis'; gap: 10px; padding: 12px; }
+.vuEtroit .bcAvis { padding: 10px 0 0; border-left: none; border-top: 1px solid #f5f4f4; }
+@media (hover: hover) {
+  .srcCase:not(.srcOn):hover, .quoiCase:not(.quoiOn):hover { border-color: #dad9d8; }
+  .guideVu:hover { background: #dcfce7; }
+  .lanceurFermer:hover { border-color: #dad9d8; color: #25272b; }
+  .plusMoins > button:hover { border-color: #f08c42; background: #fff9f4; }
+  .histoO > button:not([aria-pressed='true']):hover { color: #25272b; }
+}
+@media (max-width: 720px) {
+  /* Au téléphone, le numéro se pose sur le coin de sa case : toute la largeur pour elle. */
+  .pas { position: relative; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .pasN { position: absolute; z-index: 1; top: -7px; left: -5px; width: 22px; height: 22px; margin: 0; font-size: 11.5px; box-shadow: 0 0 0 3px #fff; }
+  .pasTete2 { padding-left: 22px; }
+  .lancerL { padding-left: 22px; }
+  .lanceur { gap: 14px; }
+  .guideTete { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .guideTete > svg { display: block; width: 150px; height: auto; }
+  .guideGo { flex: 1 1 100%; }
+  .lanceurFermer span { display: none; }
+  .srcs, .quoi { grid-template-columns: minmax(0, 1fr); }
+  .lancerL { padding-top: 10px; padding-bottom: 10px; padding-right: 10px; }
+  .lancerL .btn { width: 100%; }
+  .histoO > button { padding: 0 6px; font-size: 12.5px; gap: 5px; }
+}
