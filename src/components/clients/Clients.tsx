@@ -1458,7 +1458,7 @@ export default function Clients({ onNavigate, fenetre }: {
           { cle: 'contact', ico: '👤', nom: pro ? 'Ses coordonnées' : 'Le contact', sous: pro ? 'Qui il est, où il travaille, comment le joindre' : 'Qui il est, comment le joindre' },
           ...(acheteur ? [
             { cle: 'recherche' as const, ico: '🎯', nom: 'Sa recherche', sous: 'Ce qu\'il cherche, et où' },
-            { cle: 'mandat' as const, ico: '📋', nom: 'Le mandat', sous: 'Ce qui vous lie' },
+            { cle: 'mandat' as const, ico: '📋', nom: 'Le mandat', sous: 'Ce qui vous lie, lui et toi' },
           ] : []),
         ];
         const pas = GRANDES[Math.min(step, GRANDES.length - 1)].cle;
@@ -1472,7 +1472,7 @@ export default function Clients({ onNavigate, fenetre }: {
         const allerC = (n: number) => { setSensCrit(n > iC ? 1 : -1); setEtapeCrit(Math.max(0, Math.min(nbC - 1, n))); };
         const changerMode = (m: ModeCrit) => { setModeCrit(m); setEtapeCrit(0); setSensCrit(1); ecrireModeCrit(m); };
         const allerGrande = (n: number) => {
-          if (n > 0 && !form.types.length) { setError('Choisissez d’abord qui est ce contact.'); return; }
+          if (n > 0 && !form.types.length) { setError('Choisis d’abord qui est ce contact.'); return; }
           setError(''); setEtapeCrit(0); setSensCrit(1); setStep(Math.max(0, Math.min(GRANDES.length - 1, n)));
         };
 
@@ -1799,7 +1799,7 @@ export default function Clients({ onNavigate, fenetre }: {
                           color: form.statut === 'actif' ? '#15803d' : '#64748b' }}>
                           {form.statut === 'actif'
                             ? 'La veille cherchera pour ce client dès la création du dossier.'
-                            : 'Aucune veille tant que le dossier n\'est pas « Actif ». Vous pourrez basculer le statut à tout moment depuis sa fiche.'}
+                            : 'Aucune veille tant que le dossier n\'est pas « Actif ». Tu pourras changer le statut à tout moment depuis sa fiche.'}
                         </div>
                         {/* Werner : « Actif » = avec son espace client (src/lib/espace-choix.ts). */}
                         <InterrupteurEspace on={form.statut === 'actif'}
@@ -1812,7 +1812,7 @@ export default function Clients({ onNavigate, fenetre }: {
                       {/* Werner : pas de « Sa situation aujourd’hui » (logement actuel,
                           revente) : c'est l'achat d'un particulier. */}
 
-                      <Bloc ic="crayon" titre={`À savoir sur ${quiC}`} petit="pour vous seul" teinte={OR}>
+                      <Bloc ic="crayon" titre={`À savoir sur ${quiC}`} petit="pour toi seul" teinte={OR}>
                         <textarea className={styles.textarea} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={3} />
                         <span className="nc-aide">{acheteur
                           ? 'Son projet, ce qu’il vous a dit, comment vous vous êtes connus… S’affiche en haut de sa fiche, dans « À savoir ». Les précisions que le client verra se remplissent à l’étape « Sa recherche ».'

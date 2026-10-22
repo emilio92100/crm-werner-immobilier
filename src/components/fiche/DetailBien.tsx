@@ -59,7 +59,7 @@ const PARTIES: { id: string; l: string; i: string; vides: (f: Form) => string[] 
   { id: 'lieu', l: 'Lieu et annonce', i: 'lieu', vides: f => ['titre', 'ville', 'url'].filter(k => vide(f[k])) },
   { id: 'bien', l: 'Le bien', i: 'surface', vides: f => ['surface', 'nb_pieces', 'nb_chambres', 'etage', 'annee_construction', 'exposition'].filter(k => vide(f[k])) },
   { id: 'equipements', l: 'Équipements', i: 'coche', vides: () => [] },
-  { id: 'prix', l: 'Prix et charges', i: 'euro', vides: f => [...(f.bien_vente_id ? [] : ['prix_vendeur']), 'charges_trimestrielles', 'taxe_fonciere'].filter(k => vide(f[k])) },
+  { id: 'prix', l: 'Loyer ou prix, et charges', i: 'euro', vides: f => [...(f.bien_vente_id ? [] : ['prix_vendeur']), 'charges_trimestrielles', 'taxe_fonciere'].filter(k => vide(f[k])) },
   { id: 'energie', l: 'Énergie', i: 'boussole', vides: f => ['dpe'].filter(k => vide(f[k])) },
   { id: 'agence', l: 'Agence', i: 'immeuble', vides: f => (f.est_particulier ? [] : ['agence_nom', 'agence_tel'].filter(k => vide(f[k]))) },
   { id: 'description', l: 'Description', i: 'note', vides: f => ['description'].filter(k => vide(f[k])) },
@@ -398,7 +398,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
               </div>
             </Partie>
 
-            <Partie id="prix" titre="Prix et charges" icone="euro">
+            <Partie id="prix" titre="Loyer ou prix, et charges" icone="euro">
               <div className={s.grille}>
                 {f.bien_vente_id ? (
                   <div className={`${s.mandat} ${s.g4}`}>
@@ -407,7 +407,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
                   </div>
                 ) : (
                   <>
-                    <Champ etiquette="Prix mandant" manque={manque('prix_vendeur')}>
+                    <Champ etiquette="Loyer ou prix, côté mandant" manque={manque('prix_vendeur')}>
                       <Saisie valeur={f.prix_vendeur} onChange={v => set('prix_vendeur', v)} vide={vide(f.prix_vendeur)} unite="€" mode="numeric" />
                     </Champ>
                     <Champ etiquette="Tes honoraires" groupe>
@@ -419,7 +419,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
                         <input inputMode="decimal" value={val(f.commission_val)} onChange={e => set('commission_val', e.target.value)} aria-label="Montant des honoraires" />
                       </span>
                     </Champ>
-                    <Champ etiquette="Prix demandeur" className={s.g2} groupe>
+                    <Champ etiquette="Pour le demandeur" className={s.g2} groupe>
                       <span className={s.prixAcq}>
                         <span>Ce que le client verra</span>
                         <b>{prixAcq ? euros(prixAcq) : '—'}</b>
@@ -433,7 +433,7 @@ export default function DetailBien({ form, setForm, saving, onFermer, onEnregist
                   <Saisie valeur={f.charges_trimestrielles} onChange={v => set('charges_trimestrielles', v)} vide={vide(f.charges_trimestrielles)} unite="€ / trim." mode="numeric" />
                 </Champ>
                 <Champ etiquette="Ce qu’elles comprennent" className={s.g2}>
-                  <Saisie valeur={f.charges_comprises} onChange={v => set('charges_comprises', v)} placeholder="chauffage collectif, gardien, ménage" />
+                  <Saisie valeur={f.charges_comprises} onChange={v => set('charges_comprises', v)} placeholder="eau, entretien des parties communes, taxe foncière refacturée" />
                 </Champ>
                 <Champ etiquette="Taxe foncière" manque={manque('taxe_fonciere')}>
                   <Saisie valeur={f.taxe_fonciere} onChange={v => set('taxe_fonciere', v)} vide={vide(f.taxe_fonciere)} unite="€ / an" mode="numeric" />

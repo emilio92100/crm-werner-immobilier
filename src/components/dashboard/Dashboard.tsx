@@ -230,7 +230,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
           <h1 className={styles.welcomeTitle}>Bonjour, Werner 👋</h1>
           <p className={styles.welcomeSub}>
             {relanceAfaire.length > 0
-              ? <>Vous avez <strong style={{color:'#fca5a5'}}>{relanceAfaire.length} relance{relanceAfaire.length > 1 ? 's' : ''} à faire</strong>{relanceAvenir.length > 0 ? <> et {relanceAvenir.length} à venir</> : null} — bonne journée ! 🌟</>
+              ? <>Tu as <strong style={{color:'#fca5a5'}}>{relanceAfaire.length} relance{relanceAfaire.length > 1 ? 's' : ''} à faire</strong>{relanceAvenir.length > 0 ? <> et {relanceAvenir.length} à venir</> : null} — bonne journée ! 🌟</>
               : relanceAvenir.length > 0
                 ? <>Rien à relancer aujourd&apos;hui — {relanceAvenir.length} relance{relanceAvenir.length > 1 ? 's' : ''} dans les 3 prochains jours. ☀️</>
                 : <>Aucune relance à faire — bonne journée ! ☀️</>
@@ -424,7 +424,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
             {activite.length === 0 ? (
               <div style={{ padding: '24px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 12 }}>
                 {clients.length === 0
-                  ? 'Créez votre premier client pour commencer'
+                  ? 'Crée ton premier contact pour commencer'
                   : 'Aucune activité récente'
                 }
               </div>
@@ -446,8 +446,8 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
           {clients.length === 0 && (
             <div style={{ background: 'var(--emilio-fond)', borderRadius: 16, padding: 16 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#f08c42', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>🚀 Pour commencer</div>
-              <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 13, color: 'white', marginBottom: 4 }}>Créez votre premier contact</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Ajoutez vos demandeurs et vos affaires pour commencer !</div>
+              <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 13, color: 'white', marginBottom: 4 }}>Crée ton premier contact</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>Ajoute tes demandeurs et tes affaires pour commencer.</div>
               <button
                 onClick={() => onNavigate('clients')}
                 style={{ width: '100%', background: '#f08c42', color: 'var(--emilio)', border: 'none', borderRadius: 8, padding: '8px 0', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}

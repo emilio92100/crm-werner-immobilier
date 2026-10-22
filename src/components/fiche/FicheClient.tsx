@@ -849,14 +849,14 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
       </div>
 
       {/* ===== PRIX & CHARGES ===== */}
-      <div style={sectionTitle}>💰 Prix & Charges</div>
+      <div style={sectionTitle}>💰 Loyer ou prix, et charges</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
         <div>
-          <label className={styles.lbl}>Prix mandant €</label>
+          <label className={styles.lbl}>Loyer annuel HT HC ou prix, côté mandant €</label>
           <input className={styles.inp} type="number" value={bienForm.prix_vendeur||''} onChange={e => set('prix_vendeur', e.target.value)} />
         </div>
         <div>
-          <label className={styles.lbl}>Commission</label>
+          <label className={styles.lbl}>Tes honoraires</label>
           <div style={{ display: 'flex', gap: 6 }}>
             <select className={styles.inp} style={{ width: 80 }} value={bienForm.commission_type||'pourcentage'} onChange={e => set('commission_type', e.target.value)}>
               <option value="pourcentage">%</option>
@@ -866,13 +866,13 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
           </div>
         </div>
         <div>
-          <label className={styles.lbl}>Prix demandeur (honoraires inclus)</label>
+          <label className={styles.lbl}>Pour le demandeur (honoraires inclus)</label>
           <div className={styles.inp} style={{ background: '#fef9c3', color: '#854d0e', fontWeight: 700 }}>
             {prixAcq ? `${prixAcq.toLocaleString('fr-FR')}€` : '—'}
           </div>
         </div>
         <div>
-          <label className={styles.lbl}>Prix au m²</label>
+          <label className={styles.lbl}>Au m²</label>
           <div className={styles.inp} style={{ background: '#f8fafc', color: '#64748b' }}>
             {prixAcq && bienForm.surface ? `${Math.round(prixAcq / parseFloat(bienForm.surface)).toLocaleString('fr-FR')}€/m²` : '—'}
           </div>
@@ -883,7 +883,7 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
         </div>
         <div>
           <label className={styles.lbl}>Compris dans les charges</label>
-          <input className={styles.inp} value={bienForm.charges_comprises||''} onChange={e => set('charges_comprises', e.target.value)} placeholder="chauffage collectif, gardien, ménage" />
+          <input className={styles.inp} value={bienForm.charges_comprises||''} onChange={e => set('charges_comprises', e.target.value)} placeholder="eau, entretien des parties communes, taxe foncière refacturée" />
         </div>
         <div>
           <label className={styles.lbl}>Taxe foncière annuelle €</label>

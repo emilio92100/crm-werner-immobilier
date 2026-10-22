@@ -841,8 +841,8 @@ export default function PageRelances({ onNavigate, seulTri = false, cherche = ''
             const nomC = acheteur ? [a.client?.prenom, a.client?.nom].filter(Boolean).join(' ') || 'Un demandeur' : '';
             const m0 = acheteur ? a.mandats[0] : null;
             const titre = acheteur
-              ? (a.mandats.length > 1 ? `${nomC} correspond à ${a.mandats.length} de vos affaires, jusqu’à ${m0!.note}\u00a0%` : `${nomC} correspond à votre « ${m0!.titre} »${m0!.ville ? ` à ${m0!.ville}` : ''} · ${m0!.note}\u00a0%`)
-              : `Votre affaire « ${a.titre} »${a.bien.ville ? ` à ${a.bien.ville}` : ''} intéresse ${a.n > 1 ? `${a.n} de vos demandeurs` : 'un de vos demandeurs'}`;
+              ? (a.mandats.length > 1 ? `${nomC} correspond à ${a.mandats.length} de tes affaires, jusqu’à ${m0!.note}\u00a0%` : `${nomC} correspond à ton affaire « ${m0!.titre} »${m0!.ville ? ` à ${m0!.ville}` : ''} · ${m0!.note}\u00a0%`)
+              : `Ton affaire « ${a.titre} »${a.bien.ville ? ` à ${a.bien.ville}` : ''} intéresse ${a.n > 1 ? `${a.n} de tes demandeurs` : 'un de tes demandeurs'}`;
             const j = Math.max(0, Math.floor((Date.now() - Date.parse(a.le)) / 86400000));
             const quand = j === 0 ? 'aujourd’hui' : j === 1 ? 'hier' : `il y a ${j} jours`;
             const autres = acheteur ? 0 : a.n - a.noms.length;
