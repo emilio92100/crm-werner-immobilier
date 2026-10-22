@@ -6,21 +6,22 @@
 
    1. L'ÉTAT de la signature en ligne de cette recherche : signé (avec le PDF),
       en cours (le client a demandé son code), ou rétracté.
-   2. « FAIRE SIGNER LE MANDAT » : Alexandre choisit le type, ses honoraires
-      — un pourcentage (2,5 % par défaut, jusqu'à 5 %, son barème) ou un
-      forfait en euros, jamais au-dessus de ce barème — colle le numéro réservé dans ImmoFacile (ou
-      prend le suivant de sa réserve), et propose. Son clic vaut signature de
+   2. « FAIRE SIGNER LE MANDAT » : Werner choisit ses honoraires — un
+      pourcentage (2,5 % HT par défaut, du loyer annuel HT HC pour un bail, du
+      prix pour une cession ou une vente ; il le change à son gré, jusqu'à
+      BAREME) ou un forfait en euros HT —, et propose. Le numéro vient du
+      registre commun de RT CONSEILS quand le client demande son code. Son clic vaut signature de
       l'offre pour l'agence (la date est gardée). Le client voit aussitôt
       « Votre mandat est prêt » dans son espace ; « Envoyer par e-mail » lui
       envoie le lien direct (…?mandat=1). « Aperçu » montre le PDF exact,
       filigrané « PROJET · NON SIGNÉ ».
-   3. LA RÉSERVE DE NUMÉROS, pour les clients qui signent seuls au clic « Je
-      souhaite le visiter » : quelques numéros réservés d'avance dans
-      ImmoFacile, plus l'approbation du mandat type (la signature de l'agence
-      pour ces mandats-là). Et la signature manuscrite posée sur les PDF.
+   3. L'APPROBATION DU MANDAT TYPE, pour les demandeurs qui signent seuls au
+      clic « Je souhaite le visiter » (la signature de l'agence pour ces
+      mandats-là). La réserve de numéros d'avant le registre reste pour un
+      registre non démarré. Et la signature manuscrite posée sur les PDF.
 
-   ⚠️ Un seul registre des mandats pour toute l'agence, celui d'ImmoFacile :
-   pas de numérotation « maison » (Cass. 1re civ., 10 décembre 2014).
+   ⚠️ Un seul registre des mandats pour toute la carte de RT CONSEILS : le
+   registre commun, tenu dans le CRM d'Emilio (Cass. 1re civ., 10 décembre 2014).
    ════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -35,6 +36,7 @@ import {
 import { CLE_IDENTITE, lireIdentite } from '@/lib/agence';
 import { contenuApresAvenants } from '@/lib/actes/avenant-recherche';
 import { signalerEchec } from '@/lib/ecritures';
+import Aide from '@/components/shared/Aide';
 import { etatLigne, lireDepart, numeroAncien, observer, prochainNumero, type ObsRegistre } from '@/lib/registre';
 import { mandatRechercheEnCours, phraseMandat, type MandatEnCours } from '@/lib/coherence';
 import { exemplaireManquant, lienFichier, nomFichier, rappelExemplaire, type DocumentRow } from '@/components/documents/outils';
@@ -135,7 +137,7 @@ type EtatNumero = 'ancien' | 'ouvert' | 'fini' | null;
    null s'il n'en sait rien. */
 type Retrait = {
   commence: Sig | null; duRegistre: boolean; seulEncore: boolean; numero: string;
-  /* Le numéro vient d'ImmoFacile (pas de registre, ou un numéro d'avant
+  /* Le numéro vient d'un registre tenu à la main (pas de registre, ou un numéro d'avant
      lui) : c'est là qu'il faut le marquer « clos sans suite ». */
   immoFacile: boolean;
   emails: string[]; informe: string | null;
@@ -253,6 +255,8 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
   const tauxN = lireTaux(taux);
   const tauxOk = tauxN > 0 && tauxN <= BAREME;
   const budget = typeof recherche?.budget_max === 'number' ? recherche.budget_max : null;
+  /* Werner : son loyer annuel maximum HT HC (recherches.criteres_pro). */
+  const loyerMax = rechercheDepuis(recherche || {}).loyerMax || null;
   const pmax = tauxOk ? prixMaximum(budget, tauxN) : null;
   /* Le forfait : jamais au-dessus du barème au prix maximum. */
   const forfaitN = forfaitDe(forfait);
@@ -373,7 +377,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
     /* Le registre démarré : on garde un numéro d'avant lui, ou celui d'une
        signature commencée ; sinon, il donnera le suivant. */
     const n = registre ? (registre.numero === 'ancien' || registre.numero === 'ouvert' ? (recherche?.mandat_numero || '').trim() : '') : numero.trim();
-    if (!n && !registre) { setMsg({ t: 'Colle d’abord le numéro réservé dans ImmoFacile, ou prends le suivant de ta réserve.', ok: false }); return; }
+    if (!n && !registre) { setMsg({ t: 'Colle d’abord le numéro réservé dans le registre des mandats, ou prends le suivant de ta réserve.', ok: false }); return; }
     if (!honoOk) {
       setMsg({ t: mode === 'forfait'
         ? `Le forfait ne peut pas dépasser ton barème (${ecrireTaux(BAREME)} % du montant maximum).`
@@ -576,7 +580,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
      signature, le prochain numéro du registre. */
   async function prendreDuRegistre() {
     const n = recherche?.mandat_numero;
-    if (!n || !confirm(`Laisser le n° ${n} et prendre le prochain numéro du registre ?\n\nLe n° ${n} ne servira plus : pense à le marquer « sans suite » dans ImmoFacile.`)) return;
+    if (!n || !confirm(`Laisser le n° ${n} et prendre le prochain numéro du registre ?\n\nLe n° ${n} ne servira plus : pense à le marquer « sans suite » dans le registre où il a été réservé.`)) return;
     setTravail('registre');
     const { data, error } = await supabase.from('recherches')
       .update({ mandat_numero: null, updated_at: new Date().toISOString() })
@@ -754,7 +758,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
           ...(f.commence ? [{ ic: 'pause', ton: 'alerte' as const, t: `${P} avait commencé à le signer : cette signature s’arrête, son code ne fonctionne plus.` }] : []),
           ...(f.seulEncore ? [{ ic: 'info', t: `Ton mandat type est approuvé : s’il demande une visite, son espace lui proposera quand même de signer un mandat${f.commence ? ' (une signature toute neuve)' : ''}.` }] : []),
           ...(f.duRegistre ? [{ ic: 'doc', t: `Le n° ${n} est noté « sans suite » dans le registre des mandats.` }]
-            : n && f.immoFacile ? [{ ic: 'doc', ton: 'alerte' as const, t: `Le n° ${n} est libéré sur cette fiche : pense à le marquer « clos sans suite » dans ImmoFacile.` }] : []),
+            : n && f.immoFacile ? [{ ic: 'doc', ton: 'alerte' as const, t: `Le n° ${n} est libéré sur cette fiche : pense à le marquer « clos sans suite » dans le registre où il a été réservé.` }] : []),
           f.emails.length
             ? (coche
               ? { ic: 'mail', ton: 'ok' as const, t: `${P} reçoit un e-mail simple, à ton nom : la proposition est retirée, rien à faire de son côté.` }
@@ -781,7 +785,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
       {sig?.statut === 'retracte' && (
         <div style={boite('#fef2f2', '#fecaca', '#991b1b')}>
           <b>{`↩️ Mandat n° ${sig.numero} rétracté`}</b>
-          <div>{`Le client a renoncé en ligne le ${sig.retracte_le ? quand(sig.retracte_le) : '—'}. ${registre && Number(sig.numero) >= registre.premier ? 'C’est noté tout seul dans le registre des mandats.' : 'Note-le dans le registre ImmoFacile.'}`}</div>
+          <div>{`Le client a renoncé en ligne le ${sig.retracte_le ? quand(sig.retracte_le) : '—'}. ${registre && Number(sig.numero) >= registre.premier ? 'C’est noté tout seul dans le registre des mandats.' : 'Note-le dans le registre où ce numéro a été réservé.'}`}</div>
           {sig.pdf_chemin && <button type="button" style={{ ...btn, marginTop: 10 }} onClick={voirPdf}>📄 Voir le mandat signé</button>}
         </div>
       )}
@@ -819,7 +823,14 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
       {/* 2 — Faire signer le mandat */}
       {!valide && (
         <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14 }}>
-          <div style={titreBloc}>Faire signer le mandat</div>
+          <div style={{ ...titreBloc, display: 'flex', alignItems: 'center' }}>
+            Faire signer le mandat
+            <Aide titre="Faire signer le mandat, en 3 temps">
+              <span>{'1. Choisis les honoraires juste en dessous (2,5 % par défaut).'}</span>
+              <span>{'2. « Proposer au client » : le mandat se génère avec ces honoraires et sa recherche, et apparaît aussitôt dans son espace (« Votre mandat est prêt »). « Aperçu » te montre le PDF exact avant.'}</span>
+              <span>{'3. « Envoyer par e-mail » lui donne le lien. Il relit, remplit son identité ou celle de sa société, reçoit un code et signe. Tu reçois un mail, le mandat signé arrive ici et dans Documents.'}</span>
+            </Aide>
+          </div>
           {docMandat && (
             <div style={{ ...boite('#fffbeb', '#fde68a', '#92400e'), marginBottom: 12 }}>
               <b>📄 Un mandat de recherche est déjà en route dans Documents</b>
@@ -830,7 +841,15 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
             <span style={{ ...btn, borderColor: '#f08c42', background: '#fdf6f1', cursor: 'default' }}>✓ Simple</span>
             <span style={{ ...btn, color: '#94a3b8', cursor: 'not-allowed' }} title="Bientôt : il faut d’abord reprendre ton modèle exclusif">Exclusif · bientôt</span>
           </div>
-          <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>Honoraires (HT, à la charge du demandeur)</label>
+          <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center' }}>
+            Honoraires (HT, à la charge du demandeur)
+            <Aide titre="Les honoraires">
+              <span>{'Pourcentage : 2,5 % par défaut. Il s’applique au loyer annuel HT HC de la première année pour un bail, ou au prix pour une cession de droit au bail, un fonds ou des murs. Tape un autre taux si besoin.'}</span>
+              <span>{'Forfait : un montant fixe en euros HT, quel que soit le loyer ou le prix.'}</span>
+              <span>{'Rien n’est dû si le local est proposé par une autre agence qui partage ses honoraires ; sinon, ils sont payés à la signature du bail ou de l’acte, jamais avant.'}</span>
+              <span>{'Déjà proposé ? Change ici, « Mettre à jour », puis renvoie-lui le mail : il relira la nouvelle version avant de signer.'}</span>
+            </Aide>
+          </label>
           <div style={{ display: 'flex', width: 'fit-content', marginTop: 5, border: '1px solid #e2e8f0', borderRadius: 10, padding: 3, gap: 3, background: '#f8fafc' }}>
             {([['taux', 'Pourcentage'], ['forfait', 'Forfait']] as const).map(([m, l]) => (
               <button key={m} type="button" onClick={() => setMode(m)}
@@ -848,19 +867,21 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
                     onChange={e => setTaux(e.target.value)} aria-label="Taux des honoraires" />
                   <span style={{ position: 'absolute', right: 10, top: 9, color: '#94a3b8', fontWeight: 700 }}>%</span>
                 </div>
-                {[5, 2.5, 2, 1.5].map(t => (
+                {[2.5, 5, 10, 15].map(t => (
                   <button key={t} type="button" onClick={() => setTaux(ecrireTaux(t))}
                     style={{ ...btn, padding: '7px 11px', border: `1px solid ${tauxN === t ? '#f08c42' : '#e2e8f0'}`, background: tauxN === t ? '#fdf6f1' : '#fff' }}>
-                    {`${ecrireTaux(t)} %${t === BAREME ? ' · barème' : ''}`}
+                    {`${ecrireTaux(t)} %${t === HONORAIRES_TAUX ? ' · par défaut' : ''}`}
                   </button>
                 ))}
               </div>
               <div style={{ fontSize: 12.5, color: tauxOk ? '#475569' : '#b91c1c', marginTop: 6, lineHeight: 1.5 }}>
                 {!tauxOk
-                  ? `Entre 0 et ${ecrireTaux(BAREME)} % : ton barème est un maximum.`
-                  : pmax && budget
-                    ? `Budget ${euros(budget)} → montant maximum ${euros(pmax)} hors honoraires, soit ${euros(honorairesPour(pmax, tauxN) || 0)} d’honoraires.`
-                    : `${tauxTexte(tauxN)} du montant de l’affaire.`}
+                  ? `Entre 0 et ${ecrireTaux(BAREME)} %.`
+                  : [
+                    `${tauxTexte(tauxN)} du loyer annuel HT HC d’un bail, ou du prix d’une cession ou d’une vente.`,
+                    loyerMax ? `Sur son loyer maximum (${euros(loyerMax)} HT HC / an) : ${euros(Math.round((loyerMax * tauxN) / 100))} HT.` : '',
+                    pmax && budget ? `Sur son prix maximum (${euros(pmax)} hors honoraires) : ${euros(honorairesPour(pmax, tauxN) || 0)} HT.` : '',
+                  ].filter(Boolean).join(' ')}
               </div>
             </>
           ) : (
@@ -874,12 +895,10 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
               </div>
               <div style={{ fontSize: 12.5, color: forfaitOk || !forfait.trim() ? '#475569' : '#b91c1c', marginTop: 6, lineHeight: 1.5 }}>
                 {!forfaitN
-                  ? `Un montant fixe, en euros HT.${forfaitMax ? ` Au plus ${euros(forfaitMax)} pour ce budget (ton barème, ${ecrireTaux(BAREME)} % du montant maximum).` : ''}`
+                  ? `Un montant fixe, en euros HT, quel que soit le loyer ou le prix.${forfaitMax ? ` Au plus ${euros(forfaitMax)} pour son budget de cession ou d’achat.` : ''}`
                   : !forfaitOk
-                    ? `Au-dessus de ton barème : pour ce budget, le forfait ne peut pas dépasser ${forfaitMax ? euros(forfaitMax) : `${ecrireTaux(BAREME)} % du montant`}.`
-                    : pmaxF
-                      ? `Budget ${euros(budget || 0)} → montant maximum ${euros(pmaxF)} hors honoraires ; ${euros(forfaitN)} = ${pourcentDe(forfaitN, pmaxF)} de ce montant. Le mandat précise que, sous ${euros(seuilForfait(forfaitN))}, il est ramené à ${ecrireTaux(BAREME)} %.`
-                      : `Le mandat précise que, sous ${euros(seuilForfait(forfaitN))}, il est ramené à ${ecrireTaux(BAREME)} %.`}
+                    ? `Trop haut pour son budget : le forfait ne peut pas dépasser ${forfaitMax ? euros(forfaitMax) : `${ecrireTaux(BAREME)} % du montant`}.`
+                    : `${euros(forfaitN)} HT, TVA en sus, dus à la signature du bail ou de l’acte.`}
               </div>
             </>
           )}
@@ -901,9 +920,12 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
                       </button>
                     </>)
                 : `Le numéro sera pris dans le registre des mandats quand ${client.prenom || 'le client'} demandera son code de signature (le prochain est le ${registre.prochain}) : il figurera sur son exemplaire avant qu’il signe.`}
+              <Aide titre="Le numéro du mandat">
+                <span>{'Rien à faire : le numéro vient du registre des mandats de RT CONSEILS, partagé avec Alexandre, au moment où le client demande son code. Il est inscrit sur le mandat avant qu’il signe, et la ligne apparaît dans Documents › Registre des mandats.'}</span>
+              </Aide>
             </div>
           ) : (
-            <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginTop: 12 }}>N° réservé dans le registre ImmoFacile</label>
+            <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginTop: 12 }}>N° réservé dans le registre des mandats</label>
           )}
           <div style={{ display: 'flex', gap: 8, marginTop: registre ? 10 : 5, flexWrap: 'wrap' }}>
             {!registre && <input style={{ ...champ, maxWidth: 160 }} value={numero} onChange={e => setNumero(e.target.value)} placeholder="ex. 997" inputMode="numeric" />}
@@ -945,7 +967,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
       <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14 }}>
         <button type="button" onClick={() => setVoirReserve(v => !v)}
           style={{ ...titreBloc, background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-          <span>Pour les clients qui signent seuls</span>
+          <span>Pour les clients qui signent seuls · aussi dans Paramètres › Agence</span>
           <span style={{ color: (registre || reste > 2) && approuveLe ? '#15803d' : '#c05d12' }}>
             {!approuveLe ? 'non activé' : registre ? 'numéros du registre' : `${reste} numéro${reste > 1 ? 's' : ''} d’avance`} {voirReserve ? '▴' : '▾'}
           </span>
@@ -959,7 +981,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
             ) : (
               <>
                 <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.55 }}>
-                  Réserve quelques numéros dans ImmoFacile et colle-les ici. Un client qui clique « Je souhaite le visiter » sans mandat préparé prend le premier libre, signe tout de suite, et tu reçois un mail pour reporter le nom dans le registre.
+                  Réserve quelques numéros dans le registre des mandats et colle-les ici. Un client qui clique « Je souhaite le visiter » sans mandat préparé prend le premier libre, signe tout de suite, et tu reçois un mail pour reporter le nom dans le registre.
                 </div>
                 <input style={champ} value={reserve} onChange={e => setReserve(e.target.value)} placeholder="ex. 997, 998, 999" />
               </>
@@ -981,7 +1003,15 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
       </div>
 
       {msg && <div style={boite(msg.ok ? '#f0fdf4' : '#fef2f2', msg.ok ? '#bbf7d0' : '#fecaca', msg.ok ? '#166534' : '#991b1b')}>{msg.t}</div>}
-      {!valide && <div style={{ ...titreBloc, marginTop: 6 }}>Ou saisir un mandat signé ailleurs</div>}
+      {!valide && (
+        <div style={{ ...titreBloc, marginTop: 6, display: 'flex', alignItems: 'center' }}>
+          Ou saisir un mandat signé ailleurs
+          <Aide titre="Un mandat signé ailleurs">
+            <span>{'Un mandat signé sur papier ou dans un autre outil : note sa date, sa durée et ses honoraires ici, pour que la fiche et les relances le connaissent.'}</span>
+            <span>{'Pour un mandat préparé dans le CRM et signé sur place ou à distance : Documents › Créer un document › Mandat de recherche.'}</span>
+          </Aide>
+        </div>
+      )}
     </div>
   );
 }

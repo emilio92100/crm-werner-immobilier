@@ -8,6 +8,7 @@ import {
   type Bloc, type Champ, type Fonds, type IdentiteAgence, type Modif,
 } from '@/lib/agence';
 import { BAREME, BAREME_VENTE, HONORAIRES_TAUX, tauxTexte } from '@/lib/mandat';
+import Aide from '@/components/shared/Aide';
 
 /* ═══ Paramètres · Agence ═════════════════════════════════════════════════
    L'identité de l'agence que les documents impriment (src/lib/agence.ts).
@@ -16,6 +17,8 @@ import { BAREME, BAREME_VENTE, HONORAIRES_TAUX, tauxTexte } from '@/lib/mandat';
    datée, avec l'ancienne et la nouvelle valeur. */
 
 const SIGNATURE = 'agence/signature.png';
+/* L'approbation du mandat de recherche type (la même clé que MandatEnLigne). */
+const CLE_APPROBATION = 'mandat_modele_approuve_le';
 const NAVY = '#2e3034', OR = '#f08c42', OR_FONCE = '#c2621c', GRIS = '#64748b', GRIS_CLAIR = '#94a3b8', TRAIT = '#eaeae9';
 
 const jourLong = (ymd: string) => new Date(ymd.slice(0, 10) + 'T12:00:00Z')
@@ -111,10 +114,16 @@ export default function ParamAgence() {
   const [voirHisto, setVoirHisto] = useState(false);
   const [signature, setSignature] = useState<string | null | undefined>(undefined);   // url signée, null = aucune
   const fichier = useRef<HTMLInputElement>(null);
+  /* 22 octobre 2026 — le mandat type, réglé ici une fois pour toutes. */
+  const [approuveLe, setApprouveLe] = useState<string | null>(null);
+  const [approuve, setApprouve] = useState(false);
+  const [noteMandat, setNoteMandat] = useState<{ t: string; ok: boolean } | null>(null);
 
   const charger = useCallback(async () => {
-    const { data, error } = await supabase.from('parametres').select('cle, valeur').in('cle', [CLE_IDENTITE, CLE_HISTORIQUE]);
+    const { data, error } = await supabase.from('parametres').select('cle, valeur').in('cle', [CLE_IDENTITE, CLE_HISTORIQUE, CLE_APPROBATION]);
     if (error) { setErreurLecture(error.message); return; }
+    const ap = data?.find(x => x.cle === CLE_APPROBATION)?.valeur || null;
+    setApprouveLe(ap); setApprouve(!!ap);
     const brut = data?.find(x => x.cle === CLE_IDENTITE)?.valeur ?? null;
     const id = lireIdentite(brut);
     setJamais(!brut);
@@ -130,6 +139,19 @@ export default function ParamAgence() {
   }, []);
 
   useEffect(() => { charger(); chargerSignature(); }, [charger, chargerSignature]);
+
+  async function enregistrerApprobation() {
+    setEnCours('approbation'); setNoteMandat(null);
+    const maintenant = new Date().toISOString();
+    const valeur = approuve ? (approuveLe || maintenant) : '';
+    const { error } = await supabase.from('parametres').upsert({ cle: CLE_APPROBATION, valeur, updated_at: maintenant }, { onConflict: 'cle' });
+    setEnCours('');
+    if (error) { setNoteMandat({ t: 'Pas enregistré : ' + error.message, ok: false }); return; }
+    setApprouveLe(valeur || null);
+    setNoteMandat(approuve
+      ? { t: 'Enregistré. Un demandeur sans mandat peut maintenant signer seul le mandat type, depuis son espace, quand il demande une visite : 2,5 % HT, ou le taux que tu as mis sur sa fiche. Tu reçois un mail à chaque signature.', ok: true }
+      : { t: 'Enregistré. Les demandeurs ne signent plus seuls : tu leur proposes le mandat depuis leur fiche.', ok: true });
+  }
 
   const erreurs = useMemo(() => aRevoir(brouillon), [brouillon]);
   const modifs = useMemo(() => enregistree ? ecarts(enregistree, brouillon) : [], [enregistree, brouillon]);
@@ -286,21 +308,46 @@ export default function ParamAgence() {
 
       {/* Les honoraires : lus ici, réglés client par client */}
       <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 22 }}>
-        <TeteBloc e="💶" titre="Honoraires" sert="Ce que chaque type de mandat propose, et jusqu’où tu peux aller." />
+        <TeteBloc e="💶" titre="Honoraires et mandat de recherche" sert="Ce que le mandat de recherche propose d’office, et le mandat type qu’un demandeur peut signer seul." />
         <div className={styles.param2} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {[
-            ['Mandat de recherche', `${tauxTexte(HONORAIRES_TAUX)} du montant`, `Proposé par défaut · tu peux aller jusqu’à ${tauxTexte(BAREME)}`],
-            ['Mandat de location ou vente', `${tauxTexte(BAREME_VENTE)} du montant`, 'Pour les mandats de location ou de vente, à venir'],
+            ['Mandat de recherche', `${tauxTexte(HONORAIRES_TAUX)} par défaut`, `Du loyer annuel HT HC d’un bail, ou du prix d’une cession ou d’une vente · modifiable pour chaque demandeur, jusqu’à ${tauxTexte(BAREME)}`],
+            ['Mandat de commercialisation', 'Dans le document', 'Taux ou forfait, HT ou TTC, choisis en préparant le mandat (Documents)'],
           ].map(([t, v, d]) => (
             <div key={t} style={{ background: '#f8fafc', border: `1px solid ${TRAIT}`, borderRadius: 11, padding: '10px 12px' }}>
               <div style={{ fontSize: 11.5, fontWeight: 700, color: GRIS_CLAIR, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t}</div>
               <div style={{ fontSize: 15, fontWeight: 800, color: NAVY, marginTop: 3 }}>{v}</div>
-              <div style={{ fontSize: 12, color: GRIS, marginTop: 2 }}>{d}</div>
+              <div style={{ fontSize: 12, color: GRIS, marginTop: 2, lineHeight: 1.45 }}>{d}</div>
             </div>
           ))}
         </div>
         <div style={{ fontSize: 12.5, color: GRIS, lineHeight: 1.55, marginTop: 10 }}>
-          {'Pour un demandeur, tu choisis le taux ou un forfait depuis sa fiche (bouton Mandat). Ces valeurs deviendront modifiables ici avec les mandats de location ou de vente : elles entrent dans le calcul du prix maximum de chaque mandat.'}
+          {'Pour un demandeur, tu changes le taux ou choisis un forfait sur sa fiche : sa recherche › « Mandat de recherche ».'}
+          <Aide titre="Changer les honoraires d’un demandeur">
+            <span>{'Ouvre sa fiche, puis sa recherche, puis « Mandat de recherche ». Choisis « Pourcentage » (2,5 %, 5 %, 10 %, 15 % ou le taux que tu tapes) ou « Forfait » (un montant en euros HT).'}</span>
+            <span>{'« Proposer au client » : il voit aussitôt « Votre mandat est prêt » dans son espace, avec ces honoraires. Déjà proposé ? « Mettre à jour », puis renvoie-lui le mail.'}</span>
+          </Aide>
+        </div>
+
+        <div style={{ borderTop: `1px solid ${TRAIT}`, marginTop: 16, paddingTop: 14 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, color: NAVY, display: 'flex', alignItems: 'center' }}>
+            {'Le mandat type, signé seul par le demandeur'}
+            <Aide titre="Le mandat type">
+              <span>{'Sans lui, un demandeur ne signe un mandat que si tu le lui as proposé depuis sa fiche.'}</span>
+              <span>{'Avec lui : quand un demandeur sans mandat clique « Je souhaite le visiter » dans son espace, on lui propose de signer le mandat de recherche simple, au taux par défaut (ou celui de sa fiche). Il remplit son identité ou celle de sa société, reçoit un code par mail et signe. Le numéro vient du registre commun ; tu reçois un mail.'}</span>
+              <span>{'Ton approbation vaut signature de l’offre au nom de l’agence pour ces mandats-là. Tu peux la retirer à tout moment.'}</span>
+            </Aide>
+          </div>
+          <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, color: NAVY, lineHeight: 1.5, cursor: 'pointer', marginTop: 10 }}>
+            <input type="checkbox" checked={approuve} onChange={e => setApprouve(e.target.checked)} style={{ marginTop: 3, accentColor: '#f08c42' }} />
+            <span>{`J’approuve le mandat de recherche simple type, et je signe l’offre au nom de l’agence pour les mandats que les demandeurs signent seuls.${approuveLe ? ` (approuvé le ${new Date(approuveLe).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: 'numeric', month: 'long', year: 'numeric' })})` : ''}`}</span>
+          </label>
+          <button type="button" className={styles.btn} disabled={enCours === 'approbation' || approuve === !!approuveLe} onClick={() => { void enregistrerApprobation(); }} style={{ marginTop: 10 }}>
+            {enCours === 'approbation' ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+          {noteMandat && (
+            <div style={{ marginTop: 10, fontSize: 12.5, lineHeight: 1.5, padding: '9px 12px', borderRadius: 10, background: noteMandat.ok ? '#f0fdf4' : '#fef2f2', color: noteMandat.ok ? '#166534' : '#991b1b', border: `1px solid ${noteMandat.ok ? '#bbf7d0' : '#fecaca'}` }}>{noteMandat.t}</div>
+          )}
         </div>
       </div>
 

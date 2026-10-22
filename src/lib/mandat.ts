@@ -6,8 +6,17 @@
    exactement ce qu'il signe. Aucune dépendance serveur ici — il est importé
    des deux côtés.
 
-   Le texte reprend le modèle Modelo d'Alexandre (« Mandat de recherche simple
-   d'un bien à acquérir », via ImmoFacile), avec les réponses qu'il a choisies :
+   Werner (22 octobre 2026) : le mandat de recherche d'un DEMANDEUR — une
+   entreprise, un commerçant qui cherche un local à prendre à bail, un droit
+   au bail ou un fonds à reprendre, des murs à acheter. Honoraires : 2,5 % HT
+   par défaut, du loyer annuel HT HC pour un bail, du prix pour une cession
+   ou une vente ; Werner les change à chaque mandat (Alexandre : « 2,5 % du
+   prix, du loyer ou autre, qu'il ait le choix de modifier lui-même »),
+   jusqu'à BAREME. Payés à la signature du bail ou de l'acte, jamais avant.
+   ⚠️ À faire relire par l'avocat avant le premier usage réel.
+
+   Le texte d'origine reprenait le modèle Modelo d'Alexandre (« Mandat de
+   recherche simple d'un bien à acquérir »), avec les réponses qu'il a choisies :
 
      · mandat NON exclusif ;
      · durée « inférieure à 3 mois avec tacite reconduction » : 30 jours,
@@ -28,11 +37,12 @@
        de rétractation, renonciation possible en ligne (obligatoire depuis le
        19 juin 2026 pour un contrat conclu sur une interface en ligne).
 
-   ⚠️ Le numéro du mandat est celui qu'Alexandre RÉSERVE dans son registre
-   ImmoFacile. Il n'y a qu'un registre pour toute l'agence : un second registre
-   « maison » rendrait le mandat nul et les honoraires non dus (Cass. 1re civ.,
-   10 décembre 2014, n° 13-24.352). Le numéro doit figurer sur le mandat AVANT
-   la signature : sans lui, l'espace ne propose pas de signer.
+   ⚠️ Le numéro du mandat vient du registre des mandats de RT CONSEILS, le
+   registre commun tenu dans le CRM d'Emilio (src/lib/registre-commun.ts) :
+   un seul registre pour toute la carte, un second rendrait le mandat nul et
+   les honoraires non dus (Cass. 1re civ., 10 décembre 2014, n° 13-24.352).
+   Le numéro est pris quand le demandeur demande son code, et figure sur le
+   mandat AVANT la signature.
    ════════════════════════════════════════════════════════════════════════ */
 
 /* L'identité de l'agence (société, carte, assurance, médiateur, signataire,
@@ -43,11 +53,14 @@
    avoir ADHÉRÉ avant la première signature. */
 import { IDENTITE_DEFAUT, lignesMandataire, phraseFonds, type IdentiteAgence } from './agence';
 
-/* Les honoraires, tels qu'Alexandre les fixe : un mandat de recherche part
-   de 2,5 % TTC, et il peut monter jusqu'à 5 % quand il le décide avec son
-   client (c'est lui qui choisit, pas le CRM). Un mandat de vente : 5 % TTC. */
-export const HONORAIRES_TAUX = 2.5;          // % TTC du prix : le taux proposé quand Alexandre ne choisit rien
-export const BAREME = 5;                     // % TTC du prix : le maximum d'un mandat de recherche
+/* Les honoraires d'un mandat de recherche (Werner, 22 octobre 2026) : 2,5 %
+   HT par défaut, du loyer annuel HT HC pour un bail, du prix pour une
+   cession ou une vente. Werner choisit un autre taux à chaque mandat, jusqu'à
+   BAREME : sur un loyer annuel, les taux du marché vont bien au-delà de 5 %.
+   ⚠️ BAREME est un garde-fou de saisie, pas le barème affiché de Werner (à
+   poser, context.md §7). Un mandat de vente : BAREME_VENTE. */
+export const HONORAIRES_TAUX = 2.5;          // % HT : le taux proposé quand Werner ne choisit rien
+export const BAREME = 30;                    // % HT : le plus haut taux qu'un mandat de recherche accepte
 export const BAREME_VENTE = 5;               // % TTC du prix : le barème du mandat de vente (documents à venir)
 /* 12 mois au plus, fin à tout moment avec 15 jours de préavis. `total` sert
    aux dates (fin du mandat), en jours. */
@@ -149,7 +162,7 @@ export function honorairesCourt(h: Honoraires): string {
 /* « 2,5 % TTC du prix d’achat » ou « forfait de 20 000 € TTC ». */
 export function honorairesDuPrix(h: Honoraires): string {
   const f = forfaitDe(h.forfait);
-  return f ? `forfait de ${euros(f)} HT` : `${tauxTexte(tauxDe(h.taux))} du prix d’achat`;
+  return f ? `forfait de ${euros(f)} HT` : `${tauxTexte(tauxDe(h.taux))} du loyer annuel ou du prix`;
 }
 /* « 2,27 % » : ce que représente un forfait au prix donné. */
 export const pourcentDe = (montant: number, prix: number) =>
@@ -231,7 +244,13 @@ export type Recherche = {
   chambresMin: number | null;
   surfaceMin: number | null;
   secteurs: string[];
-  budget: number | null;      // le budget total du client, honoraires compris
+  budget: number | null;      // le prix total qu'il peut payer pour une cession ou des murs, honoraires compris
+  /* Werner (22 octobre 2026) : ce que le demandeur cherche (recherches.criteres_pro) —
+     location, cession_bail, fonds, murs, murs_occupes —, son loyer annuel
+     maximum HT HC, et son activité. Absents : un mandat signé avant. */
+  natures?: string[];
+  loyerMax?: number | null;
+  activite?: string | null;
   /* Le taux des honoraires proposé à ce client (recherches.mandat_taux).
      Absent : le barème, 2,5 %. Il voyage avec la recherche parce que c'est
      elle que l'écran et le PDF reçoivent ; on le lit toujours par tauxDe(). */
@@ -302,7 +321,7 @@ export function figerContenu(r: Recherche): Contenu {
    client relit la nouvelle version avant de signer — jamais l'inverse. */
 export function versionMandat(r: Recherche): string {
   const c = figerContenu(r);
-  return `${c.taux}|${c.forfait ?? ''}|${c.prixMax ?? ''}|${decrireRecherche(r)}`;
+  return `${c.taux}|${c.forfait ?? ''}|${c.prixMax ?? ''}|${r.loyerMax ?? ''}|${decrireRecherche(r)}`;
 }
 
 /* La famille d'un type de bien (V3.56) : « appartement » (un loft, un
@@ -387,8 +406,12 @@ export function decrireRecherche(r: Recherche): string {
   }
   if (r.surfaceMin) bouts.push(`d’une surface de ${r.surfaceMin}\u00a0m² environ ou plus`);
   const ou = r.secteurs.length ? `, situé à ${r.secteurs.join(', ').replace(/, ([^,]*)$/, ' ou $1')}, ou à proximité` : '';
+  /* Werner : à louer, à reprendre ou à acheter, et pour quelle activité. */
+  const natures = (r.natures || []).map(n => QUOI_NATURE[n]).filter(Boolean);
+  const comment = natures.length ? ` ${natures.join(', ').replace(/, ([^,]*)$/, ' ou $1')}` : '';
+  const activite = r.activite ? `, pour une activité de ${r.activite.charAt(0).toLowerCase()}${r.activite.slice(1)}` : '';
   const debut = quoi.charAt(0).toUpperCase() + quoi.slice(1);
-  return `${debut}${bouts.length ? ', ' + bouts.join(', ') : ''}${ou}.`;
+  return `${debut}${comment}${bouts.length ? ', ' + bouts.join(', ') : ''}${ou}${activite}.`;
 }
 
 /* La même chose en deux lignes courtes, pour une case : « Appartement ·
@@ -410,19 +433,27 @@ export function decrireCourt(r: Recherche): { valeur: string; detail: string } {
 export type Resume = { titre: string; valeur: string; detail: string }[];
 /* Les deux cas de l'article « Honoraires », en une ligne (V3.144). Le
    mandat de Documents dit la même chose. */
-export const HONO_DETAIL = 'rien si l’agence qui propose le local partage ses honoraires · sinon à l’acte';
+export const HONO_DETAIL = 'rien si l’agence qui propose le local partage ses honoraires · sinon à la signature du bail ou de l’acte';
 export function resumeMandat(r: Recherche): Resume {
   const c = figerContenu(r);
   return [
     { titre: 'Le local recherché', ...decrireCourt(r) },
-    c.prixMax
-      ? { titre: 'Prix maximum', valeur: `${euros(c.prixMax)} hors honoraires`, detail: `soit ${euros(r.budget || 0)} honoraires compris` }
-      : { titre: 'Prix maximum', valeur: 'Votre budget', detail: 'tel qu’indiqué dans votre espace' },
+    budgetCourt(r, c),
     c.forfait
       ? { titre: 'Honoraires', valeur: `${euros(c.forfait)} HT, au forfait`, detail: HONO_DETAIL }
-      : { titre: 'Honoraires', valeur: `${tauxTexte(c.taux)} du prix`, detail: HONO_DETAIL },
+      : { titre: 'Honoraires', valeur: `${tauxTexte(c.taux)} ${LOUE(r) && ACHETE(r) ? 'du loyer annuel ou du prix' : LOUE(r) ? 'du loyer annuel HT HC' : 'du prix'}`, detail: HONO_DETAIL },
     { titre: 'Durée', valeur: `${DUREE.mois} mois au plus`, detail: `vous l’arrêtez quand vous voulez · ${DUREE.preavis} jours de préavis` },
   ];
+}
+
+/* Le budget en une case : le loyer annuel maximum, le prix maximum, ou les deux. */
+function budgetCourt(r: Recherche, c: Contenu): Resume[number] {
+  const loyer = LOUE(r) && r.loyerMax ? `${euros(r.loyerMax)} HT HC / an` : '';
+  const prix = ACHETE(r) && c.prixMax ? `${euros(c.prixMax)} hors honoraires` : '';
+  if (loyer && prix) return { titre: 'Budget', valeur: `Loyer ${loyer}`, detail: `prix ${prix}` };
+  if (loyer) return { titre: 'Loyer maximum', valeur: loyer, detail: 'hors taxes et hors charges' };
+  if (prix) return { titre: 'Prix maximum', valeur: prix, detail: `soit ${euros(r.budget || 0)} honoraires compris` };
+  return { titre: 'Budget', valeur: 'Votre budget', detail: 'tel qu’indiqué dans votre espace' };
 }
 
 /* ══ Le texte ═══════════════════════════════════════════════════════════
@@ -484,7 +515,7 @@ export type Partie = { titre: string; court: string; sous?: string; ic: Icone; s
 const P = (x: string, g = false): Bloc => ({ t: 'p', x, g });
 
 export function titreMandat(numero: string) {
-  return `Mandat de recherche non exclusif d’un bien à acquérir n° ${numero || '…'}`;
+  return `Mandat de recherche non exclusif d’un local professionnel n° ${numero || '…'}`;
 }
 
 export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEFAUT): Partie[] {
@@ -541,7 +572,7 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
   if (plusieurs && m) {
     parties = [
       { t: 'fiches', items: [...signataires.map(x => ficheDe(x)), { ...mandataire, large: signataires.length % 2 === 0 }] },
-      P(`Ci-après ensemble « le MANDANT ». ${nomLong(m)}, titulaire de l’espace personnel, est le « premier signataire ». Chacun est tenu des engagements du MANDANT pour lui-même ; ceux qui achètent ensemble un bien sont tenus solidairement des honoraires de cet achat.`),
+      P(`Ci-après ensemble « le MANDANT ». ${nomLong(m)}, titulaire de l’espace personnel, est le « premier signataire ». Chacun est tenu des engagements du MANDANT pour lui-même ; ceux qui concluent ensemble une même affaire sont tenus solidairement des honoraires de cette affaire.`),
       ...absents.map(x => P(`${nomLong(x)}, ${x.civilite === 'Madame' ? 'invitée' : 'invité'} à signer, ne l’a pas fait : ${x.civilite === 'Madame' ? 'elle' : 'il'} n’est pas partie au mandat.`)),
     ];
   } else if (soc && m) {
@@ -555,16 +586,20 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
     parties = [
       { t: 'fiches', items: [fs, mandataire] },
       P(`${nomLong(m)} déclare être habilité${e(m)} à signer ce mandat au nom de la société, en vertu de ses statuts ou d’une décision de ses associés.`),
-      P(`${nomLong(m)} signe aussi en son nom personnel : les engagements du MANDANT s’appliquent à ${m.civilite === 'Madame' ? 'elle' : 'lui'}, notamment s’${m.civilite === 'Madame' ? 'elle' : 'il'} achète ${m.civilite === 'Madame' ? 'elle' : 'lui'}-même, ou par une autre société, un bien présenté par l’Agence. Comme la société, ${m.civilite === 'Madame' ? 'elle' : 'il'} peut se rétracter dans les conditions ci-dessous.`),
+      P(`${nomLong(m)} signe aussi en son nom personnel : les engagements du MANDANT s’appliquent à ${m.civilite === 'Madame' ? 'elle' : 'lui'}, notamment s’${m.civilite === 'Madame' ? 'elle' : 'il'} prend à bail, reprend ou acquiert ${m.civilite === 'Madame' ? 'elle' : 'lui'}-même, ou par une autre société, un local présenté par l’Agence. Comme la société, ${m.civilite === 'Madame' ? 'elle' : 'il'} peut se rétracter dans les conditions ci-dessous.`),
     ];
   }
 
+  /* Werner : la base des honoraires dit ce que le demandeur cherche — le
+     loyer annuel d'un bail, le prix d'une cession ou d'une vente, ou les deux. */
+  const r = d.recherche;
+  const base = LOUE(r) && ACHETE(r)
+    ? 'du loyer annuel hors taxes et hors charges de la première année pour un bail, ou du prix hors honoraires pour une cession de droit au bail, de fonds de commerce ou une vente'
+    : LOUE(r) ? 'du loyer annuel hors taxes et hors charges de la première année du bail conclu'
+    : 'du prix, hors honoraires, de la cession ou de la vente conclue';
   const honoraires: Bloc[] = forfait
-    ? [
-      P(`Honoraires de l’Agence : forfait de ${euros(forfait)} HT (${enLettres(forfait)} euros).`, true),
-      P(`Conformément au barème de l’Agence (${tauxTexte(BAREME)} du prix), ils ne peuvent dépasser ${tauxCourt(BAREME)} du prix d’achat : si ce prix est inférieur à ${euros(seuilForfait(forfait))}, ils sont ramenés à ${tauxCourt(BAREME)} de ce prix.`),
-    ]
-    : [P(`Honoraires de l’Agence : ${tauxTexte(c.taux)} du prix d’achat${prix && hono ? `, soit ${euros(hono)} pour un prix de ${euros(prix)}` : ''}.`, true)];
+    ? [P(`Honoraires de l’Agence : forfait de ${euros(forfait)} HT (${enLettres(forfait)} euros hors taxes), TVA en sus.`, true)]
+    : [P(`Honoraires de l’Agence : ${tauxTexte(c.taux)} ${base}${ACHETE(r) && prix && hono ? `, soit ${euros(hono)} HT pour un prix de ${euros(prix)}` : ''}${LOUE(r) && r.loyerMax ? `, soit ${euros(Math.round((r.loyerMax * c.taux) / 100))} HT pour un loyer annuel de ${euros(r.loyerMax)}` : ''}, TVA en sus.`, true)];
 
   const mandat: Partie = {
     titre: titreMandat(d.numero),
@@ -574,23 +609,27 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
     sections: [
       { titre: 'Entre les soussignés', blocs: parties },
       { titre: 'Il a été convenu ce qui suit', blocs: [
-        P('Le MANDANT confie au MANDATAIRE, qui l’accepte, un mandat NON EXCLUSIF de rechercher un bien à acheter. Il reste libre de chercher lui-même et de confier d’autres mandats non exclusifs.', true),
+        P(`Le MANDANT confie au MANDATAIRE, qui l’accepte, un mandat NON EXCLUSIF de rechercher pour lui un local à usage professionnel ou commercial ${LOUE(r) && ACHETE(r) ? 'à prendre à bail, à reprendre ou à acquérir' : LOUE(r) ? 'à prendre à bail' : 'à reprendre ou à acquérir'}, aux conditions ci-dessous. Il reste libre de chercher lui-même et de confier d’autres mandats non exclusifs.`, true),
         ...(plusieurs ? [
           P(`Le mandat engage chaque signataire dès qu’il le signe. Un signataire invité qui décline, ou qui ne signe pas dans les ${enLettres(DELAI_COSIGNATURE)} (${DELAI_COSIGNATURE}) jours suivant l’envoi de son dernier lien, n’est pas partie au mandat : celui-ci se poursuit avec les seuls signataires.`),
           P('Les autres signataires chargent le premier de faire évoluer pour eux, depuis son espace personnel, les critères de la recherche et le budget.'),
         ] : []),
       ] },
-      { titre: 'Le local recherché', ic: 'maison', blocs: [
+      { titre: 'Le local recherché', ic: 'agence', blocs: [
         P(decrireRecherche(d.recherche), true),
-        P('Ainsi que tout bien correspondant aux critères du MANDANT tels qu’ils figurent, et évoluent, dans son espace personnel.'),
+        P('Ainsi que tout local correspondant aux critères du MANDANT tels qu’ils figurent, et évoluent, dans son espace personnel.'),
       ] },
-      { titre: 'Prix', ic: 'etiquette', blocs: prix
-        ? [
-          P(`Prix d’achat maximum, hors honoraires : ${euros(prix)} (${enLettres(prix)} euros).`, true),
-          P(`Honoraires compris, il correspond au budget de ${euros(d.recherche.budget || 0)} indiqué par le MANDANT, qui peut le modifier depuis son espace personnel.`),
-          P(`Lorsqu’aucun honoraire n’est dû au titre du présent mandat (bien en vente chez une autre agence qui partage ses honoraires avec l’Agence, voir « Honoraires »), le prix d’achat peut atteindre ce budget, soit ${euros(d.recherche.budget || 0)}.`),
-        ]
-        : [P('Le prix d’achat, hors honoraires, correspond au budget indiqué par le MANDANT dans son espace personnel, qu’il peut modifier à tout moment.')] },
+      { titre: 'Budget', ic: 'etiquette', blocs: [
+        ...(LOUE(r) ? [r.loyerMax
+          ? P(`Loyer annuel maximum : ${euros(r.loyerMax)} hors taxes et hors charges (${enLettres(r.loyerMax)} euros).`, true)
+          : P('Le loyer annuel maximum est celui indiqué par le MANDANT dans son espace personnel, qu’il peut modifier à tout moment.')] : []),
+        ...(ACHETE(r) ? (prix
+          ? [
+            P(`Prix maximum d’une cession ou d’une acquisition, hors honoraires : ${euros(prix)} (${enLettres(prix)} euros).`, true),
+            P(`Honoraires compris, il correspond au budget de ${euros(r.budget || 0)} indiqué par le MANDANT, qui peut le modifier depuis son espace personnel.`),
+          ]
+          : [P('Le prix maximum d’une cession ou d’une acquisition, hors honoraires, correspond au budget indiqué par le MANDANT dans son espace personnel, qu’il peut modifier à tout moment.')]) : []),
+      ] },
       { titre: 'Honoraires', ic: 'euro', blocs: [
         ...honoraires,
         /* Les deux cas (V3.144, à la demande d'Alexandre) : en inter-cabinet,
@@ -598,16 +637,16 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
            sinon, ses honoraires de recherche s'ajoutent au prix. Si le client
            contourne l'Agence, il n'y a pas de partage : on retombe dans le
            second cas. */
-        P('Ils ne sont dus que si l’achat se réalise grâce à l’Agence, et selon l’un des deux cas suivants :'),
+        P('Ils ne sont dus que si le bail, la cession ou la vente se conclut grâce à l’Agence, et selon l’un des deux cas suivants :'),
         { t: 'l', items: [
-          'Le bien est en vente chez une autre agence, qui partage avec l’Agence les honoraires prévus à son mandat de vente : le MANDANT ne doit alors aucun honoraire au titre du présent mandat. Il paie le prix convenu avec le mandant, et l’Agence est rémunérée par cette autre agence.',
-          'Dans tous les autres cas (bien vendu par son propriétaire, agence qui ne partage pas ses honoraires, bien trouvé hors des annonces…) : les honoraires ci-dessus sont à la charge du MANDANT, en plus du prix.',
+          'Le local est proposé par une autre agence, qui partage avec l’Agence les honoraires prévus à son propre mandat : le MANDANT ne doit alors aucun honoraire au titre du présent mandat, et l’Agence est rémunérée par cette autre agence.',
+          'Dans tous les autres cas (local proposé par son propriétaire ou par son locataire, agence qui ne partage pas ses honoraires, local trouvé hors des annonces…) : les honoraires ci-dessus sont à la charge du MANDANT, en plus du loyer ou du prix.',
         ] },
-        P('L’Agence indique au MANDANT par écrit, avant toute offre d’achat, dans lequel de ces deux cas se trouve le bien, notamment dans son espace personnel.', true),
+        P('L’Agence indique au MANDANT par écrit, avant toute offre, dans lequel de ces deux cas se trouve le local, notamment dans son espace personnel.', true),
         /* V3.145 : les prix de l'espace sont ceux des annonces ; ses honoraires y
            sont dits sur le bien, quand ils s'ajoutent (src/lib/honoraires-bien.ts). */
-        P('Dans l’espace personnel du MANDANT, le prix affiché pour chaque bien est celui de son annonce. Si des honoraires de l’Agence s’y ajoutent (second cas ci-dessus), l’espace le précise sur le bien concerné, avec leur montant.'),
-        P('Lorsqu’ils sont dus, les honoraires sont payés le jour de la signature de l’acte authentique, par l’intermédiaire du notaire : aucune somme n’est due avant. En cas de préemption, le titulaire du droit de préemption les doit à la place du demandeur.'),
+        P('Dans l’espace personnel du MANDANT, le loyer ou le prix affiché pour chaque local est celui de son annonce. Si des honoraires de l’Agence s’y ajoutent (second cas ci-dessus), l’espace le précise sur le local concerné, avec leur montant.'),
+        P('Lorsqu’ils sont dus, les honoraires sont payés le jour de la signature du bail, ou de l’acte de cession ou de vente : aucune somme n’est due, ni ne peut être versée à l’Agence, avant (article 6 de la loi du 2 janvier 1970). En cas de préemption d’une cession ou d’une vente, le titulaire du droit de préemption les doit à la place du MANDANT.'),
       ] },
       { titre: 'Durée', ic: 'calendrier', blocs: plusieurs
         ? [
@@ -619,21 +658,21 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
           P(`Chaque partie peut y mettre fin à tout moment, par lettre recommandée avec avis de réception ou par e-mail, avec un préavis de ${enLettres(DUREE.preavis)} (${DUREE.preavis}) jours.`, true),
         ] },
       { titre: 'Engagements du mandant', ic: 'personne', blocs: [
-        P('Le MANDANT déclare avoir la capacité d’acheter et n’avoir confié aucun mandat exclusif de recherche portant sur les mêmes biens. Il autorise le MANDATAIRE à se faire assister ou substituer par un autre professionnel habilité.'),
-        P('S’il achète un bien, avec ou sans le MANDATAIRE, il l’en informe sans délai et lui indique, à sa demande, le mandant, le prix et le notaire chargé de la vente.'),
+        P('Le MANDANT déclare avoir la capacité de contracter et n’avoir confié aucun mandat exclusif de recherche portant sur les mêmes locaux. Il autorise le MANDATAIRE à se faire assister ou substituer par un autre professionnel habilité.'),
+        P('S’il prend à bail, reprend ou acquiert un local, avec ou sans le MANDATAIRE, il l’en informe sans délai et lui indique, à sa demande, le bailleur ou le cédant, le loyer ou le prix, et l’avocat ou le notaire chargé de l’acte.'),
         soc
-          ? P('Pendant le mandat et les douze mois qui suivent sa fin, le MANDANT s’interdit d’acheter sans le MANDATAIRE, directement ou par personne interposée, un bien que celui-ci lui a présenté. Il s’en porte fort pour les associés et dirigeants de la société, et pour toute société qu’ils contrôlent.', true)
-          : P('Pendant le mandat et les douze mois qui suivent sa fin, le MANDANT s’interdit d’acheter sans le MANDATAIRE, directement ou par personne interposée, un bien que celui-ci lui a présenté. Il s’en porte fort pour son conjoint, son partenaire de PACS, son concubin et toute personne avec qui il achèterait.', true),
+          ? P('Pendant le mandat et les douze mois qui suivent sa fin, le MANDANT s’interdit de prendre à bail, de reprendre ou d’acquérir sans le MANDATAIRE, directement ou par personne interposée, un local que celui-ci lui a présenté. Il s’en porte fort pour les associés et dirigeants de la société, et pour toute société qu’ils contrôlent.', true)
+          : P('Pendant le mandat et les douze mois qui suivent sa fin, le MANDANT s’interdit de prendre à bail, de reprendre ou d’acquérir sans le MANDATAIRE, directement ou par personne interposée, un local que celui-ci lui a présenté. Il s’en porte fort pour son conjoint, son partenaire de PACS, son concubin, toute personne avec qui il traiterait et toute société qu’il constituerait ou contrôlerait pour cette affaire.', true),
       ] },
       { titre: 'Engagements de l’Agence', ic: 'etoile', blocs: [
         P('Le MANDATAIRE s’engage, à chaque étape :'),
         { t: 'etapes', items: [
-          { titre: 'Rechercher', x: 'Suivre chaque jour les annonces correspondant aux critères du MANDANT, y compris celles des particuliers ; chercher des biens hors marché auprès de son réseau de confrères et de son carnet d’adresses.' },
-          { titre: 'Visiter et sélectionner', x: 'Visiter les biens susceptibles de convenir avant de les proposer, et obtenir des mandants les renseignements et documents imposés par la réglementation.' },
-          { titre: 'Vérifier', x: 'Étudier le dossier de chaque bien avant toute offre : diagnostics, documents de copropriété, charges et travaux votés.' },
-          { titre: 'Négocier', x: 'Accompagner le MANDANT dans la négociation du prix.' },
-          { titre: 'Accompagner jusqu’à l’acte', x: 'L’accompagner jusqu’à la signature de l’acte authentique chez le notaire.' },
-          { titre: 'Rendre compte', x: 'Tenir à jour, dans l’espace personnel du MANDANT, le suivi de sa recherche et les biens présentés, et lui adresser un compte rendu après chaque visite.' },
+          { titre: 'Rechercher', x: 'Suivre les annonces correspondant aux critères du MANDANT, y compris celles des propriétaires et des commerçants qui cèdent ; chercher des locaux hors marché auprès de son réseau de confrères et de son carnet d’adresses.' },
+          { titre: 'Visiter et sélectionner', x: 'Visiter les locaux susceptibles de convenir avant de les proposer, et obtenir des bailleurs et des cédants les renseignements et documents imposés par la réglementation.' },
+          { titre: 'Vérifier', x: 'Étudier le dossier de chaque local avant toute offre : le bail en cours et sa destination, les charges et taxes refacturées, les diagnostics et, en copropriété, le règlement et les travaux votés.' },
+          { titre: 'Négocier', x: 'Accompagner le MANDANT dans la négociation du loyer, des conditions du bail ou du prix.' },
+          { titre: 'Accompagner jusqu’à la signature', x: 'L’accompagner jusqu’à la signature du bail, ou de l’acte de cession ou de vente, en lien avec l’avocat ou le notaire.' },
+          { titre: 'Rendre compte', x: 'Tenir à jour, dans l’espace personnel du MANDANT, le suivi de sa recherche et les locaux présentés, et lui adresser un compte rendu après chaque visite.' },
         ] },
       ] },
       { titre: 'Droit de rétractation', ic: 'retour', blocs: plusieurs
@@ -932,5 +971,21 @@ export function rechercheDepuis(r: Record<string, unknown>): Recherche {
     budget: num(r.budget_max),
     taux: tauxDe(r.mandat_taux),
     forfait: forfaitDe(r.mandat_forfait),
+    ...proDuMandat(r.criteres_pro),
   };
 }
+/* Les critères pro d'une recherche (recherches.criteres_pro), pour le mandat. */
+function proDuMandat(v: unknown): Pick<Recherche, 'natures' | 'loyerMax' | 'activite'> {
+  const o = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+  const natures = Array.isArray(o.natures) ? (o.natures as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+  const lm = typeof o.loyerMax === 'number' ? o.loyerMax : typeof o.loyerMax === 'string' ? parseFloat(o.loyerMax.replace(/\s/g, '').replace(',', '.')) : NaN;
+  const activite = typeof o.activite === 'string' && o.activite.trim() ? o.activite.trim() : null;
+  return { natures, loyerMax: Number.isFinite(lm) && lm > 0 ? Math.round(lm) : null, activite };
+}
+/* Ce que le demandeur veut faire : prendre à bail, reprendre, acheter. */
+const LOUE = (r: Recherche) => !r.natures?.length || r.natures.includes('location');
+const ACHETE = (r: Recherche) => !r.natures?.length || r.natures.some(n => n !== 'location');
+const QUOI_NATURE: Record<string, string> = {
+  location: 'à prendre à bail', cession_bail: 'en reprise d’un droit au bail', fonds: 'avec la reprise d’un fonds de commerce',
+  murs: 'à acheter (les murs)', murs_occupes: 'à acheter déjà loué (des murs occupés)',
+};
