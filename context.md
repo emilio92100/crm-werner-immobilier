@@ -286,6 +286,24 @@ deux onglets (`OngletsHisto`, « Depuis sa fiche » et « Depuis tes affaires »
 les plus anciens » ; trois affaires par groupe dans « Depuis tes affaires ». L'ancienne carte « Vu depuis
 tes affaires » du bas n'existe plus.
 
+**L'espace : l'heure de la dernière recherche, et « Un imprévu ? » sur une visite calée** (22 octobre 2026,
+repris du CRM d'Emilio, sa V3.232). En haut de l'espace, « mis à jour à … » est en heure de Paris (c'était
+l'heure du serveur, 2 h de moins). Plus jamais « 0 annonce lue » : on compte la journée de la dernière
+recherche (« Aujourd'hui : 21 annonces lues sur vos critères · dernière recherche à 17 h 56 » ; à zéro,
+« aucune nouvelle annonce… depuis la recherche précédente ») ; sur ordinateur, cette ligne devient une bande
+sous trois cases. « Votre recherche est à jour » : la loupe qui balaie, « Dernière recherche » (orange et
+animée quand c'est aujourd'hui) et « Ces 7 derniers jours ». « Un imprévu ? » (carte de la visite, et sous
+« Où en est Werner ») : le demandeur demande à décaler (ses disponibilités) ou à annuler (sa raison) ; il
+ne change rien lui-même. Werner a une relance du jour « Imprévu — <local> · visite du … », une ligne au
+Suivi (type message_client, `metadata.imprevu`), un mail (alerte « visite_imprevu »). Dans le CRM :
+l'encadré orange sur la visite (onglet Visites : « Déplacer la visite », « Annuler la visite ») et en tête
+de « Mon suivi avec l'agence » (« Imprévu : à décaler ») ; un créneau noté après l'imprévu y devient
+« Déplacer la visite ici ». Déplacée, la relance se ferme et le Suivi note « Visite déplacée ». Annulée :
+la relance se ferme ; « Le local ne m'intéresse plus » ou « J'ai trouvé un autre local » font passer le
+local « Pas pour lui ». `src/lib/imprevus.ts`, `imprevusOuverts` dans `src/lib/visites.ts`. Ici, le
+demandeur ne choisit pas encore lui-même un nouveau créneau dans son espace (la V3.221 d'Emilio n'a pas été
+reprise).
+
 ### Le marché, l'ancienneté d'une annonce
 
 Savoir **depuis quand une annonce est en ligne** se lit dans les données de la page SeLoger Bureaux &
