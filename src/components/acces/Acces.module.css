@@ -2,11 +2,12 @@
    (22 octobre 2026) : les mêmes couleurs que la page de connexion
    (anthracite #25272b, carte blanche, orange #f08c42). */
 
+/* html et body sont figés dans le CRM (globals.css) : la page défile d'elle-même. */
 .page {
-  min-height: 100vh; min-height: 100dvh; background: #25272b; display: flex; align-items: center; justify-content: center;
+  position: fixed; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; background: #25272b; display: flex;
   padding: 24px 16px; box-sizing: border-box; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
-.colonne { width: 100%; max-width: 400px; }
+.colonne { width: 100%; max-width: 400px; margin: auto; }
 .marque { text-align: center; margin-bottom: 26px; }
 .marque img { display: block; width: 210px; height: auto; margin: 0 auto 12px; }
 .marque span { font-size: 12px; font-weight: 700; color: #f08c42; text-transform: uppercase; letter-spacing: 2px; }

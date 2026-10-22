@@ -149,17 +149,24 @@ function FormulaireAcces() {
 
   return (
     <div
+      /* 22 octobre 2026 : le CRM fige html et body (globals.css, overflow
+         hidden) ; la page de connexion défile donc d'elle-même, sinon le bas
+         du formulaire restait hors d'atteinte sur un téléphone. Centrée par
+         `margin: auto` : plus haute que l'écran, elle part du haut au lieu
+         d'être coupée des deux côtés. */
       style={{
-        minHeight: '100vh',
+        position: 'fixed',
+        inset: 0,
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
         background: '#25272b',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
+        padding: '24px 16px',
+        boxSizing: 'border-box',
         fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
       }}
     >
-      <div style={{ width: '100%', maxWidth: 380 }}>
+      <div style={{ width: '100%', maxWidth: 380, margin: 'auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 30 }}>
           {/* Le logo de l'agence (V3.29), en blanc sur le fond bleu. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
