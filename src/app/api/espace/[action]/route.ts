@@ -5,7 +5,8 @@ import { createClient } from '@supabase/supabase-js';
 import { lienBienPublic } from '@/lib/jeton';
 import { etatServeur, alerteHorsMandat, mandatDocumentEnRoute } from '@/lib/mandat-serveur';
 import { alerteMailActive } from '@/lib/alertes';
-import { estIssue, raisonsValides, issueDe, badgeApresVisite, maintenantParis, visitePasseeParis, ISSUES, type Issue } from '@/lib/visites';
+import { estIssue, raisonsValides, issueDe, badgeApresVisite, maintenantParis, visitePasseeParis, disposPropres, estRaisonImprevu, ISSUES, type Issue } from '@/lib/visites';
+import { texteCreneau } from '@/lib/suivi-agence';
 import { ecritServeur } from '@/lib/ecritures';
 import { colonneSuspensionAbsente } from '@/lib/suspension';
 import { retracteEnLigne, pourEspaceAcheteur } from '@/lib/documents-espace';
@@ -19,6 +20,7 @@ import { prixDuBien } from '@/lib/honoraires-bien';   // V3.145 : le prix de l'a
  *   POST /api/espace/vue       { token, bien_id }
  *   POST /api/espace/retour    { token, bien_id, avis, commentaire }
  *   POST /api/espace/visite    { token, visite_id, issue, motifs, mot, prix }   son avis après une visite
+ *   POST /api/espace/imprevu   { token, visite_id, quoi, motifs, dispos, mot }   un imprévu sur une visite calée (V3.232)
  *   POST /api/espace/criteres  { token, criteres }
  *   POST /api/espace/message   { token, texte }
  *   POST /api/espace/rappel    { token, creneau }
@@ -220,6 +222,76 @@ async function prevenirVisite(
       }],
     }),
   });
+}
+
+/* V3.232 — Le mail qui prévient Werner d'un imprévu sur une visite calée :
+   son demandeur veut la décaler (ses disponibilités) ou l'annuler (sa raison).
+   La visite est toujours dans l'agenda : c'est lui qui prévient l'agence ou le
+   bailleur. Coupé dans Paramètres → Alertes mail (« visite_imprevu ») : la
+   relance du jour suffit. */
+async function prevenirImprevu(
+  supabase: ReturnType<typeof base>, clientId: string,
+  bien: { id: string; titre?: string | null; ville?: string | null; quartier?: string | null; photos?: string[] | null } | null,
+  quand: string, quoi: 'decaler' | 'annuler', motifs: string[], dispos: string[], mot: string | null,
+) {
+  const apiKey = process.env.MAILJET_API_KEY, apiSecret = process.env.MAILJET_API_SECRET;
+  if (!apiKey || !apiSecret) return;
+  if (!(await alerteMailActive(supabase, 'visite_imprevu'))) return;
+  const { data: client } = await supabase.from('clients').select('id, prenom, nom').eq('id', clientId).maybeSingle();
+  const nom = client ? `${client.prenom || ''} ${client.nom || ''}`.trim() : 'Un demandeur';
+  const prenom = String(client?.prenom || '').trim() || nom;
+  const echappe = (t: string) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const crm = process.env.NEXT_PUBLIC_CRM_URL || 'https://crm-werner-immobilier.vercel.app';
+  const lien = `${crm}/?page=fiche&client=${encodeURIComponent(clientId)}`;
+  const titre = bien?.titre || 'le local';
+  const lieu = bien ? [bien.quartier, bien.ville].filter(Boolean).join(', ') : '';
+  const photo = bien && Array.isArray(bien.photos) ? bien.photos.filter(Boolean)[0] : null;
+  const veut = quoi === 'decaler' ? `${prenom} veut la décaler` : `${prenom} veut l’annuler`;
+  const sousT = quoi === 'decaler' ? 'Ses disponibilités' : 'Sa raison';
+  const sous = quoi === 'decaler' ? (dispos.length ? dispos.join(' · ') : 'Pas précisées : à lui demander.') : (motifs.length ? motifs.join(' · ') : 'Pas précisée.');
+  const html = `<div style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#363533">
+  <div style="background:#2e3034;padding:18px 22px 16px;border-radius:14px 14px 0 0;border-bottom:3px solid #f08c42">
+    ${logoMail('CRM')}
+    <div style="color:#ffffff;font-weight:800;font-size:18px;line-height:1.3;margin-top:12px">${echappe(nom)} a un imprévu</div>
+  </div>
+  <div style="border:1px solid #eeeeed;border-top:none;border-radius:0 0 14px 14px;padding:20px 22px">
+    <div style="padding:14px 16px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa">
+      <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#9a3412;font-weight:800">Visite du ${echappe(quand)}</div>
+      <div style="margin-top:6px;font-size:18px;font-weight:800;color:#232528">${echappe(veut)}</div>
+    </div>
+    <div style="margin-top:14px;border:1px solid #eeeeed;border-radius:12px;overflow:hidden;background:#f6f6f7">
+      ${photo ? `<img src="${echappe(photo)}" alt="" width="514" style="width:100%;max-width:514px;height:auto;display:block;border:0" />` : ''}
+      <div style="padding:14px 16px">
+        <div style="font-weight:700;font-size:15px;color:#232528">${echappe(titre)}</div>
+        ${lieu ? `<div style="color:#5B6B80;margin-top:4px;font-size:13px">${echappe(lieu)}</div>` : ''}
+      </div>
+    </div>
+    <div style="margin-top:16px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#aba7a3;font-weight:700">${sousT}</div>
+    <div style="margin-top:6px;font-size:14px;line-height:1.6;color:#232528">${echappe(sous)}</div>
+    ${mot ? `<div style="margin-top:14px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#aba7a3;font-weight:700">Son mot</div><div style="margin-top:6px;font-size:14px;line-height:1.6;color:#232528">« ${echappe(mot)} »</div>` : ''}
+    <div style="margin-top:16px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#aba7a3;font-weight:700">À faire</div>
+    <div style="margin-top:6px;font-size:14px;line-height:1.6;color:#232528">Prévenir l’agence ou le bailleur, puis ${quoi === 'decaler' ? 'décaler' : 'annuler'} la visite dans le CRM (onglet Visites de sa fiche). D’ici là, elle reste prévue de son côté.</div>
+    <a href="${lien}" style="display:inline-block;margin-top:18px;background:#f08c42;color:#232528;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:800">Ouvrir sa fiche</a>
+    <div style="margin-top:14px;font-size:12px;color:#aba7a3">C’est aussi dans tes Relances, pour aujourd’hui.</div>
+  </div>
+</div>`;
+  const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
+  const r = await fetch('https://api.mailjet.com/v3.1/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+    body: JSON.stringify({
+      Messages: [{
+        From: { Email: FROM_EMAIL, Name: 'Werner · CRM' },
+        To: [{ Email: process.env.ALERTES_EMAIL || FROM_EMAIL }],
+        Subject: `⚠️ ${nom} a un imprévu · visite du ${quand}`,
+        TextPart: `${nom} a un imprévu sur la visite du ${quand} (${titre}${lieu ? `, ${lieu}` : ''}) : ${veut.replace(prenom + ' ', '')}.\n\n${sousT} : ${sous}${mot ? `\n\nSon mot : « ${mot} »` : ''}\n\nÀ faire : prévenir l’agence ou le bailleur, puis ${quoi === 'decaler' ? 'décaler' : 'annuler'} la visite dans le CRM.\n\nOuvrir sa fiche : ${lien}`,
+        HTMLPart: html,
+        CustomID: `imprevu-${(bien?.id || 'v').slice(0, 36)}-${Date.now().toString(36)}`,
+        TrackOpens: 'disabled', TrackClicks: 'disabled',
+      }],
+    }),
+  });
+  if (!r.ok) console.error('[espace/imprevu] mail', r.status, await r.text().catch(() => ''));
 }
 
 /* Le mail qui prévient Alexandre de la réponse du client après une visite.
@@ -823,6 +895,63 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
 
         await evt('avis', `${libelle}${com ? ' · ' + com : ''}`, bien.id);
         return NextResponse.json({ ok: true });
+      }
+
+      /* ── V3.232 : un imprévu sur une visite calée ─────────────────
+         Repris du CRM d'Emilio (sa V3.232). Le demandeur ne déplace ni
+         n'annule rien lui-même : c'est Werner qui parle à l'agence ou au
+         bailleur, et la visite reste « à venir ». Werner a une relance du
+         jour, une ligne dans le Suivi (type message_client ;
+         `metadata.imprevu` dit lequel) et un mail (« visite_imprevu »).
+         L'espace relit `metadata.imprevu` (page.tsx) pour dire « Werner est
+         prévenu » tant que la visite n'a pas bougé. */
+      case 'imprevu': {
+        const quoi = body.quoi === 'decaler' || body.quoi === 'annuler' ? (body.quoi as 'decaler' | 'annuler') : null;
+        if (!quoi) return NextResponse.json({ ok: false, error: 'choix inconnu' }, { status: 400 });
+        const vid = typeof body.visite_id === 'string' ? body.visite_id : '';
+        if (!vid) return NextResponse.json({ ok: false, error: 'visite inconnue' }, { status: 404 });
+        const { data: v, error: eLu } = await supabase.from('visites').select('id, bien_id, statut, date_visite, heure')
+          .eq('id', vid).eq('recherche_id', recherche.id).maybeSingle();
+        if (eLu) { console.error('[espace/imprevu] lecture', eLu.message); return NextResponse.json({ ok: false, error: 'lecture' }, { status: 500 }); }
+        if (!v || v.statut !== 'a_venir') return NextResponse.json({ ok: false, error: 'visite inconnue' }, { status: 404 });
+        if (visitePasseeParis(v)) return NextResponse.json({ ok: false, error: 'passee' }, { status: 409 });
+
+        /* Comme les messages : vingt par jour au plus. */
+        const depuis24h = new Date(Date.now() - 86_400_000).toISOString();
+        const { count: nbMessages } = await supabase.from('journal').select('id', { count: 'exact', head: true })
+          .eq('recherche_id', recherche.id).eq('type', 'message_client').gte('created_at', depuis24h);
+        if ((nbMessages || 0) >= 20) return NextResponse.json({ ok: false, error: 'trop de messages aujourd’hui' }, { status: 429 });
+
+        const bien = v.bien_id ? await bienDeLaRecherche(v.bien_id) : null;
+        const motifs = quoi === 'annuler' && Array.isArray(body.motifs) ? Array.from(new Set((body.motifs as unknown[]).filter(estRaisonImprevu))) : [];
+        const dispos = quoi === 'decaler' ? disposPropres(body.dispos) : [];
+        const mot = nettoie(body.mot, 500) || null;
+        const le = new Date().toISOString();
+        const titreBien = bien?.titre || bien?.ville || 'le local';
+        const jour = String(v.date_visite || '').slice(0, 10);
+        const heureV = /^\d{2}:\d{2}/.test(String(v.heure || '')) ? String(v.heure).slice(0, 5) : '';
+        /* « Sam. 31 oct. à 12 h » (sans heure : le jour seul). */
+        const quand = !jour ? 'à venir' : heureV ? texteCreneau({ date: jour, heure: heureV }).replace(' · ', ' à ') : texteCreneau({ date: jour, heure: '12:00' }).split(' · ')[0];
+        const veut = quoi === 'decaler' ? 'veut la décaler' : 'veut l’annuler';
+        const detail = [...motifs, ...dispos].join(' · ');
+
+        if (!(await ecritServeur('[espace/imprevu] journal', supabase.from('journal').insert({
+          client_id: recherche.client_id, recherche_id: recherche.id, bien_id: bien?.id || null,
+          type: 'message_client', titre: `⚠️ Imprévu sur la visite du ${quand} — ${veut}`,
+          description: [titreBien, detail, mot].filter(Boolean).join(' — '),
+          metadata: { imprevu: { visite_id: v.id, quoi, date: jour || null, heure: heureV || null, motifs, dispos, mot } },
+        })))) return NextResponse.json({ ok: false, error: 'enregistrement' }, { status: 500 });
+
+        /* À faire pour Werner, du jour, en tête. */
+        await ecritServeur('[espace/imprevu] relance', supabase.from('relances').insert({
+          client_id: recherche.client_id, recherche_id: recherche.id,
+          type: 'rappel_client', statut: 'en_attente', date_echeance: le,
+          note: `Imprévu — ${titreBien} · visite du ${quand} : ${veut}${detail ? ` · ${detail}` : ''}${mot ? ` · ${mot}` : ''}`.slice(0, 600),
+        }));
+        try { await prevenirImprevu(supabase, recherche.client_id, bien, quand, quoi, motifs, dispos, mot); }
+        catch (err) { console.error('[espace/imprevu] mail', err); }
+        await evt('message', `⚠️ Imprévu sur la visite du ${quand} : ${veut}${detail ? ' · ' + detail : ''}${mot ? ' — ' + mot : ''}`, bien?.id || null);
+        return NextResponse.json({ ok: true, quoi, le });
       }
 
       /* ── il fait évoluer ses critères ───────────────────────── */
