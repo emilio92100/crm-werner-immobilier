@@ -35,6 +35,7 @@ import {
 } from '@/lib/mandat';
 import { IDENTITE_DEFAUT, lireIdentite, type IdentiteAgence } from '@/lib/agence';
 import { chercherSocietes, qualiteDe, type SocieteTrouvee } from '@/lib/entreprises';
+import { morceaux } from '@/lib/actes/retouches';
 /* Des types seulement : rien de ce fichier serveur ne part dans le navigateur. */
 import type { DocEspace, MandatDocEspace, SignataireEspace } from '@/lib/documents-espace';
 /* V3.153 : le lieu de naissance et l'adresse, avec leurs suggestions. */
@@ -167,7 +168,12 @@ export function TexteMandat({ parties, identite, moi = 0, signes = [], bandeau, 
                 ? <div className="mdt-sec-t"><span className="ic"><Ic n={s.ic} t={14} /></span><span>{s.titre}</span></div>
                 : <div className="mdt-sec-i">{s.titre}</div>)}
               {s.blocs.map((b, k) => {
-                if (b.t === 'p') return <p key={k} className={b.g ? 'mdt-enc' : b.petit ? 'petit' : undefined}>{b.x}</p>;
+                /* 23 octobre 2026 : un paragraphe retouché par l'agence (gras, italique, taille). */
+                if (b.t === 'p') return (
+                  <p key={k} className={b.g ? 'mdt-enc' : b.petit ? 'petit' : undefined} style={b.grand ? { fontSize: '1.14em' } : undefined}>
+                    {b.riche && !b.g ? morceaux(b.x).map((m, q) => (m.g && m.i ? <b key={q}><i>{m.t}</i></b> : m.g ? <b key={q}>{m.t}</b> : m.i ? <i key={q}>{m.t}</i> : <span key={q}>{m.t}</span>)) : b.x}
+                  </p>
+                );
                 if (b.t === 'l') return <ul key={k}>{b.items.map((x, n) => <li key={n}>{x}</li>)}</ul>;
                 if (b.t === 'coches') return (
                   <div key={k} className="mdt-coches">

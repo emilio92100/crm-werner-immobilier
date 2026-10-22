@@ -70,6 +70,10 @@ function mots(d: Donnees, pl = false) {
   if (n === 'fonds') return { qui: pl ? 'les CESSIONNAIRES' : 'le CESSIONNAIRE', Qui: pl ? 'Les CESSIONNAIRES' : 'Le CESSIONNAIRE', pour: 'CESSIONNAIRE', un: 'Le cessionnaire', dest: 'le CÉDANT', Dest: 'Le CÉDANT', destMaj: 'CÉDANT', titre: 'Offre d’achat du fonds de commerce', sous: 'ferme, d’achat d’un fonds de commerce', objet: 'acquérir ce fonds de commerce', proprio: 'propriétaire du fonds', le: 'l’acte de cession' };
   return { qui: pl ? 'les ACQUÉREURS' : 'l’ACQUÉREUR', Qui: pl ? 'Les ACQUÉREURS' : 'L’ACQUÉREUR', pour: 'ACQUÉREUR', un: 'L’acquéreur', dest: 'le VENDEUR', Dest: 'Le VENDEUR', destMaj: 'VENDEUR', titre: n === 'murs' || n === 'murs_occupes' ? 'Offre d’achat des murs' : 'Offre d’achat', sous: n === 'murs' || n === 'murs_occupes' ? 'ferme, d’achat des murs d’un local' : 'ferme, d’un local', objet: 'acheter ces murs', proprio: 'propriétaire des murs', le: 'l’avant-contrat' };
 }
+/* « d'acquérir », « de prendre » ; « du CESSIONNAIRE », « des PRENEURS », « de l'ACQUÉREUR ». */
+const de = (x: string) => (/^[aeiouyéèêàâh]/i.test(x) ? `d’${x}` : `de ${x}`);
+const deQui = (q: string) => (q.startsWith('le ') ? `du ${q.slice(3)}` : q.startsWith('les ') ? `des ${q.slice(4)}` : `de ${q}`);
+
 /* Le bail proposé, en une phrase. */
 const BAUX: Record<string, string> = {
   commercial: 'un bail commercial de neuf années, soumis aux articles L145-1 et suivants du Code de commerce, le preneur pouvant y mettre fin à l’expiration de chaque période triennale',
@@ -118,9 +122,10 @@ const ETAPES: Etape[] = [
       { t: 'texte', cle: 'adresse', lib: 'Adresse du local', ic: 'lieu', large: true, requis: true, avec: ['ville'] },
       { t: 'texte', cle: 'ville', lib: 'Ville', ic: 'immeuble', requis: true },
       { t: 'zone', cle: 'description', lib: 'La désignation du local', ic: 'doc', large: true, exemple: 'une boutique de 60 m² en rez-de-chaussée, avec 6 m de vitrine et une réserve' },
-      { t: 'titre', cle: 't-vendeur', lib: 'Son propriétaire', ic: 'personne' },
-      { t: 'texte', cle: 'vendeurNom', lib: 'Son nom', ic: 'personne', exemple: 'SCI Les Tilleuls', question: 'Connais-tu le nom du bailleur, du cédant ou du vendeur ?', aide: 'Sinon, l’offre s’adresse « au propriétaire ».' },
-      { t: 'texte', cle: 'agenceVendeur', lib: 'L’agence qui le propose', ic: 'agence', exemple: 'Agence du Parc, Paris 17e', question: 'Le local est-il proposé par une autre agence ?', aide: 'C’est elle qui transmet l’offre.' },
+      /* Alexandre (23 octobre 2026) : jamais le nom du propriétaire dans
+         l'offre — Werner est l'intermédiaire ; l'offre lui est transmise par
+         l'agence, avec le local et les conditions, rien d'autre. */
+      { t: 'texte', cle: 'agenceVendeur', lib: 'L’agence qui le propose', ic: 'agence', exemple: 'Agence du Parc, Paris 17e', question: 'Le local est-il proposé par une autre agence ?', aide: 'C’est elle qui transmet l’offre au propriétaire. Sinon, c’est toi.' },
       { t: 'euros', cle: 'prixAffiche', lib: 'Loyer annoncé', ic: 'etiquette', unite: '€ HT HC / an', si: enLocation },
       { t: 'euros', cle: 'prixAffiche', lib: 'Prix annoncé', ic: 'etiquette', si: horsLocation },
     ],
@@ -471,12 +476,12 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
       `Représentée par ${nomComplet(as[0])}${txt(d, 'sciPouvoir') ? `, ${txt(d, 'sciPouvoir')}` : ''}, dûment habilité${as[0].civilite === 'Madame' ? 'e' : ''}.`,
     ].filter(Boolean), pied }]
     : as.map((p, i) => fichePersonne(p, 'personne', i === as.length - 1 ? pied : undefined));
-  const destinataire = txt(d, 'vendeurNom')
-    ? `${txt(d, 'vendeurNom')}, ${M.proprio}`
-    : `le ${M.proprio}`;
+  /* Jamais son nom : l'offre va au propriétaire par l'intermédiaire de
+     l'agence qui propose le local (Werner, ou une autre agence). */
+  const par = txt(d, 'agenceVendeur') && txt(d, 'agenceVendeur') !== A.nom ? txt(d, 'agenceVendeur') : 'l’Agence';
   const entre: Bloc[] = [
     { t: 'fiches', items: [...qui, ficheAgence(A, lignesMandataire(A).slice(0, 3), undefined, 'Ci-après « l’Agence », qui transmet l’offre')] },
-    P(`${M.Qui} ${v('adresse', 'adressent')} la présente offre à ${destinataire}${txt(d, 'agenceVendeur') ? `, par l’intermédiaire de ${txt(d, 'agenceVendeur')}` : ''}, ci-après « ${M.dest} ».`),
+    P(`${M.Qui} ${v('adresse', 'adressent')} la présente offre au ${M.proprio}, par l’intermédiaire de ${par}, ci-après « ${M.dest} ».`),
   ];
 
   const nat = NATURES.find(n => n.v === d.nature);
@@ -535,11 +540,11 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
 
   /* ── Une cession (droit au bail, fonds) ou un achat (les murs) ── */
   const prixB: Bloc[] = [
-    P(`${M.Qui} ${v('offre', 'offrent')} de ${M.objet} au prix de ${prix ? eurosLettres(prix) : '……………'}${d.forme === 'fai' ? ', honoraires de l’agence compris' : `, net pour ${M.dest}`}.`, true),
+    P(`${M.Qui} ${v('offre', 'offrent')} ${de(M.objet)} au prix de ${prix ? eurosLettres(prix) : '……………'}${d.forme === 'fai' ? ', honoraires de l’agence compris' : `, net pour ${M.dest}`}.`, true),
   ];
-  if (d.forme === 'fai' && prix && hv) prixB.push(P(`Soit un prix revenant au ${M.destMaj} de ${euros(prix - hv)} et des honoraires de ${honoEnClair(d, hv)}, à la charge de ${M.qui}.`));
+  if (d.forme === 'fai' && prix && hv) prixB.push(P(`Soit un prix revenant au ${M.destMaj} de ${euros(prix - hv)} et des honoraires de ${honoEnClair(d, hv)}, à la charge ${deQui(M.qui)}.`));
   prixB.push(P(sorte === 'cession'
-    ? `Les frais de l’acte de cession (droits d’enregistrement et honoraires de son rédacteur) sont en sus, à la charge de ${M.qui}, comme l’usage le veut.`
+    ? `Les frais de l’acte de cession (droits d’enregistrement et honoraires de son rédacteur) sont en sus, à la charge ${deQui(M.qui)}, comme l’usage le veut.`
     : 'Les frais de l’acte (droits de mutation et émoluments du notaire) sont en sus, à la charge de l’acquéreur, comme l’usage le veut.'));
   if (sorte === 'cession' && txt(d, 'activite')) prixB.push(P(`Activité qu’il exercera dans les lieux : ${txt(d, 'activite')}.`));
 
@@ -575,7 +580,7 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
   engage.push(P(sorte === 'achat'
     ? 'Aucune somme n’est versée à l’occasion de la présente offre : la loi l’interdit (article 1589-1 du Code civil). Le dépôt de garantie éventuel sera prévu par l’avant-contrat et versé entre les mains du notaire.'
     : 'Aucune somme n’est versée à l’occasion de la présente offre. Un éventuel acompte sera prévu par l’acte de cession et versé entre les mains de son rédacteur.', true));
-  if (txt(d, 'notaire')) engage.push(P(`${sorte === 'cession' ? 'Conseil' : 'Notaire ou avocat'} de ${M.qui} : ${txt(d, 'notaire')}.`));
+  if (txt(d, 'notaire')) engage.push(P(`${sorte === 'cession' ? 'Conseil' : 'Notaire ou avocat'} ${deQui(M.qui)} : ${txt(d, 'notaire')}.`));
   if (txt(d, 'note')) engage.push(P(`Précision : ${txt(d, 'note')}`));
 
   return [{
@@ -590,7 +595,7 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
       { titre: 'Le financement', ic: 'banque', blocs: fin },
       { titre: 'Les conditions', ic: 'check', blocs: [P(`${sorte === 'cession' ? 'L’acte de cession' : 'L’avant-contrat'} sera conclu sous les conditions suivantes :`), { t: 'l', items: conditions }] },
       { titre: 'Ce que l’offre engage', ic: 'balance', blocs: engage },
-      { titre: 'Informations', ic: 'info', blocs: [blocDonnees(A), P('Lutte contre le blanchiment : l’acquéreur fournira à l’Agence, et au rédacteur de l’acte, les justificatifs d’identité et d’origine des fonds qui lui seront demandés (articles L561-1 et suivants du Code monétaire et financier).')] },
+      { titre: 'Informations', ic: 'info', blocs: [blocDonnees(A), P(`Lutte contre le blanchiment : ${M.un.charAt(0).toLowerCase()}${M.un.slice(1)} fournira à l’Agence, et au rédacteur de l’acte, les justificatifs d’identité et d’origine des fonds qui lui seront demandés (articles L561-1 et suivants du Code monétaire et financier).`)] },
       signatures(d, A, M, pl),
       reponse(d, M, prix ? `au prix de ${euros(prix)}` : '', jusquau),
     ],
@@ -623,7 +628,7 @@ function reponse(d: Donnees, M: ReturnType<typeof mots>, montant: string, jusqua
     { t: 'case' as const, coche: false, x: `${Dest} fait la contre-proposition suivante : ____________________________ (elle ne vaut acceptation qu’une fois contresignée).` },
     Pp('Mots rayés nuls : ______   ·   Lignes rayées nulles : ______'),
     { t: 'sigs' as const, mention: `Il date et signe, précédé de la mention « Bon pour acceptation » s’il accepte.`, cases: [
-      { qui: `Le ${M.destMaj.toLowerCase()}`, nom: txt(d, 'vendeurNom') || '________________', lignes: ['Le __________ à ____ h ____'] },
+      { qui: `Le ${M.destMaj.toLowerCase()}`, nom: '________________', lignes: ['Le __________ à ____ h ____'] },
       { qui: `Le ${M.destMaj.toLowerCase()}`, nom: '________________', lignes: ['Le __________ à ____ h ____'] },
     ] },
     Pp('L’acceptation est portée à la connaissance du signataire de l’offre par l’Agence, par écrit (un e-mail suffit), le jour même.'),

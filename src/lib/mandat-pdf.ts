@@ -24,6 +24,7 @@ import {
   PDFDocument, StandardFonts, rgb, degrees, LineCapStyle, LineJoinStyle, pushGraphicsState, popGraphicsState, setLineJoin,
   type PDFFont, type PDFPage, type PDFImage, type RGB,
 } from 'pdf-lib';
+import { morceaux, sansBalises } from '@/lib/actes/retouches';
 import {
   ICONES, type Partie, type Bloc, type Fiche, type Icone, type Resume, dateLongue, heureParis, dateCourte,
 } from './mandat';
@@ -100,7 +101,7 @@ function lg(police: PDFFont, s: string, taille: number, espacement = 0): number 
   return t * taille + espacement * Math.max(0, n - 1);
 }
 
-type Kit = { r: PDFFont; g: PDFFont; i: PDFFont; serif: PDFFont; serifI: PDFFont; logo: PDFImage; logoBlanc: PDFImage };
+type Kit = { r: PDFFont; g: PDFFont; i: PDFFont; gi: PDFFont; serif: PDFFont; serifI: PDFFont; logo: PDFImage; logoBlanc: PDFImage };
 
 /* Du base64 aux octets, sans Buffer : ce fichier sert aussi dans le
    navigateur (l'aperçu du CRM). */
@@ -111,6 +112,7 @@ async function kit(doc: PDFDocument): Promise<Kit> {
     r: await doc.embedFont(StandardFonts.Helvetica),
     g: await doc.embedFont(StandardFonts.HelveticaBold),
     i: await doc.embedFont(StandardFonts.HelveticaOblique),
+    gi: await doc.embedFont(StandardFonts.HelveticaBoldOblique),
     serif: await doc.embedFont(StandardFonts.TimesRomanBold),
     serifI: await doc.embedFont(StandardFonts.TimesRomanItalic),
     logo: await doc.embedPng(octets(LOGO_MARINE)),
@@ -322,6 +324,48 @@ class Plume {
     this.y -= o.apres ?? 6;
   }
 
+  /* 23 octobre 2026 — Un paragraphe retouché par Werner (« Modifier le
+     texte ») : du gras (<b>) et de l'italique (<i>) au milieu des mots,
+     justifié comme les autres. Un mot peut changer de style en son milieu. */
+  paragrapheRiche(texte: string, o: { taille?: number; apres?: number } = {}) {
+    const taille = o.taille ?? CORPS;
+    const pas = taille * CORPS_PAS;
+    type Morceau = { t: string; f: PDFFont };
+    const mots: Morceau[][] = [];
+    let cur: Morceau[] = [];
+    for (const m of morceaux(texte)) {
+      const f = m.g && m.i ? this.k.gi : m.g ? this.k.g : m.i ? this.k.i : this.k.r;
+      propre(m.t).split(' ').forEach((x, n) => {
+        if (n > 0 && cur.length) { mots.push(cur); cur = []; }
+        if (x) cur.push({ t: x, f });
+      });
+    }
+    if (cur.length) mots.push(cur);
+    const lm = (m: Morceau[]) => m.reduce((t, x) => t + lg(x.f, x.t, taille), 0);
+    const esp = lg(this.k.r, ' ', taille);
+    const lignes: Morceau[][][] = [];
+    let ligne: Morceau[][] = [];
+    let l = 0;
+    for (const m of mots) {
+      const w = lm(m);
+      if (ligne.length && l + esp + w > LARGEUR) { lignes.push(ligne); ligne = [m]; l = w; }
+      else { l = ligne.length ? l + esp + w : w; ligne.push(m); }
+    }
+    if (ligne.length) lignes.push(ligne);
+    lignes.forEach((li, n) => {
+      this.place(pas);
+      const plein = li.reduce((t, m) => t + lm(m), 0);
+      const trou = n < lignes.length - 1 && li.length > 1 ? (LARGEUR - plein) / (li.length - 1) : esp;
+      let x = MARGE.g;
+      for (const m of li) {
+        for (const s of m) { this.page.drawText(s.t, { x, y: this.y - taille, size: taille, font: s.f, color: MARINE }); x += lg(s.f, s.t, taille); }
+        x += trou > esp * 3 ? esp : trou;
+      }
+      this.y -= pas;
+    });
+    this.y -= o.apres ?? 6;
+  }
+
   /* Une phrase qui engage : un encadré bleu très pâle, un filet d'or à
      gauche, le texte en gras bleu. */
   encadre(texte: string) {
@@ -492,7 +536,7 @@ class Plume {
   hauteurDebut(b: Bloc | undefined): number {
     if (!b) return 0;
     if (b.t === 'p' && b.g) return couper(b.x, this.k.g, 9.8, LARGEUR - 25).length * 14.5 + 22;
-    if (b.t === 'p') return Math.min(3, couper(b.x, this.k.r, CORPS, LARGEUR).length) * CORPS * CORPS_PAS;
+    if (b.t === 'p') return Math.min(3, couper(sansBalises(b.x), this.k.r, CORPS, LARGEUR).length) * CORPS * CORPS_PAS;
     if (b.t === 'fiches') return this.hauteurPremierRang(b.items);
     if (b.t === 'coches') return 60;
     if (b.t === 'etapes') return 60;
@@ -977,8 +1021,12 @@ export async function pdfMandat(parties: Partie[], o: OptionsPdf): Promise<Uint8
 
 function dessinerBloc(pl: Plume, b: Bloc, o: OptionsPdf) {
   if (b.t === 'p') {
-    if (b.g) pl.encadre(b.x);
+    /* 23 octobre 2026 : un paragraphe retouché (gras, italique, taille). */
+    const taille = b.petit ? 8.7 : b.grand ? 11.5 : undefined;
+    if (b.g) pl.encadre(sansBalises(b.x));
+    else if (b.riche) pl.paragrapheRiche(b.x, { taille, apres: b.petit ? 4 : undefined });
     else if (b.petit) pl.paragraphe(b.x, { taille: 8.7, apres: 4 });
+    else if (b.grand) pl.paragraphe(b.x, { taille: 11.5 });
     else pl.paragraphe(b.x);
   }
   else if (b.t === 'l') pl.liste(b.items);

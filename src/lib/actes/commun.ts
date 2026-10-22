@@ -223,6 +223,9 @@ export type Modele = {
   /* Le nom sur la page de garde. */
   pour: (d: Donnees) => string;
   rediger: (d: Donnees, id: IdentiteAgence) => Partie[];
+  /* Le texte tel que les réponses le rédigent, sans les retouches de Werner
+     (« Modifier le texte », src/lib/actes/retouches.ts) : posé par index.ts. */
+  brut?: (d: Donnees, id: IdentiteAgence) => Partie[];
   resume: (d: Donnees) => Resume;
   garde: (d: Donnees) => Garde;
   entete: (d: Donnees) => string;

@@ -15,8 +15,15 @@ import { AVENANT_RECHERCHE } from './avenant-recherche';
 import { COURRIER_RECONDUCTION } from './courrier-reconduction';
 import { DELEGATION } from './delegation';
 import { RECONNAISSANCE } from './reconnaissance';
+import { appliquerRetouches } from './retouches';
 
-export const MODELES: Modele[] = [MANDAT_VENTE, AVENANT_VENTE, MANDAT_RECHERCHE, AVENANT_RECHERCHE, OFFRE_ACHAT, BON_VISITE, RECONNAISSANCE, COURRIER_RECONDUCTION, DELEGATION];
+/* 23 octobre 2026 : chaque modèle rédige son texte, puis les retouches de
+   Werner (« Modifier le texte ») s'y appliquent — l'aperçu, le PDF, la page
+   de signature et l'espace du client passent tous par ici. `brut` garde le
+   texte d'origine pour la fenêtre des retouches. */
+const avecRetouches = (m: Modele): Modele => ({ ...m, brut: m.rediger, rediger: (d, id) => appliquerRetouches(m.rediger(d, id), d) });
+
+export const MODELES: Modele[] = [MANDAT_VENTE, AVENANT_VENTE, MANDAT_RECHERCHE, AVENANT_RECHERCHE, OFFRE_ACHAT, BON_VISITE, RECONNAISSANCE, COURRIER_RECONDUCTION, DELEGATION].map(avecRetouches);
 export const modele = (id: string): Modele | null => MODELES.find(m => m.id === id) || null;
 
 /* Les rubriques de la page, dans l'ordre. Le mandat de recherche en ligne
@@ -78,3 +85,4 @@ export async function pdfDocument(m: Modele, d: Donnees, identite: IdentiteAgenc
 }
 
 export * from './commun';
+export * from './retouches';

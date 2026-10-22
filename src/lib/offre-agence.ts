@@ -18,7 +18,7 @@
 
    Navigateur (Documents) et serveur (l'espace du client). */
 
-import { argentBien, honorairesPour, nomProprioActe, type Donnees } from './biens-vente';
+import { argentBien, honorairesPour, type Donnees } from './biens-vente';
 import { natureDe } from './affaires';
 import { num, txt } from './actes';
 
@@ -40,7 +40,9 @@ export function champsOffreAgence(v: VentePourOffre, agence: string, prix?: numb
     ...(num(d, 'surface') ? { surface: num(d, 'surface') } : {}),
     ...(nature === 'location' ? { bailType: txt(d, 'bailType') || 'commercial', pret: null, saisi: 'prix', total: null, ...(num(d, 'depotMois') ? { depotMois: num(d, 'depotMois') } : {}) } : {}),
     ...(nature === 'fonds' && txt(d, 'activite') ? { activite: txt(d, 'activite') } : {}),
-    vendeurNom: nomProprioActe(d),
+    /* Werner : jamais le nom du propriétaire dans l'offre (son mandant reste
+       confidentiel ; l'offre lui est transmise par l'agence). */
+    vendeurNom: '',
     agenceVendeur: agence,
     ...(adresse ? { adresse } : {}),
     ...(ville ? { ville } : {}),

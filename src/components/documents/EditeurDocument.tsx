@@ -3,6 +3,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { supabase } from '@/lib/supabase';
 import { IDENTITE_DEFAUT, type IdentiteAgence } from '@/lib/agence';
 import { STATUTS, modele, pdfDocument, electronique, modeSignature, surPlaceSansCode, versEtape, type Champ, type Donnees, type Etape, type Repere } from '@/lib/actes';
+import { lireRetouches, nbRetouches, type Retouches } from '@/lib/actes/retouches';
 import ApercuActe, { Croix, Ic } from './ApercuActe';
 import FenetreConfirmer from './FenetreConfirmer';
 import { ContexteActe, manquesEtape } from './ChampsActe';
@@ -135,6 +136,10 @@ export default function EditeurDocument({ doc, onFermer, onMaj, onFinalise, reto
   const [fin, setFin] = useState(false);
   /* « Envoyer ce projet » (V3.40) : le brouillon part en relecture. */
   const [projet, setProjet] = useState(false);
+  /* 23 octobre 2026 — « Modifier le texte » : l'avertissement, puis le texte
+     déverrouillé (chaque phrase de l'aperçu s'ouvre au clic, EditionTexte). */
+  const [avertirTexte, setAvertirTexte] = useState(false);
+  const [texteLibre, setTexteLibre] = useState(false);
   const [travail, setTravail] = useState('');
   const [message, setMessage] = useState<{ t: string; ok: boolean } | null>(null);
   /* V3.55 : un brouillon resté avec une signature en ligne ouverte (repassé
@@ -258,6 +263,21 @@ export default function EditeurDocument({ doc, onFermer, onMaj, onFinalise, reto
     enVol.current = null;
     return ok;
   }, [m, row.id, onMaj]);
+
+  /* Les retouches du texte : posées, puis enregistrées tout de suite (le
+     cadre attend la réponse pour dire « Modification enregistrée »). */
+  const enregistrerRetouches = useCallback(async (r: Retouches): Promise<boolean> => {
+    if (off) return false;
+    const n: Donnees = { ...dernier.current, retouches: r };
+    dernier.current = n;
+    setD(n);
+    aEnregistrer.current = true;
+    setEnreg('attente');
+    if (minuterie.current) clearTimeout(minuterie.current);
+    return enregistrer();
+  }, [off, enregistrer]);
+  /* Un document parti en signature ne se retouche plus. */
+  useEffect(() => { if (off) setTexteLibre(false); }, [off]);
 
   const maj = useCallback((cle: string, v: unknown) => {
     if (off) return;
@@ -388,11 +408,17 @@ export default function EditeurDocument({ doc, onFermer, onMaj, onFinalise, reto
   const rendu = useMemo(() => {
     if (!m || !voirApercu) return null;
     try {
-      return { parties: m.rediger(dd, identite), garde: m.garde(dd), pour: m.pour(dd), resume: m.resume(dd), erreur: '' };
+      return {
+        parties: m.rediger(dd, identite), garde: m.garde(dd), pour: m.pour(dd), resume: m.resume(dd), erreur: '',
+        /* Le texte d'origine, pour le retoucher. */
+        brut: texteLibre ? (m.brut || m.rediger)(dd, identite) : null,
+      };
     } catch (e) {
-      return { parties: [], garde: m.garde({}), pour: '', resume: [], erreur: (e as Error).message };
+      return { parties: [], garde: m.garde({}), pour: '', resume: [], erreur: (e as Error).message, brut: null };
     }
-  }, [m, dd, identite, voirApercu]);
+  }, [m, dd, identite, voirApercu, texteLibre]);
+  const retouches = lireRetouches(d);
+  const nbRetouche = nbRetouches(retouches);
 
   /* L'aperçu suit l'étape : il montre la rubrique dont on parle. */
   /* Les étapes telles qu'on les montre (le numéro remplacé quand le
@@ -737,6 +763,13 @@ export default function EditeurDocument({ doc, onFermer, onMaj, onFinalise, reto
           <button type="button" className={`${s.btn} ${s.btnMasque}`} disabled={travail === 'apercu'} onClick={apercuPdf}>
             <Ic n="doc" t={15} />{row.statut === 'brouillon' ? (travail === 'apercu' ? 'Préparation…' : 'Aperçu PDF') : 'Le PDF'}
           </button>
+          {row.statut === 'brouillon' && (
+            <button type="button" className={`${s.btn} ${s.btnCourt} ${texteLibre ? s.btnOr : ''}`} aria-pressed={texteLibre}
+              title={texteLibre ? 'Reverrouiller le texte' : 'Changer une phrase, retirer une partie, ajouter ton texte'}
+              onClick={() => { if (texteLibre) setTexteLibre(false); else setAvertirTexte(true); }}>
+              <Ic n={texteLibre ? 'cadenas' : 'crayon'} t={15} /><span>{texteLibre ? 'Terminer' : 'Modifier le texte'}</span>
+            </button>
+          )}
           {row.statut === 'brouillon' && !m.courrier && (
             <button type="button" className={`${s.btn} ${s.btnCourt}`} onClick={() => setProjet(true)} title="Envoyer ce projet pour relecture, sans signature" aria-label="Envoyer ce projet">
               <Ic n="envoyer" t={15} /><span>Envoyer ce projet</span>
@@ -848,17 +881,30 @@ export default function EditeurDocument({ doc, onFermer, onMaj, onFinalise, reto
 
         {/* ── Le document : un clic sur un passage ouvre sa question ── */}
         {voirApercu && (
-          <div className={s.edApercu} ref={apercuRef} onClick={cliquerApercu}>
+          <div className={s.edApercu} ref={apercuRef} onClick={texteLibre ? undefined : cliquerApercu}>
             <div className={s.edApercuT}>
-              <span>{off ? 'Le document figé' : 'Aperçu en direct'}</span>
+              <span>{off ? 'Le document figé' : texteLibre ? 'Texte déverrouillé' : 'Aperçu en direct'}</span>
+              {!texteLibre && nbRetouche > 0 && (
+                <button type="button" className={s.edRetouche} title="Voir et changer tes modifications du texte" onClick={e => { e.stopPropagation(); if (!off) setAvertirTexte(true); }}>
+                  <Ic n="crayon" t={11} />{`Texte retouché · ${nbRetouche}`}
+                </button>
+              )}
               <span className={s.edApercuQui}>{m.signataires}</span>
               <button type="button" className={s.edMasquer} onClick={() => montrerApercu(false)} title="Masquer l’aperçu : les questions prennent toute la largeur">
                 <Ic n="oeilBarre" t={14} /><span>Masquer</span>
               </button>
             </div>
+            {texteLibre && (
+              <div className={s.etBandeau} data-emi-anim="non">
+                <span className={s.etBandeauIc}><Ic n="crayon" t={15} /></span>
+                <span><b>{'Le texte est déverrouillé.'}</b>{' Clique sur une phrase pour la changer. À côté de chaque titre : « Retirer la partie ». En bas de chaque partie : « Ajouter un paragraphe ».'}</span>
+                <button type="button" className={`${s.btn} ${s.btnCourt}`} onClick={() => setTexteLibre(false)}><Ic n="cadenas" t={14} /><span>Terminer</span></button>
+              </div>
+            )}
             {rendu && (rendu.erreur
               ? <div className={s.erreur}>{`L’aperçu n’a pas pu être rédigé : ${rendu.erreur}`}</div>
-              : <ApercuActe parties={rendu.parties} garde={rendu.garde} pour={rendu.pour} resume={rendu.resume} projet={row.statut === 'brouillon'} cliquable
+              : <ApercuActe parties={rendu.parties} garde={rendu.garde} pour={rendu.pour} resume={rendu.resume} projet={row.statut === 'brouillon'} cliquable={!texteLibre}
+                  edition={texteLibre && rendu.brut ? { brut: rendu.brut, r: retouches, enregistrer: enregistrerRetouches } : undefined}
                   pied={`${identite.nom} · ${identite.societe}, ${identite.forme} · carte professionnelle ${identite.carte}`} />)}
           </div>
         )}
@@ -947,6 +993,27 @@ export default function EditeurDocument({ doc, onFermer, onMaj, onFinalise, reto
           ]}
           conseil="Tu hésites ? Garde-le : un brouillon n’engage à rien et ne compte nulle part tant qu’il n’est pas finalisé."
           onFermer={() => setFenSuppr(null)} onConfirmer={() => { void supprimer(fenSuppr.ligne); }} />
+      )}
+      {/* « Modifier le texte » : avant de déverrouiller, ce qu'il prend en main. */}
+      {avertirTexte && (
+        <FenetreConfirmer ic="crayon" ton="or" titre="Modifier le texte du document ?"
+          intro="Le texte est rédigé à partir de tes réponses, pour être juste et conforme. Tu vas pouvoir le changer à ta main, directement sur l’aperçu."
+          points={[
+            { ic: 'crayon', t: 'Chaque phrase s’ouvre au clic : tu la réécris, tu mets du gras, de l’italique, une autre taille, ou tu la supprimes.' },
+            { ic: 'plus', t: 'Tu peux retirer une partie entière, ajouter tes paragraphes, et tes propres parties avant les signatures.' },
+            { ic: 'balance', ton: 'alerte', t: 'Tu es responsable de chaque modification. Relis-la, et dans le doute, fais relire le document par ton avocat : une mention que la loi exige, retirée ou mal réécrite, peut le rendre nul.' },
+            { ic: 'cadenas', t: 'Les signatures et la rétractation restent telles quelles. Dès que la signature est lancée, plus rien ne se modifie.' },
+          ]}
+          bouton="J’ai compris, modifier le texte"
+          onFermer={() => setAvertirTexte(false)}
+          onConfirmer={() => {
+            setAvertirTexte(false);
+            setTexteLibre(true);
+            montrerApercu(true);
+            setVue('apercu');
+            /* Quand il a pris la main sur le texte (gardé avec le document). */
+            if (!retouches.responsable_le) void enregistrerRetouches({ ...retouches, responsable_le: new Date().toISOString() });
+          }} />
       )}
       {fenModif && (
         <FenetreConfirmer ic="crayon" titre="Repasser en brouillon pour le modifier ?" bouton="Repasser en brouillon"

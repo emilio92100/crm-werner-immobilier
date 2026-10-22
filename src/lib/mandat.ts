@@ -505,7 +505,7 @@ export type Icone = keyof typeof ICONES;
 export type Fiche = { ic: Icone; titre: string; lignes: string[]; note?: string; large?: boolean; pied?: string };
 
 export type Bloc =
-  | { t: 'p'; x: string; g?: boolean; petit?: boolean }  // un paragraphe (g : il engage → encadré)
+  | { t: 'p'; x: string; g?: boolean; petit?: boolean; grand?: boolean; riche?: boolean }  // un paragraphe (g : il engage → encadré ; riche : du <b> et du <i>, « Modifier le texte »)
   | { t: 'l'; items: string[] }                          // une liste à puces
   | { t: 'coches'; items: string[] }                     // une liste cochée
   | { t: 'etapes'; items: { titre: string; x: string }[] } // la mission, étape par étape, numérotée
