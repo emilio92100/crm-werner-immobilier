@@ -628,18 +628,23 @@ const initiales = (x: { prenom: string; nom: string }) => `${x.prenom.trim().cha
 
 export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onSigne, tel, bienId }: {
   mandat: MandatEspace;
-  /** 'visite' : il vient d'appuyer sur « Je souhaite le visiter ». */
-  raison: 'visite' | 'libre';
+  /** 'visite' : il vient d'appuyer sur « Je souhaite le visiter ».
+      'creneau' (V3.233) : il vient de confirmer un créneau de l'agence. */
+  raison: 'visite' | 'creneau' | 'libre';
   /** Le bien qu'il voulait visiter : Alexandre le voit s'il demande à être rappelé. */
   bienId?: string;
   envoyer: Envoyer;
   onFermer: () => void;
-  /** Appelé une fois signé : l'espace se met à jour, la demande de visite part. */
-  onSigne: (r: { numero: string; signeLe: string; finRetractation: string; execution: boolean; attente?: CoEspace[] }) => Promise<void> | void;
+  /** Appelé une fois signé : l'espace se met à jour, la demande de visite part.
+      V3.233 : une phrase rendue remplace celle de l'écran « C'est signé »
+      (le créneau confirmé, ou pourquoi il ne l'est pas). */
+  onSigne: (r: { numero: string; signeLe: string; finRetractation: string; execution: boolean; attente?: CoEspace[] }) => Promise<void | string> | void | string;
   tel: string;
 }) {
   /* Un code déjà envoyé et encore valable : on reprend là où il en était. */
   const [etape, setEtape] = useState<'accueil' | 'recap' | 'lecture' | 'coord' | 'signer' | 'fini'>(mandat.code ? 'signer' : 'accueil');
+  /* V3.233 : ce que dit l'écran « C'est signé » quand l'espace a une suite à raconter (le créneau). */
+  const [phraseApres, setPhraseApres] = useState('');
   const [retourLecture, setRetourLecture] = useState<'recap' | 'signer'>('recap');
   const [m, setM] = useState<Mandant>(mandat.mandant);
   const [champs, setChamps] = useState<Record<string, string>>({});
@@ -864,7 +869,9 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
         })) : [];
       setEnAttente(att);
       const res = { numero: r.numero, signeLe: r.signeLe || new Date().toISOString(), finRetractation: r.finRetractation, execution: r.execution ?? execution, ...(att.length ? { attente: att } : {}) };
-      try { await onSigne(res); } catch { /* la signature est faite : la suite ne doit pas la cacher */ }
+      let apres: unknown = null;
+      try { apres = await onSigne(res); } catch { /* la signature est faite : la suite ne doit pas la cacher */ }
+      setPhraseApres(typeof apres === 'string' ? apres : '');
       setFin(res);
       setEnvoi(false);
       setEtape('fini');
@@ -913,7 +920,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
   if (docRefus) {
     return (
       <div className="mdt">
-        {tete(raison === 'visite' ? 'Avant la visite' : 'Votre mandat de recherche')}
+        {tete(raison !== 'libre' ? 'Avant la visite' : 'Votre mandat de recherche')}
         <div className="mdt-corps mdt-accueil">
           <div className="mdt-sceau"><Ic n="bouclier" t={30} /></div>
           <h3>{docRefus.signe ? 'Vous avez déjà signé votre mandat' : docRefus.lien ? 'Votre mandat de recherche vous attend' : 'Werner prépare votre mandat'}</h3>
@@ -933,11 +940,13 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
   if (etape === 'accueil') {
     return (
       <div className="mdt">
-        {tete(raison === 'visite' ? 'Avant la visite' : 'Votre mandat de recherche')}
+        {tete(raison !== 'libre' ? 'Avant la visite' : 'Votre mandat de recherche')}
         <div className="mdt-corps mdt-accueil">
           <div className="mdt-sceau"><Ic n="bouclier" t={30} /></div>
-          <h3>{raison === 'visite' ? 'Visitez avec un conseiller de votre côté' : 'Confirmez votre recherche avec Werner'}</h3>
-          <p className="mdt-p">{raison === 'visite'
+          <h3>{raison !== 'libre' ? 'Visitez avec un conseiller de votre côté' : 'Confirmez votre recherche avec Werner'}</h3>
+          <p className="mdt-p">{raison === 'creneau'
+            ? 'Avant de confirmer ce créneau, Werner vous propose de confirmer votre recherche avec lui : c’est votre mandat de recherche. Votre créneau part dès que c’est signé.'
+            : raison === 'visite'
             ? 'Pour organiser cette visite et vous accompagner jusqu’au bout, Werner vous propose de confirmer votre recherche avec lui. C’est votre mandat de recherche.'
             : 'Werner vous propose de confirmer votre recherche avec lui. C’est votre mandat de recherche : il l’engage à vos côtés, jusqu’au bout.'}</p>
           <div className="mdt-puces">
@@ -949,7 +958,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
           </div>
           {/* V3.183 : « Commencer » a sa ligne dans l'historique (le résumé affiché). */}
           <button type="button" className="btn or mdt-plein" onClick={() => { setEtape('recap'); void envoyer('mandat', { etape: 'commencer' }); }}>
-            {raison === 'visite' ? 'Confirmer ma recherche · 2 min' : 'Commencer · 2 min'}
+            {raison !== 'libre' ? 'Confirmer ma recherche · 2 min' : 'Commencer · 2 min'}
           </button>
           {aide}
           {erreur && <div className="mdt-erreur">{erreur}</div>}
@@ -1176,11 +1185,11 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
 
   /* ── 4. C'est signé ── */
   const attendre = fin && !fin.execution;
-  const phraseVisite = raison === 'visite'
+  const phraseVisite = phraseApres || (raison !== 'libre'
     ? (attendre
       ? `Votre demande de visite est partie. Comme vous avez choisi d’attendre vos ${RETRACTATION_JOURS} jours, Werner vous proposera un créneau à partir du ${dateLongue(fin!.finRetractation)}.`
       : 'Votre demande de visite est partie avec vos disponibilités. Werner vous propose un créneau très vite.')
-    : 'Werner est prévenu. Vous pouvez maintenant demander vos visites en un geste, depuis chaque local.';
+    : 'Werner est prévenu. Vous pouvez maintenant demander vos visites en un geste, depuis chaque local.');
 
   /* Signé à plusieurs : sa signature est faite, on attend les autres. Pas
      de rond qui tourne : qui a signé, qui on attend, et quoi faire si le
@@ -1742,7 +1751,8 @@ export function CartePret({ onSigner }: { onSigner: () => void }) {
    Il veut visiter, et son mandat de recherche l'attend (préparé dans le
    CRM, envoyé par e-mail). Pas de second mandat : on l'emmène signer
    celui-là. Sa demande de visite est gardée et part à son retour. */
-export function AvantVisiteDocument({ lien, onFermer }: { lien: string; onFermer: () => void }) {
+/* `creneau` (V3.233) : c'est un créneau de l'agence qui attend sa signature, pas une demande de visite. */
+export function AvantVisiteDocument({ lien, onFermer, creneau = false }: { lien: string; onFermer: () => void; creneau?: boolean }) {
   return (
     <div className="mdt">
       <div className="mdt-tete">
@@ -1752,10 +1762,12 @@ export function AvantVisiteDocument({ lien, onFermer }: { lien: string; onFermer
       <div className="mdt-corps mdt-accueil">
         <div className="mdt-sceau"><Ic n="bouclier" t={30} /></div>
         <h3>Votre mandat de recherche vous attend</h3>
-        <p className="mdt-p">{'Pour organiser cette visite, Werner vous a envoyé votre mandat de recherche. Il se relit en entier et se signe en deux minutes, avec un code reçu par e-mail.'}</p>
+        <p className="mdt-p">{creneau
+          ? 'Avant de confirmer ce créneau, signez votre mandat de recherche : Werner vous l’a envoyé. Il se relit en entier et se signe en deux minutes, avec un code reçu par e-mail.'
+          : 'Pour organiser cette visite, Werner vous a envoyé votre mandat de recherche. Il se relit en entier et se signe en deux minutes, avec un code reçu par e-mail.'}</p>
         <div className="mdt-puces">
           <span><span className="k"><Ic n="check" t={14} /></span><span><b>Une seule signature</b>, valable pour tous les locaux qu’il vous présentera.</span></span>
-          <span><span className="k"><Ic n="check" t={14} /></span><span>Votre demande de visite est gardée&nbsp;: elle part dès votre retour dans votre espace, une fois signé.</span></span>
+          <span><span className="k"><Ic n="check" t={14} /></span><span>{creneau ? 'Votre créneau est gardé\u00a0: il part dès votre retour dans votre espace, une fois signé.' : 'Votre demande de visite est gardée\u00a0: elle part dès votre retour dans votre espace, une fois signé.'}</span></span>
         </div>
         <a className="btn or mdt-plein" href={lien}>Lire et signer mon mandat</a>
         <button type="button" className="btn lien mdt-plein" onClick={onFermer}>Plus tard</button>

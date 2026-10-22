@@ -9,8 +9,8 @@ import { communeDeVille } from '@/lib/quartiers';
 import ArretPicker, { PastilleArret } from '@/components/shared/ArretPicker';
 import type { Arret } from '@/lib/arrets';
 import SignatureMandat, { AvantVisiteDocument, CarteMonMandat, CartePret, CarteAttente, CarteDocuments, Renonciation, mandatARenoncer, CSS_MANDAT, type MandatEspace } from './SignatureMandat';
-import { ajouterMois, jourParis, DUREE } from '@/lib/mandat';
-import { ISSUES, ISSUES_OK, RAISONS, RAISONS_IMPREVU, type Issue, type ImprevuVisite } from '@/lib/visites';
+import { ajouterMois, jourParis, DUREE, RETRACTATION_JOURS } from '@/lib/mandat';
+import { ISSUES, ISSUES_OK, RAISONS, RAISONS_IMPREVU, estRaison, maintenantParis, type Issue, type ImprevuVisite } from '@/lib/visites';
 import { correspondance, type LigneCorr, type Correspondance } from '@/lib/correspondance';
 import CarteEspace, { CATS_ESPACE, type BienCarte, type CatEspace } from './CarteEspace';
 import Decouverte, { GalerieGlisse, CSS_DECOUVERTE, type ActionsFiche, type AvisDecouverte } from './Decouverte';
@@ -19,7 +19,7 @@ import { CarteAnnonce, EnvoiAnnonce, ListeAnnonces, CSS_ANNONCES, type ResultatE
 import type { AnnonceEspace } from '@/lib/annonces-client';
 import FaireOffre, { CarteOffre, CarteOffreAccueil, offreAAccueil, phraseOffre, libelleOffre, ETIQ_TON, CSS_OFFRE, type BienOffre, type HonoOffre, type ModeOffre } from './FaireOffre';
 import { ETATS_CLIENT, FINIES, type OffreEspace, type SaisieOffre } from '@/lib/offres';
-import type { SuiviClient } from '@/lib/suivi-client';
+import { suiviCale, type SuiviClient, type ChoixCreneaux, type CreneauChoix } from '@/lib/suivi-client';
 import ChoixDispos, { MOMENTS_DISPO, ANCIENS_DISPO, estDateDispo } from './ChoixDispos';
 
 /**
@@ -136,6 +136,19 @@ type VisiteE = {
   motifs: string[]; mot: string | null; prix: number | null;
   compteRendu: string | null; etoiles: number | null; issueLe: string | null; revisite: boolean;
 };
+/* V3.221 : une visite à venir, telle que l'accueil et « Vos visites » la
+   lisent (page.tsx, `visites`) — et telle que la renvoie le serveur quand il
+   cale lui-même un créneau de l'agence (/api/espace/creneau). */
+type VisiteAVenir = { id: string; date: string; heure: string | null; titre: string; adresse: string; photo?: string | null; court?: string | null; bienId: string | null };
+/* V3.233 : `mandat` — un mandat l'attend : sa signature s'ouvre, et le
+   créneau part ensuite (`lien` : celui préparé dans Documents) ;
+   `retractation` — il a choisi d'attendre la fin de son délai de réflexion
+   (`apres` : quand il finit). */
+type ResultatCreneau = { ok: true; visite: VisiteAVenir } | { ok: false; raison: 'deja' | 'ferme' | 'plus_dispo' | 'reseau' | 'mandat' | 'retractation'; apres?: string; lien?: string };
+/* Un créneau qui attend la signature du mandat (V3.233). */
+type CreneauAttente = { ligne: string; date: string; heure: string };
+/* Sa réponse après une visite (V3.222 : `dispos`, ses disponibilités pour la revoir). */
+type Repondre = (v: VisiteE, i: Issue, motifs: string[], mot: string, prix: number | null, dispos?: string[]) => Promise<boolean>;
 type Criteres = {
   budgetMin: number | null; budgetMax: number | null;
   surfaceMin: number | null; surfaceMax: number | null; surfaceSejourMin: number | null;
@@ -156,8 +169,6 @@ type Criteres = {
   natures?: string[]; activite?: string; loyerMin?: number | null; loyerMax?: number | null;
   vitrineMin?: number | null; postesMin?: number | null; emplacements?: string[];
 };
-/* V3.232 : une visite à venir, telle que l'accueil et « Vos visites » la lisent (page.tsx, `visites`). */
-type VisiteAVenir = Props['visites'][number];
 type Props = {
   token: string;
   client: { prenom: string; nom: string; reference: string; jours: number | null };
@@ -170,7 +181,7 @@ type Props = {
   } | null;
   semaine: { quand: string | null; lues: number }[];
   /* Les visites calées et pas encore passées, la plus proche en premier. */
-  visites: { id: string; date: string; heure: string | null; titre: string; adresse: string; photo?: string | null; bienId: string | null }[];
+  visites: VisiteAVenir[];
   /* ── le sélecteur de recherche ──
      Toutes les recherches visibles du client, la plus ancienne d'abord.
      Un client n'en a le plus souvent qu'une : dans ce cas le sélecteur ne
@@ -1106,7 +1117,7 @@ const SANS_APPRIS: string[] = [];
 const SANS_IDENTITE: SaisieOffre['acquereurs'] = [];
 const SANS_IMPREVUS: Record<string, ImprevuVisite> = {};
 
-export default function EspaceClient({ token, client, criteres, biens: biensInit, passage, semaine, visites, recherches, rechercheId, rang, enCours, mandat: mandatInit, mesVisites, apprisClient = SANS_APPRIS, annonces: annoncesInit = null, identiteOffre = SANS_IDENTITE, imprevus: imprevusInit = SANS_IMPREVUS }: Props) {
+export default function EspaceClient({ token, client, criteres, biens: biensInit, passage, semaine, visites: visitesInit, recherches, rechercheId, rang, enCours, mandat: mandatInit, mesVisites, apprisClient = SANS_APPRIS, annonces: annoncesInit = null, identiteOffre = SANS_IDENTITE, imprevus: imprevusInit = SANS_IMPREVUS }: Props) {
   const [vue, setVue] = useState('accueil');
   /* V3.184 : ses annonces envoyées ; une nouvelle s'ajoute sans recharger. */
   const [annonces, setAnnonces] = useState<AnnonceEspace[] | null>(annoncesInit);
@@ -1119,6 +1130,11 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
      relancerait cet effet sans fin. */
   const [mesV, setMesV] = useState<VisiteE[]>(mesVisites || []);
   useEffect(() => { setMesV(mesVisites || []); }, [mesVisites]);
+  /* V3.221 : ses visites à venir vivent aussi dans un état local : celle
+     qu'il cale lui-même (un créneau de l'agence) s'ajoute tout de suite à
+     l'accueil, à « Vos visites » et au chiffre de l'onglet Visites. */
+  const [visites, setVisites] = useState(visitesInit);
+  useEffect(() => { setVisites(visitesInit); }, [visitesInit]);
   /* V3.232 : ses imprévus sur une visite calée (« Werner est prévenu »). */
   const [imprevus, setImprevus] = useState(imprevusInit);
   useEffect(() => { setImprevus(imprevusInit); }, [imprevusInit]);
@@ -1536,8 +1552,9 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
   };
 
   /* ── ouverture d'une fiche ── */
-  function ouvrirBien(b: Bien, o?: { versCr?: boolean }) {
-    if (aDecouvrir(b)) { ouvrirDecouverte(b.id); return; }
+  function ouvrirBien(b: Bien, o?: { versCr?: boolean; versCreneau?: boolean }) {
+    /* V3.221 : « Choisir mon créneau » ouvre la fiche, jamais « Découvrir ». */
+    if (aDecouvrir(b) && !o?.versCreneau) { ouvrirDecouverte(b.id); return; }
     if (b.etat === 'neuf') {
       setBiens(l => l.map(x => x.id === b.id ? { ...x, etat: 'vu', vuLe: new Date().toISOString() } : x));
     }
@@ -1555,8 +1572,124 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
       visitesB={mesV.filter(x => x.bienId === b.id)} onRepondreVisite={repondreVisite}
       onFaireOffre={peutOffrir(b) ? () => ouvrirOffre(b, b.offreSuivi ? { depuis: b.offreSuivi.id, derniere: b.offreSuivi.total } : {}) : undefined}
       actionsOffre={actionsOffre(b)} versCr={!!o?.versCr}
+      token={token} onCreneau={(ligne: string, date: string, heure: string) => choisirCreneau(b, ligne, date, heure)}
+      onRevoir={(motifs: string[], dispos: string[], mot: string) => demanderRevisite(b, motifs, dispos, mot)}
+      versCreneau={!!o?.versCreneau}
       imprevu={vav ? imprevus[vav.id] || null : null} onImprevu={vav ? () => ouvrirImprevu(vav) : undefined} />, 'fiche');
   }
+
+  /* ── V3.221 : il choisit un des créneaux proposés par l'agence ──
+     Le serveur pose la visite comme « Planifier une visite » dans le CRM.
+     Ici, tout se met à jour aussitôt : le bien (visite à venir, suivi
+     « Visite calée »), « Vos visites », l'accueil et le chiffre de l'onglet
+     Visites. La fiche ouverte, elle, garde sa fenêtre de confirmation
+     jusqu'au bout, puis se met à jour à son tour (onFait). */
+  async function poserCreneau(b: Bien, ligne: string, date: string, heure: string): Promise<ResultatCreneau> {
+    const r = await envoyer('creneau', { bien_id: b.id, ligne, date, heure });
+    if (!r?.ok || !r.visite) {
+      if (r?.error === 'mandat') return { ok: false, raison: 'mandat' };
+      if (r?.error === 'mandat_document' && typeof r.lien === 'string') return { ok: false, raison: 'mandat', lien: r.lien };
+      const raison = r?.error === 'deja' ? 'deja' : r?.error === 'creneau_ferme' ? 'ferme' : r?.error === 'plus_dispo' ? 'plus_dispo' : 'reseau';
+      return { ok: false, raison };
+    }
+    const v = r.visite as VisiteAVenir;
+    const cle = (x: { date: string; heure: string | null }) => `${x.date} ${x.heure || ''}`;
+    setVisites(l => [...l.filter(x => x.id !== v.id), v].sort((a, c) => cle(a).localeCompare(cle(c))));
+    setMesV(l => [...l.filter(x => x.id !== v.id), {
+      id: v.id, bienId: b.id, date: v.date, heure: v.heure, passee: false,
+      issue: null, issuePar: null, motifs: [], mot: null, prix: null, compteRendu: null, etoiles: null, issueLe: null,
+      revisite: l.some(x => x.bienId === b.id && x.id !== v.id),
+    }]);
+    /* V3.232 : une visite déplacée après son imprévu — l'imprévu est réglé. */
+    setImprevus(x => { if (!x[v.id]) return x; const y = { ...x }; delete y[v.id]; return y; });
+    const le = new Date().toISOString();
+    setBiens(l => l.map(x => {
+      if (x.id !== b.id) return x;
+      const sansReponse = !x.avis || x.avis === 'propose';
+      return {
+        ...x, visitePrevue: { date: v.date, heure: v.heure },
+        suivi: x.suivi ? suiviCale(x.suivi, v) : x.suivi,
+        ...(sansReponse ? { avis: 'souhaite_visiter', etat: 'avis', retourLe: le, retourPar: 'client' } : {}),
+      };
+    }));
+    return { ok: true, visite: v };
+  }
+
+  /* ── V3.233 : pas de créneau sans mandat signé ──
+     Alexandre (CRM d’Emilio) : « s'il valide un créneau et qu'il n'a pas de mandat signé,
+     que ça lui demande de signer le mandat d'abord ; il n'y a que quand c'est
+     moi qui place la visite que ça s'en passe ». La même règle que « Je
+     souhaite le visiter » (visiteBloquee) : un mandat l'attend → la
+     signature s'ouvre, et le créneau part tout seul une fois signé. Le
+     serveur fait la même vérification (route « creneau », réponse
+     « mandat »). Et s'il a choisi d'attendre la fin de son délai de
+     réflexion, pas de visite avant. */
+  async function choisirCreneau(b: Bien, ligne: string, date: string, heure: string): Promise<ResultatCreneau> {
+    const x: CreneauAttente = { ligne, date, heure };
+    const m = mandatRef.current;
+    if (!b.agence && m.etat !== 'valide' && m.enRoute?.lien && m.document?.vous !== 'signe') {
+      creneauApresDocument(b, x, m.enRoute.lien);
+      return { ok: false, raison: 'mandat' };
+    }
+    if (!b.agence && m.etat === 'a_signer') { signerPuisCreneau(b, x); return { ok: false, raison: 'mandat' }; }
+    const avant = avantFinReflexion(m.signe, date, heure);
+    if (avant) return { ok: false, raison: 'retractation', apres: avant };
+    const r = await poserCreneau(b, ligne, date, heure);
+    /* Le serveur réclame un mandat que l'écran ne savait pas nécessaire
+       (Werner vient de le préparer) : la signature s'ouvre quand même. */
+    if (!r.ok && r.raison === 'mandat') {
+      if (r.lien) {
+        const lien = r.lien;
+        setMandat(y => ({ ...y, etat: 'sans_numero', propose: false, enRoute: { lien } }));
+        mandatRef.current = { ...mandatRef.current, etat: 'sans_numero', propose: false, enRoute: { lien } };
+        creneauApresDocument(b, x, lien);
+      } else {
+        setMandat(y => ({ ...y, etat: 'a_signer' }));
+        mandatRef.current = { ...mandatRef.current, etat: 'a_signer' };
+        signerPuisCreneau(b, x);
+      }
+    }
+    return r;
+  }
+  /* Il a choisi d'attendre la fin de son délai de réflexion : un créneau
+     avant cette date ne peut pas être retenu. Rend la fin du délai, ou null. */
+  function avantFinReflexion(sig: { fin: string; execution: boolean | null } | null | undefined, date: string, heure: string): string | null {
+    if (!sig?.fin || sig.execution !== false) return null;
+    return `${date} ${heure}` < maintenantParis(new Date(sig.fin)) ? sig.fin : null;
+  }
+  function signerPuisCreneau(b: Bien, x: CreneauAttente) {
+    garderVisite(b, '', false, x);
+    ouvrirMandat('creneau', async (s) => { oublierVisite(); return creneauSigne(b, x, s); }, b.id);
+  }
+  function creneauApresDocument(b: Bien, x: CreneauAttente, lien: string) {
+    garderVisite(b, '', true, x);
+    montrer(<AvantVisiteDocument lien={lien} onFermer={fermer} creneau />, 'pleine mandat');
+  }
+  /* Juste signé : le créneau part, et l'écran « C'est signé » le raconte. */
+  async function creneauSigne(b: Bien, x: CreneauAttente, s?: { finRetractation: string; execution: boolean }): Promise<string> {
+    const avant = s ? avantFinReflexion({ fin: s.finRetractation, execution: s.execution }, x.date, x.heure) : null;
+    if (avant) return phraseReflexion(avant);
+    return phraseCreneau(await poserCreneau(b, x.ligne, x.date, x.heure));
+  }
+  /* Revenu après avoir signé le mandat de Documents : le créneau part, une fenêtre le dit. */
+  async function creneauApresRetour(b: Bien, x: CreneauAttente) {
+    const avant = avantFinReflexion(mandatRef.current.signe, x.date, x.heure);
+    const r = avant ? null : await poserCreneau(b, x.ligne, x.date, x.heure);
+    montrer(<GrandOk titre={r?.ok ? 'Votre visite est calée' : 'Votre mandat est signé'}
+      texte={avant ? phraseReflexion(avant) : r ? phraseCreneau(r) : ''}
+      rappel={`En cas de contretemps, prévenez Werner au plus vite : <b>${AGENT.tel}</b>.`}
+      onFermer={fermer} />, 'pleine');
+  }
+  const phraseReflexion = (fin: string) => `Comme vous avez choisi d’attendre vos ${RETRACTATION_JOURS} jours de réflexion, ce créneau ne peut pas être retenu : Werner vous en proposera un après le ${dateLongue(jourParis(fin)).toLowerCase()}.`;
+  function phraseCreneau(r: ResultatCreneau): string {
+    if (r.ok) return `Votre visite est prévue ${minus1(quandCx(r.visite.date, r.visite.heure || '12:00'))}. Werner est prévenu : il confirme le rendez-vous avec le propriétaire. Vous la retrouvez dans « Vos visites ».`;
+    if (r.raison === 'deja') return 'Votre mandat est bien signé, et la visite de ce local est déjà calée : vous la retrouvez dans « Vos visites ».';
+    if (r.raison === 'plus_dispo') return 'Votre mandat est bien signé. Ce local, lui, n’est plus disponible : Werner vous en parle, et la recherche continue pour vous.';
+    if (r.raison === 'ferme') return 'Votre mandat est bien signé. Ce créneau, lui, n’est plus proposé : Werner revient vers vous avec un autre.';
+    return 'Votre mandat est bien signé. Votre créneau, lui, n’est pas parti : choisissez-le à nouveau sur la fiche du local.';
+  }
+  /* Les biens où un créneau l'attend (l'accueil et « Vos visites » les montrent). */
+  const aChoisir = biens.filter(b => !!b.suivi?.choix && !b.visitePrevue && !indispo(b));
 
   /* ── Le mandat de recherche ──
      Pas de visite sans mandat : « Je souhaite le visiter » ouvre d'abord la
@@ -1567,7 +1700,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
   const mandatRef = useRef(mandat);
   mandatRef.current = mandat;
 
-  function ouvrirMandat(raison: 'visite' | 'libre', apres?: () => Promise<void>, bienId?: string) {
+  function ouvrirMandat(raison: 'visite' | 'creneau' | 'libre', apres?: (s: { finRetractation: string; execution: boolean }) => Promise<void | string>, bienId?: string) {
     montrer(<SignatureMandat mandat={mandatRef.current} raison={raison} envoyer={envoyer} tel={AGENT.tel}
       bienId={bienId} onFermer={fermer}
       onSigne={async (r) => {
@@ -1578,7 +1711,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
           /* Signé à plusieurs : « Mon mandat » suit ceux qu'on attend. */
           ...(r.attente?.length ? { cos: r.attente } : {}),
         }));
-        if (apres) await apres();
+        if (apres) return apres(r);
       }} />, 'pleine mandat');
   }
 
@@ -1617,11 +1750,12 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
   const CLE_VISITE = 'emilio_visite_apres_mandat';
   /* `doc` : il part signer le mandat qu'Alexandre lui a envoyé (V3.32), sur
      une autre page ; sa demande l'attend une semaine, pas une heure. */
-  function garderVisite(b: Bien, commentaire: string, doc = false) {
-    try { localStorage.setItem(CLE_VISITE, JSON.stringify({ bienId: b.id, commentaire, t: Date.now(), doc })); } catch { /* sans effet */ }
+  /* `creneau` (V3.233) : c'est un créneau de l'agence qui attend la signature. */
+  function garderVisite(b: Bien, commentaire: string, doc = false, creneau?: CreneauAttente) {
+    try { localStorage.setItem(CLE_VISITE, JSON.stringify({ bienId: b.id, commentaire, t: Date.now(), doc, ...(creneau ? { creneau } : {}) })); } catch { /* sans effet */ }
   }
   function oublierVisite() { try { localStorage.removeItem(CLE_VISITE); } catch { /* sans effet */ } }
-  function visiteEnAttente(): { bienId: string; commentaire: string; doc?: boolean } | null {
+  function visiteEnAttente(): { bienId: string; commentaire: string; doc?: boolean; creneau?: CreneauAttente } | null {
     try {
       const v = JSON.parse(localStorage.getItem(CLE_VISITE) || 'null');
       return v && typeof v.bienId === 'string' && Date.now() - Number(v.t) < (v.doc ? 7 * 86_400_000 : 3_600_000) ? v : null;
@@ -1693,23 +1827,40 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
   /* Son avis après une visite. La visite change de rubrique dans « Vos
      visites » ; le bien suit (« Pas pour moi » le range avec les biens
      écartés). Renvoie false si rien n'est parti : le bouton le dit. */
-  async function repondreVisite(v: VisiteE, issue: Issue, motifs: string[], mot: string, prix: number | null): Promise<boolean> {
-    const r = await envoyer('visite', { visite_id: v.id, issue, motifs, mot, prix });
+  async function repondreVisite(v: VisiteE, issue: Issue, motifs: string[], mot: string, prix: number | null, dispos: string[] = []): Promise<boolean> {
+    const r = await envoyer('visite', { visite_id: v.id, issue, motifs, mot, prix, dispos: issue === 'revoir' ? dispos : [] });
     if (r?.error === 'plus_dispo') { plusDispoMsg(); return false; }
     if (!r?.ok) return false;
     const le = r.le || new Date().toISOString();
+    const tout = issue === 'revoir' ? Array.from(new Set([...motifs, ...dispos])) : motifs;
     setMesV(l => l.map(x => x.id === v.id
-      ? { ...x, issue, issuePar: 'client', motifs, mot: mot || null, prix: issue === 'offre' ? prix : null, issueLe: le } : x));
+      ? { ...x, issue, issuePar: 'client', motifs: tout, mot: mot || null, prix: issue === 'offre' ? prix : null, issueLe: le } : x));
     setBiens(l => l.map(x => x.id === v.bienId
       ? { ...x, avis: x.avis === 'offre_faite' ? x.avis : issue === 'non' ? 'refuse' : 'visite', retourLe: le } : x));
     return true;
+  }
+
+  /* ── V3.222 : « Je souhaite le revoir », d'un bien déjà visité ──
+     Ses raisons, ses disponibilités (le même calendrier que pour une première
+     visite) et un mot. Le serveur passe sa dernière visite à « À revoir » et
+     prévient Werner ; ici, la visite et le bien suivent aussitôt. */
+  async function demanderRevisite(b: Bien, motifs: string[], dispos: string[], mot: string): Promise<'ok' | 'deja' | 'plus_dispo' | 'rate'> {
+    const r = await envoyer('revoir', { bien_id: b.id, motifs, dispos, mot });
+    if (r?.error === 'plus_dispo') return 'plus_dispo';
+    if (r?.error === 'deja') return 'deja';
+    if (!r?.ok) return 'rate';
+    const le = r.le || new Date().toISOString();
+    setMesV(l => l.map(x => x.id === r.visite_id
+      ? { ...x, issue: 'revoir' as Issue, issuePar: 'client' as const, motifs: Array.isArray(r.motifs) ? r.motifs : [...motifs, ...dispos], mot: r.mot || null, prix: null, issueLe: le } : x));
+    setBiens(l => l.map(x => x.id === b.id ? { ...x, avis: x.avis === 'offre_faite' ? x.avis : 'visite', retourLe: le } : x));
+    return 'ok';
   }
   /* Depuis « Vos visites » ou l'accueil, la carte change de rubrique (ou
      disparaît) dès la réponse : on dit donc « c'est noté » dans une feuille,
      avec l'endroit où il retrouvera le bien. Dans la fiche, la carte le dit
      elle-même. */
-  async function repondreEtDire(v: VisiteE, issue: Issue, motifs: string[], mot: string, prix: number | null): Promise<boolean> {
-    const ok = await repondreVisite(v, issue, motifs, mot, prix);
+  async function repondreEtDire(v: VisiteE, issue: Issue, motifs: string[], mot: string, prix: number | null, dispos: string[] = []): Promise<boolean> {
+    const ok = await repondreVisite(v, issue, motifs, mot, prix, dispos);
     if (ok) {
       montrer(<GrandOk titre="C'est noté, merci" texte={QUESTION_VISITE[issue].ok}
         rappel={`Vous retrouvez ce local dans « Vos visites », rangé dans « ${issue === 'non' ? 'Pas pour moi' : 'En cours'} ».`}
@@ -1905,7 +2056,9 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
       repriseFaite.current = true;
       const v = visiteEnAttente();
       const b = v ? biens.find(x => x.id === v.bienId) : undefined;
-      if (b && v) ouvrirMandat('visite', async () => { oublierVisite(); await poserAvis(b, 'souhaite_visiter', v.commentaire, true); }, b.id);
+      const cx = v?.creneau;
+      if (b && v && cx) ouvrirMandat('creneau', async (s) => { oublierVisite(); return creneauSigne(b, cx, s); }, b.id);
+      else if (b && v) ouvrirMandat('visite', async () => { oublierVisite(); await poserAvis(b, 'souhaite_visiter', v.commentaire, true); }, b.id);
       else ouvrirMandat('libre');
     }, 700);
     return () => clearTimeout(t);
@@ -1924,7 +2077,8 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
       visiteRepartie.current = true;
       const b = biens.find(x => x.id === v.bienId);
       oublierVisite();
-      if (b) void poserAvis(b, 'souhaite_visiter', v.commentaire, false);
+      if (b && v.creneau) void creneauApresRetour(b, v.creneau);
+      else if (b) void poserAvis(b, 'souhaite_visiter', v.commentaire, false);
     }, 700);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2313,6 +2467,8 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
                 let bo: Bien | null = null, score = 0;
                 for (const b of biens) { const s = offreAAccueil(b.offreSuivi); if (s > score) { score = s; bo = b; } }
                 return <>
+                  {/* V3.221 : un créneau de visite l'attend — avant tout le reste. */}
+                  {aChoisir.length > 0 && <CarteCreneauxAccueil biens={aChoisir} onChoisir={(b: Bien) => ouvrirBien(b, { versCreneau: true })} />}
                   {bo && bo.offreSuivi && <CarteOffreAccueil bien={bienOffre(bo)} o={bo.offreSuivi} indispo={indispo(bo)}
                     onOuvrir={() => ouvrirBien(bo as Bien)} onVoir={() => aller('visites')} {...actionsOffre(bo)} />}
                   {x ? <CarteAvisAccueil b={x.b} v={x.v} onRepondre={repondreEtDire}
@@ -2485,6 +2641,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
           )}
           {vue === 'visites' && (
             <VueVisites biens={biens} mesV={mesV} visites={visites} token={token} apprisClient={apprisClient}
+              aChoisir={aChoisir} onChoisirCreneau={(b: Bien) => ouvrirBien(b, { versCreneau: true })}
               aller={aller} onOuvrir={ouvrirBien} onRepondre={repondreEtDire}
               onFaireOffre={b => (peutOffrir(b) ? () => ouvrirOffre(b, b.offreSuivi ? { depuis: b.offreSuivi.id, derniere: b.offreSuivi.total } : {}) : undefined)}
               actionsOffre={actionsOffre} imprevus={imprevus} onImprevu={ouvrirImprevu} />
@@ -3451,10 +3608,13 @@ function Liste({ biens, onOuvrir, vide, sansEtiq, crit }: { biens: Bien[]; onOuv
                 </span>
               )}
               {/* V3.193 : où en est Alexandre, d'un coup d'œil (le détail est sur la fiche). */}
-              {b.suivi && !b.suivi.calee && (() => {
-                const e = b.suivi.etapes.find(x => x.etat === 'encours');
-                return e ? <span className="suivi-l"><span className="suivi-pt" aria-hidden="true" /><span>{e.t}</span></span> : null;
-              })()}
+              {/* V3.221 : des créneaux l'attendent — c'est à lui de jouer, on le dit. */}
+              {b.suivi && !b.suivi.calee && !b.visitePrevue && (b.suivi.choix
+                ? <span className="suivi-l cx-l"><Ico n="calendrier" t={14} /><span>{b.suivi.choix.creneaux.length > 1 ? 'Créneaux de visite : choisissez le vôtre' : 'Un créneau de visite vous est proposé'}</span></span>
+                : (() => {
+                  const e = b.suivi.etapes.find(x => x.etat === 'encours');
+                  return e ? <span className="suivi-l"><span className="suivi-pt" aria-hidden="true" /><span>{e.t}</span></span> : null;
+                })())}
               {b.visitePrevue && !b.visiteFaite && (
                 <span className="rdv-l"><Ico n="calendrier" t={13} />
                   Visite le {dateCourte(b.visitePrevue.date)}
@@ -4254,7 +4414,7 @@ function visiteSansAvis(mesV: VisiteE[], biens: Bien[]): { v: VisiteE; b: Bien }
 type ActionsOffre = { onAccepter?: () => void; onAutre?: () => void; onNouvelle?: () => void; onSansSuite?: () => Promise<boolean> };
 
 /* Les quatre choix, puis la question qui va avec. */
-function AvisVisite({ v, onRepondre, sansNote, sansSuite, onFaireOffre }: { v: VisiteE; onRepondre: (v: VisiteE, i: Issue, motifs: string[], mot: string, prix: number | null) => Promise<boolean>; sansNote?: boolean;
+function AvisVisite({ v, onRepondre, sansNote, sansSuite, onFaireOffre }: { v: VisiteE; onRepondre: Repondre; sansNote?: boolean;
   /* V3.48 : le bien n'est plus disponible — ni offre, ni deuxième visite. */
   sansSuite?: boolean;
   /* V3.189 : il peut préparer son offre lui-même (pas un bien de l'agence). */
@@ -4266,6 +4426,8 @@ function AvisVisite({ v, onRepondre, sansNote, sansSuite, onFaireOffre }: { v: V
   const [ecrire, setEcrire] = useState(false);
   const [mot, setMot] = useState('');
   const [prix, setPrix] = useState('');
+  /* V3.222 : « J'aimerais le revoir » — ses disponibilités, le même calendrier que pour une première visite. */
+  const [dispos, setDispos] = useState<string[]>([]);
   const [enCours, setEnCours] = useState(false);
   const [envoye, setEnvoye] = useState<Issue | null>(null);
   const [rate, setRate] = useState(false);
@@ -4285,7 +4447,7 @@ function AvisVisite({ v, onRepondre, sansNote, sansSuite, onFaireOffre }: { v: V
         <div className="vv-choix">
           {ISSUES_OK.filter(i => !sansSuite || (i !== 'offre' && i !== 'revoir')).map(i => (
             <button key={i} type="button" className="vv-c" data-a={i}
-              onClick={() => { setChoix(i); setMotifs([]); setEcrire(false); setRappel(false); }}>
+              onClick={() => { setChoix(i); setMotifs([]); setDispos([]); setEcrire(false); setRappel(false); }}>
               <i><Ico n={ICO_ISSUE[i]} t={17} /></i><span>{ISSUES[i].choix}</span>
             </button>
           ))}
@@ -4318,7 +4480,7 @@ function AvisVisite({ v, onRepondre, sansNote, sansSuite, onFaireOffre }: { v: V
     if (!choix) return;
     setEnCours(true); setRate(false);
     const p = Number(String(prix).replace(/[^\d]/g, ''));
-    const ok = await onRepondre(v, choix, motifs, mot.trim(), choix === 'offre' && p >= 10000 ? p : null);
+    const ok = await onRepondre(v, choix, motifs, mot.trim(), choix === 'offre' && p >= 10000 ? p : null, choix === 'revoir' ? dispos : []);
     setEnCours(false);
     if (ok) { setEnvoye(choix); vibrer(); } else setRate(true);
   }
@@ -4349,10 +4511,107 @@ function AvisVisite({ v, onRepondre, sansNote, sansSuite, onFaireOffre }: { v: V
         {(ecrire || choix === 'offre') && (
           <textarea rows={3} value={mot} onChange={e => setMot(e.target.value)} placeholder={q.ph} style={{ marginTop: 10 }} />
         )}
+        {choix === 'revoir' && (
+          <div className="rv-dispos">
+            <div className="rv-dispos-t"><Ico n="calendrier" t={15} /><span>{'Vos disponibilités pour la 2e visite'}</span></div>
+            <ChoixDispos choisies={dispos} onBasculer={n => setDispos(l => (l.includes(n) ? l.filter(x => x !== n) : [...l, n]))} />
+          </div>
+        )}
         {rate && <p className="vv-rate">{'Votre réponse n’est pas partie. Vérifiez votre connexion et réessayez.'}</p>}
         <BtnEnvoi enCours={enCours} libelle={q.btn} style={{ marginTop: 12 }} onClick={envoyer} />
         <button type="button" className="vv-retour" onClick={() => setChoix(null)}>Changer de réponse</button>
       </div>
+    </div>
+  );
+}
+
+/* ══ V3.222 : « Je souhaite le revoir », d'un bien déjà visité ════════════
+   Alexandre (CRM d’Emilio) : « quand il clique sur un bien déjà visité, il a plusieurs
+   fonctions et souhaite revisiter, il a ses plannings ». Ses raisons (s'il
+   ne l'avait pas déjà dit), ses disponibilités — le même calendrier que pour
+   une première visite — et un mot. Werner est prévenu (relance du jour,
+   mail) et cale la 2e visite, ou lui propose les créneaux de l'agence : ils
+   arrivent dans « Où en est Werner », juste en dessous. */
+type EtatRevoir = 'ok' | 'deja' | 'plus_dispo' | 'rate';
+function DemandeRevisite({ dejaRevoir, aDispos, onEnvoyer }: {
+  dejaRevoir: boolean; aDispos: boolean;
+  onEnvoyer: (motifs: string[], dispos: string[], mot: string) => Promise<EtatRevoir>;
+}) {
+  const [ouvert, setOuvert] = useState(false);
+  const [motifs, setMotifs] = useState<string[]>([]);
+  const [dispos, setDispos] = useState<string[]>([]);
+  const [ecrire, setEcrire] = useState(false);
+  const [mot, setMot] = useState('');
+  const [enCours, setEnCours] = useState(false);
+  const [etat, setEtat] = useState<EtatRevoir | null>(null);
+  const vide = !motifs.length && !dispos.length && !mot.trim();
+  async function envoyer() {
+    if (vide || enCours) return;
+    setEnCours(true); setEtat(null);
+    const r = await onEnvoyer(motifs, dispos, mot.trim());
+    setEnCours(false); setEtat(r);
+    if (r === 'ok') { setOuvert(false); vibrer(); }
+  }
+  if (etat === 'ok') {
+    return (
+      <div className="rv-ok" role="status">
+        <span className="rv-ok-ic" aria-hidden="true"><Ico n="check" t={16} /></span>
+        <span className="rv-ok-x">
+          <b>{'C’est envoyé'}</b>
+          <small>{'Werner organise la 2e visite. Dès que le propriétaire propose des créneaux, vous choisirez le vôtre ici.'}</small>
+        </span>
+      </div>
+    );
+  }
+  if (etat === 'deja' || etat === 'plus_dispo') {
+    return (
+      <div className="rv-ok rv-non" role="status">
+        <span className="rv-ok-ic" aria-hidden="true"><Ico n="calendrier" t={16} /></span>
+        <span className="rv-ok-x">
+          <b>{etat === 'deja' ? 'La 2e visite est déjà calée' : 'Ce local n’est plus disponible'}</b>
+          <small>{etat === 'deja' ? 'Vous la retrouvez dans « Vos visites ».' : 'Votre conseiller vous en parle, et la recherche continue pour vous.'}</small>
+        </span>
+      </div>
+    );
+  }
+  if (!ouvert) {
+    return (
+      <button type="button" className="rv-btn" onClick={() => setOuvert(true)}>
+        <span className="rv-btn-ic" aria-hidden="true"><Ico n="calendrier" t={18} /></span>
+        <span className="rv-btn-x">
+          <b>{dejaRevoir ? (aDispos ? 'Changer mes disponibilités' : 'Donner mes disponibilités') : 'Je souhaite le revoir'}</b>
+          <small>{dejaRevoir ? 'Pour la 2e visite : Werner la cale avec le propriétaire.' : 'Donnez vos disponibilités : Werner organise une 2e visite.'}</small>
+        </span>
+        <span className="rv-btn-f" aria-hidden="true"><Ico n="fleche" t={16} /></span>
+      </button>
+    );
+  }
+  return (
+    <div className="apres-avis vv-suite rv-form">
+      <div className="aa-t">{dejaRevoir ? 'Vos disponibilités pour la 2e visite' : 'Revoir ce local'}</div>
+      <p className="aa-p">{dejaRevoir
+        ? 'Choisissez des moments ou des dates précises. Werner cale la 2e visite avec le propriétaire.'
+        : 'Pourquoi le revoir, et quand êtes-vous disponible ? Werner cale la 2e visite avec le propriétaire.'}</p>
+      {!dejaRevoir && (
+        <div className="reponses">
+          {RAISONS.revoir.map(r => (
+            <button key={r.n} type="button" className="rep" data-a={TON_ISSUE.revoir}
+              aria-pressed={motifs.includes(r.n)} onClick={() => setMotifs(l => (l.includes(r.n) ? l.filter(x => x !== r.n) : [...l, r.n]))}>
+              <Ico n={r.i} t={15} /><span>{r.n}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="rv-dispos">
+        <div className="rv-dispos-t"><Ico n="calendrier" t={15} /><span>{'Vos disponibilités'}</span></div>
+        <ChoixDispos choisies={dispos} onBasculer={n => setDispos(l => (l.includes(n) ? l.filter(x => x !== n) : [...l, n]))} />
+      </div>
+      {ecrire
+        ? <textarea rows={3} value={mot} onChange={e => setMot(e.target.value)} placeholder={QUESTION_VISITE.revoir.ph} style={{ marginTop: 10 }} />
+        : <div className="reponses" style={{ marginTop: 10 }}><button type="button" className="rep plus" onClick={() => setEcrire(true)}>+ Ajouter un mot</button></div>}
+      {etat === 'rate' && <p className="vv-rate">{'Votre demande n’est pas partie. Vérifiez votre connexion et réessayez.'}</p>}
+      <BtnEnvoi enCours={enCours} libelle={vide ? 'Choisissez une disponibilité' : 'Envoyer ma demande'} classe={'btn or' + (vide ? ' rv-vide' : '')} style={{ marginTop: 12 }} onClick={() => { void envoyer(); }} />
+      <button type="button" className="vv-retour" onClick={() => setOuvert(false)}>Annuler</button>
     </div>
   );
 }
@@ -4365,9 +4624,13 @@ function EtatVisite({ b, v, enLigne }: { b: Bien; v: VisiteE;
   const eo = etatOffre(b);
   const offreFaite = !!eo;
   const i = v.issue;
+  /* V3.222 : la 2e visite, quand elle est calée (après celle-ci). */
+  const deuxieme = b.visitePrevue && v.passee && b.visitePrevue.date >= String(v.date || '').slice(0, 10) ? b.visitePrevue : null;
   const ligne = eo ? eo.ligne
     : i === 'offre' ? `Votre conseiller vous appelle pour préparer l’offre avec vous.${v.prix ? ` Votre montant en tête : ${EUR(v.prix)}.` : ''}`
-    : i === 'revoir' ? 'Votre conseiller cale une 2e visite : le rendez-vous s’affichera dans « À venir ».'
+    : i === 'revoir' ? (deuxieme
+      ? `Votre 2e visite est prévue ${minus1(dateLongue(deuxieme.date))}${deuxieme.heure ? ` à ${heureVisite(deuxieme.heure)}` : ''}.`
+      : 'Votre conseiller cale une 2e visite : le rendez-vous s’affichera dans « À venir ».')
     : i === 'reflexion' ? 'Votre conseiller fait le point avec vous dans les prochains jours.'
     : '';
   const source = offreFaite ? null
@@ -4380,7 +4643,8 @@ function EtatVisite({ b, v, enLigne }: { b: Bien; v: VisiteE;
         <div className="reponses lu vv-lu">
           {v.motifs.map(m => {
             const r = RAISONS[i].find(x => x.n === m);
-            return <span key={m} className="rep" data-a={TON_ISSUE[i]} aria-pressed="true">{r ? <Ico n={r.i} t={14} /> : null}<span>{m}</span></span>;
+            /* V3.222 : ce qui n'est pas une raison, ce sont ses disponibilités. */
+            return <span key={m} className="rep" data-a={TON_ISSUE[i]} aria-pressed="true"><Ico n={r ? r.i : 'calendrier'} t={14} /><span>{m}</span></span>;
           })}
         </div>
       )}
@@ -4398,7 +4662,7 @@ function EtiqVisite({ b, v }: { b: Bien; v: VisiteE }) {
 
 function CarteVisite({ b, v, onOuvrir, onCompteRendu, onRepondre, onFaireOffre, actionsOffre }: { b: Bien; v: VisiteE; onOuvrir: () => void;
   /* V3.195 : la fiche s'ouvre et descend jusqu'au compte rendu. */
-  onCompteRendu?: () => void; onRepondre: (v: VisiteE, i: Issue, motifs: string[], mot: string, prix: number | null) => Promise<boolean>;
+  onCompteRendu?: () => void; onRepondre: Repondre;
   /* V3.189 : préparer son offre ; les gestes de la carte « Votre offre ». */
   onFaireOffre?: () => void; actionsOffre?: ActionsOffre }) {
   const ph = (b.photos || [])[0];
@@ -4437,7 +4701,7 @@ function CarteVisite({ b, v, onOuvrir, onCompteRendu, onRepondre, onFaireOffre, 
 }
 
 /* La carte de l'accueil : sa dernière visite, et la question. */
-function CarteAvisAccueil({ b, v, onRepondre, onOuvrir, onVoir, onFaireOffre }: { b: Bien; v: VisiteE; onRepondre: (v: VisiteE, i: Issue, motifs: string[], mot: string, prix: number | null) => Promise<boolean>; onOuvrir: () => void; onVoir: () => void; onFaireOffre?: () => void }) {
+function CarteAvisAccueil({ b, v, onRepondre, onOuvrir, onVoir, onFaireOffre }: { b: Bien; v: VisiteE; onRepondre: Repondre; onOuvrir: () => void; onVoir: () => void; onFaireOffre?: () => void }) {
   const auj = jourParis();
   const hier = jourParis(new Date(Date.now() - 86400000));
   const j = (v.date || '').slice(0, 10);
@@ -4461,16 +4725,66 @@ function CarteAvisAccueil({ b, v, onRepondre, onOuvrir, onVoir, onFaireOffre }: 
   );
 }
 
+/* V3.221 — Les biens où un créneau de visite l'attend : en tête de l'accueil
+   et dans « Vos visites ». Un appui ouvre la fiche, posée sur les créneaux. */
+const metaCourte = (b: Bien) => [b.pieces === 1 ? '1 espace' : b.pieces ? `${b.pieces} espaces` : '', b.surface ? `${b.surface} m²` : '', b.ville || b.secteur].filter(Boolean).join(' · ') || b.titre;
+function phraseCreneaux(ch: ChoixCreneaux): string {
+  if (ch.creneaux.length === 1) {
+    const c = ch.creneaux[0];
+    const j = jourCx(c.date);
+    return c.fin && c.heures.length > 1
+      ? `Proposé : ${j.court} ${j.n} ${j.mois}, de ${heureVisite(c.heure)} à ${heureVisite(c.fin)}`
+      : `Proposé : ${j.court} ${j.n} ${j.mois} à ${heureVisite(c.heures[0])}`;
+  }
+  const jours = [...new Set(ch.creneaux.map(c => c.date))];
+  const lib = jours.slice(0, 3).map(d => { const j = jourCx(d); return `${j.court} ${j.n}`; }).join(', ');
+  return `${ch.creneaux.length} créneaux : ${lib}${jours.length > 3 ? '…' : ''}`;
+}
+function LignesCreneaux({ biens, onChoisir }: { biens: Bien[]; onChoisir: (b: Bien) => void }) {
+  return (
+    <div className="cxa-liste">
+      {biens.map(b => {
+        const ch = b.suivi?.choix;
+        if (!ch) return null;
+        const ph = (b.photos || [])[0];
+        return (
+          <button key={b.id} type="button" className="cxa" onClick={() => onChoisir(b)}>
+            <span className="cxa-ph">{ph ? <img src={ph} alt="" /> : <Ico n="maison" t={20} />}</span>
+            <span className="cxa-x">
+              <b>{metaCourte(b)}</b>
+              <span>{phraseCreneaux(ch)}</span>
+            </span>
+            <span className="cxa-go"><span>Choisir</span><Ico n="fleche" t={15} /></span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+function CarteCreneauxAccueil({ biens, onChoisir }: { biens: Bien[]; onChoisir: (b: Bien) => void }) {
+  return (
+    <section className="vv-acc cx-acc">
+      <div className="vv-acc-t"><Ico n="calendrier" t={14} /><span>{biens.length > 1 ? 'Des créneaux de visite à choisir' : 'Un créneau de visite à choisir'}</span></div>
+      <div className="vv-acc-c">
+        <p className="cxa-p">{'Le propriétaire peut vous recevoir. Choisissez le moment qui vous convient : Werner s’occupe du reste.'}</p>
+        <LignesCreneaux biens={biens} onChoisir={onChoisir} />
+      </div>
+    </section>
+  );
+}
+
 /* « Vos visites » : des rubriques, un bien par ligne, rangé d'après sa
    dernière visite. Les chiffres du haut s'additionnent. Jamais « retenu »
    ici : dans l'espace, ce mot désigne les biens que la recherche a retenus
    pour lui. V3.189 : « Vos offres » en tête — une offre qui court passe
    avant tout ; celle qui s'arrête sans accord rejoint « Pas pour moi », avec
    son étiquette, et une nouvelle offre reste possible. */
-function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir, onRepondre, onFaireOffre, actionsOffre, imprevus, onImprevu }: {
+function VueVisites({ biens, mesV, visites, token, apprisClient, aChoisir = [], onChoisirCreneau, aller, onOuvrir, onRepondre, onFaireOffre, actionsOffre, imprevus, onImprevu }: {
   biens: Bien[]; mesV: VisiteE[]; visites: any[]; token: string; apprisClient: string[];
+  /* V3.221 : les biens où un créneau de l'agence l'attend. */
+  aChoisir?: Bien[]; onChoisirCreneau?: (b: Bien) => void;
   aller: (v: string) => void; onOuvrir: (b: Bien, o?: { versCr?: boolean }) => void;
-  onRepondre: (v: VisiteE, i: Issue, motifs: string[], mot: string, prix: number | null) => Promise<boolean>;
+  onRepondre: Repondre;
   onFaireOffre?: (b: Bien) => (() => void) | undefined;
   actionsOffre?: (b: Bien) => ActionsOffre;
   /* V3.232 : « Un imprévu ? » sur ses visites à venir. */
@@ -4529,7 +4843,7 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir
 
   return (
     <Vue icone="calendrier" aller={aller} titre="Vos visites"
-      sous={total ? undefined : 'Aucune visite pour l’instant. Quand un local vous plaît, dites « Je veux visiter » sur sa fiche : votre conseiller organise la visite, et elle s’affiche ici.'}>
+      sous={total || aChoisir.length ? undefined : 'Aucune visite pour l’instant. Quand un local vous plaît, dites « Je veux visiter » sur sa fiche : votre conseiller organise la visite, et elle s’affiche ici.'}>
       {total > 0 && (
         <div className="vv-res">
           <span className="vv-res-ic" aria-hidden="true"><Ico n="calendrier" t={22} /></span>
@@ -4544,6 +4858,12 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir
           </span>
         </div>
       )}
+      {aChoisir.length > 0 && onChoisirCreneau && (
+        <div className="vv-groupe">
+          <div className="sep vv-sep-or"><span>{`Créneaux à choisir · ${aChoisir.length}`}</span><i /></div>
+          <LignesCreneaux biens={aChoisir} onChoisir={onChoisirCreneau} />
+        </div>
+      )}
       {aVenir.length > 0 && (
         <div className="vv-groupe">
           <div className="sep vv-sep-prune"><span>{`Prochainement · ${aVenir.length}`}</span><i /></div>
@@ -4554,7 +4874,7 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir
               return r
                 ? <ProchaineVisite key={v.id} v={r} autres={0} token={token} titre={titre} onBien={() => onOuvrir(b)}
                   imprevu={imprevus?.[r.id] || null} onImprevu={onImprevu ? () => onImprevu(r) : undefined}
-                  />
+                  onChoisir={imprevus?.[r.id] && b.suivi?.choix && onChoisirCreneau ? () => onChoisirCreneau(b) : undefined} />
                 : carte({ b, v });
             })}
           </div>
@@ -4758,7 +5078,7 @@ function OuEnEst({ s, choix }: { s: SuiviClient; choix?: React.ReactNode }) {
     <div className="oe">
       <div className="oe-tete">
         <span className="oe-t">{'Où en est Werner'}</span>
-        <span className={'oe-b' + (s.calee ? ' oe-ok' : '')}>{s.calee ? 'Visite calée' : 'En cours'}</span>
+        <span className={'oe-b' + (s.calee ? ' oe-ok' : '')}>{s.calee ? 'Visite calée' : choix ? 'À vous de choisir' : 'En cours'}</span>
       </div>
       <ol className="oe-fil">
         {avant.map((e, i) => <EtapeOE key={'a' + i} e={e} />)}
@@ -4789,8 +5109,225 @@ function OuEnEst({ s, choix }: { s: SuiviClient; choix?: React.ReactNode }) {
   );
 }
 
-function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, visitesB = [], onRepondreVisite, decouverte, onFaireOffre, actionsOffre, versCr, imprevu, onImprevu }: any) {
+/* ══ V3.221 : « Choisissez votre créneau » ══════════════════════════════
+   Alexandre (CRM d’Emilio) : « un créneau proposé par l'agence : est-ce qu'il peut le
+   valider dans son espace ? » — et « que les choix des créneaux, s'il y en a
+   plusieurs ou s'il y a une plage horaire, soient bien affichés, jolis,
+   version PC et mobile ». Un créneau par carte (le jour, l'heure ou la
+   plage) ; une plage déplie ses heures, de demi-heure en demi-heure.
+   « Ce créneau me va » ouvre la confirmation (« Werner sera prévenu »),
+   puis l'envoi, puis « Confirmation envoyée » avec le rappel en cas de
+   contretemps. La visite est posée par le serveur (/api/espace/creneau),
+   comme si Werner l'avait planifiée. */
+const cleCx = (c: { date: string; heure: string; fin?: string }) => `${c.date}-${c.heure}-${c.fin || ''}`;
+function jourCx(d: string) {
+  const x = new Date(`${d}T12:00:00`);
+  return { court: `${JOURS_L[x.getDay()].slice(0, 3)}.`, n: x.getDate(), mois: MOIS[x.getMonth()] };
+}
+/* « Jeudi 23 octobre à 14 h 30 » ; `minus1` le met en milieu de phrase. */
+const quandCx = (date: string, h: string) => `${dateLongue(date)} à ${heureVisite(h)}`;
+const minus1 = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
+const MOTS_ERREUR: Record<'deja' | 'ferme' | 'plus_dispo' | 'reseau', { t: string; p: string }> = {
+  deja: { t: 'La visite est déjà calée', p: 'Werner vient de fixer le rendez-vous de ce local. Votre espace se met à jour pour vous le montrer.' },
+  ferme: { t: 'Ce créneau n’est plus proposé', p: 'Les créneaux de ce local viennent de changer. Votre espace se met à jour pour vous montrer les bons.' },
+  plus_dispo: { t: 'Ce local n’est plus disponible', p: 'Il vient d’être réservé ou retiré du marché. Votre conseiller vous en parle, et la recherche continue pour vous.' },
+  reseau: { t: 'Ce n’est pas parti', p: 'Un souci de connexion, sans doute. Réessayez dans un instant, ou appelez directement Werner.' },
+};
+
+function ChoixCreneau({ choix, bien, token, onChoisir, onFait }: {
+  choix: ChoixCreneaux; token: string;
+  bien: { titre: string; photo: string | null; meta: string };
+  onChoisir: (ligne: string, date: string, heure: string) => Promise<ResultatCreneau>;
+  onFait: (v: { date: string; heure: string | null }) => void;
+}) {
+  /* Un seul créneau, à une heure précise : il est déjà coché. */
+  const seul = choix.creneaux.length === 1 && !choix.creneaux[0].fin ? choix.creneaux[0] : null;
+  const [cle, setCle] = useState<string | null>(seul ? cleCx(seul) : null);
+  const [h, setH] = useState<string | null>(seul ? seul.heures[0] : null);
+  const [etape, setEtape] = useState<null | 'confirmer' | 'envoi' | 'fait' | 'erreur'>(null);
+  const [res, setRes] = useState<ResultatCreneau | null>(null);
+  const idT = useId();
+  const c = choix.creneaux.find(x => cleCx(x) === cle) || null;
+  const pret = !!c && !!h && c.heures.includes(h);
+  const quand = c && h ? quandCx(c.date, h) : '';
+  const choisir = (x: CreneauChoix) => {
+    if (cleCx(x) === cle) return;
+    setCle(cleCx(x));
+    setH(x.heures.length === 1 ? x.heures[0] : null);
+  };
+  async function confirmer() {
+    if (!c || !h || etape === 'envoi') return;
+    setEtape('envoi');
+    const debut = Date.now();
+    const r = await onChoisir(choix.ligne, c.date, h);
+    /* V3.233 : un mandat à signer d'abord — sa fenêtre s'ouvre à la place de celle-ci. */
+    if (!r.ok && r.raison === 'mandat') { setEtape(null); return; }
+    /* Un envoi trop rapide ferait clignoter la roue : on la laisse tourner un instant. */
+    const reste = 900 - (Date.now() - debut);
+    if (reste > 0) await new Promise(ok => setTimeout(ok, reste));
+    setRes(r);
+    setEtape(r.ok ? 'fait' : 'erreur');
+  }
+  const fermer = () => {
+    if (etape === 'envoi') return;
+    if (etape === 'fait' && res?.ok) { onFait({ date: res.visite.date, heure: res.visite.heure }); return; }
+    /* Le bien a changé côté Alexandre : l'espace se recharge pour le montrer. */
+    if (etape === 'erreur' && res && !res.ok && res.raison !== 'reseau' && res.raison !== 'retractation') {
+      try { window.location.reload(); } catch { /* sans effet */ }
+      return;
+    }
+    setEtape(null);
+  };
+  useEchap(etape !== null, fermer);
+  const v = res?.ok ? res.visite : null;
+  const err = !res || res.ok || res.raison === 'mandat' ? null
+    : res.raison === 'retractation' ? { t: 'Pendant votre délai de réflexion', p: `Vous avez choisi d’attendre vos ${RETRACTATION_JOURS} jours avant que la mission commence : ce créneau tombe avant. Werner vous en proposera un après le ${res.apres ? dateLongue(jourParis(res.apres)).toLowerCase() : 'délai'}.` }
+    : MOTS_ERREUR[res.raison];
+
+  return (
+    <div className="cx">
+      <div className="cx-tete">
+        <span className="cx-ic" aria-hidden="true"><Ico n="calendrier" t={20} /></span>
+        <span className="cx-tt">
+          <b>{choix.creneaux.length > 1 ? 'Choisissez votre créneau' : 'Ce créneau vous convient-il ?'}</b>
+          <small>{choix.creneaux.length > 1
+            ? 'Le propriétaire peut vous recevoir à ces moments-là. Choisissez celui qui vous va : Werner s’occupe du reste.'
+            : 'Le propriétaire peut vous recevoir à ce moment-là. S’il vous va, confirmez-le : Werner s’occupe du reste.'}</small>
+        </span>
+      </div>
+      <div className="cx-liste" role="radiogroup" aria-label="Les créneaux proposés par le propriétaire">
+        {choix.creneaux.map(x => {
+          const on = cleCx(x) === cle;
+          const j = jourCx(x.date);
+          const plage = !!x.fin && x.heures.length > 1;
+          return (
+            <div key={cleCx(x)} className="cx-c" data-on={on ? '1' : undefined}>
+              <button type="button" role="radio" aria-checked={on} className="cx-b" onClick={() => choisir(x)}>
+                <span className="cx-cal" aria-hidden="true"><i>{j.court}</i><b className="tab">{j.n}</b><i>{j.mois}</i></span>
+                <span className="cx-txt">
+                  <b>{dateLongue(x.date)}</b>
+                  <span>{plage ? `Entre ${heureVisite(x.heure)} et ${heureVisite(x.fin)}` : `À ${heureVisite(x.heures[0])}`}</span>
+                  {plage && <small>{'Vous choisissez l’heure'}</small>}
+                </span>
+                <span className="cx-rond" aria-hidden="true"><Ico n="check" t={13} /></span>
+              </button>
+              {plage && (
+                <div className="cx-heures" data-o={on ? '1' : undefined}>
+                  <div className="cx-heures-in" inert={on ? undefined : true}>
+                    <span className="cx-heures-t">{'À quelle heure ?'}</span>
+                    <div className="cx-puces" role="group" aria-label={`Les heures possibles, ${dateLongue(x.date)}`}>
+                      {x.heures.map(y => (
+                        <button key={y} type="button" className="cx-h tab" aria-pressed={on && h === y} onClick={() => setH(y)}>{heureVisite(y)}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="cx-bas">
+        {pret && <p className="cx-choix" aria-live="polite"><Ico n="check" t={14} /><span>{`Votre choix : ${minus1(quand)}`}</span></p>}
+        <button type="button" className="btn or cx-ok" disabled={!pret} onClick={() => setEtape('confirmer')}>
+          <Ico n="calendrier" t={17} /><span>{pret ? 'Ce créneau me va' : c ? 'Choisissez une heure' : 'Choisissez un créneau'}</span>
+        </button>
+        <p className="cx-pied">{choix.creneaux.length > 1 ? 'Aucun ne vous convient ? ' : 'Il ne vous convient pas ? '}<a href={`tel:${AGENT.telUrl}`}>{'Appelez Werner'}</a>{' : il en demandera d’autres au propriétaire.'}</p>
+      </div>
+
+      {etape && c && h && createPortal(
+        <div className="pop" role="dialog" aria-modal="true" aria-labelledby={idT}>
+          <div className="pop-voile" onClick={fermer} />
+          <div className="pop-carte">
+            {etape === 'confirmer' && (
+              <div className="cx-pop">
+                <span className="cx-pop-ic" aria-hidden="true"><Ico n="calendrier" t={28} /></span>
+                <h3 id={idT}>{'Confirmer ce créneau ?'}</h3>
+                <div className="cx-recap">
+                  {bien.photo ? <img src={bien.photo} alt="" /> : <span className="cx-recap-v"><Ico n="maison" t={20} /></span>}
+                  <span className="cx-recap-x">
+                    <b>{quand}</b>
+                    <span>{bien.meta || bien.titre}</span>
+                  </span>
+                </div>
+                <p className="cx-pop-p">{'Werner sera prévenu tout de suite. Il confirme le rendez-vous avec le propriétaire.'}</p>
+                <div className="duo">
+                  <button type="button" className="btn fant" onClick={fermer}>Annuler</button>
+                  <button type="button" className="btn or" onClick={() => { void confirmer(); }}>Oui, je confirme</button>
+                </div>
+              </div>
+            )}
+            {etape === 'envoi' && (
+              <div className="cx-pop cx-envoi" aria-live="polite">
+                <span className="cx-roue" aria-hidden="true" />
+                <h3 id={idT}>{'Envoi de votre confirmation…'}</h3>
+                <p className="cx-pop-p">{quand}</p>
+              </div>
+            )}
+            {etape === 'fait' && v && (
+              <div className="cx-pop cx-fait" aria-live="polite">
+                <span className="cx-rond-ok" aria-hidden="true"><Ico n="check" t={34} /></span>
+                <h3 id={idT}>{'Confirmation envoyée'}</h3>
+                <p className="cx-pop-p">{'Votre visite est prévue '}<b>{minus1(quandCx(v.date, v.heure || h))}</b>{'. Werner est prévenu : il confirme le rendez-vous avec le propriétaire.'}</p>
+                <div className="cx-rappel">
+                  <span className="cx-rappel-ic" aria-hidden="true"><Ico n="cloche" t={18} /></span>
+                  <span className="cx-rappel-x">
+                    <b>{'Un petit rappel'}</b>
+                    <span>{'Pensez à la noter dans votre agenda. Et en cas de contretemps, prévenez Werner au plus vite : '}<a href={`tel:${AGENT.telUrl}`}>{AGENT.tel}</a>{'.'}</span>
+                  </span>
+                </div>
+                <div className="cx-ag">
+                  <span className="cx-ag-t">{'Ajouter à mon agenda'}</span>
+                  <span className="cx-ag-b">
+                    <a className="cx-ics" href={lienGoogle(v)} target="_blank" rel="noopener noreferrer">{'Google Agenda'}</a>
+                    <a className="cx-ics" href={`/api/espace/agenda?token=${encodeURIComponent(token)}&v=${encodeURIComponent(v.id)}`}>{'Apple · Outlook'}</a>
+                  </span>
+                </div>
+                <p className="cx-ou">{'Vous la retrouvez aussi dans « Vos visites ».'}</p>
+                <button type="button" className="btn or" onClick={fermer}>Parfait</button>
+              </div>
+            )}
+            {etape === 'erreur' && err && (
+              <div className="cx-pop cx-err">
+                <span className="cx-pop-ic" aria-hidden="true"><Ico n={res && !res.ok && res.raison === 'reseau' ? 'horloge' : 'calendrier'} t={28} /></span>
+                <h3 id={idT}>{err.t}</h3>
+                <p className="cx-pop-p">{err.p}</p>
+                {res && !res.ok && res.raison === 'reseau' ? (
+                  <div className="duo">
+                    <button type="button" className="btn fant" onClick={fermer}>Fermer</button>
+                    <button type="button" className="btn or" onClick={() => { void confirmer(); }}>Réessayer</button>
+                  </div>
+                ) : (
+                  <button type="button" className="btn or" onClick={fermer}>{'D’accord'}</button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body,
+      )}
+    </div>
+  );
+}
+
+function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, visitesB = [], onRepondreVisite, decouverte, onFaireOffre, actionsOffre, versCr, token, onCreneau, versCreneau, onRevoir, imprevu, onImprevu }: any) {
   const dec = decouverte as ActionsFiche | undefined;
+  /* V3.221 : le créneau qu'il vient de choisir ici. La fiche est posée une
+     fois pour toutes dans la feuille : elle ne reçoit pas le bien mis à
+     jour, elle tient donc elle-même sa visite calée. */
+  const [rdv, setRdv] = useState<{ date: string; heure: string | null } | null>(null);
+  const vp: { date: string; heure: string | null } | null = b.visitePrevue || rdv;
+  const suivi: SuiviClient | null = b.suivi ? (rdv ? suiviCale(b.suivi, rdv) : b.suivi) : null;
+  /* V3.222 : sa demande de 2e visite, envoyée d'ici (la fiche ne reçoit pas la visite mise à jour). */
+  const [revu, setRevu] = useState<{ id: string; motifs: string[]; mot: string | null; le: string } | null>(null);
+  /* Ouverte depuis « Choisir mon créneau » (accueil, Vos visites) : la fiche
+     descend jusqu'aux créneaux, une fois la fenêtre posée. */
+  const refCreneau = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!versCreneau) return;
+    const t = setTimeout(() => refCreneau.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 450);
+    return () => clearTimeout(t);
+  }, [versCreneau]);
   /* V3.195 : ouverte depuis « Le compte rendu de votre conseiller » (Vos
      visites), la fiche descend jusqu'à lui, une fois la fenêtre posée. */
   const refCr = useRef<HTMLDivElement>(null);
@@ -4877,7 +5414,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
   /* « Ça me plaît » déjà envoyé : le client peut encore dire qu'il veut le
      visiter, sans rien défaire. Ses disponibilités partent avec, et Alexandre
      est prévenu (une relance du jour dans le CRM, et un mail). */
-  const peutVisiter = envoye && b.avis === 'interesse' && !b.visitePrevue && !b.visiteFaite && !indispo(b);
+  const peutVisiter = envoye && b.avis === 'interesse' && !vp && !b.visiteFaite && !indispo(b);
   const [versVisite, setVersVisite] = useState(false);
   const envoyerVisite = async () => {
     setEnvoiAvis(true);
@@ -5038,8 +5575,16 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
         {b.visiteFaite && (() => {
           const cle = (v: VisiteE) => `${v.date || ''}${v.heure || ''}`;
           const faites = (visitesB as VisiteE[]).filter(v => v.passee).sort((a, c) => cle(c).localeCompare(cle(a)));
-          const v = faites[0];
+          const v0 = faites[0];
+          const v: VisiteE | undefined = v0 && revu && revu.id === v0.id
+            ? { ...v0, issue: 'revoir', issuePar: 'client', motifs: revu.motifs, mot: revu.mot, issueLe: revu.le } : v0;
           const et = b.visiteFaite.etoiles || 0;
+          /* V3.222 : la 2e visite calée (par Alexandre, ou un créneau choisi ici). */
+          const bv = vp && vp !== b.visitePrevue ? { ...b, visitePrevue: vp } : b;
+          const deuxiemeCalee = !!vp && !!v && vp.date >= String(v.date || '').slice(0, 10);
+          const eoV = etatOffre(b);
+          /* Des créneaux de l'agence l'attendent déjà (« Où en est Alexandre », juste en dessous) : c'est là qu'il choisit. */
+          const peutRevoir = !!v && !!v.issue && !!onRevoir && !indispo(b) && !deuxiemeCalee && (!eoV || !!eoV.fini) && !(suivi?.choix && !suivi.calee);
           /* V3.196 — Alexandre : « En réflexion à côté de Visite effectuée,
              Faire une offre à côté, sur la même ligne : ne pas créer des
              lignes pour un mot ». */
@@ -5066,8 +5611,21 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
               {b.offreSuivi
                 ? <CarteOffre o={b.offreSuivi} indispo={indispo(b)} historique {...(actionsOffre || {})} />
                 : avecEtat && v
-                  ? <div className="vf-etat"><EtatVisite b={b} v={v} enLigne /></div>
+                  ? <div className="vf-etat"><EtatVisite b={bv} v={v} enLigne /></div>
                   : v && onRepondreVisite ? <AvisVisite v={v} onRepondre={onRepondreVisite} sansSuite={indispo(b)} onFaireOffre={onFaireOffre} /> : null}
+              {peutRevoir && v && (
+                <DemandeRevisite dejaRevoir={v.issue === 'revoir'} aDispos={v.issue === 'revoir' && v.motifs.some(m => !estRaison('revoir', m))}
+                  onEnvoyer={async (motifs: string[], dispos: string[], mot: string) => {
+                    const r: EtatRevoir = await onRevoir(motifs, dispos, mot);
+                    if (r === 'ok') {
+                      /* Comme le serveur : ses raisons d'avant restent s'il n'en coche pas d'autres. */
+                      const dejaR = v.issue === 'revoir';
+                      const raisons = motifs.length ? motifs : dejaR ? v.motifs.filter(m => estRaison('revoir', m)) : [];
+                      setRevu({ id: v.id, motifs: Array.from(new Set([...raisons, ...dispos])), mot: mot || (dejaR ? v.mot : null), le: new Date().toISOString() });
+                    }
+                    return r;
+                  }} />
+              )}
               {b.visiteFaite.commentaire ? (
                 <div className="cpr" ref={refCr}>
                   <div className="cpr-tete">
@@ -5090,7 +5648,15 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
             </div>
           );
         })()}
-        {b.suivi && <OuEnEst s={b.suivi} choix={b.suivi.calee && onImprevu ? <LigneImprevu imprevu={imprevu} onClick={onImprevu} /> : null} />}
+        {suivi && (
+          <OuEnEst s={suivi} choix={suivi.choix && !suivi.calee && onCreneau && !indispo(b) ? (
+            <div ref={refCreneau}>
+              <ChoixCreneau choix={suivi.choix} token={token}
+                bien={{ titre: b.titre, photo: (b.photos || [])[0] || null, meta: [b.pieces === 1 ? '1 espace' : b.pieces ? `${b.pieces} espaces` : '', b.surface ? `${b.surface} m²` : '', b.ville || b.secteur].filter(Boolean).join(' · ') }}
+                onChoisir={onCreneau} onFait={(v: { date: string; heure: string | null }) => setRdv(v)} />
+            </div>
+          ) : suivi.calee && onImprevu ? <LigneImprevu imprevu={imprevu} onClick={onImprevu} /> : null} />
+        )}
         {corr && (
           <button type="button" className="corresp" onClick={() => setVoirCorr(true)}>
             <AnneauNote note={corr.note} />
@@ -5206,12 +5772,12 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
             premier sans qu'Alexandre sache lequel comptait. */}
         {/* Le rendez-vous, quand il est pris : c'est l'information la plus
             attendue sur la fiche, elle passe avant l'avis déjà donné. */}
-        {b.visitePrevue && !b.visiteFaite && (
+        {vp && !b.visiteFaite && (
           <div className="apres-avis fini">
             <div className="aa-t">📅 Visite à venir</div>
             <p className="aa-p">
-              Votre conseiller a calé le rendez-vous&nbsp;: <b>{dateLongue(b.visitePrevue.date)}</b>
-              {b.visitePrevue.heure ? <> à <b>{String(b.visitePrevue.heure).slice(0, 5).replace(':', ' h ')}</b></> : null}.
+              Votre conseiller a calé le rendez-vous&nbsp;: <b>{dateLongue(vp.date)}</b>
+              {vp.heure ? <> à <b>{String(vp.heure).slice(0, 5).replace(':', ' h ')}</b></> : null}.
               Vous le retrouvez dans « Vos visites », avec le lien pour l’ajouter à votre agenda.
             </p>
           </div>
@@ -6069,7 +6635,7 @@ function lienGoogle(v: { date: string; heure: string | null; titre: string; adre
 
 /* V3.206 (planche 4) — la carte violette, qu'Alexandre aime, avec la vraie
    photo du bien : à gauche sur ordinateur, en haut sur un téléphone. */
-function ProchaineVisite({ v, autres, token, onBien, titre = 'Votre prochaine visite', imprevu, onImprevu }: { v: any; autres: number; token: string; onBien?: () => void; titre?: string; imprevu?: ImprevuVisite | null; onImprevu?: () => void }) {
+function ProchaineVisite({ v, autres, token, onBien, titre = 'Votre prochaine visite', imprevu, onImprevu, onChoisir }: { v: any; autres: number; token: string; onBien?: () => void; titre?: string; imprevu?: ImprevuVisite | null; onImprevu?: () => void; onChoisir?: () => void }) {
   const bientot = joursAvant(v.date);
   /* La photo et le titre mènent au bien : quand le rendez-vous tombe une
      semaine plus tard, la première question est « c'était lequel, déjà ? ». */
@@ -6088,7 +6654,10 @@ function ProchaineVisite({ v, autres, token, onBien, titre = 'Votre prochaine vi
         {v.adresse && <div className="vav-a"><Ico n="lieu" t={13} /><span>{v.adresse}</span></div>}
         {imprevu && (
           <div className="vav-imp-ok" role="status"><Ico n="check" t={15} />
-            <span>{`${imprevu.quoi === 'annuler' ? 'Vous avez demandé à l’annuler' : 'Vous avez demandé à la décaler'} : Werner est prévenu, il revient vers vous.`}</span>
+            <span>{onChoisir
+              ? 'Vous avez demandé à la décaler : le propriétaire propose d’autres créneaux, choisissez le vôtre.'
+              : `${imprevu.quoi === 'annuler' ? 'Vous avez demandé à l’annuler' : 'Vous avez demandé à la décaler'} : Werner est prévenu, il revient vers vous.`}</span>
+            {onChoisir && <button type="button" className="vav-imp-choix" onClick={onChoisir}><span>Choisir mon créneau</span><Ico n="fleche" t={14} /></button>}
           </div>
         )}
         <div className="vav-act">
@@ -7277,6 +7846,150 @@ input, textarea, select{font-family:inherit}
 .oe-pied{margin:0; padding-top:10px; border-top:1px solid #f3f2f2; font-size:12.5px; line-height:1.5; color:var(--plume)}
 .suivi-l{display:flex; align-items:center; gap:7px; margin-top:9px; font-size:12.5px; font-weight:700; line-height:1.35; color:var(--or-fonce)}
 .suivi-pt{flex:0 0 auto; width:7px; height:7px; border-radius:50%; background:var(--or)}
+/* ─── V3.221 : il choisit son créneau de visite ─── */
+.cx{display:flex; flex-direction:column; gap:12px; padding:14px; border-radius:16px;
+  background:linear-gradient(180deg,#FFF8EF 0,#FFFCF8 70%); border:1px solid var(--or-trait)}
+.cx-tete{display:flex; align-items:flex-start; gap:12px}
+.cx-ic{flex:0 0 auto; width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  background:#fff; color:var(--or-fonce); border:1px solid var(--or-trait)}
+.cx-tt{display:flex; flex-direction:column; gap:3px; min-width:0; padding-top:1px}
+.cx-tt > b{font-size:16px; font-weight:800; line-height:1.3; color:var(--encre)}
+.cx-tt > small{font-size:13px; font-weight:600; line-height:1.5; color:var(--plume)}
+.cx-liste{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:8px; align-items:start}
+.cx-c{background:#fff; border:1.5px solid var(--trait-fort); border-radius:15px; overflow:hidden;
+  transition:border-color .2s ease, box-shadow .2s ease, background .2s ease}
+.cx-c[data-on]{border-color:var(--or); box-shadow:0 0 0 3px rgba(240,140,66,.16), 0 12px 26px -20px rgba(194,98,28,.55)}
+.cx-b{display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px 10px 10px; border:0; background:none;
+  font:inherit; color:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent}
+.cx-b:focus-visible{outline:2px solid var(--marque); outline-offset:-2px; border-radius:14px}
+.cx-cal{flex:0 0 auto; width:50px; padding:6px 0 5px; border-radius:11px; display:flex; flex-direction:column; align-items:center;
+  background:var(--fond); border:1px solid var(--trait); transition:background .2s ease, color .2s ease, border-color .2s ease}
+.cx-cal i{font-style:normal; font-size:10.5px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:var(--or-fonce); line-height:1.2}
+.cx-cal b{font-size:21px; font-weight:800; line-height:1.1; color:var(--encre)}
+.cx-cal i:last-child{color:var(--plume); text-transform:none; letter-spacing:0; font-weight:700; font-size:11px}
+.cx-c[data-on] .cx-cal{background:var(--or); border-color:var(--or)}
+.cx-c[data-on] .cx-cal i, .cx-c[data-on] .cx-cal b{color:#fff}
+.cx-txt{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px}
+.cx-txt > b{font-size:14.5px; font-weight:800; line-height:1.3; color:var(--encre)}
+.cx-txt > span{font-size:14px; font-weight:700; line-height:1.35; color:var(--marque)}
+.cx-txt > small{font-size:12px; font-weight:600; color:var(--plume)}
+.cx-rond{flex:0 0 auto; width:24px; height:24px; border-radius:50%; border:2px solid #d9d7d4; display:flex;
+  align-items:center; justify-content:center; color:transparent; transition:all .2s ease}
+.cx-c[data-on] .cx-rond{background:var(--or); border-color:var(--or); color:#fff}
+.cx-heures{display:grid; grid-template-rows:0fr; transition:grid-template-rows .35s cubic-bezier(.16,1,.3,1)}
+.cx-heures[data-o]{grid-template-rows:1fr}
+.cx-heures-in{min-height:0; overflow:hidden}
+.cx-heures-t{display:block; margin:0 12px; padding-top:10px; border-top:1px dashed var(--or-trait);
+  font-size:11.5px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--or-fonce)}
+.cx-puces{display:flex; flex-wrap:wrap; gap:6px; padding:9px 12px 12px}
+.cx-h{min-height:38px; min-width:64px; padding:0 12px; border-radius:99px; border:1px solid var(--trait-fort); background:#fff;
+  font:inherit; font-size:13.5px; font-weight:700; color:var(--encre); cursor:pointer;
+  transition:background .15s ease, color .15s ease, border-color .15s ease}
+.cx-h:hover{border-color:var(--marque)}
+.cx-h[aria-pressed="true"]{background:var(--marque); border-color:var(--marque); color:#fff}
+.cx-bas{display:flex; flex-direction:column; gap:9px}
+.cx-choix{display:flex; align-items:flex-start; gap:8px; margin:0; font-size:13.5px; font-weight:700; line-height:1.45; color:var(--vert)}
+.cx-choix > svg{margin-top:2px}
+.cx-ok{margin-top:0}
+.cx-ok[disabled]{opacity:.5; box-shadow:none}
+.cx-pied{margin:0; text-align:center; font-size:12.5px; line-height:1.5; color:var(--plume)}
+.cx-pied a{color:var(--marque); font-weight:800}
+@media(min-width:640px){
+  .cx{padding:18px}
+  .cx-bas{flex-direction:row; flex-wrap:wrap; align-items:center; column-gap:16px}
+  .cx-bas .cx-choix{flex:1 1 100%}
+  .cx-ok{width:auto; min-width:250px}
+  .cx-pied{text-align:left; flex:1 1 200px}
+}
+/* La fenêtre : confirmer, l'envoi, c'est envoyé. */
+.cx-pop{display:flex; flex-direction:column; align-items:center; text-align:center; padding:26px 22px 8px}
+.cx-pop h3{margin:0 0 12px; font-size:20px; font-weight:800; line-height:1.3; text-wrap:balance}
+.cx-pop-ic{width:62px; height:62px; border-radius:50%; margin:0 0 16px; display:flex; align-items:center; justify-content:center;
+  background:var(--or-fond); color:var(--or-fonce); border:1px solid var(--or-trait)}
+.cx-pop-p{margin:0 0 18px; font-size:14.5px; line-height:1.6; color:var(--plume)}
+.cx-pop-p b{color:var(--encre)}
+.cx-pop .duo{width:100%; margin-top:0}
+.cx-pop > .btn{width:100%}
+.cx-recap{display:flex; align-items:center; gap:12px; width:100%; margin:2px 0 14px; padding:10px; border-radius:16px;
+  background:var(--fond); border:1px solid var(--trait); text-align:left}
+.cx-recap img, .cx-recap-v{flex:0 0 auto; width:64px; height:52px; border-radius:11px; object-fit:cover; display:flex;
+  align-items:center; justify-content:center; background:#fff; color:var(--plume-clair)}
+.cx-recap-x{display:flex; flex-direction:column; gap:2px; min-width:0}
+.cx-recap-x b{font-size:15.5px; font-weight:800; line-height:1.3; color:var(--encre)}
+.cx-recap-x span{font-size:13px; color:var(--plume); line-height:1.4}
+.cx-envoi{padding:40px 22px 30px}
+.cx-roue{width:46px; height:46px; margin:0 0 20px; border-radius:50%; border:4px solid var(--or-trait);
+  border-top-color:var(--or); animation:tourne .8s linear infinite}
+.cx-envoi .cx-pop-p{margin:0; font-weight:700; color:var(--encre)}
+.cx-rond-ok{width:72px; height:72px; border-radius:50%; margin:0 0 16px; display:flex; align-items:center;
+  justify-content:center; background:var(--vert); color:#fff; box-shadow:0 0 0 8px var(--vert-fond);
+  animation:cxOk .5s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes cxOk{from{transform:scale(.4); opacity:0} to{transform:scale(1); opacity:1}}
+.cx-rappel{display:flex; align-items:flex-start; gap:11px; width:100%; margin:0 0 14px; padding:13px 14px; border-radius:15px;
+  background:var(--or-fond); border:1px solid var(--or-trait); text-align:left}
+.cx-rappel-ic{flex:0 0 auto; width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  background:#fff; color:var(--or-fonce)}
+.cx-rappel-x{display:flex; flex-direction:column; gap:3px; min-width:0}
+.cx-rappel-x b{font-size:13.5px; font-weight:800; color:var(--or-fonce)}
+.cx-rappel-x > span{font-size:13.5px; line-height:1.55; color:var(--encre)}
+.cx-rappel-x a{color:var(--marque); font-weight:800; white-space:nowrap}
+.cx-ag{display:flex; flex-direction:column; align-items:center; gap:8px; width:100%; margin:0 0 6px}
+.cx-ag-t{font-size:10.5px; font-weight:800; letter-spacing:1.1px; text-transform:uppercase; color:var(--plume-clair)}
+.cx-ag-b{display:flex; flex-wrap:wrap; justify-content:center; gap:8px}
+.cx-ics{display:inline-flex; align-items:center; min-height:38px; padding:0 15px; border-radius:99px; border:1px solid var(--trait-fort);
+  background:#fff; color:var(--encre); font-size:13px; font-weight:700; text-decoration:none}
+.cx-ics:hover{border-color:var(--marque); color:var(--marque)}
+.cx-ou{margin:6px 0 16px; font-size:12.5px; color:var(--plume)}
+@media(prefers-reduced-motion:reduce){ .cx-heures, .cx-c, .cx-cal, .cx-rond{transition:none} .cx-rond-ok{animation:none} }
+/* Sur la carte d'un bien, dans les listes : « choisissez le vôtre ». */
+.suivi-l.cx-l{color:var(--or-fonce)}
+.suivi-l.cx-l svg{color:var(--or)}
+/* À l'accueil et dans « Vos visites » : les biens où un créneau l'attend. */
+.cxa-p{margin:0 0 10px; font-size:13.5px; line-height:1.5; color:var(--plume)}
+.cxa-liste{display:flex; flex-direction:column; gap:8px}
+.cxa{display:flex; align-items:center; gap:12px; width:100%; padding:9px 10px 9px 9px; border-radius:15px;
+  border:1px solid var(--or-trait); background:#fff; font:inherit; color:inherit; text-align:left; cursor:pointer;
+  box-shadow:var(--ombre); transition:border-color .15s ease, transform .15s ease}
+.cxa:hover{border-color:var(--or)}
+.cxa-ph{flex:0 0 auto; width:64px; height:52px; border-radius:11px; overflow:hidden; display:flex; align-items:center;
+  justify-content:center; background:var(--fond); color:var(--plume-clair)}
+.cxa-ph img{width:100%; height:100%; object-fit:cover; display:block}
+.cxa-x{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px}
+.cxa-x b{font-size:14.5px; font-weight:800; line-height:1.3; color:var(--encre)}
+.cxa-x > span{font-size:13px; font-weight:600; line-height:1.4; color:var(--or-fonce)}
+.cxa-go{flex:0 0 auto; display:inline-flex; align-items:center; gap:4px; padding:8px 11px 8px 13px; border-radius:99px;
+  background:var(--or); color:#fff; font-size:13px; font-weight:800}
+.vv-sep-or span{color:var(--or-fonce)}
+@media(max-width:479px){
+  .cxa-go{width:34px; height:34px; padding:0; justify-content:center}
+  .cxa-go span{display:none}
+}
+.cx-acc .vv-acc-c{padding:12px 13px 13px}
+/* ─── V3.222 : la 2e visite, côté client ─── */
+.rv-dispos{margin-top:14px; padding-top:12px; border-top:1px dashed var(--trait-fort)}
+.rv-dispos-t{display:flex; align-items:center; gap:7px; margin:0 0 10px; font-size:12px; font-weight:800;
+  letter-spacing:.8px; text-transform:uppercase; color:var(--marque)}
+.rv-btn{display:flex; align-items:center; gap:12px; width:100%; margin-top:12px; padding:12px 14px; border-radius:16px;
+  border:1px solid var(--bleu-trait); background:var(--bleu-fond); font:inherit; color:inherit; text-align:left; cursor:pointer;
+  transition:border-color .15s ease, box-shadow .15s ease}
+@media(hover:hover){ .rv-btn:hover{border-color:var(--marque); box-shadow:0 10px 24px -18px rgba(42,41,39,.6)} }
+.rv-btn-ic{flex:0 0 auto; width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  background:#fff; color:var(--marque)}
+.rv-btn-x{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px}
+.rv-btn-x b{font-size:15px; font-weight:800; line-height:1.3; color:var(--marque)}
+.rv-btn-x small{font-size:12.5px; font-weight:600; line-height:1.45; color:var(--plume)}
+.rv-btn-f{flex:0 0 auto; color:var(--marque)}
+.rv-form{margin-top:12px}
+.rv-vide{opacity:.55; box-shadow:none}
+.rv-ok{display:flex; align-items:flex-start; gap:11px; margin-top:12px; padding:12px 14px; border-radius:15px;
+  background:var(--vert-fond); border:1px solid var(--vert-trait)}
+.rv-ok-ic{flex:0 0 auto; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:var(--vert); color:#fff}
+.rv-ok-x{display:flex; flex-direction:column; gap:2px; min-width:0}
+.rv-ok-x b{font-size:14.5px; font-weight:800; color:var(--encre)}
+.rv-ok-x small{font-size:13px; line-height:1.5; color:var(--plume)}
+.rv-ok.rv-non{background:var(--fond); border-color:var(--trait)}
+.rv-ok.rv-non .rv-ok-ic{background:var(--marque)}
 /* V3.164 : le mot du conseiller sur un bien plus disponible. */
 .mot-indispo{display:flex; flex-direction:column; gap:4px; margin:-6px 0 14px; padding:11px 14px; border-radius:14px; background:white; border:1px solid #eaeae9; border-left:3px solid var(--or); color:#232528; font-size:14px; line-height:1.55}
 .mot-indispo i{font-style:normal; font-size:11.5px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; color:#8592A6}
@@ -8598,6 +9311,8 @@ button.auj-c:active{transform:scale(.96)}
 .vav-imp-ok > svg{flex:0 0 auto; margin-top:2px; color:#86efac}
 .vav-imp-ok{flex-wrap:wrap}
 .vav-imp-ok > span{flex:1 1 200px}
+.vav-imp-choix{display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border:0; border-radius:99px; background:#fff; color:#232528;
+  font:inherit; font-size:12.5px; font-weight:800; cursor:pointer}
 .imp-v{display:flex; align-items:center; gap:12px; padding:10px; border-radius:16px; background:var(--prune-fond); border:1px solid #e1dbef}
 .imp-v > img, .imp-v-vide{flex:0 0 auto; width:64px; height:52px; border-radius:11px; object-fit:cover; background:#ece8f6; color:#7b6ba8;
   display:flex; align-items:center; justify-content:center}
