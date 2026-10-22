@@ -10,7 +10,7 @@ import ArretPicker, { PastilleArret } from '@/components/shared/ArretPicker';
 import type { Arret } from '@/lib/arrets';
 import SignatureMandat, { AvantVisiteDocument, CarteMonMandat, CartePret, CarteAttente, CarteDocuments, Renonciation, mandatARenoncer, CSS_MANDAT, type MandatEspace } from './SignatureMandat';
 import { ajouterMois, jourParis, DUREE } from '@/lib/mandat';
-import { ISSUES, ISSUES_OK, RAISONS, type Issue } from '@/lib/visites';
+import { ISSUES, ISSUES_OK, RAISONS, RAISONS_IMPREVU, type Issue, type ImprevuVisite } from '@/lib/visites';
 import { correspondance, type LigneCorr, type Correspondance } from '@/lib/correspondance';
 import CarteEspace, { CATS_ESPACE, type BienCarte, type CatEspace } from './CarteEspace';
 import Decouverte, { GalerieGlisse, CSS_DECOUVERTE, type ActionsFiche, type AvisDecouverte } from './Decouverte';
@@ -156,6 +156,8 @@ type Criteres = {
   natures?: string[]; activite?: string; loyerMin?: number | null; loyerMax?: number | null;
   vitrineMin?: number | null; postesMin?: number | null; emplacements?: string[];
 };
+/* V3.232 : une visite à venir, telle que l'accueil et « Vos visites » la lisent (page.tsx, `visites`). */
+type VisiteAVenir = Props['visites'][number];
 type Props = {
   token: string;
   client: { prenom: string; nom: string; reference: string; jours: number | null };
@@ -191,6 +193,9 @@ type Props = {
   /** V3.189 : qui pré-remplir dans « Faire une offre » — lui, tel qu'il a
       signé son mandat (naissance comprise), puis ceux qui l'ont signé avec lui. */
   identiteOffre?: SaisieOffre['acquereurs'];
+  /** V3.232 : les visites à venir où il a signalé un imprévu (par id de visite),
+      tant que la visite n'a pas bougé. */
+  imprevus?: Record<string, ImprevuVisite>;
 };
 
 /* ══ outils ═══════════════════════════════════════ */
@@ -282,12 +287,21 @@ function depuis(d?: string | null) {
    « Actualisé le 14 sept. à 19 h 05 » ensuite. Pas de vocabulaire différent
    entre le téléphone et l'ordinateur — c'est la même phrase pour tout le monde. */
 function actualiseLe(d?: string | null) {
-  if (!d) return '';
-  const x = new Date(d); if (isNaN(x.getTime())) return '';
-  const h = 'à ' + x.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ');
-  if (x.toDateString() === new Date().toDateString()) return h;
-  return `le ${x.getDate()} ${MOIS[x.getMonth()]} ${h}`;
+  /* V3.232 : en heure de Paris, comme momentRecherche. Le serveur est en
+     heure universelle : il écrivait « mis à jour à 15 h 56 » pour une
+     recherche finie à 17 h 56, que la case d'à côté disait bien. */
+  const m = momentRecherche(d);
+  return m.startsWith('aujourd’hui ') ? m.slice('aujourd’hui '.length) : m;
 }
+/* « aujourd'hui à 17 h 56 » coupé en deux : { jour: 'aujourd’hui', heure: '17 h 56' }. */
+function momentDecoupe(d?: string | null) {
+  const m = momentRecherche(d);
+  const i = m.indexOf('à\u00a0');
+  return i < 0 ? null : { jour: m.slice(0, i).trim(), heure: m.slice(i + 2) };
+}
+/* Le jour de Paris d'une date (« 2026-10-22 »), comme les jours de `semaine` (page.tsx). */
+const jourDeParis = (d: string) => new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(d));
+
 /* Le moment de la dernière recherche, dit dans la phrase qui la raconte :
    « aujourd'hui à 14 h 34 », « hier à 9 h 12 », « le 24 sept. à 14 h 34 ».
    Le « mis à jour » de l'en-tête est petit et loin : sans l'heure dans la
@@ -1090,8 +1104,9 @@ function useNotifications(token: string) {
 /* ══ composant ════════════════════════════════════ */
 const SANS_APPRIS: string[] = [];
 const SANS_IDENTITE: SaisieOffre['acquereurs'] = [];
+const SANS_IMPREVUS: Record<string, ImprevuVisite> = {};
 
-export default function EspaceClient({ token, client, criteres, biens: biensInit, passage, semaine, visites, recherches, rechercheId, rang, enCours, mandat: mandatInit, mesVisites, apprisClient = SANS_APPRIS, annonces: annoncesInit = null, identiteOffre = SANS_IDENTITE }: Props) {
+export default function EspaceClient({ token, client, criteres, biens: biensInit, passage, semaine, visites, recherches, rechercheId, rang, enCours, mandat: mandatInit, mesVisites, apprisClient = SANS_APPRIS, annonces: annoncesInit = null, identiteOffre = SANS_IDENTITE, imprevus: imprevusInit = SANS_IMPREVUS }: Props) {
   const [vue, setVue] = useState('accueil');
   /* V3.184 : ses annonces envoyées ; une nouvelle s'ajoute sans recharger. */
   const [annonces, setAnnonces] = useState<AnnonceEspace[] | null>(annoncesInit);
@@ -1104,6 +1119,9 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
      relancerait cet effet sans fin. */
   const [mesV, setMesV] = useState<VisiteE[]>(mesVisites || []);
   useEffect(() => { setMesV(mesVisites || []); }, [mesVisites]);
+  /* V3.232 : ses imprévus sur une visite calée (« Werner est prévenu »). */
+  const [imprevus, setImprevus] = useState(imprevusInit);
+  useEffect(() => { setImprevus(imprevusInit); }, [imprevusInit]);
   const [crit, setCrit] = useState(criteres);
   const [feuille, setFeuille] = useState<React.ReactNode>(null);
   const [ouvert, setOuvert] = useState(false);
@@ -1529,12 +1547,15 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
     /* Il vient de regarder un bien : c'est le bon moment pour lui proposer de
        garder l'espace sous la main, et pas avant. */
     ecran.eveiller();
+    /* V3.232 : sa visite à venir sur ce bien, pour « Un imprévu ? ». */
+    const vav = visites.find(x => x.bienId === b.id) || null;
     montrer(<FicheBien b={b} client={client} crit={crit} onFermer={fermer}
       onCarte={() => { fermer(); allerCarte(b.id); }}
       onAvis={enregistrerAvis} onPartager={partagerBien}
       visitesB={mesV.filter(x => x.bienId === b.id)} onRepondreVisite={repondreVisite}
       onFaireOffre={peutOffrir(b) ? () => ouvrirOffre(b, b.offreSuivi ? { depuis: b.offreSuivi.id, derniere: b.offreSuivi.total } : {}) : undefined}
-      actionsOffre={actionsOffre(b)} versCr={!!o?.versCr} />, 'fiche');
+      actionsOffre={actionsOffre(b)} versCr={!!o?.versCr}
+      imprevu={vav ? imprevus[vav.id] || null : null} onImprevu={vav ? () => ouvrirImprevu(vav) : undefined} />, 'fiche');
   }
 
   /* ── Le mandat de recherche ──
@@ -2084,6 +2105,26 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
     }} />, 'pleine');
   }
 
+  /* ── V3.232 : « Un imprévu ? » sur une visite calée ──
+     Il ne l'annule ni ne la déplace lui-même : Werner est prévenu
+     (relance du jour, Suivi, mail) et parle au vendeur. La visite reste
+     prévue tant qu'Alexandre n'a rien changé ; la carte dit « Alexandre est
+     prévenu ». */
+  function ouvrirImprevu(v: VisiteAVenir) {
+    montrer(<Imprevu v={v} onFermer={fermer} onEnvoi={async (quoi, motifs, dispos, mot) => {
+      const r = await envoyer('imprevu', { visite_id: v.id, quoi, motifs, dispos, mot });
+      if (!r?.ok) return false;
+      setImprevus(x => ({ ...x, [v.id]: { quoi, le: typeof r.le === 'string' ? r.le : new Date().toISOString() } }));
+      montrer(<GrandOk titre="Werner est prévenu"
+        texte={quoi === 'decaler'
+          ? 'Il en parle au propriétaire et revient vers vous avec un nouveau créneau. D’ici là, la visite reste prévue à l’heure convenue.'
+          : 'Il prévient le propriétaire. La visite disparaîtra de votre espace dès qu’il l’aura annulée.'}
+        rappel={`Si c’est pour aujourd’hui ou demain, appelez-le aussi : <b>${AGENT.tel}</b>.`}
+        onFermer={fermer} />);
+      return true;
+    }} />);
+  }
+
   function ouvrirMessage() {
     montrer(<Message onFermer={fermer} onEnvoi={async (texte: string) => {
       const r = await envoyer('message', { texte });
@@ -2446,7 +2487,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
             <VueVisites biens={biens} mesV={mesV} visites={visites} token={token} apprisClient={apprisClient}
               aller={aller} onOuvrir={ouvrirBien} onRepondre={repondreEtDire}
               onFaireOffre={b => (peutOffrir(b) ? () => ouvrirOffre(b, b.offreSuivi ? { depuis: b.offreSuivi.id, derniere: b.offreSuivi.total } : {}) : undefined)}
-              actionsOffre={actionsOffre} />
+              actionsOffre={actionsOffre} imprevus={imprevus} onImprevu={ouvrirImprevu} />
           )}
         </div>
 
@@ -2668,6 +2709,18 @@ function Accueil({ client, crit, neufs, vus, donnes, nbPlusDispo = 0, passage, s
      à 14 h 34 »). C'est ce que « Aujourd'hui pour vous » doit montrer. */
   const duJour = passage?.lues ?? null;
   const quandJour = momentRecherche(passage?.quand);
+  const decoupe = momentDecoupe(passage?.quand);
+  /* V3.232 — Alexandre : « quand je fais des veilles à une heure d'intervalle,
+     il ne trouve rien », et l'espace disait « 0 annonce lue aujourd'hui ». On
+     compte la JOURNÉE de la dernière recherche (toutes ses recherches), avec
+     l'heure de la dernière ; une journée à zéro ne montre aucun chiffre. */
+  const jourDernier = passage?.quand ? jourDeParis(passage.quand) : '';
+  const luesJour: number = (jourDernier && semaine.find((x: any) => x.quand === jourDernier)?.lues) ?? duJour ?? 0;
+  const Jour = decoupe ? decoupe.jour.charAt(0).toUpperCase() + decoupe.jour.slice(1) : '';
+  const duJourMeme = decoupe?.jour === 'aujourd’hui';
+  const ligneJour = !decoupe ? null : luesJour > 0
+    ? <>{`${Jour} : `}<b className="tab">{`${nombre(luesJour)} annonce${luesJour > 1 ? 's lues' : ' lue'}`}</b>{` sur vos\u00a0critères · dernière recherche à\u00a0${decoupe.heure}`}</>
+    : <>{`${Jour} à\u00a0${decoupe.heure} : `}<b>{'aucune nouvelle annonce'}</b>{' sur vos\u00a0critères depuis la recherche précédente'}</>;
   const retours = [...donnes].sort((a: Bien, b: Bien) => String(b.retourLe || '').localeCompare(String(a.retourLe || '')));
   /* La carte de ses biens (V3.27) : un aperçu dessiné, pas une vraie carte. */
   /* V3.48 : comme la vraie carte, sans les biens vendus à un autre ou retirés. */
@@ -2773,20 +2826,10 @@ function Accueil({ client, crit, neufs, vus, donnes, nbPlusDispo = 0, passage, s
               </span>
             </button>
           ))}
-          {/* Sur ordinateur seulement : la quatrième case. Sur téléphone, le
-              même chiffre est dans la ligne du pied. Elle dit la dernière
-              recherche, pas le total : sous « Aujourd'hui pour vous », un total
-              de plusieurs centaines se lisait comme le travail du jour. Le
-              total est dans « Le marché sur vos critères ». */}
-          {duJour != null && (
-            <div className="auj-c c-lues on">
-              <span className="auj-ic"><Ico n="loupe" t={17} /></span>
-              <span className="auj-tx">
-                <span className="auj-n tab">{nombre(duJour)}</span>
-                <span className="auj-l" suppressHydrationWarning>{`annonce${duJour > 1 ? 's lues' : ' lue'} ${quandJour || 'lors de la dernière recherche'}`}</span>
-              </span>
-            </div>
-          )}
+          {/* V3.232 : plus de quatrième case sur ordinateur (« 0 annonce lue
+              aujourd'hui à 17 h 56 », que personne ne comprenait). La ligne du
+              téléphone, juste dessous, y devient une bande : la journée de la
+              dernière recherche et son heure, lisibles dès l'arrivée. */}
         </div>
         {/* Le pied dit d'abord la dernière recherche, avec son moment, puis le
             total, nommé « depuis l'ouverture » : sans ces mots, les 455 se
@@ -2794,10 +2837,8 @@ function Accueil({ client, crit, neufs, vus, donnes, nbPlusDispo = 0, passage, s
         {(duJour != null || lues != null) && (
           <div className="auj-pied2">
             {duJour != null && (
-              <span className="ap-jour"><span className="ap-i"><Ico n="loupe" t={15} /></span>
-                <span suppressHydrationWarning>{quandJour
-                  ? <>{`${quandJour.charAt(0).toUpperCase() + quandJour.slice(1)} : `}<b className="tab">{`${nombre(duJour)} annonce${duJour > 1 ? 's lues' : ' lue'}`}</b>{' sur vos\u00a0critères'}</>
-                  : <><b className="tab">{`${nombre(duJour)} annonce${duJour > 1 ? 's lues' : ' lue'}`}</b>{' lors de la dernière recherche'}</>}</span>
+              <span className="ap-jour"><span className="ap-i ap-vif"><Ico n="loupe" t={15} />{duJourMeme && <i className="auj-pt" aria-hidden="true" />}</span>
+                <span suppressHydrationWarning>{ligneJour || <><b className="tab">{`${nombre(duJour)} annonce${duJour > 1 ? 's lues' : ' lue'}`}</b>{' lors de la dernière recherche'}</>}</span>
               </span>
             )}
             {lues != null && (
@@ -2854,7 +2895,7 @@ function Accueil({ client, crit, neufs, vus, donnes, nbPlusDispo = 0, passage, s
                     ligne : il y en a toujours un, et un seul, sur l'accueil. */}
                 {!!passage?.lues && <RecapRecherche aller={aller} />}
               </>
-              : <RienDeNeuf passage={passage} aVoir={vus.length + donnes.length > 0} aller={aller} enCours={enCours} achat={achat || null} />}
+              : <RienDeNeuf passage={passage} aVoir={vus.length + donnes.length > 0} aller={aller} enCours={enCours} achat={achat || null} semaine={semaine} />}
             {vus.length > 0 && <AvisAttendus biens={vus} onOuvrir={onOuvrir} />}
             {/* V3.184 : au téléphone, après les nouveaux biens et les avis
                 attendus, avant la carte de ses biens et sa recherche. */}
@@ -3004,52 +3045,70 @@ function RecapRecherche({ aller }: { aller: (v: string) => void }) {
 }
 
 /* Rien de nouveau : on le dit, et on dit pourquoi — jamais un bloc vide. */
-function RienDeNeuf({ passage, aVoir, aller, enCours = true, achat = null }: { passage: Props['passage']; aVoir: boolean; aller: (v: string) => void; enCours?: boolean; achat?: Bien | null }) {
-  /* V3.48 : sous compromis, la recherche est souvent en pause — on ne dit plus « elle continue ». */
-  const etat = achat?.vente
+/* Ce que dit la phrase d'état. */
+function etatRecherche(enCours: boolean, achat: Bien | null) {
+  return achat?.vente
     ? (achat.vente.etat === 'vendu' ? 'Votre affaire est signée : félicitations.'
       : enCours ? 'Votre accord est signé ; la recherche continue en attendant la signature du bail ou de l’acte.' : 'Votre accord est signé : la recherche est en pause jusqu’à la signature du bail ou de l’acte.')
-    : enCours ? 'Votre recherche continue, rien n’est bloqué.' : 'Votre recherche est en pause pour le moment.';
+    : enCours ? 'Rien de nouveau depuis votre dernière visite : nous continuons à chercher pour vous.' : 'Votre recherche est en pause pour le moment.';
+}
+/* Un chronomètre dont les aiguilles tournent (V3.232) : immobile, sauf dans
+   une case animée (.c2-auj). */
+function Chrono({ t = 18 }: { t?: number }) {
   return (
-    <section className="calme">
-      <div className="calme-h">
-        <span className="calme-ic"><Ico n="loupe" t={21} /></span>
-        <div>
-          <h2>Rien de nouveau depuis votre dernière visite</h2>
-          <p>{etat}</p>
+    <svg className="chrono" width={t} height={t} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" aria-hidden="true">
+      <circle cx="12" cy="13.5" r="8.2" />
+      <path d="M9.5 2.6h5M12 2.6v2.6M18.6 6.4l1.3-1.3" />
+      <line className="chr-m" x1="12" y1="13.5" x2="12" y2="8.4" />
+      <line className="chr-h" x1="12" y1="13.5" x2="15.2" y2="13.5" />
+    </svg>
+  );
+}
+/* V3.232 — Alexandre : « rien de nouveau depuis votre dernière visite : tu
+   peux faire plus joli ? Et bien mettre l'horaire de la dernière
+   actualisation, qu'il le voie ». L'état (« Votre recherche est à jour »,
+   la loupe qui balaie), puis deux repères en rectangles : la dernière
+   recherche (son heure, l'accent de la page) et les annonces lues ces 7
+   jours (le même total que « Le marché sur vos critères »). « Où nous
+   cherchons » a été retiré : « trop de texte, il a ça dans sa recherche ».
+   Un repère sans donnée ne s'affiche pas. */
+function RienDeNeuf({ passage, aVoir, aller, enCours = true, achat = null, semaine = [] }: { passage: Props['passage']; aVoir: boolean; aller: (v: string) => void; enCours?: boolean; achat?: Bien | null; semaine?: Props['semaine'] }) {
+  const q = momentRecherche(passage?.quand);
+  /* Alexandre : « quand c'est aujourd'hui, que ce soit coloré, que ça
+     scintille, en continu ». Hier ou avant : la même case, calme. */
+  const auj = q.startsWith('aujourd’hui');
+  const sem = semaine.reduce((t, x) => t + (x.lues || 0), 0);
+  return (
+    <section className="calme2">
+      <div className="c2-tete">
+        <span className="c2-radar" aria-hidden="true"><i className="c2-balai" /><Ico n="loupe" t={22} /><i className="c2-ok"><Ico n="check" t={11} /></i></span>
+        <div className="c2-tx">
+          <h2>{enCours && !achat ? 'Votre recherche est à jour' : 'Rien de nouveau depuis votre dernière visite'}</h2>
+          <p>{etatRecherche(enCours, achat)}</p>
         </div>
       </div>
-      <div className="calme-l">
-        {!!passage?.lues && (
-          <span><span className="calme-k"><Ico n="check" t={15} /></span>
-            {/* Le chiffre et l'heure sont juste au-dessus, dans « Aujourd'hui
-                pour vous » : on ne les redit pas, on dit ce qu'ils ont donné. */}
-            <span>{passage.proposees
-              ? `La dernière recherche a retenu ${passage.proposees} ${passage.proposees > 1 ? 'locaux' : 'local'} : vous ${passage.proposees > 1 ? 'les avez' : 'l’avez'} déjà ouvert${passage.proposees > 1 ? 's' : ''}.`
-              : 'Aucune des annonces lues lors de la dernière recherche ne cochait toutes vos cases. Mieux vaut ne rien vous envoyer que vous faire perdre du temps.'}</span>
-          </span>
+      <div className="c2-g">
+        {q && (
+          <div className={'c2-t' + (auj ? ' c2-t-or c2-auj' : '')}>
+            <span className="c2-ic"><Chrono t={19} /></span>
+            <span className="c2-v"><small>{'Dernière recherche'}</small><b suppressHydrationWarning>{q.charAt(0).toUpperCase() + q.slice(1)}</b></span>
+          </div>
         )}
-        <span><span className="calme-k"><Ico n="etincelle" t={15} /></span>
-          <span>Dès qu’un local correspond à ce que vous voulez, il arrive ici.</span>
-        </span>
+        {sem > 0 && (
+          <div className="c2-t">
+            <span className="c2-ic"><Ico n="graph" t={17} /></span>
+            <span className="c2-v"><small>{'Ces 7 derniers jours'}</small><b>{`${nombre(sem)} annonces lues`}</b></span>
+          </div>
+        )}
       </div>
-      {/* Le détail de ce travail est dans « Le marché sur vos critères ». La
-          carte du même nom est tout en bas de l'accueil : on y mène d'ici,
-          juste sous la phrase qui raconte la dernière recherche. */}
-      {!!passage?.lues && (
-        <button type="button" className="calme-b calme-m" onClick={() => aller('marche')}>
-          <Ico n="graph" t={16} /><span>Voir le marché sur vos critères</span><Ico n="fleche" t={16} />
-        </button>
-      )}
-      {aVoir && (
-        <button type="button" className="calme-b" onClick={() => aller('consultes')}>
-          <span>Revoir les locaux déjà consultés</span><Ico n="fleche" t={16} />
-        </button>
-      )}
+      <p className="c2-l"><Ico n="etincelle" t={15} /><span>{'Dès qu’un local coche toutes vos cases, il arrive ici, avant qu’il ne circule.'}</span></p>
+      <div className="c2-b">
+        {aVoir && <button type="button" className="calme-b" onClick={() => aller('consultes')}><span>Revoir les locaux déjà consultés</span><Ico n="fleche" t={16} /></button>}
+        {!!passage && <button type="button" className="calme-b calme-m" onClick={() => aller('marche')}><Ico n="graph" t={16} /><span>Le marché sur vos critères</span><Ico n="fleche" t={16} /></button>}
+      </div>
     </section>
   );
 }
-
 /* Les biens ouverts sans avis : une seule phrase, et un bouton par bien qui
    ouvre sa fiche — là où se trouvent les boutons d'avis habituels. */
 function AvisAttendus({ biens, onOuvrir }: { biens: Bien[]; onOuvrir: (b: Bien) => void }) {
@@ -4408,12 +4467,14 @@ function CarteAvisAccueil({ b, v, onRepondre, onOuvrir, onVoir, onFaireOffre }: 
    pour lui. V3.189 : « Vos offres » en tête — une offre qui court passe
    avant tout ; celle qui s'arrête sans accord rejoint « Pas pour moi », avec
    son étiquette, et une nouvelle offre reste possible. */
-function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir, onRepondre, onFaireOffre, actionsOffre }: {
+function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir, onRepondre, onFaireOffre, actionsOffre, imprevus, onImprevu }: {
   biens: Bien[]; mesV: VisiteE[]; visites: any[]; token: string; apprisClient: string[];
   aller: (v: string) => void; onOuvrir: (b: Bien, o?: { versCr?: boolean }) => void;
   onRepondre: (v: VisiteE, i: Issue, motifs: string[], mot: string, prix: number | null) => Promise<boolean>;
   onFaireOffre?: (b: Bien) => (() => void) | undefined;
   actionsOffre?: (b: Bien) => ActionsOffre;
+  /* V3.232 : « Un imprévu ? » sur ses visites à venir. */
+  imprevus?: Record<string, ImprevuVisite>; onImprevu?: (v: VisiteAVenir) => void;
 }) {
   const cle = (v: VisiteE) => `${v.date || ''}${v.heure || ''}`;
   const parBien = new Map<string, VisiteE[]>();
@@ -4491,7 +4552,9 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aller, onOuvrir
               const r = visites.find((x: any) => x.id === v.id);
               const titre = `${i === 0 ? 'Votre prochaine visite' : 'Visite suivante'}${v.revisite ? ' · 2e visite' : ''}`;
               return r
-                ? <ProchaineVisite key={v.id} v={r} autres={0} token={token} titre={titre} onBien={() => onOuvrir(b)} />
+                ? <ProchaineVisite key={v.id} v={r} autres={0} token={token} titre={titre} onBien={() => onOuvrir(b)}
+                  imprevu={imprevus?.[r.id] || null} onImprevu={onImprevu ? () => onImprevu(r) : undefined}
+                  />
                 : carte({ b, v });
             })}
           </div>
@@ -4680,7 +4743,7 @@ function EtapeOE({ e }: { e: SuiviClient['etapes'][number] }) {
    petit message : voir tout l'historique des échanges, ça se déplie en mode
    fluide, et il peut replier ». Les appels d'avant les trois derniers
    (`ancien`) restent repliés à leur place, sous son avis. */
-function OuEnEst({ s }: { s: SuiviClient }) {
+function OuEnEst({ s, choix }: { s: SuiviClient; choix?: React.ReactNode }) {
   const [tout, setTout] = useState(false);
   const id = useId();
   const premier = s.etapes.findIndex(e => e.ancien);
@@ -4719,12 +4782,14 @@ function OuEnEst({ s }: { s: SuiviClient }) {
         )}
         {apres.map((e, i) => <EtapeOE key={'r' + i} e={e} />)}
       </ol>
+      {/* V3.232 : « Un imprévu pour cette visite ? », quand elle est calée. */}
+      {choix}
       <p className="oe-pied">{'Les étapes se mettent à jour à chaque appel de Werner.'}</p>
     </div>
   );
 }
 
-function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, visitesB = [], onRepondreVisite, decouverte, onFaireOffre, actionsOffre, versCr }: any) {
+function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, visitesB = [], onRepondreVisite, decouverte, onFaireOffre, actionsOffre, versCr, imprevu, onImprevu }: any) {
   const dec = decouverte as ActionsFiche | undefined;
   /* V3.195 : ouverte depuis « Le compte rendu de votre conseiller » (Vos
      visites), la fiche descend jusqu'à lui, une fois la fenêtre posée. */
@@ -5025,7 +5090,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
             </div>
           );
         })()}
-        {b.suivi && <OuEnEst s={b.suivi} />}
+        {b.suivi && <OuEnEst s={b.suivi} choix={b.suivi.calee && onImprevu ? <LigneImprevu imprevu={imprevu} onClick={onImprevu} /> : null} />}
         {corr && (
           <button type="button" className="corresp" onClick={() => setVoirCorr(true)}>
             <AnneauNote note={corr.note} />
@@ -5839,6 +5904,101 @@ function EchecEnvoi() {
   );
 }
 
+/* ══ V3.232 : « Un imprévu ? » sur une visite calée ══════════════════════
+   Alexandre : « quand une visite est calée, est-ce qu'on pourrait mettre un
+   petit mot, un imprévu… est-ce qu'aujourd'hui il peut annuler une visite
+   pour que moi, je sois prévenu sur mon CRM ? ». Décaler (avec ses
+   disponibilités) ou annuler (avec sa raison), un mot s'il veut : tout part
+   chez Werner (/api/espace/imprevu). Repris du CRM d'Emilio (sa V3.232). Le téléphone reste en bas, pour le
+   jour même. */
+type QuoiImprevu = ImprevuVisite['quoi'];
+function Imprevu({ v, onFermer, onEnvoi }: { v: VisiteAVenir; onFermer: () => void; onEnvoi: (quoi: QuoiImprevu, motifs: string[], dispos: string[], mot: string) => Promise<boolean> }) {
+  const [quoi, setQuoi] = useState<QuoiImprevu | null>(null);
+  const [dispos, setDispos] = useState<string[]>([]);
+  const [motifs, setMotifs] = useState<string[]>([]);
+  const [mot, setMot] = useState('');
+  const [ecrire, setEcrire] = useState(false);
+  const [enCours, setEnCours] = useState(false);
+  const [rate, setRate] = useState(false);
+  const quand = `${dateLongue(v.date)}${v.heure ? ` à ${heureVisite(v.heure)}` : ''}`;
+  const bientot = joursAvant(v.date);
+  const vide = quoi === 'decaler' && !dispos.length && !mot.trim();
+  async function partir() {
+    if (!quoi || vide || enCours) return;
+    setEnCours(true); setRate(false);
+    if (!(await onEnvoi(quoi, motifs, dispos, mot.trim()))) { setEnCours(false); setRate(true); }
+  }
+  const CHOIX: { k: QuoiImprevu; ic: string; t: string; s: string }[] = [
+    { k: 'decaler', ic: 'calendrier', t: 'Décaler la visite', s: 'Werner demande un autre créneau au propriétaire' },
+    { k: 'annuler', ic: 'croix', t: 'Annuler la visite', s: 'Vous ne souhaitez plus y aller' },
+  ];
+  return (
+    <>
+      <div className="tete-f">
+        <div><div className="sur">Votre visite</div><h3>Un imprévu ?</h3></div>
+        <button className="fermer" onClick={onFermer} aria-label="Fermer"><Ico n="croix" t={14} /></button>
+      </div>
+      <div className="corps-f">
+        <div className="imp-v">
+          {v.photo ? <img src={v.photo} alt="" /> : <span className="imp-v-vide"><Ico n="maison" t={20} /></span>}
+          <span className="imp-v-x"><b>{quand}</b><small>{v.titre}</small></span>
+          {bientot && <span className="imp-v-b">{capi(bientot)}</span>}
+        </div>
+        <p className="imp-p">{'Dites-le à Werner : il prévient le propriétaire et s’occupe de la suite.'}</p>
+        <div className="imp-choix" role="radiogroup" aria-label="Ce que vous souhaitez">
+          {CHOIX.map(c => (
+            <button key={c.k} type="button" role="radio" aria-checked={quoi === c.k} data-t={c.k} className="imp-c" onClick={() => setQuoi(c.k)}>
+              <span className="imp-c-ic"><Ico n={c.ic} t={18} /></span>
+              <span className="imp-c-x"><b>{c.t}</b><small>{c.s}</small></span>
+              <span className="imp-rond" aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+        {quoi === 'decaler' && (
+          <div className="rv-dispos">
+            <div className="rv-dispos-t"><Ico n="calendrier" t={15} /><span>{'Vos disponibilités'}</span></div>
+            <ChoixDispos choisies={dispos} onBasculer={n => setDispos(l => (l.includes(n) ? l.filter(x => x !== n) : [...l, n]))} />
+          </div>
+        )}
+        {quoi === 'annuler' && (
+          <div className="reponses">
+            {RAISONS_IMPREVU.map(r => (
+              <button key={r.n} type="button" className="rep" data-a="non" aria-pressed={motifs.includes(r.n)}
+                onClick={() => setMotifs(l => (l.includes(r.n) ? l.filter(x => x !== r.n) : [...l, r.n]))}>
+                <Ico n={r.i} t={15} /><span>{r.n}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {quoi && (ecrire
+          ? <textarea rows={3} value={mot} onChange={e => setMot(e.target.value)} style={{ marginTop: 12 }} autoFocus
+            placeholder={quoi === 'decaler' ? 'Ex : un rendez-vous de dernière minute, la semaine prochaine m’irait mieux.' : 'Ex : finalement le quartier ne nous convient pas.'} />
+          : <div className="reponses" style={{ marginTop: 12 }}><button type="button" className="rep plus" onClick={() => setEcrire(true)}>+ Ajouter un mot</button></div>)}
+        {quoi && <BtnEnvoi enCours={enCours} libelle={vide ? 'Choisissez une disponibilité' : 'Prévenir Werner'} classe={'btn or' + (vide ? ' rv-vide' : '')} style={{ marginTop: 14, width: '100%' }} onClick={() => { void partir(); }} />}
+        {rate && <EchecEnvoi />}
+        <a className="imp-tel" href={'tel:' + AGENT.telUrl}><Ico n="tel" t={14} /><span>{`Pour aujourd’hui ou demain, appelez aussi Werner : ${AGENT.tel}`}</span></a>
+      </div>
+    </>
+  );
+}
+/* Sur la fiche du local, sous « Où en est Werner » quand la visite est calée. */
+function LigneImprevu({ imprevu, onClick }: { imprevu?: ImprevuVisite | null; onClick: () => void }) {
+  if (imprevu) {
+    return (
+      <div className="imp-ok" role="status"><Ico n="check" t={15} />
+        <span>{`${imprevu.quoi === 'annuler' ? 'Vous avez demandé à annuler cette visite' : 'Vous avez demandé à décaler cette visite'} : Werner est prévenu, il revient vers vous.`}</span>
+      </div>
+    );
+  }
+  return (
+    <button type="button" className="imp-btn" onClick={onClick}>
+      <span className="imp-btn-ic"><Ico n="aide" t={16} /></span>
+      <span className="imp-btn-x"><b>{'Un imprévu pour cette visite ?'}</b><small>{'La décaler ou l’annuler : prévenez Werner'}</small></span>
+      <Ico n="fleche" t={16} />
+    </button>
+  );
+}
+
 function Message({ onFermer, onEnvoi }: any) {
   const [txt, setTxt] = useState('');
   const [envoi, setEnvoi] = useState(false);
@@ -5909,7 +6069,7 @@ function lienGoogle(v: { date: string; heure: string | null; titre: string; adre
 
 /* V3.206 (planche 4) — la carte violette, qu'Alexandre aime, avec la vraie
    photo du bien : à gauche sur ordinateur, en haut sur un téléphone. */
-function ProchaineVisite({ v, autres, token, onBien, titre = 'Votre prochaine visite' }: { v: any; autres: number; token: string; onBien?: () => void; titre?: string }) {
+function ProchaineVisite({ v, autres, token, onBien, titre = 'Votre prochaine visite', imprevu, onImprevu }: { v: any; autres: number; token: string; onBien?: () => void; titre?: string; imprevu?: ImprevuVisite | null; onImprevu?: () => void }) {
   const bientot = joursAvant(v.date);
   /* La photo et le titre mènent au bien : quand le rendez-vous tombe une
      semaine plus tard, la première question est « c'était lequel, déjà ? ». */
@@ -5926,8 +6086,14 @@ function ProchaineVisite({ v, autres, token, onBien, titre = 'Votre prochaine vi
         </div>
         <div className="vav-b2">{v.titre}</div>
         {v.adresse && <div className="vav-a"><Ico n="lieu" t={13} /><span>{v.adresse}</span></div>}
+        {imprevu && (
+          <div className="vav-imp-ok" role="status"><Ico n="check" t={15} />
+            <span>{`${imprevu.quoi === 'annuler' ? 'Vous avez demandé à l’annuler' : 'Vous avez demandé à la décaler'} : Werner est prévenu, il revient vers vous.`}</span>
+          </div>
+        )}
         <div className="vav-act">
           {onBien && <button type="button" className="vav-voir2" onClick={onBien}><span>Revoir le local</span><Ico n="fleche" t={14} /></button>}
+          {onImprevu && !imprevu && <button type="button" className="vav-imp" onClick={onImprevu}><Ico n="aide" t={15} /><span>Un imprévu ?</span></button>}
           <span className="vav-ag-t">Ajouter à mon agenda</span>
           <span className="vav-ag-b">
             <a className="vav-ics" href={lienGoogle(v)} target="_blank" rel="noopener noreferrer">Google&nbsp;Agenda</a>
@@ -8259,9 +8425,6 @@ button.auj-c:active{transform:scale(.96)}
 .auj-c.c-vus.on .auj-n{color:#2e3034}
 .auj-c.c-neuf.ajour .auj-ic{background:#e7f6ec; color:#15803d}
 .auj-n.mot{font-size:20px; letter-spacing:-.4px; color:var(--encre); line-height:1.25}
-.auj-c.c-lues{display:none}
-.auj-c.c-lues .auj-ic{background:#efeeed; color:#2e3034}
-.auj-c.c-lues .auj-n{color:#2e3034}
 .auj-n .nv, .auj-pied .nv{position:relative; display:inline-block; padding-right:17px}
 .auj-n .nv .aide-pt, .auj-pied .nv .aide-pt{position:absolute; left:auto; right:0; top:-6px}
 .auj-pied{display:flex; flex-wrap:wrap; gap:4px 16px; padding-top:10px; border-top:1px solid #f6f5f5;
@@ -8373,6 +8536,105 @@ button.auj-c:active{transform:scale(.96)}
 .calme-m{background:#f1f0ef; border-color:#e5e3e2; color:#2a2927}
 .calme-m > span{flex:1; text-align:left}
 .calme-m > svg:first-child{color:#2e3034}
+/* ══ V3.232 — L'heure de la dernière recherche, et « votre recherche est à jour » ══
+   Alexandre : « 0 annonce lue aujourd'hui, ça veut dire quoi ? » ; « sur le
+   PC, c'est vague, on ne comprend pas dès qu'on arrive » ; « bien mettre
+   l'horaire, qu'il le voie ». */
+.ap-vif{position:relative}
+.auj-pt{position:absolute; top:-4px; right:-5px; width:9px; height:9px; border-radius:50%; background:#16a34a; border:2px solid #fff; box-sizing:border-box}
+.auj-pt::after{content:''; position:absolute; inset:-3px; border-radius:50%; border:2px solid #16a34a; animation:auj-bat 2.2s ease-out infinite}
+@keyframes auj-bat{0%{transform:scale(.8); opacity:.7}100%{transform:scale(2); opacity:0}}
+.calme2{background:var(--carte); border:1px solid var(--trait); border-radius:22px; padding:20px; display:flex; flex-direction:column; gap:16px; box-shadow:var(--ombre)}
+.c2-tete{display:flex; align-items:center; gap:16px}
+.c2-radar{position:relative; flex:0 0 auto; width:50px; height:50px; margin:4px; border-radius:50%; background:#2e3034; color:#fff; display:flex; align-items:center; justify-content:center}
+.c2-radar::before, .c2-radar::after{content:''; position:absolute; inset:0; border-radius:50%; border:2px solid #2e3034; opacity:0; animation:c2-onde 2.8s ease-out infinite}
+.c2-radar::after{animation-delay:1.4s}
+/* La loupe balaie en continu : un faisceau qui tourne, la loupe qui cherche. */
+.c2-balai{position:absolute; inset:0; border-radius:50%; overflow:hidden;
+  background:conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0) 250deg, rgba(255,255,255,.38) 350deg, rgba(255,255,255,0) 360deg);
+  animation:c2-tourne 2.6s linear infinite}
+@keyframes c2-tourne{to{transform:rotate(360deg)}}
+.c2-radar > svg{position:relative; animation:c2-cherche 3.4s ease-in-out infinite}
+@keyframes c2-cherche{0%,100%{transform:translate(0,0)}25%{transform:translate(-2.5px,-2px)}50%{transform:translate(2px,-2.5px)}75%{transform:translate(2px,2px)}}
+@keyframes c2-onde{0%{transform:scale(1); opacity:.45}100%{transform:scale(1.8); opacity:0}}
+.c2-ok{position:absolute; right:-4px; bottom:-4px; width:21px; height:21px; border-radius:50%; background:#16a34a; color:#fff; border:2px solid #fff; display:flex; align-items:center; justify-content:center; box-sizing:border-box}
+.c2-tx h2{margin:0; font-size:18px; font-weight:800; line-height:1.3; color:var(--encre)}
+.c2-tx p{margin:3px 0 0; font-size:13px; line-height:1.5; color:var(--plume)}
+.c2-g{display:grid; grid-template-columns:1fr; gap:8px}
+.c2-t{position:relative; overflow:hidden; display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:16px; background:#f6f6f7; border:1px solid var(--trait); min-width:0}
+/* Aujourd'hui : la case orange scintille (un reflet qui passe, une lueur qui
+   respire) et le chrono tourne. */
+.c2-auj{animation:c2-lueur 2.4s ease-in-out infinite}
+@keyframes c2-lueur{0%,100%{box-shadow:0 0 0 0 rgba(240,140,66,0)}50%{box-shadow:0 0 0 5px rgba(240,140,66,.16)}}
+.c2-auj::after{content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(105deg, rgba(255,255,255,0) 35%, rgba(255,255,255,.8) 50%, rgba(255,255,255,0) 65%);
+  transform:translateX(-110%); animation:c2-reflet 3.4s ease-in-out infinite}
+@keyframes c2-reflet{0%{transform:translateX(-110%)}55%,100%{transform:translateX(110%)}}
+.chrono .chr-m, .chrono .chr-h{transform-box:view-box; transform-origin:12px 13.5px}
+.c2-auj .chr-m{animation:chr 2.4s linear infinite}
+.c2-auj .chr-h{animation:chr 28s linear infinite}
+@keyframes chr{to{transform:rotate(360deg)}}
+.c2-ic{flex:0 0 auto; width:36px; height:36px; border-radius:11px; background:#efeeed; color:#2e3034; display:flex; align-items:center; justify-content:center}
+.c2-v{display:flex; flex-direction:column; gap:2px; min-width:0}
+.c2-v small{font-size:10.5px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--plume-clair)}
+.c2-v b{font-size:15px; font-weight:800; color:var(--encre); line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.c2-t-or{background:#FFF6EC; border-color:#F7D5B0}
+.c2-t-or .c2-ic{background:#FDEBD3; color:var(--or-fonce)}
+.c2-t-or b{color:var(--or-fonce)}
+.c2-l{display:flex; align-items:flex-start; gap:9px; margin:0; font-size:13.5px; line-height:1.5; color:var(--encre)}
+.c2-l > svg{flex:0 0 auto; margin-top:2px; color:#2e3034}
+.c2-b{display:flex; flex-direction:column; gap:8px}
+.c2-b > .calme-b{width:100%; margin:0}
+@media(min-width:640px){
+  .c2-g{grid-template-columns:repeat(auto-fit, minmax(220px, 1fr))}
+  .c2-b{flex-direction:row}
+  .c2-b > .calme-b{flex:1 1 0; padding:0 16px}
+}
+/* ══ V3.232 : « Un imprévu ? » ══ */
+.vav-imp{order:1; display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:99px; border:1px solid rgba(255,255,255,.42);
+  background:rgba(255,255,255,.08); color:#fff; font:inherit; font-size:13px; font-weight:700; cursor:pointer}
+.vav-imp-ok{position:relative; display:flex; align-items:flex-start; gap:8px; margin-top:12px; padding:10px 12px; border-radius:12px;
+  background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.24); font-size:13px; font-weight:600; line-height:1.45; color:#fff}
+.vav-imp-ok > svg{flex:0 0 auto; margin-top:2px; color:#86efac}
+.vav-imp-ok{flex-wrap:wrap}
+.vav-imp-ok > span{flex:1 1 200px}
+.imp-v{display:flex; align-items:center; gap:12px; padding:10px; border-radius:16px; background:var(--prune-fond); border:1px solid #e1dbef}
+.imp-v > img, .imp-v-vide{flex:0 0 auto; width:64px; height:52px; border-radius:11px; object-fit:cover; background:#ece8f6; color:#7b6ba8;
+  display:flex; align-items:center; justify-content:center}
+.imp-v-x{flex:1; display:flex; flex-direction:column; gap:2px; min-width:0}
+.imp-v-x b{font-size:14.5px; font-weight:800; color:var(--encre); line-height:1.3}
+.imp-v-x small{font-size:12.5px; color:var(--plume); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.imp-v-b{flex:0 0 auto; font-size:11px; font-weight:800; color:var(--prune); background:#fff; border:1px solid #e1dbef; border-radius:99px; padding:3px 9px}
+.imp-p{margin:14px 0 10px; font-size:14px; line-height:1.55; color:var(--plume)}
+.imp-choix{display:grid; gap:8px}
+.imp-c{display:flex; align-items:center; gap:12px; width:100%; padding:13px 14px; border-radius:16px; border:1.5px solid var(--trait);
+  background:var(--carte); text-align:left; font:inherit; color:var(--encre); cursor:pointer; transition:border-color .16s, background .16s}
+.imp-c-ic{flex:0 0 auto; width:38px; height:38px; border-radius:12px; background:var(--prune-fond); color:var(--prune); display:flex; align-items:center; justify-content:center}
+.imp-c[data-t="annuler"] .imp-c-ic{background:var(--brique-fond); color:var(--brique)}
+.imp-c-x{flex:1; display:flex; flex-direction:column; gap:2px; min-width:0}
+.imp-c-x b{font-size:14.5px; font-weight:800}
+.imp-c-x small{font-size:12.5px; color:var(--plume); line-height:1.4}
+.imp-rond{flex:0 0 auto; width:20px; height:20px; border-radius:50%; border:2px solid #CBD5E1; box-sizing:border-box; transition:border .16s}
+.imp-c[aria-checked="true"]{border-color:var(--prune); background:var(--prune-fond)}
+.imp-c[aria-checked="true"] .imp-rond{border:6px solid var(--prune)}
+.imp-c[aria-checked="true"] .imp-c-ic{background:#fff}
+.imp-c[data-t="annuler"][aria-checked="true"]{border-color:var(--brique); background:var(--brique-fond)}
+.imp-c[data-t="annuler"][aria-checked="true"] .imp-rond{border-color:var(--brique)}
+.imp-tel{display:flex; align-items:center; justify-content:center; gap:7px; margin:16px 0 4px; padding:10px 12px; border-radius:12px; background:var(--fond);
+  font-size:12.5px; font-weight:600; line-height:1.4; color:var(--plume); text-decoration:none; text-align:center}
+.imp-tel > svg{flex:0 0 auto; color:var(--marque)}
+.imp-btn{display:flex; align-items:center; gap:11px; width:100%; margin-top:2px; padding:11px 13px; border-radius:14px; border:1px dashed #d4cbe8;
+  background:#faf8fd; text-align:left; font:inherit; color:var(--encre); cursor:pointer}
+.imp-btn-ic{flex:0 0 auto; width:32px; height:32px; border-radius:10px; background:var(--prune-fond); color:var(--prune); display:flex; align-items:center; justify-content:center}
+.imp-btn-x{flex:1; display:flex; flex-direction:column; gap:1px; min-width:0}
+.imp-btn-x b{font-size:14px; font-weight:800}
+.imp-btn-x small{font-size:12.5px; color:var(--plume)}
+.imp-btn > svg:last-child{flex:0 0 auto; color:var(--plume-clair)}
+.imp-ok{display:flex; align-items:flex-start; gap:8px; padding:10px 12px; border-radius:12px; background:var(--vert-fond); border:1px solid var(--vert-trait);
+  color:var(--vert); font-size:13.5px; font-weight:700; line-height:1.45}
+.imp-ok > svg{flex:0 0 auto; margin-top:2px}
+@media(hover:hover){ .vav-imp:hover{background:rgba(255,255,255,.18)} .imp-btn:hover{border-color:var(--prune)} .imp-c:hover{border-color:#cbd5e1} }
+@media(prefers-reduced-motion:reduce){ .auj-pt::after, .c2-radar::before, .c2-radar::after, .c2-balai, .c2-radar > svg, .c2-auj, .c2-auj::after, .c2-auj .chr-m, .c2-auj .chr-h{animation:none} }
 .recap-r{display:flex; flex-direction:column}
 .rr-t{display:flex; gap:9px; font-size:13.5px; line-height:1.5}
 
@@ -8586,7 +8848,12 @@ button.auj-c:active{transform:scale(.96)}
   .chapeau .selec{max-width:520px}
 
   .auj{margin-top:-64px; padding:0; background:none; box-shadow:none; border-radius:0}
-  .auj-h, .auj-pied, .auj-pied2{display:none}
+  .auj-h, .auj-pied{display:none}
+  /* V3.232 : la ligne de la dernière recherche, en bande sous les cases. */
+  .auj-pied2{flex-direction:row; align-items:center; flex-wrap:wrap; gap:8px 28px; margin-top:4px; padding:15px 20px;
+    border:0; border-radius:18px; background:var(--carte); box-shadow:0 16px 34px -26px rgba(42, 41, 39,.55)}
+  .auj-pied2 .ap-jour{font-size:15px}
+  .auj-pied2 .ap-tot{font-size:13px}
   /* Sur ordinateur, la bande prend la largeur de ses boutons, pas de la page. */
   .al3-r{width:fit-content; max-width:100%; margin:18px 0 22px}
   .al3{flex:0 0 auto; min-width:230px; flex-direction:row; align-items:center; gap:11px; padding:12px 18px 12px 14px}
@@ -8597,7 +8864,6 @@ button.auj-c:active{transform:scale(.96)}
   .auj-c{flex-direction:row; align-items:center; gap:14px; padding:16px 18px; border-radius:20px;
     background:var(--carte) !important; box-shadow:0 16px 34px -26px rgba(42, 41, 39,.55)}
   button.auj-c:hover{box-shadow:0 20px 38px -24px rgba(42, 41, 39,.6)}
-  .auj-c.c-lues{display:flex}
   .auj-ic{width:46px; height:46px; border-radius:14px}
   .auj-n{font-size:27px}
   .auj-l{font-size:13.5px}
