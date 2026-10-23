@@ -8,7 +8,7 @@ import { EVT_MAJ, demanderNouveauClient, demanderNouveauMail, demanderNouveauRdv
 import { lireBiensSuivis, parBoutDeNumero, parNom, estUnNumero, ouEnEst, telNational, texteDernier, type BienSuivi } from '@/lib/agences-suivies';
 import { Icone } from '@/components/fiche/ParcoursBien';
 import { estAcheteur, estArchive, lirePro, lireStructure, typeDe, typesDe } from '@/lib/contacts';
-import { conjointDe } from '@/lib/foyer';
+import { personne2De, adressesDossierDe } from '@/lib/foyer';
 import { etapeDe, titreBien, villeAffichee, type Donnees } from '@/lib/biens-vente';
 import { euros } from '@/lib/mandat';
 import { Ic } from '@/components/documents/ApercuActe';
@@ -64,10 +64,12 @@ function chercher(ix: { clients: any[] }, mots: string[]) {
     /* V3.50 : comme la page Contacts, on cherche aussi la personne 2 d'un
        couple (son nom, son mail, son téléphone) et ce qui est propre au
        métier : l'étude d'un notaire, l'agence d'un confrère, la société… */
-    const j = c.couple ? conjointDe(c.conjoint) : null;
+    /* V3.236 : la personne 2 qu'elle signe ou non, toutes ses adresses et
+       tous ses numéros, et les autres adresses du dossier (le notaire…). */
+    const j = personne2De(c);
     const p = lirePro(c.pro);
-    const mails: string[] = [...(c.emails || []), j?.email].filter(Boolean);
-    const tels: string[] = [...(c.telephones || []), j?.telephone].filter(Boolean);
+    const mails: string[] = [...(c.emails || []), ...(j?.emails || []), ...adressesDossierDe(c.adresses_dossier).map(a => a.email)].filter(Boolean);
+    const tels: string[] = [...(c.telephones || []), ...(j?.telephones || [])].filter(Boolean);
     const metier = [p.etude, p.agence, p.reseau, p.societe, p.metier, p.immeuble, lireStructure(p.structure)?.denomination].filter((x): x is string => typeof x === 'string' && !!x.trim());
     const champs: [string, string][] = [
       ['nom', sansAccent(`${c.prenom || ''} ${c.nom || ''} ${c.reference || ''}`)],
@@ -196,7 +198,10 @@ export default function Topbar({ onNavigate, onMenu, menuReduit = false, onBascu
       /* Par pages de 1 000 (V3.43) : au-delà, Supabase s'arrête sans rien dire,
          et la recherche ne trouvait plus les derniers contacts. */
       const lire = (cols: string) => toutLire<Record<string, unknown>>((de, a) => supabase.from('clients').select(cols).order('id').range(de, a));
-      let c = await lire('id, prenom, nom, reference, statut, adresse, bien_actuel_adresse, emails, telephones, types, pro, civilite, couple, conjoint, archive');
+      /* V3.236 : les autres adresses du dossier, si le SQL « adresses-dossier » est passé. */
+      const COLS_C = 'id, prenom, nom, reference, statut, adresse, bien_actuel_adresse, emails, telephones, types, pro, civilite, couple, conjoint, archive';
+      let c = await lire(`${COLS_C}, adresses_dossier`);
+      if (c.erreur) c = await lire(COLS_C);
       if (c.erreur) c = await lire('id, prenom, nom, reference, statut, adresse, bien_actuel_adresse, emails, telephones');
       if (c.erreur) { chargement.current = null; return; }
       /* Les biens (V3.86) : s'ils ne se lisent pas, la recherche des contacts marche quand même. */
