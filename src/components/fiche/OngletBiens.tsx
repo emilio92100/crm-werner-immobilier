@@ -13,6 +13,7 @@ import Cascade from '@/components/shared/Cascade';
 import Curseur from '@/components/shared/Curseur';
 import FenetreBien, { LigneListe, BasLigne, BoutonBas, BoutonPied, LienPied, Ressort, BoutonVite } from './FenetreBien';
 import { prixDuBien } from '@/lib/honoraires-bien';
+import { prixAvantBaisse } from '@/lib/baisse-prix';
 import { lireIndispo, motifIndispo, remettreDispo } from '@/lib/biens-indispo';
 import FenetreIndispo from './FenetreIndispo';
 import SuiviAgence from './SuiviAgence';
@@ -154,6 +155,8 @@ interface Props {
   mode: 'selection' | 'presentes';
   onChange?: () => void;
   onMail: (bienId: string) => void;
+  /** V3.242 : « Prévenir le client » d'une baisse de loyer ou de prix — la fenêtre de mail habituelle, préremplie. */
+  onMailBaisse?: (bienId: string) => void;
   onFiche: (bienId: string) => void;
   /** V3.182 : `pre`, un créneau validé dans « Mon suivi avec l'agence » (la date, l'heure, le contact). */
   onVisite: (bienId: string, pre?: { date: string; heure: string; contact: string }) => void;
@@ -174,7 +177,7 @@ interface Props {
   onBienVente?: (bienVenteId: string) => void;
 }
 
-export default function OngletBiens({ clientId, rechercheId, client, mode, onChange, onMail, onFiche, onVisite, onMailGroupe, rafraichir = 0, vise = null, viseEnGrand = false, visitePosee = null, onDocument, onTransaction, onBienVente }: Props) {
+export default function OngletBiens({ clientId, rechercheId, client, mode, onChange, onMail, onMailBaisse, onFiche, onVisite, onMailGroupe, rafraichir = 0, vise = null, viseEnGrand = false, visitePosee = null, onDocument, onTransaction, onBienVente }: Props) {
   const [biens, setBiens] = useState<any[]>([]);
   const [chargement, setChargement] = useState(true);
   const [obs, setObs] = useState<any>(null);
@@ -643,6 +646,16 @@ export default function OngletBiens({ clientId, rechercheId, client, mode, onCha
       montant: prixAff,
       dessous: (
         <>
+          {/* V3.242 : le loyer ou le prix a baissé depuis que le local lui a été présenté. */}
+          {mode === 'presentes' && prixAvantBaisse(b, prixAff) ? (
+            <span style={{ color: '#15803d', fontWeight: 700 }}>{`${b.pro?.nature === 'location' ? 'Baisse de loyer' : 'Baisse de prix'} : ${euros(prixAvantBaisse(b, prixAff))} → ${euros(prixAff)}`}</span>
+          ) : null}
+          {mode === 'presentes' && onMailBaisse && prixAvantBaisse(b, prixAff) ? (
+            <button type="button" onClick={() => { setGrand(null); onMailBaisse(b.id); }} title="Ouvre le mail habituel, prérempli avec l’ancien et le nouveau montant : c’est toi qui l’envoies"
+              style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', borderRadius: 99, padding: '4px 11px', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 800, cursor: 'pointer' }}>
+              <Icone nom="envoyer" taille={13} epaisseur={2.2} />{'Prévenir le client'}
+            </button>
+          ) : null}
           {hono
             ? mode === 'presentes' && !b.bien_vente_id
               ? (
