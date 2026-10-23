@@ -54,7 +54,7 @@ et 21 octobre 2026. **Ne jamais toucher au dépôt ni à la base d'Emilio** (Sup
 | Next.js **16.3.7** + TypeScript | Framework. Next 16 : `middleware.ts` s'appelle `src/proxy.ts` (AGENTS.md §2.6) |
 | Vercel | Hébergement. Quatre tâches planifiées dans `vercel.json` (point automatique, relances des signatures, diffusion, demandes SeLoger) |
 | Supabase | Base + Storage. RLS actif sur toutes les tables (AGENTS.md §3.4) |
-| Claude API | Lecture d'annonces, rédaction, analyse, rapprochement : **pas encore branchée** |
+| Claude API | Lecture d'annonces, rédaction, analyse, rapprochement : **branchée** le 23 octobre 2026 (la clé d'Alexandre). Modèles Haiku 5.5 et Sonnet 5.5 ; leurs réglages (réflexion coupée pour les appels simples, texte lu par type de bloc) dans `src/lib/ia.ts`. Testé en ligne : reformuler, lire une annonce collée |
 | Mailjet | E-mail transactionnel : **branché** (compte de Werner, domaine et DKIM validés, clés sur Vercel depuis le 22 octobre 2026 ; vérifié le 23) |
 | Ringover | Téléphonie (`/api/ringover/…`) : pas encore branché |
 | geo.api.gouv.fr · api-adresse.data.gouv.fr | Communes et adresses |
@@ -78,7 +78,8 @@ et les colonnes `clients.vendeur_*`), puis `outils/sql/werner-commerce.sql` (§2
 | `WERNER_MAILS_AUTORISES` (ou `EMILIO_MAILS_AUTORISES`) | Facultative : la liste des adresses qui peuvent entrer. Vide, tout compte Supabase du projet entre |
 | `MAILJET_API_KEY` · `MAILJET_API_SECRET` | **Posées** (22 octobre 2026, vérifié sur Vercel le 23). `MAILJET_FROM_EMAIL` · `MAILJET_FROM_NAME` ne le sont pas : replis contact@wernerimmobilier.com, « Werner Immobilier ». `ALERTES_EMAIL` non plus : les alertes vont à contact@ |
 | `MAILJET_FROM_SIGNATURE` | **Posée** : `signature@wernerimmobilier.com`. Les mails d'une signature (lien, code, exemplaire signé, renonciation : l'option `expediteur: 'signature'` de `envoyerMail`) partent de cette adresse, réponses vers contact@. Vide, ils partent de `MAILJET_FROM_EMAIL` |
-| `ANTHROPIC_API_KEY` · `CRON_SECRET` | **À poser** : la clé de l'IA ; le secret des tâches planifiées (sans lui, elles refusent de tourner, c'est voulu) |
+| `ANTHROPIC_API_KEY` | **Posée** (23 octobre 2026) |
+| `CRON_SECRET` | **À poser** : le secret des tâches planifiées (sans lui, elles refusent de tourner, c'est voulu) |
 | `RINGOVER_CLE_CONTACT` · `RINGOVER_CLE_RECHERCHE` · `NEXT_PUBLIC_HOTE_ESPACE` | **À poser** quand Ringover sera branché, et quand le sous-domaine de l'espace existera (§6) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY` · `VAPID_SUBJECT` | À poser pour les notifications de l'espace client |
 | `SELOGER_*` (sept variables) | La diffusion SeLoger et ses demandes de contact, par l'API d'AVIV de l'origine : à ne poser qu'après vérification (§7) |
@@ -664,9 +665,7 @@ et la relecture des mandats de recherche (§6).
 - **Les mails** — Mailjet est branché (§1, §8). Restent : un vrai envoi d'essai vers Alexandre,
   regardé sur téléphone et ordinateur ; le SPF à alléger chez IONOS (retirer `mailgun.org` et
   `_spf-eu.ionos.com`, garder Mailjet et Outlook).
-- **Les clés qui manquent** — `ANTHROPIC_API_KEY` (l'IA : lire une annonce collée ou un PDF,
-  reformuler une description, analyser un local, le rapprochement « intelligent » ; le rapprochement
-  par critères, lui, marche sans), `CRON_SECRET` (les quatre tâches du matin : le point automatique
+- **Les clés qui manquent** — `CRON_SECRET` (les quatre tâches du matin : le point automatique
   aux demandeurs, les rappels de signature des mandats, la diffusion, les demandes SeLoger),
   Ringover, les notifications (§1).
 - **Le premier accès de Werner** — fait (commit « Première connexion de Werner et mot de passe
