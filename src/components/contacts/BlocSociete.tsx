@@ -24,7 +24,8 @@ import c from './Contacts.module.css';
    formulaire (le nom de la société, le RCS, le siège, les lignes « – Nom
    (gérante) : 06… · mail ») : on vérifie, puis on enregistre. */
 
-const VIDE: Structure = { denomination: '', forme: 'SCI', rcs: '', siege: '', qualite: '', associes: [] };
+/* V3.245 : pas de forme imposée (c'était « SCI », hérité du résidentiel) : on la touche. */
+const VIDE: Structure = { denomination: '', forme: '', rcs: '', siege: '', qualite: '', associes: [] };
 const idNeuf = () => `a${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const chiffres = (t: string) => t.replace(/\D/g, '').replace(/^33/, '0');
 const capitale = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
@@ -128,7 +129,7 @@ export default function BlocSociete({ client, notes, onEnregistrer, onFiche, ouv
             associes: e.associes.length ? e.associes : x.dirigeants.slice(0, 6).map(d => ({ id: idNeuf(), nom: nomDirigeant(d), role: fonctionCourte(d.qualite), tel: '', email: '' })),
           } : e))} />
         <div className={c.g2}>
-          <label className={c.ch}><span>Nom de la société</span><input className={c.in} value={edit.denomination} placeholder="SCI AVIENA" onChange={e => setEdit({ ...edit, denomination: e.target.value })} /></label>
+          <label className={c.ch}><span>Nom de la société</span><input className={c.in} value={edit.denomination} placeholder="SAS Le Comptoir" onChange={e => setEdit({ ...edit, denomination: e.target.value })} /></label>
           <div className={c.ch}>
             <span>Forme</span>
             <div className={c.pills}>{FORMES_SOCIETE.map(f => <button key={f} type="button" className={`${c.pill} ${edit.forme === f ? c.pillOn : ''}`} onClick={() => setEdit({ ...edit, forme: f })}>{f}</button>)}</div>
@@ -165,7 +166,7 @@ export default function BlocSociete({ client, notes, onEnregistrer, onFiche, ouv
     return (
       <button type="button" className={c.asvVide} onClick={() => setEdit(suggestion || { ...VIDE, associes: [] })}>
         <span className={c.asvIc}><Ic n="immeuble" t={15} /></span>
-        <span>{`${client.prenom || 'Ce contact'} représente une société (SCI…) ?`}<em>{suggestion?.denomination ? ` · ${suggestion.denomination} est nommée dans « À savoir »` : ' · sa forme, ses associés'}</em></span>
+        <span>{`${client.prenom || 'Ce contact'} représente une société (SAS, SARL, SCI…) ?`}<em>{suggestion?.denomination ? ` · ${suggestion.denomination} est nommée dans « À savoir »` : ' · sa forme, ses associés'}</em></span>
       </button>
     );
   }
