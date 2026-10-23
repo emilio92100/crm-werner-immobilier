@@ -28,7 +28,7 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { typesDe, typeDe, ligneContact } from '@/lib/contacts';
-import { conjointDe } from '@/lib/foyer';
+import { conjointDe, lienLisible, personne2De } from '@/lib/foyer';
 import { etapeDe, titreBien, type Donnees } from '@/lib/biens-vente';
 import { euros } from '@/lib/mandat';
 import { lireBiensSuivis, parNumero, lienFiche, ouEnEst, texteDernier, type BienSuivi } from '@/lib/agences-suivies';
@@ -105,8 +105,9 @@ export function trouverNumero(liste: ClientLu[], numero: string): Trouve[] {
   const out: Trouve[] = [];
   for (const c of liste) {
     if ((c.telephones || []).some(t => cleNumero(t) === cle)) { out.push({ c, conjoint: false }); continue; }
-    const j = c.couple ? conjointDe(c.conjoint) : null;
-    if (j?.telephone && cleNumero(j.telephone) === cle) out.push({ c, conjoint: true });
+    /* V3.236 : la personne 2, qu'elle signe ou non, et tous ses numéros. */
+    const j = personne2De(c);
+    if ((j?.telephones || []).some(t => cleNumero(t) === cle)) out.push({ c, conjoint: true });
   }
   /* Les fiches en cours d'abord, la personne 1 avant la personne 2. */
   return out.sort((a, b) => Number(a.c.archive === true) - Number(b.c.archive === true) || Number(a.conjoint) - Number(b.conjoint));
@@ -189,7 +190,10 @@ export async function reponsePour(numero: string, sb: SupabaseClient = baseServe
   const libTypes = types.map(t => typeDe(t).lib).join(' · ');
   const j = conjoint ? conjointDe(c.conjoint) : null;
   const data: Record<string, string> = { Type: libTypes };
-  if (conjoint) data['Fiche'] = `Sur la fiche de ${[c.prenom, c.nom].filter(Boolean).join(' ')}`;
+  if (conjoint) {
+    const nom1 = [c.prenom, c.nom].filter(Boolean).join(' ');
+    data['Fiche'] = `Sur la fiche de ${nom1} (${lienLisible(j)})`;
+  }
 
   /* Sa recherche (un acheteur) et son bien (un vendeur, un propriétaire) :
      une lecture qui échoue n'empêche pas d'afficher le nom. */
@@ -317,10 +321,11 @@ export async function rechercheRingover(q: string, sb: SupabaseClient = baseServ
     if (ok1 && nums.length) {
       out.push({ firstname: c.prenom || '', lastname: c.nom || (c.prenom ? '' : 'Contact sans nom'), company, url, numbers: nums, archive: c.archive === true });
     }
-    const j = c.couple ? conjointDe(c.conjoint) : null;
-    if (j?.telephone) {
-      const ok2 = tel ? numeroNational(j.telephone).includes(tel) : trouve(plat(`${j.prenom || ''} ${j.nom || ''} ${c.nom || ''} ${ligne}`));
-      const n2 = numeros([j.telephone]);
+    /* V3.236 : la personne 2, qu'elle signe ou non, et tous ses numéros. */
+    const j = personne2De(c);
+    if (j?.telephones?.length) {
+      const ok2 = tel ? j.telephones.some(t => numeroNational(t).includes(tel)) : trouve(plat(`${j.prenom || ''} ${j.nom || ''} ${c.nom || ''} ${ligne}`));
+      const n2 = numeros(j.telephones);
       if (ok2 && n2.length && !(ok1 && nums.some(x => x.number === n2[0].number))) {
         out.push({ firstname: j.prenom || '', lastname: j.nom || '', company, url, numbers: n2, archive: c.archive === true });
       }

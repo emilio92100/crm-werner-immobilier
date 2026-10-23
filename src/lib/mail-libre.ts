@@ -150,6 +150,17 @@ export function personnaliserObjet(t: string, c: PourMail, conseiller: string): 
   return personnaliserTexte(t, c, conseiller).replace(/[\s,;:–—-]+$/, '').trim();
 }
 
+/* V3.234 — Un mail avec des copies part en un seul exemplaire, le même pour
+   tous : {{prénom}} prend le prénom de la personne en « À », ou ceux de
+   toutes, « Marie et Paul » (les copies ne comptent pas). Une seule personne :
+   son nom et sa référence aussi ; plusieurs : ni l'un ni l'autre. */
+export function pourGroupe(l: PourMail[]): PourMail {
+  if (l.length === 1) return l[0];
+  const p = l.map(x => String(x.prenom || '').trim()).filter(Boolean);
+  const prenom = p.length > 1 ? `${p.slice(0, -1).join(', ')} et ${p[p.length - 1]}` : p[0] || '';
+  return { prenom, nom: '', reference: '' };
+}
+
 /* ── L'habillage : ce que le pied et le bandeau disent ── */
 /* `mentions` : une ligne par mention (22 octobre 2026, Alexandre : « la société,
    puis l'adresse sur sa ligne, puis la carte professionnelle à la ligne »). */

@@ -35,13 +35,17 @@ const collecte = new AsyncLocalStorage<Remise[]>();
    message, destinataire par destinataire. On les lit dans `MessageHref`
    (« …/v3/REST/message/1152921… ») : `MessageID` est un nombre trop grand
    pour JavaScript, qui l'arrondirait. */
-export function idsMailjet(j: unknown): { email: string; id: string }[][] {
+export function idsMailjet(j: unknown, copies = false): { email: string; id: string }[][] {
   const l = (j as { Messages?: unknown[] } | null)?.Messages;
   if (!Array.isArray(l)) return [];
+  type Dest = { Email?: string; MessageHref?: string; MessageID?: unknown };
   return l.map(m => {
-    const x = (m || {}) as { Status?: string; To?: { Email?: string; MessageHref?: string; MessageID?: unknown }[] };
+    const x = (m || {}) as { Status?: string; To?: Dest[]; Cc?: Dest[]; Bcc?: Dest[] };
     if (x.Status !== 'success' || !Array.isArray(x.To)) return [];
-    return x.To.map(t => {
+    /* V3.234 : `copies`, les personnes en Cc et en Cci aussi (« Nouveau mail ») ;
+       ailleurs, la copie cachée d'un mail est celle de l'agence : pas suivie. */
+    const tous = copies ? [...x.To, ...(Array.isArray(x.Cc) ? x.Cc : []), ...(Array.isArray(x.Bcc) ? x.Bcc : [])] : x.To;
+    return tous.map(t => {
       const href = String(t?.MessageHref || '');
       const id = /\/message\/(\d+)\s*$/.exec(href)?.[1] || (typeof t?.MessageID === 'string' ? t.MessageID : '');
       return { email: String(t?.Email || '').trim().toLowerCase(), id };
@@ -55,6 +59,13 @@ export function noterRemises(j: unknown, info: Omit<Remise, 'id' | 'email'> = {}
   const l = collecte.getStore();
   if (!l) return;
   for (const t of idsMailjet(j)[n] || []) l.push({ ...info, id: t.id, email: t.email });
+}
+/* V3.234 — Un mail avec des copies : chaque adresse (À, Cc, Cci) est suivie,
+   sous le nom de la personne qui la porte. */
+export function noterRemisesCopies(j: unknown, n: number, infoDe: (email: string) => Omit<Remise, 'id' | 'email'>) {
+  const l = collecte.getStore();
+  if (!l) return;
+  for (const t of idsMailjet(j, true)[n] || []) l.push({ ...infoDe(t.email), id: t.id, email: t.email });
 }
 
 /* Une route dont les mails sont suivis : sa réponse JSON reçoit `remise`. */
