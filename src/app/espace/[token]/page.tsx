@@ -15,6 +15,7 @@ import { maintenantParis, visitePasseeParis, issueDe, apprisDe, imprevusOuverts,
 import { lireDocumentsEspace, fichierDe, modeDoc, type DocEspace, type MandatDocEspace } from '@/lib/documents-espace';
 import { ecritServeur } from '@/lib/ecritures';
 import { prixDuBien } from '@/lib/honoraires-bien';
+import { prixAvantBaisse } from '@/lib/baisse-prix';
 import { texteChauffage } from '@/lib/chauffage';
 import { annoncePourEspace, tableAbsente, type AnnonceEspace } from '@/lib/annonces-client';
 import { offresPourEspace } from '@/lib/offres-serveur';
@@ -373,6 +374,9 @@ export default async function PageEspace({ params, searchParams }: {
     /* V3.145 : le prix de l'annonce ; `hono`, ce qui s'y ajoute quand ses
        honoraires ne sont pas partagés (0 en inter-cabinet). */
     prix: prixDuBien(b).demande, hono: prixDuBien(b).hono,
+    /* V3.242 : le montant auquel le local lui a été présenté, quand il a
+       baissé depuis — l'espace le barre à côté du nouveau (src/lib/baisse-prix.ts). */
+    prixAvant: prixAvantBaisse(b, prixDuBien(b).demande),
     surface: b.surface, pieces: b.nb_pieces, chambres: b.nb_chambres,
     etage: b.etage, etageTotal: b.etage_total, expo: b.exposition,
     dpe: b.dpe, ges: b.ges, annee: b.annee_construction,
