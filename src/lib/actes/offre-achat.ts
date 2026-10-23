@@ -109,7 +109,7 @@ const ETAPES: Etape[] = [
         question: 'Préciser sa forme, son siège et son immatriculation ?', avec: ['sciSiege', 'sciRcs'] },
       { t: 'texte', cle: 'sciSiege', lib: 'Siège social', ic: 'lieu', large: true, si: d => d.qui === 'sci' },
       { t: 'texte', cle: 'sciRcs', lib: 'Immatriculation', ic: 'livre', si: d => d.qui === 'sci', exemple: 'RCS de Paris n° 123 456 789' },
-      { t: 'personnes', cle: 'acquereurs', lib: 'Qui signe', ic: 'personne', un: 'Signataire', min: 1, max: 4, complet: d => d.qui !== 'sci',
+      { t: 'personnes', cle: 'acquereurs', lib: 'Qui signe', ic: 'personne', un: 'Signataire', min: 1, max: 4, complet: d => d.qui !== 'sci' && pourAchat(d),
         nomCarte: (d, i) => (d.qui === 'sci' ? 'Son représentant, qui signe' : `Signataire ${i + 1}`) },
       { t: 'texte', cle: 'sciPouvoir', lib: 'Sa qualité', ic: 'plume', si: d => d.qui === 'sci', exemple: 'gérant' },
     ],

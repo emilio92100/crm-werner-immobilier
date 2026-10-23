@@ -222,10 +222,68 @@ function ZoneTexte({ id, v, manque, off, exemple, onChange }: {
 /* ── Une personne : une carte, ses champs ── */
 const lirePersonneBrute = (x: unknown): Personne => ({ ...PERSONNE_VIDE, ...((x && typeof x === 'object' ? x : {}) as Partial<Personne>) });
 
-function CartePersonne({ id, nom, p, complet, off, peutRetirer, onChange, onRetirer }: {
+/* ── « Choisir dans mes contacts » (23 octobre 2026) ──
+   Alexandre : « dans un document, les noms, ça peut récupérer des noms qu'il
+   y a déjà dans le CRM ? ». Chaque carte de personne se remplit depuis une
+   fiche : civilité, prénom, nom, adresse, e-mail, téléphone. La liste des
+   contacts se lit à l'ouverture (la même que partout, gardée en mémoire). */
+type ContactMini = { id: string; prenom?: string | null; nom?: string | null; civilite?: string | null; adresse?: string | null; emails?: string[] | null; telephones?: string[] | null; pro?: unknown };
+const sansAccentC = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const societeC = (c: ContactMini) => {
+  const pro = c.pro && typeof c.pro === 'object' ? c.pro as { structure?: { denomination?: string } } : {};
+  return pro.structure?.denomination || '';
+};
+function ChoixContact({ onChoisir, onFermer }: { onChoisir: (p: Partial<Personne>, nom: string) => void; onFermer: () => void }) {
+  const [liste, setListe] = useState<ContactMini[] | null>(null);
+  const [erreur, setErreur] = useState('');
+  const [q, setQ] = useState('');
+  useEffect(() => {
+    let vivant = true;
+    import('@/components/biens/ChampsBien').then(m => m.lireClients()).then(l => { if (vivant) setListe(l as ContactMini[]); })
+      .catch(e => { if (vivant) { setListe([]); setErreur(`Les contacts n’ont pas pu être lus : ${(e as Error).message}`); } });
+    return () => { vivant = false; };
+  }, []);
+  const t = sansAccentC(q.trim());
+  const trouves = t.length >= 2 ? (liste || []).filter(c => sansAccentC(`${c.prenom || ''} ${c.nom || ''} ${c.nom || ''} ${c.prenom || ''} ${societeC(c)} ${(c.emails || []).join(' ')} ${(c.telephones || []).join(' ')}`).includes(t)).slice(0, 6) : [];
+  return (
+    <div className={s.ccPanneau} onKeyDown={e => { if (e.key === 'Escape') onFermer(); }}>
+      <div className={s.ccChamp}>
+        <Ic n="loupe" t={15} />
+        <input autoFocus value={q} placeholder={liste === null ? 'Chargement des contacts…' : 'Un nom, une société, un e-mail, un téléphone…'} aria-label="Chercher dans mes contacts"
+          onChange={e => setQ(e.target.value)} />
+        <button type="button" className={s.retirer} onClick={onFermer} aria-label="Fermer"><Croix t={13} /></button>
+      </div>
+      {erreur && <div className={s.erreur}>{erreur}</div>}
+      {t.length >= 2 && liste && !trouves.length && <div className={s.ccVide}>{`Personne ne correspond à « ${q.trim()} » dans tes contacts.`}</div>}
+      {trouves.length > 0 && (
+        <div className={s.ccListe}>
+          {trouves.map(c => {
+            const nomC = [c.prenom, c.nom].filter(Boolean).join(' ') || societeC(c) || 'Contact';
+            return (
+              <button key={c.id} type="button" className={s.ccLigne} onClick={() => onChoisir({
+                civilite: c.civilite === 'Madame' || c.civilite === 'Monsieur' ? c.civilite : '',
+                prenom: c.prenom || '', nom: c.nom || '', adresse: c.adresse || '',
+                email: (c.emails || []).find(Boolean) || '', telephone: (c.telephones || []).find(Boolean) || '',
+              }, nomC)}>
+                <span className={s.ccInit}>{(nomC.trim()[0] || '?').toUpperCase()}</span>
+                <span className={s.ccTx}><b>{[societeC(c), nomC].filter(Boolean).filter((x, i, l) => l.indexOf(x) === i).join(' · ')}</b><small>{[c.telephones?.[0], c.emails?.[0], c.adresse].filter(Boolean).join(' · ') || 'Fiche du CRM'}</small></span>
+                <span className={s.ccPrendre}>Prendre</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {t.length < 2 && liste && <div className={s.ccVide}>{'Tape au moins deux lettres : ses coordonnées rempliront la carte.'}</div>}
+    </div>
+  );
+}
+
+function CartePersonne({ id, nom, p, complet, off, peutRetirer, onChange, onRemplir, onRetirer }: {
   id: string; nom: string; p: Personne; complet: boolean; off: boolean; peutRetirer: boolean;
-  onChange: (k: keyof Personne, v: string) => void; onRetirer: () => void;
+  onChange: (k: keyof Personne, v: string) => void; onRemplir: (x: Partial<Personne>) => void; onRetirer: () => void;
 }) {
+  const [choix, setChoix] = useState(false);
+  const [rempli, setRempli] = useState('');
   /* V3.154 : une naissance déjà connue (le conjoint d'une fiche « couple »,
      repris sur un bon de visite) s'imprime : elle doit donc se voir et se
      corriger, même là où on ne la demande pas. Facultative alors. Lu à
@@ -251,10 +309,18 @@ function CartePersonne({ id, nom, p, complet, off, peutRetirer, onChange, onReti
       <div className={s.persoT}>
         <span className={s.ligneIc}><Ic n="personne" t={15} /></span>
         <b>{[nom, [p.prenom, p.nom].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}</b>
+        {!off && !choix && (
+          <button type="button" className={s.ccOuvrir} title="Choisir dans mes contacts" aria-label="Choisir dans mes contacts" onClick={() => { setChoix(true); setRempli(''); }}><Ic n="personne" t={13} /><span>Choisir dans mes contacts</span></button>
+        )}
         {peutRetirer && !off && (
           <button type="button" className={s.retirer} onClick={onRetirer}><Croix t={13} />Retirer</button>
         )}
       </div>
+      {choix && !off && (
+        <ChoixContact onFermer={() => setChoix(false)}
+          onChoisir={(x, nomC) => { onRemplir(x); setChoix(false); setRempli(`Rempli depuis la fiche de ${nomC}. Vérifie, et complète ce qui manque.`); }} />
+      )}
+      {rempli && <div className={s.ccRempli} role="status"><Ic n="check" t={13} e={2.6} /><span>{rempli}</span></div>}
       <div className={s.persoCorps}>
         <div className={`${s.ch} ${s.large}`}>
           <div className={s.pills} role="radiogroup" aria-label="Civilité">
@@ -291,6 +357,7 @@ function ChampPersonnes({ c, d, v, onChange, off }: {
           nom={c.nomCarte ? c.nomCarte(d, i) : n > 1 ? `${c.un} ${i + 1}` : c.un}
           peutRetirer={n > b.min}
           onChange={(k, x) => onChange(cartes.map((q, j) => (j === i ? { ...q, [k]: x } : q)))}
+          onRemplir={x => onChange(cartes.map((q, j) => (j === i ? { ...q, ...x } : q)))}
           onRetirer={() => onChange(cartes.filter((_, j) => j !== i))} />
       ))}
       {!off && n < b.max && (

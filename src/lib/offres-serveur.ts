@@ -174,7 +174,20 @@ export async function offreSigneeParTous(sb: SupabaseClient, doc: { id: string; 
   /* V3.190 : l'offre écrite depuis la fiche d'un bien de l'agence (« Préparer
      une offre ») : sa ligne est déjà dans les offres du bien. Rien à
      envoyer, rien à relier (la V3.189 posait à tort « à envoyer »). */
-  if (estAgence(d) && !doc.bien_id) return null;
+  if (estAgence(d) && !doc.bien_id) {
+    /* 23 octobre 2026 : préparée depuis l'affaire pour un demandeur dont le
+       dossier n'a pas ce local — rien à relier automatiquement : une relance
+       dit de la noter dans les offres de l'affaire. Écrite depuis la carte
+       d'une offre déjà notée (offreSuiviId) : sa ligne existe déjà. */
+    if (txt(d, 'offreSuiviId')) return null;
+    const { data: aff } = await sb.from('biens_vente').select('titre, ville').eq('id', txt(d, 'bienVenteId')).maybeSingle();
+    const af = aff as { titre?: string | null; ville?: string | null } | null;
+    const titreA = af?.titre || af?.ville || 'le local';
+    return poserRelanceOffre(sb, {
+      clientId: doc.client_id, rechercheId: doc.recherche_id, tete: TETES_OFFRE.envoyer, titre: titreA,
+      detail: 'à noter dans les offres de la fiche de l’affaire (« Une offre », Visites et offres), avec son montant',
+    });
+  }
   /* Une offre du CRM sur un bien de l'agence, écrite avant la V3.190 (sans
      son lien au bien en vente) : on le retrouve par le bien du client. */
   if (!estAgence(d) && doc.bien_id) {

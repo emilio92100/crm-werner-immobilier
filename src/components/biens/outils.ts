@@ -2422,6 +2422,9 @@ export async function recherchesDe(clientId: string): Promise<RechercheMini[]> {
 export type PourDocument = {
   modele: 'mandat_vente' | 'offre_achat' | 'bon_visite';
   personne?: Personne | null; clientId?: string | null; rechercheId?: string | null;
+  /* Le local de l'affaire dans le dossier du demandeur (23 octobre 2026) :
+     signée, l'offre rejoint les offres de l'affaire et sa fiche. */
+  bienId?: string | null;
   visite?: { date: string; heure: string } | null;
   offre?: SuiviVente | null;
 };
@@ -2476,7 +2479,7 @@ export async function creerDocument(b: BienVente, x: PourDocument): Promise<stri
   const { data, error } = await supabase.from('documents').insert({
     modele: m.id, categorie: m.categorie, statut: 'brouillon', donnees, ...colonnesListe(m, donnees),
     client_id: x.clientId || (x.modele === 'mandat_vente' ? b.client_id : null) || null,
-    bien_id: null, recherche_id: x.rechercheId || null,
+    bien_id: x.bienId || null, recherche_id: x.rechercheId || null,
   }).select('id').single();
   if (error) throw new Error('Le document n’a pas pu être créé : ' + error.message);
   const id = (data as { id: string }).id;

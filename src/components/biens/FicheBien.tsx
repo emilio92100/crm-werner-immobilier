@@ -9,7 +9,7 @@ import { ISSUES, issueDe, visitePasseeParis, type Issue } from '@/lib/visites';
 import CompteRenduVisite, { enregistrerCompteRendu } from '@/components/shared/CompteRenduVisite';
 import {
   ETAPES_BIEN, PARCOURS, permisBien, apresReponse, argentBien, echangesDe, montantActuel, avantMandat, controleAnnonce, mentionsAnnonce, villeAffichee, dateCourte, dateLongue, etapeDe, etageTexte, joursAvant,
-  lireDossier, lireObservations, lirePhotos, lirePieces, m2, nomExpo, nomProprio, passoire, pourcent, titreBien,
+  lireDossier, lireObservations, lirePhotos, lirePieces, m2, nomExpo, nomProprio, passoire, personneDepuisClient, pourcent, titreBien,
   type BienVente, type Donnees, type EtapeVente, type Observation, type Reponse, type SuiviVente,
 } from '@/lib/biens-vente';
 import { Ic } from '@/components/documents/ApercuActe';
@@ -53,6 +53,7 @@ import { RapprochementBien, lireSeance, resumeSeance } from './RapprochementBien
 import { FenEnvoiLot } from './LotBiens';
 import { DossierBien, type DestPropose } from './DossierBien';
 import FenReconnaissance from './FenReconnaissance';
+import FenOffreDemandeur from './FenOffreDemandeur';
 import ApercuMail, { type MailApercu } from '@/components/documents/ApercuMail';
 import { PastilleProprio } from './PastilleProprio';
 import { visitePourCarte } from './pour-visite';
@@ -96,7 +97,7 @@ type Onglet = 'apercu' | 'photos' | 'bien' | 'visites' | 'acheteurs' | 'document
 type Fen =
   | { k: 'mandat' } | { k: 'estimation' } | { k: 'estim' } | { k: 'offre'; pour?: ChoixA; existante?: SuiviVente } | { k: 'compromis'; offre?: string; existant?: SuiviVente }
   /* V3.172 : « Il accepte » demande les honoraires négociés ; les notaires d'une offre. */
-  | { k: 'accepte'; offre: SuiviVente; edition?: boolean } | { k: 'notaires'; offre: SuiviVente } | { k: 'tombe' } | { k: 'revente' } | { k: 'vendu'; correction?: boolean } | { k: 'prix' } | { k: 'visite'; pour?: ChoixA } | { k: 'note' } | { k: 'reconnaissance' }
+  | { k: 'accepte'; offre: SuiviVente; edition?: boolean } | { k: 'notaires'; offre: SuiviVente } | { k: 'tombe' } | { k: 'revente' } | { k: 'vendu'; correction?: boolean } | { k: 'prix' } | { k: 'visite'; pour?: ChoixA } | { k: 'note' } | { k: 'reconnaissance' } | { k: 'offreQui' }
   | { k: 'deplacer'; v: VisiteU } | { k: 'point' }
   | { k: 'raison'; etape: EtapeVente; titre: string; sur: string } | { k: 'acheteurs'; liste: Acheteur[] } | { k: 'annulerMandat'; vers?: EtapeVente }
   | { k: 'diffusion'; premiere?: boolean };
@@ -2254,7 +2255,7 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
       k: 'offres', ic: 'euro', titre: 'Les offres', etat: offresOuvertes.length ? 'encours' : accepte ? 'fait' : 'libre',
       statut: resumeOffres || (offresDocs.length ? `${offresDocs.length} offre${offresDocs.length > 1 ? 's' : ''} préparée${offresDocs.length > 1 ? 's' : ''}` : 'Aucune pour l’instant'), detail: 'Le document que le demandeur signe, prérempli avec lui et le local. Les réponses du mandant se notent sur la carte de l’offre, dans « Visites et offres ».',
       suite: offresDocs.length ? <ChaineDocs items={[...offresDocs].sort(parDate).map(x => maillon(x, sansPrefixe(x.titre, /^Offre d’achat\s*·\s*/) || 'Offre'))} /> : undefined,
-      actions: <>{offresDocs.length > 0 && <BtnTuile onClick={() => ouvrirDoc(offresDocs[0].id)}>Voir</BtnTuile>}<BtnTuile onClick={() => faireDocument({ modele: 'offre_achat' })}><Ic n="plus" t={12} e={2.6} />Préparer une offre</BtnTuile></>,
+      actions: <>{offresDocs.length > 0 && <BtnTuile onClick={() => ouvrirDoc(offresDocs[0].id)}>Voir</BtnTuile>}<BtnTuile onClick={() => setFen({ k: 'offreQui' })}><Ic n="plus" t={12} e={2.6} />Préparer une offre</BtnTuile></>,
     },
     compromisSigne ? { k: 'compromis', ic: 'doc', titre: 'L’accord', etat: 'fait', statut: compromisLe ? `Signé le ${dateCourte(compromisLe)}` : 'Signé', detail: 'Rédigé et signé chez le notaire ou l’avocat.' }
       : accepte ? { k: 'compromis', ic: 'doc', titre: 'L’accord', etat: 'afaire', statut: 'Une offre est acceptée : à signer chez le notaire ou l’avocat', detail: 'Une fois signé, l’affaire passe « En signature ».', actions: <BoutonAct or onClick={() => setFen({ k: 'compromis' })}>Accord signé</BoutonAct> }
@@ -2742,6 +2743,14 @@ export default function FicheBien({ bien: depart, liste, onRetour, retourLib = '
             setApercuAdresse(null);
             setMessage(j.avertissement ? { t: j.avertissement, ok: false } : { t: 'L’adresse du local lui est partie par e-mail, avec la photo et le lien de sa fiche.', ok: true });
             void apres();
+          }} />
+      )}
+      {/* 23 octobre 2026 : « Préparer une offre », d'abord pour quel demandeur. */}
+      {fen?.k === 'offreQui' && (
+        <FenOffreDemandeur bien={bien} suggestions={options} onFermer={() => setFen(null)}
+          onChoisi={async x => {
+            setFen(null);
+            await faireDocument({ modele: 'offre_achat', clientId: x.clientId, rechercheId: x.rechercheId, bienId: x.bienId, personne: x.client ? personneDepuisClient(x.client) : null });
           }} />
       )}
       {fen?.k === 'reconnaissance' && (
