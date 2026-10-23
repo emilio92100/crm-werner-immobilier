@@ -534,6 +534,49 @@ et la relecture des mandats de recherche (§6).
   matin marque « sans espace ». La fiche d'un demandeur sans espace montre aussi le bloc du point
   automatique (onglet « Son espace »).
 
+**23 octobre 2026, le soir (V3.240, comme chez Emilio)** — Alexandre : « dans paramètres, point
+automatique, ça met très longtemps à charger […] j'aime pas trop la présentation avec le menu à
+gauche […] c'est pareil sur Werner ».
+- **Paramètres en onglets** : la tête sombre, et les six rubriques en onglets à cheval sur elle (la
+  pastille glisse : Curseur ; au téléphone, la barre défile). Le rail de gauche est parti
+  (`PageParametres.tsx`, `Parametres.module.css` : `.haut`, `.onglets`, `.onglet`).
+- **Point automatique rapide** : `calculerCandidats` lit tout en paquets (100 clients par lecture,
+  quatre paquets à la fois, les clients par pages de 1 000) et seulement les 61 derniers jours du
+  suivi, au lieu de trois lectures par client une par une ; la fiche d'un client garde le calcul
+  complet, historique compris. L'écran : les réglages arrivent seuls (mode `lire`), la liste à
+  côté (mode `etat`, calculée pour « tous ceux qui ont une recherche », avec les dates brutes et
+  `viaEspace`), préchargée dès l'ouverture de Paramètres ; un clic change l'écran tout de suite et
+  s'enregistre derrière. « Qui le recevrait » : trois chiffres, les six prochains mails, la liste
+  entière à la demande, avec une recherche par nom.
+- **La veille seulement si elle tournait** : les textes (clôture, acte, archivage, suspension,
+  changement de statut, déclarations du client, compromis/accord tombé, Paramètres) ne disent « la
+  veille s'arrête » que pour un Actif dont une recherche est active (`veilleTourne`).
+- **La reprise d'une suspension rend l'état d'avant** (`suspension.avant` : `actif` ou `prospect`,
+  au choix dans la fenêtre « Suspendre le dossier ») : un Prospect suspendu redevient Prospect, sans
+  veille (avant, il devenait Actif). `phraseReprise` dit ce que devient le demandeur quand un accord
+  tombe.
+- **Deux noms sur deux lignes** dans la liste des contacts et des demandeurs
+  (`nomFoyerLignes`, `src/lib/foyer.ts`) : « Charlotte ROSENZWEIG » puis « et Maxime JULIENNE ».
+- **Le détail des critères se déplie en glissant** (`Depliant`), sur ordinateur aussi, avec son
+  petit bouton ; le choix est retenu sur l'appareil (`werner:criteres-ouverts`).
+- **Les états d'un demandeur en clair, comme chez Emilio** (Alexandre : « faire pareil, un peu comme
+  moi, comme ça c'est plus lisible pour lui […] Accompagné, c'est les clients à qui tu souhaites
+  offrir un espace, un accompagnement sur mesure ») : `src/lib/etats-acheteur.ts`, un seul
+  vocabulaire partout ; les clés en base ne changent pas. `prospect` **En recherche** (sans espace
+  ni veille, dans les rapprochements), `actif` **Accompagné** (son espace client, la veille chaque
+  jour, le point automatique), `suspendu` **En pause**, `bien_trouve` **Local trouvé avec moi**,
+  `perdu` **Recherche arrêtée** (motifs : trouvé ailleurs, projet abandonné, autre).
+- Sur la fiche : l'état et **« Mettre à jour »** à côté du nom de la recherche, qui ouvre « Où en est
+  la recherche ? » (`src/components/fiche/EtatRecherche.tsx` : chaque choix avec sa petite
+  explication et ce qu'il fait tourner — rapprochements, espace client, veille, point automatique
+  selon Paramètres) ; en pause ou dossier clos, le bloc se grise et une carte au centre propose de
+  reprendre en « Accompagné » ou « En recherche ». L'étiquette de l'onglet dit l'état. La fenêtre
+  qui explique l'espace (passer « Accompagné », repasser « En recherche ») reste.
+- Dans Contacts : **« Demandeurs »** = ceux qui cherchent encore, tous visibles à l'ouverture ;
+  **« Anciens demandeurs »** (dans « Autres types ») = les dossiers clos, avec l'étiquette grise
+  « Ancien demandeur ». Les filtres, la recherche du haut, le tableau de bord, l'activité, les
+  rapprochements et les textes des affaires prennent les mêmes mots.
+
 ---
 
 ## 6. Ce qui reste à faire
