@@ -4499,7 +4499,7 @@ ${signatureMail()}`,
                           </button>
                         ) : (
                           <button type="button" className={`${styles.teteSoc} ${styles.teteSocVide}`} onClick={() => { setCleSoc(k => k + 1); setSocieteOuverte(true); setVue('ensemble'); }}>
-                            <Icone nom="immeuble" taille={13} epaisseur={2} /><span>Pour une société (SCI…) ?</span><b>Ajouter</b>
+                            <Icone nom="immeuble" taille={13} epaisseur={2} /><span>Pour une société (SAS, SARL…) ?</span><b>Ajouter</b>
                           </button>
                         );
                       })()}
