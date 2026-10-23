@@ -55,7 +55,8 @@ et 21 octobre 2026. **Ne jamais toucher au dépôt ni à la base d'Emilio** (Sup
 | Vercel | Hébergement. Quatre tâches planifiées dans `vercel.json` (point automatique, relances des signatures, diffusion, demandes SeLoger) |
 | Supabase | Base + Storage. RLS actif sur toutes les tables (AGENTS.md §3.4) |
 | Claude API | Lecture d'annonces, rédaction, analyse, rapprochement : **pas encore branchée** |
-| Mailjet · Ringover | E-mail transactionnel ; téléphonie (`/api/ringover/…`) : **pas encore branchés** |
+| Mailjet | E-mail transactionnel : **branché** (compte de Werner, domaine et DKIM validés, clés sur Vercel depuis le 22 octobre 2026 ; vérifié le 23) |
+| Ringover | Téléphonie (`/api/ringover/…`) : pas encore branché |
 | geo.api.gouv.fr · api-adresse.data.gouv.fr | Communes et adresses |
 
 **Polices** : Plus Jakarta Sans (titres) · DM Sans (corps), dans `src/styles/globals.css`.
@@ -75,8 +76,8 @@ et les colonnes `clients.vendeur_*`), puis `outils/sql/werner-commerce.sql` (§2
 | `NEXT_PUBLIC_SUPABASE_URL` · `NEXT_PUBLIC_SUPABASE_ANON_KEY` · `SUPABASE_SERVICE_ROLE_KEY` | Posées : le CRM s'ouvre et la reprise SeLoger du 20 octobre est passée par le serveur |
 | `WERNER_ACCESS_CODE` (l'ancien nom `EMILIO_ACCESS_CODE` est encore lu) | Facultative : sans elle, le badge est signé avec la seule clé de service (`codeAcces()`, `src/lib/badge.ts`). La changer invalide tous les badges. À vérifier sur Vercel |
 | `WERNER_MAILS_AUTORISES` (ou `EMILIO_MAILS_AUTORISES`) | Facultative : la liste des adresses qui peuvent entrer. Vide, tout compte Supabase du projet entre |
-| `MAILJET_API_KEY` · `MAILJET_API_SECRET` · `MAILJET_FROM_EMAIL` · `MAILJET_FROM_NAME` | **À poser.** Sans elles, aucun mail ne part. Replis d'expéditeur : contact@wernerimmobilier.com, « Werner Immobilier » |
-| `MAILJET_FROM_SIGNATURE` | **À poser** après la validation du domaine dans Mailjet : `signature@wernerimmobilier.com`. Les mails d'une signature (lien, code, exemplaire signé, renonciation : l'option `expediteur: 'signature'` de `envoyerMail`) partent de cette adresse, réponses vers contact@. Vide, ils partent de `MAILJET_FROM_EMAIL` |
+| `MAILJET_API_KEY` · `MAILJET_API_SECRET` | **Posées** (22 octobre 2026, vérifié sur Vercel le 23). `MAILJET_FROM_EMAIL` · `MAILJET_FROM_NAME` ne le sont pas : replis contact@wernerimmobilier.com, « Werner Immobilier ». `ALERTES_EMAIL` non plus : les alertes vont à contact@ |
+| `MAILJET_FROM_SIGNATURE` | **Posée** : `signature@wernerimmobilier.com`. Les mails d'une signature (lien, code, exemplaire signé, renonciation : l'option `expediteur: 'signature'` de `envoyerMail`) partent de cette adresse, réponses vers contact@. Vide, ils partent de `MAILJET_FROM_EMAIL` |
 | `ANTHROPIC_API_KEY` · `CRON_SECRET` | **À poser** : la clé de l'IA ; le secret des tâches planifiées (sans lui, elles refusent de tourner, c'est voulu) |
 | `RINGOVER_CLE_CONTACT` · `RINGOVER_CLE_RECHERCHE` · `NEXT_PUBLIC_HOTE_ESPACE` | **À poser** quand Ringover sera branché, et quand le sous-domaine de l'espace existera (§6) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY` · `VAPID_SUBJECT` | À poser pour les notifications de l'espace client |
@@ -618,8 +619,8 @@ et la relecture des mandats de recherche (§6).
   finissait au 1000). Page Registre : les numéros pris par Alexandre entre deux mandats de Werner
   s'affichent grisés dans la frise (« N° 1005 à 1008 · 4 mandats d'Alexandre », sans leur contenu :
   ce sont ses clients), entre le départ, les lignes et le prochain numéro. La fiche du mandat
-  en ligne (`src/components/fiche/MandatEnLigne.tsx`) renvoie encore à ImmoFacile pour réserver :
-  à reprendre avec le mandat de recherche dans l'espace.
+  en ligne (`src/components/fiche/MandatEnLigne.tsx`) ne parle d'ImmoFacile que dans un commentaire
+  (un numéro réservé avant le registre : impossible chez Werner) — rien à l'écran.
 - **L'adresse de l'espace client** — fait le 21 octobre 2026 côté DNS : wernerimmobilier.com,
   www, espace et crm pointent sur Vercel (IONOS, TTL 5 minutes ; l'hébergement WordPress piraté
   est débranché du domaine). Chez IONOS, le contrat « WordPress Hosting Boost » (105224331) contient
@@ -655,11 +656,17 @@ et la relecture des mandats de recherche (§6).
   de près… », sous l'interrupteur quand « Actif » est choisi à la création, dans la fenêtre « Passer en
   Actif », sur l'onglet « Son espace » d'un demandeur qui n'en a pas, et au changement en lot vers
   « Actif » (au pluriel). Le « ? » de l'interrupteur le dit aussi.
-- **Mailjet et les clés** — le compte et le domaine d'envoi de Werner, les variables Mailjet,
-  `ANTHROPIC_API_KEY`, `CRON_SECRET`, Ringover, les notifications (§1).
-- **Le premier accès de Werner** — aujourd'hui, `/login` ouvre un compte Supabase créé à la main. Le
-  parcours voulu (un compte d'essai, puis une première connexion où Werner reçoit un code par mail
-  et choisit son mot de passe, ce qui ferme le compte d'essai) n'existe pas encore dans le code.
+- **Les mails** — Mailjet est branché (§1, §8). Restent : un vrai envoi d'essai vers Alexandre,
+  regardé sur téléphone et ordinateur ; le SPF à alléger chez IONOS (retirer `mailgun.org` et
+  `_spf-eu.ionos.com`, garder Mailjet et Outlook).
+- **Les clés qui manquent** — `ANTHROPIC_API_KEY` (l'IA : lire une annonce collée ou un PDF,
+  reformuler une description, analyser un local, le rapprochement « intelligent » ; le rapprochement
+  par critères, lui, marche sans), `CRON_SECRET` (les quatre tâches du matin : le point automatique
+  aux demandeurs, les rappels de signature des mandats, la diffusion, les demandes SeLoger),
+  Ringover, les notifications (§1).
+- **Le premier accès de Werner** — fait (commit « Première connexion de Werner et mot de passe
+  oublié », `src/app/api/acces/`, `MotDePasseOublie.tsx`) ; Paramètres › Sécurité pour changer son
+  mot de passe.
 
 En attente, sans rien à faire : le dépôt GitHub est **public**, c'est voulu (confirmé par
 Alexandre) ; aucune clé n'y figure, elles vivent sur Vercel.
