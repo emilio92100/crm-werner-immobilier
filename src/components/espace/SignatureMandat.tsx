@@ -80,7 +80,8 @@ export type CoEspace = {
   statut: string;                 // invite · signe · decline · annule · retracte
   invite: string | null; signe: string | null; expire: string | null;
 };
-const SOCIETE_VIDE: Societe = { denomination: '', forme: 'SCI', siren: '', rcsVille: '', siege: '', qualite: 'Gérant' };
+/* V3.245 : la forme se choisit (c'était « SCI » d'office, hérité du résidentiel). */
+const SOCIETE_VIDE: Societe = { denomination: '', forme: '', siren: '', rcsVille: '', siege: '', qualite: 'Gérant' };
 const PERSONNE_VIDE: Mandant = { civilite: '', prenom: '', nom: '', naissanceDate: '', naissanceLieu: '', adresse: '', email: '', telephone: '' };
 /* « Claire », « Claire et Marc », « Claire, Marc et Léa ». */
 export const prenoms = (l: { prenom: string }[]) => l.map(x => x.prenom).join(', ').replace(/, ([^,]*)$/, ' et $1');
@@ -584,6 +585,7 @@ function FormSociete({ s, champs, civilite, prenom, nom, kbis, kbisErr, onS, onK
       <label className={'mdt-ch' + (champs.forme ? ' err' : '')}>
         <span className="l">Forme</span>
         <select className="mdt-sel" value={s.forme} onChange={e => maj('forme')(e.target.value)}>
+          {!s.forme && <option value="" disabled>Choisir…</option>}
           {FORMES_SOCIETE.map(x => <option key={x} value={x}>{x}</option>)}
         </select>
         {champs.forme && <span className="e">{champs.forme}</span>}
