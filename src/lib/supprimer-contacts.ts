@@ -82,9 +82,11 @@ export async function effacerContact(id: string): Promise<void> {
    fiche, sa veille arrêtée, ses relances en attente qui se ferment
    (cloreRelancesArchive), une ligne dans son Suivi. */
 export async function archiverContact(id: string, archive: boolean): Promise<void> {
-  const { data, error } = await supabase.from('clients').update({ archive, updated_at: new Date().toISOString() }).eq('id', id).select('id');
+  const { data, error } = await supabase.from('clients').update({ archive, updated_at: new Date().toISOString() }).eq('id', id).select('id, statut');
   if (error) throw new Error(error.message);
   if (!data || !(data as unknown[]).length) throw new Error('la base n’a rien modifié (session expirée ? recharge la page)');
+  /* V3.240 : « la veille est arrêtée » seulement s'il était Actif. */
+  const tournait = (data as { statut?: string | null }[])[0]?.statut === 'actif';
   if (archive) {
     /* Comme la fiche d'un acheteur : sa veille s'arrête (rien pour un autre contact). */
     const v = await supabase.from('recherches').update({ active: false }).eq('client_id', id);
@@ -93,7 +95,7 @@ export async function archiverContact(id: string, archive: boolean): Promise<voi
     if (erreur) throw new Error(`archivé, mais ses relances : ${erreur}`);
   }
   await addJournal(id, 'statut_change', archive ? 'Contact archivé' : 'Contact sorti des archives',
-    archive ? 'Archivé depuis la liste, avec d’autres contacts : la veille est arrêtée et ses relances en attente sont fermées.' : 'Rien n’est remis en marche : choisis son état.', { archive });
+    archive ? `Archivé depuis la liste, avec d’autres contacts : ${tournait ? 'la veille est arrêtée et ' : ''}ses relances en attente sont fermées.` : 'Rien n’est remis en marche : choisis son état.', { archive });
 }
 
 /* ═══ Changer le statut de plusieurs acheteurs (V3.89) ═══════════════════
@@ -109,25 +111,27 @@ export async function archiverContact(id: string, archive: boolean): Promise<voi
    ⚠️ Si changeStatut change, changer ici aussi. */
 export type StatutLot = 'actif' | 'prospect' | 'suspendu';
 export const STATUTS_LOT: { k: StatutLot; lib: string; sous: string; c: string }[] = [
-  { k: 'actif', lib: 'Actif', sous: 'Recherche en cours, avec son espace client : la veille cherche', c: '#10b981' },
-  { k: 'prospect', lib: 'Prospect', sous: 'Premier contact, sans espace client', c: '#8b5cf6' },
-  { k: 'suspendu', lib: 'Suspendu', sous: 'En pause, sans date de reprise', c: '#f59e0b' },
+  /* V3.240 : les mots de src/lib/etats-acheteur.ts. */
+  { k: 'actif', lib: 'Accompagné', sous: 'Accompagnement sur mesure : son espace client, la veille chaque jour', c: '#10b981' },
+  { k: 'prospect', lib: 'En recherche', sous: 'Dans tes rapprochements, sans espace client ni veille', c: '#8b5cf6' },
+  { k: 'suspendu', lib: 'En pause', sous: 'Il reprendra plus tard, sans date de reprise', c: '#f59e0b' },
 ];
 
 export async function changerStatutContact(id: string, statut: StatutLot): Promise<void> {
-  /* Ce qu'il faudra rallumer s'il était suspendu avec une date. */
+  /* Ce qu'il faudra rallumer s'il était suspendu avec une date — et ce
+     qu'il était : « la veille est arrêtée » seulement s'il était Actif
+     (V3.240). */
   let aReprendre: string[] = [];
-  if (statut === 'actif') {
-    const { data: avant } = await supabase.from('clients').select('*').eq('id', id).maybeSingle();
-    aReprendre = lireSuspension(avant)?.recherches || [];
-  }
+  const { data: avant } = await supabase.from('clients').select('*').eq('id', id).maybeSingle();
+  const tournait = (avant as { statut?: string | null } | null)?.statut === 'actif';
+  if (statut === 'actif') aReprendre = lireSuspension(avant)?.recherches || [];
   /* Werner : comme chez Emilio, « Actif » ouvre son espace, « Prospect » le ferme (src/lib/espace-choix.ts). */
   let { data, error } = await supabase.from('clients').update({ statut, suspension: null, ...espaceSelonStatut(statut) }).eq('id', id).select('id');
   if (error && colonneEspaceAbsente(error.message)) ({ data, error } = await supabase.from('clients').update({ statut, suspension: null }).eq('id', id).select('id'));
   if (error && colonneSuspensionAbsente(error.message)) ({ data, error } = await supabase.from('clients').update({ statut }).eq('id', id).select('id'));
   if (error) throw new Error(error.message);
   if (!data || !(data as unknown[]).length) throw new Error('la base n’a rien modifié (session expirée ? recharge la page)');
-  let detail = 'La veille est arrêtée sur ce dossier.';
+  let detail = tournait ? 'La veille est arrêtée sur ce dossier.' : '';
   if (statut === 'actif') {
     if (!aReprendre.length) {
       const { data: r } = await supabase.from('recherches').select('id').eq('client_id', id).order('updated_at', { ascending: false }).limit(1);
@@ -143,5 +147,5 @@ export async function changerStatutContact(id: string, statut: StatutLot): Promi
     if (v.error && !absente(v.error.message)) throw new Error(`statut changé, mais sa veille : ${v.error.message}`);
   }
   const nom = STATUTS_LOT.find(x => x.k === statut)?.lib || statut;
-  await addJournal(id, 'statut_change', `Statut → ${nom}`, `${detail} Changé depuis la liste, avec d’autres contacts.`);
+  await addJournal(id, 'statut_change', `Statut → ${nom}`, `${detail ? `${detail} ` : ''}Changé depuis la liste, avec d’autres contacts.`);
 }

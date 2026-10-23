@@ -78,6 +78,18 @@ export const estArchive = (c: AvecTypes | null | undefined) => c?.archive === tr
    de rapprochement) : un acheteur, pas archivé. Sans la colonne des types
    (avant le SQL) ou vide, un contact reste un acheteur, comme avant. */
 export const acheteurEnCours = (c: AvecTypes | null | undefined) => estAcheteur(c) && !estArchive(c);
+/* V3.240 (comme chez Emilio) — « Ancien demandeur » n'est pas un type non
+   plus : un demandeur dont le dossier est clos (« Local trouvé avec moi »,
+   « Recherche arrêtée »). Il quitte « Demandeurs » (ceux qui cherchent
+   encore : en recherche, accompagnés, en pause) pour « Anciens demandeurs » ;
+   rouvrir sa recherche l'y ramène tout seul : rien ne change en base, ni son
+   type ni les automatismes (`acheteurEnCours` reste le même). */
+export const STATUTS_CLOS: string[] = ['bien_trouve', 'perdu'];
+type AvecStatut = AvecTypes & { statut?: unknown };
+export const estAncienAcheteur = (c: AvecStatut | null | undefined) => estAcheteur(c) && STATUTS_CLOS.includes(String(c?.statut));
+export const acheteurQuiCherche = (c: AvecStatut | null | undefined) => estAcheteur(c) && !STATUTS_CLOS.includes(String(c?.statut));
+/* Le nom d'un type pour ce contact : « Ancien demandeur » pour un dossier clos. */
+export const libType = (k: TypeContact, c?: AvecStatut | null) => (k === 'acheteur' && estAncienAcheteur(c) ? 'Ancien demandeur' : typeDe(k).lib);
 /* Les contacts « particuliers » (on les suit pour un achat ou une vente)
    par opposition aux professionnels. */
 export const PARTICULIERS: TypeContact[] = ['acheteur', 'vendeur', 'vendeur_signe', 'proprietaire'];

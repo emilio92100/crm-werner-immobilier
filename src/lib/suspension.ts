@@ -9,9 +9,16 @@ import { jourParis } from '@/lib/mandat';
    d'appeler le client.
 
    La date vit dans `clients.suspension` (jsonb, outils/sql/suspension.sql) :
-     { jusqu_au: 'AAAA-MM-JJ', recherches: [id…], le: date de la pause }
+     { jusqu_au: 'AAAA-MM-JJ', recherches: [id…], le: date de la pause,
+       avant: 'actif' | 'prospect' }
    `recherches` : celles qui étaient en marche au moment de la pause. C'est
-   elles, et elles seules, que la reprise rallume.
+   elles, et elles seules, que la reprise rallume (un « Actif »).
+   `avant` absent (une suspension d'avant la V3.240) : « Actif », comme avant.
+
+   V3.240 (comme chez Emilio) : la reprise rend l'état d'AVANT la pause. Un
+   « Actif » redevient Actif et sa veille repart ; un « Prospect » redevient
+   Prospect, sans veille (avant, il devenait « Actif » et sa veille
+   démarrait). La fenêtre de suspension laisse choisir.
 
    ⚠️ Un statut qui change autrement (à la main, depuis l'espace du client)
    efface `suspension` : sans ça, une vieille date restée en base réveillerait
@@ -27,7 +34,7 @@ import { jourParis } from '@/lib/mandat';
    (`.eq('statut', 'suspendu')`), et seul celui qui a vraiment modifié la
    ligne écrit le journal et la relance. Ce fichier est isomorphe. */
 
-export type Suspension = { jusqu_au: string; recherches: string[]; le: string | null };
+export type Suspension = { jusqu_au: string; recherches: string[]; le: string | null; avant: 'actif' | 'prospect' };
 
 /* L'erreur d'une base où le SQL n'est pas encore passé. */
 export const colonneSuspensionAbsente = (m: string) =>
@@ -39,7 +46,7 @@ export function lireSuspension(c: unknown): Suspension | null {
   const j = typeof s.jusqu_au === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s.jusqu_au) ? s.jusqu_au : null;
   if (!j) return null;
   const r = Array.isArray(s.recherches) ? s.recherches.filter((x): x is string => typeof x === 'string') : [];
-  return { jusqu_au: j, recherches: r, le: typeof s.le === 'string' ? s.le : null };
+  return { jusqu_au: j, recherches: r, le: typeof s.le === 'string' ? s.le : null, avant: s.avant === 'prospect' ? 'prospect' : 'actif' };
 }
 
 /* Aujourd'hui + n mois, en date de Paris (« AAAA-MM-JJ »). Le 31 janvier
@@ -81,17 +88,19 @@ export async function reprendreSuspendus(sb: SupabaseClient): Promise<{ repris: 
 
       /* Le verrou : seul celui qui fait passer la ligne de « Suspendu » à
          « Actif » continue. Deux portes ouvertes en même temps ne créent
-         donc pas deux relances. */
+         donc pas deux relances. V3.240 : vers l'état d'avant la pause. */
+      const actif = s.avant !== 'prospect';
       const { data: pris, error: e1 } = await sb.from('clients')
-        .update({ statut: 'actif', suspension: null })
+        .update({ statut: actif ? 'actif' : 'prospect', suspension: null })
         .eq('id', c.id).eq('statut', 'suspendu').select('id');
       if (e1) { erreurs.push(`${nom} : ${e1.message}`); continue; }
       if (!pris || !pris.length) continue;
 
       /* Les recherches à rallumer : celles qui tournaient avant la pause.
-         Si aucune n'était notée, la plus récemment touchée. */
-      let ids = s.recherches;
-      if (!ids.length) {
+         Si aucune n'était notée, la plus récemment touchée. « Prospect » :
+         aucune, il n'a pas de veille. */
+      let ids = actif ? s.recherches : [];
+      if (actif && !ids.length) {
         const { data: r } = await sb.from('recherches').select('id')
           .eq('client_id', c.id).order('updated_at', { ascending: false }).limit(1);
         ids = ((r || []) as { id: string }[]).map(x => x.id);
@@ -108,14 +117,16 @@ export async function reprendreSuspendus(sb: SupabaseClient): Promise<{ repris: 
       const le = jourLisible(s.jusqu_au);
       const { error: e3 } = await sb.from('journal').insert({
         client_id: c.id, recherche_id: ids[0] || null, type: 'statut_change',
-        titre: '▶️ Reprise automatique — Statut → Actif',
-        description: `Le dossier était suspendu jusqu'au ${le}. Il repasse en « Actif » et la veille repart.`,
+        titre: `▶️ Reprise automatique — Statut → ${actif ? 'Accompagné' : 'En recherche'}`,
+        description: actif
+          ? `Le dossier était en pause jusqu'au ${le}. Il repasse « Accompagné » et la veille repart.`
+          : `Le dossier était en pause jusqu'au ${le}. Il repasse « En recherche » : dans tes rapprochements, sans espace client ni veille.`,
       });
       if (e3) erreurs.push(`${nom} — l'historique : ${e3.message}`);
       const { error: e4 } = await sb.from('relances').insert({
         client_id: c.id, recherche_id: ids[0] || null, type: 'rappel_client', statut: 'en_attente',
         date_echeance: new Date().toISOString(),
-        note: `Reprise du dossier (il était suspendu jusqu'au ${le}) : la veille est repartie. À appeler pour faire le point.`,
+        note: `Reprise du dossier (il était en pause jusqu'au ${le})${actif ? ' : la veille est repartie' : ', il repasse « En recherche »'}. À appeler pour faire le point.`,
       });
       if (e4) erreurs.push(`${nom} — la relance : ${e4.message}`);
       repris.push(nom);

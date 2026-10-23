@@ -132,6 +132,18 @@ export function nomFoyer(c: { prenom?: string | null; nom?: string | null; coupl
   return `${p} et ${`${j.prenom || ''} ${j.nom || ''}`.trim()}`;
 }
 
+/* V3.240 (comme chez Emilio) — Le même nom en deux lignes pour une liste :
+   « Charlotte ROSENZWEIG » puis « et Maxime JULIENNE » (Alexandre : « mettre
+   l'autre nom à la suite, en bas, dans le cas où il y a un nom qui est
+   long »). Même nom de famille, ou une seule personne : une ligne. */
+export function nomFoyerLignes(c: { prenom?: string | null; nom?: string | null; couple?: boolean | null; conjoint?: unknown }): [string, string | null] {
+  const p = `${c.prenom || ''} ${c.nom || ''}`.trim();
+  const j = c.couple ? conjointDe(c.conjoint) : null;
+  const n = nomFoyer(c);
+  if (!j || !p || n !== `${p} et ${`${j.prenom || ''} ${j.nom || ''}`.trim()}`) return [n, null];
+  return [p, `et ${`${j.prenom || ''} ${j.nom || ''}`.trim()}`];
+}
+
 /* À qui l'on écrit, pour {{prénom}} (« Nouveau mail ») : les adresses
    choisies sont toutes à la personne 2 → elle ; toutes du dossier (l'avocat,
    l'expert-comptable…) → personne, « Bonjour, » ; sinon la personne 1. */

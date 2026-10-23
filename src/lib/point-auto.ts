@@ -150,6 +150,13 @@ export type Candidat = {
   /** Werner a choisi de ne jamais lui envoyer ce mail. */
   exclu: boolean;
   historique: Envoi[];
+  /** V3.240 — La création du dossier : ce qui fait l'échéance quand rien
+      d'autre ne bouge, pour qu'un écran la recalcule tout de suite avec un
+      autre délai. */
+  creeLe: string | null;
+  /** Calcul en paquets : rien dans le suivi depuis FENETRE_JOURS jours (et un
+      dossier plus vieux que ça). On dit « plus de deux mois », sans date. */
+  ancien: boolean;
 };
 
 /* Ce que le client a répondu après un envoi : sa première réaction dans les
@@ -171,14 +178,80 @@ function libelleReaction(type: string, titre: string, metadata?: any): string {
   return 'réaction';
 }
 
+/* ── Le calcul pour un client, à partir de ce qu'on a lu ── */
+/* Avec un espace (activé, et son lien créé), il y répond : on ne lui parle
+   que d'une recherche que l'espace montre. Sans, la page de réponse ne
+   dépend pas de l'espace : une recherche en cours suffit. */
+function viaEspaceDe(c: any, reglages: Reglages): boolean {
+  return reglages.pour === 'espace' || (c.espace_client === true && !!c.token_espace);
+}
+function choisirRecherche(rechs: any[], viaEspace: boolean): any | null {
+  const visible = (r: any) => r.espace_actif !== false;
+  return rechs.find((r: any) => r.active && visible(r))
+    || (viaEspace ? null : rechs.find((r: any) => r.active))
+    || rechs.find(visible) || null;
+}
+function emailDe(c: any): string | null {
+  return (Array.isArray(c.emails) ? c.emails : []).map((e: string) => String(e || '').trim()).find((e: string) => /.+@.+\..+/.test(e)) || null;
+}
+function empechementDe(c: any, reglages: Reglages, email: string | null, recherche: any): string | null {
+  if (!STATUTS_DE[reglages.pour].includes(c.statut)) {
+    return c.statut === 'prospect'
+      ? 'En recherche : le mail ne part qu’aux Accompagnés. Pour l’envoyer aussi à ceux en recherche : Paramètres › Point automatique › Pour qui.'
+      : c.statut === 'suspendu' ? 'En pause : le mail ne part pas. Il repartira quand sa recherche reprendra.'
+        : c.statut === 'bien_trouve' || c.statut === 'perdu' ? 'Sa recherche est terminée : le mail ne part pas.'
+          : `Le mail ne part que pour les recherches en cours (${reglages.pour === 'recherche' ? 'Accompagnés ou En recherche' : 'Accompagnés'}).`;
+  }
+  if (!estAcheteur(c)) return 'Ce contact n’est plus demandeur : le mail ne part pas.';
+  if (estArchive(c)) return 'Ce contact est archivé : le mail ne part pas.';
+  if (reglages.exclus.includes(c.id)) return 'Tu as choisi de ne jamais lui envoyer ce mail.';
+  if (!email) return 'Pas d’adresse mail sur sa fiche.';
+  if (!recherche) return 'Pas de recherche en cours.';
+  if (reglages.pour === 'espace' && !c.token_espace) return 'Son espace n’a pas encore de lien : ouvre sa fiche une fois pour le créer.';
+  /* Werner : réservé aux espaces, le mail ne part pas sans espace activé. */
+  if (reglages.pour === 'espace' && c.espace_client !== true) return 'Pas d’espace client : le mail est réservé aux Accompagnés qui ont leur espace. Pour l’envoyer aussi sans espace : Paramètres › Point automatique › Pour qui.';
+  return null;
+}
+function candidat(c: any, reglages: Reglages, maintenant: Date, x: {
+  rechs: any[]; dernierMouvement: string | null; dernierEnvoi: string | null; ancien: boolean; historique: Envoi[];
+}): Candidat {
+  const email = emailDe(c);
+  const viaEspace = viaEspaceDe(c, reglages);
+  const recherche = choisirRecherche(x.rechs, viaEspace);
+  const empechement = empechementDe(c, reglages, email, recherche);
+  const ech = echeance({ dernierMouvement: x.dernierMouvement, dernierEnvoi: x.dernierEnvoi, creeLe: c.created_at, delai: reglages.delai });
+  return {
+    clientId: c.id, prenom: c.prenom || '', nom: c.nom || '', email, statut: c.statut,
+    revente: reventePossible(c), tokenClient: c.token_espace || null, viaEspace,
+    recherche, dernierMouvement: x.dernierMouvement, dernierEnvoi: x.dernierEnvoi,
+    echeance: ech.toISOString(),
+    du: !empechement && ech.getTime() <= maintenant.getTime(),
+    empechement, exclu: reglages.exclus.includes(c.id), historique: x.historique,
+    creeLe: c.created_at || null, ancien: x.ancien,
+  };
+}
+
+/* Toutes les lignes d'une requête, page après page (Supabase en rend 1 000 au plus). */
+async function toutLire(quoi: string, fabrique: (de: number, a: number) => any): Promise<any[]> {
+  const tout: any[] = [];
+  for (let de = 0; ; de += PAGE) {
+    const { data, error } = await fabrique(de, de + PAGE - 1);
+    if (error) throw new Error(`Lecture ${quoi} impossible : ${error.message}`);
+    tout.push(...(data || []));
+    if (!data || data.length < PAGE) break;
+  }
+  return tout;
+}
+
 /**
  * Pour chaque client visé : son dernier mouvement, son dernier mail, la date
  * du prochain, et ce qui empêcherait l'envoi.
  *
  * Sans `clientId`, on prend tous les dossiers en cours (actifs, et les
  * prospects quand le mail est « pour tous ceux qui ont une recherche ») :
- * c'est ce que fait l'envoi quotidien. Avec, on calcule pour ce seul client,
- * quel que soit son statut — c'est ce qu'affiche sa fiche.
+ * c'est ce que fait l'envoi quotidien, en paquets, sans l'historique des
+ * envois. Avec, on calcule pour ce seul client, quel que soit son statut,
+ * historique compris — c'est ce qu'affiche sa fiche.
  */
 export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { clientId?: string; maintenant?: Date } = {}): Promise<Candidat[]> {
   const maintenant = opts.maintenant || new Date();
@@ -188,9 +261,14 @@ export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { cl
      recevait encore « Où en est votre recherche ? ». Avant le SQL des types,
      les colonnes manquent : on relit sans elles (tout le monde est acheteur). */
   const COLS = 'id, prenom, nom, emails, statut, created_at, statut_occupation, bien_actuel_a_vendre, token_espace';
-  const lire = (cols: string) => {
-    const q = sb.from('clients').select(cols);
-    return opts.clientId ? q.eq('id', opts.clientId) : q.in('statut', STATUTS_DE[reglages.pour]);
+  /* V3.240 : les dossiers peuvent dépasser le millier que Supabase rend d'un
+     coup : lus par pages. */
+  const lire = async (cols: string): Promise<{ data: any[] | null; error: any }> => {
+    if (opts.clientId) return sb.from('clients').select(cols).eq('id', opts.clientId);
+    try {
+      return { data: await toutLire('des clients', (de, a) => sb.from('clients').select(cols).in('statut', STATUTS_DE[reglages.pour])
+        .order('id', { ascending: true }).range(de, a)), error: null };
+    } catch (e) { return { data: null, error: { message: e instanceof Error ? e.message : String(e) } }; }
   };
   /* Werner : `espace_client` en plus, quand son SQL est passé. */
   let { data: clients, error } = await lire(`${COLS}, types, archive, espace_client`);
@@ -201,90 +279,101 @@ export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { cl
      précise, on calcule quand même, et on dit pourquoi rien ne part. */
   if (!opts.clientId) clients = (clients || []).filter((c: any) => acheteurEnCours(c));
   if (!clients?.length) return [];
-
-  const ids = clients.map((c: any) => c.id);
-  const { data: recherches, error: errR } = await sb.from('recherches').select('*')
-    .in('client_id', ids).order('created_at', { ascending: true });
-  if (errR) throw new Error('Lecture des recherches impossible : ' + errR.message);
-
-  const sortie: Candidat[] = [];
-  for (const c of clients as any[]) {
-    /* Une requête par client plutôt qu'une grande : le journal d'une agence
-       dépasse vite le millier de lignes que Supabase rend d'un coup. */
-    const [mv, env, bi] = await Promise.all([
-      sb.from('journal').select('created_at').eq('client_id', c.id).neq('type', TYPE_ENVOI)
-        .order('created_at', { ascending: false }).limit(1),
-      sb.from('journal').select('created_at').eq('client_id', c.id).eq('type', TYPE_ENVOI)
-        .order('created_at', { ascending: false }).limit(6),
-      sb.from('biens').select('envoye_le, retour_le').eq('client_id', c.id),
-    ]);
-    if (mv.error) throw new Error('Lecture du suivi impossible : ' + mv.error.message);
-    if (env.error) throw new Error('Lecture des envois impossible : ' + env.error.message);
-    if (bi.error) throw new Error('Lecture des biens impossible : ' + bi.error.message);
-
-    let dernierMouvement: string | null = mv.data?.[0]?.created_at || null;
-    for (const b of (bi.data || []) as any[]) {
-      dernierMouvement = plusRecent(dernierMouvement, b.envoye_le || null);
-      dernierMouvement = plusRecent(dernierMouvement, b.retour_le || null);
-    }
-    const envois: string[] = (env.data || []).map((e: any) => e.created_at);
-    const dernierEnvoi = envois[0] || null;
-
-    const rechs = (recherches || []).filter((r: any) => r.client_id === c.id);
-    /* Avec un espace (activé, et son lien créé), il y répond : on ne lui parle
-       que d'une recherche que l'espace montre. Sans, la page de réponse ne
-       dépend pas de l'espace : une recherche en cours suffit. */
-    const aSonEspace = c.espace_client === true && !!c.token_espace;
-    const viaEspace = reglages.pour === 'espace' || aSonEspace;
-    const visible = (r: any) => r.espace_actif !== false;
-    const recherche = rechs.find((r: any) => r.active && visible(r))
-      || (viaEspace ? null : rechs.find((r: any) => r.active))
-      || rechs.find(visible) || null;
-
-    const email = (Array.isArray(c.emails) ? c.emails : []).map((e: string) => String(e || '').trim()).find((e: string) => /.+@.+\..+/.test(e)) || null;
-
-    let empechement: string | null = null;
-    if (!STATUTS_DE[reglages.pour].includes(c.statut)) {
-      empechement = c.statut === 'prospect'
-        ? 'Prospect : le mail ne part qu’aux demandeurs qui ont leur espace. Pour l’envoyer aussi aux prospects : Paramètres › Point automatique › Pour qui.'
-        : `Le mail ne part que pour les recherches en cours (${reglages.pour === 'recherche' ? 'statut Actif ou Prospect' : 'statut Actif'}).`;
-    }
-    else if (!estAcheteur(c)) empechement = 'Ce contact n’est plus demandeur : le mail ne part pas.';
-    else if (estArchive(c)) empechement = 'Ce contact est archivé : le mail ne part pas.';
-    else if (reglages.exclus.includes(c.id)) empechement = 'Tu as choisi de ne jamais lui envoyer ce mail.';
-    else if (!email) empechement = 'Pas d’adresse mail sur sa fiche.';
-    else if (!recherche) empechement = 'Pas de recherche en cours.';
-    else if (reglages.pour === 'espace' && !c.token_espace) empechement = 'Son espace n’a pas encore de lien : ouvre sa fiche une fois pour le créer.';
-    /* Werner : réservé aux espaces, le mail ne part pas sans espace activé. */
-    else if (reglages.pour === 'espace' && c.espace_client !== true) empechement = 'Pas d’espace client : le mail est réservé aux demandeurs qui ont leur espace. Pour l’envoyer aussi sans espace : Paramètres › Point automatique › Pour qui.';
-
-    const ech = echeance({ dernierMouvement, dernierEnvoi, creeLe: c.created_at, delai: reglages.delai });
-
-    /* L'historique des envois, avec la première réaction qui a suivi chacun. */
-    const historique: Envoi[] = [];
-    for (let i = 0; i < envois.length; i++) {
-      const le = envois[i];
-      const jusqua = new Date(Math.min(new Date(le).getTime() + 30 * 86_400_000,
-        i > 0 ? new Date(envois[i - 1]).getTime() : Number.MAX_SAFE_INTEGER)).toISOString();
-      const { data: rep } = await sb.from('journal').select('type, titre, metadata, created_at')
-        .eq('client_id', c.id).in('type', TYPES_REACTION)
-        .gt('created_at', le).lt('created_at', jusqua)
-        .order('created_at', { ascending: true }).limit(1);
-      const r = rep?.[0];
-      historique.push({ le, reponse: r ? libelleReaction(r.type, r.titre || '', r.metadata) : null, reponduLe: r?.created_at || null });
-    }
-
-    sortie.push({
-      clientId: c.id, prenom: c.prenom || '', nom: c.nom || '', email, statut: c.statut,
-      revente: reventePossible(c), tokenClient: c.token_espace || null, viaEspace,
-      recherche, dernierMouvement, dernierEnvoi,
-      echeance: ech.toISOString(),
-      du: !empechement && ech.getTime() <= maintenant.getTime(),
-      empechement, exclu: reglages.exclus.includes(c.id), historique,
-    });
-  }
-  return sortie;
+  return opts.clientId ? [await pourUnClient(sb, reglages, clients[0], maintenant)] : enPaquets(sb, reglages, clients, maintenant);
 }
+
+/* ── Un seul client (sa fiche) : tout son suivi, et l'historique des envois ── */
+async function pourUnClient(sb: Base, reglages: Reglages, c: any, maintenant: Date): Promise<Candidat> {
+  const [mv, env, bi, re] = await Promise.all([
+    sb.from('journal').select('created_at').eq('client_id', c.id).neq('type', TYPE_ENVOI)
+      .order('created_at', { ascending: false }).limit(1),
+    sb.from('journal').select('created_at').eq('client_id', c.id).eq('type', TYPE_ENVOI)
+      .order('created_at', { ascending: false }).limit(6),
+    sb.from('biens').select('envoye_le, retour_le').eq('client_id', c.id),
+    sb.from('recherches').select('*').eq('client_id', c.id).order('created_at', { ascending: true }),
+  ]);
+  if (mv.error) throw new Error('Lecture du suivi impossible : ' + mv.error.message);
+  if (env.error) throw new Error('Lecture des envois impossible : ' + env.error.message);
+  if (bi.error) throw new Error('Lecture des biens impossible : ' + bi.error.message);
+  if (re.error) throw new Error('Lecture des recherches impossible : ' + re.error.message);
+
+  let dernierMouvement: string | null = mv.data?.[0]?.created_at || null;
+  for (const b of (bi.data || []) as any[]) {
+    dernierMouvement = plusRecent(dernierMouvement, b.envoye_le || null);
+    dernierMouvement = plusRecent(dernierMouvement, b.retour_le || null);
+  }
+  const envois: string[] = (env.data || []).map((e: any) => e.created_at);
+
+  /* L'historique des envois, avec la première réaction qui a suivi chacun. */
+  const historique: Envoi[] = [];
+  for (let i = 0; i < envois.length; i++) {
+    const le = envois[i];
+    const jusqua = new Date(Math.min(new Date(le).getTime() + 30 * 86_400_000,
+      i > 0 ? new Date(envois[i - 1]).getTime() : Number.MAX_SAFE_INTEGER)).toISOString();
+    const { data: rep } = await sb.from('journal').select('type, titre, metadata, created_at')
+      .eq('client_id', c.id).in('type', TYPES_REACTION)
+      .gt('created_at', le).lt('created_at', jusqua)
+      .order('created_at', { ascending: true }).limit(1);
+    const r = rep?.[0];
+    historique.push({ le, reponse: r ? libelleReaction(r.type, r.titre || '', r.metadata) : null, reponduLe: r?.created_at || null });
+  }
+  return candidat(c, reglages, maintenant, {
+    rechs: (re.data || []) as any[], dernierMouvement, dernierEnvoi: envois[0] || null, ancien: false, historique,
+  });
+}
+
+/* ── Tous les dossiers visés (l'envoi du matin, Paramètres) : en paquets ──
+   V3.240 (Alexandre : « ça met très longtemps à charger […] c'est pareil sur
+   Werner ») : trois lectures par client, une par une, c'était des centaines
+   d'allers-retours. Ici, une poignée par paquet de 100 clients, et seulement
+   le suivi des FENETRE_JOURS derniers jours : le délai le plus long est de
+   60 jours, donc un dossier sans rien de plus récent est dû de toute façon
+   (la seule chose perdue est la date exacte de son dernier mouvement :
+   « plus de deux mois »). */
+async function enPaquets(sb: Base, reglages: Reglages, clients: any[], maintenant: Date): Promise<Candidat[]> {
+  const fenetre = new Date(maintenant.getTime() - FENETRE_JOURS * 86_400_000).toISOString();
+  const ids: string[] = clients.map((c: any) => c.id);
+  const paquets: string[][] = [];
+  for (let k = 0; k < ids.length; k += PAQUET_IDS) paquets.push(ids.slice(k, k + PAQUET_IDS));
+
+  const recherches = new Map<string, any[]>();
+  const mouvement = new Map<string, string>();
+  const envoi = new Map<string, string>();
+  const noter = (m: Map<string, string>, id: string, d: string | null | undefined) => {
+    const r = plusRecent(m.get(id) || null, d || null); if (r) m.set(id, r);
+  };
+  const unPaquet = async (p: string[]) => {
+    const [re, jo, en, rt] = await Promise.all([
+      toutLire('des recherches', (de, a) => sb.from('recherches').select('*').in('client_id', p).order('created_at', { ascending: true }).range(de, a)),
+      toutLire('du suivi', (de, a) => sb.from('journal').select('client_id, created_at, type').in('client_id', p).gte('created_at', fenetre)
+        .order('created_at', { ascending: false }).range(de, a)),
+      toutLire('des biens', (de, a) => sb.from('biens').select('client_id, envoye_le').in('client_id', p).gte('envoye_le', fenetre).order('id', { ascending: true }).range(de, a)),
+      toutLire('des biens', (de, a) => sb.from('biens').select('client_id, retour_le').in('client_id', p).gte('retour_le', fenetre).order('id', { ascending: true }).range(de, a)),
+    ]);
+    for (const r of re) { const l = recherches.get(r.client_id) || []; l.push(r); recherches.set(r.client_id, l); }
+    for (const j of jo) noter(j.type === TYPE_ENVOI ? envoi : mouvement, j.client_id, j.created_at);
+    for (const b of en) noter(mouvement, b.client_id, b.envoye_le);
+    for (const b of rt) noter(mouvement, b.client_id, b.retour_le);
+  };
+  /* Quelques paquets à la fois. */
+  let suivant = 0;
+  const ouvrier = async () => { while (suivant < paquets.length) { const k = suivant++; await unPaquet(paquets[k]); } };
+  await Promise.all(Array.from({ length: Math.min(PAQUETS_EN_MEME_TEMPS, paquets.length) }, ouvrier));
+
+  return clients.map((c: any) => {
+    const dernierMouvement = mouvement.get(c.id) || null;
+    return candidat(c, reglages, maintenant, {
+      rechs: recherches.get(c.id) || [], dernierMouvement, dernierEnvoi: envoi.get(c.id) || null,
+      ancien: !dernierMouvement && String(c.created_at || '') < fenetre, historique: [],
+    });
+  });
+}
+
+const PAGE = 1000;
+const PAQUET_IDS = 100;
+const PAQUETS_EN_MEME_TEMPS = 4;
+/** Le suivi lu par le calcul en paquets : un jour de plus que le délai le plus long. */
+export const FENETRE_JOURS = Math.max(...DELAIS) + 1;
 
 /* ══ Le mail ════════════════════════════════════════════════════════════ */
 

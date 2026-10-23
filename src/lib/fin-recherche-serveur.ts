@@ -149,10 +149,11 @@ export async function declarerFin(sb: Base, o: {
      `updated_at` n'est pas touché : c'est lui qui dit à l'espace si la
      déclaration du client est toujours la dernière parole. */
   const BASCULE: Record<string, { statut: string; nom: string; raison: string | null }> = {
-    trouve_avec_vous: { statut: 'bien_trouve', nom: 'Local trouvé', raison: 'Trouvé avec moi' },
-    trouve_ailleurs: { statut: 'perdu', nom: 'Perdu', raison: 'Trouvé ailleurs' },
-    abandon: { statut: 'perdu', nom: 'Perdu', raison: 'A renoncé' },
-    pause: { statut: 'suspendu', nom: 'Suspendu', raison: null },
+    /* V3.240 : les mots de src/lib/etats-acheteur.ts (et ses motifs de clôture). */
+    trouve_avec_vous: { statut: 'bien_trouve', nom: 'Local trouvé avec moi', raison: 'Local trouvé avec moi' },
+    trouve_ailleurs: { statut: 'perdu', nom: 'Recherche arrêtée', raison: 'Trouvé ailleurs' },
+    abandon: { statut: 'perdu', nom: 'Recherche arrêtée', raison: 'Projet abandonné' },
+    pause: { statut: 'suspendu', nom: 'En pause', raison: null },
   };
   const cible = BASCULE[motif];
   let bascule = '';
@@ -175,12 +176,14 @@ export async function declarerFin(sb: Base, o: {
     if (echec) {
       bascule = ` ⚠️ Le dossier n'a pas pu changer de rubrique tout seul (${echec.message}) : à faire depuis la fiche.`;
     } else {
-      bascule = ` Le dossier est passé en « ${cible.nom} » et la veille est arrêtée.`;
+      /* V3.240 : « la veille est arrêtée » seulement s'il était Actif. */
+      const tournait = avant.statut === 'actif';
+      bascule = ` Le dossier est passé en « ${cible.nom} »${tournait ? ' et la veille est arrêtée' : ''}.`;
       await ecritServeur('[fin] journal statut', sb.from('journal').insert({
         client_id: clientId, recherche_id: rechercheId,
         type: 'statut_change',
         titre: `Statut → ${cible.nom} (automatique)`,
-        description: `Le client ${quoi}, ${ou}. La veille est arrêtée sur ce dossier.`,
+        description: `Le client ${quoi}, ${ou}.${tournait ? ' La veille est arrêtée sur ce dossier.' : ''}`,
       }));
     }
   }
