@@ -23,7 +23,8 @@ import { signalerMaj, demanderRendezVous, lireOuvertureFiche, oublierOuvertureFi
 import { retenirPlace, useHauteur, usePlace } from '@/lib/place-fiche';
 import CloreRelances, { relancesACocher } from '@/components/shared/CloreRelances';
 import { jetonEspace, lienEspace, BIENS_PAR_MAIL } from '@/lib/jeton';
-import { nomFoyer, conjointDe } from '@/lib/foyer';
+import { nomFoyer, personne2De, adressesDossierDe, colonneDossierAbsente, MESSAGE_SQL_DOSSIER } from '@/lib/foyer';
+import IdentitesContact, { identitesDe, colonnesDe, dossierDe, erreurIdentites, changementsIdentites } from '@/components/contacts/IdentitesContact';
 import {
   BasculeCriteres, CorpsCriteres, CRIT_VIDE, EXPOSITIONS, etapesCriteres,
   FINANCEMENTS, FriseCriteres, ICONE_EXPO, lireModeCrit, ecrireModeCrit,
@@ -474,7 +475,7 @@ import Cascade from '@/components/shared/Cascade';
 import GardeHauteur from '@/components/shared/GardeHauteur';
 import Rapprochement, { GuideRapprochement, OngletsHisto, RapprochementsFaits, VuDepuisBiens, rapproAReprendre, type DepartRappro, type OngletHisto } from './Rapprochement';
 import { mandatsPour, poserVenteEnSelection, vusDepuisBiens, type EtatDossier, type LigneHistoVu, type MandatOk, type VuDepuisBien } from '@/lib/rapprochement';
-import { ListeCoordonnees, lignesDe, nettoyer } from '@/components/shared/ListeCoordonnees';
+import { nettoyer } from '@/components/shared/ListeCoordonnees';
 import { ChoixQuand } from '@/components/pages/PageAgenda';
 import FenetreIndispo from './FenetreIndispo';
 import { colonneEspaceAbsente, espaceSelonStatut, prendreBienvenue } from '@/lib/espace-choix';
@@ -924,23 +925,17 @@ function BienFormFields({ bienForm, setBienForm, prixAcq, styles }: { bienForm: 
   );
 }
 
-/* Le formulaire « Modifier le contact », rempli depuis la fiche. La
-   personne 2 d'une fiche « couple » y est aussi (src/lib/foyer.ts). */
+/* Le formulaire « Modifier le contact », rempli depuis la fiche. V3.236 :
+   qui est-ce (personne 1, personne 2, autres adresses du dossier) est dans
+   `ident`, le bloc IdentitesContact (src/components/contacts). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function cfDe(client: any) {
-  const j = conjointDe(client.conjoint);
   return {
-    prenom: client.prenom, nom: client.nom, adresse: client.adresse || '',
-    /* Tous les e-mails et tous les numéros, pas seulement deux (V3.89) :
-       l'import ImmoFacile en garde jusqu'à quatre. */
-    emails: lignesDe(client.emails), tels: lignesDe(client.telephones), statut_occupation: client.statut_occupation || '',
+    ident: identitesDe(client), adresse: client.adresse || '',
+    statut_occupation: client.statut_occupation || '',
     bien_actuel_type: client.bien_actuel_type || '', bien_actuel_surface: client.bien_actuel_surface?.toString() || '',
     bien_actuel_valeur: client.bien_actuel_valeur?.toString() || '', bien_actuel_a_vendre: client.bien_actuel_a_vendre || false,
     bien_actuel_notes: client.bien_actuel_notes || '', bien_actuel_adresse: client.bien_actuel_adresse || '', bien_actuel_meme_adresse: !client.bien_actuel_adresse,
-    civilite: (client.civilite === 'Monsieur' || client.civilite === 'Madame' ? client.civilite : '') as '' | 'Monsieur' | 'Madame',
-    couple: !!client.couple,
-    c2_civilite: (j?.civilite === 'Monsieur' || j?.civilite === 'Madame' ? j.civilite : '') as '' | 'Monsieur' | 'Madame',
-    c2_prenom: j?.prenom || '', c2_nom: j?.nom || '', c2_email: j?.email || '', c2_tel: j?.telephone || '',
     /* D'où vient le contact (V3.23, outils/sql/source-contact.sql). */
     source: (client.source || '') as string, source_detail: (client.source_detail || '') as string,
   };
@@ -2343,13 +2338,18 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
 
 
   async function saveContact() {
+    /* V3.236 : une personne 2 sans nom, une adresse du dossier incomplète. */
+    const pb = erreurIdentites(cf.ident);
+    if (pb) { alert(pb); return; }
     setSaving(true);
+    const id = cf.ident;
+    const col = colonnesDe(id, client.conjoint);
     // Détecter les vrais changements avant de logger
-    const newEmails = nettoyer(cf.emails, 'mail');
-    const newTels = nettoyer(cf.tels, 'tel');
+    const newEmails = col.emails;
+    const newTels = col.telephones;
     const changes: string[] = [];
-    if ((client.prenom||'') !== cf.prenom) changes.push(`Prénom : "${client.prenom||'—'}" → "${cf.prenom||'—'}"`);
-    if ((client.nom||'') !== cf.nom) changes.push(`Nom : "${client.nom||'—'}" → "${cf.nom||'—'}"`);
+    if ((client.prenom||'') !== id.prenom) changes.push(`Prénom : "${client.prenom||'—'}" → "${id.prenom||'—'}"`);
+    if ((client.nom||'') !== id.nom) changes.push(`Nom : "${client.nom||'—'}" → "${id.nom||'—'}"`);
     if ((client.adresse||'') !== (cf.adresse||'')) changes.push(`Adresse mise à jour`);
     if (JSON.stringify(nettoyer(client.emails || [], 'mail')) !== JSON.stringify(newEmails)) changes.push(newEmails.length > 1 ? `E-mails : ${newEmails.join(', ')}` : `E-mail : ${newEmails[0] || '—'}`);
     if (JSON.stringify(nettoyer(client.telephones || [], 'tel')) !== JSON.stringify(newTels)) changes.push(newTels.length > 1 ? `Téléphones : ${newTels.join(', ')}` : `Téléphone : ${newTels[0] || '—'}`);
@@ -2359,22 +2359,16 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     const typesRevente = cf.bien_actuel_a_vendre && 'types' in client && estAcheteur(client) ? typesAvecRevente(typesDe(client)) : null;
     if (((client as any).statut_occupation||'') !== occupation) changes.push(`Situation actuelle modifiée`);
     if (typesRevente) changes.push('Classé aussi Propriétaire (revente possible de son local actuel)');
-    /* Une personne ou un couple : écrit seulement si la colonne existe (SQL
-       « signature-plusieurs » lancé) ou si Alexandre vient de choisir. */
-    const jAvant = conjointDe(client.conjoint);
-    const conjoint = cf.couple ? {
-      ...(jAvant || {}), civilite: cf.c2_civilite, prenom: cf.c2_prenom.trim(), nom: cf.c2_nom.trim(),
-      email: cf.c2_email.trim().toLowerCase(), telephone: cf.c2_tel.trim(),
-    } : null;
-    const foyer = 'couple' in client || cf.couple || cf.civilite
-      ? { civilite: cf.civilite || null, couple: cf.couple, conjoint }
+    /* La personne 2 (et si elle signe), écrite seulement si la colonne existe
+       (SQL « signature-plusieurs » lancé) ou si elle vient d'être posée. */
+    const foyer = 'couple' in client || col.couple || col.civilite || col.conjoint
+      ? { civilite: col.civilite, couple: col.couple, conjoint: col.conjoint }
       : {};
-    if (!!client.couple !== cf.couple) changes.push(cf.couple ? `Fiche passée à deux personnes (avec ${`${cf.c2_prenom} ${cf.c2_nom}`.trim() || 'une 2e personne'})` : 'Fiche repassée à une seule personne');
-    else if (cf.couple && JSON.stringify(jAvant || {}) !== JSON.stringify(conjointDe(conjoint) || {})) changes.push(`Personne 2 mise à jour`);
+    changes.push(...changementsIdentites(client, id));
 
     const { data, error: eContact } = await supabase.from('clients').update({
       ...foyer,
-      prenom: cf.prenom, nom: cf.nom, adresse: cf.adresse||null, emails: newEmails, telephones: newTels,
+      prenom: id.prenom, nom: id.nom, adresse: cf.adresse||null, emails: newEmails, telephones: newTels,
       statut_occupation: occupation||null,
       ...(typesRevente ? { types: typesRevente } : {}),
       bien_actuel_a_vendre: cf.bien_actuel_a_vendre,
@@ -2389,9 +2383,22 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
       alert('Le contact n’a pas pu être enregistré.\n\n' + eContact.message + (/couple|civilite|conjoint/.test(eContact.message) ? '\n\nLance d’abord le fichier SQL « signature-plusieurs.sql » dans Supabase.' : ''));
       return;
     }
+    /* V3.236 : les autres adresses du dossier, à part : avant le SQL
+       « adresses-dossier », la colonne n'existe pas et le reste doit passer. */
+    const dAvant = adressesDossierDe((client as unknown as { adresses_dossier?: unknown }).adresses_dossier);
+    const dApres = dossierDe(id);
+    let dossierOk = true;
+    if (JSON.stringify(dAvant) !== JSON.stringify(dApres)) {
+      const { error: eD } = await supabase.from('clients').update({ adresses_dossier: dApres }).eq('id', client.id);
+      if (eD) {
+        dossierOk = false;
+        alert(colonneDossierAbsente(eD.message) ? MESSAGE_SQL_DOSSIER : `Les autres adresses du dossier n’ont pas été enregistrées.\n\n${eD.message}`);
+      }
+    }
     if (data) {
-      setClient(data as Client);
-      if (changes.length) await addJournal(client.id, 'contact', '✏️ Contact modifié', changes.join('\n'));
+      setClient({ ...(data as Client), ...(dossierOk ? { adresses_dossier: dApres } : {}) } as Client);
+      const lignes = dossierOk ? changes : changes.filter(l => !l.startsWith('Autres adresses du dossier'));
+      if (lignes.length) await addJournal(client.id, 'contact', '✏️ Contact modifié', lignes.join('\n'));
     }
     /* La source s'écrit à part, seulement si elle a changé : avant le SQL
        « source-contact », la colonne n'existe pas et le reste doit passer. */
@@ -2400,7 +2407,8 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
       const src = { source: cf.source || null, source_detail: cf.source ? (cf.source_detail.trim() || null) : null };
       const { error: eSrc } = await supabase.from('clients').update(src).eq('id', client.id);
       if (eSrc) { setSaving(false); alert(colonneSourceAbsente(eSrc.message) ? MESSAGE_SQL_SOURCE : `La source n’a pas été enregistrée.\n\n${eSrc.message}`); return; }
-      setClient(c0 => ({ ...(data || c0), ...src } as Client));
+      /* c0 : la fiche déjà à jour (adresses du dossier comprises, V3.236). */
+      setClient(c0 => ({ ...c0, ...src } as Client));
     }
     setSaving(false); setShowContact(false);
   }
@@ -4195,18 +4203,21 @@ ${signatureMail()}`,
         const dossierClos = st === 'bien_trouve' || st === 'perdu';
         const teinte = st === 'actif' ? '#34d399' : st === 'prospect' ? '#a78bfa' : st === 'suspendu' || st === 'offre_ecrite' ? '#fbbf24' : st === 'bien_trouve' ? '#60a5fa' : '#f87171';
         void dossierClos;
-        /* À qui est chaque numéro : seulement dans un couple. « Madame » et
-           « Monsieur » quand les civilités diffèrent, sinon le prénom. */
-        const j2 = client.couple ? conjointDe(client.conjoint) : null;
+        /* À qui est chaque numéro : seulement s'il y a une personne 2 (V3.236 :
+           même si elle ne signe pas). « Madame » et « Monsieur » quand les
+           civilités diffèrent, sinon le prénom. */
+        const j2 = personne2De(client);
         const civ1 = (client as unknown as { civilite?: string | null }).civilite || '';
         const civ2 = j2?.civilite || '';
         const qui1 = j2 ? (civ1 && civ2 && civ1 !== civ2 ? civ1 : client.prenom || civ1 || 'Personne 1') : undefined;
         const qui2 = j2 ? (civ1 && civ2 && civ1 !== civ2 ? civ2 : j2.prenom || civ2 || 'Personne 2') : undefined;
         const coords: Coord[] = [
           ...(client.telephones || []).filter(Boolean).map(t => ({ k: 'tel' as const, val: t, qui: qui1 })),
-          ...(j2?.telephone ? [{ k: 'tel' as const, val: j2.telephone, qui: qui2 }] : []),
+          ...(j2?.telephones || []).map(t => ({ k: 'tel' as const, val: t, qui: qui2 })),
           ...(client.emails || []).filter(Boolean).map(e => ({ k: 'mail' as const, val: e, qui: qui1 })),
-          ...(j2?.email ? [{ k: 'mail' as const, val: j2.email, qui: qui2 }] : []),
+          ...(j2?.emails || []).map(e => ({ k: 'mail' as const, val: e, qui: qui2 })),
+          /* V3.236 : les autres adresses du dossier, sous leur étiquette. */
+          ...adressesDossierDe((client as unknown as { adresses_dossier?: unknown }).adresses_dossier).map(a => ({ k: 'mail' as const, val: a.email, qui: a.etiquette })),
           ...(client.adresse ? [{ k: 'adresse' as const, val: client.adresse }] : []),
         ];
         const aCarte = !!(client.adresse || (client as unknown as { bien_actuel_adresse?: string | null }).bien_actuel_adresse);
@@ -5881,59 +5892,9 @@ ${signatureMail()}`,
           <div className={styles.modal}>
             <div className={styles.modalHeader}><h2 className={styles.modalTitle}>📞 Modifier le contact</h2><button className={styles.modalClose} onClick={() => setShowContact(false)}>✕</button></div>
             <div className={styles.modalBody}>
-              {/* Une personne ou un couple : la personne 2 signe le mandat avec son propre lien. */}
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-                {([['Monsieur', 'Monsieur'], ['Madame', 'Madame'], ['couple', 'Deux personnes']] as const).map(([k, lib]) => {
-                  const on = k === 'couple' ? cf.couple : !cf.couple && cf.civilite === k;
-                  return (
-                    <button type="button" key={k} onClick={() => setCf(f => (k === 'couple' ? { ...f, couple: true } : { ...f, couple: false, civilite: k }))}
-                      style={{ padding: '7px 14px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', border: `1.5px solid ${on ? 'var(--emilio)' : '#e2e8f0'}`, background: on ? '#f8fafc' : '#fff', color: on ? 'var(--emilio)' : '#64748b' }}>
-                      {lib}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* Un couple : chaque personne dans son cadre, avec son e-mail et
-                  son téléphone. La personne 1 reçoit les mails et a l'espace. */}
-              {cf.couple ? (
-                <div style={{ border: '1px solid #eaeae9', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8, margin: '6px 0 0' }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: '#d36a1a' }}>Personne 1 · contact principal</div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {(['Monsieur', 'Madame'] as const).map(c => (
-                      <button type="button" key={c} onClick={() => setCf(f => ({ ...f, civilite: c }))}
-                        style={{ padding: '5px 11px', borderRadius: 9, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', border: `1.5px solid ${cf.civilite === c ? 'var(--emilio)' : '#e2e8f0'}`, background: cf.civilite === c ? '#f8fafc' : '#fff', color: cf.civilite === c ? 'var(--emilio)' : '#8593a8' }}>{c}</button>
-                    ))}
-                  </div>
-                  <div className={styles.formRow}><div><label className={styles.lbl}>Prénom</label><input className={styles.inp} value={cf.prenom} onChange={e => setCf(f => ({ ...f, prenom: e.target.value }))} /></div><div><label className={styles.lbl}>Nom</label><input className={styles.inp} value={cf.nom} onChange={e => setCf(f => ({ ...f, nom: e.target.value }))} /></div></div>
-                  <div className={styles.formRow}>
-                    <ListeCoordonnees genre="mail" etiquette="E-mails" valeurs={cf.emails} onChange={v => setCf(f => ({ ...f, emails: v }))} classeEtiquette={styles.lbl} classeChamp={styles.inp} />
-                    <ListeCoordonnees genre="tel" etiquette="Téléphones" valeurs={cf.tels} onChange={v => setCf(f => ({ ...f, tels: v }))} classeEtiquette={styles.lbl} classeChamp={styles.inp} />
-                  </div>
-                </div>
-              ) : (
-                <div className={styles.formRow}><div><label className={styles.lbl}>Prénom</label><input className={styles.inp} value={cf.prenom} onChange={e => setCf(f => ({ ...f, prenom: e.target.value }))} /></div><div><label className={styles.lbl}>Nom</label><input className={styles.inp} value={cf.nom} onChange={e => setCf(f => ({ ...f, nom: e.target.value }))} /></div></div>
-              )}
-              {cf.couple && (
-                <div style={{ border: '1px solid #eaeae9', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8, margin: '6px 0' }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: '#d36a1a' }}>Personne 2</div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {(['Monsieur', 'Madame'] as const).map(c => (
-                      <button type="button" key={c} onClick={() => setCf(f => ({ ...f, c2_civilite: c }))}
-                        style={{ padding: '5px 11px', borderRadius: 9, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', border: `1.5px solid ${cf.c2_civilite === c ? 'var(--emilio)' : '#e2e8f0'}`, background: cf.c2_civilite === c ? '#f8fafc' : '#fff', color: cf.c2_civilite === c ? 'var(--emilio)' : '#8593a8' }}>{c}</button>
-                    ))}
-                  </div>
-                  <div className={styles.formRow}><div><label className={styles.lbl}>Prénom</label><input className={styles.inp} value={cf.c2_prenom} onChange={e => setCf(f => ({ ...f, c2_prenom: e.target.value }))} /></div><div><label className={styles.lbl}>Nom</label><input className={styles.inp} value={cf.c2_nom} onChange={e => setCf(f => ({ ...f, c2_nom: e.target.value }))} /></div></div>
-                  <div className={styles.formRow}><div><label className={styles.lbl}>Email</label><input className={styles.inp} type="email" value={cf.c2_email} onChange={e => setCf(f => ({ ...f, c2_email: e.target.value }))} /></div><div><label className={styles.lbl}>Téléphone</label><input className={styles.inp} value={cf.c2_tel} onChange={e => setCf(f => ({ ...f, c2_tel: e.target.value }))}  /></div></div>
-                </div>
-              )}
+              {/* V3.236 : une case par personne, et les autres adresses du dossier. */}
+              <IdentitesContact v={cf.ident} onChange={x => setCf(f => ({ ...f, ident: x }))} />
               <ChampAdresseAuto etiquette="Adresse" valeur={cf.adresse} onChange={v => setCf(f => ({ ...f, adresse: v }))} />
-              {/* Tous ses e-mails et tous ses numéros (V3.89) : le premier est le principal. */}
-              {!cf.couple && (
-                <div className={styles.formRow}>
-                  <ListeCoordonnees genre="mail" etiquette="E-mails" valeurs={cf.emails} onChange={v => setCf(f => ({ ...f, emails: v }))} classeEtiquette={styles.lbl} classeChamp={styles.inp} />
-                  <ListeCoordonnees genre="tel" etiquette="Téléphones" valeurs={cf.tels} onChange={v => setCf(f => ({ ...f, tels: v }))} classeEtiquette={styles.lbl} classeChamp={styles.inp} />
-                </div>
-              )}
 
               {/* Situation actuelle (propriétaire / locataire) */}
               <div style={{ borderTop: '1px solid #f1f5f9', marginTop: 8, paddingTop: 12 }}>
