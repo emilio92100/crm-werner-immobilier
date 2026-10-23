@@ -8,6 +8,8 @@ import { lienBienPublic } from '@/lib/jeton';
 import { QUARTIERS, searchCommune, type CpSuggestion } from '@/lib/secteurs';
 import { communeDeVille } from '@/lib/quartiers';
 import ArretPicker, { PastilleArret } from '@/components/shared/ArretPicker';
+import Curseur from '@/components/shared/Curseur';
+import GardeHauteur from '@/components/shared/GardeHauteur';
 import type { Arret } from '@/lib/arrets';
 import SignatureMandat, { AvantVisiteDocument, CarteMonMandat, CartePret, CarteAttente, CarteDocuments, Renonciation, mandatARenoncer, CSS_MANDAT, type MandatEspace } from './SignatureMandat';
 import { ajouterMois, jourParis, DUREE, RETRACTATION_JOURS } from '@/lib/mandat';
@@ -4848,6 +4850,25 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aChoisir = [], 
      qui n'a pas abouti, d'après son avis ou le compte rendu du conseiller. */
   type Onglet = 'tout' | 'offres' | 'avis' | 'encours' | 'non';
   const [onglet, setOnglet] = useState<Onglet>('tout');
+  /* V3.244 — Alexandre (24 octobre 2026) : « quand on switch entre tout,
+     votre avis, en cours, pas pour moi […] c'est trop brut, il faut qu'il y
+     ait une petite fluidité sympa ». La case choisie glisse jusqu'à l'étape
+     choisie (Curseur) ; ce qui est affiché s'efface en un instant, puis les
+     cartes de l'étape montent l'une après l'autre ; la page ne remonte pas
+     (GardeHauteur). `vu` : l'étape montrée, qui suit `onglet` après la
+     sortie. Sans animation si le téléphone les a coupées. */
+  const [vu, setVu] = useState<Onglet>('tout');
+  const [sortie, setSortie] = useState(false);
+  const minuterie = useRef<number | null>(null);
+  useEffect(() => () => { if (minuterie.current) window.clearTimeout(minuterie.current); }, []);
+  const choisir = (o: Onglet) => {
+    setOnglet(o);
+    if (minuterie.current) window.clearTimeout(minuterie.current);
+    const doux = !(typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+    if (!doux || o === vu) { minuterie.current = null; setVu(o); setSortie(false); return; }
+    setSortie(true);
+    minuterie.current = window.setTimeout(() => { minuterie.current = null; setVu(o); setSortie(false); }, 160);
+  };
   type Rang = { k: Exclude<Onglet, 'tout'>; l: string; l2: L; ton: string; ico: string; sous: (n: number) => string; note: string; vide: string };
   const RANGS: Rang[] = [
     { k: 'offres', l: 'Vos offres', l2: offres, ton: 'vert', ico: 'euro', sous: n => (n > 1 ? 'offres en cours' : 'offre en cours'),
@@ -4861,6 +4882,7 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aChoisir = [], 
   ];
   const rangs = RANGS.filter(r => r.k !== 'offres' || r.l2.length > 0);
   const actif = rangs.find(r => r.k === onglet) || null;
+  const montre = rangs.find(r => r.k === vu) || null;
   const carte = ({ b, v }: { b: Bien; v: VisiteE }) => (
     <CarteVisite key={v.id} b={b} v={v} onOuvrir={() => onOuvrir(b)} onCompteRendu={() => onOuvrir(b, { versCr: true })} onRepondre={onRepondre}
       onFaireOffre={onFaireOffre?.(b)} actionsOffre={actionsOffre?.(b)} />
@@ -4872,13 +4894,14 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aChoisir = [], 
   const refAVenir = useRef<HTMLDivElement>(null);
   const refDeja = useRef<HTMLDivElement>(null);
   const viser = (ou: 'avenir' | 'deja', o?: Onglet) => {
-    if (o) setOnglet(o);
+    if (o) choisir(o);
     const groupe = ou === 'avenir' ? refAVenir.current : refDeja.current;
     if (!groupe) return;
     const doux = !(typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
     groupe.scrollIntoView({ behavior: doux ? 'smooth' : 'auto', block: 'start' });
     if (!doux) return;
-    /* Après le rendu de l'étape choisie : sa première carte, sinon le tableau des étapes. */
+    /* Après le rendu de l'étape choisie (sa sortie comprise) : sa première
+       carte, sinon le tableau des étapes. */
     window.setTimeout(() => {
       const cible = ou === 'avenir' ? groupe.querySelector('.vv-liste > *')
         : o && o !== 'tout' ? groupe.querySelector('.vv-carte') || groupe.querySelector('.vv-cats')
@@ -4888,8 +4911,8 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aChoisir = [], 
         { boxShadow: `0 0 0 0 rgba(${c},0)`, transform: 'scale(1)' },
         { boxShadow: `0 0 0 7px rgba(${c},.3)`, transform: 'scale(1.012)', offset: 0.35 },
         { boxShadow: `0 0 0 16px rgba(${c},0)`, transform: 'scale(1)' },
-      ], { duration: 1050, iterations: 2, delay: 380, easing: 'ease-out' });
-    }, 40);
+      ], { duration: 1050, iterations: 2, delay: 200, easing: 'ease-out' });
+    }, 220);
   };
 
   return (
@@ -4948,42 +4971,45 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aChoisir = [], 
           <div className="sep"><span>{`Déjà visités · ${deja}`}</span><i /></div>
           {/* V3.241 : les étapes en cases, toujours visibles ; un appui en montre une. */}
           <div className="vv-cats" role="tablist" aria-label="Vos locaux visités, par étape" data-n={rangs.length + 1}>
-            <button type="button" role="tab" aria-selected={!actif} className="vv-cat" data-ton="encre" onClick={() => setOnglet('tout')}>
+            <Curseur cle={onglet} />
+            <button type="button" role="tab" aria-selected={!actif} className="vv-cat" data-ton="encre" onClick={() => choisir('tout')}>
               <span className="vv-cat-h"><span className="vv-cat-i"><Ico n="calendrier" t={15} /></span><b className="tab">{deja}</b></span>
               <span className="vv-cat-l">Tout</span>
               <small>{deja > 1 ? 'locaux visités' : 'local visité'}</small>
             </button>
             {rangs.map(r => (
               <button key={r.k} type="button" role="tab" aria-selected={actif?.k === r.k} className="vv-cat" data-ton={r.ton}
-                data-vide={r.l2.length ? undefined : ''} onClick={() => setOnglet(r.k)}>
+                data-vide={r.l2.length ? undefined : ''} onClick={() => choisir(r.k)}>
                 <span className="vv-cat-h"><span className="vv-cat-i"><Ico n={r.ico} t={15} /></span><b className="tab">{r.l2.length}</b></span>
                 <span className="vv-cat-l">{r.l}</span>
                 <small>{r.sous(r.l2.length)}</small>
               </button>
             ))}
           </div>
-          {actif ? (
-            <div className="vv-rang" data-ton={actif.ton} key={actif.k}>
-              {actif.l2.length ? (
-                <>
-                  <p className="vv-note">{actif.note}</p>
-                  <div className="vv-grille">{actif.l2.map(carte)}</div>
-                </>
-              ) : (
-                <div className="vv-vide">
-                  <span className="vv-cat-i" aria-hidden="true"><Ico n={actif.ico} t={18} /></span>
-                  <b>{`${actif.l} : aucun local pour l’instant`}</b>
-                  <span>{actif.vide}</span>
-                </div>
-              )}
-            </div>
-          ) : rangs.filter(r => r.l2.length > 0).map(r => (
-            <section key={r.k} className="vv-rang" data-ton={r.ton}>
-              <div className="vv-rang-t"><i aria-hidden="true" /><span>{r.l}</span><b className="tab">{r.l2.length}</b></div>
-              <p className="vv-note">{r.note}</p>
-              <div className="vv-grille">{r.l2.map(carte)}</div>
-            </section>
-          ))}
+          <GardeHauteur avecPrecedent className={`vv-contenu${sortie ? ' vv-sort' : ''}`}>
+            {montre ? (
+              <div className="vv-rang" data-ton={montre.ton} key={montre.k}>
+                {montre.l2.length ? (
+                  <>
+                    <p className="vv-note">{montre.note}</p>
+                    <div className="vv-grille">{montre.l2.map(carte)}</div>
+                  </>
+                ) : (
+                  <div className="vv-vide">
+                    <span className="vv-cat-i" aria-hidden="true"><Ico n={montre.ico} t={18} /></span>
+                    <b>{`${montre.l} : aucun local pour l’instant`}</b>
+                    <span>{montre.vide}</span>
+                  </div>
+                )}
+              </div>
+            ) : rangs.filter(r => r.l2.length > 0).map((r, i) => (
+              <section key={r.k} className="vv-rang" data-ton={r.ton} style={{ '--d': `${Math.min(i, 4) * 0.09}s` } as React.CSSProperties}>
+                <div className="vv-rang-t"><i aria-hidden="true" /><span>{r.l}</span><b className="tab">{r.l2.length}</b></div>
+                <p className="vv-note">{r.note}</p>
+                <div className="vv-grille">{r.l2.map(carte)}</div>
+              </section>
+            ))}
+          </GardeHauteur>
         </div>
       )}
     </Vue>
@@ -8837,13 +8863,13 @@ button.vv-pil:hover{border-color:currentColor; box-shadow:0 8px 18px -12px curre
 .vv-sep-prune span{color:#6f60a2}
 .vv-groupe{scroll-margin-top:72px}
 /* V3.241 : les étapes des biens déjà visités, en cases, toujours visibles. */
-.vv-cats{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0 0 16px; border-radius:18px}
-.vv-cats[data-n="5"] .vv-cat:first-child{grid-column:1 / -1}
+.vv-cats{position:relative; isolation:isolate; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0 0 16px; border-radius:18px}
+.vv-cats[data-n="5"] .vv-cat:first-of-type{grid-column:1 / -1}
 @media(min-width:760px){.vv-cats{grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr)}
-  .vv-cats[data-n="5"] .vv-cat:first-child{grid-column:auto}}
+  .vv-cats[data-n="5"] .vv-cat:first-of-type{grid-column:auto}}
 .vv-cat{position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:2px; min-width:0; padding:12px 13px 11px;
   border-radius:16px; border:1px solid var(--trait); background:var(--carte); box-shadow:var(--ombre); font:inherit; text-align:left;
-  color:var(--encre); cursor:pointer; transition:background .25s, border-color .25s, color .25s, transform .2s}
+  color:var(--encre); cursor:pointer; transition:background .25s, border-color .25s, color .25s, transform .2s; -webkit-tap-highlight-color:transparent}
 .vv-cat:hover{border-color:var(--trait-fort)}
 .vv-cat-h{display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:5px}
 .vv-cat-h b{font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; font-weight:800; line-height:1}
@@ -8862,8 +8888,31 @@ button.vv-pil:hover{border-color:currentColor; box-shadow:0 8px 18px -12px curre
 .vv-cat[aria-selected="true"] small{color:rgba(255,255,255,.72)}
 .vv-cat[aria-selected="true"] .vv-cat-i{background:rgba(255,255,255,.14); color:#fff; filter:none; opacity:1}
 .vv-cat[aria-selected="true"] .vv-cat-h b{color:#fff}
+/* V3.244 — La case choisie GLISSE d'une étape à l'autre (Curseur) : elle
+   passe par-dessus le fond blanc des cases, sous leur texte. La case choisie
+   garde son fond blanc sous la pastille (au lieu du fond transparent de
+   globals.css) ; le texte passe au blanc en douceur. */
+.vv-cats > .emi-curseur{z-index:1}
+.vv-cats[data-glisse] > .vv-cat{z-index:auto}
+.vv-cats[data-glisse] > .vv-cat > *{position:relative; z-index:2}
+.vv-cats[data-glisse="pret"] > .vv-cat[aria-selected="true"]{background:var(--carte) !important; border-color:var(--trait) !important;
+  box-shadow:var(--ombre) !important}
+.vv-cat-h b{transition:color .3s ease}
+.vv-cat .vv-cat-i{transition:background-color .3s ease, color .3s ease, filter .3s ease, opacity .3s ease}
+/* Ce qui est affiché s'efface d'un coup (la sortie), puis la nouvelle étape
+   arrive : son titre, sa note, et ses cartes l'une après l'autre. */
+.vv-contenu.vv-sort{opacity:0; transform:translateY(-6px); transition:opacity .16s ease, transform .16s ease}
+.vv-rang > .vv-rang-t, .vv-rang > .vv-note, .vv-rang > .vv-vide{animation:vvEntre .42s cubic-bezier(.16,1,.3,1) backwards;
+  animation-delay:var(--d, 0s)}
+.vv-grille > *{animation:vvMonte .6s cubic-bezier(.16,1,.3,1) backwards; animation-delay:calc(var(--d, 0s) + .05s)}
+.vv-grille > :nth-child(2){animation-delay:calc(var(--d, 0s) + .11s)}
+.vv-grille > :nth-child(3){animation-delay:calc(var(--d, 0s) + .17s)}
+.vv-grille > :nth-child(4){animation-delay:calc(var(--d, 0s) + .23s)}
+.vv-grille > :nth-child(5){animation-delay:calc(var(--d, 0s) + .29s)}
+.vv-grille > :nth-child(n+6){animation-delay:calc(var(--d, 0s) + .34s)}
+@keyframes vvMonte{from{opacity:0; transform:translateY(16px) scale(.98)}to{opacity:1; transform:none}}
+@media(prefers-reduced-motion:reduce){.vv-rang > *, .vv-grille > *{animation:none} .vv-contenu.vv-sort{transition:none}}
 /* « Tout » : chaque étape sous son titre ; une étape : sa note, ses cartes. */
-.vv-rang{animation:vvEntre .35s cubic-bezier(.16,1,.3,1) both}
 .vv-rang + .vv-rang{margin-top:24px}
 .vv-rang-t{display:flex; align-items:center; gap:8px; margin:0 2px 10px; font-size:12px; font-weight:800; letter-spacing:1px;
   text-transform:uppercase; color:var(--encre2)}
@@ -8885,10 +8934,9 @@ button.vv-pil:hover{border-color:currentColor; box-shadow:0 8px 18px -12px curre
 .vv-vide .vv-cat-i{width:40px; height:40px; border-radius:13px; margin-bottom:4px}
 .vv-vide b{font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:800; color:var(--encre)}
 .vv-vide > span:last-child{max-width:420px; font-size:13px; line-height:1.55; color:var(--plume)}
-@media(prefers-reduced-motion:reduce){.vv-rang, .vv-pil-f{animation:none}}
-.vv-grille{display:grid; gap:14px; align-items:start; animation:vvEntre .35s cubic-bezier(.16,1,.3,1) both}
+@media(prefers-reduced-motion:reduce){.vv-pil-f{animation:none}}
+.vv-grille{display:grid; gap:14px; align-items:start}
 @keyframes vvEntre{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
-@media(prefers-reduced-motion:reduce){.vv-grille{animation:none}}
 @media(min-width:760px){.vv-grille{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(min-width:1100px){.vv-grille{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .vv-groupe .sep{margin-top:22px}
