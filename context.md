@@ -602,6 +602,19 @@ gauche […] c'est pareil sur Werner ».
   brusque — la case anthracite glisse jusqu'à l'étape choisie (`Curseur`), ce qui était affiché
   s'efface, puis les cartes arrivent l'une après l'autre ; la page ne remonte pas (`GardeHauteur`).
 
+**24 octobre 2026, dans la nuit (V3.245, Werner seul)** — « une société », pas « une SCI ».
+- Le mandant d'une affaire peut être l'exploitant qui cède (SAS, SARL) comme le propriétaire des
+  murs (SCI, foncière) ; le demandeur, presque toujours une entreprise. Les mots hérités du
+  résidentiel disaient « SCI » partout : ils disent maintenant « la société ». Dossier d'une affaire
+  (mandant en société) : « Kbis de la société (moins de 3 mois) », « Statuts de la société »,
+  « Pouvoir du signataire (PV d'assemblée ou délégation) » — et plus « Kbis et statuts de la
+  société » en double ; exemple « Kbis de la société ».
+- **La forme n'est plus « SCI » d'office** : fiche d'un contact › Société (aucune pastille
+  choisie) et, dans l'espace, la signature du mandat « Via une société » (« Choisir… » ; sans
+  choix, « Sa forme » est demandée). Les exemples : « SAS Le Comptoir », « SARL Le Comptoir » ;
+  « représente une société (SAS, SARL, SCI…) ? », « Pour une société (SAS, SARL…) ? ».
+- La clé interne reste `sci` (`qui: 'sci'`) : rien ne change en base.
+
 ---
 
 ## 6. Ce qui reste à faire
