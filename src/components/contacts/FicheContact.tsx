@@ -643,7 +643,7 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
                     {!estPro(types) || aUnBien(types) ? (
                       <div className={c.aussi}>
                         <span className={c.blocIc} style={{ width: 36, height: 36 }}><Ic n="cible" t={17} /></span>
-                        <div><b>Il cherche aussi un local ?</b>Ouvre-lui une recherche : il passe sur la fiche de demandeur, avec son espace et la veille.</div>
+                        <div><b>Il cherche aussi un local ?</b>Ouvre-lui une recherche : il passe sur la fiche de demandeur, « En recherche ». Passé « Accompagné », il aura son espace et la veille.</div>
                         <button type="button" className={`${c.btn} ${c.btnOr}`} disabled={occupe} onClick={ouvrirRecherche}>Ouvrir une recherche</button>
                       </div>
                     ) : null}

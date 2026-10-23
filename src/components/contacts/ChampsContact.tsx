@@ -4,10 +4,10 @@ import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { verifie } from '@/lib/ecritures';
 import { euros } from '@/lib/mandat';
-import { nomFoyer } from '@/lib/foyer';
+import { nomFoyer, nomFoyerLignes } from '@/lib/foyer';
 import { demanderNouveauBien } from '@/lib/intentions';
 import {
-  ETAPES_EN_VENTE, FORMES_SOCIETE, METIERS, STATUTS_PRO, TYPES_CONTACT, aUnBien, colonneContactAbsente, ligneContact, typeDe, typesDe,
+  ETAPES_EN_VENTE, FORMES_SOCIETE, METIERS, STATUTS_PRO, TYPES_CONTACT, aUnBien, colonneContactAbsente, estAncienAcheteur, ligneContact, typeDe, typesDe,
   type InfosPro, type TypeContact,
 } from '@/lib/contacts';
 import { etapeDe, lirePhotos, specsBien, titreBien } from '@/lib/biens-vente';
@@ -53,7 +53,11 @@ export function ChoixTypes({ v, onChange }: { v: TypeContact[]; onChange: (x: Ty
 }
 
 /* ── Une pastille de type ── */
-export function Puce({ k }: { k: TypeContact }) {
+/* V3.240 (comme chez Emilio) : « Ancien demandeur », en gris, pour un
+   demandeur dont le dossier est clos (local trouvé avec moi, recherche
+   arrêtée). */
+export function Puce({ k, ancien }: { k: TypeContact; ancien?: boolean }) {
+  if (k === 'acheteur' && ancien) return <span className={c.puce} style={{ background: '#f4f4f5', color: '#71717a', borderColor: '#d4d4d833' }}><Ic n="archive" t={12} />Ancien demandeur</span>;
   const t = typeDe(k);
   return <span className={c.puce} style={{ background: t.fond, color: t.c, borderColor: `${t.c}33` }}><Ic n={t.ic} t={12} />{t.lib}</span>;
 }
@@ -392,6 +396,7 @@ type ContactListe = {
   id: string; prenom: string; nom: string; civilite?: string | null; reference?: string | null; couple?: boolean | null; conjoint?: unknown;
   types?: unknown; pro?: unknown; adresse?: string | null; emails?: string[] | null; telephones?: string[] | null; archive?: boolean | null;
   type_bien?: string | null; nb_pieces_min?: number | null; surface_min?: number | null; budget_max?: number | null; secteurs?: string[] | null;
+  statut?: string | null;
 };
 /* Le montant en entier, jamais « 1,5 M€ » ni « 380 k€ » (V3.21). */
 const court = (n: number) => `${Math.round(n).toLocaleString('fr-FR')} €`;
@@ -446,6 +451,10 @@ export function LigneContact({ x, biens: tousBiens, derniere, onOuvrir, onBien, 
   const types = typesDe(x);
   const t = typeDe(types.find(k => k !== 'acheteur') || types[0]);
   const principal = types.includes('acheteur') ? typeDe('acheteur') : t;
+  /* V3.240 : un ancien demandeur, son dossier est clos : on dit comment, et
+     son personnage prend la couleur de son autre type, ou le gris. */
+  const ancien = estAncienAcheteur(x);
+  const teinteAv = ancien ? (t.k !== 'acheteur' ? t : { fond: '#f4f4f5', c: '#71717a' }) : principal;
   const tel = x.telephones?.[0], mail = x.emails?.[0];
   const pro = ligneContact(x);
   const recherche = types.includes('acheteur') ? resumeRecherche(x) : '';
@@ -457,17 +466,22 @@ export function LigneContact({ x, biens: tousBiens, derniere, onOuvrir, onBien, 
         {/* Le même petit personnage que dans « Acheteurs » (V3.31), à la couleur
             de son type ; une mallette pour un professionnel. Avant : ses initiales. */}
         {selection && <span className={c.lCase}><CaseLigne on={selection.on} onBasculer={selection.onBasculer} titre={selection.on ? `Décocher ${nom}` : `Cocher ${nom}`} /></span>}
-        <AvatarContact c={x} teinte={{ bg: principal.fond, fg: principal.c, trait: `${principal.c}33` }} className={c.lAv} libre />
+        <AvatarContact c={x} teinte={{ bg: teinteAv.fond, fg: teinteAv.c, trait: `${teinteAv.c}33` }} className={c.lAv} libre />
         <span className={c.lNom}>
-          <b title={nom}>{nom}</b>
-          <span className={c.puces}>{types.map(k => <Puce key={k} k={k} />)}</span>
+          {/* V3.240 : deux noms qui ne se suivent pas passent sur deux lignes. */}
+          {(() => {
+            const [l1, l2] = nomFoyerLignes(x);
+            return l2 ? <b title={nom} className={c.lNom2}><span>{l1}</span><span>{l2}</span></b> : <b title={nom}>{nom}</b>;
+          })()}
+          <span className={c.puces}>{types.map(k => <Puce key={k} k={k} ancien={ancien} />)}</span>
         </span>
       </span>
       <span className={c.lSuivi}>
         {types.includes('acheteur') && (
           <span className={c.lInfo}>
-            <span className={c.lInfoIc} style={{ color: typeDe('acheteur').c }}><Ic n="cible" t={14} /></span>
-            {recherche ? <span className={c.lTxt}>{recherche}</span> : <span className={c.lAFaire}>Critères à remplir</span>}
+            <span className={c.lInfoIc} style={{ color: ancien ? '#a1a1aa' : typeDe('acheteur').c }}><Ic n={ancien ? 'archive' : 'cible'} t={14} /></span>
+            {ancien ? <span className={c.lTxt}>{[x.statut === 'bien_trouve' ? 'Local trouvé avec moi' : 'Recherche arrêtée', recherche].filter(Boolean).join(' · ')}</span>
+              : recherche ? <span className={c.lTxt}>{recherche}</span> : <span className={c.lAFaire}>Critères à remplir</span>}
           </span>
         )}
         {vend && biens.slice(0, 2).map(b => {
