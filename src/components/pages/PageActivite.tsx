@@ -86,7 +86,7 @@ export default function PageActivite() {
           <div className={styles.statCard}>
             <div style={{ fontSize: 28 }}>🟢</div>
             <div className={styles.statVal}>{stats.actifs}</div>
-            <div className={styles.statLabel}>Clients actifs</div>
+            <div className={styles.statLabel}>Demandeurs accompagnés</div>
           </div>
           <div className={styles.statCard}>
             <div style={{ fontSize: 28 }}>📅</div>
@@ -101,7 +101,7 @@ export default function PageActivite() {
           <div className={styles.statCard}>
             <div style={{ fontSize: 28 }}>✅</div>
             <div className={styles.statVal}>{stats.finalises}</div>
-            <div className={styles.statLabel}>Dossiers finalisés</div>
+            <div className={styles.statLabel}>Locaux trouvés avec moi</div>
           </div>
           <div className={styles.statCard} style={{ background: 'var(--emilio-fond)', borderColor: 'var(--emilio)' }}>
             <div style={{ fontSize: 28 }}>💰</div>

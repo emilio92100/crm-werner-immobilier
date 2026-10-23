@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import Cascade from '@/components/shared/Cascade';
 import Curseur from '@/components/shared/Curseur';
-import ParamPointAuto from './ParamPointAuto';
+import ParamPointAuto, { prechargerPointAuto } from './ParamPointAuto';
 import ParamAlertes from './ParamAlertes';
 import ParamAgence from './ParamAgence';
 import ParamSecurite from './ParamSecurite';
@@ -19,6 +19,12 @@ import { Carte, Enregistre, Etapes, Hero, Ico, Note, fr, styles as p } from './P
    pastille glisse : Curseur), et dans chaque rubrique une tête qui dit ce
    qu'elle règle, des cartes, des interrupteurs, « Comment ça marche ».
    Les pièces communes : ParamUI.tsx et Parametres.module.css.
+
+   V3.240 — Alexandre : « j'aime pas trop la présentation avec le menu à
+   gauche ». Les rubriques passent en onglets, à cheval sur la tête (la
+   pastille glisse toujours : Curseur). Et le point automatique se calcule
+   dès l'ouverture de la page (prechargerPointAuto) : quand on clique sur
+   son onglet, il est prêt.
 
    Agence, Point automatique, Alertes mail et Sécurité s'enregistrent seules
    (leur propre bouton, ou chaque clic). Mails et Relances passent par la
@@ -176,6 +182,9 @@ export default function PageParametres() {
   const [activeSection, setActiveSection] = useState('agence');
 
   useEffect(() => {
+    /* V3.240 : le point automatique se calcule tout de suite, pendant qu'on
+       regarde une autre rubrique (le résultat attend 60 secondes). */
+    prechargerPointAuto();
     supabase.from('parametres').select('cle, valeur').then(({ data }) => {
       const v: Params = {};
       (data || []).forEach((r: { cle: string; valeur: string | null }) => { v[r.cle] = r.valeur || ''; });
@@ -218,59 +227,58 @@ export default function PageParametres() {
 
   return (
     <div className={p.page}>
-      <div className={p.tete}>
-        <span className={p.teteIc}><Ico n="reglage" t={24} /></span>
-        <div className={p.teteTx}>
-          <h1>Paramètres</h1>
-          <p>{fr('Ton agence, tes mails, tes alertes et ton compte : tout se règle ici. Chaque rubrique dit ce qu’elle change.')}</p>
+      <div className={p.haut}>
+        <div className={p.tete}>
+          <span className={p.teteIc}><Ico n="reglage" t={24} /></span>
+          <div className={p.teteTx}>
+            <h1>Paramètres</h1>
+            <p>{fr('Ton agence, tes mails, tes alertes et ton compte : tout se règle ici. Chaque rubrique dit ce qu’elle change.')}</p>
+          </div>
         </div>
-      </div>
-
-      <div className={p.grille}>
-        {/* Le rail des rubriques : la pastille sombre glisse de l'une à l'autre (Curseur). */}
-        <nav className={p.rail} data-defile="" aria-label="Rubriques des paramètres">
+        {/* Les rubriques en onglets : la pastille sombre glisse de l'une à l'autre (Curseur). */}
+        <nav className={p.onglets} data-defile="" aria-label="Rubriques des paramètres">
           <Curseur cle={activeSection} />
           {SECTIONS.map(s => (
-            <button key={s.id} type="button" className={p.railBtn} onClick={() => setActiveSection(s.id)} aria-pressed={activeSection === s.id}>
-              <span className={p.railIc}><Ico n={s.ic} t={17} /></span>
-              <span className={p.railTx}><b>{s.titre}</b><small>{s.sous}</small></span>
-              {enAttente(s.id) && <i className={p.railPoint} title="Pas encore enregistré" />}
+            <button key={s.id} type="button" className={p.onglet} onClick={() => setActiveSection(s.id)} aria-pressed={activeSection === s.id} title={s.sous}>
+              <span className={p.ongletIc}><Ico n={s.ic} t={16} /></span>
+              {s.titre}
+              {enAttente(s.id) && <i className={p.ongletPoint} title="Pas encore enregistré" />}
             </button>
           ))}
         </nav>
+      </div>
 
-        {/* V3.152 : une autre rubrique arrive en cascade. */}
-        <div style={{ minWidth: 0 }}>
-          <Cascade cle={activeSection}>
-            {activeSection === 'agence' && <ParamAgence onEnregistree={v => { setParams(x => ({ ...x, [CLE_IDENTITE]: v })); setLues(x => ({ ...x, [CLE_IDENTITE]: v })); }} />}
-            {activeSection === 'emails' && <RubriqueMails params={params} set={set} saved={saved} onAgence={() => setActiveSection('agence')} />}
-            {activeSection === 'alertes' && <ParamAlertes />}
-            {activeSection === 'relances' && <RubriqueRelances params={params} set={set} saved={saved} />}
-            {activeSection === 'point' && <ParamPointAuto />}
-            {/* SÉCURITÉ — ton compte et ton mot de passe (ParamSecurite.tsx). */}
-            {activeSection === 'securite' && <ParamSecurite />}
-          </Cascade>
+      {/* V3.152 : une autre rubrique arrive en cascade. */}
+      <div style={{ minWidth: 0 }}>
+        <Cascade cle={activeSection}>
+          {activeSection === 'agence' && <ParamAgence onEnregistree={v => { setParams(x => ({ ...x, [CLE_IDENTITE]: v })); setLues(x => ({ ...x, [CLE_IDENTITE]: v })); }} />}
+          {activeSection === 'emails' && <RubriqueMails params={params} set={set} saved={saved} onAgence={() => setActiveSection('agence')} />}
+          {activeSection === 'alertes' && <ParamAlertes />}
+          {activeSection === 'relances' && <RubriqueRelances params={params} set={set} saved={saved} />}
+          {activeSection === 'point' && <ParamPointAuto />}
+          {/* SÉCURITÉ — ton compte et ton mot de passe (ParamSecurite.tsx). */}
+          {activeSection === 'securite' && <ParamSecurite />}
+        </Cascade>
 
-          {/* La barre d'enregistrement de Mails et Relances : elle monte dès qu'un champ change. */}
-          {CLES_RUBRIQUE[activeSection] && modifiees.size > 0 && (
-            <div style={{ marginTop: 14 }}>
-              {erreurSave && <div style={{ marginBottom: 10 }}><Note ton="erreur">{erreurSave}</Note></div>}
-              <div className={p.barre}>
-                <div className={p.barreTx}>
-                  <Ico n="enregistrer" t={18} />
-                  <div>
-                    <b>{`${modifiees.size} changement${modifiees.size > 1 ? 's' : ''} à enregistrer`}</b>
-                    <span>{nbAilleurs > 0 ? ` · dont ${nbAilleurs} dans ${activeSection === 'emails' ? 'Relances' : 'Mails et signature'}` : ''}</span>
-                  </div>
-                </div>
-                <div className={p.barreBoutons}>
-                  <button type="button" className={p.barreAnnuler} onClick={annuler} disabled={saving}>Annuler</button>
-                  <button type="button" className={p.barreOk} onClick={() => { void save(); }} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+        {/* La barre d'enregistrement de Mails et Relances : elle monte dès qu'un champ change. */}
+        {CLES_RUBRIQUE[activeSection] && modifiees.size > 0 && (
+          <div style={{ marginTop: 14 }}>
+            {erreurSave && <div style={{ marginBottom: 10 }}><Note ton="erreur">{erreurSave}</Note></div>}
+            <div className={p.barre}>
+              <div className={p.barreTx}>
+                <Ico n="enregistrer" t={18} />
+                <div>
+                  <b>{`${modifiees.size} changement${modifiees.size > 1 ? 's' : ''} à enregistrer`}</b>
+                  <span>{nbAilleurs > 0 ? ` · dont ${nbAilleurs} dans ${activeSection === 'emails' ? 'Relances' : 'Mails et signature'}` : ''}</span>
                 </div>
               </div>
+              <div className={p.barreBoutons}>
+                <button type="button" className={p.barreAnnuler} onClick={annuler} disabled={saving}>Annuler</button>
+                <button type="button" className={p.barreOk} onClick={() => { void save(); }} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
