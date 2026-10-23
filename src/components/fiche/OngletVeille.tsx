@@ -5,6 +5,7 @@ import { verifie } from '@/lib/ecritures';
 import {
   Chip, BoutonLien, CARTE, ModaleScore, StylesEmilio, NAVY, OR, BORD, verdictDe,
 } from './ParcoursBien';
+import { NATURES, loyerM2, montantAffaire } from '@/lib/affaires';
 import { telAgence } from '@/lib/rapprochement';
 import FenetreBien, { LigneListe, BoutonPied, Ressort, ChampPied, InfoPied } from './FenetreBien';
 import { champsChauffage } from '@/lib/chauffage';
@@ -140,6 +141,8 @@ export default function OngletVeille({ clientId, rechercheId, onChange, prenom, 
       score: p.score ?? null, points_forts: p.points_forts || null, points_attention: p.points_attention || null,
       // l'appréciation suit le bien en Sélection
       verdict: p.verdict ?? null, appreciation: p.appreciation ?? null,
+      // Werner : la nature, le loyer, le bail… suivent le bien (biens.pro), pour son espace
+      ...(p.pro && typeof p.pro === 'object' && Object.keys(p.pro).length ? { pro: p.pro } : {}),
     };
 
     /* `verdict` et `appreciation` sont récents : tant que la colonne n'existe
@@ -178,6 +181,16 @@ export default function OngletVeille({ clientId, rechercheId, onChange, prenom, 
   }
 
   const euros = (n: any) => (n == null ? '—' : Number(n).toLocaleString('fr-FR') + ' €');
+  /* Werner : un loyer s'écrit « HT HC / an », et son prix au m² à l'année ;
+     la nature de l'affaire vient du résumé déposé par la veille (`pro`). */
+  const dPro = (p: any) => ({ nature: p?.pro?.nature || null, parPoste: p?.pro?.parPoste ? 'oui' : null });
+  const prixVeille = (p: any) => (p.prix ? montantAffaire(Number(p.prix), dPro(p)) || euros(p.prix) : '—');
+  const sousPrixVeille = (p: any) => {
+    if (!p.prix || !p.surface) return null;
+    if (p?.pro?.nature === 'location') return loyerM2(Number(p.prix), Number(p.surface)) || null;
+    return `${Math.round(p.prix / Number(p.surface)).toLocaleString('fr-FR')} €/m²`;
+  };
+  const natureVeille = (p: any) => NATURES.find(n => n.v === p?.pro?.nature)?.l || '';
 
   const quandPassage = () => {
     if (!passage?.termine_le) return null;
@@ -255,8 +268,8 @@ export default function OngletVeille({ clientId, rechercheId, onChange, prenom, 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
         {props_.map(p => (
           <LigneListe key={p.id} b={p} accent={railDe(p)} attente={enTraitement === p.id}
-            onOuvrir={() => ouvrir(p.id)} prix={euros(p.prix)}
-            sousPrix={p.prix && p.surface ? `${Math.round(p.prix / Number(p.surface)).toLocaleString('fr-FR')} €/m²` : null} />
+            onOuvrir={() => ouvrir(p.id)} prix={prixVeille(p)}
+            sousPrix={sousPrixVeille(p)} />
         ))}
       </div>
 
@@ -266,7 +279,9 @@ export default function OngletVeille({ clientId, rechercheId, onChange, prenom, 
           recherche={recherche} message={message} onScore={p => setScoreOuvert(p)}
           prix={p => ({
             montant: p.prix,
-            dessous: p.prix && p.surface ? <span>{`${Math.round(p.prix / Number(p.surface)).toLocaleString('fr-FR')} €/m²`}</span> : null,
+            dessous: (p.pro?.nature === 'location' || sousPrixVeille(p))
+              ? <span>{[p.pro?.nature === 'location' ? 'HT HC par an' : '', sousPrixVeille(p) || ''].filter(Boolean).join(' · ')}</span>
+              : null,
           })}
           coinPhoto={p => (p.est_particulier
             ? <span style={{ background: '#10b981', color: 'white', borderRadius: 9, padding: '5px 11px', fontSize: 12, fontWeight: 800, boxShadow: '0 4px 12px -4px rgba(16,185,129,.9)' }}>Particulier</span>
@@ -281,7 +296,7 @@ export default function OngletVeille({ clientId, rechercheId, onChange, prenom, 
             </>
           ) : (
             <>
-              <InfoPied>{`${p.type_bien || 'Bien'}${p.code_postal ? ` · ${p.code_postal}` : ''}${p.portail ? ` · repéré sur ${p.portail}` : ''}`}</InfoPied>
+              <InfoPied>{`${p.type_bien || 'Local'}${natureVeille(p) ? ` · ${natureVeille(p)}` : ''}${p.code_postal ? ` · ${p.code_postal}` : ''}${p.portail ? ` · repéré sur ${p.portail}` : ''}`}</InfoPied>
               <Ressort />
               <BoutonPied ton="rouge" onClick={() => { setEcartEnCours(p.id); setMotif(''); }} disabled={!!enTraitement}>Écarter</BoutonPied>
               <BoutonPied ton="or" onClick={() => { void retenir(p); }} disabled={!!enTraitement}>Retenir</BoutonPied>
@@ -297,7 +312,7 @@ export default function OngletVeille({ clientId, rechercheId, onChange, prenom, 
           {ecartees.map(p => (
             <div key={p.id} style={{ background: '#f8fafc', border: `1px solid ${BORD}`, borderRadius: 12, padding: '11px 15px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: '#64748b', flexGrow: 1, minWidth: 180 }}>{p.titre || p.ville}</span>
-              <span style={{ fontSize: 13, color: '#94a3b8' }}>{euros(p.prix)}</span>
+              <span style={{ fontSize: 13, color: '#94a3b8' }}>{prixVeille(p)}</span>
               {p.motif_ecart && <Chip ton="ambre">{p.motif_ecart}</Chip>}
               <BoutonLien href={p.url}>Voir</BoutonLien>
               <BoutonLien onClick={() => restaurer(p)}>Remettre</BoutonLien>

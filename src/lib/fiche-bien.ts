@@ -104,3 +104,44 @@ export function proDepuisLecture(f: Record<string, any>): ProBien | Record<strin
   const p = proDuBien(d);
   return !nature && loyer ? { ...p, loyerAn: loyer } : p;
 }
+
+/* ═══ La veille de Werner : ce que l'annonce dit du local (23 octobre 2026) ═══
+   La veille dépose une annonce par `window.veilleDeposer` (src/app/veille/
+   import/page.tsx). Elle peut donner le résumé tout fait (`pro`, les clés de
+   ProBien) ou les champs d'une lecture d'annonce (`nature`,
+   `loyer_annuel_ht_hc`, `prix_cession`, `vitrine_ml`, `extraction`,
+   `destination`, `bail_type`, `bail_fin`, `activite`…, ceux de
+   lecture-annonce.ts) : les deux se rangent ici dans le même résumé, celui
+   que lisent l'espace du demandeur et le rapprochement (biens.pro). */
+const CLES_PRO_NOMBRES = ['loyerAn', 'prix', 'droitEntree', 'chargesAn', 'taxeFonciere', 'depotMois', 'surfDivMin', 'vitrine', 'nbPostes'] as const;
+const CLES_PRO_TEXTES = ['emplacement', 'extraction', 'destinationType', 'destination', 'bailType', 'bailFin', 'activite'] as const;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function proDeVeille(p: Record<string, any>): Partial<ProBien> {
+  const lu = proDepuisLecture(p) as Partial<ProBien>;
+  const donne = p && typeof p.pro === 'object' && p.pro && !Array.isArray(p.pro) ? (p.pro as Record<string, unknown>) : null;
+  if (!donne) return lu;
+  const out: Record<string, unknown> = { ...lu };
+  if (NATURES.some(n => n.v === donne.nature)) out.nature = donne.nature;
+  const type = TYPES_LOCAL.find(t => t.v === donne.type || t.court === donne.type || t.l === donne.type)?.v;
+  if (type) out.type = type;
+  for (const k of CLES_PRO_NOMBRES) {
+    const v = donne[k];
+    const x = typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v.replace(/\s/g, '').replace(',', '.')) : NaN;
+    if (Number.isFinite(x) && x > 0 && x < 1e9) out[k] = x;
+  }
+  for (const k of CLES_PRO_TEXTES) if (typeof donne[k] === 'string' && String(donne[k]).trim()) out[k] = String(donne[k]).trim().slice(0, 300);
+  if (donne.divisible === true) out.divisible = true;
+  if (donne.parPoste === true) out.parPoste = true;
+  if (Array.isArray(donne.equipements)) out.equipements = (donne.equipements as unknown[]).filter((x): x is string => typeof x === 'string').slice(0, 20);
+  /* Une location n'a ni prix de cession ni droit au bail ; une cession, un loyer en place. */
+  if (out.nature === 'location') out.prix = null;
+  return out as Partial<ProBien>;
+}
+
+/** Le montant principal d'une annonce de veille : le loyer annuel pour une location, sinon le prix. */
+export function prixDeVeille(p: { prix?: unknown }, pro: Partial<ProBien>): number | null {
+  const n = typeof p.prix === 'number' ? p.prix : parseFloat(String(p.prix ?? '').replace(/\s/g, '').replace(',', '.'));
+  if (Number.isFinite(n) && n > 0) return n;
+  if (pro.nature === 'location') return pro.loyerAn || null;
+  return pro.prix || null;
+}

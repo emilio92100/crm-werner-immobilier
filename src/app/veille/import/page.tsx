@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase, addJournal } from '@/lib/supabase';
 import { apprisDe } from '@/lib/visites';
 import { reprendreSuspendus } from '@/lib/suspension';
+import { prixDeVeille, proDeVeille } from '@/lib/fiche-bien';
 import { champsChauffage } from '@/lib/chauffage';
 
 /**
@@ -294,6 +295,9 @@ export default function PageImportVeille() {
               }
             }
 
+            /* Werner : ce que l'annonce dit du local (nature, loyer annuel HT HC,
+               bail, vitrine, extraction…), rangé comme biens.pro. */
+            const pro = proDeVeille(p);
             const ligne: Record<string, any> = {
               client_id,
               recherche_id,
@@ -306,7 +310,7 @@ export default function PageImportVeille() {
               code_postal: p.code_postal || null,
               quartier: p.quartier || null,
               adresse: p.adresse || null,
-              prix: p.prix ?? null,
+              prix: prixDeVeille(p, pro),
               surface: p.surface ?? null,
               nb_pieces: p.nb_pieces ?? null,
               nb_chambres: p.nb_chambres ?? null,
@@ -363,6 +367,7 @@ export default function PageImportVeille() {
               date_derniere_baisse: p.date_derniere_baisse || null,
               // V3.165 : le numéro de l'agence, relevé sur l'annonce (bouton « Appeler »)
               ...(p.agence_tel ? { agence_tel: String(p.agence_tel).trim() } : {}),
+              ...(Object.keys(pro).length ? { pro } : {}),
             };
             let { error } = await supabase.from('veille_propositions').insert(ligne);
             /* Tant que la colonne n'existe pas (outils/sql/veille-agence-tel.sql
@@ -371,6 +376,13 @@ export default function PageImportVeille() {
             if (error && /agence_tel/i.test(error.message || '') && 'agence_tel' in ligne) {
               delete ligne.agence_tel;
               ({ error } = await supabase.from('veille_propositions').insert(ligne));
+            }
+            /* Pareil pour `pro` tant que outils/sql/veille-pro.sql n'est pas passé :
+               l'annonce se dépose, sans son résumé d'immobilier d'entreprise. */
+            if (error && /\bpro\b/i.test(error.message || '') && 'pro' in ligne) {
+              delete ligne.pro;
+              ({ error } = await supabase.from('veille_propositions').insert(ligne));
+              if (!error) log('Colonne « pro » absente : passer outils/sql/veille-pro.sql dans Supabase.', false);
             }
 
             if (error) {

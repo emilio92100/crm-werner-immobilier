@@ -132,6 +132,8 @@ export function bienDepuisProposition(p: Ligne, clientId: string, rechercheId: s
     historique_prix: p.historique_prix || [], date_derniere_baisse: p.date_derniere_baisse || null,
     score: p.score ?? null, points_forts: p.points_forts || null, points_attention: p.points_attention || null,
     verdict: p.verdict ?? null, appreciation: p.appreciation ?? null,
+    /* Werner : la nature, le loyer, le bail… (biens.pro), pour l'espace du demandeur. */
+    ...(p.pro && typeof p.pro === 'object' && Object.keys(p.pro).length ? { pro: p.pro } : {}),
   };
 }
 
