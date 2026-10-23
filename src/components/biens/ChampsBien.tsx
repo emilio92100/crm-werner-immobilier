@@ -1048,7 +1048,7 @@ function ChampSociete({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
       <RechercheSociete classeChamp={s.input} off={off}
         aide="Son nom, sa forme, son siège et son immatriculation sont notés : le mandat les reprendra."
         onChoisir={x => { for (const [k, y] of Object.entries(sciDepuisStructure({ denomination: x.denomination, forme: x.forme, siege: x.siege, rcs: rcsCourt(x), siren: sirenAere(x.siren) }))) maj(k, y); }} />
-      <input id="ch-sciNom" className={s.input} disabled={off} autoComplete="off" value={v} placeholder="Ou écris son nom : SCI Les Tilleuls"
+      <input id="ch-sciNom" className={s.input} disabled={off} autoComplete="off" value={v} placeholder="Ou écris son nom : SARL Le Comptoir"
         onChange={e => maj('sciNom', e.target.value)} />
       {repris && v && <div className={s.chAide}>{repris}</div>}
     </div>

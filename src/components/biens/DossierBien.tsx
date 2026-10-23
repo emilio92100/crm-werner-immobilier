@@ -34,7 +34,7 @@ import Curseur from '@/components/shared/Curseur';
      (`dossier[k].dans`). Il s'affiche en tête des diagnostics, avec ce qu'il
      couvre ; « Ce qu'il contient » se corrige à tout moment.
    · Ses propres pièces (V3.31) : « + Ajouter une pièce » dans chaque groupe,
-     avec le nom qu'on veut (Kbis de la SCI, statuts, bail…) —
+     avec le nom qu'on veut (Kbis de la société, statuts, bail…) —
      `donnees.piecesPerso`. Elles se renomment et se retirent ; les autres
      documents se renomment aussi.
    · Le dossier : une ligne par pièce, rangées par groupe (V3.90 ; avant,
@@ -57,7 +57,11 @@ const IDEES: Record<LigneDossier['groupe'], string[]> = {
   copro: ['Relevés de charges (4 derniers trimestres)', 'Convocation à la prochaine AG', 'État daté', 'Attestation du syndic'],
   vendeur: ['Pièces d’identité des mandants', 'Kbis et statuts de la société', 'Plans du local', 'Garanties décennales et dommages-ouvrage', 'Prêt en cours (pour la mainlevée)', 'Contrat d’entretien de la climatisation', 'Attestation d’assurance multirisque', 'Contrat de gestion locative'],
 };
-const IDEES_SCI = ['Kbis de la SCI', 'Statuts de la SCI', 'PV d’AG de la SCI autorisant la vente'];
+/* Le mandant est une société (la clé reste 'sci') — V3.245 : chez Werner, c'est aussi bien
+   l'exploitant qui cède (SAS, SARL) que le propriétaire des murs (SCI, foncière). Le Kbis
+   dit qui la représente ; sinon, le pouvoir de celui qui signe. */
+const IDEES_SCI = ['Kbis de la société (moins de 3 mois)', 'Statuts de la société', 'Pouvoir du signataire (PV d’assemblée ou délégation)'];
+const IDEE_DOUBLON = 'Kbis et statuts de la société';
 const VIDE: PieceDossier = { etat: '', date: '', chemin: '', nom: '' };
 const AUTRE = '__autre';
 const DDT = '__ddt';
@@ -541,7 +545,7 @@ export function DossierBien({ bienId, d, maj, destinataires, lieu, onMessage, et
     const s = st(k);
     return filtre === 'tout' ? s !== 'nc' : filtre === 'reunir' ? s !== 'recu' && s !== 'nc' : filtre === 'demande' ? s === 'demande' || s === 'relance' : s === 'recu';
   };
-  const idees = (g: LigneDossier['groupe']) => [...(g === 'vendeur' && d.qui === 'sci' ? IDEES_SCI : []), ...IDEES[g]]
+  const idees = (g: LigneDossier['groupe']) => [...(g === 'vendeur' && d.qui === 'sci' ? IDEES_SCI : []), ...IDEES[g].filter(t => !(d.qui === 'sci' && t === IDEE_DOUBLON))]
     .filter(t => !lignes.some(y => sansAccent(y.l) === sansAccent(t))).slice(0, 8);
 
   /* ── Une ligne du dossier ── */
@@ -677,7 +681,7 @@ export function DossierBien({ bienId, d, maj, destinataires, lieu, onMessage, et
   const ligneAjout = (g: LigneDossier['groupe']) => (filtre !== 'tout' ? null : ajout?.g === g ? (
     <div className={x.lgAjout}>
       <div className={x.lgAjoutL}>
-        <input className={x.nomEdit} value={ajout.v} autoFocus placeholder="Ex. : Kbis de la SCI" aria-label="Nom de la pièce"
+        <input className={x.nomEdit} value={ajout.v} autoFocus placeholder="Ex. : Kbis de la société" aria-label="Nom de la pièce"
           onChange={e => setAjout({ g, v: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') ajouterPiece(); if (e.key === 'Escape') setAjout(null); }} />
         <button type="button" className={`${x.btn} ${x.btnMarine}`} disabled={!ajout.v.trim()} onClick={ajouterPiece}><Ic n="check" t={14} e={2.6} />Ajouter</button>
         <button type="button" className={x.lien} onClick={() => setAjout(null)}>Annuler</button>
@@ -1078,7 +1082,7 @@ export function FenDemandeDocuments({ bienId, d, doss, lignes, destinataires, li
   const dejaLa = (t: string) => [...lignes.map(l => l.l), ...extras.map(e => e.l)].some(y => sansAccent(y) === sansAccent(t));
   /* Des idées, comme dans le dossier : ce que le notaire demandera souvent. */
   const idees = [...(d.qui === 'sci' ? IDEES_SCI.map(l => ({ l, g: 'vendeur' as const })) : []),
-    ...IDEES.vendeur.map(l => ({ l, g: 'vendeur' as const })), ...(d.copro === 'oui' ? IDEES.copro.map(l => ({ l, g: 'copro' as const })) : [])]
+    ...IDEES.vendeur.filter(l => !(d.qui === 'sci' && l === IDEE_DOUBLON)).map(l => ({ l, g: 'vendeur' as const })), ...(d.copro === 'oui' ? IDEES.copro.map(l => ({ l, g: 'copro' as const })) : [])]
     .filter(i => !dejaLa(i.l)).slice(0, 8);
   function ajouterExtra(l: string, g: LigneDossier['groupe'] = 'vendeur') {
     const t = l.trim();
