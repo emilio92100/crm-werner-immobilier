@@ -1,26 +1,38 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import styles from './Page.module.css';
 import {
   BLOCS, CHAMPS, CLE_HISTORIQUE, CLE_IDENTITE, HISTORIQUE_MAX, IDENTITE_DEFAUT, LIB_FONDS, PREVENIR_JOURS,
   aRevoir, ecarts, etatCarte, formeCourte, lignesMandataire, lireHistorique, lireIdentite, phraseFonds,
   type Bloc, type Champ, type Fonds, type IdentiteAgence, type Modif,
 } from '@/lib/agence';
-import { BAREME, BAREME_VENTE, HONORAIRES_TAUX, tauxTexte } from '@/lib/mandat';
+import { BAREME, HONORAIRES_TAUX, tauxTexte } from '@/lib/mandat';
 import Aide from '@/components/shared/Aide';
 import FenetreSignatureAgence from '@/components/shared/FenetreSignatureAgence';
+import { Carte, Hero, Ico, Interrupteur, Note, styles as p } from './ParamUI';
 
 /* ═══ Paramètres · Agence ═════════════════════════════════════════════════
    L'identité de l'agence que les documents impriment (src/lib/agence.ts).
-   Elle s'enregistre ici, avec son propre bouton : le « Sauvegarder tout »
-   de la page n'y touche pas. Chaque modification entre dans l'historique,
-   datée, avec l'ancienne et la nouvelle valeur. */
+   Elle s'enregistre ici, avec son propre bouton : le bouton « Enregistrer »
+   des autres rubriques n'y touche pas. Chaque modification entre dans
+   l'historique, datée, avec l'ancienne et la nouvelle valeur.
+
+   23 octobre 2026 — le nouveau dessin (Alexandre : « des jolies cases, de
+   beaux rectangles, des explications ») : la même logique, des cartes à
+   icônes dessinées (plus d'émoji), l'aperçu comme une feuille, l'argent des
+   clients en deux grandes cases, l'approbation du mandat type en
+   interrupteur. Les styles : Parametres.module.css. */
 
 const SIGNATURE = 'agence/signature.png';
 /* L'approbation du mandat de recherche type (la même clé que MandatEnLigne). */
 const CLE_APPROBATION = 'mandat_modele_approuve_le';
-const NAVY = '#2e3034', OR = '#f08c42', OR_FONCE = '#c2621c', GRIS = '#64748b', GRIS_CLAIR = '#94a3b8', TRAIT = '#eaeae9';
+const OR = '#f08c42';
+
+/* L'icône dessinée de chaque bloc (les émoji de src/lib/agence.ts ne servent plus ici). */
+const IC_BLOC: Record<Bloc, string> = {
+  identite: 'agence', carte: 'carte', fonds: 'euro', assurance: 'bouclier', mediateur: 'balance',
+  signataire: 'plume', coordonnees: 'pin', autres: 'trombone',
+};
 
 const jourLong = (ymd: string) => new Date(ymd.slice(0, 10) + 'T12:00:00Z')
   .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' });
@@ -30,20 +42,14 @@ const quand = (iso: string) => new Date(iso).toLocaleString('fr-FR', {
   day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris',
 }).replace(':', ' h ');
 
-/* ── Une pastille d'état, en haut ── */
+/* ── Une case d'état, en haut ── */
 type Ton = 'vert' | 'or' | 'rouge' | 'gris';
-const TONS: Record<Ton, { f: string; t: string; c: string }> = {
-  vert: { f: '#f0fdf4', t: '#bbf7d0', c: '#166534' },
-  or: { f: '#fffbeb', t: '#fde68a', c: '#92400e' },
-  rouge: { f: '#fef2f2', t: '#fecaca', c: '#b91c1c' },
-  gris: { f: '#f8fafc', t: TRAIT, c: GRIS },
-};
-function Etat({ ton, titre, texte }: { ton: Ton; titre: string; texte: string }) {
-  const t = TONS[ton];
+const TON_ETAT: Record<Ton, string> = { vert: p.etatVert, or: p.etatOr, rouge: p.etatRouge, gris: p.etatGris };
+function Etat({ ton, ic, titre, texte }: { ton: Ton; ic: string; titre: string; texte: string }) {
   return (
-    <div style={{ flex: '1 1 200px', minWidth: 0, background: t.f, border: `1px solid ${t.t}`, borderRadius: 12, padding: '10px 12px' }}>
-      <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, textTransform: 'uppercase', color: t.c, opacity: 0.85 }}>{titre}</div>
-      <div style={{ fontSize: 13.5, fontWeight: 700, color: t.c, marginTop: 3, lineHeight: 1.4 }}>{texte}</div>
+    <div className={`${p.etat} ${TON_ETAT[ton]}`}>
+      <span className={p.etatIc}><Ico n={ic} t={17} /></span>
+      <div style={{ minWidth: 0 }}><small>{titre}</small><b>{texte}</b></div>
     </div>
   );
 }
@@ -54,50 +60,38 @@ function ChampAgence({ c, valeur, erreur, change, onChange }: {
   c: Champ; valeur: string; erreur?: string; change: boolean; onChange: (v: string) => void;
 }) {
   return (
-    <div style={{ gridColumn: c.large ? '1 / -1' : undefined, minWidth: 0 }} data-champ={c.cle}>
-      <label className={styles.label} htmlFor={`ag-${c.cle}`}>
+    <div className={`${p.champ} ${c.large ? p.champLarge : ''}`} data-champ={c.cle}>
+      <label htmlFor={`ag-${c.cle}`} style={{ fontSize: 12.5, fontWeight: 700, color: '#3f3f46' }}>
         {c.lib}
-        {!c.requis && <span style={{ fontWeight: 500, color: GRIS_CLAIR, textTransform: 'none', letterSpacing: 0 }}>{' · facultatif'}</span>}
+        {!c.requis && <span style={{ fontWeight: 500, color: '#a1a1aa' }}>{' · facultatif'}</span>}
       </label>
-      <input id={`ag-${c.cle}`} className={styles.input} type={c.type === 'date' ? 'date' : c.type === 'email' ? 'email' : 'text'}
+      <input id={`ag-${c.cle}`} className={p.input} type={c.type === 'date' ? 'date' : c.type === 'email' ? 'email' : 'text'}
         value={valeur} maxLength={c.max} placeholder={c.exemple ? `Ex : ${c.exemple}` : undefined}
         onChange={e => onChange(e.target.value)}
         style={{ borderColor: erreur ? '#f87171' : change ? OR : undefined, background: change && !erreur ? '#fff9f5' : undefined }} />
       {erreur
-        ? <div style={{ fontSize: 12, color: '#b91c1c', marginTop: 4 }}>{erreur}</div>
-        : c.aide ? <div style={{ fontSize: 12, color: GRIS_CLAIR, marginTop: 4, lineHeight: 1.45 }}>{c.aide}</div> : null}
-    </div>
-  );
-}
-
-function TeteBloc({ e, titre, sert }: { e: string; titre: string; sert: string }) {
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: 15, color: NAVY }}>{`${e} ${titre}`}</div>
-      <div style={{ fontSize: 12.5, color: GRIS, marginTop: 3, lineHeight: 1.5 }}>{sert}</div>
+        ? <span className={p.aideChamp} style={{ color: '#b91c1c' }}>{erreur}</span>
+        : change ? <span className={p.aideChamp} style={{ color: '#c2621c' }}>{'Modifié, pas encore enregistré'}</span>
+        : c.aide ? <span className={p.aideChamp}>{c.aide}</span> : null}
     </div>
   );
 }
 
 /* Les guillemets et les deux-points ne se séparent pas de leur mot en bout
    de ligne (à l'écran seulement : le texte du mandat, lui, ne change pas). */
-const fr = (t: string) => t.replace(/« /g, '«\u00a0').replace(/ »/g, '\u00a0»').replace(/ ([:;?!])/g, '\u00a0$1').replace(/n° /g, 'n°\u00a0');
+const fr = (t: string) => t.replace(/« /g, '« ').replace(/ »/g, ' »').replace(/ ([:;?!])/g, ' $1').replace(/n° /g, 'n° ');
 
 /* ── Ce que lit le client : la fiche « le mandataire » du mandat, en direct ── */
 function Apercu({ id }: { id: IdentiteAgence }) {
   return (
-    <div style={{ border: `1px solid ${TRAIT}`, borderRadius: 14, background: '#f8fafc', padding: '14px 16px' }}>
-      <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: GRIS_CLAIR }}>Le mandataire</div>
-      <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 15, color: NAVY, marginTop: 4 }}>{id.nom.toUpperCase()}</div>
-      {lignesMandataire(id).map((l, i) => (
-        <div key={i} style={{ fontSize: 13, color: '#334155', lineHeight: 1.55, marginTop: 4 }}>{fr(l)}</div>
-      ))}
-      <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, marginTop: 8, paddingBottom: 2, borderBottom: `2px solid ${OR}`, display: 'inline' }}>{fr(phraseFonds(id))}</div>
-      <div style={{ fontSize: 12.5, color: GRIS, marginTop: 12, lineHeight: 1.5 }}>
-        {`Médiateur : ${id.mediateurNom}, ${id.mediateurAdresse}, ${id.mediateurSite}.`}
-      </div>
-      <div style={{ fontSize: 12.5, color: GRIS, marginTop: 4, lineHeight: 1.5 }}>
-        {`Fait à ${id.ville} · pied de page : ${id.nom} · ${id.societe}, ${formeCourte(id)} · carte professionnelle ${id.carte}`}
+    <div className={p.feuille}>
+      <div className={p.feuilleTag}>Le mandataire</div>
+      <div className={p.feuilleNom}>{id.nom.toUpperCase()}</div>
+      {lignesMandataire(id).map((l, i) => <p key={i}>{fr(l)}</p>)}
+      <p style={{ marginTop: 8 }}><span className={p.feuilleFonds}>{fr(phraseFonds(id))}</span></p>
+      <div className={p.feuillePied}>
+        <div>{`Médiateur : ${id.mediateurNom}, ${id.mediateurAdresse}, ${id.mediateurSite}.`}</div>
+        <div style={{ marginTop: 3 }}>{`Fait à ${id.ville} · pied de page : ${id.nom} · ${id.societe}, ${formeCourte(id)} · carte professionnelle ${id.carte}`}</div>
       </div>
     </div>
   );
@@ -111,7 +105,7 @@ export default function ParamAgence() {
   const [erreurLecture, setErreurLecture] = useState('');
   const [essai, setEssai] = useState(false);          // on montre les erreurs après un premier « Enregistrer »
   const [enCours, setEnCours] = useState('');
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState<{ t: string; ok: boolean } | null>(null);
   const [voirHisto, setVoirHisto] = useState(false);
   const [signature, setSignature] = useState<string | null | undefined>(undefined);   // url signée, null = aucune
   const [dessin, setDessin] = useState(false);
@@ -140,7 +134,9 @@ export default function ParamAgence() {
     setSignature(u.error ? null : u.data.signedUrl);
   }, []);
 
-  useEffect(() => { charger(); chargerSignature(); }, [charger, chargerSignature]);
+  useEffect(() => { void charger(); void chargerSignature(); }, [charger, chargerSignature]);
+
+  const montrer = (t: string, ok = true) => { setNote({ t, ok }); if (ok) setTimeout(() => setNote(n => (n?.t === t ? null : n)), 6000); };
 
   async function enregistrerApprobation() {
     setEnCours('approbation'); setNoteMandat(null);
@@ -181,36 +177,37 @@ export default function ParamAgence() {
       { cle: CLE_HISTORIQUE, valeur: JSON.stringify(histo), updated_at: le },
     ], { onConflict: 'cle' });
     setEnCours('');
-    if (error) { alert("L'identité de l'agence n'a pas pu être enregistrée.\n\n" + error.message); return; }
+    if (error) { montrer(`L’identité de l’agence n’a pas pu être enregistrée : ${error.message}. Rien n’a changé.`, false); return; }
     setEnregistree(propre); setBrouillon(propre); setHistorique(histo); setJamais(false); setEssai(false);
-    setNote(`${lignes.length} modification${lignes.length > 1 ? 's' : ''} enregistrée${lignes.length > 1 ? 's' : ''} : les prochains documents les reprennent.`);
-    setTimeout(() => setNote(''), 5000);
+    montrer(`${lignes.length} modification${lignes.length > 1 ? 's' : ''} enregistrée${lignes.length > 1 ? 's' : ''} : les prochains documents les reprennent.`);
   }
 
   function annuler() { if (enregistree) { setBrouillon(enregistree); setEssai(false); } }
 
   async function deposerSignature(f: File | undefined) {
     if (!f) return;
-    if (f.type !== 'image/png') { alert('La signature doit être une image PNG, sur fond transparent.'); return; }
-    if (f.size > 2_000_000) { alert('Cette image est trop lourde (2 Mo au plus).'); return; }
+    if (f.type !== 'image/png') { montrer('La signature doit être une image PNG, sur fond transparent.', false); return; }
+    if (f.size > 2_000_000) { montrer('Cette image est trop lourde (2 Mo au plus).', false); return; }
     setEnCours('signature');
     const { error } = await supabase.storage.from('mandats').upload(SIGNATURE, f, { upsert: true, contentType: 'image/png' });
-    if (error) { setEnCours(''); alert("La signature n'a pas pu être déposée.\n\n" + error.message); return; }
+    if (error) { setEnCours(''); montrer(`La signature n’a pas pu être déposée : ${error.message}.`, false); return; }
     /* Elle entre dans l'historique, comme un champ. */
     const le = new Date().toISOString();
     const ligne: Modif = { le, cle: 'signature', lib: 'Signataire · Signature manuscrite', avant: signature ? 'une signature' : 'aucune', apres: 'nouvelle signature déposée' };
     const histo = [ligne, ...historique].slice(0, HISTORIQUE_MAX);
     const { error: eH } = await supabase.from('parametres').upsert({ cle: CLE_HISTORIQUE, valeur: JSON.stringify(histo), updated_at: le }, { onConflict: 'cle' });
     setEnCours('');
-    if (eH) alert("La signature est déposée, mais l'historique n'a pas pu être mis à jour.\n\n" + eH.message);
-    else setHistorique(histo);
+    if (eH) montrer(`La signature est déposée, mais l’historique n’a pas pu être mis à jour : ${eH.message}.`, false);
+    else { setHistorique(histo); montrer('Signature déposée : elle apparaîtra sur les prochains mandats signés.'); }
     await chargerSignature();
-    setNote('Signature déposée : elle apparaîtra sur les prochains mandats signés.');
-    setTimeout(() => setNote(''), 5000);
   }
 
-  if (erreurLecture) return <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 24, color: '#b91c1c', fontSize: 13 }}>{`L'identité de l'agence n'a pas pu être lue : ${erreurLecture}`}</div>;
-  if (!enregistree) return <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 24, color: GRIS_CLAIR, fontSize: 13 }}>Chargement…</div>;
+  const hero = (
+    <Hero ic="agence" titre="Agence"
+      texte={fr('Ce que tes documents impriment : le mandat de recherche, les mandats de location ou de vente, les offres. Un document déjà signé ne change jamais ; les suivants prennent l’identité du jour de leur signature.')} />
+  );
+  if (erreurLecture) return <div className={p.rubrique}>{hero}<Note ton="erreur">{`L’identité de l’agence n’a pas pu être lue : ${erreurLecture}`}</Note></div>;
+  if (!enregistree) return <div className={p.rubrique}>{hero}<Carte><div className={p.aideChamp}>Chargement…</div></Carte></div>;
 
   const carteEtat: { ton: Ton; texte: string } =
     carte.etat === 'expiree' ? { ton: 'rouge', texte: `Expirée depuis le ${jourLong(brouillon.carteFin)} : renouvelle-la avant tout nouveau mandat` }
@@ -222,60 +219,56 @@ export default function ParamAgence() {
 
   const champsDe = (b: Bloc) => CHAMPS.filter(c => c.bloc === b && (!c.siGarantie || brouillon.fonds === 'garantie'));
   const grille = (b: Bloc) => (
-    <div className={styles.param2} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+    <div className={p.champs}>
       {champsDe(b).map(c => (
         <ChampAgence key={c.cle} c={c} valeur={String(brouillon[c.cle] || '')} erreur={erreurDe(c)} change={changes.has(c.cle)}
           onChange={v => poser(c.cle, v)} />
       ))}
     </div>
   );
+  const nbChanges = (b: Bloc) => champsDe(b).filter(c => changes.has(c.cle)).length + (b === 'fonds' && changes.has('fonds') ? 1 : 0);
   const carteBloc = (id: Bloc, plus?: React.ReactNode, avant?: React.ReactNode) => {
     const b = BLOCS.find(x => x.id === id)!;
+    const n = nbChanges(id);
     return (
-      <div key={id} className={`${styles.card} ${styles.carteForm}`} style={{ padding: 22 }}>
-        <TeteBloc e={b.e} titre={b.titre} sert={b.sert} />
+      <Carte key={id} ic={IC_BLOC[id]} titre={b.titre} sous={fr(b.sert)}
+        droite={n ? <span className={p.aideChamp} style={{ color: '#c2621c', fontWeight: 700, whiteSpace: 'nowrap' }}>{`${n} modifié${n > 1 ? 's' : ''}`}</span> : undefined}>
         {avant}
         {champsDe(id).length > 0 && grille(id)}
         {plus}
-      </div>
+      </Carte>
     );
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className={p.rubrique}>
+      {hero}
+
       {/* L'état, en un coup d'œil */}
-      <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 22 }}>
-        <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: 16, color: NAVY }}>🏢 Identité de l’agence</div>
-        <p style={{ fontSize: 13, color: GRIS, lineHeight: 1.6, margin: '6px 0 14px' }}>
-          {'Ce que tes documents impriment : le mandat de recherche aujourd’hui, les mandats de location ou de vente et les offres ensuite. Un document déjà signé ne change jamais ; les suivants prennent l’identité du jour de leur signature.'}
-        </p>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <Etat ton={carteEtat.ton} titre="Carte professionnelle" texte={carteEtat.texte} />
-          <Etat ton={signature ? 'vert' : signature === null ? 'or' : 'gris'} titre="Signature manuscrite"
-            texte={signature ? 'Déposée : elle figure sur chaque mandat signé' : signature === null ? 'Pas encore déposée' : '…'} />
-          <Etat ton="gris" titre="Dernière modification"
-            texte={derniere ? `Le ${quand(derniere.le)}` : jamais ? 'Jamais : c’est l’identité d’origine' : '—'} />
-        </div>
+      <div className={p.etats}>
+        <Etat ton={carteEtat.ton} ic="carte" titre="Carte professionnelle" texte={carteEtat.texte} />
+        <Etat ton={signature ? 'vert' : signature === null ? 'or' : 'gris'} ic="plume" titre="Signature manuscrite"
+          texte={signature ? 'Déposée : elle figure sur chaque mandat signé' : signature === null ? 'Pas encore déposée' : '…'} />
+        <Etat ton="gris" ic="historique" titre="Dernière modification"
+          texte={derniere ? `Le ${quand(derniere.le)}` : jamais ? 'Jamais : c’est l’identité d’origine' : '—'} />
       </div>
 
       {/* Ce que lit le client */}
-      <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 22 }}>
-        <TeteBloc e="👁️" titre="Ce que lit ton client" sert="La fiche « le mandataire » de son mandat de recherche, telle qu’elle s’imprimera. Elle suit ce que tu tapes." />
+      <Carte ic="oeil" titre="Ce que lit ton client" sous={fr('La fiche « le mandataire » de son mandat de recherche, telle qu’elle s’imprimera.')}
+        droite={<span className={p.direct}><i />{'En direct'}</span>}>
         <Apercu id={lireIdentite(JSON.stringify(brouillon))} />
-      </div>
+      </Carte>
 
       {carteBloc('identite')}
       {carteBloc('carte')}
       {carteBloc('fonds', undefined, (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: brouillon.fonds === 'garantie' ? 16 : 0 }}>
+        <div className={p.cases} style={{ marginBottom: brouillon.fonds === 'garantie' ? 16 : 0 }}>
           {(['non', 'garantie'] as Fonds[]).map(f => {
             const on = brouillon.fonds === f;
             return (
               <button key={f} type="button" onClick={() => setBrouillon(b => ({ ...b, fonds: f }))} aria-pressed={on}
-                style={{ flex: '1 1 220px', textAlign: 'left', padding: '11px 13px', borderRadius: 11, cursor: 'pointer', fontFamily: 'inherit',
-                  fontSize: 13.5, fontWeight: 700, lineHeight: 1.35,
-                  border: `1.5px solid ${on ? (changes.has('fonds') ? OR : NAVY) : TRAIT}`, background: on ? '#f8fafc' : 'white', color: on ? NAVY : GRIS }}>
-                {`${on ? '● ' : '○ '}${LIB_FONDS[f]}`}
+                className={`${p.case} ${changes.has('fonds') ? p.caseChange : ''}`}>
+                <span className={p.caseRond} /><span>{LIB_FONDS[f]}</span>
               </button>
             );
           })}
@@ -284,26 +277,24 @@ export default function ParamAgence() {
       {carteBloc('assurance')}
       {carteBloc('mediateur')}
       {carteBloc('signataire', (
-        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #f1f5f9', display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ width: 190, height: 84, borderRadius: 10, border: `1px dashed ${signature ? '#cbd5e1' : '#fcd34d'}`, flexShrink: 0,
-            background: 'repeating-conic-gradient(#f1f5f9 0% 25%, white 0% 50%) 0 0 / 14px 14px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        <div className={p.signature}>
+          <div className={`${p.signatureCadre} ${signature ? '' : p.signatureVide}`}>
             {signature
-              ? <img src={signature} alt="Ta signature manuscrite" style={{ maxWidth: '92%', maxHeight: '88%', objectFit: 'contain' }} />
-              : <span style={{ fontSize: 12, color: GRIS_CLAIR, padding: 10, textAlign: 'center' }}>{signature === null ? 'Aucune signature' : '…'}</span>}
+              ? <img src={signature} alt="Ta signature manuscrite" />
+              : <span className={p.aideChamp} style={{ padding: 10, textAlign: 'center' }}>{signature === null ? 'Aucune signature' : '…'}</span>}
           </div>
           <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: NAVY }}>Signature manuscrite</div>
-            <div style={{ fontSize: 12.5, color: GRIS, lineHeight: 1.5, marginTop: 3 }}>
-              {'Dessine-la au doigt ou à la souris, ou dépose une image PNG sur fond transparent. Rangée dans un dossier privé, elle se pose dans ta case au moment où le client signe.'}
+            <div className={p.ligneTitre}>Signature manuscrite</div>
+            <div className={p.ligneTx}>
+              {fr('Dessine-la au doigt ou à la souris, ou dépose une image PNG sur fond transparent. Rangée dans un dossier privé, elle se pose dans ta case au moment où le client signe.')}
             </div>
             <input ref={fichier} type="file" accept="image/png" style={{ display: 'none' }}
-              onChange={e => { deposerSignature(e.target.files?.[0]); e.target.value = ''; }} />
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-              <button type="button" className={`${styles.btn} ${styles.btnDark}`} disabled={enCours === 'signature'} onClick={() => setDessin(true)}>
-                {signature ? '✍️ La redessiner' : '✍️ Dessiner ma signature'}
+              onChange={e => { void deposerSignature(e.target.files?.[0]); e.target.value = ''; }} />
+            <div className={p.boutons} style={{ marginTop: 12 }}>
+              <button type="button" className={`${p.btn} ${p.btnFonce}`} disabled={enCours === 'signature'} onClick={() => setDessin(true)}>
+                <Ico n="plume" t={15} />{signature ? 'La redessiner' : 'Dessiner ma signature'}
               </button>
-              <button type="button" className={`${styles.btn}`} disabled={enCours === 'signature'} onClick={() => fichier.current?.click()}>
+              <button type="button" className={p.btn} disabled={enCours === 'signature'} onClick={() => fichier.current?.click()}>
                 {enCours === 'signature' ? 'Envoi…' : 'Déposer une image'}
               </button>
             </div>
@@ -317,22 +308,17 @@ export default function ParamAgence() {
       {carteBloc('coordonnees')}
 
       {/* Les honoraires : lus ici, réglés client par client */}
-      <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 22 }}>
-        <TeteBloc e="💶" titre="Honoraires et mandat de recherche" sert="Ce que le mandat de recherche propose d’office, et le mandat type qu’un demandeur peut signer seul." />
-        <div className={styles.param2} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <Carte ic="euro" titre="Honoraires et mandat de recherche" sous={fr('Ce que le mandat de recherche propose d’office, et le mandat type qu’un demandeur peut signer seul.')}>
+        <div className={p.chiffres}>
           {[
             ['Mandat de recherche', `${tauxTexte(HONORAIRES_TAUX)} par défaut`, `Du loyer annuel HT HC d’un bail, ou du prix d’une cession ou d’une vente · modifiable pour chaque demandeur, jusqu’à ${tauxTexte(BAREME)}`],
             ['Mandat de commercialisation', 'Dans le document', 'Taux ou forfait, HT ou TTC, choisis en préparant le mandat (Documents)'],
           ].map(([t, v, d]) => (
-            <div key={t} style={{ background: '#f8fafc', border: `1px solid ${TRAIT}`, borderRadius: 11, padding: '10px 12px' }}>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: GRIS_CLAIR, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t}</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: NAVY, marginTop: 3 }}>{v}</div>
-              <div style={{ fontSize: 12, color: GRIS, marginTop: 2, lineHeight: 1.45 }}>{d}</div>
-            </div>
+            <div key={t} className={p.chiffre}><small>{t}</small><b>{v}</b><span>{fr(d)}</span></div>
           ))}
         </div>
-        <div style={{ fontSize: 12.5, color: GRIS, lineHeight: 1.55, marginTop: 10 }}>
-          {'Pour un demandeur, tu changes le taux ou choisis un forfait sur sa fiche : sa recherche › « Mandat de recherche ».'}
+        <div className={p.ligneTx} style={{ marginTop: 12 }}>
+          {fr('Pour un demandeur, tu changes le taux ou choisis un forfait sur sa fiche : sa recherche › « Mandat de recherche ».')}
           <Aide titre="Changer les honoraires d’un demandeur">
             <span>{'Ouvre sa fiche, puis sa recherche, puis « Mandat de recherche ». Choisis « Pourcentage » (2,5 %, 5 %, 10 %, 15 % ou le taux que tu tapes) ou « Forfait » (un montant en euros HT).'}</span>
             <span>{'« Proposer au client » : il voit aussitôt « Votre mandat est prêt » dans son espace, avec ces honoraires. Déjà proposé ? « Mettre à jour », puis renvoie-lui le mail.'}</span>
@@ -340,89 +326,94 @@ export default function ParamAgence() {
           </Aide>
         </div>
 
-        <div style={{ borderTop: `1px solid ${TRAIT}`, marginTop: 16, paddingTop: 14 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 800, color: NAVY, display: 'flex', alignItems: 'center' }}>
-            {'Le mandat type, signé seul par le demandeur'}
-            <Aide titre="Ce que change le mandat type">
-              <span><b>{'Non coché (au départ). '}</b>{'Un demandeur peut demander une visite sans signer de mandat : tu reçois sa demande, et tu décides. Seul un demandeur à qui tu as proposé le mandat depuis sa fiche doit le signer avant que sa demande parte.'}</span>
-              <span><b>{'Coché. '}</b>{'Tout demandeur sans mandat qui clique « Je souhaite le visiter » doit d’abord signer le mandat de recherche : il remplit son identité ou celle de sa société, reçoit un code par mail, signe, et sa demande part juste après. Le numéro vient du registre commun ; tu reçois un mail.'}</span>
-              <span><b>{'Les honoraires restent à toi, client par client. '}</b>{'2,5 % HT n’est que le taux par défaut. Un autre pourcentage ou un forfait mis sur la fiche d’un demandeur passe avant, coché ou non. Une fois le mandat signé, ils ne changent plus que par un avenant (Documents).'}</span>
-              <span><b>{'Jamais pour tes affaires. '}</b>{'Un local dont tu as le mandat du bailleur ou du cédant se visite toujours sans mandat de recherche.'}</span>
-              <span>{'Ton approbation vaut signature de l’offre au nom de l’agence pour ces mandats-là. Tu peux la retirer quand tu veux : les mandats déjà signés restent valables.'}</span>
-            </Aide>
+        <div className={p.separe}>
+          <div className={`${p.ligne} ${approuve ? '' : p.ligneOff}`} style={{ margin: 0 }}>
+            <span className={p.ligneIc}><Ico n="doc" t={18} /></span>
+            <div className={p.ligneCorps}>
+              <div className={p.ligneTitre} style={{ display: 'flex', alignItems: 'center' }}>
+                {'Le mandat type, signé seul par le demandeur'}
+                <Aide titre="Ce que change le mandat type">
+                  <span><b>{'Éteint (au départ). '}</b>{'Un demandeur peut demander une visite sans signer de mandat : tu reçois sa demande, et tu décides. Seul un demandeur à qui tu as proposé le mandat depuis sa fiche doit le signer avant que sa demande parte.'}</span>
+                  <span><b>{'Allumé. '}</b>{'Tout demandeur sans mandat qui clique « Je souhaite le visiter » doit d’abord signer le mandat de recherche : il remplit son identité ou celle de sa société, reçoit un code par mail, signe, et sa demande part juste après. Le numéro vient du registre commun ; tu reçois un mail.'}</span>
+                  <span><b>{'Les honoraires restent à toi, client par client. '}</b>{'2,5 % HT n’est que le taux par défaut. Un autre pourcentage ou un forfait mis sur la fiche d’un demandeur passe avant, allumé ou non. Une fois le mandat signé, ils ne changent plus que par un avenant (Documents).'}</span>
+                  <span><b>{'Jamais pour tes affaires. '}</b>{'Un local dont tu as le mandat du bailleur ou du cédant se visite toujours sans mandat de recherche.'}</span>
+                  <span>{'Ton approbation vaut signature de l’offre au nom de l’agence pour ces mandats-là. Tu peux la retirer quand tu veux : les mandats déjà signés restent valables.'}</span>
+                </Aide>
+              </div>
+              <div className={p.ligneTx}>
+                {fr(`J’approuve le mandat de recherche simple type, et je signe l’offre au nom de l’agence pour les mandats que les demandeurs signent seuls.${approuveLe ? ` Approuvé le ${new Date(approuveLe).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: 'numeric', month: 'long', year: 'numeric' })}.` : ''}`)}
+              </div>
+              {approuve !== !!approuveLe && (
+                <div className={p.boutons} style={{ marginTop: 12 }}>
+                  <button type="button" className={`${p.btn} ${p.btnOr}`} disabled={enCours === 'approbation'} onClick={() => { void enregistrerApprobation(); }}>
+                    <Ico n="enregistrer" t={15} />{enCours === 'approbation' ? 'Enregistrement…' : 'Enregistrer ce choix'}
+                  </button>
+                  <button type="button" className={p.btn} disabled={enCours === 'approbation'} onClick={() => setApprouve(!!approuveLe)}>Annuler</button>
+                </div>
+              )}
+            </div>
+            <Interrupteur on={approuve} disabled={enCours === 'approbation'} onClick={() => { setApprouve(a => !a); setNoteMandat(null); }}
+              label={approuve ? 'Retirer l’approbation du mandat type' : 'Approuver le mandat type'} />
           </div>
-          <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, color: NAVY, lineHeight: 1.5, cursor: 'pointer', marginTop: 10 }}>
-            <input type="checkbox" checked={approuve} onChange={e => setApprouve(e.target.checked)} style={{ marginTop: 3, accentColor: '#f08c42' }} />
-            <span>{`J’approuve le mandat de recherche simple type, et je signe l’offre au nom de l’agence pour les mandats que les demandeurs signent seuls.${approuveLe ? ` (approuvé le ${new Date(approuveLe).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: 'numeric', month: 'long', year: 'numeric' })})` : ''}`}</span>
-          </label>
-          <button type="button" className={styles.btn} disabled={enCours === 'approbation' || approuve === !!approuveLe} onClick={() => { void enregistrerApprobation(); }} style={{ marginTop: 10 }}>
-            {enCours === 'approbation' ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
-          {noteMandat && (
-            <div style={{ marginTop: 10, fontSize: 12.5, lineHeight: 1.5, padding: '9px 12px', borderRadius: 10, background: noteMandat.ok ? '#f0fdf4' : '#fef2f2', color: noteMandat.ok ? '#166534' : '#991b1b', border: `1px solid ${noteMandat.ok ? '#bbf7d0' : '#fecaca'}` }}>{noteMandat.t}</div>
-          )}
+          {noteMandat && <div style={{ marginTop: 10 }}><Note ton={noteMandat.ok ? 'ok' : 'erreur'}>{fr(noteMandat.t)}</Note></div>}
         </div>
-      </div>
+      </Carte>
 
       {carteBloc('autres')}
 
       {/* L'historique */}
-      <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 22 }}>
-        <button type="button" onClick={() => setVoirHisto(v => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
-          <span style={{ flex: 1, fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 700, fontSize: 15, color: NAVY }}>
-            {`🕘 Historique des modifications${historique.length ? ` · ${historique.length}` : ''}`}
+      <Carte className={voirHisto ? p.pliOuvert : ''}>
+        <button type="button" className={p.pliTete} onClick={() => setVoirHisto(v => !v)} aria-expanded={voirHisto}>
+          <span className={p.carteIc}><Ico n="historique" t={18} /></span>
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: 'block', fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 15, color: '#232528' }}>
+              {`Historique des modifications${historique.length ? ` · ${historique.length}` : ''}`}
+            </span>
+            <span style={{ display: 'block', fontSize: 12.5, color: '#64748b', marginTop: 3 }}>{'Chaque changement, daté, avec l’ancienne et la nouvelle valeur.'}</span>
           </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: GRIS }}>{voirHisto ? 'Masquer' : 'Afficher'}</span>
+          <span className={p.pliFleche}><Ico n="chevron" t={18} /></span>
         </button>
         {voirHisto && (
           historique.length === 0
-            ? <div style={{ fontSize: 13, color: GRIS, marginTop: 12 }}>{'Aucune modification pour l’instant : tes documents impriment l’identité d’origine.'}</div>
+            ? <div className={p.ligneTx} style={{ marginTop: 14 }}>{'Aucune modification pour l’instant : tes documents impriment l’identité d’origine.'}</div>
             : (
-              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column' }}>
+              <div className={p.histo}>
                 {historique.map((m, i) => (
-                  <div key={i} style={{ padding: '10px 0', borderTop: i ? '1px solid #f1f5f9' : 'none', fontSize: 13, lineHeight: 1.5 }}>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'baseline' }}>
-                      <b style={{ color: NAVY }}>{m.lib}</b>
-                      <span style={{ fontSize: 12, color: GRIS_CLAIR }}>{quand(m.le)}</span>
-                    </div>
-                    <div style={{ color: GRIS, marginTop: 2, overflowWrap: 'anywhere' }}>
-                      <span style={{ textDecoration: 'line-through', textDecorationColor: '#cbd5e1' }}>{lisible(m.avant) || 'vide'}</span>
-                      <span style={{ color: OR_FONCE, fontWeight: 800 }}>{' → '}</span>
-                      <span style={{ color: NAVY }}>{lisible(m.apres) || 'vide'}</span>
+                  <div key={i} className={p.histoLigne}>
+                    <div><b>{m.lib}</b><small>{quand(m.le)}</small></div>
+                    <div style={{ marginTop: 3, overflowWrap: 'anywhere' }}>
+                      <span className={p.histoAvant}>{lisible(m.avant) || 'vide'}</span>
+                      <span className={p.histoFleche}>{' → '}</span>
+                      <span style={{ color: '#232528' }}>{lisible(m.apres) || 'vide'}</span>
                     </div>
                   </div>
                 ))}
               </div>
             )
         )}
-      </div>
+      </Carte>
 
-      {note && (
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', borderRadius: 12, padding: '11px 14px', fontSize: 13, fontWeight: 600 }}>{note}</div>
-      )}
+      {note && <Note ton={note.ok ? 'ok' : 'erreur'}>{fr(note.t)}</Note>}
 
       {/* La barre d'enregistrement : seulement quand quelque chose a changé */}
       {modifs.length > 0 && (
-        <div style={{ position: 'sticky', bottom: 12, zIndex: 5, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-          background: NAVY, color: 'white', borderRadius: 14, padding: '12px 14px', boxShadow: '0 10px 30px rgba(37, 39, 43,.28)' }}>
-          <div style={{ flex: '1 1 260px', minWidth: 0, fontSize: 13.5, lineHeight: 1.4 }}>
-            <b>{`${modifs.length} modification${modifs.length > 1 ? 's' : ''}`}</b>
-            <span style={{ color: '#cbd5e1' }}>
-              {essai && Object.keys(erreurs).length
-                ? ` · ${Object.keys(erreurs).length} champ${Object.keys(erreurs).length > 1 ? 's' : ''} à revoir`
-                : ' · les prochains documents les reprendront'}
-            </span>
+        <div className={p.barre}>
+          <div className={p.barreTx}>
+            <Ico n="enregistrer" t={18} />
+            <div>
+              <b>{`${modifs.length} modification${modifs.length > 1 ? 's' : ''}`}</b>
+              <span>
+                {essai && Object.keys(erreurs).length
+                  ? ` · ${Object.keys(erreurs).length} champ${Object.keys(erreurs).length > 1 ? 's' : ''} à revoir`
+                  : ' · les prochains documents les reprendront'}
+              </span>
+            </div>
           </div>
-          <div style={{ flex: '1 1 auto', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button type="button" onClick={annuler} disabled={!!enCours}
-            style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,.35)', borderRadius: 10, padding: '9px 14px', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-            Annuler
-          </button>
-          <button type="button" onClick={enregistrer} disabled={!!enCours}
-            style={{ background: OR, color: NAVY, border: 'none', borderRadius: 10, padding: '9px 16px', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-            {enCours === 'enregistrer' ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
+          <div className={p.barreBoutons}>
+            <button type="button" className={p.barreAnnuler} onClick={annuler} disabled={!!enCours}>Annuler</button>
+            <button type="button" className={p.barreOk} onClick={() => { void enregistrer(); }} disabled={!!enCours}>
+              {enCours === 'enregistrer' ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
           </div>
         </div>
       )}

@@ -116,7 +116,7 @@ export const CHAMPS: Champ[] = [
   { cle: 'rcs', lib: 'Immatriculation', bloc: 'identite', requis: true, exemple: 'RCS de Nanterre n° 884 141 201', max: 80 },
   { cle: 'siege', lib: 'Siège social', bloc: 'identite', requis: true, max: 160, large: true },
   { cle: 'tva', lib: 'TVA intracommunautaire', bloc: 'identite', max: 30 },
-  { cle: 'representantLegal', lib: 'Représentant légal', bloc: 'identite', exemple: 'Alexandre ROGELET, Président', aide: 'Celui qui représente la société titulaire de la carte. Imprimé dans les mandats.', max: 120 },
+  { cle: 'representantLegal', lib: 'Représentant légal', bloc: 'identite', exemple: 'Prénom NOM, Président', aide: 'Celui qui représente la société titulaire de la carte. Imprimé dans les mandats.', max: 120 },
 
   { cle: 'carte', lib: 'Numéro', bloc: 'carte', requis: true, exemple: 'CPI 9201 2020 000 045 344', max: 40 },
   { cle: 'carteFin', lib: 'Valable jusqu’au', bloc: 'carte', type: 'date', aide: 'Trois ans après sa délivrance ou son dernier renouvellement.' },

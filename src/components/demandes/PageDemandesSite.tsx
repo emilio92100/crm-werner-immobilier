@@ -610,7 +610,7 @@ export function PasserelleSeLoger() {
       <div className={s.videSous}>{'Pour l’instant, les messages reçus sur SeLoger Bureaux & Commerces arrivent seulement par mail, sur contact@wernerimmobilier.com.'}</div>
       <ol className={s.etapesPasserelle}>
         <li><span>{'Contacter le support SeLoger (votre conseiller ou le service client pro) et demander l’envoi automatique des contacts vers le CRM.'}</span></li>
-        <li><span>{'SeLoger fournit des codes de connexion : les transmettre à Alexandre, qui les pose dans le CRM.'}</span></li>
+        <li><span>{'SeLoger fournit des codes de connexion : ils se posent une seule fois dans le réglage technique du CRM.'}</span></li>
         <li><span>{'Ensuite, chaque demande reçue sur SeLoger arrive ici, avec le local concerné, comme celles du site.'}</span></li>
       </ol>
     </div>

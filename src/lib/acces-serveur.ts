@@ -136,7 +136,7 @@ export async function envoyerCodePremierAcces(sb: SupabaseClient, prenom: string
   await ecrire(sb, CLE_CODE, etat);
   const m = mailCode(prenom, code);
   const err = await envoyerMail({ a: mail, sujet: m.sujet, texte: m.texte, html: m.html, deLaPartDe: 'agence' });
-  if (err) return { ok: false, error: err === 'Mailjet non configuré' ? 'L’envoi des mails n’est pas encore branché sur le serveur : demandez à Alexandre de créer votre accès.' : `Le code n’a pas pu partir (${err}). Réessayez dans un instant.` };
+  if (err) return { ok: false, error: err === 'Mailjet non configuré' ? 'L’envoi des mails n’est pas encore branché sur le serveur : votre accès ne peut pas encore être créé d’ici.' : `Le code n’a pas pu partir (${err}). Réessayez dans un instant.` };
   return { ok: true, mail };
 }
 
@@ -193,7 +193,7 @@ export async function envoyerLienOubli(sb: SupabaseClient, mailBrut: string, bas
   const lien = `${base}/mot-de-passe?jeton=${encodeURIComponent(jeton)}`;
   const m = mailOubli(prenom, lien);
   const err = await envoyerMail({ a: mail, sujet: m.sujet, texte: m.texte, html: m.html, deLaPartDe: 'agence' });
-  if (err) return { ok: false, error: err === 'Mailjet non configuré' ? 'L’envoi des mails n’est pas encore branché sur le serveur : prévenez Alexandre.' : `Le mail n’a pas pu partir (${err}). Réessayez dans un instant.` };
+  if (err) return { ok: false, error: err === 'Mailjet non configuré' ? 'L’envoi des mails n’est pas encore branché sur le serveur : le lien ne peut pas partir pour l’instant.' : `Le mail n’a pas pu partir (${err}). Réessayez dans un instant.` };
   return { ok: true };
 }
 

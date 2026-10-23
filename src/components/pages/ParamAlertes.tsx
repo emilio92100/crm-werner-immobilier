@@ -1,22 +1,26 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import styles from './Page.module.css';
 import { ALERTES_MAIL, CLE_ALERTES, alertesCoupees, valeurAlertes, type Alerte, type CleAlerte } from '@/lib/alertes';
 import { CLE_ALERTE_DEMANDE, alerteDemandeCoupee } from '@/lib/demandes-site-mail';
+import { Anneau, Carte, Enregistre, Etapes, Hero, Ico, Interrupteur, Note, Tuiles, fr, styles as p } from './ParamUI';
 
 /* ═══ Paramètres · Alertes mail ═══════════════════════════════════════════
-   Les mails que le CRM envoie à Alexandre (« Emilio · CRM »), un
-   interrupteur chacun. La liste et la règle sont dans src/lib/alertes.ts ;
-   les routes qui envoient relisent le réglage juste avant chaque envoi.
-   Chaque clic s'enregistre tout de suite : le bouton « Sauvegarder tout »
-   ne touche pas à ce réglage (voir PageParametres). */
+   Les mails que le CRM envoie à Werner (« Werner · CRM »), un interrupteur
+   chacun. La liste et la règle sont dans src/lib/alertes.ts ; les routes qui
+   envoient relisent le réglage juste avant chaque envoi (alerteMailActive :
+   les quatorze clés y sont lues, vérifié le 23 octobre 2026). Chaque clic
+   s'enregistre tout de suite : le bouton « Enregistrer » de la page ne touche
+   pas à ce réglage (voir PageParametres).
+
+   23 octobre 2026 — le nouveau dessin (Alexandre : « fais une présentation
+   plus jolie pour les alertes mail ») : une carte par famille, un anneau qui
+   compte ce qui est reçu, « Comment ça marche » en quatre étapes. */
 
 /* V3.50 : « Nouvelle demande du site » se coupe aussi d'ici (et avec
-   « Tout couper »). Avant, il partait toujours, quel que soit le réglage.
-   Elle n'est pas encore dans la liste commune (src/lib/alertes.ts) : on
-   l'ajoute ici, rangée dans la même valeur que les autres ; si elle y entre
-   un jour, elle n'est pas montrée deux fois. */
+   « Tout couper »). Elle n'est pas encore dans la liste commune
+   (src/lib/alertes.ts) : on l'ajoute ici, rangée dans la même valeur que les
+   autres ; si elle y entre un jour, elle n'est pas montrée deux fois. */
 type Cle = CleAlerte | typeof CLE_ALERTE_DEMANDE;
 type Ligne = Omit<Alerte, 'cle' | 'groupe'> & { cle: Cle; groupe: Alerte['groupe'] | 'site' };
 const DEMANDE_SITE: Ligne = {
@@ -37,16 +41,16 @@ const valeurDe = (s: Set<Cle>): string => {
   return JSON.stringify(o);
 };
 
-const GROUPES: { id: Ligne['groupe']; titre: string }[] = [
-  { id: 'site', titre: 'Le site wernerimmobilier.com' },
-  { id: 'clients', titre: 'Tes clients' },
-  { id: 'mandats', titre: 'Les mandats' },
-  { id: 'auto', titre: 'Le point automatique' },
+const GROUPES: { id: Ligne['groupe']; titre: string; sous: string; ic: string }[] = [
+  { id: 'site', titre: 'Le site wernerimmobilier.com', sous: 'Les formulaires remplis par les visiteurs.', ic: 'globe' },
+  { id: 'clients', titre: 'Tes clients', sous: 'Ce que tes demandeurs font depuis leur espace.', ic: 'groupe' },
+  { id: 'mandats', titre: 'Les mandats et les documents', sous: 'Les signatures, les numéros, les questions.', ic: 'doc' },
+  { id: 'auto', titre: 'Le point automatique', sous: 'Le récapitulatif des mails partis tout seuls.', ic: 'avion' },
 ];
 
-/* Ce qui n'arrive jamais par mail : Alexandre croyait recevoir les avis. */
+/* Ce qui n'arrive jamais par mail. */
 const JAMAIS = [
-  'Les avis « Ça me plaît » et « Pas pour moi » sur un bien pas encore visité',
+  'Les avis « Ça me plaît » et « Pas pour moi » sur un local pas encore visité',
   'Les messages du client',
   'Les demandes de rappel',
   'Les changements de critères',
@@ -54,26 +58,12 @@ const JAMAIS = [
   'Les réponses au mail « Où en est votre recherche ? »',
 ];
 
-function Interrupteur({ on, onClick, disabled, label }: { on: boolean; onClick: () => void; disabled?: boolean; label: string }) {
-  return (
-    <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={onClick} disabled={disabled}
-      style={{ width: 44, height: 25, borderRadius: 99, border: 'none', cursor: disabled ? 'wait' : 'pointer', position: 'relative', background: on ? '#10b981' : '#cbd5e1', transition: 'background .15s', flexShrink: 0, padding: 0 }}>
-      <span style={{ position: 'absolute', top: 3, left: on ? 22 : 3, width: 19, height: 19, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
-    </button>
-  );
-}
-
-/* Espaces insécables à la française : un « ou un : ne reste jamais seul en
-   bout de ligne sur un téléphone. */
-const fr = (t: string) => t.replace(/« /g, '«\u00a0').replace(/ »/g, '\u00a0»').replace(/ ([:;?!])/g, '\u00a0$1');
-
-const RUBRIQUE: React.CSSProperties = { fontSize: 10.5, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: '#94a3b8', margin: '22px 0 4px' };
-
 export default function ParamAlertes() {
   const [coupees, setCoupees] = useState<Set<Cle> | null>(null);
   const [erreur, setErreur] = useState('');
+  const [erreurEcriture, setErreurEcriture] = useState('');
   const [enCours, setEnCours] = useState(false);
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(0);
 
   useEffect(() => {
     supabase.from('parametres').select('valeur').eq('cle', CLE_ALERTES).maybeSingle().then(({ data, error }) => {
@@ -84,88 +74,101 @@ export default function ParamAlertes() {
 
   async function enregistrer(suivant: Set<Cle>) {
     const avant = coupees;
-    setCoupees(suivant); setEnCours(true);
+    setCoupees(suivant); setEnCours(true); setErreurEcriture('');
     const { error } = await supabase.from('parametres')
       .upsert({ cle: CLE_ALERTES, valeur: valeurDe(suivant), updated_at: new Date().toISOString() }, { onConflict: 'cle' });
     setEnCours(false);
-    if (error) { setCoupees(avant); alert("Le réglage n'a pas pu être enregistré.\n\n" + error.message); return; }
-    setNote('Enregistré'); setTimeout(() => setNote(''), 2000);
+    if (error) { setCoupees(avant); setErreurEcriture(`Le réglage n’a pas pu être enregistré : ${error.message}. Rien n’a changé.`); return; }
+    const n = Date.now(); setNote(n); setTimeout(() => setNote(x => (x === n ? 0 : x)), 2200);
   }
 
   function basculer(cle: Cle) {
     if (!coupees) return;
     const s = new Set(coupees);
     if (s.has(cle)) s.delete(cle); else s.add(cle);
-    enregistrer(s);
+    void enregistrer(s);
   }
 
-  if (erreur) return <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 24, color: '#b91c1c', fontSize: 13 }}>{`Les alertes n'ont pas pu être lues : ${erreur}`}</div>;
-  if (!coupees) return <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 24, color: '#94a3b8', fontSize: 13 }}>Chargement…</div>;
+  const hero = (
+    <Hero ic="cloche" titre="Alertes mail"
+      texte={fr('Les mails que le CRM t’envoie, avec l’expéditeur « Werner · CRM ». Coupe ceux dont tu n’as pas besoin : l’événement reste toujours dans le CRM, rien ne se perd.')}
+      droite={note ? <Enregistre /> : undefined} />
+  );
+  if (erreur) return <div className={p.rubrique}>{hero}<Note ton="erreur">{`Les alertes n’ont pas pu être lues : ${erreur}`}</Note></div>;
+  if (!coupees) return <div className={p.rubrique}>{hero}<Carte><div className={p.aideChamp}>Chargement…</div></Carte></div>;
 
   const total = LISTE.length;
   const recues = total - coupees.size;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 17, color: 'var(--emilio)' }}>🔔 Alertes par mail</div>
-            <div style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 1.5, maxWidth: 580 }}>{fr('Les mails que le CRM t’envoie, avec l’expéditeur « Werner · CRM ». Coupe ceux dont tu n’as pas besoin : l’événement reste toujours visible dans le CRM, rien ne se perd.')}</div>
+    <div className={p.rubrique}>
+      {hero}
+
+      {/* Le résumé */}
+      <Carte>
+        <div className={p.resume}>
+          <Anneau n={recues} sur={total} />
+          <div className={p.resumeTx}>
+            <b>{recues === total ? 'Tu reçois toutes les alertes' : recues === 0 ? 'Toutes les alertes sont coupées' : `Tu reçois ${recues} alerte${recues > 1 ? 's' : ''} sur ${total}`}</b>
+            <p>{fr('Chaque interrupteur s’enregistre tout de suite et compte dès le prochain événement : tu n’as rien d’autre à faire.')}</p>
           </div>
-          {note && <span style={{ fontSize: 12, fontWeight: 700, color: '#10b981' }}>✓ {note}</span>}
-        </div>
-
-        <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', background: '#f8fafc', border: '1px solid #eaeae9', borderRadius: 12, padding: '11px 14px' }}>
-          <span style={{ fontSize: 13.5, color: 'var(--emilio)' }}>{'Tu reçois '}<b>{`${recues} alerte${recues > 1 ? 's' : ''} sur ${total}`}</b></span>
-          <span style={{ display: 'inline-flex', gap: 14 }}>
-            <button type="button" disabled={enCours || coupees.size === total} onClick={() => enregistrer(new Set(LISTE.map(a => a.cle)))}
-              style={{ background: 'none', border: 'none', padding: 0, fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: coupees.size === total ? '#cbd5e1' : '#64748b', cursor: 'pointer' }}>
-              Tout couper
+          <div className={p.boutons}>
+            <button type="button" className={p.btn} disabled={enCours || coupees.size === total} onClick={() => { void enregistrer(new Set(LISTE.map(a => a.cle))); }}>
+              <Ico n="pause" t={15} />Tout couper
             </button>
-            <button type="button" disabled={enCours || coupees.size === 0} onClick={() => enregistrer(new Set())}
-              style={{ background: 'none', border: 'none', padding: 0, fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: coupees.size === 0 ? '#cbd5e1' : '#716d69', cursor: 'pointer' }}>
-              Tout recevoir
+            <button type="button" className={`${p.btn} ${p.btnFonce}`} disabled={enCours || coupees.size === 0} onClick={() => { void enregistrer(new Set()); }}>
+              <Ico n="check" t={15} e={2.4} />Tout recevoir
             </button>
-          </span>
+          </div>
         </div>
+        {erreurEcriture && <div style={{ marginTop: 14 }}><Note ton="erreur">{erreurEcriture}</Note></div>}
+      </Carte>
 
-        {GROUPES.filter(g => LISTE.some(a => a.groupe === g.id)).map(g => (
-          <div key={g.id}>
-            <div style={RUBRIQUE}>{g.titre}</div>
-            {LISTE.filter(a => a.groupe === g.id).map(a => {
+      {/* Comment ça marche */}
+      <Carte ic="info" titre="Comment ça marche">
+        <Etapes items={[
+          { ic: 'etincelle', titre: 'Il se passe quelque chose', texte: 'Un client demande une visite, signe un mandat, remplit le site…' },
+          { ic: 'ecran', titre: 'Le CRM le note', texte: 'Dans son suivi, et dans Relances quand il faut agir.' },
+          { ic: 'mail', titre: 'Le mail part', texte: 'Seulement si l’alerte est allumée, vers ta boîte.' },
+          { ic: 'check', titre: 'Rien ne se perd', texte: 'Coupée, l’alerte reste visible dans le CRM.' },
+        ]} />
+      </Carte>
+
+      {/* Une carte par famille */}
+      {GROUPES.filter(g => LISTE.some(a => a.groupe === g.id)).map(g => {
+        const lignes = LISTE.filter(a => a.groupe === g.id);
+        const n = lignes.filter(a => !coupees.has(a.cle)).length;
+        return (
+          <Carte key={g.id} ic={g.ic} titre={g.titre} sous={g.sous}
+            droite={<span className={p.aideChamp} style={{ whiteSpace: 'nowrap', fontWeight: 700 }}>{`${n} sur ${lignes.length}`}</span>}>
+            {lignes.map(a => {
               const on = !coupees.has(a.cle);
               return (
-                <div key={a.cle} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 0', borderTop: '1px solid #f1f5f9' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: on ? 'var(--emilio)' : '#64748b' }}>{a.titre}</div>
-                    <div title={a.objet} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 7, maxWidth: '100%', background: on ? '#f8f8f7' : '#f8fafc', border: '1px solid #edeceb', borderRadius: 8, padding: '5px 9px', fontSize: 12, color: on ? '#334155' : '#94a3b8' }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6.5 8.5 6 8.5-6" /></svg>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{a.objet}</span>
+                <div key={a.cle} className={`${p.ligne} ${on ? '' : p.ligneOff}`}>
+                  <span className={p.ligneIc}><Ico n={on ? 'mail' : 'pause'} t={18} /></span>
+                  <div className={p.ligneCorps}>
+                    <div className={p.ligneTitre}>{a.titre}</div>
+                    <div className={p.objet} title={a.objet}><Ico n="mail" t={13} e={2.2} /><span>{a.objet}</span></div>
+                    <div className={p.ligneTx}>{fr(a.quand)}</div>
+                    <div className={`${p.dansCrm} ${on ? '' : p.dansCrmCoupe}`}>
+                      <Ico n="ecran" t={14} e={2} />
+                      <span>{fr(`${on ? 'Aussi dans le CRM' : 'Coupé : tu le vois dans le CRM'} : ${a.crm.charAt(0).toLowerCase()}${a.crm.slice(1)}`)}</span>
                     </div>
-                    <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 7, lineHeight: 1.5 }}>{fr(a.quand)}</div>
-                    <div style={{ fontSize: 12.5, color: on ? '#94a3b8' : '#0f7a4f', marginTop: 3, lineHeight: 1.5 }}>{fr(`${on ? 'Aussi dans le CRM' : 'Coupé. Tu le vois dans le CRM'} : ${a.crm.charAt(0).toLowerCase()}${a.crm.slice(1)}`)}</div>
-                    {a.sauf && !on && <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 3, lineHeight: 1.5 }}>{fr(`Il part quand même si ${a.sauf}`)}</div>}
+                    {a.sauf && !on && <div className={p.sauf}>{fr(`Il part quand même si ${a.sauf}`)}</div>}
                   </div>
                   <Interrupteur on={on} disabled={enCours} onClick={() => basculer(a.cle)} label={`${on ? 'Couper' : 'Recevoir'} : ${a.titre}`} />
                 </div>
               );
             })}
-          </div>
-        ))}
-      </div>
+          </Carte>
+        );
+      })}
 
-      <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 24 }}>
-        <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 15, color: 'var(--emilio)' }}>Ce que tu ne reçois jamais par mail</div>
-        <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 3, lineHeight: 1.5 }}>{fr('Tout ça arrive seulement dans le CRM : dans le suivi du client, et dans Relances quand il faut le rappeler.')}</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '7px 16px', marginTop: 14, fontSize: 13, color: '#334155' }}>
-          {JAMAIS.map(t => (
-            <span key={t} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              <b style={{ color: '#94a3b8', width: 12, flexShrink: 0 }}>·</b><span>{fr(t)}</span>
-            </span>
-          ))}
-        </div>
-      </div>
+      {/* Ce qui n'arrive jamais par mail */}
+      <Carte ic="ecran" titre="Ce que tu ne reçois jamais par mail"
+        sous={fr('Tout ça arrive seulement dans le CRM : dans le suivi du client, et dans Relances quand il faut le rappeler.')}>
+        <Tuiles items={JAMAIS.map(t => ({ ic: 'ecran', t: fr(t), ton: 'neutre' as const }))} />
+      </Carte>
     </div>
   );
 }

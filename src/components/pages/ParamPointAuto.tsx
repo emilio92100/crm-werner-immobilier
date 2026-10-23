@@ -1,12 +1,20 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import styles from './Page.module.css';
+import Curseur from '@/components/shared/Curseur';
+import { Carte, Enregistre, Etapes, Hero, Ico, Interrupteur, Note, Pastille, Tuiles, fr, initiales, styles as p } from './ParamUI';
 
 /* ═══ Paramètres · Point automatique ══════════════════════════════════════
    Le réglage général du mail « Où en est votre recherche ? » (la règle est
    dans src/lib/point-auto.ts). Chaque changement s'enregistre tout de suite,
-   par /api/point-auto : pas besoin du bouton « Sauvegarder tout », et ce
-   bouton-là ne touche pas à ces réglages (voir PageParametres). */
+   par /api/point-auto : pas besoin du bouton « Enregistrer » de la page, et
+   ce bouton-là ne touche pas à ces réglages (voir PageParametres).
+
+   23 octobre 2026 — le nouveau dessin, et les questions d'Alexandre : « une
+   fois branché sur Vercel, c'est juste lui qui active ou pas ? » (oui : le
+   branchement est fait une fois, l'interrupteur est à Werner) ; « actif,
+   c'est quoi ? et les prospects ? » (Actif = un demandeur qui a son espace ;
+   un prospect n'en a pas, et ce mail le renvoie vers son espace : il ne le
+   reçoit pas, c'est voulu — c'est dit en clair ici). */
 
 type Candidat = {
   clientId: string; prenom: string; nom: string; statut: string;
@@ -22,24 +30,13 @@ type Etat = {
 const DELAIS = [30, 45, 60];
 const jour = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'Europe/Paris' });
 
-function Interrupteur({ on, onClick, disabled }: { on: boolean; onClick: () => void; disabled?: boolean }) {
-  return (
-    <button type="button" role="switch" aria-checked={on} onClick={onClick} disabled={disabled}
-      style={{ width: 44, height: 25, borderRadius: 99, border: 'none', cursor: disabled ? 'wait' : 'pointer', position: 'relative', background: on ? '#10b981' : '#cbd5e1', transition: 'background .15s', flexShrink: 0, padding: 0 }}>
-      <span style={{ position: 'absolute', top: 3, left: on ? 22 : 3, width: 19, height: 19, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
-    </button>
-  );
-}
-
-const RUBRIQUE: React.CSSProperties = { fontSize: 10.5, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: '#94a3b8', marginBottom: 10 };
-const LIGNE: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '16px 0', borderTop: '1px solid #f1f5f9' };
-
 export default function ParamPointAuto() {
   const [etat, setEtat] = useState<Etat | null>(null);
   const [erreur, setErreur] = useState('');
+  const [erreurReglage, setErreurReglage] = useState('');
   const [enCours, setEnCours] = useState(false);
-  const [note, setNote] = useState('');
-  const [exemple, setExemple] = useState<'' | 'envoi' | string>('');
+  const [note, setNote] = useState(0);
+  const [exemple, setExemple] = useState<'' | 'envoi' | { ok: boolean; t: string }>('');
 
   const appeler = useCallback(async (corps: Record<string, unknown>) => {
     const r = await fetch('/api/point-auto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) });
@@ -54,149 +51,174 @@ export default function ParamPointAuto() {
     } catch { setErreur('Lecture impossible'); }
   }, [appeler]);
 
-  useEffect(() => { charger(); }, [charger]);
+  useEffect(() => { void charger(); }, [charger]);
 
   async function regler(corps: { actif?: boolean; delai?: number }) {
-    setEnCours(true);
+    setEnCours(true); setErreurReglage('');
     try {
       const j = await appeler({ mode: 'reglages', ...corps });
-      if (!j.ok) { alert("Le réglage n'a pas pu être enregistré.\n\n" + (j.error || '')); return; }
-      setNote('Enregistré'); setTimeout(() => setNote(''), 2000);
+      if (!j.ok) { setErreurReglage(`Le réglage n’a pas pu être enregistré : ${j.error || 'erreur'}. Rien n’a changé.`); return; }
+      const n = Date.now(); setNote(n); setTimeout(() => setNote(x => (x === n ? 0 : x)), 2200);
       await charger();
+    } catch {
+      setErreurReglage('Erreur réseau : le réglage n’a pas été enregistré. Réessaie dans un instant.');
     } finally { setEnCours(false); }
   }
 
   async function envoyerExemple() {
     setExemple('envoi');
     const j = await appeler({ mode: 'exemple' }).catch(() => ({ ok: false }));
-    setExemple(j.ok ? `Envoyé à ${j.a}, avec le dossier de ${j.client}.` : `Pas parti : ${j.error || 'erreur'}`);
+    setExemple(j.ok ? { ok: true, t: `Envoyé à ${j.a}, avec le dossier de ${j.client}.` } : { ok: false, t: `Pas parti : ${j.error || 'erreur'}` });
   }
 
-  if (erreur) return <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 24, color: '#b91c1c', fontSize: 13 }}>Le point automatique n&apos;a pas pu être lu : {erreur}</div>;
-  if (!etat) return <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 24, color: '#94a3b8', fontSize: 13 }}>Chargement…</div>;
+  const hero = (droite?: React.ReactNode) => (
+    <Hero ic="avion" titre="Point automatique"
+      texte={fr('Le mail « Où en est votre recherche ? », envoyé tout seul à un demandeur dont le dossier ne bouge plus. Il répond en un clic depuis son espace, et sa réponse arrive dans tes Relances.')}
+      droite={droite} />
+  );
+  if (erreur) return <div className={p.rubrique}>{hero()}<Note ton="erreur">{`Le point automatique n’a pas pu être lu : ${erreur}`}</Note></div>;
+  if (!etat) return <div className={p.rubrique}>{hero()}<Carte><div className={p.aideChamp}>Chargement…</div></Carte></div>;
 
   const { reglages, branche, candidats } = etat;
   const dus = candidats.filter(c => c.du);
   const aVenir = candidats.filter(c => !c.du && !c.empechement).sort((a, b) => a.echeance.localeCompare(b.echeance));
   const bloques = candidats.filter(c => c.empechement);
-
-  const bandeau = !branche.cron
-    ? { t: 'L’envoi automatique n’est pas encore branché sur Vercel', s: 'Il manque la variable CRON_SECRET dans le projet Vercel. Tant qu’elle n’y est pas, aucun mail ne part, même activé.', bg: '#fffbeb', bd: '#fde68a', fg: '#92400e' }
-    : !branche.mailjet
-      ? { t: 'Mailjet n’est pas configuré', s: 'Les clés Mailjet manquent sur Vercel : aucun mail ne peut partir.', bg: '#fef2f2', bd: '#fecaca', fg: '#991b1b' }
-      : reglages.actif
-        ? { t: 'Activé', s: 'L’envoi a lieu chaque matin, vers 10 h. Ceux qui sont dus reçoivent le mail à ce moment-là.', bg: '#ecfdf5', bd: '#bbf7d0', fg: '#166534' }
-        : { t: 'Désactivé', s: 'Aucun mail ne part. Regarde la liste plus bas avant de l’activer : elle dit exactement qui le recevrait.', bg: '#f8fafc', bd: '#eaeae9', fg: '#475569' };
-
   const nomDe = (c: Candidat) => `${c.prenom} ${c.nom}`.trim() || 'Sans nom';
+  const d = reglages.delai;
+
+  /* L'état, en une pastille et une phrase. */
+  const pret = branche.cron && branche.mailjet;
+  const pastille = !pret ? <Pastille ton="or">{reglages.actif ? 'Allumé, en attente' : 'En attente'}</Pastille>
+    : reglages.actif ? <Pastille ton="vert">Activé</Pastille> : <Pastille ton="gris">Désactivé</Pastille>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 17, color: 'var(--emilio)' }}>📨 Point automatique</div>
-            <div style={{ fontSize: 13, color: '#64748b', marginTop: 4, lineHeight: 1.5, maxWidth: 560 }}>{'Le mail « Où en est votre recherche ? », envoyé tout seul quand un dossier actif ne bouge plus. Le client répond en un clic depuis son espace, et sa réponse arrive dans tes Relances.'}</div>
+    <div className={p.rubrique}>
+      {hero(note ? <Enregistre /> : pastille)}
+
+      {/* L'interrupteur, et ce qui manque éventuellement */}
+      <Carte>
+        <div className={`${p.ligne} ${reglages.actif ? '' : p.ligneOff}`} style={{ margin: 0 }}>
+          <span className={p.ligneIc}><Ico n={reglages.actif ? 'avion' : 'pause'} t={18} /></span>
+          <div className={p.ligneCorps}>
+            <div className={p.ligneTitre}>{reglages.actif ? 'L’envoi automatique est activé' : 'L’envoi automatique est éteint'}</div>
+            <div className={p.ligneTx}>
+              {fr(reglages.actif
+                ? (pret ? 'Chaque matin, le CRM regarde qui est dû et lui envoie le mail. Tu peux l’éteindre quand tu veux.' : 'Il est allumé : les mails partiront dès que le branchement du serveur sera fait (voir dessous).')
+                : 'Aucun mail ne part. Regarde plus bas qui le recevrait avant de l’allumer : la liste est exacte.')}
+            </div>
           </div>
-          {note && <span style={{ fontSize: 12, fontWeight: 700, color: '#10b981' }}>✓ {note}</span>}
+          <Interrupteur on={reglages.actif} disabled={enCours} onClick={() => { void regler({ actif: !reglages.actif }); }}
+            label={reglages.actif ? 'Éteindre l’envoi automatique' : 'Allumer l’envoi automatique'} />
         </div>
-
-        <div style={{ marginTop: 18, background: bandeau.bg, border: `1px solid ${bandeau.bd}`, borderRadius: 12, padding: '12px 14px' }}>
-          <div style={{ fontSize: 13.5, fontWeight: 800, color: bandeau.fg }}>{bandeau.t}</div>
-          <div style={{ fontSize: 12.5, color: bandeau.fg, opacity: .85, marginTop: 3, lineHeight: 1.5 }}>{bandeau.s}</div>
-        </div>
-
-        <div style={{ ...LIGNE, marginTop: 18 }}>
-          <Interrupteur on={reglages.actif} disabled={enCours} onClick={() => regler({ actif: !reglages.actif })} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--emilio)' }}>{reglages.actif ? 'Envoi automatique activé' : 'Activer l’envoi automatique'}</span>
-        </div>
-
-        <div style={LIGNE}>
-          <span style={{ fontSize: 14, color: 'var(--emilio)', fontWeight: 600 }}>Envoyer après</span>
-          <span style={{ display: 'inline-flex', gap: 6 }}>
-            {DELAIS.map(d => (
-              <button key={d} type="button" disabled={enCours} onClick={() => d !== reglages.delai && regler({ delai: d })}
-                style={{ padding: '6px 14px', borderRadius: 99, border: `1px solid ${d === reglages.delai ? 'var(--emilio)' : '#e2e8f0'}`, background: d === reglages.delai ? 'var(--emilio)' : 'white', color: d === reglages.delai ? 'white' : '#64748b', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                {d} jours
-              </button>
-            ))}
-          </span>
-          <span style={{ fontSize: 14, color: 'var(--emilio)', fontWeight: 600 }}>sans mouvement</span>
-        </div>
-
-        <div style={LIGNE}>
-          <span style={{ fontSize: 14, color: 'var(--emilio)', fontWeight: 600 }}>Qui le reçoit</span>
-          <span style={{ fontSize: 13, color: '#475569' }}>Les dossiers <b>Actifs</b>, qui ont une adresse mail et une recherche en cours. Jamais les autres.</span>
-        </div>
-
-        <div style={{ ...LIGNE, display: 'block' }}>
-          <div style={RUBRIQUE}>Ce qui compte comme un mouvement</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '7px 16px', fontSize: 13, color: '#334155' }}>
-            {[
-              [true, 'Une note, un appel, un mail dans le suivi'],
-              [true, 'Un changement de critères'],
-              [true, 'Un bien envoyé'],
-              [true, 'Une visite'],
-              [true, 'Une réaction du client : avis sur un bien, message, demande de rappel'],
-              [false, 'Le client qui ouvre simplement son espace'],
-            ].map(([ok, t]) => (
-              <span key={String(t)} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                <b style={{ color: ok ? '#10b981' : '#ef4444', width: 12, flexShrink: 0 }}>{ok ? '✓' : '✗'}</b><span>{t as string}</span>
-              </span>
-            ))}
+        {!branche.cron && (
+          <div style={{ marginTop: 12 }}>
+            <Note ton="attention">
+              <b>{'Le branchement du serveur n’est pas encore fait. '}</b>
+              {fr('C’est un réglage technique, posé une seule fois (l’envoi de chaque matin). Tant qu’il manque, aucun mail ne part, même allumé. Une fois fait, tout se décide ici : tu allumes ou tu éteins, rien d’autre.')}
+            </Note>
           </div>
-          <div style={{ fontSize: 12.5, color: '#94a3b8', marginTop: 12, lineHeight: 1.55 }}>{`Un seul mail par période : sans réponse, le suivant part ${reglages.delai} jours plus tard. Au moindre mouvement, le compteur repart de zéro.`}</div>
-        </div>
+        )}
+        {branche.cron && !branche.mailjet && (
+          <div style={{ marginTop: 12 }}>
+            <Note ton="erreur">{fr('L’envoi des mails n’est pas configuré sur le serveur : aucun mail ne peut partir pour l’instant.')}</Note>
+          </div>
+        )}
+        {erreurReglage && <div style={{ marginTop: 12 }}><Note ton="erreur">{erreurReglage}</Note></div>}
+      </Carte>
 
-        <div style={{ ...LIGNE, paddingBottom: 0 }}>
-          <button type="button" onClick={envoyerExemple} disabled={exemple === 'envoi'}
-            className={`${styles.btn} ${styles.btnDark}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            {exemple === 'envoi' ? '⏳ Envoi…' : '✉️ M’envoyer un exemple'}
+      {/* Comment ça marche */}
+      <Carte ic="info" titre="Comment ça marche">
+        <Etapes items={[
+          { ic: 'horloge', titre: 'Le dossier ne bouge plus', texte: `Rien de nouveau depuis ${d} jours : ni note, ni envoi, ni visite.` },
+          { ic: 'avion', titre: 'Le mail part, le matin', texte: 'Un seul, au demandeur, avec le rappel de sa recherche.' },
+          { ic: 'message', titre: 'Il répond en un clic', texte: 'Je cherche toujours, mes critères ont changé, j’ai trouvé, en pause.' },
+          { ic: 'relance', titre: 'Sa réponse arrive chez toi', texte: `Dans Relances et dans son suivi. Sans réponse, un nouveau mail ${d} jours plus tard.` },
+        ]} />
+      </Carte>
+
+      {/* Le délai */}
+      <Carte ic="calendrier" titre="Envoyer après combien de jours sans mouvement ?"
+        sous={fr('Au moindre mouvement, le compteur repart de zéro. 45 jours conviennent à la plupart des recherches.')}
+        droite={<span className={p.choix} role="group" aria-label="Délai">
+          <Curseur cle={d} />
+          {DELAIS.map(x => (
+            <button key={x} type="button" aria-pressed={x === d} disabled={enCours} onClick={() => { if (x !== d) void regler({ delai: x }); }}>{`${x} jours`}</button>
+          ))}
+        </span>}>
+        <div className={p.sousTitre}>Ce qui compte comme un mouvement</div>
+        <Tuiles items={[
+          { ic: 'check', t: 'Une note, un appel, un mail dans le suivi', ton: 'oui' },
+          { ic: 'check', t: 'Un changement de critères', ton: 'oui' },
+          { ic: 'check', t: 'Un local envoyé', ton: 'oui' },
+          { ic: 'check', t: 'Une visite', ton: 'oui' },
+          { ic: 'check', t: 'Une réaction du client : avis sur un local, message, demande de rappel', ton: 'oui' },
+          { ic: 'croix', t: 'Le client qui ouvre simplement son espace', ton: 'non' },
+        ]} />
+      </Carte>
+
+      {/* Qui le reçoit */}
+      <Carte ic="groupe" titre="Qui le reçoit"
+        sous={fr('Seulement les demandeurs Actifs : ceux qui ont leur espace client. Il faut tout ce qui est en vert.')}>
+        <Tuiles items={[
+          { ic: 'check', t: fr('Un demandeur « Actif », c’est-à-dire avec son espace client'), ton: 'oui' },
+          { ic: 'check', t: 'Une adresse mail sur sa fiche', ton: 'oui' },
+          { ic: 'check', t: 'Une recherche en cours', ton: 'oui' },
+          { ic: 'croix', t: fr('Un prospect : il n’a pas d’espace, et les quatre réponses du mail ouvrent l’espace'), ton: 'non' },
+          { ic: 'croix', t: 'Un contact archivé, ou qui n’est plus demandeur', ton: 'non' },
+          { ic: 'croix', t: 'Un client que tu as exclu depuis sa fiche', ton: 'non' },
+        ]} />
+        <div style={{ marginTop: 12 }}>
+          <Note ton="info">
+            <b>{'Et tes prospects ? '}</b>
+            {fr('Ils ne reçoivent pas ce mail, c’est voulu : sans espace, ils ne sauraient pas où répondre. Pour eux, c’est toi qui relances (Relances). Et dès que tu passes un prospect en « Actif », son espace s’ouvre et il entre tout seul dans le point automatique.')}
+          </Note>
+        </div>
+      </Carte>
+
+      {/* Qui le recevrait */}
+      <Carte ic="personne" titre="Qui le recevrait" sous={fr(`Calculé maintenant, avec le délai de ${d} jours, parmi tes demandeurs Actifs.`)}>
+        <div className={p.sousTitre}>{`Au prochain envoi · ${dus.length}`}</div>
+        {dus.length === 0
+          ? <div className={p.aideChamp} style={{ color: '#71717a' }}>{fr('Personne : tous tes demandeurs Actifs ont bougé récemment.')}</div>
+          : <div className={p.liste}>{dus.map(c => (
+            <div key={c.clientId} className={`${p.personne} ${p.personneDue}`}>
+              <span className={p.avatar}>{initiales(nomDe(c))}</span><b>{nomDe(c)}</b>
+              <small>{c.dernierMouvement ? `rien depuis le ${jour(c.dernierMouvement)}` : 'rien depuis la création'}</small>
+            </div>
+          ))}</div>}
+
+        {aVenir.length > 0 && <>
+          <div className={p.sousTitre}>{`Plus tard, si rien ne bouge · ${aVenir.length}`}</div>
+          <div className={p.liste}>{aVenir.map(c => (
+            <div key={c.clientId} className={p.personne}>
+              <span className={p.avatar}>{initiales(nomDe(c))}</span><b>{nomDe(c)}</b>
+              <small>{`le ${jour(c.echeance)}`}</small>
+            </div>
+          ))}</div>
+        </>}
+
+        {bloques.length > 0 && <>
+          <div className={p.sousTitre}>{`Ne le recevront pas · ${bloques.length}`}</div>
+          <div className={p.liste}>{bloques.map(c => (
+            <div key={c.clientId} className={p.personne} style={{ alignItems: 'flex-start' }}>
+              <span className={p.avatar} style={{ background: '#e4e4e7', color: '#52525b' }}>{initiales(nomDe(c))}</span>
+              <b style={{ color: '#52525b', paddingTop: 5 }}>{nomDe(c)}</b>
+              <small style={{ whiteSpace: 'normal', paddingTop: 6 }}>{(c.empechement || '').replace('Active-le plus haut si tu veux qu’il parte.', 'Active-le sur sa fiche si tu veux qu’il parte.')}</small>
+            </div>
+          ))}</div>
+        </>}
+        <div className={p.aideChamp} style={{ marginTop: 12 }}>{fr('Les prospects ne figurent pas dans ces listes : ils ne sont jamais concernés.')}</div>
+      </Carte>
+
+      {/* L'exemple */}
+      <Carte ic="mail" titre="Voir le mail" sous={fr('Le mail tel qu’un demandeur le recevrait, envoyé à ton adresse. Rien ne part au client.')}>
+        <div className={p.actions} style={{ marginTop: 0 }}>
+          <button type="button" className={`${p.btn} ${p.btnFonce}`} onClick={() => { void envoyerExemple(); }} disabled={exemple === 'envoi'}>
+            <Ico n="avion" t={15} />{exemple === 'envoi' ? 'Envoi…' : 'M’envoyer un exemple'}
           </button>
-          <span style={{ fontSize: 12.5, color: '#64748b' }}>{exemple && exemple !== 'envoi' ? exemple : 'Le mail tel qu’un client le recevrait, envoyé à ton adresse.'}</span>
+          {exemple && exemple !== 'envoi' && <span style={{ fontSize: 13, color: exemple.ok ? '#166534' : '#991b1b' }}>{exemple.t}</span>}
         </div>
-      </div>
-
-      <div className={`${styles.card} ${styles.carteForm}`} style={{ padding: 24 }}>
-        <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 15, color: 'var(--emilio)' }}>Qui le recevrait</div>
-        <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 3 }}>{`Calculé maintenant, avec le délai de ${reglages.delai} jours.`}</div>
-
-        <div style={{ marginTop: 16 }}>
-          <div style={RUBRIQUE}>{`Au prochain envoi · ${dus.length}`}</div>
-          {dus.length === 0
-            ? <div style={{ fontSize: 13, color: '#94a3b8' }}>Personne : tous les dossiers actifs ont bougé récemment.</div>
-            : dus.map(c => (
-              <div key={c.clientId} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '9px 12px', borderRadius: 10, background: '#fdf2ea', border: '1px solid #facdab', marginBottom: 6, fontSize: 13.5 }}>
-                <b style={{ color: 'var(--emilio)' }}>{nomDe(c)}</b>
-                <span style={{ color: '#a85515', fontSize: 12.5 }}>{c.dernierMouvement ? `rien depuis le ${jour(c.dernierMouvement)}` : 'rien depuis la création'}</span>
-              </div>
-            ))}
-        </div>
-
-        {aVenir.length > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <div style={RUBRIQUE}>{`Plus tard, si rien ne bouge · ${aVenir.length}`}</div>
-            {aVenir.map(c => (
-              <div key={c.clientId} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '8px 2px', borderBottom: '1px solid #f1f5f9', fontSize: 13.5 }}>
-                <span style={{ color: 'var(--emilio)', fontWeight: 600 }}>{nomDe(c)}</span>
-                <span style={{ color: '#64748b', fontSize: 12.5 }}>le {jour(c.echeance)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {bloques.length > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <div style={RUBRIQUE}>{`Ne le recevront pas · ${bloques.length}`}</div>
-            {bloques.map(c => (
-              <div key={c.clientId} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '8px 2px', borderBottom: '1px solid #f1f5f9', fontSize: 13.5 }}>
-                <span style={{ color: '#64748b', fontWeight: 600 }}>{nomDe(c)}</span>
-                <span style={{ color: '#94a3b8', fontSize: 12.5 }}>{c.empechement}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      </Carte>
     </div>
   );
 }

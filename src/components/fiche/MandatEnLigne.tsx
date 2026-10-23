@@ -1052,7 +1052,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
                     </>)
                 : `Le numéro sera pris dans le registre des mandats quand ${client.prenom || 'le client'} demandera son code de signature (le prochain est le ${registre.prochain}) : il figurera sur son exemplaire avant qu’il signe.`}
               <Aide titre="Le numéro du mandat">
-                <span>{'Rien à faire : le numéro vient du registre des mandats de RT CONSEILS, partagé avec Alexandre, au moment où le client demande son code. Il est inscrit sur le mandat avant qu’il signe, et la ligne apparaît dans Documents › Registre des mandats.'}</span>
+                <span>{'Rien à faire : le numéro vient du registre des mandats de RT CONSEILS, partagé avec Emilio Immobilier, au moment où le client demande son code. Il est inscrit sur le mandat avant qu’il signe, et la ligne apparaît dans Documents › Registre des mandats.'}</span>
               </Aide>
             </div>
           ) : (
