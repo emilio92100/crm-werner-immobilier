@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 import {
   lireReglages, calculerCandidats, mailPoint, envoyerMailjet,
   CLE_ACTIF, CLE_DELAI, CLE_EXCLUS, DELAIS,
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
       const liste = await calculerCandidats(sb, { ...reglages, exclus: [] }, id ? { clientId: id } : {});
       const c = liste.find((x) => x.recherche && x.tokenClient);
       if (!c) return NextResponse.json({ ok: false, error: 'Aucun dossier actif avec une recherche pour construire un exemple.' }, { status: 404 });
-      const m = mailPoint({ prenom: c.prenom, recherche: c.recherche, tokenClient: c.tokenClient!, site: SITE });
+      const m = mailPoint({ prenom: c.prenom, recherche: c.recherche, tokenClient: c.tokenClient!, site: SITE, co: await coordonnees(sb) });
       const a = process.env.ALERTES_EMAIL || process.env.MAILJET_FROM_EMAIL || 'contact@wernerimmobilier.com';
       const r = await envoyerMailjet({ a, sujet: `[Exemple · ${`${c.prenom} ${c.nom}`.trim()}] ${m.sujet}`, html: m.html, texte: m.texte, id: `point-exemple-${Date.now()}` });
       if (!r.ok) return NextResponse.json({ ok: false, error: r.erreur }, { status: 502 });

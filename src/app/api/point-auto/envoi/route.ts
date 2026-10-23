@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 import {
   lireReglages, calculerCandidats, mailPoint, envoyerMailjet,
   TYPE_ENVOI, PLAFOND_PAR_JOUR,
@@ -59,7 +60,8 @@ export async function GET(req: NextRequest) {
 
     for (const c of dus) {
       const nom = `${c.prenom} ${c.nom}`.trim();
-      const m = mailPoint({ prenom: c.prenom, recherche: c.recherche, tokenClient: c.tokenClient!, site: SITE });
+      const co = await coordonnees(sb);
+      const m = mailPoint({ prenom: c.prenom, recherche: c.recherche, tokenClient: c.tokenClient!, site: SITE, co });
 
       /* V3.43 : la ligne du suivi d'abord, le mail ensuite. C'est elle qui
          empêche un deuxième mail le lendemain : écrite après, un échec
@@ -75,7 +77,7 @@ export async function GET(req: NextRequest) {
         metadata: { delai: reglages.delai },
       }).select('id').single();
       if (error || !note) { rates.push({ nom, erreur: 'pas noté dans le suivi, donc pas envoyé : ' + (error?.message || 'rien n’est revenu') }); continue; }
-      const r = await envoyerMailjet({ a: c.email!, nom, sujet: m.sujet, html: m.html, texte: m.texte, id: `point-${c.clientId}-${Date.now()}` });
+      const r = await envoyerMailjet({ a: c.email!, nom, sujet: m.sujet, html: m.html, texte: m.texte, id: `point-${c.clientId}-${Date.now()}`, repondre: co.mail });
       if (!r.ok) {
         rates.push({ nom, erreur: r.erreur || 'échec' });
         const { error: eRetrait } = await sb.from('journal').delete().eq('id', (note as { id: string }).id);

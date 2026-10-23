@@ -35,6 +35,7 @@ import { alerteMailActive } from './alertes';
 import { lireDepart } from './registre';
 import { enveloppeMail } from '@/lib/mail-charte';
 import { idsMailjet, noterRemises } from '@/lib/remise-mail';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 
 export const CLE_RESERVE = 'mandat_numeros_reserve';
 export const CLE_APPROBATION = 'mandat_modele_approuve_le';
@@ -281,6 +282,11 @@ const FROM_NAME = process.env.MAILJET_FROM_NAME || 'Werner Immobilier';
    partent de l'adresse habituelle, comme avant. */
 const FROM_SIGNATURE = (process.env.MAILJET_FROM_SIGNATURE || '').trim();
 
+/* « Répondre à » : le mail de contact de l'agence, tel que Werner le règle
+   dans Paramètres › Agence (23 octobre 2026). Les appelants passent ce mot,
+   et l'adresse du jour est lue à l'envoi. */
+export const REPONSE_AGENCE = 'agence';
+
 export const echappe = (t: string) =>
   String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -313,15 +319,17 @@ export async function envoyerMailSuivi(o: MailAEnvoyer): Promise<{ erreur: strin
   if (!apiKey || !apiSecret) return { erreur: 'Mailjet non configuré', id: null };
   const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
   try {
+    const co = await coordonnees();
+    const repondre = o.repondreA === REPONSE_AGENCE ? co.mail : o.repondreA;
     const r = await fetch('https://api.mailjet.com/v3.1/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
       body: JSON.stringify({
         Messages: [{
-          From: { Email: o.expediteur === 'signature' && FROM_SIGNATURE ? FROM_SIGNATURE : FROM_EMAIL, Name: o.deLaPartDe === 'crm' ? 'Werner · CRM' : o.deLaPartDe === 'agence' ? 'Werner Immobilier' : FROM_NAME },
+          From: { Email: o.expediteur === 'signature' && FROM_SIGNATURE ? FROM_SIGNATURE : FROM_EMAIL, Name: o.deLaPartDe === 'crm' ? 'Werner · CRM' : o.deLaPartDe === 'agence' ? co.agence : FROM_NAME },
           To: [{ Email: o.a, ...(o.nomA ? { Name: o.nomA } : {}) }],
           ...(o.cci && o.cci.toLowerCase() !== o.a.toLowerCase() ? { Bcc: [{ Email: o.cci }] } : {}),
-          ...(o.repondreA || (o.expediteur === 'signature' && FROM_SIGNATURE) ? { ReplyTo: { Email: o.repondreA || FROM_EMAIL } } : {}),
+          ...(repondre || (o.expediteur === 'signature' && FROM_SIGNATURE) ? { ReplyTo: { Email: repondre || co.mail } } : {}),
           Subject: o.sujet,
           TextPart: o.texte,
           HTMLPart: o.html,

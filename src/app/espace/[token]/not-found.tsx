@@ -21,16 +21,17 @@
  * non plus — il ne reste rien à interroger. On reste donc factuel, et on donne
  * ce qui sert vraiment : de quoi joindre son conseiller.
  */
+import { coordonnees } from '@/lib/coordonnees-serveur';
 
 const ENCRE = '#232528';
 const OR_CLAIR = '#f7b07a';
 const OR_FONCE = '#C8710F';
 
-const TEL = '01 87 66 06 00';
-const TEL_URL = '+33187660600';
-const MAIL = 'contact@wernerimmobilier.com';
 
-export default function LienInactif() {
+export default async function LienInactif() {
+  /* Le téléphone et le mail : Paramètres › Agence. */
+  const co = await coordonnees();
+  const TEL = co.tel, TEL_URL = co.telLien, MAIL = co.mail;
   return (
     <div
       style={{

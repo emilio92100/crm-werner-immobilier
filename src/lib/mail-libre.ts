@@ -18,8 +18,8 @@
    sauf l'adresse d'un lien (http, https, mailto, tel) : un collage venu de
    Word ou d'une page web ne peut rien glisser d'autre dans le mail. */
 
-import { IDENTITE_DEFAUT, type IdentiteAgence } from './agence';
-import { conseillerDe, personnaliser, type PourMail } from './mail-variables';
+import { IDENTITE_DEFAUT, coordonneesDe, type IdentiteAgence } from './agence';
+import { conseillerDe, coordonneesMail, personnaliser, type PourMail } from './mail-variables';
 import { LIEN_POLICE_MAIL, LOGO_BLANC_MAIL, LOGO_MAIL } from '@/lib/mail-charte';
 
 export type StyleMail = 'simple' | 'emilio';
@@ -165,7 +165,8 @@ export function habillageDe(reglages: Record<string, string | undefined>, identi
   const adresse = [id.adresse, [id.cp, id.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   return {
     conseiller: joliNom(conseillerDe(reglages)),
-    telephone: (reglages.conseiller_telephone || '').trim() || '01 87 66 06 00',
+    /* Le téléphone : Paramètres › Agence (23 octobre 2026, une seule source). */
+    telephone: identite ? coordonneesDe(identite).tel : coordonneesMail(reglages).tel,
     agence: id.nom || 'Werner Immobilier',
     mentions: [`${id.nom} — ${id.societe}${id.forme ? `, ${id.forme}` : ''}`, adresse, id.carte ? `Carte professionnelle ${id.carte}` : ''].filter(Boolean).join('\n'),
     /* V3.198 : le logo depuis IMAGES_MAIL (src/lib/mail-charte.ts), plus depuis `site`. */

@@ -14,16 +14,17 @@
  * ⚠️ Cet écran ne remplace pas not-found.tsx : celui-là reste pour les liens
  * qui ne mènent vraiment nulle part (fiche supprimée, adresse tronquée).
  */
+import { coordonnees } from '@/lib/coordonnees-serveur';
 
 const ENCRE = '#232528';
 const OR_CLAIR = '#f7b07a';
 const OR_FONCE = '#C8710F';
 
-const TEL = '01 87 66 06 00';
-const TEL_URL = '+33187660600';
-const MAIL = 'contact@wernerimmobilier.com';
 
-export default function EspaceEnPreparation({ prenom }: { prenom?: string | null }) {
+export default async function EspaceEnPreparation({ prenom }: { prenom?: string | null }) {
+  /* Le téléphone et le mail : Paramètres › Agence. */
+  const co = await coordonnees();
+  const TEL = co.tel, TEL_URL = co.telLien, MAIL = co.mail;
   const bonjour = prenom ? `Bonjour ${prenom},` : 'Bonjour,';
 
   return (

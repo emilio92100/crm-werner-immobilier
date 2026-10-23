@@ -7,7 +7,8 @@ import ParamPointAuto from './ParamPointAuto';
 import ParamAlertes from './ParamAlertes';
 import ParamAgence from './ParamAgence';
 import ParamSecurite from './ParamSecurite';
-import { signatureDe, texteModele, VARIABLES_MAIL } from '@/lib/mail-variables';
+import { coordonneesMail, signatureDe, texteModele, VARIABLES_MAIL } from '@/lib/mail-variables';
+import { CLE_IDENTITE } from '@/lib/agence';
 import { Carte, Enregistre, Etapes, Hero, Ico, Note, fr, styles as p } from './ParamUI';
 
 /* ═══ Paramètres ══════════════════════════════════════════════════════════
@@ -25,7 +26,7 @@ import { Carte, Enregistre, Etapes, Hero, Ico, Note, fr, styles as p } from './P
 
 /* Les clés que chaque rubrique enregistre par la barre du bas. */
 const CLES_RUBRIQUE: Record<string, string[]> = {
-  emails: ['agence_nom', 'conseiller_email', 'conseiller_prenom', 'conseiller_nom', 'conseiller_telephone', 'site_web', 'signature_email', 'template_email_objet', 'template_email_corps'],
+  emails: ['conseiller_prenom', 'conseiller_nom', 'signature_email', 'template_email_objet', 'template_email_corps'],
   relances: ['delai_relance_jours'],
 };
 
@@ -44,6 +45,7 @@ type Poser = (k: string, v: string) => void;
 /* ── Mails et signature (déclarée au niveau du module : AGENTS.md §2.4) ── */
 function RubriqueMails({ params, set, saved, onAgence }: { params: Params; set: Poser; saved: boolean; onAgence: () => void }) {
   const corps = useRef<HTMLTextAreaElement>(null);
+  const co = coordonneesMail(params);
   const champ = (cle: string, lib: string, o: { type?: string; ph?: string; large?: boolean; facultatif?: boolean } = {}) => (
     <label className={`${p.champ} ${o.large ? p.champLarge : ''}`}>
       <span>{lib}{o.facultatif && <em>{' · facultatif'}</em>}</span>
@@ -64,21 +66,44 @@ function RubriqueMails({ params, set, saved, onAgence }: { params: Params; set: 
         texte={fr('Ce qui signe les mails que tu écris depuis le CRM, et le texte qui pré-remplit l’envoi d’une sélection de locaux. Rien ne part tout seul : tu relis toujours avant d’envoyer.')}
         droite={saved ? <Enregistre /> : undefined} />
 
-      <Carte ic="personne" titre="Tes coordonnées dans les mails" sous={fr('Elles signent tes mails. L’identité imprimée sur les documents (mandats, offres) est dans la rubrique Agence.')}
-        droite={<button type="button" className={p.lien} onClick={onAgence}>{'Ouvrir Agence'}<Ico n="fleche" t={14} /></button>}>
+      <Carte ic="personne" titre="Qui signe tes mails" sous={fr('Ton prénom et ton nom, tels qu’ils s’écrivent en bas de tes mails et à la place de {{conseiller}}.')}>
         <div className={p.champs}>
-          {champ('agence_nom', 'Nom de l’agence')}
-          {champ('conseiller_email', 'Adresse mail professionnelle', { type: 'email' })}
           {champ('conseiller_prenom', 'Prénom')}
           {champ('conseiller_nom', 'Nom')}
-          {champ('conseiller_telephone', 'Téléphone', { type: 'tel' })}
-          {champ('site_web', 'Site web', { ph: 'https://…', facultatif: true })}
+        </div>
+      </Carte>
+
+      {/* 23 octobre 2026 : le nom de l'agence, le téléphone, le mail et le site
+          ne se règlent plus ici. Une seule source, Agence › Coordonnées. */}
+      <Carte ic="tel" titre="Les coordonnées de l’agence" sous={fr('Lues dans la rubrique Agence, la même source que tes documents, tes mails automatiques et l’espace de tes clients.')}
+        droite={<button type="button" className={p.lien} onClick={onAgence}>{'Les changer dans Agence'}<Ico n="fleche" t={14} /></button>}>
+        <div className={p.tuiles} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
+          {[
+            { ic: 'agence', l: 'Agence', v: co.agence },
+            { ic: 'tel', l: 'Téléphone', v: co.tel },
+            { ic: 'mail', l: 'Mail', v: co.mail },
+            { ic: 'globe', l: 'Site', v: co.site || 'aucun' },
+          ].map(x => (
+            <div key={x.l} className={`${p.tuile} ${p.tuileNeutre}`}>
+              <Ico n={x.ic} t={16} e={2} />
+              <span><small style={{ display: 'block', fontSize: 11, fontWeight: 800, letterSpacing: .6, textTransform: 'uppercase', color: '#a1a1aa' }}>{x.l}</small><b style={{ overflowWrap: 'anywhere' }}>{x.v}</b></span>
+            </div>
+          ))}
         </div>
       </Carte>
 
       <Carte ic="plume" titre="Ta signature" sous={fr('Placée à la fin de chaque mail que tu écris depuis le CRM (Nouveau mail, envoi de locaux) : tu peux la retoucher avant d’envoyer.')}>
         <textarea className={p.input} rows={5} value={params.signature_email || signatureDe(params)} onChange={e => set('signature_email', e.target.value)} />
-        <div className={p.aideChamp} style={{ marginTop: 6 }}>{fr('Laissée telle quelle, elle se compose toute seule avec ton prénom, ton nom, l’agence et ton téléphone.')}</div>
+        {(params.signature_email || '').trim()
+          ? (
+            <div style={{ marginTop: 10 }}>
+              <Note ton="attention">
+                {fr('Tu l’as écrite toi-même : elle ne suit plus toute seule. Si tu changes de numéro dans Agence, pense à la retoucher.')}{' '}
+                <button type="button" className={p.lien} onClick={() => set('signature_email', '')}>{'Revenir à la signature automatique'}</button>
+              </Note>
+            </div>
+          )
+          : <div className={p.aideChamp} style={{ marginTop: 6 }}>{fr('Automatique : elle se compose avec ton prénom, ton nom, l’agence et son téléphone, et suit tout seule ce que tu changes dans Agence.')}</div>}
       </Carte>
 
       {/* « Email de relance J+5 » est parti : aucun mail de relance ne part
@@ -217,7 +242,7 @@ export default function PageParametres() {
         {/* V3.152 : une autre rubrique arrive en cascade. */}
         <div style={{ minWidth: 0 }}>
           <Cascade cle={activeSection}>
-            {activeSection === 'agence' && <ParamAgence />}
+            {activeSection === 'agence' && <ParamAgence onEnregistree={v => { setParams(x => ({ ...x, [CLE_IDENTITE]: v })); setLues(x => ({ ...x, [CLE_IDENTITE]: v })); }} />}
             {activeSection === 'emails' && <RubriqueMails params={params} set={set} saved={saved} onAgence={() => setActiveSection('agence')} />}
             {activeSection === 'alertes' && <ParamAlertes />}
             {activeSection === 'relances' && <RubriqueRelances params={params} set={set} saved={saved} />}

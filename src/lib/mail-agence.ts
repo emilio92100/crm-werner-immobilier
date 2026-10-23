@@ -1,4 +1,5 @@
 import { IMAGES_MAIL, LIEN_POLICE_MAIL, LOGO_BLANC_MAIL, LOGO_MAIL, MAIL, POLICE_MAIL } from '@/lib/mail-charte';
+import { coordonneesDe, type Coordonnees } from '@/lib/agence';
 import { criteresAgence, type CritereAgence, type ResumeAgence } from '@/lib/agences-lien';
 
 /* ═══ Le mail du lien pour les agences (V3.198) ═══════════════════════════
@@ -17,9 +18,7 @@ import { criteresAgence, type CritereAgence, type ResumeAgence } from '@/lib/age
 
 const echappe = (t: string) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const ICO = `${IMAGES_MAIL}/mail/agence`;
-const TEL = '01 87 66 06 00';
-const TEL_URL = '+33187660600';
-const MAIL_ALEX = 'contact@wernerimmobilier.com';
+/* Le téléphone et le mail : Paramètres › Agence (la route et l'aperçu les passent). */
 
 export const SUJET_AGENCE = 'Un local pour mon client ? Voici le lien pour me le proposer';
 
@@ -41,7 +40,9 @@ const ETAPES = [
   { ico: 'etape-tel', t: 'Je vous rappelle', s: 'Si le local correspond à mon client.' },
 ];
 
-export function mailLienAgence(o: { lien: string; interlocuteur?: string | null; resume: ResumeAgence }): { sujet: string; html: string; texte: string } {
+export function mailLienAgence(o: { lien: string; interlocuteur?: string | null; resume: ResumeAgence; co?: Coordonnees }): { sujet: string; html: string; texte: string } {
+  const co = o.co || coordonneesDe(null);
+  const TEL = echappe(co.tel), TEL_URL = co.telLien, MAIL_ALEX = echappe(co.mail);
   const lien = echappe(o.lien);
   const lienCourt = echappe(o.lien.replace(/^https?:\/\//, ''));
   const bonjour = echappe(bonjourAgence(o.interlocuteur));

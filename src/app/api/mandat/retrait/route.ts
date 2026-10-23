@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 import { createClient } from '@supabase/supabase-js';
 import { envoyerMail, gabarit, echappe } from '@/lib/mandat-serveur';
 import { avecRemises } from '@/lib/remise-mail';
@@ -30,11 +31,10 @@ export const maxDuration = 30;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const TEL = '01 87 66 06 00';
 const ko = (erreur: string, status = 400) => NextResponse.json({ ok: false, erreur }, { status });
 
 /* Le mail, au nom d'Alexandre : court, simple, rien à faire. */
-function mailRetrait(prenom: string, commence: boolean) {
+function mailRetrait(prenom: string, commence: boolean, TEL: string) {
   const bonjour = `Bonjour${prenom ? ` ${prenom}` : ''},`;
   const p1 = 'Je retire pour le moment la proposition de mandat de recherche que je vous avais faite.';
   const p2 = commence
@@ -104,7 +104,7 @@ async function traiterPost(req: NextRequest) {
 
     const prevenus: string[] = [], echecs: string[] = [];
     for (const x of a) {
-      const m = mailRetrait(x.prenom, commence);
+      const m = mailRetrait(x.prenom, commence, (await coordonnees(sb)).tel);
       const e = await envoyerMail({ a: x.email, nomA: x.prenom || undefined, sujet: m.sujet, texte: m.texte, html: m.html });
       if (e) echecs.push(`${x.email} : ${e}`); else prevenus.push(x.email);
     }

@@ -1,4 +1,6 @@
 'use client';
+import { useCoordonnees } from '@/lib/coordonnees-client';
+import type { Coordonnees } from '@/lib/agence';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import AvatarContact, { type Personne } from '@/components/contacts/AvatarContact';
 import { createPortal } from 'react-dom';
@@ -2240,7 +2242,7 @@ function Interrupteur({ actif, onChange, titre, sous, desactive }: { actif: bool
 const ETAPES: Record<string, string> = { offre: 'Signature de l’offre', compromis: 'Signature de l’accord', acte: 'Signature du bail ou de l’acte' };
 
 /* Le mail au client : court, en clair, sans mot de métier. */
-function texteMail(o: { type: TypeRdv; prenom: string; debut: Date; lieu: string; biens: { titre: string; lieu: string }[]; mode: string; etape: string }) {
+function texteMail(o: { type: TypeRdv; prenom: string; debut: Date; lieu: string; biens: { titre: string; lieu: string }[]; mode: string; etape: string; co: Coordonnees }) {
   const quand = `${jourLong(o.debut)} à ${heureFr(o.debut)}`;
   let objet = '', phrase = '';
   if (o.type === 'visite') {
@@ -2264,7 +2266,7 @@ function texteMail(o: { type: TypeRdv; prenom: string; debut: Date; lieu: string
     objet = `Rendez-vous confirmé · ${quand}`;
     phrase = `Je vous confirme notre rendez-vous du ${quand}${o.lieu ? `, ${o.lieu}` : ''}.`;
   }
-  const corps = `Bonjour ${o.prenom},\n\n${phrase}\n\nN'hésitez pas à m'appeler si le moindre changement s'impose.\n\nÀ très vite,\nWerner\nWerner Immobilier\n01 87 66 06 00`;
+  const corps = `Bonjour ${o.prenom},\n\n${phrase}\n\nN'hésitez pas à m'appeler si le moindre changement s'impose.\n\nÀ très vite,\nWerner\n${o.co.agence}\n${o.co.tel}`;
   return { objet: maj(objet), corps };
 }
 
@@ -2354,6 +2356,8 @@ const prixCourt = (n: number | null | undefined) => (n ? `${Math.round(n).toLoca
 function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onEnregistre }: {
   modale: NonNullable<Modale>; dossiers: Dossier[]; relances: any[]; tableAbsente: boolean; evs: Ev[]; onFerme: () => void; onEnregistre: () => void;
 }) {
+  /* La signature du mail au client : Paramètres › Agence. */
+  const co = useCoordonnees();
   const ev = modale.mode === 'modifier' ? modale.ev : null;
   const init = useMemo<Formulaire>(() => {
     if (ev) {
@@ -2531,7 +2535,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
   const ecartJours = Math.round((depuisCle(f.date || cleDe(new Date())).getTime() - depuisCle(cleDe(new Date())).getTime()) / 86400000);
   const relatif = ecartJours === 0 ? 'Aujourd’hui' : ecartJours === 1 ? 'Demain' : ecartJours === -1 ? 'Hier' : ecartJours > 1 ? `Dans ${ecartJours} jours` : `Il y a ${-ecartJours} jours`;
   const peutPrevenir = avecDossier && !!dossier && dossier.emails.length > 0;
-  const mail = peutPrevenir ? texteMail({ type: f.type, prenom: dossier!.prenom, debut, lieu, biens: [...choisis.map(b => ({ titre: b.titre || b.ville || 'Local', lieu: lieuChoisi(b) })), ...ajoutes.map(a => ({ titre: a.titre || a.ville || 'Local', lieu: adresseVente(a) }))], mode: f.mode, etape: f.etape }) : null;
+  const mail = peutPrevenir ? texteMail({ type: f.type, prenom: dossier!.prenom, debut, lieu, biens: [...choisis.map(b => ({ titre: b.titre || b.ville || 'Local', lieu: lieuChoisi(b) })), ...ajoutes.map(a => ({ titre: a.titre || a.ville || 'Local', lieu: adresseVente(a) }))], mode: f.mode, etape: f.etape, co }) : null;
   const rdvImpossible = f.type !== 'visite' && tableAbsente;
 
   const effets: string[] = [`Ajouté à ton agenda le ${jourLong(debut)} à ${hhmm(debut)}.`];

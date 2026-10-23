@@ -43,6 +43,7 @@ import { lienEspace } from '@/lib/jeton';
 import { acheteurEnCours, colonneContactAbsente, estAcheteur, estArchive, reventePossible } from '@/lib/contacts';
 import { LIEN_POLICE_MAIL, LOGO_BLANC_MAIL, LOGO_MAIL } from '@/lib/mail-charte';
 import { EMPLACEMENTS, nomEquipement } from '@/lib/affaires';
+import { coordonneesDe, type Coordonnees } from '@/lib/agence';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Base = any;
@@ -395,8 +396,10 @@ export function lienReponse(tokenClient: string, rechercheId: string, reponse: R
   return `${lienEspace(tokenClient, site)}?r=${encodeURIComponent(rechercheId)}&point=${reponse}`;
 }
 
-export function mailPoint(o: { prenom: string; recherche: any; tokenClient: string; site: string }): { sujet: string; html: string; texte: string } {
+export function mailPoint(o: { prenom: string; recherche: any; tokenClient: string; site: string; co?: Coordonnees }): { sujet: string; html: string; texte: string } {
   const { recherche, tokenClient, site } = o;
+  /* Le téléphone de l'agence : Paramètres › Agence (la route le passe). */
+  const co = o.co || coordonneesDe(null);
   const prenom = echappe(o.prenom || '');
   const res = resumeRecherche(recherche);
   const lien = (x: Reponse) => lienReponse(tokenClient, recherche.id, x, site);
@@ -474,7 +477,7 @@ ${LIEN_POLICE_MAIL}
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris et l’Ouest parisien</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">${echappe(co.tel)}</td>
           </tr></table>
         </td></tr>
       </table>
@@ -506,7 +509,7 @@ ${LIEN_POLICE_MAIL}
     `J’ai mis ma recherche en pause ou arrêtée : ${lien('pause')}`,
     '',
     'Bonne journée,',
-    'Werner · Werner Immobilier · 01 87 66 06 00',
+    `Werner · ${co.agence} · ${co.tel}`,
   ].join('\n');
 
   return { sujet: 'Où en est votre recherche ?', html, texte };
@@ -514,7 +517,7 @@ ${LIEN_POLICE_MAIL}
 
 /* ══ L'envoi par Mailjet ══ */
 
-export async function envoyerMailjet(o: { a: string; nom?: string; sujet: string; html: string; texte: string; id: string; deNom?: string }): Promise<{ ok: boolean; erreur?: string }> {
+export async function envoyerMailjet(o: { a: string; nom?: string; sujet: string; html: string; texte: string; id: string; deNom?: string; repondre?: string }): Promise<{ ok: boolean; erreur?: string }> {
   const cle = process.env.MAILJET_API_KEY, secret = process.env.MAILJET_API_SECRET;
   if (!cle || !secret) return { ok: false, erreur: 'clés Mailjet absentes' };
   const de = process.env.MAILJET_FROM_EMAIL || 'contact@wernerimmobilier.com';
@@ -528,6 +531,7 @@ export async function envoyerMailjet(o: { a: string; nom?: string; sujet: string
         Messages: [{
           From: { Email: de, Name: deNom },
           To: [{ Email: o.a, Name: o.nom || undefined }],
+          ...(o.repondre && o.repondre.toLowerCase() !== de.toLowerCase() ? { ReplyTo: { Email: o.repondre } } : {}),
           Subject: o.sujet, TextPart: o.texte, HTMLPart: o.html,
           CustomID: o.id,
           TrackOpens: 'disabled', TrackClicks: 'disabled',

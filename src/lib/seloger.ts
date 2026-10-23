@@ -29,13 +29,15 @@ import { liste, num, txt } from '@/lib/actes';
 import { argentBien, lirePhotos, type BienVente } from '@/lib/biens-vente';
 import { diffuseSur } from '@/lib/diffusion';
 import { bienPourSite, gpsFiche } from '@/lib/flux-site';
+import { coordonneesDe, type Coordonnees } from '@/lib/agence';
 
 export const SELOGER_LOGICIEL = 'WernerImmoCRM';
 export const SELOGER_VERSION_LOGICIEL = '3.98';
 const BAREME = 'https://www.wernerimmobilier.com/honoraires';
-/* Le contact que SeLoger affichait avec les annonces d'ImmoFacile (relevé
-   dans leur comparaison du 6 octobre). */
-const CONTACT = { companyName: 'Werner Immobilier', phoneNumber: '01 87 66 06 00', email: 'contact@wernerimmobilier.com' };
+/* Le contact affiché par SeLoger avec chaque annonce : les coordonnées de
+   l'agence, réglées dans Paramètres › Agence (23 octobre 2026 ; avant, celui
+   d'ImmoFacile écrit en dur). Un changement là-bas renvoie les annonces. */
+const contactSeLoger = (co: Coordonnees) => ({ companyName: co.agence, phoneNumber: co.tel, email: co.mail });
 
 /* « 12 bis Rue Edouard Detaille, 92100 Boulogne » → numéro et rue. */
 export function rueEtNumero(adresse: string): { houseNumber: string; street: string } {
@@ -141,7 +143,7 @@ export function dpeIncomplet(d: BienVente['donnees'], energyClass?: string, gesC
 /* ── Une annonce ───────────────────────────────────────────────────────── */
 export type AnnonceSeLoger = { portals: Portail[]; data: Json; specific?: Json; media?: Json[] };
 
-export function annonceSeLoger(b: BienVente, gps?: { lat: number; lng: number } | null): AnnonceSeLoger {
+export function annonceSeLoger(b: BienVente, gps?: { lat: number; lng: number } | null, co: Coordonnees = coordonneesDe(null)): AnnonceSeLoger {
   const d = b.donnees || {};
   const g = gps ?? gpsFiche(b);
   const s = bienPourSite(b, g);
@@ -312,7 +314,7 @@ export function annonceSeLoger(b: BienVente, gps?: { lat: number; lng: number } 
   const loc = (propre.location || {}) as Json;
   propre.location = { ...loc, street, houseNumber };
 
-  const specific = { gsl: { mainContactPerson: CONTACT } };
+  const specific = { gsl: { mainContactPerson: contactSeLoger(co) } };
   const media = photos.map((url, i) => ({ url, mediaType: 'PICTURE', ...(i === 0 ? { category: 'COVER_PICTURE' } : {}) }));
   return { portals: portailsDe(b), data: propre, specific, ...(media.length ? { media } : {}) };
 }
@@ -323,7 +325,7 @@ export type LotSeLoger = {
   avertissements: string[];
 };
 
-export function lotSeLoger(biens: BienVente[], gps?: Map<string, { lat: number; lng: number }>): LotSeLoger {
+export function lotSeLoger(biens: BienVente[], gps?: Map<string, { lat: number; lng: number }>, co: Coordonnees = coordonneesDe(null)): LotSeLoger {
   const out: LotSeLoger = { annonces: [], avertissements: [] };
   const vus = new Set<string>();
   /* Le plus ancien d'abord : en cas de doublon d'identifiant, il le garde. */
@@ -333,7 +335,7 @@ export function lotSeLoger(biens: BienVente[], gps?: Map<string, { lat: number; 
     const nom = b.reference || b.titre || b.id;
     const id = idSeLoger(b);
     if (vus.has(id)) { out.avertissements.push(`${nom} : même identifiant qu’une autre affaire (${id}), laissé de côté`); continue; }
-    const annonce = annonceSeLoger(b, gps?.get(b.id) || null);
+    const annonce = annonceSeLoger(b, gps?.get(b.id) || null, co);
     const dt = annonce.data as Json;
     const loc = dt.location as Json;
     const prix = ((dt.prices as Json)?.buy as Json)?.price as Json | undefined;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 import { createClient } from '@supabase/supabase-js';
 
 /**
@@ -78,11 +79,13 @@ export async function GET(req: NextRequest) {
   const titre = bien?.titre || `${bien?.type_bien || 'Local'} — ${bien?.ville || ''}`;
   const lieu = [bien?.adresse || bien?.adresse_probable || bien?.quartier, bien?.ville]
     .filter(Boolean).join(', ');
+  /* Le téléphone et le nom : Paramètres › Agence. */
+  const co = await coordonnees(supabase);
   const details = [
-    'Visite organisée par Werner Immobilier.',
+    `Visite organisée par ${co.agence}.`,
     visite.contact_agence ? `Contact sur place : ${visite.contact_agence}` : '',
     visite.commentaire || '',
-    'Werner · 01 87 66 06 00',
+    `Werner · ${co.tel}`,
   ].filter(Boolean).join('\n');
 
   const ics = [

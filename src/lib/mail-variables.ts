@@ -12,11 +12,21 @@
    Et la signature des mails se lit dans les Paramètres (`signature_email`),
    au lieu d'être recopiée en dur dans chaque écran. Rien ici ne touche à la
    base : ce fichier sert au navigateur comme au serveur. */
+import { CLE_IDENTITE, coordonneesBrutes, coordonneesDe, type Coordonnees } from '@/lib/agence';
 
 export type PourMail = { prenom?: string | null; nom?: string | null; reference?: string | null };
 
 /** Les réglages des Paramètres qui servent aux mails. */
-export const CLES_MAIL = ['signature_email', 'conseiller_prenom', 'conseiller_nom', 'agence_nom', 'conseiller_telephone', 'template_email_objet', 'template_email_corps'];
+export const CLES_MAIL = ['signature_email', 'conseiller_prenom', 'conseiller_nom', 'agence_nom', 'conseiller_telephone', 'template_email_objet', 'template_email_corps', CLE_IDENTITE];
+
+/** Le nom de l'agence et son téléphone pour les mails : ceux de Paramètres ›
+    Agence quand ils sont lus (23 octobre 2026, une seule source), sinon les
+    anciennes clés de Paramètres › Mails, sinon ceux d'origine. */
+export function coordonneesMail(p: Record<string, string | undefined>): Coordonnees {
+  if (p[CLE_IDENTITE]) return coordonneesBrutes(p[CLE_IDENTITE]);
+  const d = coordonneesDe(null);
+  return coordonneesDe({ nom: (p.agence_nom || '').trim() || d.agence, tel: (p.conseiller_telephone || '').trim() || d.tel, mail: (p.conseiller_email || '').trim() || d.mail, site: (p.site_web ?? d.site) });
+}
 
 const sansAccent = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
@@ -32,7 +42,8 @@ export function conseillerDe(p: Record<string, string | undefined>): string {
 export function signatureDe(p: Record<string, string | undefined>): string {
   const posee = texteModele(p.signature_email || '').trim();
   if (posee) return posee;
-  return `Cordialement,\n${p.conseiller_prenom || 'Werner'} ${p.conseiller_nom || ''}\n${p.agence_nom || 'Werner Immobilier'}\n${p.conseiller_telephone || '01 87 66 06 00'}`;
+  const co = coordonneesMail(p);
+  return `Cordialement,\n${p.conseiller_prenom || 'Werner'} ${p.conseiller_nom || ''}\n${co.agence}\n${co.tel}`;
 }
 
 /** Remplace les variables connues ; une variable inconnue reste telle quelle,

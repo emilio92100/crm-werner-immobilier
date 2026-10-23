@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 import { base } from '@/lib/agences-serveur';
 import { codeValide, lienAvecCode, resumePourAgence, tableAgencesAbsente } from '@/lib/agences-lien';
 import { mailLienAgence } from '@/lib/mail-agence';
@@ -48,7 +49,7 @@ async function envoyer(req: NextRequest) {
     const jeton = (r as Record<string, unknown> | null)?.token_agences;
     if (!r || typeof jeton !== 'string' || !jeton) return NextResponse.json({ ok: false, error: 'Le lien de cette recherche n’existe pas (ou il a été coupé).' }, { status: 409 });
 
-    const m = mailLienAgence({ lien: lienAvecCode(jeton, code), interlocuteur, resume: resumePourAgence(r as Record<string, unknown>) });
+    const m = mailLienAgence({ lien: lienAvecCode(jeton, code), interlocuteur, resume: resumePourAgence(r as Record<string, unknown>), co: await coordonnees(sb) });
     const erreur = await envoyerMail({ a: email, nomA: interlocuteur || agence || undefined, sujet: m.sujet, texte: m.texte, html: m.html, deLaPartDe: 'alexandre' });
     if (erreur) return NextResponse.json({ ok: false, error: `Le mail n’est pas parti : ${erreur}` }, { status: 502 });
     return NextResponse.json({ ok: true });

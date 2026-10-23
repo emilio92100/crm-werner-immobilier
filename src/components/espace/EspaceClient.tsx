@@ -1,4 +1,5 @@
 'use client';
+import { coordonneesDe, type Coordonnees } from '@/lib/agence';
 import type { ProBien } from '@/lib/affaires';
 import { useState, useCallback, useRef, useEffect, useLayoutEffect, useMemo, useId } from 'react';
 import { useRouter } from 'next/navigation';
@@ -204,6 +205,8 @@ type Props = {
   /** V3.189 : qui pré-remplir dans « Faire une offre » — lui, tel qu'il a
       signé son mandat (naissance comprise), puis ceux qui l'ont signé avec lui. */
   identiteOffre?: SaisieOffre['acquereurs'];
+  /* Les coordonnées de l'agence (Paramètres › Agence), lues par la page. */
+  co?: Coordonnees;
   /** V3.232 : les visites à venir où il a signalé un imprévu (par id de visite),
       tant que la visite n'a pas bougé. */
   imprevus?: Record<string, ImprevuVisite>;
@@ -802,14 +805,17 @@ const T: Record<string, string[]> = {
   galerie:['M5.5 4.5h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2z','c:9,10,1.8','m20.5 16-5-5-8 8.5'],
 };
 
-/* Le chasseur qui suit le dossier — affiché en haut de l'espace. */
-const AGENT = {
+/* Le conseiller qui suit le dossier — affiché en haut de l'espace. Son
+   téléphone et son mail : Paramètres › Agence, passés par la page (`co`) ;
+   posés ici au premier rendu, pour tous les blocs de l'espace. */
+const agentDe = (co: Coordonnees) => ({
   nom: 'Werner',
-  role: 'Votre conseiller · Werner Immobilier',
-  tel: '01 87 66 06 00',
-  telUrl: '+33187660600',
-  mail: 'contact@wernerimmobilier.com',
-};
+  role: `Votre conseiller · ${co.agence}`,
+  tel: co.tel,
+  telUrl: co.telLien,
+  mail: co.mail,
+});
+let AGENT = agentDe(coordonneesDe(null));
 function Ico({ n, t = 22 }: { n: string; t?: number }) {
   const d = T[n]; if (!d) return null;
   return (
@@ -1117,7 +1123,8 @@ const SANS_APPRIS: string[] = [];
 const SANS_IDENTITE: SaisieOffre['acquereurs'] = [];
 const SANS_IMPREVUS: Record<string, ImprevuVisite> = {};
 
-export default function EspaceClient({ token, client, criteres, biens: biensInit, passage, semaine, visites: visitesInit, recherches, rechercheId, rang, enCours, mandat: mandatInit, mesVisites, apprisClient = SANS_APPRIS, annonces: annoncesInit = null, identiteOffre = SANS_IDENTITE, imprevus: imprevusInit = SANS_IMPREVUS }: Props) {
+export default function EspaceClient({ token, client, criteres, biens: biensInit, passage, semaine, visites: visitesInit, recherches, rechercheId, rang, enCours, mandat: mandatInit, mesVisites, apprisClient = SANS_APPRIS, annonces: annoncesInit = null, identiteOffre = SANS_IDENTITE, imprevus: imprevusInit = SANS_IMPREVUS, co }: Props) {
+  if (co) AGENT = agentDe(co);
   const [vue, setVue] = useState('accueil');
   /* V3.184 : ses annonces envoyées ; une nouvelle s'ajoute sans recharger. */
   const [annonces, setAnnonces] = useState<AnnonceEspace[] | null>(annoncesInit);
@@ -2937,7 +2944,7 @@ function Accueil({ client, crit, neufs, vus, donnes, nbPlusDispo = 0, passage, s
         <div className="chasseur">
           <div className="av">W</div>
           <div><h4>Werner</h4><p>Il cherche pour vous au quotidien</p></div>
-          <a className="tel" href="tel:0187660600"><Ico n="tel" t={15} /> Appeler</a>
+          <a className="tel" href={`tel:${AGENT.telUrl}`}><Ico n="tel" t={15} /> Appeler</a>
         </div>
       </>}
       {k === 'engage' && (
@@ -6629,7 +6636,7 @@ function lienGoogle(v: { date: string; heure: string | null; titre: string; adre
     action: 'TEMPLATE',
     text: 'Visite — ' + v.titre,
     dates: `${fmt(debut)}/${fmt(fin)}`,
-    details: 'Visite organisée par Werner Immobilier.\nWerner · 01 87 66 06 00',
+    details: `Visite organisée par ${AGENT.role.replace(/^Votre conseiller · /, '')}.\nWerner · ${AGENT.tel}`,
     ctz: 'Europe/Paris',
   });
   if (v.adresse) p.set('location', v.adresse);

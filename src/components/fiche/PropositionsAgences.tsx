@@ -14,6 +14,7 @@ import {
   ORIGINES, agencesDuClient, canalLong, creerJeton, envoyerMailAgence, estMobile, lienMail, lienSms, lireOuCreerJeton, mailValide, messagePourAgence, noterContact, noterEnvoi, quandEnvoi,
   type AgenceConnue, type Canal, type Destinataire, type Jeton,
 } from '@/lib/lien-agences-envois';
+import { useCoordonnees } from '@/lib/coordonnees-client';
 import { mailLienAgence } from '@/lib/mail-agence';
 import { nombre, rapprocher, villeDeLAdresse, type Rapprochement, type Repere } from '@/lib/meme-bien';
 import s from './AnnoncesClient.module.css';
@@ -795,6 +796,8 @@ function FenetreLien({ clientId, rechercheId, prenom, recherche, stats, absent, 
   clientId: string; rechercheId: string; prenom?: string | null; recherche?: any;
   stats: { biens: number; agences: number }; absent: boolean; onFermer: () => void;
 }) {
+  /* Le téléphone et le mail du mail aux agences : Paramètres › Agence. */
+  const co = useCoordonnees();
   const [jeton, setJeton] = useState<string | null | undefined>(undefined);
   const [manque, setManque] = useState(absent);
   const [message, setMessage] = useState('');
@@ -934,7 +937,7 @@ function FenetreLien({ clientId, rechercheId, prenom, recherche, stats, absent, 
     proposees: liste.filter(g => g.proposes > 0),
   };
   const nbContactees = liste.filter(g => g.envois.length).length;
-  const htmlMail = apercu === 'mail' && jeton && resume ? mailLienAgence({ lien, resume }).html : '';
+  const htmlMail = apercu === 'mail' && jeton && resume ? mailLienAgence({ lien, resume, co }).html : '';
 
   const ligne = (partie: Partie) => (g: AgenceConnue) => (
     <LigneAgence g={g} partie={partie} edition={edition === g.cle} onEdition={o => setEdition(o ? g.cle : null)}

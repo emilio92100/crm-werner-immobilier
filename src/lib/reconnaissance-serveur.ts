@@ -22,7 +22,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { txt, lirePersonnes, type Donnees } from './actes';
-import { envoyerMail, gabarit, echappe } from './mandat-serveur';
+import { envoyerMail, gabarit, echappe, REPONSE_AGENCE } from './mandat-serveur';
+import { coordonnees, coordonneesConnues } from './coordonnees-serveur';
 import { lienBienPublic } from './jeton';
 import { codeSuivi, lienBienSuivi } from './bien-suivi';
 import { euros } from './mandat';
@@ -31,8 +32,7 @@ import type { BienVente } from './biens-vente';
 
 export type DocReco = { id: string; modele: string; statut: string; titre: string | null; client_id: string | null; donnees: Donnees };
 
-const TEL = '01 87 66 06 00';
-const MAIL_AGENCE = 'contact@wernerimmobilier.com';
+/* Le téléphone et le mail : Paramètres › Agence (src/lib/coordonnees-serveur.ts). */
 const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
 const sansCourbes = (t: string) => t.replace(/’/g, "'");
 const insec = (t: string) => echappe(t).replace(/(\d) (?=\d{3}\b)/g, '$1&nbsp;').replace(/(\d) €/g, '$1&nbsp;€');
@@ -89,6 +89,8 @@ async function destinataireDe(sb: SupabaseClient, doc: DocReco): Promise<{ email
 /* Le mail, en texte et en HTML (le texte est aussi celui qu'on garde dans
    les historiques, pour « Voir le mail »). */
 export function mailAdresse(o: { prenom: string; local: Local; lien: string }) {
+  const co = coordonneesConnues();
+  const TEL = echappe(co.tel), MAIL_AGENCE = echappe(co.mail);
   const { local, lien } = o;
   const bonjour = o.prenom ? `Bonjour ${o.prenom},` : 'Bonjour,';
   const merci = 'Merci pour votre signature. Comme convenu, voici l’adresse du local :';
@@ -113,7 +115,7 @@ export function mailAdresse(o: { prenom: string; local: Local; lien: string }) {
   const contact = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-radius:12px;border-collapse:separate;background:#f6f6f7;margin:18px 0">
       <tr><td style="padding:14px 16px;font-size:14px;line-height:1.7;color:#334155">
         <div style="font-weight:800;color:#232528">Pour le visiter, ou pour toute question</div>
-        <div>Téléphone : <a href="tel:+33187660600" style="color:#c2621c;font-weight:700;text-decoration:none">${TEL.replace(/ /g, '&nbsp;')}</a></div>
+        <div>Téléphone : <a href="tel:${co.telLien}" style="color:#c2621c;font-weight:700;text-decoration:none">${TEL.replace(/ /g, '&nbsp;')}</a></div>
         <div>E-mail : <a href="mailto:${MAIL_AGENCE}" style="color:#c2621c;font-weight:700;text-decoration:none">${MAIL_AGENCE}</a></div>
         <div style="color:#64748b;font-size:13px">Ou répondez simplement à ce message.</div>
       </td></tr>
@@ -130,6 +132,7 @@ export function mailAdresse(o: { prenom: string; local: Local; lien: string }) {
 /* L'aperçu, avant d'envoyer d'un clic (22 octobre 2026) : le mail tel qu'il
    partira, sans rien envoyer ni noter. */
 export async function apercuAdresseReco(sb: SupabaseClient, doc: DocReco): Promise<{ a: string; nom: string; sujet: string; html: string } | { erreur: string }> {
+  await coordonnees(sb);
   if (doc.modele !== 'reconnaissance') return { erreur: 'Ce document n’est pas une reconnaissance.' };
   const qui = await destinataireDe(sb, doc);
   if (!qui) return { erreur: 'Pas d’adresse e-mail pour lui envoyer l’adresse du local : donne-la-lui de vive voix.' };
@@ -143,6 +146,7 @@ export async function apercuAdresseReco(sb: SupabaseClient, doc: DocReco): Promi
    la fiche du local » porte un code à lui (src/lib/bien-suivi.ts) : quand il
    l'ouvre, l'historique de l'affaire et son suivi le disent. */
 export async function envoyerAdresseReco(sb: SupabaseClient, doc: DocReco, o: { auto: boolean }): Promise<string | null> {
+  await coordonnees(sb);
   if (doc.modele !== 'reconnaissance') return 'ce document n’est pas une reconnaissance';
   const qui = await destinataireDe(sb, doc);
   const local = await localDe(sb, doc);
@@ -180,7 +184,7 @@ export async function envoyerAdresseReco(sb: SupabaseClient, doc: DocReco, o: { 
   const m = mailAdresse({ prenom: qui.prenom, local, lien });
   const erreur = await envoyerMail({
     a: qui.email, nomA: [qui.prenom, qui.nom].filter(Boolean).join(' ') || undefined,
-    repondreA: MAIL_AGENCE, sujet: m.sujet, texte: sansCourbes(m.texte), html: m.html,
+    repondreA: REPONSE_AGENCE, sujet: m.sujet, texte: sansCourbes(m.texte), html: m.html,
   });
   if (erreur) return echec(`le mail n’est pas parti (${erreur}) — réessaie avec « Lui envoyer l’adresse » (onglet Documents)`);
 

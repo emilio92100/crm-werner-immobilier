@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 import PageAgence from '@/components/agences/PageAgence';
 import { resumePourAgence } from '@/lib/agences-lien';
 import { codeValide } from '@/lib/agences-lien';
@@ -34,11 +35,12 @@ export default async function PageProposer({ params, searchParams }: {
 }) {
   const [{ token }, q] = await Promise.all([params, searchParams]);
   const sb = base();
+  const co = await coordonnees(sb);
   const r = await rechercheDuJeton(sb, token).catch(() => null);
-  if (!r) return <PageAgence etat="inconnu" />;
-  if (r.ferme) return <PageAgence etat="ferme" />;
+  if (!r) return <PageAgence etat="inconnu" co={co} />;
+  if (r.ferme) return <PageAgence etat="ferme" co={co} />;
   const code = typeof q.de === 'string' && codeValide(q.de) ? q.de : null;
   const e = code ? await envoiDuCode(sb, r.recherche.id as string, code).catch(() => null) : null;
   const repris = e ? { agence: e.agence, interlocuteur: e.interlocuteur, tel: e.tel, email: e.email } : null;
-  return <PageAgence etat="ouvert" token={token} resume={resumePourAgence(r.recherche)} repris={repris} code={e ? code : null} />;
+  return <PageAgence etat="ouvert" co={co} token={token} resume={resumePourAgence(r.recherche)} repris={repris} code={e ? code : null} />;
 }

@@ -5,7 +5,8 @@ import SignatureDocument, { type DonneesSignerDoc } from '@/components/signer/Si
 import { modele, aRetractation, demandeExpresse } from '@/lib/actes';
 import * as SD from '@/lib/signature-documents';
 import { lireCos, lienValide, dansLeMandat, finRetractationDe, type Co, type LigneMandat } from '@/lib/cosignature';
-import { lireIdentiteAgence, IDENTITE_DEFAUT } from '@/lib/agence';
+import { lireIdentiteAgence, IDENTITE_DEFAUT, coordonneesDe } from '@/lib/agence';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 import { masquerEmail, type Mandant } from '@/lib/mandat';
 import { lienEspace } from '@/lib/jeton';
 import { adressesClient } from '@/lib/mandat-serveur';
@@ -32,13 +33,15 @@ export const metadata: Metadata = {
 };
 export const viewport: Viewport = { themeColor: '#25272b' };
 
-const TEL_AGENT = '01 87 66 06 00';
+/* Le téléphone de l'agence : Paramètres › Agence, relu à chaque ouverture. */
+let TEL_AGENT = coordonneesDe(null).tel;
 /* Un code parti il y a moins d'un quart d'heure. */
 const recent = (iso: string) => Date.now() - Date.parse(iso) < 15 * 60_000;
 const VIDE: Mandant = { civilite: '', prenom: '', nom: '', naissanceDate: '', naissanceLieu: '', adresse: '', email: '', telephone: '' };
 
 export default async function PageSigner({ params }: { params: Promise<{ jeton: string }> }) {
   const { jeton } = await params;
+  TEL_AGENT = (await coordonnees()).tel;
   const introuvable = (): DonneesSigner => ({
     jeton, etat: 'introuvable', numero: '', moi: VIDE, premier: VIDE, premierLe: new Date().toISOString(), membres: [], rang: 0, signes: [],
     recherche: { typeBien: null, piecesMin: null, chambresMin: null, surfaceMin: null, secteurs: [], budget: null },

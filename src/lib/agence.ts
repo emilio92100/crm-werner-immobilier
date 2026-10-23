@@ -105,7 +105,7 @@ export const BLOCS: { id: Bloc; titre: string; e: string; sert: string }[] = [
   { id: 'assurance', titre: 'Assurance', e: '🛡️', sert: 'La responsabilité civile professionnelle citée dans le mandat.' },
   { id: 'mediateur', titre: 'Médiateur', e: '⚖️', sert: 'Obligatoire avec un client particulier. Tu dois y avoir adhéré.' },
   { id: 'signataire', titre: 'Signataire', e: '✍️', sert: 'Qui signe pour l’agence, et sa signature manuscrite.' },
-  { id: 'coordonnees', titre: 'Coordonnées', e: '📍', sert: 'Le pied des documents, le formulaire de rétractation et la ville de signature.' },
+  { id: 'coordonnees', titre: 'Coordonnées', e: '📍', sert: 'Le pied des documents, le formulaire de rétractation et la ville de signature. Le téléphone, le mail et le site servent partout : documents, mails, espace client, page d’un local, annonces SeLoger.' },
   { id: 'autres', titre: 'Autres mentions', e: '📎', sert: 'Ce que certains modèles de mandat de location ou de vente demandent. Rien ne s’imprime s’ils sont vides.' },
 ];
 
@@ -253,3 +253,64 @@ export async function lireIdentiteAgence(sb: SupabaseClient): Promise<IdentiteAg
     return IDENTITE_DEFAUT;
   }
 }
+
+/* ══ Les coordonnées de l'agence : UNE seule source (23 octobre 2026) ══════
+   Alexandre : « si dans Agence il modifie ses renseignements, il faut que
+   tout suive ». Le nom commercial, le téléphone, le mail et le site se
+   règlent dans Paramètres › Agence (Identité et Coordonnées), et nulle part
+   ailleurs. Les documents, les mails automatiques, l'espace client, la page
+   publique d'un local, la signature des mails et le flux SeLoger lisent
+   tous ce qui suit. Un document déjà signé, lui, ne bouge jamais.
+
+   Ce qui ne passe PAS par ici, exprès : l'adresse d'EXPÉDITION des mails
+   (MAILJET_FROM_EMAIL, validée chez Mailjet), le compte de connexion
+   (WERNER_MAIL_COMPTE) et l'adresse du site (le domaine). */
+
+export type Coordonnees = {
+  /** le nom commercial (« Werner Immobilier ») */
+  agence: string;
+  /** le téléphone tel qu'il s'affiche (« 01 87 66 06 00 ») */
+  tel: string;
+  /** le même, pour un lien tel: (« +33187660600 ») */
+  telLien: string;
+  /** le mail de contact, celui où le client répond */
+  mail: string;
+  /** le site, sans https (« www.wernerimmobilier.com ») */
+  site: string;
+};
+
+/** « 01 87 66 06 00 » → « +33187660600 » ; un numéro déjà international reste tel quel. */
+export function telLien(tel: string): string {
+  const t = String(tel || '').replace(/[^\d+]/g, '');
+  if (t.startsWith('+')) return t;
+  if (t.startsWith('00')) return `+${t.slice(2)}`;
+  if (/^0\d{9}$/.test(t)) return `+33${t.slice(1)}`;
+  return t;
+}
+
+const MAIL_VALIDE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/** Les coordonnées d'une identité ; un champ vide ou abîmé reprend celui d'origine. */
+export function coordonneesDe(id: Partial<IdentiteAgence> | null | undefined): Coordonnees {
+  const d = IDENTITE_DEFAUT;
+  const agence = String(id?.nom || '').trim() || d.nom;
+  const tel = String(id?.tel || '').trim() || d.tel;
+  const m = String(id?.mail || '').trim();
+  const mail = MAIL_VALIDE.test(m) ? m : d.mail;
+  const site = String(id?.site ?? d.site).trim().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  return { agence, tel, telLien: telLien(tel), mail, site };
+}
+
+/** Les coordonnées lues dans une valeur brute de `parametres` (agence_identite). */
+export const coordonneesBrutes = (valeur: unknown): Coordonnees => coordonneesDe(lireIdentite(valeur ?? null));
+
+/** Côté serveur : les coordonnées du jour (celles d'origine si la lecture échoue). */
+export async function coordonneesAgence(sb: SupabaseClient): Promise<Coordonnees> {
+  return coordonneesDe(await lireIdentiteAgence(sb));
+}
+
+/** Les anciennes clés de Paramètres › Mails, recopiées de l'identité à chaque
+    enregistrement d'Agence : ce qui les lit encore reste juste. */
+export const clesMiroir = (c: Coordonnees): Record<string, string> => ({
+  agence_nom: c.agence, conseiller_telephone: c.tel, conseiller_email: c.mail, site_web: c.site,
+});

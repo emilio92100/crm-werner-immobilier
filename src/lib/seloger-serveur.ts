@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 import type { BienVente } from '@/lib/biens-vente';
 import { baseServeur, positionsBiens } from '@/lib/flux-site-serveur';
 import { lotSeLoger, SELOGER_LOGICIEL, SELOGER_VERSION_LOGICIEL, type LotSeLoger, type Portail } from '@/lib/seloger';
@@ -187,7 +188,7 @@ export async function preparerSeLoger(sb = baseServeur()): Promise<LotSeLoger & 
   if (error) throw new Error(error.message);
   const biens = (data || []) as BienVente[];
   const gps = await positionsBiens(sb, biens);
-  const lot = lotSeLoger(biens, gps);
+  const lot = lotSeLoger(biens, gps, await coordonnees(sb));
   const empreintes = new Map(lot.annonces.map(x => [x.id, createHash('sha256').update(JSON.stringify(x.annonce)).digest('hex')]));
   return { ...lot, empreintes };
 }

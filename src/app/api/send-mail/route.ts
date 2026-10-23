@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { coordonneesDe, type Coordonnees } from '@/lib/agence';
+import { coordonnees, reponseAgence } from '@/lib/coordonnees-serveur';
 import { lienEspace, lienBienPublic, BIENS_PAR_MAIL, basePublique } from '@/lib/jeton';
 import { nommerRecherche } from '@/lib/espace';
 import { tauxDe, forfaitDe, honorairesCourt, honorairesDuPrix, DUREE, RETRACTATION_JOURS, type Honoraires } from '@/lib/mandat';
@@ -22,6 +24,9 @@ const supabase = createClient(
 
 const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || 'contact@wernerimmobilier.com';
 const FROM_NAME = process.env.MAILJET_FROM_NAME || 'Werner Immobilier';
+/* Les coordonnées de l'agence (Paramètres › Agence), relues au début de
+   chaque envoi : le téléphone des mails suit ce que Werner y règle. */
+let CO: Coordonnees = coordonneesDe(null);
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobilier.vercel.app';
 /* V3.199 : un client sans espace ouvre l'adresse d'Emilio, jamais l'adresse
    technique (…vercel.app), mal vue des filtres anti-spam. SITE_URL ne sert plus
@@ -360,7 +365,7 @@ ${LIEN_POLICE_MAIL}
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris et l’Ouest parisien</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">${escapeHtml(CO.tel)}</td>
           </tr></table>
         </td></tr>
 
@@ -541,7 +546,7 @@ ${LIEN_POLICE_MAIL}
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris et l’Ouest parisien</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">${escapeHtml(CO.tel)}</td>
           </tr></table>
         </td></tr>
 
@@ -583,8 +588,8 @@ Le conseil qui change tout : ouvrez ce lien depuis votre téléphone, puis ajout
 
 Une question, une précision à me donner ? Répondez simplement à ce message, ou appelez-moi.
 
-Werner · Werner Immobilier
-01 87 66 06 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
+Werner · ${CO.agence}
+${CO.tel}${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
 }
 
 
@@ -701,7 +706,7 @@ ${LIEN_POLICE_MAIL}
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris et l’Ouest parisien</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">${escapeHtml(CO.tel)}</td>
           </tr></table>
         </td></tr>
 
@@ -739,8 +744,8 @@ Ouvrir mon espace : ${lien}
 
 Une question, une précision à me donner ? Répondez simplement à ce message, ou appelez-moi.
 
-Werner · Werner Immobilier
-01 87 66 06 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
+Werner · ${CO.agence}
+${CO.tel}${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
 }
 
 
@@ -830,7 +835,7 @@ ${LIEN_POLICE_MAIL}
               <div style="font-size:14px;font-weight:700;color:#ffffff;">Werner</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;">Immobilier d’entreprise · Paris et l’Ouest parisien</div>
             </td>
-            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">01 87 66 06 00</td>
+            <td align="right" class="pied-tel" style="color:${DORE_CLAIR};font-size:15px;font-weight:700;white-space:nowrap;">${escapeHtml(CO.tel)}</td>
           </tr></table>
         </td></tr>
 
@@ -866,8 +871,8 @@ Pour être prévenu sur votre téléphone : ouvrez ce lien depuis votre téléph
 
 Un souci pour l'ouvrir ? Répondez simplement à ce message, ou appelez-moi.
 
-Werner · Werner Immobilier
-01 87 66 06 00${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
+Werner · ${CO.agence}
+${CO.tel}${lienFin(token) ? `\n\n---\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''}`;
 }
 
 
@@ -986,7 +991,7 @@ Lire et signer mon mandat : ${lien}
 Une question avant de signer ? Répondez simplement à ce message.
 
 ---
-Werner · Werner Immobilier · 01 87 66 06 00`;
+Werner · ${CO.agence} · ${CO.tel}`;
 }
 
 function texteVisites(corps: string, lignes: LigneVisite[], token?: string | null): string {
@@ -996,7 +1001,7 @@ function texteVisites(corps: string, lignes: LigneVisite[], token?: string | nul
     const adresse = lieuMail(b);
     return `- ${quandMail(l)} : ${titre}${adresse ? ` (${adresse})` : ''}`;
   }).join('\n');
-  return `${corps}\n\n${liste}\n\n---\nWerner · Werner Immobilier · 01 87 66 06 00${
+  return `${corps}\n\n${liste}\n\n---\nWerner · ${CO.agence} · ${CO.tel}${
     lienFin(token) ? `\nVous n'êtes plus en recherche ? Dites-le-nous : ${lienFin(token)}` : ''
   }`;
 }
@@ -1014,6 +1019,7 @@ async function envoyer(req: NextRequest) {
      parti, le CRM le dit quand même. */
   const avertissements: string[] = [];
   try {
+    CO = await coordonnees(supabase);
     const apiKey = process.env.MAILJET_API_KEY;
     const apiSecret = process.env.MAILJET_API_SECRET;
     if (!apiKey || !apiSecret) {
@@ -1283,6 +1289,7 @@ async function envoyer(req: NextRequest) {
             body: JSON.stringify({
               Messages: [{
                 From: { Email: FROM_EMAIL, Name: FROM_NAME },
+                ...reponseAgence(FROM_EMAIL, CO),
                 To: emails.map((e: string) => ({ Email: e, Name: `${client.prenom} ${client.nom}` })),
                 Subject: sujetV,
                 TextPart: texteVisites(corpsPerso, lignes, jeton),
@@ -1350,6 +1357,7 @@ async function envoyer(req: NextRequest) {
             body: JSON.stringify({
               Messages: [{
                 From: { Email: FROM_EMAIL, Name: FROM_NAME },
+                ...reponseAgence(FROM_EMAIL, CO),
                 To: emails.map((e: string) => ({ Email: e, Name: `${client.prenom} ${client.nom}` })),
                 Subject: sujet,
                 TextPart: texteMandatPret(client.prenom || '', hono, jeton, recherche_id || null),
@@ -1482,6 +1490,7 @@ async function envoyer(req: NextRequest) {
           body: JSON.stringify({
             Messages: [{
               From: { Email: FROM_EMAIL, Name: FROM_NAME },
+              ...reponseAgence(FROM_EMAIL, CO),
               To: emails.map((e: string) => ({ Email: e, Name: `${client.prenom} ${client.nom}` })),
               Subject: objetFinal,
               TextPart: bienvenue || lienSeul ? corpsPerso : text,

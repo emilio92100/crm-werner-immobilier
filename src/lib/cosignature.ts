@@ -30,7 +30,7 @@ import {
   type Mandant, type Contenu, type Societe,
 } from './mandat';
 import { etListe, pdfMandat, pdfSigne, type SignataireCadre, type SignataireCertif } from './mandat-pdf';
-import { envoyerMail, gabarit, echappe } from './mandat-serveur';
+import { envoyerMail, REPONSE_AGENCE, gabarit, echappe } from './mandat-serveur';
 import { basePublique, partieAleatoire, poignee } from './jeton';
 import type { IdentiteAgence } from './agence';
 
@@ -151,7 +151,7 @@ export function lienNeuf(co: Co, le: string, note?: string): Partial<Co> {
 export async function envoyerLien(c: Co, l: Pick<LigneMandat, 'mandant' | 'signe_le'>, rappel: 0 | 1 | 2 = 0): Promise<string | null> {
   if (!c.jeton || !c.lien_expire_le) return 'lien absent';
   const m = mailInvitation({ co: c.personne, premier: l.mandant, premierLe: l.signe_le, lien: lienSigner(c.jeton), expire: c.lien_expire_le, rappel });
-  return envoyerMail({ expediteur: 'signature', a: c.personne.email, nomA: nomDe(c.personne), sujet: m.sujet, texte: m.texte, html: m.html, repondreA: 'contact@wernerimmobilier.com' });
+  return envoyerMail({ expediteur: 'signature', a: c.personne.email, nomA: nomDe(c.personne), sujet: m.sujet, texte: m.texte, html: m.html, repondreA: REPONSE_AGENCE });
 }
 
 /* Renvoie son lien (le même s'il est encore valable, sinon un neuf), ou
@@ -310,7 +310,7 @@ export async function envoyerExemplaire(o: {
     ? `Votre mandat de recherche n° ${o.numero} est complet : tous les signataires l’ont signé. Vous le trouverez ci-joint, avec son certificat de signature.`
     : `Votre signature est enregistrée. Vous trouverez ci-joint le mandat de recherche n° ${o.numero} tel qu’il est signé aujourd’hui, avec son certificat. Vous recevrez la version complète dès que ${attente} l’aura signé.`;
   return envoyerMail({ expediteur: 'signature',
-    a: o.a.email, nomA: nomDe(o.a), pj, repondreA: 'contact@wernerimmobilier.com',
+    a: o.a.email, nomA: nomDe(o.a), pj, repondreA: REPONSE_AGENCE,
     sujet: o.complet ? `Votre mandat de recherche n° ${o.numero}, signé par tous` : `Votre mandat de recherche n° ${o.numero}`,
     texte: `Bonjour ${o.a.prenom},\n\n${corps.replace(/’/g, "'")}\n\nWerner\nWerner Immobilier\n\n—\nLe mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours et la façon de l'exercer.${finTexte}`,
     html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(o.a.prenom)},</p><p>${echappe(corps)}</p><p>Werner<br/>Werner Immobilier</p>`,

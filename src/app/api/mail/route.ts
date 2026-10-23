@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { coordonnees, reponseAgence } from '@/lib/coordonnees-serveur';
 import { createClient } from '@supabase/supabase-js';
 import { lireIdentiteAgence } from '@/lib/agence';
 import { ecritServeur } from '@/lib/ecritures';
@@ -78,12 +79,14 @@ async function mailjetLot(messages: Message[], pj: Pj[], limite: number): Promis
   const arret = new AbortController();
   const minuterie = setTimeout(() => arret.abort(), Math.max(5_000, limite));
   try {
+    const co = await coordonnees();
     const r = await fetch('https://api.mailjet.com/v3.1/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Basic ${Buffer.from(`${k}:${s}`).toString('base64')}` },
       body: JSON.stringify({
         Messages: messages.map(m => ({
           From: { Email: FROM_EMAIL, Name: FROM_NAME },
+          ...reponseAgence(FROM_EMAIL, co),
           To: m.a.map(x => ({ Email: x.email, ...(x.nom ? { Name: x.nom } : {}) })),
           Subject: m.sujet, TextPart: m.texte, HTMLPart: m.html, CustomID: m.id,
           ...(pj.length ? { Attachments: pj.map(p => ({ ContentType: p.type, Filename: p.nom, Base64Content: p.base64 })) } : {}),

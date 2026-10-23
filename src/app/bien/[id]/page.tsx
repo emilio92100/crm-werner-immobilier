@@ -1,4 +1,5 @@
 import { NATURES } from '@/lib/affaires';
+import { coordonneesAgence } from '@/lib/agence';
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
@@ -120,11 +121,8 @@ function etatDeVente(v: { etape?: string | null; archive?: boolean | null } | nu
   return null;
 }
 
-/* Les coordonnées du conseiller : celles des Paramètres (« Tes coordonnées
-   dans les mails »), comme la signature des mails ; celles d'avant si elles
-   sont vides. */
-const TEL_DEFAUT = '01 87 66 06 00';
-const MAIL_DEFAUT = 'contact@wernerimmobilier.com';
+/* Les coordonnées du conseiller : celles de l'agence, réglées dans
+   Paramètres › Agence (23 octobre 2026 : une seule source pour tout le CRM). */
 function lienTel(t: string): string {
   const n = t.replace(/[^\d+]/g, '');
   return /^0\d{9}$/.test(n) ? `+33${n.slice(1)}` : n;
@@ -244,16 +242,15 @@ export default async function PageBien({ params }: { params: Promise<{ id: strin
       : bien.bien_vente_id
       ? supabase.from('biens_vente').select('etape, archive, donnees').eq('id', bien.bien_vente_id).maybeSingle()
       : Promise.resolve({ data: null, error: null }),
-    supabase.from('parametres').select('cle, valeur').in('cle', ['conseiller_telephone', 'conseiller_email']),
+    coordonneesAgence(supabase),
   ]);
   if (venteLue.error) console.error('[bien public] état de la vente', venteLue.error.message);
   const etat = etatDeVente(venteLue.data as { etape?: string | null; archive?: boolean | null } | null);
   /* V3.133 : un bien de l'agence — les charges annuelles saisies dans le CRM. */
   const chargesAn = Number((venteLue.data as { donnees?: Record<string, unknown> | null } | null)?.donnees?.chargesAn) || 0;
   const bandeau = etat ? BANDEAU[etat] : null;
-  const reglages = Object.fromEntries(((reglagesLus.data || []) as { cle: string; valeur: string | null }[]).map(r => [r.cle, (r.valeur || '').trim()]));
-  const telConseiller = reglages.conseiller_telephone || TEL_DEFAUT;
-  const mailConseiller = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(reglages.conseiller_email || '') ? reglages.conseiller_email : MAIL_DEFAUT;
+  const telConseiller = reglagesLus.tel;
+  const mailConseiller = reglagesLus.mail;
 
   /* V3.145 : le prix de l'annonce, comme dans l'espace ; ses honoraires en
      petit dessous, seulement quand ils s'ajoutent (pas d'inter-cabinet). Un

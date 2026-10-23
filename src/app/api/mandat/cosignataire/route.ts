@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { dateCourte, heureParis } from '@/lib/mandat';
 import { lireCos, inviter, sceller, envoyerExemplaire, finRetractationDe, nomDe, attendu, lienValide, type LigneMandat, type Co } from '@/lib/cosignature';
-import { envoyerMail, gabarit, echappe } from '@/lib/mandat-serveur';
+import { envoyerMail, REPONSE_AGENCE, gabarit, echappe } from '@/lib/mandat-serveur';
 import { ecritServeur } from '@/lib/ecritures';
 import { solderRelancesSignature } from '@/lib/documents-relances';
 import { avecRemises } from '@/lib/remise-mail';
@@ -92,7 +92,7 @@ async function traiterPost(req: NextRequest) {
       let eMail: string | null = null;
       if (signe) eMail = await envoyerExemplaire({ a: p, numero: ligne.numero, signe, complet: true, fin: finRetractationDe(ligne, cos), attendus: [] });
       const eInfo = await envoyerMail({
-        a: p.email, nomA: nomDe(p), repondreA: 'contact@wernerimmobilier.com',
+        a: p.email, nomA: nomDe(p), repondreA: REPONSE_AGENCE,
         sujet: `Votre mandat de recherche n° ${ligne.numero} continue sans la signature de ${c.personne.prenom}`,
         texte: `Bonjour ${p.prenom},\n\n${nomDe(c.personne)} n'a pas signé le mandat de recherche n° ${ligne.numero}. Comme le mandat le prévoit, il continue avec vous${signe ? ' : vous en trouverez la version définitive dans un autre message' : ''}.\n\nSi ${c.personne.prenom} souhaite finalement signer, dites-le-moi : je lui enverrai un nouveau lien.\n\nWerner\nWerner Immobilier`,
         html: gabarit('Votre mandat continue', `<p>Bonjour ${echappe(p.prenom)},</p>

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 import { createClient } from '@supabase/supabase-js';
 import { TABLE_DEMANDES, type CategorieDemande } from '@/lib/demandes-site';
 import { annoncerDemandes } from '@/lib/demandes-annonce';
@@ -95,7 +96,7 @@ export async function POST(req: Request) {
   }).select('id').single();
   if (error || !data) {
     console.error('[site/demande] dépôt', error?.message);
-    return refus('La demande n’a pas pu être enregistrée. Appelez-nous au 01 87 66 06 00.', 500);
+    return refus(`La demande n’a pas pu être enregistrée. Appelez-nous au ${(await coordonnees(sb)).tel}.`, 500);
   }
 
   /* Le mail à Werner : un échec n'empêche pas la demande d'être dans le CRM

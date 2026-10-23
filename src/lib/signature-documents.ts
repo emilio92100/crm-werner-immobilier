@@ -37,13 +37,14 @@
    pendant que l'écran montre chaque étape.
    ════════════════════════════════════════════════════════════════════════ */
 
+import { coordonnees, coordonneesConnues } from '@/lib/coordonnees-serveur';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createHash, randomInt, timingSafeEqual } from 'crypto';
 import { PDFDocument } from 'pdf-lib';
 import { modele, pdfDocument, txt, num, aRetractation, demandeExpresse, modeSignature, electronique, surPlaceSansCode, type Donnees, type Modele, type CaseSignature } from './actes';
 import { etListe, pdfSigne, type SignataireCertif, type CadreSigne } from './mandat-pdf';
 import { dateLongue, dateCourte, heureParis, masquerEmail, DELAI_COSIGNATURE } from './mandat';
-import { envoyerMail, gabarit, echappe, ALERTES, CRM } from './mandat-serveur';
+import { envoyerMail, REPONSE_AGENCE, gabarit, echappe, ALERTES, CRM } from './mandat-serveur';
 import { basePublique, partieAleatoire, poignee } from './jeton';
 import { IDENTITE_DEFAUT, type IdentiteAgence } from './agence';
 import { noterSignature } from './registre';
@@ -165,7 +166,8 @@ const bouton = (href: string, texte: string) =>
   `<a href="${href}" style="display:inline-block;margin:6px 0 4px;background:#f08c42;color:#232528;text-decoration:none;padding:13px 22px;border-radius:12px;font-weight:800;font-size:15px">${echappe(texte)}</a>`;
 const sansCourbes = (t: string) => t.replace(/’/g, "'");
 /* « appelez Werner » ne servait à rien sans son numéro. */
-const UNE_QUESTION = 'Une question ? Répondez à ce message, ou appelez Werner au 01 87 66 06 00.';
+/* Le téléphone : Paramètres › Agence (src/lib/coordonnees-serveur.ts). */
+const uneQuestion = () => `Une question ? Répondez à ce message, ou appelez Werner au ${coordonneesConnues().tel}.`;
 /* L'offre et la reconnaissance sont au féminin : « la relire », « signée par tous ». */
 export const auFeminin = (m: Pick<Modele, 'id'>) => m.id === 'offre_achat' || m.id === 'reconnaissance';
 
@@ -196,14 +198,14 @@ export function mailInvitation(o: { s: SigDoc; m: Modele; d: Donnees; lien: stri
   const le = auFeminin(o.m) ? 'la' : 'le';
   return {
     sujet,
-    texte: `Bonjour ${prenom},\n\n${sansCourbes(intro)}${pourquoi ? `\n\n${sansCourbes(pourquoi)}` : ''}\n\nVous pourrez ${le} relire en entier, puis ${le} signer en ligne :\n${lien}\n\nCe lien est personnel${sansCourbes(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\n${sansCourbes(UNE_QUESTION)}\n\nWerner Immobilier`,
+    texte: `Bonjour ${prenom},\n\n${sansCourbes(intro)}${pourquoi ? `\n\n${sansCourbes(pourquoi)}` : ''}\n\nVous pourrez ${le} relire en entier, puis ${le} signer en ligne :\n${lien}\n\nCe lien est personnel${sansCourbes(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.\n\n${sansCourbes(uneQuestion())}\n\nWerner Immobilier`,
     html: gabarit('Un document à signer', `<p>Bonjour ${echappe(prenom)},</p>
       <p>${echappe(intro)}</p>${pourquoi ? `
       <p>${echappe(pourquoi)}</p>` : ''}
       <p>Vous pourrez ${le} relire en entier, puis ${le} signer en ligne&nbsp;:</p>
       <p>${bouton(lien, 'Relire et signer')}</p>
       <p style="font-size:13px;color:#5B6B80">Ce lien est personnel${echappe(valable)}. Le code de signature ne vous est envoyé que lorsque vous le demandez, et il est valable 15 minutes.</p>`,
-      UNE_QUESTION),
+      uneQuestion()),
   };
 }
 
@@ -234,12 +236,12 @@ export function mailArret(o: { s: SigDoc; m: Modele; d: Donnees; annulation: boo
   const p3 = o.annulation ? '' : 'Si le document doit être signé à nouveau, vous recevrez un nouveau lien par e-mail.';
   return {
     sujet,
-    texte: `Bonjour ${prenom},\n\n${sansCourbes(p1)}\n\n${sansCourbes(p2)}${p3 ? `\n\n${sansCourbes(p3)}` : ''}\n\n${sansCourbes(UNE_QUESTION)}\n\nWerner Immobilier`,
+    texte: `Bonjour ${prenom},\n\n${sansCourbes(p1)}\n\n${sansCourbes(p2)}${p3 ? `\n\n${sansCourbes(p3)}` : ''}\n\n${sansCourbes(uneQuestion())}\n\nWerner Immobilier`,
     html: gabarit(o.annulation ? 'Document annulé' : 'Signature interrompue', `<p>Bonjour ${echappe(prenom)},</p>
       <p>${echappe(p1)}</p>
       <p>${echappe(p2)}</p>
       ${p3 ? `<p>${echappe(p3)}</p>` : ''}`,
-      UNE_QUESTION),
+      uneQuestion()),
   };
 }
 
@@ -248,10 +250,11 @@ export function mailArret(o: { s: SigDoc; m: Modele; d: Donnees; annulation: boo
    reçu. Rend les noms prévenus et les envois ratés. */
 export const aPrevenir = (sigs: SigDoc[]) => sigs.filter(x => (x.statut === 'invite' || x.statut === 'signe') && emailValide(x.personne.email || ''));
 export async function prevenirArret(sigs: SigDoc[], m: Modele, d: Donnees, annulation: boolean): Promise<{ prevenus: string[]; echecs: string[] }> {
+  await coordonnees();
   const prevenus: string[] = [], echecs: string[] = [];
   for (const x of aPrevenir(sigs)) {
     const mail = mailArret({ s: x, m, d, annulation });
-    const e = await envoyerMail({ expediteur: 'signature', a: x.personne.email, nomA: nomSig(x), sujet: mail.sujet, texte: mail.texte, html: mail.html, repondreA: 'contact@wernerimmobilier.com' });
+    const e = await envoyerMail({ expediteur: 'signature', a: x.personne.email, nomA: nomSig(x), sujet: mail.sujet, texte: mail.texte, html: mail.html, repondreA: REPONSE_AGENCE });
     if (e) echecs.push(`${nomSig(x)} : ${e}`); else prevenus.push(nomSig(x));
   }
   return { prevenus, echecs };
@@ -270,9 +273,10 @@ export function lienNeuf(s: SigDoc, le: string, note?: string, expire?: string):
 
 /* Envoie son lien (invitation, ou rappel n° 1 / n° 2). */
 export async function envoyerLien(s: SigDoc, m: Modele, d: Donnees, rappel: 0 | 1 | 2 = 0): Promise<string | null> {
+  await coordonnees();
   if (!s.jeton || !s.lien_expire_le) return 'lien absent';
   const x = mailInvitation({ s, m, d, lien: lienSigner(s.jeton), expire: s.lien_expire_le, rappel });
-  return envoyerMail({ expediteur: 'signature', a: s.personne.email, nomA: nomSig(s), sujet: x.sujet, texte: x.texte, html: x.html, repondreA: 'contact@wernerimmobilier.com' });
+  return envoyerMail({ expediteur: 'signature', a: s.personne.email, nomA: nomSig(s), sujet: x.sujet, texte: x.texte, html: x.html, repondreA: REPONSE_AGENCE });
 }
 
 /* Renvoie son lien (le même s'il vaut encore, sinon un neuf), ou un rappel.
@@ -647,7 +651,7 @@ export async function envoyerExemplaire(o: {
   const r = o.s.cle !== 'agence' && o.m.rappel ? o.m.rappel(o.d) : null;
   const rappel = r ? `Pour rappel : ${r.titre.charAt(0).toLowerCase() + r.titre.slice(1)}, ${r.valeur}${r.detail ? ` (${r.detail})` : ''}${r.ecart ? `, ${r.ecart}` : ''}.` : '';
   return envoyerMail({ expediteur: 'signature',
-    a: o.s.personne.email, nomA: nomSig(o.s), pj, repondreA: 'contact@wernerimmobilier.com',
+    a: o.s.personne.email, nomA: nomSig(o.s), pj, repondreA: REPONSE_AGENCE,
     sujet: o.complet ? `${Doc}, signé${e} par tous` : `${Doc} : votre signature est enregistrée`,
     texte: `Bonjour ${prenom},\n\n${sansCourbes(corps)}${rappel ? `\n\n${sansCourbes(rappel)}` : ''}\n\nWerner Immobilier\n\n—\n${sansCourbes(pied)}`,
     html: gabarit(o.complet ? 'Votre document signé' : 'Votre signature est enregistrée',

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { dateCourte, heureParis } from '@/lib/mandat';
 import { inviter, nomDe, lienValide, type Co, type LigneMandat } from '@/lib/cosignature';
-import { envoyerMail, gabarit, echappe, ALERTES, CRM } from '@/lib/mandat-serveur';
+import { envoyerMail, REPONSE_AGENCE, gabarit, echappe, ALERTES, CRM } from '@/lib/mandat-serveur';
 import { modele } from '@/lib/actes';
 import * as SD from '@/lib/signature-documents';
 import { ecritServeur } from '@/lib/ecritures';
@@ -314,7 +314,7 @@ async function relancerPropositions(sb: SupabaseClient, ko: Echecs): Promise<str
         ? `Votre mandat de recherche est prêt dans votre espace depuis le ${dateCourte(proposeLe)}. Il se relit et se signe en deux minutes, avec un code reçu par e-mail.`
         : 'Je reviens vers vous au sujet de votre mandat de recherche : c’est lui qui me permet d’organiser vos visites et de vous accompagner jusqu’à la signature. Il vous attend dans votre espace, deux minutes suffisent.';
       const erreur = await envoyerMail({
-        a: emails[0], nomA: nom, repondreA: 'contact@wernerimmobilier.com', sujet,
+        a: emails[0], nomA: nom, repondreA: REPONSE_AGENCE, sujet,
         texte: `Bonjour ${prenom},\n\n${phrase.replace(/’/g, "'")}\n\nLire et signer mon mandat : ${lien}\n\nUne question avant de signer ? Répondez simplement à ce message.\n\nWerner\nWerner Immobilier`,
         html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(prenom)},</p>
           <p>${echappe(phrase)}</p>

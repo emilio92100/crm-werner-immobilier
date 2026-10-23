@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { coordonneesDe, type Coordonnees } from '@/lib/agence';
 import { PDF_MAX, criteresAgence, type ResumeAgence } from '@/lib/agences-lien';
 import { aDesInfos, estPdf, lirePdfIci, type InfosPdf, type LecturePdf } from '@/lib/pdf-navigateur';
 
@@ -57,8 +58,10 @@ type Vous = { agence: string; interlocuteur: string; tel: string; email: string 
 /** Ce qu'Alexandre a noté de la personne à qui il a envoyé ce lien (le code `?de=`). */
 export type VousRepris = { agence: string; interlocuteur: string | null; tel: string | null; email: string | null };
 
-const TEL = '01 87 66 06 00';
-const TEL_URL = '+33187660600';
+/* Le téléphone de l'agence : Paramètres › Agence, passé par la page (`co`) et
+   posé au premier rendu, pour tous les blocs de la page. */
+let TEL = coordonneesDe(null).tel;
+let TEL_URL = coordonneesDe(null).telLien;
 const CLE_VOUS = 'emilio_agence_vous';
 const cleEnvois = (t: string) => `emilio_agence_envois:${t}`;
 const PHOTOS_MAX = 6;
@@ -381,11 +384,14 @@ function Fermee({ inconnu }: { inconnu: boolean }) {
   );
 }
 
-export default function PageAgence({ etat, token, resume, repris, code }: {
+export default function PageAgence({ etat, token, resume, repris, code, co }: {
   etat: 'ouvert' | 'ferme' | 'inconnu'; token?: string; resume?: ResumeAgence;
+  /** Les coordonnées de l'agence (Paramètres › Agence) */
+  co?: Coordonnees;
   /** V3.202 : la personne à qui Alexandre a envoyé ce lien (le code `?de=`), et ce code */
   repris?: VousRepris | null; code?: string | null;
 }) {
+  if (co) { TEL = co.tel; TEL_URL = co.telLien; }
   const [lien, setLien] = useState('');
   const [lecture, setLecture] = useState<Lecture>({ etat: 'vide' });
   const [photos, setPhotos] = useState<string[]>([]);

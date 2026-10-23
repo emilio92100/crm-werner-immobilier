@@ -3,13 +3,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   BLOCS, CHAMPS, CLE_HISTORIQUE, CLE_IDENTITE, HISTORIQUE_MAX, IDENTITE_DEFAUT, LIB_FONDS, PREVENIR_JOURS,
-  aRevoir, ecarts, etatCarte, formeCourte, lignesMandataire, lireHistorique, lireIdentite, phraseFonds,
+  aRevoir, clesMiroir, coordonneesDe, ecarts, etatCarte, formeCourte, lignesMandataire, lireHistorique, lireIdentite, phraseFonds,
   type Bloc, type Champ, type Fonds, type IdentiteAgence, type Modif,
 } from '@/lib/agence';
 import { BAREME, HONORAIRES_TAUX, tauxTexte } from '@/lib/mandat';
 import Aide from '@/components/shared/Aide';
 import FenetreSignatureAgence from '@/components/shared/FenetreSignatureAgence';
 import { Carte, Hero, Ico, Interrupteur, Note, styles as p } from './ParamUI';
+import { oublierCoordonnees } from '@/lib/coordonnees-client';
 
 /* ═══ Paramètres · Agence ═════════════════════════════════════════════════
    L'identité de l'agence que les documents impriment (src/lib/agence.ts).
@@ -97,7 +98,7 @@ function Apercu({ id }: { id: IdentiteAgence }) {
   );
 }
 
-export default function ParamAgence() {
+export default function ParamAgence({ onEnregistree }: { onEnregistree?: (valeur: string) => void } = {}) {
   const [enregistree, setEnregistree] = useState<IdentiteAgence | null>(null);
   const [brouillon, setBrouillon] = useState<IdentiteAgence>(IDENTITE_DEFAUT);
   const [historique, setHistorique] = useState<Modif[]>([]);
@@ -172,13 +173,19 @@ export default function ParamAgence() {
     const lignes = ecarts(enregistree, propre, le);
     const histo = [...lignes, ...historique].slice(0, HISTORIQUE_MAX);
     setEnCours('enregistrer');
+    /* Les anciennes clés de « Mails et signature » suivent l'identité : une
+       seule source pour le nom, le téléphone, le mail et le site. */
+    const miroir = Object.entries(clesMiroir(coordonneesDe(propre))).map(([cle, valeur]) => ({ cle, valeur, updated_at: le }));
     const { error } = await supabase.from('parametres').upsert([
       { cle: CLE_IDENTITE, valeur: JSON.stringify(propre), updated_at: le },
       { cle: CLE_HISTORIQUE, valeur: JSON.stringify(histo), updated_at: le },
+      ...miroir,
     ], { onConflict: 'cle' });
     setEnCours('');
     if (error) { montrer(`L’identité de l’agence n’a pas pu être enregistrée : ${error.message}. Rien n’a changé.`, false); return; }
     setEnregistree(propre); setBrouillon(propre); setHistorique(histo); setJamais(false); setEssai(false);
+    oublierCoordonnees();
+    onEnregistree?.(JSON.stringify(propre));
     montrer(`${lignes.length} modification${lignes.length > 1 ? 's' : ''} enregistrée${lignes.length > 1 ? 's' : ''} : les prochains documents les reprennent.`);
   }
 
@@ -305,7 +312,14 @@ export default function ParamAgence() {
           </div>
         </div>
       ))}
-      {carteBloc('coordonnees')}
+      {carteBloc('coordonnees', undefined, (
+        <div style={{ marginBottom: 14 }}>
+          <Note ton="info">
+            <b>{'Une seule source. '}</b>
+            {fr('Change ton téléphone ou ton mail ici, et tout suit : les prochains documents, les mails automatiques, la signature de tes mails, l’espace de tes clients, la page publique d’un local et tes annonces SeLoger. Les documents déjà signés, eux, ne bougent pas.')}
+          </Note>
+        </div>
+      ))}
 
       {/* Les honoraires : lus ici, réglés client par client */}
       <Carte ic="euro" titre="Honoraires et mandat de recherche" sous={fr('Ce que le mandat de recherche propose d’office, et le mandat type qu’un demandeur peut signer seul.')}>

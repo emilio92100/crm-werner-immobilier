@@ -495,6 +495,25 @@ document, et « Pour quel demandeur ? » avant de préparer une offre depuis une
 offres de location dans l'espace client et le CRM (un loyer annuel HT HC, les honoraires à part)
 et la relecture des mandats de recherche (§6).
 
+**23 octobre 2026 — Paramètres redessinés, et une seule source pour les coordonnées.**
+- Paramètres : une tête sombre, un rail de rubriques (Agence, Mails et signature, Alertes mail,
+  Relances, Point automatique, Sécurité), des cartes à icônes dessinées (`ParamUI.tsx`,
+  `Parametres.module.css`). Sécurité : « Mot de passe actuel oublié ? Réinitialise-le » envoie le
+  lien d'une heure (`appelAcces('oubli')`). Le nom d'Alexandre n'apparaît plus dans les textes
+  d'aide montrés à Werner (il reste dans le registre commun et le « Représentant légal »).
+- **Les coordonnées de l'agence** (nom commercial, téléphone, mail, site) se règlent dans
+  Paramètres › Agence, et nulle part ailleurs : `coordonneesDe` / `coordonneesAgence`
+  (`src/lib/agence.ts`), `coordonnees()` côté serveur (`src/lib/coordonnees-serveur.ts`, 30 s en
+  mémoire), `useCoordonnees()` dans le CRM (`src/lib/coordonnees-client.ts`). Les lisent : les
+  mails automatiques (sélection, bienvenue, point automatique, mandat en ligne, signatures,
+  reconnaissance, lien aux agences, retrait), « Répondre à » (`REPONSE_AGENCE`), la signature des
+  mails (`signatureDe`, `CLES_MAIL` lit l'identité), l'espace client, la page publique d'un local,
+  la page de signature, la page des agences, l'invitation d'agenda, le flux SeLoger. Enregistrer
+  Agence recopie aussi `agence_nom`, `conseiller_telephone`, `conseiller_email`, `site_web`
+  (`clesMiroir`). Restent exprès hors de cette source : l'adresse d'expédition
+  (`MAILJET_FROM_EMAIL`), le compte de connexion (`WERNER_MAIL_COMPTE`) et la boîte des alertes
+  (`ALERTES_EMAIL`, sinon l'expéditeur).
+
 ---
 
 ## 6. Ce qui reste à faire

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { modele, surPlaceSansCode } from '@/lib/actes';
 import { dateCourte, heureParis } from '@/lib/mandat';
@@ -215,6 +216,7 @@ async function traiterPost(req: NextRequest) {
        lien réel ne se montre pas : un lien neuf peut être fait à l'envoi). */
     if (action === 'apercu') {
       if (doc.statut !== 'pret') return ko('etat', 409);
+      await coordonnees();
       const s = cible();
       if (!s || !attendu(s)) return ko('signataire', 404);
       const email = typeof body.email === 'string' && emailValide(body.email.trim()) ? body.email.trim().toLowerCase() : s.personne.email;

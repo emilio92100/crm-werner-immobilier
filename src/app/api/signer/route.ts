@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash, randomInt, timingSafeEqual } from 'crypto';
 import { validerMandant, masquerEmail, dateLongue, dateCourte, heureParis, type Mandant } from '@/lib/mandat';
@@ -6,7 +7,7 @@ import {
   lireCos, sceller, lireGriffe, rangerGriffe, envoyerExemplaire, finRetractationDe, nomDe, lienValide, dansLeMandat, attendu,
   BUCKET, type Co, type LigneMandat,
 } from '@/lib/cosignature';
-import { envoyerMail, gabarit, echappe, ALERTES, CRM, appareilDe } from '@/lib/mandat-serveur';
+import { envoyerMail, REPONSE_AGENCE, gabarit, echappe, ALERTES, CRM, appareilDe } from '@/lib/mandat-serveur';
 import { alerteMailActive } from '@/lib/alertes';
 import { modele } from '@/lib/actes';
 import * as SD from '@/lib/signature-documents';
@@ -280,7 +281,7 @@ export async function POST(req: NextRequest) {
           note: `${moi} a renoncé au mandat de recherche n° ${l.numero} ; il continue avec ${premier}. À rappeler.`,
         }));
         await envoyerMail({ expediteur: 'signature',
-          a: co.personne.email, nomA: moi, repondreA: 'contact@wernerimmobilier.com',
+          a: co.personne.email, nomA: moi, repondreA: REPONSE_AGENCE,
           sujet: `Votre renonciation au mandat de recherche n° ${l.numero}`,
           texte: `Bonjour ${co.personne.prenom},\n\nNous avons bien reçu votre renonciation au mandat de recherche n° ${l.numero}, le ${dateLongue(le)} à ${heureParis(le)}. Il ne vous engage plus, sans aucun frais.\n\nWerner Immobilier`,
           html: gabarit('Votre renonciation est enregistrée', `<p>Bonjour ${echappe(co.personne.prenom)},</p>
@@ -288,7 +289,7 @@ export async function POST(req: NextRequest) {
             <p>Werner Immobilier</p>`, 'Ce message vaut accusé de réception de votre rétractation.'),
         });
         await envoyerMail({ expediteur: 'signature',
-          a: l.mandant.email, nomA: premier, repondreA: 'contact@wernerimmobilier.com',
+          a: l.mandant.email, nomA: premier, repondreA: REPONSE_AGENCE,
           sujet: `${co.personne.prenom} a renoncé au mandat de recherche n° ${l.numero}`,
           texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a renoncé au mandat de recherche n° ${l.numero}, le ${dateLongue(le)}. Le mandat continue avec vous. Si vous souhaitez y mettre fin aussi, vous pouvez le faire depuis votre espace, rubrique « Ma recherche ».\n\nWerner Immobilier`,
           html: gabarit('Le mandat continue avec vous', `<p>Bonjour ${echappe(l.mandant.prenom)},</p>
@@ -334,12 +335,12 @@ export async function POST(req: NextRequest) {
           await envoyerExemplaire({ a: l.mandant, numero: l.numero, signe, complet: true, fin, attendus: [] });
         }
         await envoyerMail({ expediteur: 'signature',
-          a: l.mandant.email, nomA: premier, repondreA: 'contact@wernerimmobilier.com',
+          a: l.mandant.email, nomA: premier, repondreA: REPONSE_AGENCE,
           sujet: `${co.personne.prenom} ne signera pas le mandat de recherche n° ${l.numero}`,
-          texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a indiqué ne pas être concerné par cette recherche : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.\n\nS'il s'agit d'une erreur, appelez Werner au 01 87 66 06 00 : il lui renverra un lien.\n\nWerner Immobilier`,
+          texte: `Bonjour ${l.mandant.prenom},\n\n${moi} a indiqué ne pas être concerné par cette recherche : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.\n\nS'il s'agit d'une erreur, appelez Werner au ${(await coordonnees(sb)).tel} : il lui renverra un lien.\n\nWerner Immobilier`,
           html: gabarit('Le mandat continue avec vous', `<p>Bonjour ${echappe(l.mandant.prenom)},</p>
             <p>${echappe(moi)} a indiqué ne pas être concerné par cette recherche : il ne signera pas le mandat. Le mandat continue avec vous${signe ? ', et vous en trouverez la version définitive dans un autre message' : ''}.</p>
-            <p>S’il s’agit d’une erreur, appelez Werner au 01 87 66 06 00 : il lui renverra un lien.</p>
+            <p>S’il s’agit d’une erreur, appelez Werner au ${echappe((await coordonnees(sb)).tel)} : il lui renverra un lien.</p>
             <p>Werner Immobilier</p>`),
         });
         await envoyerMail({

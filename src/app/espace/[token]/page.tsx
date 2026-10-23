@@ -1,4 +1,5 @@
 import type { ProBien } from '@/lib/affaires';
+import { coordonnees } from '@/lib/coordonnees-serveur';
 import { lireCriteresPro } from '@/lib/correspondance';
 import { createClient } from '@supabase/supabase-js';
 import { notFound, redirect } from 'next/navigation';
@@ -804,6 +805,7 @@ export default async function PageEspace({ params, searchParams }: {
       apprisClient={apprisClient}
       annonces={annonces}
       identiteOffre={identiteOffre}
+      co={await coordonnees(supabase)}
       imprevus={imprevus}
     />
   );

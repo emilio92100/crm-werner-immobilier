@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { lireIdentiteAgence } from '@/lib/agence';
 import { relanceAGarder } from '@/lib/relances-garder';
 import { reventePossible } from '@/lib/contacts';
 import { createClient } from '@supabase/supabase-js';
@@ -1776,6 +1777,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
         }
         const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
 
+        /* La signature du mail : l'identité de l'agence (Paramètres › Agence). */
+        const ag = await lireIdentiteAgence(supabase);
         const html = `<div style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#363533">
   <div style="background:#2e3034;padding:18px 22px 16px;border-radius:14px 14px 0 0;border-bottom:3px solid #f08c42">
     ${logoMail()}
@@ -1799,8 +1802,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
     <hr style="border:none;border-top:1px solid #eeeeed;margin:24px 0 14px">
     <div style="font-size:12px;color:#aba7a3;line-height:1.6">
       Fiche transmise par ${echappe(prenom)}.<br>
-      Ce local est présenté par Werner, conseiller en immobilier d’entreprise · 01 87 66 06 00<br>
-      Werner Immobilier — RT Conseils · CPI 9201 2020 000 045 344
+      Ce local est présenté par Werner, conseiller en immobilier d’entreprise · ${echappe(ag.tel)}<br>
+      ${echappe(ag.nom)} — ${echappe(ag.societe)} · ${echappe(ag.carte)}
     </div>
   </div>
 </div>`;
@@ -1814,7 +1817,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
               From: { Email: FROM_EMAIL, Name: cl?.prenom ? `${cl.prenom} via Werner Immobilier` : 'Werner Immobilier' },
               To: [{ Email: dest }],
               Subject: `${prenom} vous partage un local`,
-              TextPart: `Bonjour,\n\nVoici un local que je suis en train de regarder. Dites-moi ce que vous en pensez.\n\n${bien.titre || ''}\n${[carac, prix ? Number(prix).toLocaleString('fr-FR') + ' \u20ac' + ((bien.pro as { nature?: string } | null)?.nature === 'location' ? ' HT HC / an' : '') : null].filter(Boolean).join(' \u00b7 ')}\n${lien}\n\n${prenom}\n\n---\nFiche transmise par ${prenom}.\nCe local est présenté par Werner, conseiller en immobilier d’entreprise · 01 87 66 06 00\nWerner Immobilier — RT Conseils · CPI 9201 2020 000 045 344`,
+              TextPart: `Bonjour,\n\nVoici un local que je suis en train de regarder. Dites-moi ce que vous en pensez.\n\n${bien.titre || ''}\n${[carac, prix ? Number(prix).toLocaleString('fr-FR') + ' \u20ac' + ((bien.pro as { nature?: string } | null)?.nature === 'location' ? ' HT HC / an' : '') : null].filter(Boolean).join(' \u00b7 ')}\n${lien}\n\n${prenom}\n\n---\nFiche transmise par ${prenom}.\nCe local est présenté par Werner, conseiller en immobilier d’entreprise · ${ag.tel}\n${ag.nom} — ${ag.societe} · ${ag.carte}`,
               HTMLPart: html,
               CustomID: `partage-${bien.id}-${Date.now()}`,
               TrackOpens: 'disabled', TrackClicks: 'disabled',

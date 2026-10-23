@@ -13,7 +13,7 @@ import {
 import { pdfMandat, pdfSigne } from '@/lib/mandat-pdf';
 import { PDFDocument } from 'pdf-lib';
 import {
-  lireReserve, prendreNumero, envoyerMail, gabarit, echappe, ALERTES, CRM, appareilDe, RESERVE_ALERTE, mandatDocumentEnRoute,
+  lireReserve, prendreNumero, envoyerMail, REPONSE_AGENCE, gabarit, echappe, ALERTES, CRM, appareilDe, RESERVE_ALERTE, mandatDocumentEnRoute,
   renonciationDocument, memeNumero,
 } from '@/lib/mandat-serveur';
 import { alerteMailActive } from '@/lib/alertes';
@@ -225,7 +225,7 @@ async function renoncerDocument(o: {
     const nom = `${prenom} ${texte(c.personne?.nom)}`.trim() || texte(c.nom) || a;
     const bonjour = prenom ? `Bonjour ${prenom},` : 'Bonjour,';
     const e = await envoyerMail({ expediteur: 'signature',
-      a, nomA: nom, repondreA: 'contact@wernerimmobilier.com',
+      a, nomA: nom, repondreA: REPONSE_AGENCE,
       sujet: `Le mandat de recherche${nVu} a pris fin`,
       texte: `${bonjour}\n\n${prenomClient} a renoncé au mandat de recherche${nVu}, le ${dateLongue(le)} : il prend fin pour tous ceux qui l'avaient signé, sans aucun frais.\n\nSi vous souhaitez reprendre votre recherche avec nous, vous serez les bienvenus.\n\nWerner Immobilier`,
       html: gabarit('Le mandat a pris fin', `<p>${echappe(bonjour)}</p>
@@ -279,7 +279,7 @@ async function renoncerDocument(o: {
   const nomSoi = `${texte(r.soi.personne?.prenom)} ${texte(r.soi.personne?.nom)}`.trim();
   const bonjourClient = texte(r.soi.personne?.prenom) ? `Bonjour ${texte(r.soi.personne?.prenom)},` : 'Bonjour,';
   const eClient = aClient ? await envoyerMail({ expediteur: 'signature',
-    a: aClient, ...(nomSoi ? { nomA: nomSoi } : {}), repondreA: 'contact@wernerimmobilier.com',
+    a: aClient, ...(nomSoi ? { nomA: nomSoi } : {}), repondreA: REPONSE_AGENCE,
     sujet: `Votre renonciation au mandat de recherche${nVu}`,
     texte: `${bonjourClient}\n\nNous avons bien reçu votre renonciation au mandat de recherche${nVu}, le ${dateLongue(le)} à ${heureParis(le)}.\n\nLe mandat prend fin, sans aucun frais.\n\nSi vous souhaitez un jour reprendre votre recherche avec nous, vous serez le bienvenu.\n\nWerner Immobilier`,
     html: gabarit('Votre renonciation est enregistrée', `<p>${echappe(bonjourClient)}</p>
@@ -894,7 +894,7 @@ export async function POST(req: NextRequest) {
         const pj = [{ nom: `Mandat-de-recherche-${l.numero}.pdf`, type: 'application/pdf', base64: Buffer.from(signe).toString('base64') }];
         const limite = sansDelai ? new Date(le) : finRetractation(le);
         const eClient = await envoyerMail({ expediteur: 'signature',
-          a: m.email, nomA: nom, pj, repondreA: 'contact@wernerimmobilier.com',
+          a: m.email, nomA: nom, pj, repondreA: REPONSE_AGENCE,
           sujet: `Votre mandat de recherche n° ${l.numero}`,
           texte: `Bonjour ${m.prenom},\n\nMerci pour votre confiance. Vous trouverez ci-joint votre mandat de recherche n° ${l.numero}, signé le ${dateLongue(le)}, avec son certificat de signature.\n\nVous le retrouvez aussi à tout moment dans votre espace, rubrique « Ma recherche ».\n\nWerner travaille désormais pour vous : les locaux hors marché de son réseau, chaque dossier vérifié avant toute offre, la négociation, et un suivi jusqu'à la signature du bail ou de l'acte.\n\nÀ très vite,\nWerner Immobilier${sansDelai ? '' : `\n\n—\nLe mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours (jusqu'au ${dateLongue(limite)} inclus) et la façon de l'exercer.`}`,
           html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(m.prenom)},</p>
@@ -994,7 +994,7 @@ export async function POST(req: NextRequest) {
         }
         for (const c of cosR.filter(x => x.statut === 'signe')) {
           await envoyerMail({ expediteur: 'signature',
-            a: c.personne.email, nomA: nomDe(c.personne), repondreA: 'contact@wernerimmobilier.com',
+            a: c.personne.email, nomA: nomDe(c.personne), repondreA: REPONSE_AGENCE,
             sujet: `Le mandat de recherche n° ${l.numero} a pris fin`,
             texte: `Bonjour ${c.personne.prenom},\n\n${l.mandant.prenom} a renoncé au mandat de recherche n° ${l.numero}, le ${dateLongue(le)} : il prend fin pour tous ceux qui l'avaient signé, sans aucun frais.\n\nSi vous souhaitez reprendre votre recherche avec nous, vous serez les bienvenus.\n\nWerner Immobilier`,
             html: gabarit('Le mandat a pris fin', `<p>Bonjour ${echappe(c.personne.prenom)},</p>
@@ -1034,7 +1034,7 @@ export async function POST(req: NextRequest) {
            l'espace ne dit pas « envoyé », et Alexandre est prévenu quoi
            qu'il en soit des alertes coupées. */
         const eAccuse = !String(m?.email || '').includes('@') ? 'aucune adresse' : await envoyerMail({ expediteur: 'signature',
-          a: m.email, nomA: `${m.prenom} ${m.nom}`, repondreA: 'contact@wernerimmobilier.com',
+          a: m.email, nomA: `${m.prenom} ${m.nom}`, repondreA: REPONSE_AGENCE,
           sujet: `Votre renonciation au mandat de recherche n° ${l.numero}`,
           texte: `Bonjour ${m.prenom},\n\nNous avons bien reçu votre renonciation au mandat de recherche n° ${l.numero}, le ${dateLongue(le)} à ${heureParis(le)}.\n\nLe mandat prend fin, sans aucun frais.\n\nSi vous souhaitez un jour reprendre votre recherche avec nous, vous serez le bienvenu.\n\nWerner Immobilier`,
           html: gabarit('Votre renonciation est enregistrée', `<p>Bonjour ${echappe(m.prenom)},</p>
