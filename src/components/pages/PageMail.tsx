@@ -10,10 +10,11 @@ import { toutLire } from '@/lib/registre';
 import { signalerEchec } from '@/lib/ecritures';
 import { EVT_NOUVEAU_MAIL, signalerMaj } from '@/lib/intentions';
 import { CLES_MAIL, conseillerDe, signatureDe } from '@/lib/mail-variables';
+import { conjointDe, groupesAdresses, pourAdresses } from '@/lib/foyer';
 import { estArchive, typeDe, typesDe } from '@/lib/contacts';
 import { IDENTITE_DEFAUT, type IdentiteAgence } from '@/lib/agence';
 import {
-  STYLES_MAIL, habillageDe, htmlVide, lienPropre, mailLibreHtml, nettoyerHtml, personnaliserHtml, personnaliserObjet, texteVersHtml,
+  STYLES_MAIL, habillageDe, htmlVide, lienPropre, mailLibreHtml, nettoyerHtml, personnaliserHtml, personnaliserObjet, pourGroupe, texteVersHtml,
   type StyleMail,
 } from '@/lib/mail-libre';
 import s from './PageMail.module.css';
@@ -33,7 +34,11 @@ import Curseur from '@/components/shared/Curseur';
    · Les pièces jointes : déposées tout de suite dans le stockage privé ;
      jusqu'à 10 Mo en pièces jointes, au-delà en liens de 7 jours.
    · L'aperçu : le mail exact, fabriqué par les mêmes fonctions que l'envoi
-     (src/lib/mail-libre.ts), pour chaque destinataire. */
+     (src/lib/mail-libre.ts), pour chaque destinataire.
+   · V3.234 — « Cc Cci », au bout de la ligne « À » : deux lignes de plus,
+     les mêmes pastilles. Dès qu'il y a une copie, le mail part en un seul
+     exemplaire, comme depuis une messagerie (« À » et « Cc » visibles de
+     tous, « Cci » de personne) ; sans copie, un mail par personne. */
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://crm-werner-immobilier.vercel.app';
 const MAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -48,17 +53,55 @@ const TYPES: Record<string, string> = {
 const tailleFr = (o: number) => (o >= 1_000_000 ? `${String(Math.round(o / 100_000) / 10).replace('.', ',')} Mo` : `${Math.max(1, Math.round(o / 1000))} ko`);
 
 type Contact = { id: string; prenom: string | null; nom: string | null; reference: string | null; emails: string[] | null; types?: string[] | null; archive?: boolean | null; [k: string]: unknown };
-type Dest = { cle: string; contact: Contact | null; email: string };
+/* V3.235 : `choisis`, les adresses d'un contact qui reçoivent le mail (une
+   seule par défaut ; toutes avant, notaire du dossier compris). */
+type Dest = { cle: string; contact: Contact | null; email: string; choisis?: string[] };
 type Piece = { id: string; nom: string; taille: number; etat: 'envoi' | 'ok' | 'ko'; chemin?: string; erreur?: string };
-type Resultat = { envoyes: { nom: string; a: string[]; clientId: string | null }[]; echecs: string[]; avertissements: string[]; mode: 'pj' | 'liens'; incertains?: string[] };
+/* V3.234 : `role`, la ligne où la personne était (« À », Cc ou Cci). */
+type Role = 'a' | 'cc' | 'cci';
+type Resultat = { envoyes: { nom: string; a: string[]; clientId: string | null; role?: Role }[]; echecs: string[]; avertissements: string[]; mode: 'pj' | 'liens'; incertains?: string[] };
 /* V3.50 : le serveur n'a pas pu dire ce qui est parti (délai dépassé, coupure,
    Mailjet muet). Avant : « Erreur 504 », alors que des mails étaient partis,
    et un deuxième envoi faisait des doubles. */
 const PEUT_ETRE = 'L’envoi a peut-être été fait en partie : vérifie le Suivi des contacts avant de renvoyer.';
 
 const nomDe = (c: Contact) => `${c.prenom || ''} ${c.nom || ''}`.trim() || c.reference || 'Contact';
-const mailsDe = (c: Contact) => (c.emails || []).map(e => String(e).trim()).filter(e => MAIL.test(e));
+/* V3.236 : toutes les adresses de la fiche, rangées (personne 1, personne 2,
+   autres adresses du dossier : src/lib/foyer.ts). La première est celle de
+   la personne 1 : c'est elle qui part par défaut. */
+const mailsDe = (c: Contact) => groupesAdresses(c).flatMap(g => g.emails);
 const sansAccent = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+/* Ce que {{prénom}}, {{nom}}… deviennent pour une personne (rien hors CRM). */
+const pourDe = (d: Dest) => (d.contact ? pourAdresses(d.contact, adressesDe(d)) : { prenom: '', nom: '', reference: '' });
+/* Les adresses qui reçoivent le mail : celles cochées pour un contact (V3.235). */
+const adressesDe = (d: Dest) => (d.contact ? (d.choisis?.length ? d.choisis : mailsDe(d.contact).slice(0, 1)) : [d.email]);
+const choixDe = (l: Dest[]) => Object.fromEntries(l.filter(d => d.contact).map(d => [d.contact!.id, adressesDe(d)]));
+/* V3.236 : à qui part vraiment le mail. Les adresses choisies sont toutes à
+   la personne 2 → elle ; toutes du dossier → l'étiquette (le notaire…) ;
+   sinon la personne 1. */
+type Vers = { genre: 'libre' | 'p1' | 'p2' | 'dossier'; nom: string; prenom: string; etiquette: string };
+function versDe(d: Dest): Vers {
+  if (!d.contact) return { genre: 'libre', nom: d.email, prenom: '', etiquette: '' };
+  const l = adressesDe(d).map(e => e.toLowerCase());
+  const g = groupesAdresses(d.contact);
+  const dans = (qui: string) => g.filter(x => x.qui === qui).flatMap(x => x.emails.map(e => e.toLowerCase()));
+  const j = conjointDe(d.contact.conjoint);
+  if (j && l.length && l.every(e => dans('p2').includes(e))) return { genre: 'p2', nom: `${j.prenom || ''} ${j.nom || ''}`.trim() || 'Personne 2', prenom: j.prenom || '', etiquette: '' };
+  if (l.length && l.every(e => dans('dossier').includes(e))) {
+    const etiquette = g.find(x => x.qui === 'dossier' && x.emails.some(e => l.includes(e.toLowerCase())))?.lib || 'Autre';
+    return { genre: 'dossier', nom: `${etiquette} · ${nomDe(d.contact)}`, prenom: '', etiquette };
+  }
+  return { genre: 'p1', nom: nomDe(d.contact), prenom: d.contact.prenom || '', etiquette: '' };
+}
+const quiDest = (d: Dest) => versDe(d).nom;
+/* « Envoyer à Maxime », « Envoyer au notaire », « Envoyer à l'avocat »… */
+const AU: Record<string, string> = { Notaire: 'au notaire', Avocat: 'à l’avocat', 'Expert-comptable': 'à l’expert-comptable', Syndic: 'au syndic', Banque: 'à la banque' };
+function aQui(d: Dest): string {
+  const v = versDe(d);
+  if (v.genre === 'dossier') return AU[v.etiquette] || 'à cette adresse';
+  return `à ${v.prenom || v.nom}`;
+}
+const libDest = (x: Dest) => (x.contact ? `${quiDest(x)} · ${adressesDe(x).join(', ')}` : x.email);
 
 /* Les messages pré-rédigés : le texte, et un objet proposé si le champ est vide. */
 const messagesPre = (sig: string) => [
@@ -73,31 +116,69 @@ const messagesPre = (sig: string) => [
 const accueil = (sig: string, salut = 'Bonjour {{prénom}},') => texteVersHtml(`${salut}\n\n\n\n${sig}`);
 const LIGNE_A_ECRIRE = 2;
 
-/* ── Les destinataires : des pastilles, et une recherche dessous ── */
-function ChampDestinataires({ contacts, dests, onAjout, onRetrait }: {
+/* ── Les destinataires : des pastilles, et une recherche dessous ──
+   V3.235 — Alexandre : « quand je mets un nom connu ou juste un mail, ça
+   reprend le contact enregistré à ce mail, mais ça met tous les mails qu'il y
+   a dans son contact […] il faudrait que je puisse sélectionner quel mail
+   envoyer ». Un contact n'envoie plus qu'à UNE adresse par défaut : celle
+   qu'on a tapée (si la recherche passe par son adresse), sinon la première de
+   sa fiche. S'il en a plusieurs, la petite fenêtre « Ses adresses » s'ouvre à
+   l'ajout pour cocher les autres ; la pastille dit « 1 sur 5 » et la rouvre. */
+function ChampDestinataires({ contacts, dests, onAjout, onRetrait, onAdresses, exclus, invite, libelle = 'Ajouter un destinataire' }: {
   contacts: Contact[] | null; dests: Dest[]; onAjout: (d: Dest) => void; onRetrait: (cle: string) => void;
+  /* V3.235 : les adresses cochées d'un contact. */
+  onAdresses: (cle: string, choisis: string[]) => void;
+  /* V3.234 : les personnes déjà sur une autre ligne (À, Cc, Cci). */
+  exclus?: Dest[];
+  invite?: string; libelle?: string;
 }) {
   const [q, setQ] = useState('');
   const [ouvert, setOuvert] = useState(false);
   const [actif, setActif] = useState(0);
+  /* V3.235 : la pastille dont on choisit les adresses. */
+  const [adresses, setAdresses] = useState<string | null>(null);
+  const refAdresses = useRef<HTMLDivElement | null>(null);
   const saisie = q.trim().toLowerCase();
-  const pris = useMemo(() => new Set(dests.map(d => d.cle)), [dests]);
+  const pris = useMemo(() => new Set([...dests, ...(exclus || [])].map(d => d.cle)), [dests, exclus]);
   const resultats = useMemo(() => {
     if (!contacts || saisie.length < 1) return [] as Contact[];
     const x = sansAccent(saisie);
-    return contacts.filter(c => !pris.has(`c-${c.id}`) && sansAccent(`${c.prenom || ''} ${c.nom || ''} ${c.reference || ''} ${(c.emails || []).join(' ')}`).includes(x)).slice(0, 8);
+    /* V3.236 : aussi par la personne 2 et par toutes les adresses de la fiche. */
+    const j2 = (c: Contact) => { const j = conjointDe(c.conjoint); return j ? `${j.prenom || ''} ${j.nom || ''}` : ''; };
+    return contacts.filter(c => !pris.has(`c-${c.id}`) && sansAccent(`${c.prenom || ''} ${c.nom || ''} ${c.reference || ''} ${j2(c)} ${mailsDe(c).join(' ')}`).includes(x)).slice(0, 8);
   }, [contacts, saisie, pris]);
   const adresseLibre = MAIL.test(saisie) && !pris.has(`a-${saisie}`) && !resultats.some(c => mailsDe(c).map(e => e.toLowerCase()).includes(saisie));
   type Choix = { k: string; contact: Contact | null; email: string; off: boolean };
+  /* L'adresse proposée pour un contact : trouvé par son nom, la première de
+     sa fiche ; trouvé par une de ses adresses, celle-là. */
+  const trouvee = (c: Contact) => {
+    const x = sansAccent(saisie);
+    const parNom = sansAccent(`${c.prenom || ''} ${c.nom || ''} ${c.reference || ''}`).includes(x);
+    /* Trouvé par le nom de la personne 2 (V3.236) : sa première adresse. */
+    const j = conjointDe(c.conjoint);
+    const p2 = !parNom && j && sansAccent(`${j.prenom || ''} ${j.nom || ''}`).includes(x) ? groupesAdresses(c).find(g => g.qui === 'p2')?.emails[0] : undefined;
+    return p2 || (!parNom && mailsDe(c).find(e => sansAccent(e).includes(x))) || mailsDe(c)[0] || '';
+  };
   const choix: Choix[] = [
-    ...resultats.map(c => ({ k: `c-${c.id}`, contact: c, email: mailsDe(c)[0] || '', off: !mailsDe(c).length })),
+    ...resultats.map(c => ({ k: `c-${c.id}`, contact: c, email: trouvee(c), off: !mailsDe(c).length })),
     ...(adresseLibre ? [{ k: `a-${saisie}`, contact: null, email: saisie, off: false }] : []),
   ];
 
+  /* La fenêtre « Ses adresses » se ferme d'un clic à côté ou avec Échap. */
+  useEffect(() => {
+    if (!adresses) return;
+    const dehors = (e: MouseEvent) => { if (refAdresses.current && !refAdresses.current.contains(e.target as Node)) setAdresses(null); };
+    const esc = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setAdresses(null); } };
+    document.addEventListener('mousedown', dehors);
+    window.addEventListener('keydown', esc, true);
+    return () => { document.removeEventListener('mousedown', dehors); window.removeEventListener('keydown', esc, true); };
+  }, [adresses]);
+
   function prendre(c: Choix | undefined) {
     if (!c || c.off) return;
-    onAjout({ cle: c.k, contact: c.contact, email: c.email });
+    onAjout({ cle: c.k, contact: c.contact, email: c.email, ...(c.contact ? { choisis: [c.email] } : {}) });
     setQ(''); setActif(0);
+    if (c.contact && mailsDe(c.contact).length > 1) { setOuvert(false); setAdresses(c.k); }
   }
   function touche(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'ArrowDown') { e.preventDefault(); setActif(a => Math.min(a + 1, Math.max(0, choix.length - 1))); return; }
@@ -111,22 +192,33 @@ function ChampDestinataires({ contacts, dests, onAjout, onRetrait }: {
     if (e.key === 'Backspace' && !q && dests.length) onRetrait(dests[dests.length - 1].cle);
   }
 
+  const enChoix = adresses ? dests.find(d => d.cle === adresses && d.contact) : undefined;
   return (
     <div className={s.dests}>
       <div className={s.destsChamp} onClick={e => (e.currentTarget.querySelector('input') as HTMLInputElement | null)?.focus()}>
-        {dests.map(d => (
-          <span key={d.cle} className={`${s.pastille} ${d.contact ? '' : s.pastilleLibre}`} title={d.contact ? mailsDe(d.contact).join(', ') : d.email}>
-            {d.contact
-              ? <AvatarContact c={d.contact as never} teinte={teinteDe(d.contact as never)} taille={22} />
-              : <span className={s.pastilleIc}><Ic n="mail" t={13} /></span>}
-            <span>{d.contact ? nomDe(d.contact) : d.email}</span>
-            <button type="button" aria-label={`Retirer ${d.contact ? nomDe(d.contact) : d.email}`} onClick={e => { e.stopPropagation(); onRetrait(d.cle); }}><Croix t={12} /></button>
-          </span>
-        ))}
-        <input value={q} onChange={e => { setQ(e.target.value); setOuvert(true); setActif(0); }} onKeyDown={touche}
+        {dests.map(d => {
+          const toutes = d.contact ? mailsDe(d.contact) : [];
+          return (
+            <span key={d.cle} className={`${s.pastille} ${d.contact ? '' : s.pastilleLibre}`} title={adressesDe(d).join(', ')}>
+              {d.contact
+                ? <AvatarContact c={d.contact as never} teinte={teinteDe(d.contact as never)} taille={22} />
+                : <span className={s.pastilleIc}><Ic n="mail" t={13} /></span>}
+              <span>{d.contact ? quiDest(d) : d.email}</span>
+              {d.contact && toutes.length > 1 && (
+                <button type="button" className={s.pastilleNb} aria-expanded={adresses === d.cle}
+                  aria-label={`Choisir les adresses de ${nomDe(d.contact)} : ${adressesDe(d).length} sur ${toutes.length}`}
+                  onClick={e => { e.stopPropagation(); setOuvert(false); setAdresses(a => (a === d.cle ? null : d.cle)); }}>
+                  {`${adressesDe(d).length} sur ${toutes.length}`}<Ic n="bas" t={11} />
+                </button>
+              )}
+              <button type="button" aria-label={`Retirer ${d.contact ? nomDe(d.contact) : d.email}`} onClick={e => { e.stopPropagation(); onRetrait(d.cle); }}><Croix t={12} /></button>
+            </span>
+          );
+        })}
+        <input value={q} onChange={e => { setQ(e.target.value); setOuvert(true); setActif(0); setAdresses(null); }} onKeyDown={touche}
           onFocus={() => setOuvert(true)} onBlur={() => setTimeout(() => setOuvert(false), 150)}
-          placeholder={dests.length ? 'Ajouter quelqu’un…' : 'Un contact ou une adresse e-mail'}
-          aria-label="Ajouter un destinataire" autoComplete="off" inputMode="email" />
+          placeholder={dests.length ? 'Ajouter quelqu’un…' : invite || 'Un contact ou une adresse e-mail'}
+          aria-label={libelle} autoComplete="off" inputMode="email" />
       </div>
       {ouvert && saisie && (
         <div className={s.liste} role="listbox">
@@ -141,13 +233,59 @@ function ChampDestinataires({ contacts, dests, onAjout, onRetrait }: {
               <span className={s.choixTx}>
                 <b>{c.contact ? nomDe(c.contact) : `Envoyer à ${c.email}`}</b>
                 <small>{c.contact
-                  ? [typesDe(c.contact).map(t => typeDe(t).lib).join(', '), c.email || 'pas d’adresse e-mail'].filter(Boolean).join(' · ')
+                  ? [typesDe(c.contact).map(t => typeDe(t).lib).join(', '), c.email || 'pas d’adresse e-mail', mailsDe(c.contact).length > 1 ? `+ ${mailsDe(c.contact).length - 1} autre${mailsDe(c.contact).length > 2 ? 's' : ''} adresse${mailsDe(c.contact).length > 2 ? 's' : ''}` : ''].filter(Boolean).join(' · ')
                   : 'Adresse hors CRM : rien ne sera noté dans un Suivi'}</small>
               </span>
             </button>
           ))}
         </div>
       )}
+      {enChoix?.contact && (() => {
+        const c = enChoix.contact;
+        const toutes = mailsDe(c);
+        const coche = adressesDe(enChoix);
+        const basculer = (e: string) => {
+          const l = coche.includes(e) ? coche.filter(x => x !== e) : [...coche, e];
+          /* Au moins une : décocher la dernière ne fait rien. */
+          if (l.length) onAdresses(enChoix.cle, toutes.filter(x => l.includes(x)));
+        };
+        /* V3.236 : rangées par personne, puis les autres adresses du dossier sous leur étiquette. */
+        const groupes = groupesAdresses(c);
+        const dossier = groupes.filter(g => g.qui === 'dossier');
+        const ligne = (e: string, etiq?: string) => (
+          <label key={e} className={s.adresse}>
+            <input type="checkbox" checked={coche.includes(e)} onChange={() => basculer(e)} />
+            {etiq && <em className={s.adresseEtiq}>{etiq}</em>}
+            <span>{e}</span>
+          </label>
+        );
+        return (
+          <div ref={refAdresses} className={s.adresses} role="dialog" aria-label={`Les adresses de ${nomDe(c)}`}>
+            <p className={s.adressesTitre}>
+              <b>{`${toutes.length} adresses sur la fiche de ${nomDe(c)}`}</b>
+              <span>{'Coche celles qui doivent recevoir ce mail.'}</span>
+            </p>
+            <div className={s.adressesListe}>
+              {groupes.filter(g => g.qui !== 'dossier').map(g => (
+                <div key={g.qui} className={s.adressesGroupe}>
+                  {(groupes.length > 1) && <span className={s.adressesQui}>{g.qui === 'p2' ? `${g.lib} · personne 2` : g.lib}</span>}
+                  {g.emails.map(e => ligne(e))}
+                </div>
+              ))}
+              {dossier.length > 0 && (
+                <div className={s.adressesGroupe}>
+                  <span className={s.adressesQui}>Autres adresses du dossier</span>
+                  {dossier.map(g => g.emails.map(e => ligne(e, g.lib)))}
+                </div>
+              )}
+            </div>
+            <div className={s.adressesPied}>
+              <button type="button" className={`${s.btn} ${s.btnPetit}`} onClick={() => onAdresses(enChoix.cle, toutes)}>Toutes</button>
+              <button type="button" className={`${s.btn} ${s.btnPetit} ${s.btnMarine}`} onClick={() => setAdresses(null)}><Ic n="check" t={14} />{'C’est bon'}</button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -278,16 +416,18 @@ function Editeur({ refEd, onChange, messages, onMessage, onFocus }: {
 }
 
 /* ── L'aperçu : le mail tel qu'il arrivera, destinataire par destinataire ── */
-function FenetreApercu({ dests, objet, corps, style, h, conseiller, pieces, envoi, onFermer, onEnvoyer, libEnvoyer, manque }: {
-  dests: Dest[]; objet: string; corps: string; style: StyleMail; h: ReturnType<typeof habillageDe>; conseiller: string;
+function FenetreApercu({ dests, cc, cci, objet, corps, style, h, conseiller, pieces, envoi, onFermer, onEnvoyer, libEnvoyer, manque }: {
+  dests: Dest[]; cc: Dest[]; cci: Dest[]; objet: string; corps: string; style: StyleMail; h: ReturnType<typeof habillageDe>; conseiller: string;
   pieces: Piece[]; envoi: boolean; onFermer: () => void; onEnvoyer: () => void; libEnvoyer: string;
   /* Ce qui manque encore pour envoyer (vide : tout est prêt). */
   manque: string;
 }) {
   const [qui, setQui] = useState(0);
   const [ecran, setEcran] = useState<'ordi' | 'tel'>(() => (typeof window !== 'undefined' && window.innerWidth < 760 ? 'tel' : 'ordi'));
+  /* V3.234 : avec une copie, un seul mail, le même pour tous. */
+  const groupe = cc.length + cci.length > 0;
   const d = dests[Math.min(qui, dests.length - 1)];
-  const pour = d?.contact ? { prenom: d.contact.prenom || '', nom: d.contact.nom || '', reference: d.contact.reference || '' } : { prenom: '', nom: '', reference: '' };
+  const pour = groupe ? pourGroupe(dests.map(pourDe)) : d ? pourDe(d) : { prenom: '', nom: '', reference: '' };
   const html = mailLibreHtml({ style, corps: personnaliserHtml(corps, pour, conseiller), h });
   const sujet = personnaliserObjet(objet, pour, conseiller) || objet;
   const lourd = pieces.reduce((t, p) => t + p.taille, 0) > MAX_JOINTS;
@@ -304,7 +444,7 @@ function FenetreApercu({ dests, objet, corps, style, h, conseiller, pieces, envo
           <span className={s.fenIc}><Ic n="oeil" t={20} /></span>
           <div className={s.fenTx}>
             <h2>Aperçu du mail</h2>
-            <p>{dests.length > 1 ? `Tel que le recevra chaque destinataire : choisis-en un pour voir son prénom à la place de {{prénom}}.` : 'Tel que le recevra ton destinataire.'}</p>
+            <p>{groupe ? 'Un seul mail, le même pour tous : tel que le recevront tes destinataires.' : dests.length > 1 ? `Tel que le recevra chaque destinataire : choisis-en un pour voir son prénom à la place de {{prénom}}.` : 'Tel que le recevra ton destinataire.'}</p>
           </div>
           <button type="button" className={s.fermer} aria-label="Fermer" disabled={envoi} onClick={onFermer}><Croix /></button>
         </div>
@@ -312,11 +452,13 @@ function FenetreApercu({ dests, objet, corps, style, h, conseiller, pieces, envo
           <dl className={s.entete}>
             <dt>De</dt><dd>{'Werner Immobilier · contact@wernerimmobilier.com'}</dd>
             <dt>À</dt>
-            <dd>{!dests.length ? <span className={s.manque}>{'Personne pour l’instant'}</span> : dests.length > 1
+            <dd>{!dests.length ? <span className={s.manque}>{'Personne pour l’instant'}</span> : groupe ? dests.map(libDest).join(', ') : dests.length > 1
               ? <select className={s.select} value={qui} onChange={e => setQui(Number(e.target.value))} aria-label="Voir le mail de">
-                  {dests.map((x, i) => <option key={x.cle} value={i}>{x.contact ? `${nomDe(x.contact)} · ${mailsDe(x.contact).join(', ')}` : x.email}</option>)}
+                  {dests.map((x, i) => <option key={x.cle} value={i}>{libDest(x)}</option>)}
                 </select>
-              : d ? (d.contact ? `${nomDe(d.contact)} · ${mailsDe(d.contact).join(', ')}` : d.email) : ''}</dd>
+              : d ? libDest(d) : ''}</dd>
+            {cc.length > 0 && <><dt>Cc</dt><dd>{cc.map(libDest).join(', ')}</dd></>}
+            {cci.length > 0 && <><dt>Cci</dt><dd>{`${cci.map(libDest).join(', ')} — ${cci.length > 1 ? 'invisibles' : 'invisible'} pour les autres`}</dd></>}
             <dt>Objet</dt><dd><b>{sujet || '(sans objet)'}</b></dd>
             {pieces.length > 0 && <><dt>{lourd ? 'Liens' : 'Pièces'}</dt><dd>{`${pieces.map(p => p.nom).join(', ')}${lourd ? ' — trop lourdes pour être jointes : le mail portera des liens de téléchargement, valables 7 jours.' : ''}`}</dd></>}
           </dl>
@@ -362,7 +504,7 @@ type PourMail = { contact: Contact; rechercheId?: string | null };
    Écrire, un pop-up de nouveau mail qui reprend le mail ») : une adresse hors
    du CRM, son prénom pour le bonjour, l'objet proposé. */
 export type AdresseMail = { email: string; prenom?: string; objet?: string };
-const destDe = (c: Contact): Dest[] => (mailsDe(c).length ? [{ cle: `c-${c.id}`, contact: c, email: mailsDe(c)[0] }] : []);
+const destDe = (c: Contact): Dest[] => (mailsDe(c).length ? [{ cle: `c-${c.id}`, contact: c, email: mailsDe(c)[0], choisis: [mailsDe(c)[0]] }] : []);
 
 function Redaction({ pour = null, pourPlusieurs = null, adresse = null, objet0 = '', enFenetre = false, onNavigate, onFermer, onEnvoye, refSale }: {
   pour?: PourMail | null;
@@ -380,6 +522,14 @@ function Redaction({ pour = null, pourPlusieurs = null, adresse = null, objet0 =
   const [contacts, setContacts] = useState<Contact[] | null>(null);
   const destsDepart = (): Dest[] => (pour ? destDe(pour.contact) : pourPlusieurs ? pourPlusieurs.flatMap(destDe) : adresse ? [{ cle: `a-${adresse.email}`, contact: null, email: adresse.email }] : []);
   const [dests, setDests] = useState<Dest[]>(destsDepart);
+  /* V3.234 : les copies, et les deux lignes qui les portent (cachées au départ). */
+  const [cc, setCc] = useState<Dest[]>([]);
+  const [cci, setCci] = useState<Dest[]>([]);
+  const [copies, setCopies] = useState(false);
+  const groupe = cc.length + cci.length > 0;
+  const horsA = useMemo(() => [...cc, ...cci], [cc, cci]);
+  const horsCc = useMemo(() => [...dests, ...cci], [dests, cci]);
+  const horsCci = useMemo(() => [...dests, ...cc], [dests, cc]);
   const [objet, setObjet] = useState(objet0 || adresse?.objet || '');
   /* Hors du CRM, {{prénom}} ne se remplace pas : le bonjour porte le prénom. */
   const salut = adresse?.prenom ? `Bonjour ${adresse.prenom},` : undefined;
@@ -485,12 +635,13 @@ function Redaction({ pour = null, pourPlusieurs = null, adresse = null, objet0 =
   const sale = !resultat && ((!!objet.trim() && objet.trim() !== (objet0 || adresse?.objet || '').trim()) || pieces.length > 0 || (!!html && !htmlVide(corps) && html !== acc(signature) && html !== acc(signatureDe({}))));
   useEffect(() => { if (refSale) refSale.current = sale; }, [refSale, sale]);
   const nbPersonnes = dests.length;
-  const libEnvoyer = nbPersonnes === 1
-    ? `Envoyer à ${dests[0].contact ? (dests[0].contact.prenom || nomDe(dests[0].contact)) : dests[0].email}`
+  const libA = nbPersonnes === 1
+    ? `Envoyer ${aQui(dests[0])}`
     : nbPersonnes > 1 ? `Envoyer à ${nbPersonnes} personnes` : 'Envoyer';
+  const libEnvoyer = groupe && nbPersonnes ? `${libA} + ${cc.length + cci.length} en copie` : libA;
 
   function controler(): string {
-    if (!dests.length) return 'Ajoute au moins un destinataire.';
+    if (!dests.length) return groupe ? 'Ajoute au moins une personne en « À ».' : 'Ajoute au moins un destinataire.';
     if (!objet.trim()) return 'L’objet est vide.';
     if (htmlVide(corps)) return 'Le message est vide.';
     if (enCours) return 'Une pièce jointe est encore en cours d’envoi : attends qu’elle soit prête.';
@@ -516,6 +667,11 @@ function Redaction({ pour = null, pourPlusieurs = null, adresse = null, objet0 =
             action: 'envoyer', objet: objet.trim(), html: corps, style,
             contacts: dests.filter(d => d.contact).map(d => d.contact!.id),
             adresses: dests.filter(d => !d.contact).map(d => d.email),
+            /* V3.235 : pour chaque contact, les adresses cochées (sinon le serveur les prendrait toutes). */
+            choix: choixDe(dests),
+            /* V3.234 : les copies ; avec elles, un seul mail pour tous. */
+            ...(cc.length ? { cc: { contacts: cc.filter(d => d.contact).map(d => d.contact!.id), adresses: cc.filter(d => !d.contact).map(d => d.email), choix: choixDe(cc) } } : {}),
+            ...(cci.length ? { cci: { contacts: cci.filter(d => d.contact).map(d => d.contact!.id), adresses: cci.filter(d => !d.contact).map(d => d.email), choix: choixDe(cci) } } : {}),
             /* Depuis la fiche d'un acheteur : son Suivi, dans la recherche affichée. */
             ...(pour?.rechercheId ? { recherches: { [pour.contact.id]: pour.rechercheId } } : {}),
             pieces: piecesOk.map(p => ({ chemin: p.chemin, nom: p.nom })),
@@ -542,19 +698,25 @@ function Redaction({ pour = null, pourPlusieurs = null, adresse = null, objet0 =
   }
 
   function recommencer() {
-    setResultat(null); setDests(destsDepart()); setObjet(objet0 || adresse?.objet || ''); setPieces([]); setErreur(''); setStyle('simple'); place.current = false;
+    setResultat(null); setDests(destsDepart()); setCc([]); setCci([]); setCopies(false); setObjet(objet0 || adresse?.objet || ''); setPieces([]); setErreur(''); setStyle('simple'); place.current = false;
     setTimeout(() => remplir(acc(signature)), 0);
   }
 
   if (resultat) {
     const dansCrm = resultat.envoyes.filter(x => x.clientId);
     const horsCrm = resultat.envoyes.filter(x => !x.clientId);
+    /* V3.234 : un mail avec des copies — qui était en « À », en Cc, en Cci. */
+    const deRole = (r: Role) => resultat.envoyes.filter(x => (x.role || 'a') === r).map(x => x.nom || x.a[0]);
+    const avecCopies = resultat.envoyes.some(x => x.role && x.role !== 'a');
+    const qui = avecCopies
+      ? [`À : ${deRole('a').join(', ')}`, deRole('cc').length ? `Cc : ${deRole('cc').join(', ')}` : '', deRole('cci').length ? `Cci : ${deRole('cci').join(', ')}` : ''].filter(Boolean).join(' · ')
+      : resultat.envoyes.map(x => x.nom || x.a[0]).join(', ');
     return (
       <div className={`${s.carte} ${enFenetre ? s.carteFen : ''}`}>
         <div className={s.fait}>
           <span className={s.faitIc}><Ic n="check" t={26} e={2.6} /></span>
-          <h2>{resultat.envoyes.length > 1 ? `Mail envoyé à ${resultat.envoyes.length} personnes` : 'Mail envoyé'}</h2>
-          <p>{resultat.envoyes.map(x => x.nom || x.a[0]).join(', ')}</p>
+          <h2>{avecCopies ? 'Mail envoyé, avec tes copies' : resultat.envoyes.length > 1 ? `Mail envoyé à ${resultat.envoyes.length} personnes` : 'Mail envoyé'}</h2>
+          <p>{qui}</p>
           <ul className={s.faitListe}>
             {dansCrm.length > 0 && <li><Ic n="historique" t={15} /><span>{`Noté dans le Suivi de ${dansCrm.map(x => x.nom || x.a[0]).join(', ')}.`}</span></li>}
             {horsCrm.length > 0 && <li><Ic n="info" t={15} /><span>{`${horsCrm.map(x => x.a[0]).join(', ')} : hors CRM, rien n’est noté.`}</span></li>}
@@ -594,9 +756,36 @@ function Redaction({ pour = null, pourPlusieurs = null, adresse = null, objet0 =
         {/* ── À qui, l'objet ── */}
         <div className={s.ligne}>
           <span className={s.ligneLib}>À</span>
-          <ChampDestinataires contacts={contacts} dests={dests}
+          <ChampDestinataires contacts={contacts} dests={dests} exclus={horsA} onAdresses={(k, l) => setDests(x => x.map(d => (d.cle === k ? { ...d, choisis: l } : d)))}
             onAjout={d => { setDests(l => [...l, d]); setErreur(''); }} onRetrait={k => setDests(l => l.filter(x => x.cle !== k))} />
+          {!copies && (
+            <button type="button" className={s.copiesBtn} onClick={() => setCopies(true)} title="Mettre quelqu’un en copie (Cc) ou en copie cachée (Cci)">
+              <span>Cc</span><span>Cci</span>
+            </button>
+          )}
         </div>
+        {copies && (
+          <>
+            <div className={s.ligne}>
+              <span className={s.ligneLib}>Cc</span>
+              <ChampDestinataires contacts={contacts} dests={cc} exclus={horsCc} onAdresses={(k, l) => setCc(x => x.map(d => (d.cle === k ? { ...d, choisis: l } : d)))} invite="En copie : un contact ou une adresse" libelle="Ajouter une personne en copie"
+                onAjout={d => { setCc(l => [...l, d]); setErreur(''); }} onRetrait={k => setCc(l => l.filter(x => x.cle !== k))} />
+            </div>
+            <div className={s.ligne}>
+              <span className={s.ligneLib}>Cci</span>
+              <ChampDestinataires contacts={contacts} dests={cci} exclus={horsCci} onAdresses={(k, l) => setCci(x => x.map(d => (d.cle === k ? { ...d, choisis: l } : d)))} invite="Copie invisible pour les autres" libelle="Ajouter une personne en copie cachée"
+                onAjout={d => { setCci(l => [...l, d]); setErreur(''); }} onRetrait={k => setCci(l => l.filter(x => x.cle !== k))} />
+            </div>
+            {groupe && (
+              <p className={s.noteCopies}>
+                <Ic n="info" t={15} />
+                <span>{nbPersonnes > 1
+                  ? `Avec une copie, le mail part en un seul exemplaire, comme depuis ta messagerie : les ${nbPersonnes} personnes en « À » et celles en « Cc » voient toutes les adresses. En « Cci », la copie est cachée : les autres ne la voient pas.`
+                  : 'Avec une copie, le mail part en un seul exemplaire, comme depuis ta messagerie : chacun voit qui est en « À » et en « Cc ». En « Cci », la copie est cachée : les autres ne la voient pas.'}</span>
+              </p>
+            )}
+          </>
+        )}
         <div className={s.ligne}>
           <label className={s.ligneLib} htmlFor="mail-objet">Objet</label>
           <input id="mail-objet" className={s.objet} value={objet} onChange={e => { setObjet(e.target.value); setErreur(''); }} placeholder="L’objet du mail" maxLength={200} />
@@ -615,7 +804,9 @@ function Redaction({ pour = null, pourPlusieurs = null, adresse = null, objet0 =
 
         {/* ── Le texte ── */}
         <Editeur refEd={refEd} onChange={x => { setHtml(x); setErreur(''); }} messages={messages} onMessage={choisirMessage} onFocus={premierFocus} />
-        <p className={s.aide}>{'{{prénom}} se remplace par le prénom de chacun (rien pour une adresse hors CRM : « Bonjour, »). Un texte collé arrive sans sa mise en forme.'}</p>
+        <p className={s.aide}>{groupe
+          ? '{{prénom}} se remplace par le prénom de la personne en « À » (« Marie et Paul » s’il y en a plusieurs ; les copies ne comptent pas). Un texte collé arrive sans sa mise en forme.'
+          : '{{prénom}} se remplace par le prénom de chacun (rien pour une adresse hors CRM : « Bonjour, »). Un texte collé arrive sans sa mise en forme.'}</p>
 
         {/* ── Les pièces jointes ── */}
         <div className={s.pieces}>
@@ -643,7 +834,9 @@ function Redaction({ pour = null, pourPlusieurs = null, adresse = null, objet0 =
 
         {/* ── Le pied ── */}
         <div className={s.pied}>
-          <span className={s.piedNote}>{enFenetre && pour
+          <span className={s.piedNote}>{groupe
+            ? 'Tu relis le mail tel qu’il arrivera, puis tu l’envoies. Un seul mail pour tous, avec tes copies : il se range dans le Suivi de chaque contact du CRM.'
+            : enFenetre && pour
             ? 'Tu relis le mail tel qu’il arrivera, puis tu l’envoies. Il se range dans son Suivi.'
             : 'Tu relis le mail tel qu’il arrivera, puis tu l’envoies. Un mail par personne : chacun ne voit que son adresse, et l’envoi se range dans le Suivi des contacts du CRM.'}</span>
           <div className={s.piedBoutons}>
@@ -654,7 +847,7 @@ function Redaction({ pour = null, pourPlusieurs = null, adresse = null, objet0 =
       </div>
 
       {apercu && (
-        <FenetreApercu dests={dests} objet={objet} corps={corps} style={style} h={h} conseiller={conseiller} pieces={piecesOk}
+        <FenetreApercu dests={dests} cc={cc} cci={cci} objet={objet} corps={corps} style={style} h={h} conseiller={conseiller} pieces={piecesOk}
           envoi={envoi} onFermer={() => setApercu(false)} onEnvoyer={envoyer} libEnvoyer={libEnvoyer} manque={controler()} />
       )}
     </>
