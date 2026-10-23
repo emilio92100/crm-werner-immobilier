@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import AvatarContact from './AvatarContact';
 import Depliant from '@/components/shared/Depliant';
 import { supabase, addJournal, type Client } from '@/lib/supabase';
-import { conjointDe, nomFoyer } from '@/lib/foyer';
+import { nomFoyer, personne2De, adressesDossierDe, colonneDossierAbsente, MESSAGE_SQL_DOSSIER } from '@/lib/foyer';
+import IdentitesContact, { identitesDe, colonnesDe, dossierDe, erreurIdentites, changementsIdentites, type Identites } from './IdentitesContact';
 import { jetonEspace } from '@/lib/jeton';
 import {
   aUnBien, colonneContactAbsente, estAcheteur, estArchive, estPro, ligneContact, lirePro, lireStructure, structurePropre, typeDe, typesDe,
@@ -85,24 +86,25 @@ export default function FicheSelonType({ client, onBack, onNavigate, retourVers 
   return partiel ? <div className="fiche-entre">{fiche}</div> : fiche;
 }
 
-/* Un vendeur, un propriétaire peuvent être un couple (src/lib/foyer.ts) :
-   la personne 2 a son nom, son e-mail, son téléphone. */
+/* Un vendeur, un propriétaire : V3.236, une case par personne et les autres
+   adresses du dossier (`ident`, IdentitesContact). Un professionnel garde ses
+   champs simples (civilité, prénom, nom, numéros, e-mails) : `ident` les
+   recopie à chaque frappe, et les reprend quand on change de type. */
 type Form = {
   types: TypeContact[]; civilite: string; prenom: string; nom: string;
   tels: string[]; emails: string[]; adresse: string; pro: InfosPro;
-  couple: boolean; c2_civilite: string; c2_prenom: string; c2_nom: string; c2_email: string; c2_tel: string;
+  ident: Identites;
   source: string; source_detail: string;
 };
 /* D'où vient le contact (V3.23, outils/sql/source-contact.sql). */
 type AvecSource = { source?: string | null; source_detail?: string | null };
 const formDe = (x: Client): Form => {
-  const j = conjointDe(x.conjoint);
   return {
     types: typesDe(x), civilite: x.civilite || '', prenom: x.prenom || '', nom: x.nom || '',
     /* Tous les numéros et tous les e-mails (V3.89), pas seulement deux. */
     tels: lignesDe(x.telephones), emails: lignesDe(x.emails),
     adresse: x.adresse || '', pro: lirePro(x.pro),
-    couple: !!x.couple, c2_civilite: j?.civilite || '', c2_prenom: j?.prenom || '', c2_nom: j?.nom || '', c2_email: j?.email || '', c2_tel: j?.telephone || '',
+    ident: identitesDe(x),
     source: (x as AvecSource).source || '', source_detail: (x as AvecSource).source_detail || '',
   };
 };
@@ -325,31 +327,48 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
     if (!edit) return;
     if (!edit.prenom.trim() && !edit.nom.trim()) { setErreur('Écris au moins un prénom ou un nom.'); return; }
     if (!edit.types.length) { setErreur('Choisis au moins un type.'); return; }
-    const couple = edit.couple && !estPro(edit.types);
-    if (couple && !edit.c2_prenom.trim() && !edit.c2_nom.trim()) { setErreur('Écris au moins le prénom ou le nom de la personne 2.'); return; }
+    const particulier = !estPro(edit.types);
+    /* V3.236 : une personne 2 sans nom, une adresse du dossier incomplète. */
+    const pb = particulier ? erreurIdentites(edit.ident) : '';
+    if (pb) { setErreur(pb); return; }
     setOccupe(true);
     /* V3.50 : « Vendeur » ne s'enlève pas à qui a un bien en vente ;
        « Acheteur » enlevé arrête ses recherches (voir controlerTypes). */
     setErreur('');
     const ctl = await controlerTypes(x.id, typesDe(x), edit.types, x.prenom);
     if (ctl.erreur !== null) { setOccupe(false); if (ctl.erreur) setErreur(ctl.erreur); return; }
-    /* Les colonnes du couple ne s'écrivent que si elles servent : avant le SQL
-       « signature-plusieurs », elles n'existent pas. */
-    const foyer = 'couple' in x || couple
-      ? {
-        couple, conjoint: couple ? {
-          ...(conjointDe(x.conjoint) || {}), civilite: edit.c2_civilite, prenom: edit.c2_prenom.trim(), nom: edit.c2_nom.trim(),
-          email: edit.c2_email.trim().toLowerCase(), telephone: edit.c2_tel.trim(),
-        } : null,
-      }
-      : {};
+    /* La personne 2 (et si elle signe) ne s'écrit que si elle sert : avant le
+       SQL « signature-plusieurs », ces colonnes n'existent pas. Un
+       professionnel n'en a pas. */
+    const col = colonnesDe(edit.ident, x.conjoint);
+    const foyer = particulier
+      ? ('couple' in x || col.couple || col.conjoint ? { couple: col.couple, conjoint: col.conjoint } : {})
+      : ('couple' in x ? { couple: false, conjoint: null } : {});
     const r = await ecrire({
-      types: edit.types, civilite: edit.civilite || null, prenom: edit.prenom.trim(), nom: edit.nom.trim(),
-      telephones: nettoyer(edit.tels, 'tel'), emails: nettoyer(edit.emails, 'mail'),
+      types: edit.types,
+      ...(particulier
+        ? { civilite: col.civilite, prenom: edit.ident.prenom.trim(), nom: edit.ident.nom.trim(), telephones: col.telephones, emails: col.emails }
+        : { civilite: edit.civilite || null, prenom: edit.prenom.trim(), nom: edit.nom.trim(), telephones: nettoyer(edit.tels, 'tel'), emails: nettoyer(edit.emails, 'mail') }),
       adresse: edit.adresse.trim() || null, pro: structurePropre(edit.pro), ...foyer,
     }, 'La fiche n’a pas pu être enregistrée');
     if (!r) { setOccupe(false); return; }
     if (ctl.arreter) await arreterRecherches(x.id);
+    /* V3.236 : les autres adresses du dossier, à part (sans le SQL
+       « adresses-dossier », la colonne n'existe pas et le reste doit passer),
+       puis ce qui a changé côté personne 2 et dossier, dans son Suivi. */
+    if (particulier) {
+      const dAvant = adressesDossierDe((x as unknown as { adresses_dossier?: unknown }).adresses_dossier);
+      const dApres = dossierDe(edit.ident);
+      let dossierOk = true;
+      if (JSON.stringify(dAvant) !== JSON.stringify(dApres)) {
+        const { error: eD } = await supabase.from('clients').update({ adresses_dossier: dApres }).eq('id', x.id);
+        if (eD) { dossierOk = false; setErreur(colonneDossierAbsente(eD.message) ? MESSAGE_SQL_DOSSIER : `Les autres adresses du dossier : ${eD.message}`); }
+        else setX({ ...r, adresses_dossier: dApres } as Client);
+      }
+      const lignes = changementsIdentites(x, edit.ident).filter(l => dossierOk || !l.startsWith('Autres adresses du dossier'));
+      if (lignes.length) await addJournal(x.id, 'contact', '✏️ Contact modifié', lignes.join('\n'));
+      if (!dossierOk) { setOccupe(false); return; }
+    }
     /* La source s'écrit à part, et seulement si elle a changé : avant le SQL
        « source-contact », la colonne n'existe pas et le reste doit passer. */
     const avant = x as AvecSource;
@@ -444,17 +463,19 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
   }
 
   const tels = (x.telephones || []).filter(Boolean), mails = (x.emails || []).filter(Boolean);
-  const j2 = x.couple ? conjointDe(x.conjoint) : null;
+  const j2 = personne2De(x);
   /* Les coordonnées dans le panneau crème, à droite, comme sur la fiche d'un
-     acheteur (V3.32) : dans un couple, chaque ligne dit à qui elle est. */
+     acheteur (V3.32) : avec une personne 2 (V3.236 : même si elle ne signe
+     pas), chaque ligne dit à qui elle est ; les adresses du dossier, leur étiquette. */
   const civ1 = x.civilite || '', civ2 = j2?.civilite || '';
   const qui1 = j2 ? (civ1 && civ2 && civ1 !== civ2 ? civ1 : x.prenom || civ1 || 'Personne 1') : undefined;
   const qui2 = j2 ? (civ1 && civ2 && civ1 !== civ2 ? civ2 : j2.prenom || civ2 || 'Personne 2') : undefined;
   const coords: Coord[] = [
     ...tels.map(t => ({ k: 'tel' as const, val: t, qui: qui1 })),
-    ...(j2?.telephone ? [{ k: 'tel' as const, val: j2.telephone, qui: qui2 }] : []),
+    ...(j2?.telephones || []).map(t => ({ k: 'tel' as const, val: t, qui: qui2 })),
     ...mails.map(m => ({ k: 'mail' as const, val: m, qui: qui1 })),
-    ...(j2?.email ? [{ k: 'mail' as const, val: j2.email, qui: qui2 }] : []),
+    ...(j2?.emails || []).map(m => ({ k: 'mail' as const, val: m, qui: qui2 })),
+    ...adressesDossierDe((x as unknown as { adresses_dossier?: unknown }).adresses_dossier).map(a => ({ k: 'mail' as const, val: a.email, qui: a.etiquette })),
     ...(x.adresse ? [{ k: 'adresse' as const, val: x.adresse }] : []),
   ];
   const ligne = ligneContact(x);
@@ -678,41 +699,33 @@ function FicheContact({ client: depart, onBack, onNavigate, retourVers }: { clie
             <div className={c.fenCorps}>
               <div className={c.groupe}>
                 <div className={c.groupeT}>Ce contact est…</div>
-                <ChoixTypes v={edit.types} onChange={t => setEdit({ ...edit, types: t })} />
+                <ChoixTypes v={edit.types} onChange={t => setEdit({ ...edit, types: t, ident: { ...edit.ident, civilite: edit.civilite === 'Monsieur' || edit.civilite === 'Madame' ? edit.civilite : '', prenom: edit.prenom, nom: edit.nom, emails: edit.emails, tels: edit.tels } })} />
                 {edit.types.includes('acheteur') && <div className={c.typesNote}>Demandeur : en enregistrant, sa fiche de demandeur s’ouvre. Pense à lui ouvrir une recherche (« Il cherche aussi un local »).</div>}
               </div>
               {/* V3.174 (Alexandre) : un notaire se présente par son étude — « Son
                   étude » d'abord, puis qui le joindre ; et pas de « D'où vient ce
                   contact ? ». */}
               {notaireEdit && <ChampsPro types={edit.types} pro={edit.pro} onChange={p => setEdit({ ...edit, pro: p })} cls={cls} prenom={edit.prenom} nom={edit.nom} />}
-              <div className={c.groupe}>
-                <div className={c.groupeT}>{edit.couple && !estPro(edit.types) ? 'Personne 1 · contact principal' : 'Qui, et comment le joindre'}</div>
-                <div className={c.pills}>
-                  {['Monsieur', 'Madame'].map(v => <button key={v} type="button" className={`${c.pill} ${edit.civilite === v ? c.pillOn : ''}`} onClick={() => setEdit({ ...edit, civilite: edit.civilite === v ? '' : v })}>{v}</button>)}
-                  {/* Un vendeur ou un propriétaire peut être un couple. */}
-                  {!estPro(edit.types) && <button type="button" className={`${c.pill} ${edit.couple ? c.pillOn : ''}`} onClick={() => setEdit({ ...edit, couple: !edit.couple })}>{edit.couple ? '✓ Une 2e personne' : '+ Une 2e personne'}</button>}
-                </div>
-                <div className={c.g2}>
-                  <label className={c.ch}><span>Prénom</span><input className={c.in} value={edit.prenom} onChange={e => setEdit({ ...edit, prenom: e.target.value })} /></label>
-                  <label className={c.ch}><span>Nom</span><input className={c.in} value={edit.nom} onChange={e => setEdit({ ...edit, nom: e.target.value })} /></label>
-                  <ListeCoordonnees genre="tel" etiquette="Téléphones" valeurs={edit.tels} onChange={v => setEdit({ ...edit, tels: v })} classeBloc={c.ch} classeChamp={c.in} />
-                  <ListeCoordonnees genre="mail" etiquette="E-mails" valeurs={edit.emails} onChange={v => setEdit({ ...edit, emails: v })} classeBloc={c.ch} classeChamp={c.in} />
-                </div>
-                {/* Un notaire a l'adresse de son étude juste au-dessus : la sienne seulement si elle est déjà notée. */}
-                {(!notaireEdit || !!edit.adresse) && <label className={c.ch}><span>Adresse</span><input className={c.in} value={edit.adresse} onChange={e => setEdit({ ...edit, adresse: e.target.value })} /></label>}
-              </div>
-              {edit.couple && !estPro(edit.types) && (
+              {estPro(edit.types) ? (
                 <div className={c.groupe}>
-                  <div className={c.groupeT}>Personne 2</div>
+                  <div className={c.groupeT}>Qui, et comment le joindre</div>
                   <div className={c.pills}>
-                    {['Monsieur', 'Madame'].map(v => <button key={v} type="button" className={`${c.pill} ${edit.c2_civilite === v ? c.pillOn : ''}`} onClick={() => setEdit({ ...edit, c2_civilite: edit.c2_civilite === v ? '' : v })}>{v}</button>)}
+                    {['Monsieur', 'Madame'].map(v => <button key={v} type="button" className={`${c.pill} ${edit.civilite === v ? c.pillOn : ''}`} onClick={() => setEdit({ ...edit, civilite: edit.civilite === v ? '' : v })}>{v}</button>)}
                   </div>
                   <div className={c.g2}>
-                    <label className={c.ch}><span>Prénom</span><input className={c.in} value={edit.c2_prenom} onChange={e => setEdit({ ...edit, c2_prenom: e.target.value })} /></label>
-                    <label className={c.ch}><span>Nom</span><input className={c.in} value={edit.c2_nom} onChange={e => setEdit({ ...edit, c2_nom: e.target.value })} /></label>
-                    <label className={c.ch}><span>Téléphone</span><input className={c.in} value={edit.c2_tel} onChange={e => setEdit({ ...edit, c2_tel: e.target.value })} /></label>
-                    <label className={c.ch}><span>E-mail</span><input className={c.in} type="email" value={edit.c2_email} onChange={e => setEdit({ ...edit, c2_email: e.target.value })} /></label>
+                    <label className={c.ch}><span>Prénom</span><input className={c.in} value={edit.prenom} onChange={e => setEdit({ ...edit, prenom: e.target.value })} /></label>
+                    <label className={c.ch}><span>Nom</span><input className={c.in} value={edit.nom} onChange={e => setEdit({ ...edit, nom: e.target.value })} /></label>
+                    <ListeCoordonnees genre="tel" etiquette="Téléphones" valeurs={edit.tels} onChange={v => setEdit({ ...edit, tels: v })} classeBloc={c.ch} classeChamp={c.in} />
+                    <ListeCoordonnees genre="mail" etiquette="E-mails" valeurs={edit.emails} onChange={v => setEdit({ ...edit, emails: v })} classeBloc={c.ch} classeChamp={c.in} />
                   </div>
+                  {/* Un notaire a l'adresse de son étude juste au-dessus : la sienne seulement si elle est déjà notée. */}
+                  {(!notaireEdit || !!edit.adresse) && <label className={c.ch}><span>Adresse</span><input className={c.in} value={edit.adresse} onChange={e => setEdit({ ...edit, adresse: e.target.value })} /></label>}
+                </div>
+              ) : (
+                /* V3.236 : une case par personne, et les autres adresses du dossier. */
+                <div className={c.groupe}>
+                  <IdentitesContact v={edit.ident} onChange={v => setEdit({ ...edit, ident: v, civilite: v.civilite, prenom: v.prenom, nom: v.nom, emails: v.emails, tels: v.tels })} />
+                  <label className={c.ch}><span>Adresse</span><input className={c.in} value={edit.adresse} onChange={e => setEdit({ ...edit, adresse: e.target.value })} /></label>
                 </div>
               )}
               {!notaireEdit && <ChampsPro types={edit.types} pro={edit.pro} onChange={p => setEdit({ ...edit, pro: p })} cls={cls} prenom={edit.prenom} nom={edit.nom} />}
