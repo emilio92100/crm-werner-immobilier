@@ -22,9 +22,9 @@ import { annoncerSucces } from '@/lib/succes';
 import { signalerMaj } from '@/lib/intentions';
 import {
   ajouterSuivi, annulerMandatNote, changerEtape, cloreRelancesEstimation, estimationMiseDeCote, noterRdvEstimation, planifierEstimation, poserDansBien, type FaitRdv, cloreRappelsCompromis, cloreRelanceOffre, compromisTombe, creerNotaire, deposerPiece, enregistrerBien, enregistrerOffre, eurosSuivi, lireNotaires,
-  corrigerActe, creneauxPris, deplacerVisiteCRM, deplacerVisiteLibre, creerFicheProprio, donneesProprio, doublonsContact, marquerVendeur, finaliserAcquereur, finaliserTransactionsAcquereur, ligneNotaires, lireNotaire, majPrixDansAnnonces, majSuivi, modifierOffre, nomClient, notaireDepuisContact, noterJalon, nouvelleVente, offresTombees, retirerAutresAcceptees, annulerVisitesPrevues, solderDemandesDuBien, pauseAcquereur, poserRappels, refuserAutresOffres, vendeurSigne, visiteAcheteur, visiteExterne,
+  corrigerActe, creneauxPris, deplacerVisiteCRM, deplacerVisiteLibre, creerFicheProprio, donneesProprio, doublonsContact, marquerVendeur, finaliserAcquereur, finaliserTransactionsAcquereur, ligneNotaires, lireNotaire, majPrixDansAnnonces, majSuivi, modifierOffre, nomClient, notaireDepuisContact, noterJalon, nouvelleVente, offresTombees, retirerAutresAcceptees, annulerVisitesPrevues, solderDemandesDuBien, pauseAcquereur, phraseReprise, poserRappels, refuserAutresOffres, vendeurSigne, visiteAcheteur, visiteExterne,
   aDesNotaires, donneesNotaires, ligneHono, lireHono, lireNotairesDossier, completerFicheNotaire, emailsNotaire, telsNotaire,
-  type AccordHono, type CleRappel, type ClientMini, type CreneauPris, type VisiteRow, type ContactNotaire, type NotaireChoisi, type NotairesDossier, type Rappel, type RechercheMini, type SuiteTombe,
+  type AccordHono, type CleRappel, type ClientMini, type CreneauPris, type VisiteRow, type ContactNotaire, type NotaireChoisi, type NotairesDossier, type Rappel, type RechercheMini, type SuiteTombe, type PauseAcquereur,
 } from './outils';
 import s from '@/components/documents/Documents.module.css';
 import b from './Biens.module.css';
@@ -1632,7 +1632,7 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
       await noterJalon(bien, 'compromis', {
         vendeur: pourProprio ? { clientId: pourProprio, titre: `✍️ Accord signé le ${jourSuivi(signe)}`, texte: [`${titre} · ${eurosSuivi(prix)}${quiAcq ? ` · demandeur : ${quiAcq}` : ''}`, lesDates, not, ligneHono({ prix, hono, charge })] } : null,
         acquereur: offre?.client_id ? { clientId: offre.client_id, rechercheId: offre.recherche_id, titre: `✍️ Accord signé le ${jourSuivi(signe)}`,
-          texte: [`${titre} · ${eurosSuivi(prix)}`, lesDates, not, pause ? 'Sa recherche est en pause pendant la signature : la veille s’arrête. Elle reprend si l’accord tombe.' : null] } : null,
+          texte: [`${titre} · ${eurosSuivi(prix)}`, lesDates, not, pause ? (pause.statutAvant === 'actif' ? 'Sa recherche est en pause pendant la signature : la veille s’arrête. Elle reprend si l’accord tombe.' : 'Sa recherche est en pause pendant la signature. Si l’accord tombe, il redevient comme avant.') : null] } : null,
       });
       onFait(r);
     } catch (e) { setErreur((e as Error).message); setOccupe(false); }
@@ -1738,7 +1738,7 @@ export function FenCompromis({ bien, offres, choisie, existant, clientsNoms, aJo
             {offre?.client_id && (
               <Suite on={pauseAcq} onChange={setPauseAcq} ic="pause" c="#c05d12" f="#fff7ed"
                 t={`Mettre la recherche de ${acquereur} en pause`}
-                s="Il passe « Suspendu » : la veille s’arrête, il n’est plus proposé sur tes autres affaires. Si l’accord tombe, sa recherche reprend." />
+                s="Il passe « En pause » : il n’est plus proposé sur tes autres affaires, et s’il était Accompagné, sa veille s’arrête. Si l’accord tombe, il redevient comme avant." />
             )}
             {autresOuvertes.length > 0 && (
               <Suite on={refuserAutres} onChange={setRefuserAutres} ic="croix" c="#b91c1c" f="#fef2f2"
@@ -1838,11 +1838,11 @@ export function FenCompromisTombe({ bien, compromis, offres, clientsNoms, prevue
         <Section ic="personne" c="#1d4ed8" f="#eff6ff" titre={`${acquereur}, le demandeur`}>
           <div className={b.rappels}>
             <Option nom="acq" on={suiteAcq === 'reprend'} onChange={() => setSuiteAcq('reprend')} ic="loupe" c="#15803d" f="#f0fdf4"
-              t="Sa recherche reprend" s={enPause ? 'Il redevient comme avant l’accord : la veille repart et il est de nouveau proposé sur tes affaires.' : 'Sa recherche n’avait pas été mise en pause : elle continue.'} />
+              t="Sa recherche reprend" s={phraseReprise(enPause ? (c.acqPause as PauseAcquereur) : null)} />
             <Option nom="acq" on={suiteAcq === 'pause'} onChange={() => setSuiteAcq('pause')} ic="pause" c="#c05d12" f="#fff7ed"
-              t="Laisser sa recherche en pause" s="Il reste « Suspendu » : tu décideras plus tard, depuis sa fiche." />
+              t="Laisser sa recherche en pause" s={`Il ${enPause ? 'reste' : 'passe'} « En pause » : tu décideras plus tard, depuis sa fiche.`} />
             <Option nom="acq" on={suiteAcq === 'arrete'} onChange={() => setSuiteAcq('arrete')} ic="croix" c="#b91c1c" f="#fef2f2"
-              t="Il arrête sa recherche" s="Dossier clos, « A renoncé » : la veille s’arrête, ses relances en attente sont soldées. Il se rouvre depuis sa fiche." />
+              t="Il arrête sa recherche" s="Dossier clos, « Recherche arrêtée » (projet abandonné) : ni veille ni rapprochements, ses relances en attente sont soldées. Il se rouvre depuis sa fiche." />
           </div>
         </Section>
       )}
@@ -2032,14 +2032,14 @@ export function FenVendu({ bien, compromis, offres = [], proprio = null, prevues
         acquereur: offre?.client_id ? { clientId: offre.client_id, rechercheId: offre.recherche_id, type: fini ? 'dossier_finalise' : undefined,
           titre: `🔑 Affaire signée le ${jourSuivi(date)}`,
           texte: [`${titre}${lePrix}`, not,
-            fini ? 'Dossier clos (« Local trouvé ») : la veille s’arrête, ses relances en attente sont soldées.'
+            fini ? 'Dossier clos (« Local trouvé avec moi ») : sa recherche est close, ses relances en attente sont soldées.'
               : rechArretee ? 'Cette recherche s’arrête ; ses autres recherches continuent.' : null] } : null,
       });
       /* Le bandeau de la liste : ce qui vient de se passer, en une phrase. */
       onFait(r, [
         `Affaire signée le ${jourSuivi(date)}${prix ? `, ${euros(prix)}` : ''}${quiAcq ? `, avec ${quiAcq}` : ''}. Elle est rangée dans « Conclues ».`,
         vSigne ? `${nomProprio} passe « Ancien mandant ».` : '',
-        fini ? `Le dossier de ${acquereur} est clos (« Local trouvé »).` : rechArretee ? `La recherche de ${acquereur} pour cette affaire s’arrête, ses autres recherches continuent.` : '',
+        fini ? `Le dossier de ${acquereur} est clos (« Local trouvé avec moi »).` : rechArretee ? `La recherche de ${acquereur} pour cette affaire s’arrête, ses autres recherches continuent.` : '',
         txCloses ? `Sa transaction sur cette affaire est close.` : '',
       ].filter(Boolean).join(' '));
     } catch (e) { setErreur((e as Error).message); setOccupe(false); }
@@ -2081,8 +2081,8 @@ export function FenVendu({ bien, compromis, offres = [], proprio = null, prevues
             <CaseVisites prevues={prevues} on={annulerV} onChange={setAnnulerV} />
             {offre?.client_id && (
               <Suite on={finAcq} onChange={setFinAcq} ic="check" c="#1d4ed8" f="#eff6ff"
-                t={`Dossier de ${acquereur} clos : il passe « Local trouvé »`}
-                s="Sa recherche s’arrête, ses relances en attente sont soldées. S’il a une autre recherche en cours, elle continue : il ne passe pas « Local trouvé »." />
+                t={`Dossier de ${acquereur} clos : il passe « Local trouvé avec moi »`}
+                s="Sa recherche s’arrête, ses relances en attente sont soldées. S’il a une autre recherche en cours, elle continue : il ne passe pas « Local trouvé avec moi »." />
             )}
             {proprio && (
               <Suite on={signeV} onChange={setSigneV} ic="cle" c="#15803d" f="#f0fdf4"

@@ -93,7 +93,7 @@ const pause = (ms: number) => new Promise(ok => setTimeout(ok, ms));
 
 /* La recherche d'un client par son nom : sans accents ni majuscules. */
 const plat = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-const STATUT_COURT: Record<string, string> = { prospect: 'Prospect', suspendu: 'En pause', bien_trouve: 'Local trouvé', perdu: 'Perdu', offre_ecrite: 'Offre écrite' };
+const STATUT_COURT: Record<string, string> = { prospect: 'En recherche', suspendu: 'En pause', bien_trouve: 'Local trouvé avec moi', perdu: 'Recherche arrêtée', offre_ecrite: 'Offre écrite' };
 /* « Recherche principale · jusqu'à 650 000 € » : de quoi reconnaître une recherche. */
 function recherchePhrase(r: RechercheMini, plusieurs: boolean): string {
   const nom = String(r.nom || '').trim();

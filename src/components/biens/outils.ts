@@ -534,7 +534,7 @@ export function recherchesRappro(l: Pick<ListeBiens, 'recherches' | 'recherchesA
 export const acheteurSuivi = (c: ClientMini | null | undefined): c is ClientMini =>
   !!c && acheteurEnCours(c) && !['bien_trouve', 'perdu'].includes(String(c.statut || ''));
 /* Son statut, quand ce n'est pas « Actif » : à côté de son nom. */
-export const STATUT_ACHETEUR: Record<string, string> = { prospect: 'Prospect', suspendu: 'En pause', offre_ecrite: 'Offre écrite' };
+export const STATUT_ACHETEUR: Record<string, string> = { prospect: 'En recherche', suspendu: 'En pause', offre_ecrite: 'Offre écrite' };
 const copieDuBien = (b: BienVente, r: RechercheMini, copies: Copie[]) => copies.find(y => y.bien_vente_id === b.id && y.recherche_id === r.id) || null;
 
 /* V3.45 : un critère essentiel nettement raté écarte l'acheteur, quelle que
@@ -1647,8 +1647,8 @@ export async function noterNegociation(b: BienVente, avant: SuiviVente, r: Repon
    jamais bloquant : un échec se dit, l'étape du bien reste faite. */
 
 /* Au compromis : la recherche de l'acquéreur se met en pause — il passe
-   « Suspendu », la veille s'arrête, il n'est plus proposé sur les autres
-   biens. Ce qu'il était avant est rendu, pour reprendre si le compromis tombe. */
+   « Suspendu » (s'il était Actif, sa veille s'arrête), il n'est plus
+   proposé sur les autres biens. Ce qu'il était avant est rendu, pour reprendre si le compromis tombe. */
 export type PauseAcquereur = { clientId: string; rechercheId: string | null; statutAvant: string | null; activeAvant?: boolean | null };
 export async function pauseAcquereur(o: SuiviVente): Promise<PauseAcquereur | null> {
   if (!o.client_id) return null;
@@ -1658,7 +1658,7 @@ export async function pauseAcquereur(o: SuiviVente): Promise<PauseAcquereur | nu
     const statutAvant = (data as { statut?: string | null } | null)?.statut || null;
     if (statutAvant !== 'bien_trouve' && statutAvant !== 'perdu') {
       const r = await supabase.from('clients').update({ statut: 'suspendu' }).eq('id', o.client_id);
-      if (r.error) signalerEchec('Le statut « Suspendu » du demandeur', r.error.message);
+      if (r.error) signalerEchec('Le statut « En pause » du demandeur', r.error.message);
     }
     /* Ce qu'était sa recherche avant (V3.47) : si le compromis tombe, elle
        revient exactement comme avant — déjà en pause, elle y reste. */
@@ -1685,6 +1685,18 @@ export async function pauseAcquereur(o: SuiviVente): Promise<PauseAcquereur | nu
      · une ligne datée dans le Suivi du vendeur et de l'acquéreur.
    Jamais bloquant : un échec se dit, l'étape du bien reste faite. */
 export type SuiteTombe = { bien: 'mandat' | 'retire'; acq: 'reprend' | 'pause' | 'arrete' };
+/* V3.240 — Ce que devient le demandeur quand sa recherche reprend : l'état
+   d'avant l'accord, dit tel quel. La veille ne « repart » que pour un
+   Actif dont la recherche tournait (FenCompromisTombe et le Suivi). */
+export function phraseReprise(p: Pick<PauseAcquereur, 'statutAvant' | 'activeAvant'> | null | undefined): string {
+  if (!p) return 'Sa recherche n’avait pas été mise en pause : elle continue.';
+  if (p.statutAvant === 'suspendu') return 'Il était déjà « En pause » avant l’accord : il le reste.';
+  if (p.statutAvant === 'prospect') return 'Il redevient « En recherche », comme avant l’accord : de nouveau proposé sur tes affaires.';
+  if (p.statutAvant === 'actif') return p.activeAvant === false
+    ? 'Il redevient « Accompagné », comme avant l’accord (sa veille était déjà arrêtée).'
+    : 'Il redevient « Accompagné », comme avant l’accord : la veille repart et il est de nouveau proposé sur tes affaires.';
+  return 'Il revient comme avant l’accord.';
+}
 export async function compromisTombe(b: BienVente, titre: string, raison: string, suite: SuiteTombe = { bien: 'mandat', acq: 'reprend' }, ligne?: SuiviVente | null): Promise<void> {
   try {
     /* Le compromis : celui que la fenêtre montrait, sinon le dernier noté. */
@@ -1725,25 +1737,25 @@ export async function compromisTombe(b: BienVente, titre: string, raison: string
           const r2 = await supabase.from('recherches').update({ active: true, updated_at: new Date().toISOString() }).eq('id', p.rechercheId);
           if (r2.error) signalerEchec('La reprise de la recherche du demandeur', r2.error.message);
         }
-        phraseAcq = p.statutAvant === 'suspendu' || p.activeAvant === false ? 'Il revient comme avant l’accord (sa recherche était déjà en pause).' : 'Sa recherche reprend : la veille repart.';
+        phraseAcq = phraseReprise(p);
       } else if (suite.acq === 'pause') {
         const r = await supabase.from('clients').update({ statut: 'suspendu' }).eq('id', acq.clientId).in('statut', ['actif', 'prospect', 'suspendu']);
-        if (r.error) signalerEchec('Le statut « Suspendu » du demandeur', r.error.message);
+        if (r.error) signalerEchec('Le statut « En pause » du demandeur', r.error.message);
         if (acq.rechercheId) {
           const r2 = await supabase.from('recherches').update({ active: false, updated_at: new Date().toISOString() }).eq('id', acq.rechercheId);
           if (r2.error) signalerEchec('La pause de la recherche du demandeur', r2.error.message);
         }
-        phraseAcq = 'Sa recherche reste en pause (« Suspendu ») : elle reprend depuis sa fiche.';
+        phraseAcq = 'Sa recherche reste « En pause » : elle reprend depuis sa fiche.';
       } else if (suite.acq === 'arrete') {
         /* Comme « Clôturer le dossier » (FicheClient), motif « A renoncé ». */
-        const a = await supabase.from('clients').update({ statut: 'perdu', raison_perte: `A renoncé — accord tombé${raison.trim() ? ` (${raison.trim()})` : ''}` }).eq('id', acq.clientId);
+        const a = await supabase.from('clients').update({ statut: 'perdu', raison_perte: `Projet abandonné — accord tombé${raison.trim() ? ` (${raison.trim()})` : ''}` }).eq('id', acq.clientId);
         if (a.error) signalerEchec('La clôture du dossier du demandeur', a.error.message);
         else {
           finalise = true;
           const r2 = await supabase.from('recherches').update({ active: false }).eq('client_id', acq.clientId);
           if (r2.error) signalerEchec('L’arrêt de la veille du demandeur', r2.error.message);
           await solderRelancesAcheteur(acq.clientId);
-          phraseAcq = 'Il arrête sa recherche : dossier clos (« A renoncé »), la veille s’arrête, ses relances en attente sont soldées.';
+          phraseAcq = 'Il arrête sa recherche : dossier clos (« Recherche arrêtée »), ni veille ni rapprochements, ses relances en attente sont soldées.';
         }
       }
     }
@@ -1800,7 +1812,7 @@ export async function finaliserAcquereur(clientId: string, o: { rechercheId?: st
       }
     }
     const a = await supabase.from('clients').update({ statut: 'bien_trouve', raison_perte: null }).eq('id', clientId);
-    if (a.error) { signalerEchec('Le statut « Local trouvé » du demandeur', a.error.message); return { ok: false, bienTrouve: false, autres: 0 }; }
+    if (a.error) { signalerEchec('Le statut « Local trouvé avec moi » du demandeur', a.error.message); return { ok: false, bienTrouve: false, autres: 0 }; }
     if (!rechercheId) {
       const b = await supabase.from('recherches').update({ active: false }).eq('client_id', clientId);
       if (b.error) signalerEchec('L’arrêt de la veille du demandeur', b.error.message);

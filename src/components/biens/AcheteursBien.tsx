@@ -193,8 +193,8 @@ function ExplicationAcheteurs({ liste, bons, partiels, avant, bien, onFermer, on
     !bc.surface ? 'la surface' : '',
   ].filter(Boolean) : [];
   const parmi = enMots([
-    actifs ? `${actifs} actif${actifs > 1 ? 's' : ''}` : '',
-    prospects ? `${prospects} prospect${prospects > 1 ? 's' : ''}` : '',
+    actifs ? `${actifs} accompagné${actifs > 1 ? 's' : ''}` : '',
+    prospects ? `${prospects} en recherche` : '',
     pause ? `${pause} en pause` : '',
   ].filter(Boolean));
   const p = n > 1;
