@@ -33,6 +33,8 @@ type Bien = {
   id: string; titre: string; secteur: string; prix: number | null;
   /* V3.145 : ses honoraires, quand ils s'ajoutent au prix de l'annonce. */
   hono?: number;
+  /* V3.242 : le montant auquel le local lui a été présenté, quand il a baissé depuis. */
+  prixAvant?: number | null;
   surface: number | null; pieces: number | null; chambres: number | null;
   etage: number | null; etageTotal: number | null; expo: string | null;
   dpe: string | null; ges: string | null; annee: number | null;
@@ -3161,7 +3163,7 @@ function CarrouselNeufs({ biens, crit, onOuvrir, aller, onDecouvrir, nbDecouvrir
               </span>
               <span className="cn-c">
                 <span className="cn-p">
-                  <b className="tab">{PRIXB(b)}</b>
+                  <b className="tab">{b.prixAvant ? <s>{PRIX(b.prixAvant)}</s> : null}{PRIXB(b)}</b>
                   {b.prix && b.surface ? <i className="tab">{`${nombre(Math.round(b.prix / b.surface))} €/m²${b.pro?.nature === 'location' ? '/an' : ''}`}</i> : null}
                 </span>
                 {b.prix && b.hono ? <span className="cn-h">{`+ ${EUR(b.hono)} HT de nos honoraires`}</span> : null}
@@ -3607,6 +3609,7 @@ function Liste({ biens, onOuvrir, vide, sansEtiq, crit }: { biens: Bien[]; onOuv
                 b.surface && b.surface + ' m²', b.pieces && b.pieces + (b.pieces > 1 ? ' espaces' : ' espace'),
                 b.chambres && b.chambres + ' bureaux', b.secteur,
               ].filter(Boolean).join(' · ')}</span>
+              {b.prix && b.prixAvant ? <span className="prix-b"><span className="baisse-pt">{b.pro?.nature === 'location' ? 'Baisse de loyer' : 'Baisse de prix'}</span><s className="tab">{PRIXB({ prix: b.prixAvant, pro: b.pro })}</s></span> : null}
               <span className="prix tab">{PRIXB(b)}</span>
               {b.prix && b.hono ? <span className="hono-c">{`+ ${EUR(b.hono)} HT de nos honoraires`}</span> : null}
               {/* V3.184 : né d'une annonce qu'il a envoyée, avec l'avis d'Alexandre. */}
@@ -5607,6 +5610,10 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
           on peut les mettre à côté ». Ils entrent dans le bandeau : à côté du
           prix sur ordinateur, dessous sur téléphone (CSS). */}
       <div className="bandeau-prix">
+      {/* V3.242 : le loyer ou le prix a baissé depuis qu'il lui a été présenté. */}
+      {b.prix && b.prixAvant ? (
+        <span className="baisse-l"><span className="baisse-pt">{b.pro?.nature === 'location' ? 'Baisse de loyer' : 'Baisse de prix'}</span><s className="tab">{PRIXB({ prix: b.prixAvant, pro: b.pro })}</s></span>
+      ) : null}
         <span className="p tab">{b.prix ? <span className="nv">{PRIXB(b)}<BtnAide cle="prix" onAide={() => setAidePrix(true)} /></span> : PRIXB(b)}</span>
         {/* V3.145 : ses honoraires, seulement quand ils s'ajoutent — en petit. */}
         {/* V3.188 (Alexandre : « quand il y a un prix affiché en plus, une petite
@@ -8094,6 +8101,17 @@ input, textarea, select{font-family:inherit}
 .hono-l .aide-pt{margin-left:5px; vertical-align:middle; position:relative; top:-1px}
 .bien .hono-c{display:block; font-size:11.5px; color:var(--plume); font-weight:600; margin-top:3px}
 .cn-h{display:block; font-size:11.5px; color:var(--plume); font-weight:600; margin-top:-2px}
+/* V3.242 : un prix qui a baissé depuis que le bien lui a été présenté — la
+   pastille, l'ancien prix barré ; le nouveau garde sa place et sa taille. */
+.baisse-pt{display:inline-flex; align-items:center; padding:3px 10px; border-radius:99px; background:var(--vert-fond); border:1px solid var(--vert-trait); color:var(--vert); font-size:11.5px; font-weight:800; line-height:1.25; white-space:nowrap}
+.baisse-l, .bien .prix-b{display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px}
+.baisse-l s, .bien .prix-b s{color:var(--plume-clair); font-weight:700; text-decoration-thickness:1.5px}
+.bandeau-prix .baisse-l{order:-1; flex:1 0 100%}
+.bandeau-prix .baisse-l s{font-size:15px}
+.bien .prix-b{margin-top:9px}
+.bien .prix-b + .prix{margin-top:4px}
+.bien .prix-b s{font-size:13px}
+.cn-p b s{font-size:12.5px; font-weight:700; color:var(--plume-clair); letter-spacing:0; margin-right:7px}
 .pop-aide{padding:26px 22px 22px}
 .specs{display:grid; grid-template-columns:repeat(auto-fit,minmax(86px,1fr)); gap:8px; margin:16px 0 4px}
 .spec{background:var(--fond); border:1px solid var(--trait); border-radius:13px; padding:11px 8px; text-align:center}
