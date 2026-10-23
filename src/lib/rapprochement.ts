@@ -13,7 +13,9 @@
 import { supabase } from '@/lib/supabase';
 import { correspondance, criteresDepuisRecherche, type BienCorr, type Correspondance } from '@/lib/correspondance';
 import { raisonEcart } from '@/lib/ecart-acheteur';
-import { versCorrespondance, typeCompatible, versBienAcheteur, titreBien, lirePhotos, type BienVente } from '@/lib/biens-vente';
+import { versCorrespondance, typeCompatible, versBienAcheteur, titreBien, lirePhotos, nomProprio, proprietairesDe, type BienVente, type Donnees } from '@/lib/biens-vente';
+import { nomFoyer } from '@/lib/foyer';
+import { composerAdresse } from '@/lib/carte';
 import { SEUIL_LISTE } from '@/components/biens/outils';
 import { signalerEchec } from '@/lib/ecritures';
 import { champsChauffage } from '@/lib/chauffage';
@@ -50,7 +52,70 @@ export type Trouve = {
   avant?: boolean;
   /* V3.228 : déjà dans son dossier — ce qui en a été fait. */
   dossier?: EtatDossier;
+  /* V3.243 : un de tes biens — ce que dit sa fiche (pour toi seul). */
+  infos?: InfosBien;
 };
+
+/* ═══ V3.243 — Ce que la fiche d'un de tes biens dit, pour toi ═══════════════
+   Alexandre (24 octobre 2026) : « j'ai pas la photo… prix non indiqué, ton
+   estimation, j'ai pas le nom du propriétaire pour aller voir moi-même ».
+   Le rapprochement montre, pour chacun de tes biens : le propriétaire et son
+   numéro (la fiche client du vendeur, sinon les propriétaires notés dans la
+   fiche du bien), l'adresse, l'estimation (fourchette et prix conseillé),
+   combien de photos, et l'étape du jour. Rien de tout ça ne part chez
+   l'acheteur. Ce qui manque est dit comme tel (« pas renseigné »). */
+export type InfosBien = {
+  proprio: string; tel: string; mail: string; adresse: string;
+  /* Une estimation (pas encore en vente) : la fourchette et le prix conseillé. */
+  estim: { basse: number | null; haute: number | null; conseille: number | null } | null;
+  photos: number; etape: string; archive: boolean;
+};
+export async function infosDesBiens(biens: BienVente[]): Promise<Map<string, InfosBien>> {
+  const ids = [...new Set(biens.map(b => b.client_id).filter((x): x is string => !!x))];
+  const clients = new Map<string, Ligne>();
+  if (ids.length) {
+    let r: { data: Ligne[] | null; error: { message: string } | null } = await supabase.from('clients').select('id, prenom, nom, couple, conjoint, telephones, emails').in('id', ids);
+    if (r.error) r = await supabase.from('clients').select('id, prenom, nom').in('id', ids);
+    for (const c of r.data || []) clients.set(String(c.id), c);
+  }
+  const premier = (l: unknown) => (Array.isArray(l) ? String(l.find(x => typeof x === 'string' && x.trim()) || '').trim() : '');
+  const out = new Map<string, InfosBien>();
+  for (const b of biens) {
+    const d = (b.donnees || {}) as Donnees;
+    const c = b.client_id ? clients.get(String(b.client_id)) : undefined;
+    const p0 = proprietairesDe(d)[0];
+    const avant = ETAPES_ESTIMATION.includes(b.etape);
+    out.set(b.id, {
+      proprio: (c ? nomFoyer(c) : '') || nomProprio(d),
+      tel: premier(c?.telephones) || String(p0?.telephone || '').trim(),
+      mail: premier(c?.emails) || String(p0?.email || '').trim(),
+      adresse: composerAdresse(b.adresse, b.code_postal, b.ville),
+      estim: avant ? { basse: nb(d.estimBasse), haute: nb(d.estimHaute), conseille: nb(d.prix) } : null,
+      photos: lirePhotos(d.photos).length || (b.photo ? 1 : 0),
+      etape: b.etape, archive: !!b.archive,
+    });
+  }
+  return out;
+}
+
+/* V3.243 — Les biens de l'historique, tels qu'ils sont aujourd'hui : le
+   rapprochement gardé ce jour-là a sa photo, son prix, son avis ; la fiche a
+   pu changer depuis (prix baissé, photos ajoutées, vendu). */
+export type BienDuJour = { vente: BienVente; infos: InfosBien | null; photo: string | null; photos: string[] };
+export async function biensDuJour(ids: string[]): Promise<Map<string, BienDuJour>> {
+  const out = new Map<string, BienDuJour>();
+  const uniques = [...new Set(ids.filter(Boolean))];
+  if (!uniques.length) return out;
+  const { data, error } = await supabase.from('biens_vente').select('*').in('id', uniques);
+  if (error || !data) return out;
+  const biens = data as BienVente[];
+  const infos = await infosDesBiens(biens).catch(() => new Map<string, InfosBien>());
+  for (const b of biens) {
+    const photos = lirePhotos((b.donnees || {}).photos).map(p => p.url).filter(Boolean);
+    out.set(b.id, { vente: b, infos: infos.get(b.id) || null, photo: photos[0] || b.photo || null, photos });
+  }
+  return out;
+}
 /* V3.228 : un bien déjà dans le dossier de l'acheteur, et où il en est. */
 export type EtatDossier = { etape: string; envoye_le: string | null; badge: string | null; le: string | null };
 
@@ -278,6 +343,14 @@ export async function rapprocher(recherche: Ligne, clientId: string, source: Sou
         pour: nomDe[p.recherche_id] || undefined, le: p.created_at,
       });
     }
+  }
+
+  /* V3.243 : le propriétaire, l'adresse, l'estimation de chacun de tes biens.
+     Une lecture qui échoue n'empêche pas le rapprochement. */
+  const ventes = [...trouves, ...dejaL].map(t => t.vente).filter((v): v is BienVente => !!v);
+  if (ventes.length) {
+    const infos = await infosDesBiens(ventes).catch(() => null);
+    if (infos) for (const t of [...trouves, ...dejaL]) if (t.vente && infos.has(t.vente.id)) t.infos = infos.get(t.vente.id);
   }
 
   trouves.sort((a, b) => b.corr.note - a.corr.note || (a.source === b.source ? 0 : a.source === 'mandat' ? -1 : 1));
