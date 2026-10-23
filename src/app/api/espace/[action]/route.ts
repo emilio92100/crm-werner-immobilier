@@ -378,7 +378,7 @@ async function prevenirCreneau(
    l'alerte qu'il ne faut pas rater. Les trois autres partagent visite_avis. */
 async function prevenirApresVisite(
   supabase: ReturnType<typeof base>, clientId: string,
-  bien: { id: string; titre?: string | null; ville?: string | null; quartier?: string | null; photos?: string[] | null; prix_acquereur?: number | null; prix_vendeur?: number | null },
+  bien: { id: string; titre?: string | null; ville?: string | null; quartier?: string | null; photos?: string[] | null; prix_acquereur?: number | null; prix_vendeur?: number | null; pro?: unknown },
   issue: Issue, motifs: string[], mot: string | null, prix: number | null, dateVisite: string | null,
 ) {
   const apiKey = process.env.MAILJET_API_KEY, apiSecret = process.env.MAILJET_API_SECRET;
@@ -394,6 +394,9 @@ async function prevenirApresVisite(
   const prixBien = prixDuBien(bien).demande;
   const photo = Array.isArray(bien.photos) ? bien.photos.filter(Boolean)[0] : null;
   const euros = (n: number) => `${Number(n).toLocaleString('fr-FR')} €`;
+  /* Werner : une location — un loyer annuel HT HC. */
+  const loc = !!bien.pro && typeof bien.pro === 'object' && (bien.pro as { nature?: unknown }).nature === 'location';
+  const an = loc ? ' HT HC par an' : '';
   const quand = dateVisite ? new Date(`${String(dateVisite).slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
   const phrase = {
     offre: `${nom} veut faire une offre`,
@@ -408,7 +411,7 @@ async function prevenirApresVisite(
     non: 'Ses raisons rejoignent « Ce que ses visites ont appris », dans l’onglet Visites de sa fiche.',
   }[issue];
   const lignes = [
-    prix ? `<div style="margin-top:6px;font-size:15px;color:#232528"><b>Son montant en tête :</b> ${euros(prix)}</div>` : '',
+    prix ? `<div style="margin-top:6px;font-size:15px;color:#232528"><b>${loc ? 'Son loyer en tête' : 'Son montant en tête'} :</b> ${euros(prix)}${an}</div>` : '',
     motifs.length ? `<div style="margin-top:8px">${motifs.map(m => `<span style="display:inline-block;margin:0 6px 6px 0;padding:4px 10px;border-radius:99px;background:${ISSUES[issue].fond};color:${ISSUES[issue].couleur};font-size:13px;font-weight:700">${echappe(m)}</span>`).join('')}</div>` : '',
     mot ? `<div style="margin-top:8px;font-size:14px;line-height:1.6;color:#232528;background:#f6f6f7;border-radius:10px;padding:10px 12px">« ${echappe(mot)} »</div>` : '',
   ].join('');
@@ -424,7 +427,7 @@ async function prevenirApresVisite(
       <div style="padding:14px 16px">
         <div style="font-weight:700;font-size:15px;color:#232528">${echappe(titre)}</div>
         ${lieu ? `<div style="color:#5B6B80;margin-top:4px;font-size:13px">${echappe(lieu)}</div>` : ''}
-        ${prixBien ? `<div style="font-weight:800;font-size:17px;color:#232528;margin-top:8px">${euros(prixBien)}</div>` : ''}
+        ${prixBien ? `<div style="font-weight:800;font-size:17px;color:#232528;margin-top:8px">${euros(prixBien)}${an}</div>` : ''}
       </div>
     </div>
     ${lignes}
@@ -433,8 +436,8 @@ async function prevenirApresVisite(
   </div>
 </div>`;
   const texte = [
-    `${phrase} : ${titre}${lieu ? ` (${lieu})` : ''}${prixBien ? ` — ${euros(prixBien)}` : ''}.`,
-    prix ? `Son montant en tête : ${euros(prix)}.` : '',
+    `${phrase} : ${titre}${lieu ? ` (${lieu})` : ''}${prixBien ? ` — ${euros(prixBien)}${an}` : ''}.`,
+    prix ? `${loc ? 'Son loyer en tête' : 'Son montant en tête'} : ${euros(prix)}${an}.` : '',
     motifs.length ? `Raisons : ${motifs.join(', ')}.` : '',
     mot ? `Son mot : « ${mot} »` : '',
     `Ouvrir sa fiche : ${lien}`,
@@ -811,7 +814,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
            pour lui » ; sa réponse devient le retour lu dans Présentés. */
         const { data: avant } = await supabase.from('biens').select('badge_retour').eq('id', bien.id).maybeSingle();
         const e = ISSUES[issue];
-        const detail = [prix ? `autour de ${prix.toLocaleString('fr-FR')} €` : '', motifs.join(' · ')].filter(Boolean).join(' · ');
+        /* Werner : un loyer se dit par an (biens.pro : la nature de l'affaire). */
+        const loyer = !!bien.pro && typeof bien.pro === 'object' && (bien.pro as { nature?: unknown }).nature === 'location';
+        const detail = [prix ? `autour de ${prix.toLocaleString('fr-FR')} €${loyer ? ' HT HC par an' : ''}` : '', motifs.join(' · ')].filter(Boolean).join(' · ');
         const retour = [e.crm, detail].filter(Boolean).join(' · ') + (mot ? ` — ${mot}` : '');
         const { error: eBien } = await supabase.from('biens').update({
           badge_retour: badgeApresVisite(issue, avant?.badge_retour), retour_client: retour.slice(0, 600),
