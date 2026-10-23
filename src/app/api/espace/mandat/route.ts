@@ -752,9 +752,21 @@ export async function POST(req: NextRequest) {
           let ficheSouci = false;
           if ('couple' in client) {
             const lite = { civilite: conj.civilite, prenom: conj.prenom, nom: conj.nom, email: conj.email, telephone: conj.telephone, naissanceDate: conj.naissanceDate, naissanceLieu: conj.naissanceLieu };
-            if (!client.couple) {
-              const { error: eC } = await sb.from('clients').update({ couple: true, conjoint: lite, ...(client.civilite ? {} : { civilite: m.civilite }) }).eq('id', client.id);
-              fiche = eC ? `La fiche n'a pas pu passer à deux personnes (${eC.message}).` : `La fiche passe à deux personnes : ${nomDe(conj)} a été ajouté${conj.civilite === 'Madame' ? 'e' : ''} par ${m.prenom}.`;
+            /* V3.236 : la fiche peut déjà avoir une personne 2 qui ne signait pas
+               (un associé, un co-propriétaire…). La même personne : elle signe
+               désormais, ses autres adresses et son lien sont gardés ; une autre :
+               on ne touche à rien, Werner tranche. */
+            const avant = (client.conjoint && typeof client.conjoint === 'object' ? client.conjoint : null) as Record<string, unknown> | null;
+            const avecNom = !!avant && !!(netP(avant.prenom) || netP(avant.nom));
+            const meme = avecNom && netP(avant!.nom) === netP(conj.nom) && (netP(avant!.prenom) === netP(conj.prenom) || (!!conj.email && netP(avant!.email) === netP(conj.email)));
+            const unis = (x: unknown, y: unknown) => [x, ...(Array.isArray(y) ? y : [])].map(v => String(v || '').trim()).filter((v, i, l) => v && l.findIndex(w => w.toLowerCase() === v.toLowerCase()) === i);
+            if (!client.couple && avecNom && !meme) {
+              ficheSouci = true;
+              fiche = `${m.prenom} a indiqué ${nomDe(conj)} (${conj.email}) ; ta fiche a déjà une personne 2 qui ne signe pas : ${[avant!.prenom, avant!.nom].filter(Boolean).join(' ')}.`;
+            } else if (!client.couple) {
+              const conjoint = meme ? { ...avant, ...lite, emails: unis(conj.email, avant!.emails), telephones: unis(conj.telephone, avant!.telephones) } : lite;
+              const { error: eC } = await sb.from('clients').update({ couple: true, conjoint, ...(client.civilite ? {} : { civilite: m.civilite }) }).eq('id', client.id);
+              fiche = eC ? `La fiche n'a pas pu passer à deux personnes (${eC.message}).` : meme ? `${nomDe(conj)}, déjà sur la fiche, signe aussi : ajouté${conj.civilite === 'Madame' ? 'e' : ''} par ${m.prenom}.` : `La fiche passe à deux personnes : ${nomDe(conj)} a été ajouté${conj.civilite === 'Madame' ? 'e' : ''} par ${m.prenom}.`;
               ficheSouci = !!eC;
             } else if (netP(client.conjoint?.email) !== netP(conj.email) || netP(client.conjoint?.nom) !== netP(conj.nom)) {
               ficheSouci = true;
