@@ -4836,22 +4836,58 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aChoisir = [], 
      des onglets ; « Tout » les montre ensemble. Les onglets vides ne sont pas
      là, et un seul rang n'en a pas besoin. Les chiffres s'additionnent :
      « Tout » = la somme des autres ; en haut, à venir + déjà visités = total. */
+  /* V3.241 — Alexandre (23 octobre 2026) : « quand on appuie sur 1 à venir
+     ou 2 déjà visités, ça ne fait rien […] que ça descende directement, avec
+     une petite animation » et « qu'on voie bien les catégories ». Les étapes
+     sont toujours là, même vides (un appui sur une étape vide dit ce qui s'y
+     range) ; « Vos offres » seulement avec une offre. « Tout » les montre
+     l'une sous l'autre, chacune avec son titre : on voit d'un coup d'œil ce
+     qui n'a pas abouti, d'après son avis ou le compte rendu du conseiller. */
   type Onglet = 'tout' | 'offres' | 'avis' | 'encours' | 'non';
   const [onglet, setOnglet] = useState<Onglet>('tout');
-  const RANGS: { k: Onglet; l: string; l2: L; ton: string; note: string }[] = [
-    { k: 'offres', l: 'Vos offres', l2: offres, ton: 'vert', note: 'Où en est chacune, et la réponse que vous avez reçue.' },
-    { k: 'avis', l: 'Votre avis', l2: avis, ton: 'or', note: 'Un geste suffit : c’est ce qui décide de la suite.' },
-    { k: 'encours', l: 'En cours', l2: retenus, ton: 'bleu', note: 'Ceux que vous gardez en tête, et où on en est.' },
-    { k: 'non', l: 'Pas pour moi', l2: non, ton: 'brique', note: noteNon },
+  type Rang = { k: Exclude<Onglet, 'tout'>; l: string; l2: L; ton: string; ico: string; sous: (n: number) => string; note: string; vide: string };
+  const RANGS: Rang[] = [
+    { k: 'offres', l: 'Vos offres', l2: offres, ton: 'vert', ico: 'euro', sous: n => (n > 1 ? 'offres en cours' : 'offre en cours'),
+      note: 'Où en est chacune, et la réponse que vous avez reçue.', vide: '' },
+    { k: 'avis', l: 'Votre avis', l2: avis, ton: 'or', ico: 'note', sous: n => (n ? (n > 1 ? 'attendent votre avis' : 'attend votre avis') : 'rien en attente'),
+      note: 'Un geste suffit : c’est ce qui décide de la suite.', vide: 'Aucun local n’attend votre avis : vous êtes à jour.' },
+    { k: 'encours', l: 'En cours', l2: retenus, ton: 'bleu', ico: 'oeil', sous: n => (n ? (n > 1 ? 'vous intéressent' : 'vous intéresse') : 'aucun pour l’instant'),
+      note: 'Ceux que vous gardez en tête, et où on en est.', vide: 'Un local visité qui vous plaît (le revoir, y réfléchir, faire une offre) se range ici.' },
+    { k: 'non', l: 'Pas pour moi', l2: non, ton: 'brique', ico: 'croix', sous: n => (n ? (n > 1 ? 'n’ont pas abouti' : 'n’a pas abouti') : 'aucun pour l’instant'),
+      note: noteNon, vide: 'Les locaux visités qui ne vous ont pas convenu se rangent ici, d’après votre avis ou le compte rendu de votre conseiller.' },
   ];
-  const pleins = RANGS.filter(r => r.l2.length > 0);
-  const actif = pleins.find(r => r.k === onglet) || null;
-  const liste = actif ? actif.l2 : [...offres, ...avis, ...retenus, ...non];
-  const note = actif ? actif.note : pleins.length === 1 ? pleins[0].note : 'Chaque local visité, rangé d’après votre dernière visite.';
+  const rangs = RANGS.filter(r => r.k !== 'offres' || r.l2.length > 0);
+  const actif = rangs.find(r => r.k === onglet) || null;
   const carte = ({ b, v }: { b: Bien; v: VisiteE }) => (
     <CarteVisite key={v.id} b={b} v={v} onOuvrir={() => onOuvrir(b)} onCompteRendu={() => onOuvrir(b, { versCr: true })} onRepondre={onRepondre}
       onFaireOffre={onFaireOffre?.(b)} actionsOffre={actionsOffre?.(b)} />
   );
+
+  /* Les chiffres du haut mènent à leur rubrique : la page glisse jusque-là, et
+     ce qu'on vise s'allume (un halo qui s'élargit, deux fois). Sans
+     animation si le téléphone les a coupées. */
+  const refAVenir = useRef<HTMLDivElement>(null);
+  const refDeja = useRef<HTMLDivElement>(null);
+  const viser = (ou: 'avenir' | 'deja', o?: Onglet) => {
+    if (o) setOnglet(o);
+    const groupe = ou === 'avenir' ? refAVenir.current : refDeja.current;
+    if (!groupe) return;
+    const doux = !(typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+    groupe.scrollIntoView({ behavior: doux ? 'smooth' : 'auto', block: 'start' });
+    if (!doux) return;
+    /* Après le rendu de l'étape choisie : sa première carte, sinon le tableau des étapes. */
+    window.setTimeout(() => {
+      const cible = ou === 'avenir' ? groupe.querySelector('.vv-liste > *')
+        : o && o !== 'tout' ? groupe.querySelector('.vv-carte') || groupe.querySelector('.vv-cats')
+          : groupe.querySelector('.vv-cats');
+      const c = ou === 'avenir' ? '111,96,162' : o === 'avis' ? '240,140,66' : '46,48,52';
+      (cible as HTMLElement | null)?.animate?.([
+        { boxShadow: `0 0 0 0 rgba(${c},0)`, transform: 'scale(1)' },
+        { boxShadow: `0 0 0 7px rgba(${c},.3)`, transform: 'scale(1.012)', offset: 0.35 },
+        { boxShadow: `0 0 0 16px rgba(${c},0)`, transform: 'scale(1)' },
+      ], { duration: 1050, iterations: 2, delay: 380, easing: 'ease-out' });
+    }, 40);
+  };
 
   return (
     <Vue icone="calendrier" aller={aller} titre="Vos visites"
@@ -4864,9 +4900,21 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aChoisir = [], 
             <span>{'Il cale chaque visite et vous accompagne sur place.'}</span>
           </span>
           <span className="vv-res-p">
-            {aVenir.length > 0 && <span className="vv-pil" data-ton="prune"><b className="tab">{aVenir.length}</b><span>à venir</span></span>}
-            {deja > 0 && <span className="vv-pil" data-ton="bleu"><b className="tab">{deja}</b><span>{`déjà visité${deja > 1 ? 's' : ''}`}</span></span>}
-            {avis.length > 0 && deja > 0 && <span className="vv-pil" data-ton="or"><span>dont</span><b className="tab">{avis.length}</b><span>{avis.length > 1 ? 'attendent votre avis' : 'attend votre avis'}</span></span>}
+            {aVenir.length > 0 && (
+              <button type="button" className="vv-pil" data-ton="prune" onClick={() => viser('avenir')}>
+                <b className="tab">{aVenir.length}</b><span>à venir</span><span className="vv-pil-f" aria-hidden="true"><Ico n="chevron" t={14} /></span>
+              </button>
+            )}
+            {deja > 0 && (
+              <button type="button" className="vv-pil" data-ton="bleu" onClick={() => viser('deja', 'tout')}>
+                <b className="tab">{deja}</b><span>{`déjà visité${deja > 1 ? 's' : ''}`}</span><span className="vv-pil-f" aria-hidden="true"><Ico n="chevron" t={14} /></span>
+              </button>
+            )}
+            {avis.length > 0 && deja > 0 && (
+              <button type="button" className="vv-pil" data-ton="or" onClick={() => viser('deja', 'avis')}>
+                <span>dont</span><b className="tab">{avis.length}</b><span>{avis.length > 1 ? 'attendent votre avis' : 'attend votre avis'}</span><span className="vv-pil-f" aria-hidden="true"><Ico n="chevron" t={14} /></span>
+              </button>
+            )}
           </span>
         </div>
       )}
@@ -4877,7 +4925,7 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aChoisir = [], 
         </div>
       )}
       {aVenir.length > 0 && (
-        <div className="vv-groupe">
+        <div className="vv-groupe" ref={refAVenir}>
           <div className="sep vv-sep-prune"><span>{`Prochainement · ${aVenir.length}`}</span><i /></div>
           <div className="vv-liste">
             {aVenir.map(({ b, v }, i) => {
@@ -4893,22 +4941,46 @@ function VueVisites({ biens, mesV, visites, token, apprisClient, aChoisir = [], 
         </div>
       )}
       {deja > 0 && (
-        <div className="vv-groupe">
+        <div className="vv-groupe" ref={refDeja}>
           <div className="sep"><span>{`Déjà visités · ${deja}`}</span><i /></div>
-          {pleins.length > 1 && (
-            <div className="vv-onglets" role="tablist" aria-label="Vos locaux visités, par étape">
-              <button type="button" role="tab" aria-selected={!actif} className="vv-ong" data-ton="encre" onClick={() => setOnglet('tout')}>
-                <i aria-hidden="true" /><span>Tout</span><b className="tab">{deja}</b>
+          {/* V3.241 : les étapes en cases, toujours visibles ; un appui en montre une. */}
+          <div className="vv-cats" role="tablist" aria-label="Vos locaux visités, par étape" data-n={rangs.length + 1}>
+            <button type="button" role="tab" aria-selected={!actif} className="vv-cat" data-ton="encre" onClick={() => setOnglet('tout')}>
+              <span className="vv-cat-h"><span className="vv-cat-i"><Ico n="calendrier" t={15} /></span><b className="tab">{deja}</b></span>
+              <span className="vv-cat-l">Tout</span>
+              <small>{deja > 1 ? 'locaux visités' : 'local visité'}</small>
+            </button>
+            {rangs.map(r => (
+              <button key={r.k} type="button" role="tab" aria-selected={actif?.k === r.k} className="vv-cat" data-ton={r.ton}
+                data-vide={r.l2.length ? undefined : ''} onClick={() => setOnglet(r.k)}>
+                <span className="vv-cat-h"><span className="vv-cat-i"><Ico n={r.ico} t={15} /></span><b className="tab">{r.l2.length}</b></span>
+                <span className="vv-cat-l">{r.l}</span>
+                <small>{r.sous(r.l2.length)}</small>
               </button>
-              {pleins.map(r => (
-                <button key={r.k} type="button" role="tab" aria-selected={actif?.k === r.k} className="vv-ong" data-ton={r.ton} onClick={() => setOnglet(r.k)}>
-                  <i aria-hidden="true" /><span>{r.l}</span><b className="tab">{r.l2.length}</b>
-                </button>
-              ))}
+            ))}
+          </div>
+          {actif ? (
+            <div className="vv-rang" data-ton={actif.ton} key={actif.k}>
+              {actif.l2.length ? (
+                <>
+                  <p className="vv-note">{actif.note}</p>
+                  <div className="vv-grille">{actif.l2.map(carte)}</div>
+                </>
+              ) : (
+                <div className="vv-vide">
+                  <span className="vv-cat-i" aria-hidden="true"><Ico n={actif.ico} t={18} /></span>
+                  <b>{`${actif.l} : aucun local pour l’instant`}</b>
+                  <span>{actif.vide}</span>
+                </div>
+              )}
             </div>
-          )}
-          <p className="vv-note">{note}</p>
-          <div className="vv-grille" key={actif?.k || 'tout'}>{liste.map(carte)}</div>
+          ) : rangs.filter(r => r.l2.length > 0).map(r => (
+            <section key={r.k} className="vv-rang" data-ton={r.ton}>
+              <div className="vv-rang-t"><i aria-hidden="true" /><span>{r.l}</span><b className="tab">{r.l2.length}</b></div>
+              <p className="vv-note">{r.note}</p>
+              <div className="vv-grille">{r.l2.map(carte)}</div>
+            </section>
+          ))}
         </div>
       )}
     </Vue>
@@ -8734,30 +8806,67 @@ label.lab i{font-style:normal; text-transform:none; letter-spacing:0; font-size:
 .vv-res-t b{font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; font-weight:800; color:var(--encre)}
 .vv-res-t span{font-size:13.5px; color:var(--plume); line-height:1.45}
 .vv-res-p{display:flex; gap:8px; flex-wrap:wrap}
-.vv-pil{display:inline-flex; align-items:center; gap:6px; padding:9px 13px; border-radius:14px; font-size:13.5px; font-weight:700}
+.vv-pil{display:inline-flex; align-items:center; gap:6px; padding:9px 11px 9px 13px; border-radius:14px; font-size:13.5px; font-weight:700}
 .vv-pil b{font-family:'Plus Jakarta Sans',sans-serif; font-size:19px; font-weight:800; line-height:1}
 .vv-pil[data-ton="prune"]{background:#f3f0fa; color:#5b4d91}
 .vv-pil[data-ton="bleu"]{background:var(--bleu-fond); color:var(--bleu)}
 .vv-pil[data-ton="or"]{background:var(--or-fond); color:var(--or-fonce)}
+/* V3.241 : un chiffre du haut mène à sa rubrique (VueVisites, viser). */
+button.vv-pil{border:1px solid transparent; font-family:inherit; cursor:pointer; transition:border-color .2s, box-shadow .2s, background .2s}
+button.vv-pil:hover{border-color:currentColor; box-shadow:0 8px 18px -12px currentColor}
+.vv-pil-f{display:inline-flex; margin-left:1px; opacity:.7; animation:vvPilF 1.4s ease-in-out .6s 2}
+@keyframes vvPilF{0%,100%{transform:none}50%{transform:translateY(3px)}}
 .vv-sep-prune span{color:#6f60a2}
-/* Les onglets des biens déjà visités : un appui, une étape. */
-.vv-onglets{display:flex; gap:4px; padding:5px; margin:0 0 12px; border-radius:16px; background:var(--carte);
-  border:1px solid var(--trait); overflow-x:auto; scrollbar-width:none; width:max-content; max-width:100%; box-sizing:border-box}
-.vv-onglets::-webkit-scrollbar{display:none}
-.vv-ong{flex:0 0 auto; display:inline-flex; align-items:center; gap:8px; padding:9px 13px; border:0; border-radius:12px;
-  background:none; font:inherit; font-size:14px; font-weight:700; color:var(--encre2); cursor:pointer; white-space:nowrap;
-  transition:background .2s, color .2s}
-.vv-ong:hover{background:var(--fond)}
-.vv-ong i{width:8px; height:8px; border-radius:50%; background:var(--trait-fort)}
-.vv-ong b{min-width:22px; height:22px; padding:0 6px; box-sizing:border-box; border-radius:99px; background:var(--fond);
-  display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:800}
-.vv-ong[data-ton="vert"] i{background:var(--vert)}
-.vv-ong[data-ton="or"] i{background:var(--or)}
-.vv-ong[data-ton="bleu"] i{background:var(--bleu)}
-.vv-ong[data-ton="brique"] i{background:#b4532a}
-.vv-ong[aria-selected="true"]{background:var(--encre); color:#fff}
-.vv-ong[aria-selected="true"] i{background:#fff}
-.vv-ong[aria-selected="true"] b{background:rgba(255,255,255,.18); color:#fff}
+.vv-groupe{scroll-margin-top:72px}
+/* V3.241 : les étapes des biens déjà visités, en cases, toujours visibles. */
+.vv-cats{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0 0 16px; border-radius:18px}
+.vv-cats[data-n="5"] .vv-cat:first-child{grid-column:1 / -1}
+@media(min-width:760px){.vv-cats{grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr)}
+  .vv-cats[data-n="5"] .vv-cat:first-child{grid-column:auto}}
+.vv-cat{position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:2px; min-width:0; padding:12px 13px 11px;
+  border-radius:16px; border:1px solid var(--trait); background:var(--carte); box-shadow:var(--ombre); font:inherit; text-align:left;
+  color:var(--encre); cursor:pointer; transition:background .25s, border-color .25s, color .25s, transform .2s}
+.vv-cat:hover{border-color:var(--trait-fort)}
+.vv-cat-h{display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:5px}
+.vv-cat-h b{font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; font-weight:800; line-height:1}
+.vv-cat-i{width:30px; height:30px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center;
+  background:#f0f0ef; color:var(--encre); flex:0 0 auto; transition:background .25s, color .25s}
+.vv-cat-l{font-size:14px; font-weight:800; line-height:1.25}
+.vv-cat small{font-size:12px; line-height:1.35; color:var(--plume); transition:color .25s}
+.vv-cat[data-ton="vert"] .vv-cat-i, .vv-rang[data-ton="vert"] .vv-cat-i{background:var(--vert-fond); color:var(--vert)}
+.vv-cat[data-ton="or"] .vv-cat-i, .vv-rang[data-ton="or"] .vv-cat-i{background:var(--or-fond); color:var(--or-fonce)}
+.vv-cat[data-ton="bleu"] .vv-cat-i, .vv-rang[data-ton="bleu"] .vv-cat-i{background:var(--bleu-fond); color:var(--bleu)}
+.vv-cat[data-ton="brique"] .vv-cat-i, .vv-rang[data-ton="brique"] .vv-cat-i{background:#fbeee8; color:#b4532a}
+.vv-cat[data-vide] .vv-cat-h b{color:var(--plume-clair)}
+.vv-cat[data-vide] .vv-cat-i{filter:grayscale(.6); opacity:.75}
+.vv-cat[aria-selected="true"]{background:var(--encre); border-color:var(--encre); color:#fff}
+.vv-cat[aria-selected="true"] small{color:rgba(255,255,255,.72)}
+.vv-cat[aria-selected="true"] .vv-cat-i{background:rgba(255,255,255,.14); color:#fff; filter:none; opacity:1}
+.vv-cat[aria-selected="true"] .vv-cat-h b{color:#fff}
+/* « Tout » : chaque étape sous son titre ; une étape : sa note, ses cartes. */
+.vv-rang{animation:vvEntre .35s cubic-bezier(.16,1,.3,1) both}
+.vv-rang + .vv-rang{margin-top:24px}
+.vv-rang-t{display:flex; align-items:center; gap:8px; margin:0 2px 10px; font-size:12px; font-weight:800; letter-spacing:1px;
+  text-transform:uppercase; color:var(--encre2)}
+.vv-rang-t i{width:8px; height:8px; border-radius:50%; background:var(--trait-fort)}
+.vv-rang-t b{min-width:22px; height:22px; padding:0 7px; box-sizing:border-box; border-radius:99px; background:#f0f0ef;
+  display:inline-flex; align-items:center; justify-content:center; font-size:12px; letter-spacing:0}
+.vv-rang[data-ton="vert"] .vv-rang-t{color:var(--vert)} .vv-rang[data-ton="vert"] .vv-rang-t i{background:var(--vert)}
+.vv-rang[data-ton="vert"] .vv-rang-t b{background:var(--vert-fond)}
+.vv-rang[data-ton="or"] .vv-rang-t{color:var(--or-fonce)} .vv-rang[data-ton="or"] .vv-rang-t i{background:var(--or)}
+.vv-rang[data-ton="or"] .vv-rang-t b{background:var(--or-fond)}
+.vv-rang[data-ton="bleu"] .vv-rang-t{color:var(--bleu)} .vv-rang[data-ton="bleu"] .vv-rang-t i{background:var(--bleu)}
+.vv-rang[data-ton="bleu"] .vv-rang-t b{background:var(--bleu-fond)}
+.vv-rang[data-ton="brique"] .vv-rang-t{color:#b4532a} .vv-rang[data-ton="brique"] .vv-rang-t i{background:#b4532a}
+.vv-rang[data-ton="brique"] .vv-rang-t b{background:#fbeee8}
+.vv-rang .vv-note{margin-top:-4px}
+/* Une étape vide : ce qui s'y range. */
+.vv-vide{display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; padding:22px 18px;
+  border:1.5px dashed var(--trait-fort); border-radius:18px; background:rgba(255,255,255,.6)}
+.vv-vide .vv-cat-i{width:40px; height:40px; border-radius:13px; margin-bottom:4px}
+.vv-vide b{font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:800; color:var(--encre)}
+.vv-vide > span:last-child{max-width:420px; font-size:13px; line-height:1.55; color:var(--plume)}
+@media(prefers-reduced-motion:reduce){.vv-rang, .vv-pil-f{animation:none}}
 .vv-grille{display:grid; gap:14px; align-items:start; animation:vvEntre .35s cubic-bezier(.16,1,.3,1) both}
 @keyframes vvEntre{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
 @media(prefers-reduced-motion:reduce){.vv-grille{animation:none}}
