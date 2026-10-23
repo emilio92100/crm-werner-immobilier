@@ -39,6 +39,7 @@ import {
   type Acheteur, type Cache, type Copie, type RaisonCache, type TriBien,
 } from './outils';
 import { BoutonAideRappro } from '@/components/shared/AideRapprochement';
+import Depliant from '@/components/shared/Depliant';
 import r from './RapprochementBien.module.css';
 
 const presente = (c: Copie | null | undefined) => !!c && c.etape !== 'selection';
@@ -312,7 +313,8 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
         {v === 'non'
           ? <button type="button" className={`${r.groupeT} ${r.groupeBtn}`} aria-expanded={!replie} onClick={() => basculerNon(x.id)}>{tete}<span className={r.voir}>{replie ? 'Voir pourquoi' : 'Replier'}<IcoP d={CHEVRON} t={14} e={2.4} /></span></button>
           : <div className={r.groupeT}>{tete}</div>}
-        {!replie && <div className={r.cartes}>{l.map((y, k) => carte(y, k))}</div>}
+        {/* V3.243 : « Voir pourquoi » déplie en douceur. */}
+        <Depliant ouvert={!replie} ecart={8}><div className={r.cartes}>{l.map((y, k) => carte(y, k))}</div></Depliant>
       </div>
     );
   };
@@ -340,7 +342,8 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
           )}
           <span className={r.chev}><IcoP d={CHEVRON} t={18} e={2.2} /></span>
         </button>
-        {ouverte && (
+        {/* V3.243 : la séance se déplie et se replie en douceur. */}
+        <Depliant ouvert={ouverte}>
           <div className={r.seanceC}>
             {x.manquent > 0 && (
               <p className={r.alerte}><Ic n="info" t={14} /><span>{`${x.manquent} ${pl(x.manquent, 'dossier n’a', 'dossiers n’ont')} pas pu être ${pl(x.manquent, 'relu', 'relus')}${x.erreur ? ` (${x.erreur})` : ''}. Relance : il reprendra là où il s’est arrêté.`}</span></p>
@@ -363,13 +366,12 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
               </>
             )}
           </div>
-        )}
+        </Depliant>
       </section>
     );
   };
 
   const MAX_ANCIENS = 4;
-  const vues = anciens ? toutes : toutes.slice(0, MAX_ANCIENS + 1);
 
   return (
     <div className={r.page}>
@@ -429,7 +431,8 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
       {toutes.length > 0 && (
         <div className={r.seances}>
           <div className={r.seancesT}><h4>{toutes.length > 1 ? 'Tes rapprochements' : 'Ton rapprochement'}</h4><span>{toutes.length > 1 ? 'Le plus récent en haut. Clique sur une ligne pour la déplier ou la replier.' : 'Clique sur la ligne pour la replier.'}</span></div>
-          {vues.map((x, i) => vueSeance(x, i))}
+          {/* V3.243 : les plus anciens arrivent et repartent en douceur. */}
+          {toutes.map((x, i) => (i <= MAX_ANCIENS ? vueSeance(x, i) : <Depliant key={x.id} ouvert={anciens} ecart={10}>{vueSeance(x, i)}</Depliant>))}
           {toutes.length > MAX_ANCIENS + 1 && (
             <button type="button" className={r.plus} onClick={() => setAnciens(v => !v)}>{anciens ? 'Replier les plus anciens' : `Voir les ${toutes.length - MAX_ANCIENS - 1} plus anciens`}</button>
           )}
@@ -447,7 +450,7 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
             </span>
             <span className={r.voir}>{voirCaches ? 'Replier' : 'Voir'}<IcoP d={CHEVRON} t={14} e={2.4} /></span>
           </button>
-          {voirCaches && (
+          <Depliant ouvert={voirCaches} ecart={12}>
             <div className={r.carres}>
               {parRaison.map(([raison, l]) => {
                 const tout = carres.includes(raison);
@@ -479,7 +482,7 @@ export function RapprochementBien({ bien, tri, mode, copies, suivi, onSuivi, onF
                 );
               })}
             </div>
-          )}
+          </Depliant>
         </section>
       )}
 
