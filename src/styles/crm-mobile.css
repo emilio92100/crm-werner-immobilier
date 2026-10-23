@@ -44,8 +44,17 @@
   html.crm [data-defile] { transition: none; }
 }
 
-/* Le bouton qui déplie les critères n'existe que sur téléphone. */
-html.crm .fc-crit-bascule { display: none; }
+/* Le bouton qui plie ou déplie le détail des critères. V3.240 (comme chez
+   Emilio) : sur ordinateur aussi, discret, sous le bandeau ; le téléphone a
+   le sien, plus gros. Le détail glisse (Depliant, dans FicheClient). */
+html.crm .fc-crit-bascule {
+  display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; padding: 6px 12px; border-radius: 10px;
+  background: transparent; border: 1px dashed #eaeae9; color: #64748b; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 700; transition: background .15s, color .15s, border-color .15s;
+}
+html.crm .fc-crit-bascule:hover { background: #f8fafc; color: var(--emilio); border-color: #d4d4d8; }
+html.crm .fc-crit-chevron { display: inline-flex; transition: transform .28s cubic-bezier(.16,1,.3,1); }
+html.crm .fc-crit-chevron[data-ouvert="true"] { transform: rotate(180deg); }
 /* « Envoyer à Camille » (V3.87) : le choix survolé se dore (ordinateur et téléphone). */
 html.crm .fc-envoi-choix:not(:disabled):hover { border-color: #f1b180 !important; background: #fff6f0 !important; box-shadow: 0 10px 22px -18px rgba(37, 39, 43, .55); }
 
@@ -180,8 +189,6 @@ html.crm .fc-envoi-choix:not(:disabled):hover { border-color: #f1b180 !important
   }
   html.crm .fc-crit-chevron { display: inline-flex; transition: transform .28s cubic-bezier(.16,1,.3,1); }
   html.crm .fc-crit-chevron[data-ouvert="true"] { transform: rotate(180deg); }
-  html.crm .fc-crit-detail[data-ouvert="false"] { display: none !important; }
-  html.crm .fc-crit-detail[data-ouvert="true"] { animation: crmDeplie .3s cubic-bezier(.16,1,.3,1); }
 
   /* ═══ FICHE CLIENT — les onglets du suivi ═══════════════════════════ */
 
