@@ -12,6 +12,7 @@ import { basePublique } from '@/lib/jeton';
  * Le point automatique, côté CRM. Protégée par le cookie du CRM (src/proxy.ts) :
  * seul Werner y arrive.
  *
+ *   POST { mode: 'lire' }                       les réglages seuls, tout de suite
  *   POST { mode: 'etat' }                       réglages + qui recevrait le mail
  *   POST { mode: 'client', client_id }          l'état pour une fiche
  *   POST { mode: 'reglages', actif?, delai?, pour? }   enregistre les réglages généraux
@@ -75,13 +76,24 @@ export async function POST(req: NextRequest) {
       mailjet: !!(process.env.MAILJET_API_KEY && process.env.MAILJET_API_SECRET),
     };
 
+    /* V3.240 — Les réglages seuls, tout de suite : l'écran s'affiche pendant
+       que la liste se calcule. */
+    if (mode === 'lire') return NextResponse.json({ ok: true, reglages, branche });
+
     if (mode === 'etat') {
-      const candidats = await calculerCandidats(sb, reglages);
+      /* V3.240 : calculé pour « tous ceux qui ont une recherche » (la liste
+         la plus large), en paquets, avec ce qui fait l'échéance (dates
+         brutes) et s'il a son espace (`viaEspace`) : l'écran recalcule
+         lui-même avec un autre délai ou un autre « Pour qui », sans revenir
+         ici. Sans le lien d'espace ni la recherche entière (V3.43). */
+      const candidats = await calculerCandidats(sb, { ...reglages, pour: 'recherche' });
       return NextResponse.json({
-        ok: true, reglages, branche,
-        /* V3.43 : sans le lien d'espace de chaque client (l'écran ne s'en
-           sert pas, et la liste entière n'a pas à circuler). */
-        candidats: candidats.map(({ recherche, ...c }) => ({ ...c, tokenClient: null, rechercheNom: recherche?.nom || null })),
+        ok: true, reglages, branche, maintenant: new Date().toISOString(),
+        candidats: candidats.map(c => ({
+          clientId: c.clientId, prenom: c.prenom, nom: c.nom, statut: c.statut, empechement: c.empechement, exclu: c.exclu,
+          dernierMouvement: c.dernierMouvement, dernierEnvoi: c.dernierEnvoi, creeLe: c.creeLe, ancien: c.ancien,
+          viaEspace: c.viaEspace, rechercheNom: c.recherche?.nom || null,
+        })),
       });
     }
 
