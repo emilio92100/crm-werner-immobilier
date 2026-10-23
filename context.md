@@ -577,6 +577,16 @@ gauche […] c'est pareil sur Werner ».
   « Ancien demandeur ». Les filtres, la recherche du haut, le tableau de bord, l'activité, les
   rapprochements et les textes des affaires prennent les mêmes mots.
 
+**23 octobre 2026, plus tard (V3.241, comme chez Emilio)** — les visites.
+- **Espace client › Vos visites** : « 1 à venir », « 2 déjà visités » mènent à leur rubrique (la page
+  glisse, la carte visée s'allume) ; les étapes des locaux visités en cases toujours visibles (Tout,
+  Votre avis, En cours, Pas pour moi) ; « Tout » les montre chacune sous son titre.
+- **CRM › Visites** : la carte en rectangle (la date en petite tuile à côté du nom ; le local, le
+  contact et le compte rendu sur toute la largeur) ; le contact sur place lu en clair (l'agence, la
+  personne, le numéro à toucher) ; le résultat de la visite en bandeau à sa couleur.
+- **La période** dans « Effectuées » et « Toutes » : 7 jours, ce mois, 6 mois, cette année, tout, et
+  « Dates… » (un calendrier du… au…) ; les effectuées rangées par mois (`PeriodeVisites.tsx`).
+
 ---
 
 ## 6. Ce qui reste à faire
