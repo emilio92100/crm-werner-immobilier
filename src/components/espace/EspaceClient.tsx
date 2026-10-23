@@ -8839,7 +8839,8 @@ button.vv-pil:hover{border-color:currentColor; box-shadow:0 8px 18px -12px curre
 .vv-cat[data-ton="brique"] .vv-cat-i, .vv-rang[data-ton="brique"] .vv-cat-i{background:#fbeee8; color:#b4532a}
 .vv-cat[data-vide] .vv-cat-h b{color:var(--plume-clair)}
 .vv-cat[data-vide] .vv-cat-i{filter:grayscale(.6); opacity:.75}
-.vv-cat[aria-selected="true"]{background:var(--encre); border-color:var(--encre); color:#fff}
+/* La case choisie : l'anthracite de la marque, comme les autres boutons choisis (pas l'encre du texte). */
+.vv-cat[aria-selected="true"]{background:var(--marque); border-color:var(--marque); color:#fff; box-shadow:0 12px 24px -14px rgba(46,48,52,.85)}
 .vv-cat[aria-selected="true"] small{color:rgba(255,255,255,.72)}
 .vv-cat[aria-selected="true"] .vv-cat-i{background:rgba(255,255,255,.14); color:#fff; filter:none; opacity:1}
 .vv-cat[aria-selected="true"] .vv-cat-h b{color:#fff}
