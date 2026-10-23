@@ -2,28 +2,46 @@
    Maquette A choisie par Alexandre (« comme les demandes de visite ») : la
    date en grand à gauche avec l'heure, le client en titre (un clic ouvre sa
    fiche), le bien en petite carte avec sa photo carrée (un clic ouvre la
-   fiche du bien), les boutons à droite. Voir PageVisites.tsx. */
+   fiche du bien), les boutons à droite. Voir PageVisites.tsx.
+
+   V3.241 (Alexandre : « à gauche, il y a du blanc […] mettre ça plus en
+   rectangle ») : la date en petite tuile à côté du nom ; le bien, le contact
+   et le compte rendu sur toute la largeur dessous ; les boutons à droite sur
+   ordinateur (sur toute la hauteur), en bas au téléphone. */
 .liste { display: flex; flex-direction: column; gap: 10px; }
 .carte {
-  display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 12px 16px; align-items: start;
-  padding: 14px; border-radius: 20px; background: white; border: 1px solid #eaeae9;
+  display: grid; grid-template-columns: 54px minmax(0, 1fr) 196px; gap: 12px 16px; align-items: start;
+  grid-template-areas: 'date tete actions' 'corps corps actions';
+  padding: 14px 16px; border-radius: 20px; background: white; border: 1px solid #eaeae9;
   box-shadow: 0 12px 28px -24px rgba(37, 39, 43, .55);
   animation: entre .4s cubic-bezier(.2, .8, .2, 1) backwards;
 }
 @keyframes entre { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-/* La date : le jour, le numéro, le mois, et l'heure dans une pastille */
-.date { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 92px; padding: 8px 4px; border-radius: 16px; text-align: center; line-height: 1.05; }
-.date small { font-size: 10.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; opacity: .78; }
-.date b { font: 800 28px 'Plus Jakarta Sans', sans-serif; margin: 1px 0; }
-.date em { font-style: normal; font-size: 11.5px; font-weight: 800; margin-top: 5px; padding: 2px 7px; border-radius: 7px; background: rgba(255, 255, 255, .18); }
+/* La date : le jour, le numéro, le mois, en petite tuile */
+.date {
+  grid-area: date; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 54px; height: 60px; border-radius: 15px; text-align: center; line-height: 1.05;
+}
+.date small { font-size: 9.5px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; opacity: .8; }
+.date b { font: 800 22px 'Plus Jakarta Sans', sans-serif; margin: 1px 0; }
 .dateAvenir { background: var(--emilio-fond); color: white; }
 .dateAfaire { background: #ffede0; color: #92400e; }
-.dateAfaire em { background: #fdd9c0; }
 .dateFaite { background: #e9f9f1; color: #065f46; }
-.dateFaite em { background: #cdf1df; }
 
-.milieu { min-width: 0; display: flex; flex-direction: column; gap: 9px; }
+/* L'en-tête : le nom, puis l'heure et « Il y a 3 jours » */
+.tete { grid-area: tete; min-width: 0; align-self: center; display: flex; flex-direction: column; gap: 6px; }
+.quand { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; }
+.heure {
+  display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 99px; white-space: nowrap;
+  background: #f4f4f5; color: #2e3034; font-size: 12px; font-weight: 800;
+}
+.heure svg { color: #a1a1aa; }
+.corps { grid-area: corps; min-width: 0; display: flex; flex-direction: column; gap: 9px; }
+/* Le bien et le contact : côte à côte quand la carte est large. */
+.duo { display: grid; gap: 8px; }
+@media (min-width: 1180px) { .duo { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: stretch; } }
+
 .qui { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
 .nom {
   display: inline-flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; padding: 2px 8px 2px 2px; margin: -2px 0 -2px -2px;
@@ -78,8 +96,68 @@
 .note { display: flex; gap: 8px; padding: 9px 12px; border-radius: 12px; background: #f6fbf8; border: 1px solid #d5efe2; color: #24443a; font-size: 13px; line-height: 1.45; white-space: pre-line; }
 .note svg { color: #0f9f6e; margin-top: 2px; }
 
+/* Le contact sur place : l'agence, la personne, son numéro à toucher */
+.contact { display: flex; align-items: flex-start; gap: 10px; min-width: 0; padding: 9px 11px; border-radius: 15px; background: white; border: 1px solid #f2f2f2; }
+.cIc { width: 34px; height: 34px; border-radius: 11px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; background: #f4f3f2; color: #2e3034; }
+.cTx { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cTx small { font-size: 10px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: #a1a1aa; }
+.cTx b { font-size: 14px; font-weight: 800; color: #232528; line-height: 1.3; overflow-wrap: anywhere; }
+.cAvec { display: inline-flex; align-items: flex-start; gap: 5px; font-size: 13px; font-weight: 600; color: #52525b; line-height: 1.35; }
+.cAvec svg { color: #a1a1aa; margin-top: 2px; }
+.cLiens { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.cTel {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; height: 28px; padding: 0 10px; border-radius: 99px;
+  background: #f4f4f5; border: 1px solid #e4e4e7; color: #2e3034; font-size: 12.5px; font-weight: 800; text-decoration: none; white-space: nowrap;
+  transition: background-color .15s, border-color .15s;
+}
+.cTel span { overflow: hidden; text-overflow: ellipsis; }
+.cTel svg { color: #a1a1aa; }
+.cTel:hover { background: #ececeb; border-color: #e2e0df; }
+.cMini { grid-column: 2 / -1; display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; font-size: 12.5px; font-weight: 700; color: #52525b; }
+.cMini > svg { color: #a1a1aa; }
+.cMini .cTel { height: 26px; font-size: 12px; }
+
+/* V3.241 — Ce que la visite a donné, mis en avant : un bandeau à la
+   couleur de l'issue (ISSUES, src/lib/visites.ts : --c le texte, --f le
+   fond, --t le trait), et le bord gauche de la carte de la même couleur. */
+.carte { position: relative; }
+.carte[data-issue]::before {
+  content: ''; position: absolute; left: -1px; top: 18px; bottom: 18px; width: 4px; border-radius: 0 4px 4px 0;
+  background: var(--c); opacity: .9;
+}
+.verdict {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px 11px;
+  padding: 10px 12px; border-radius: 15px; background: var(--f); border: 1px solid var(--t);
+  animation: verdict .5s cubic-bezier(.2, .8, .2, 1) .12s backwards;
+}
+@keyframes verdict { from { opacity: 0; transform: translateY(4px) scale(.98); } to { opacity: 1; transform: none; } }
+.vIc {
+  width: 36px; height: 36px; border-radius: 12px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+  background: white; color: var(--c); border: 1px solid var(--t); box-shadow: 0 6px 14px -10px var(--c);
+}
+.vTx { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.vTx small { font-size: 10.5px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; color: var(--c); opacity: .75; }
+.vTx b { font: 800 15.5px 'Plus Jakarta Sans', sans-serif; color: var(--c); line-height: 1.25; }
+.vEtoiles { justify-self: end; }
+.vEtoiles small { display: none; }
+.vPuces { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.vPuce {
+  display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 99px;
+  background: white; border: 1px solid var(--t); color: var(--c); font-size: 11.5px; font-weight: 800;
+}
+.vAime { color: #166534; border-color: #c6ecd3; }
+.vMot { grid-column: 1 / -1; font-size: 13px; line-height: 1.45; color: #1e293b; font-style: italic; }
+@media (prefers-reduced-motion: reduce) { .verdict { animation: none; } }
+
+/* Les effectuées, mois par mois */
+.mois + .mois { margin-top: 16px; }
+.moisT { display: flex; align-items: center; gap: 10px; margin: 0 2px 9px; }
+.moisT span { font: 800 14px 'Plus Jakarta Sans', sans-serif; color: #232528; }
+.moisT b { height: 22px; padding: 0 9px; border-radius: 99px; display: inline-flex; align-items: center; font-size: 11.5px; font-weight: 800; color: #047857; background: #ecfdf5; border: 1px solid #b7ead3; }
+.moisT i { flex: 1; height: 1px; background: #e4e4e7; }
+
 /* Les boutons, à droite */
-.actions { display: flex; flex-direction: column; gap: 7px; min-width: 186px; }
+.actions { grid-area: actions; display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 38px; padding: 0 14px; border-radius: 12px; white-space: nowrap;
   border: 1px solid #eaeae9; background: white; color: #334155; font: 800 13px 'Plus Jakarta Sans', sans-serif; cursor: pointer; transition: background-color .15s, box-shadow .15s, filter .15s;
@@ -96,6 +174,8 @@
 
 /* Plusieurs visites le même jour : une ligne par bien, avec son heure et ses boutons */
 .lignes { display: flex; flex-direction: column; gap: 8px; }
+.journee .lignes { gap: 10px; }
+.journee .ligne + .ligne { padding-top: 10px; border-top: 1px dashed #eaeae9; }
 .ligne { display: grid; grid-template-columns: 50px minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; }
 .heureL { font: 800 15px 'Plus Jakarta Sans', sans-serif; color: #25272b; text-align: right; }
 .actL { display: flex; align-items: center; gap: 4px; }
@@ -113,17 +193,16 @@
   .btnDiscret.btnPetit { width: auto; padding: 0 10px; }
   .surTel { display: inline; }
   .ligneBulle { grid-column: 1 / -1; }
-  /* Au téléphone, les lignes des biens prennent toute la largeur, sous la date et le nom */
-  .journee .milieu { display: contents; }
-  .journee .qui { grid-column: 2; align-self: center; }
-  .journee .lignes, .journee .meta { grid-column: 1 / -1; }
-  .journee .date em { font-size: 10.5px; padding: 2px 5px; }
-  .carte { grid-template-columns: 64px minmax(0, 1fr); gap: 12px; padding: 12px; border-radius: 18px; }
-  .date { min-height: 80px; }
-  .date b { font-size: 24px; }
+  /* Au téléphone : la date et le nom en haut, tout le reste sur toute la largeur */
+  .carte { grid-template-columns: 50px minmax(0, 1fr); grid-template-areas: 'date tete' 'corps corps' 'actions actions'; gap: 12px; padding: 12px; border-radius: 18px; }
+  .date { width: 50px; height: 56px; border-radius: 14px; }
+  .date b { font-size: 20px; }
+  .tete { gap: 5px; }
+  .nom b { font-size: 15.5px; }
   .photo { width: 50px; height: 50px; }
-  .actions { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; min-width: 0; }
+  .actions { flex-direction: row; flex-wrap: wrap; }
   .actions .btn:not(.btnDiscret) { flex: 1 1 0; height: 42px; }
+  .cMini { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .carte { animation: none; }
@@ -145,6 +224,7 @@ a.btn { text-decoration: none; }
    ni cadre sur les côtés ; les titres des groupes gardent 14 px. */
 @media (max-width: 760px) {
   .titreGroupe { padding: 0 14px; }
+  .moisT { margin: 0 14px 9px; }
   /* V3.161 : arrondies, à 10 px des bords (« les coins arrondis, mais au
      maximum en largeur »). */
   .carte { border-radius: 16px; margin-left: 10px; margin-right: 10px; padding: 12px; }

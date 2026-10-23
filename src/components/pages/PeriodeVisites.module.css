@@ -1,0 +1,156 @@
+/* ═══ La période des visites (V3.241) — voir PeriodeVisites.tsx ═══════════ */
+
+/* ── La barre : les pastilles, et ce qu'elle montre ── */
+.barre {
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr); grid-template-areas: 'puces dates resume'; align-items: center; gap: 8px;
+  padding: 6px; border-radius: 18px; background: white; border: 1px solid #e4e4e7;
+  box-shadow: 0 12px 28px -24px rgba(37, 39, 43, .55);
+}
+.puces { grid-area: puces; position: relative; display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.puces::-webkit-scrollbar { display: none; }
+.puce {
+  position: relative; z-index: 1; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 13px;
+  border: 0; border-radius: 12px; background: transparent; color: #52525b; cursor: pointer; white-space: nowrap;
+  font: 700 13px 'Plus Jakarta Sans', sans-serif; transition: color .2s;
+}
+.puce:hover { color: #232528; }
+.puce[aria-pressed='true'] { background: #2e3034; color: white; box-shadow: 0 8px 16px -10px rgba(46, 48, 52, .85); }
+/* « Dates… » : un bouton à part, cerclé ; choisi, il prend la couleur pleine. */
+.pDates {
+  grid-area: dates; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 13px;
+  border: 1px solid #e4e4e7; border-radius: 12px; background: white; color: #2e3034; cursor: pointer; white-space: nowrap;
+  font: 700 13px 'Plus Jakarta Sans', sans-serif; transition: background-color .2s, border-color .2s, color .2s;
+}
+.pDates:hover { border-color: #f08c42; background: #fff7ed; }
+.pDates[aria-pressed='true'] { background: #2e3034; border-color: #2e3034; color: white; box-shadow: 0 8px 16px -10px rgba(46, 48, 52, .85); }
+
+.resume { grid-area: resume; justify-self: end; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; padding: 0 8px 0 4px; font-size: 13px; font-weight: 600; color: #71717a; }
+.n { font: 800 18px 'Plus Jakarta Sans', sans-serif; color: #232528; line-height: 1; animation: pNombre .45s cubic-bezier(.2, .9, .25, 1.25) both; }
+@keyframes pNombre { from { opacity: .2; transform: translateY(5px) scale(.8); } to { opacity: 1; transform: none; } }
+.quand { padding: 3px 9px; border-radius: 99px; background: #f4f4f5; color: #2e3034; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.effacer {
+  border: 0; background: none; padding: 2px 0; cursor: pointer; font: 800 12.5px 'Plus Jakarta Sans', sans-serif; color: #c2621c;
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1.5px;
+}
+
+/* ── Le calendrier ── */
+.voile {
+  position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgba(15, 22, 35, .45); backdrop-filter: blur(3px);
+}
+.fen {
+  width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; background: white; border-radius: 22px; box-shadow: 0 30px 60px -20px rgba(15, 22, 35, .45);
+  font-family: 'DM Sans', system-ui, sans-serif; color: #232528;
+}
+.tete { display: flex; align-items: center; gap: 12px; padding: 16px 18px 12px; }
+.teteIc { width: 38px; height: 38px; border-radius: 12px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; background: #f4f4f5; color: #2e3034; }
+.teteTx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.teteTx b { font: 800 16px 'Plus Jakarta Sans', sans-serif; }
+.teteTx small { font-size: 12.5px; color: #71717a; }
+.fermer {
+  margin-left: auto; flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid #e4e4e7; background: white;
+  color: #71717a; display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.fermer:hover { color: #232528; background: #fafafa; }
+
+.champs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: center; padding: 0 18px; }
+.champ {
+  display: flex; flex-direction: column; gap: 1px; min-width: 0; padding: 8px 12px; border-radius: 13px;
+  border: 1.5px solid #e4e4e7; background: #fcfcfc; transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.champ small { font-size: 10.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: #a1a1aa; }
+.champ b { font: 800 14px 'Plus Jakarta Sans', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.champVal { animation: pChamp .3s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes pChamp { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.champ[data-actif] { border-color: #f08c42; background: #fff7ed; box-shadow: 0 0 0 3px rgba(240, 140, 66, .15); }
+.vers { color: #a1a1aa; display: flex; }
+
+.raccourcis { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 12px 18px 2px; }
+.raccourcis::-webkit-scrollbar { display: none; }
+.racc {
+  flex: 0 0 auto; height: 32px; padding: 0 12px; border-radius: 99px; border: 1px solid #e4e4e7; background: white; color: #3f3f46;
+  font: 700 12.5px 'Plus Jakarta Sans', sans-serif; cursor: pointer; transition: background .15s, border-color .15s, color .15s;
+}
+.racc:hover { border-color: #d4d4d8; background: #fafafa; }
+.racc[aria-pressed='true'] { background: #2e3034; border-color: #2e3034; color: white; }
+
+.mois { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px 26px; padding: 14px 18px 2px; }
+.unMois { min-width: 0; }
+.moisTete { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.moisTete b { font: 800 14.5px 'Plus Jakarta Sans', sans-serif; }
+.nav {
+  width: 32px; height: 32px; border-radius: 10px; border: 1px solid #e4e4e7; background: white; color: #2e3034;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.nav:hover { background: #fafafa; }
+.navVide { width: 32px; }
+.grille { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 2px; }
+/* Un autre mois : la grille glisse du côté où l'on va. */
+.grille[data-sens='av'] { animation: pMoisAv .32s cubic-bezier(.2, .8, .2, 1) both; }
+.grille[data-sens='ar'] { animation: pMoisAr .32s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes pMoisAv { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: none; } }
+@keyframes pMoisAr { from { opacity: 0; transform: translateX(-22px); } to { opacity: 1; transform: none; } }
+.js { text-align: center; font-size: 10.5px; font-weight: 800; color: #a1a1aa; padding: 4px 0 6px; }
+.jour {
+  position: relative; height: 38px; padding: 0; border: 0; background: transparent; cursor: pointer;
+  font: 700 13.5px 'DM Sans', sans-serif; color: #232528;
+}
+.jour span {
+  position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+  border-radius: 11px; transition: background-color .15s, color .15s;
+}
+.jour:hover span { background: #f1f1f0; }
+.jour i { position: absolute; z-index: 2; left: 50%; bottom: 4px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: #f08c42; }
+.jour[data-auj] span { box-shadow: inset 0 0 0 1.5px #f08c42; }
+/* La période : une bande sous les jours, du premier au dernier. */
+.jour[data-dans]::before { content: ''; position: absolute; top: 2px; bottom: 2px; left: 0; right: 0; background: #f1f1f0; animation: pBande .22s ease-out both; }
+@keyframes pBande { from { opacity: .3; } to { opacity: 1; } }
+.jour[data-bout='debut']::before { left: 50%; }
+.jour[data-bout='fin']::before { right: 50%; }
+.jour[data-bout='seul']::before { display: none; }
+.jour[data-bout] span { background: #2e3034; color: white; box-shadow: 0 6px 14px -8px rgba(46, 48, 52, .9); animation: pJour .34s cubic-bezier(.2, .9, .3, 1.4) both; }
+@keyframes pJour { from { transform: scale(.6); } to { transform: none; } }
+.jour:active span { transform: scale(.92); }
+.jour[data-bout] i { background: #f7b07a; }
+
+.legende { display: flex; align-items: center; gap: 7px; padding: 8px 18px 0; font-size: 12px; color: #a1a1aa; }
+.legende i { width: 6px; height: 6px; border-radius: 50%; background: #f08c42; }
+
+.pied {
+  position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;
+  padding: 12px 18px 16px; background: white; border-top: 1px solid #f4f4f5;
+}
+.btn {
+  height: 42px; padding: 0 16px; border-radius: 12px; border: 1px solid #e4e4e7; background: white; color: #3f3f46; cursor: pointer;
+  font: 800 13.5px 'Plus Jakarta Sans', sans-serif; transition: background-color .15s, filter .15s;
+}
+.btn:hover { background: #fafafa; }
+.btnPlein { background: #2e3034; border-color: #2e3034; color: white; box-shadow: 0 10px 18px -12px rgba(46, 48, 52, .9); }
+.btnPlein:hover { background: #2e3034; filter: brightness(1.12); }
+.btnPlein:disabled { opacity: .5; cursor: default; filter: none; }
+
+/* Le téléphone : la barre à 10 px des bords, comme les cartes ; le
+   calendrier monte du bas. */
+@media (max-width: 760px) {
+  .barre { margin: 0 10px; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'puces puces' 'resume dates'; gap: 6px; border-radius: 16px; }
+  .resume { justify-self: start; padding: 0 6px; }
+  .pDates { height: 34px; }
+}
+@media (max-width: 640px) {
+  .voile { align-items: flex-end; padding: 0; }
+  .fen { max-width: none; max-height: 94dvh; border-radius: 22px 22px 0 0; }
+  .tete { padding: 14px 14px 10px; }
+  .champs { padding: 0 14px; }
+  .raccourcis { padding: 10px 14px 2px; }
+  .mois { padding: 12px 14px 2px; }
+  .legende { padding: 6px 14px 0; }
+  .pied { padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); }
+  .pied .btn { flex: 1 1 0; padding: 0 10px; }
+  .jour { height: 42px; }
+  .jour span { width: 38px; height: 38px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .n, .champVal, .grille[data-sens], .jour[data-dans]::before, .jour[data-bout] span { animation: none; }
+}

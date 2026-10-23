@@ -26,6 +26,7 @@ import OrganiserVisite from './OrganiserVisite';
 import { ChoixQuand } from './PageAgenda';
 import FenetreIndispo from '@/components/fiche/FenetreIndispo';
 import { lirePlace, retenirPlace, useHauteur } from '@/lib/place-fiche';
+import BarrePeriode, { PERIODE_TOUT, bornesDe, dansBornes, moisDe, type Bornes, type Periode } from './PeriodeVisites';
 
 /* ═══ Les visites hors CRM (V3.146) ═══════════════════════════════════════
    Alexandre : « j'ai planifié une visite depuis un bien, avec quelqu'un hors
@@ -97,7 +98,7 @@ function Enveloppe() {
 }
 
 /* Les pictos dessinés de la page : demandes de visite (V3.129), cartes des visites (V3.135). */
-type NomPicto = 'cal' | 'fiche' | 'croix' | 'maison' | 'tel' | 'check' | 'cr' | 'pin' | 'fleche' | 'etoile' | 'bon';
+type NomPicto = 'cal' | 'fiche' | 'croix' | 'maison' | 'tel' | 'check' | 'cr' | 'pin' | 'fleche' | 'etoile' | 'bon' | 'agence' | 'mail' | 'horloge' | 'euro' | 'oeil' | 'reflexion';
 function Picto({ n, t = 16, plein }: { n: NomPicto; t?: number; plein?: boolean }) {
   return (
     <svg width={t} height={t} viewBox="0 0 24 24" fill={plein ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
@@ -112,6 +113,12 @@ function Picto({ n, t = 16, plein }: { n: NomPicto; t?: number; plein?: boolean 
       {n === 'fleche' && <path d="m9 6 6 6-6 6" />}
       {n === 'etoile' && <path d="m12 3.5 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" />}
       {n === 'bon' && <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="m9 14.5 2.2 2.2L15.5 12" /></>}
+      {n === 'agence' && <><path d="M4 21V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v15" /><path d="M16 9h2a2 2 0 0 1 2 2v10M3 21h18M8 8h4M8 12h4M8 16h4" /></>}
+      {n === 'mail' && <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.8 7 8.2 6 8.2-6" /></>}
+      {n === 'horloge' && <><circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 2" /></>}
+      {n === 'euro' && <><path d="M17.5 6.5A7 7 0 1 0 17.5 17.5" /><path d="M4 10h9M4 14h9" /></>}
+      {n === 'oeil' && <><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></>}
+      {n === 'reflexion' && <><path d="M9.2 9.2a2.9 2.9 0 1 1 4.1 2.6c-.9.4-1.3 1-1.3 1.9v.6" /><path d="M12 17.6h.01" /><circle cx="12" cy="12" r="9.2" /></>}
     </svg>
   );
 }
@@ -260,6 +267,13 @@ function parJournee(liste: any[], regrouper: boolean): any[][] {
   return [...paquets.values()].map(p => p.sort((a, b) => h(a).localeCompare(h(b))));
 }
 
+/* V3.241 : les visites par mois, dans l'ordre de la liste (« Octobre 2026 »). */
+function parMois(liste: any[]): [string, any[]][] {
+  const m = new Map<string, any[]>();
+  for (const v of liste) { const k = moisDe(v.date_visite); const l = m.get(k); if (l) l.push(v); else m.set(k, [v]); }
+  return [...m.entries()];
+}
+
 /* V3.154 — Le bon de visite d'une visite (BonDeVisite.tsx) : la visite
    telle que la page la connaît. Hors CRM, le bien est celui de l'agence
    (`libre.bien_id`) et, sans fiche, le visiteur est le nom noté. */
@@ -299,6 +313,86 @@ function Etoiles({ n }: { n: number }) {
   );
 }
 
+/* ═══ V3.241 — La carte, en rectangle ═══════════════════════════════════════
+   Alexandre (23 octobre 2026, au téléphone) : « à gauche, il y a du blanc
+   […] mettre ça plus en rectangle, mieux optimiser ; quand c'est un
+   professionnel, mettre l'interlocuteur […] sur la version PC aussi ». La
+   date passe en petite tuile à côté du nom, avec l'heure et « Il y a 3
+   jours » ; dessous, sur toute la largeur : le bien, le contact sur place
+   (l'agence, la personne, son numéro à toucher), ce que la visite a donné.
+   Les boutons : à droite sur ordinateur, en bas au téléphone. Les gestes,
+   eux, n'ont pas changé. */
+
+/* Le contact noté sur la visite : « Agence · Personne · 06… · mail »
+   (contactEnLigne, src/lib/suivi-agence.ts), ou ce qui a été tapé à la main.
+   On en sort le nom, la personne, les numéros et les mails. */
+const RE_TEL = /(?:\+33[\s.-]?|0)[1-9](?:[\s.-]?\d{2}){4}/g;
+const RE_MAIL = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g;
+function lireContact(t: string) {
+  const tels: string[] = [], mails: string[] = [], textes: string[] = [];
+  for (const brut of String(t || '').split(/\s+·\s+|\s*\n\s*|\s+\|\s+/)) {
+    const b = brut.replace(RE_TEL, m => { tels.push(m); return ' '; }).replace(RE_MAIL, m => { mails.push(m); return ' '; })
+      .replace(/\s{2,}/g, ' ').replace(/^[\s,;:–-]+|[\s,;:–-]+$/g, '').trim();
+    if (b) textes.push(b);
+  }
+  return { qui: textes[0] || '', avec: textes.slice(1).join(' · '), tels: [...new Set(tels)], mails: [...new Set(mails)] };
+}
+const telJoli = (t: string) => { const d = t.replace(/[^\d+]/g, '').replace(/^\+33/, '0'); return d.length === 10 ? d.replace(/(\d{2})(?=\d)/g, '$1 ') : t.trim(); };
+/* Un nom d'agence (pour son picto) ; une personne en plus du nom, aussi. */
+const PRO = /immo|agence|conseil|cabinet|groupe|gestion|transaction|notaire|sarl|\bsas\b|foncia|orpi|century|lafor[eê]t|nexity|guy hoquet|plaza|\bera\b|\biad\b|safti|capifrance|barnes|sotheby|f[eé]au|junot|vaneau/i;
+
+function ContactVisite({ texte, mini }: { texte: string;
+  /* Dans une carte de plusieurs visites : une ligne sous le bien. */
+  mini?: boolean }) {
+  const c = lireContact(texte);
+  if (!c.qui && !c.avec && !c.tels.length && !c.mails.length) return null;
+  const pro = !!c.avec || PRO.test(c.qui);
+  const liens = [
+    ...c.tels.map(t => <a key={`t${t}`} className={cv.cTel} href={`tel:${t.replace(/[^\d+]/g, '')}`}><Picto n="tel" t={13} /><span>{telJoli(t)}</span></a>),
+    ...c.mails.map(m => <a key={`m${m}`} className={cv.cTel} href={`mailto:${m}`}><Picto n="mail" t={13} /><span>{m}</span></a>),
+  ];
+  if (mini) {
+    return (
+      <div className={cv.cMini}>
+        <Picto n={pro ? 'agence' : 'fiche'} t={13} />
+        {(c.qui || c.avec) && <span>{[c.qui, c.avec].filter(Boolean).join(' · ')}</span>}
+        {liens}
+      </div>
+    );
+  }
+  return (
+    <div className={cv.contact}>
+      <span className={cv.cIc}><Picto n={pro ? 'agence' : 'fiche'} t={16} /></span>
+      <span className={cv.cTx}>
+        <small>{pro ? 'Agence' : 'Contact sur place'}</small>
+        {c.qui && <b>{c.qui}</b>}
+        {c.avec && <span className={cv.cAvec}><Picto n="fiche" t={13} /><span>{c.avec}</span></span>}
+        {liens.length > 0 && <span className={cv.cLiens}>{liens}</span>}
+      </span>
+    </div>
+  );
+}
+
+/* V3.241 — Ce que la visite a donné, mis en avant (Alexandre : « quand il y
+   a les avis en réflexion, que ce soit bien mis en avant ») : un bandeau à
+   la couleur de l'issue, son picto, qui l'a dit ; la carte porte la même
+   couleur sur son bord gauche. */
+const PICTO_ISSUE: Record<Issue, NomPicto> = { offre: 'euro', revoir: 'oeil', reflexion: 'reflexion', non: 'croix' };
+const tonIssue = (i: Issue) => ({ ['--c' as string]: ISSUES[i].couleur, ['--f' as string]: ISSUES[i].fond, ['--t' as string]: ISSUES[i].trait } as React.CSSProperties);
+
+/* La date en petite tuile : le jour, le numéro, le mois. */
+function DateTuile({ iso, ton }: { iso: string; ton: string }) {
+  if (!iso) return <div className={`${cv.date} ${ton}`}><small>Sans</small><b>?</b><small>date</small></div>;
+  const d = new Date(`${iso}T12:00:00Z`);
+  return (
+    <div className={`${cv.date} ${ton}`} title={d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}>
+      <small>{d.toLocaleDateString('fr-FR', { weekday: 'short', timeZone: 'UTC' })}</small>
+      <b>{d.getUTCDate()}</b>
+      <small>{d.toLocaleDateString('fr-FR', { month: 'short', timeZone: 'UTC' })}</small>
+    </div>
+  );
+}
+
 function CarteVisite({ v, groupe, auj, rang, onClient, onBien, onCR, onAnnuler, onRappel, onBon, bonEnCours, bonEtat }: {
   v: any; groupe: Groupe; auj: string; rang: number;
   onClient: () => void; onBien: () => void; onCR: () => void; onAnnuler: () => void; onRappel: () => void;
@@ -307,10 +401,7 @@ function CarteVisite({ v, groupe, auj, rang, onClient, onBien, onCR, onAnnuler, 
 }) {
   const ton = groupe === 'a_faire' ? { date: cv.dateAfaire, past: cv.pastAfaire } : groupe === 'a_venir' ? { date: cv.dateAvenir, past: cv.pastAvenir } : { date: cv.dateFaite, past: cv.pastFaite };
   const iso = v.date_visite ? String(v.date_visite).slice(0, 10) : '';
-  const d = iso ? new Date(`${iso}T12:00:00Z`) : null;
-  const jourSem = d ? d.toLocaleDateString('fr-FR', { weekday: 'short', timeZone: 'UTC' }) : '';
-  const mois = d ? d.toLocaleDateString('fr-FR', { month: 'short', timeZone: 'UTC' }) : '';
-  const annee = iso && iso.slice(0, 4) !== auj.slice(0, 4) ? ` ${iso.slice(0, 4)}` : '';
+  const autreAn = iso && iso.slice(0, 4) !== auj.slice(0, 4) ? iso.slice(0, 4) : '';
   const heure = /^\d{2}:\d{2}/.test(String(v.heure || '')) ? String(v.heure).slice(0, 5) : '';
   const nom = `${v.clients?.prenom || ''} ${v.clients?.nom || ''}`.trim() || 'Client';
   const prenom = v.clients?.prenom || 'Le client';
@@ -327,61 +418,78 @@ function CarteVisite({ v, groupe, auj, rang, onClient, onBien, onCR, onAnnuler, 
     ? <button type="button" className={cv.btn} onClick={onBien}><Picto n="maison" t={15} /><span>Voir l’affaire</span></button>
     : <button type="button" className={cv.btn} onClick={onClient}><Picto n="fiche" t={15} /><span>Voir sa fiche</span></button>;
   const telLien = v.libre && v.tel ? `tel:${String(v.tel).replace(/[^\d+]/g, '')}` : '';
+  const contact = String(v.contact_agence || '').trim();
   return (
-    <div className={cv.carte} style={{ animationDelay: `${Math.min(rang, 6) * 40}ms` }}>
-      <div className={`${cv.date} ${ton.date}`}>
-        {d ? <><small>{jourSem}</small><b>{d.getUTCDate()}</b><small>{`${mois}${annee}`}</small></> : <small>Sans date</small>}
-        {heure && <em>{heure}</em>}
-      </div>
+    <div className={cv.carte} data-issue={issue || repondu ? '' : undefined}
+      style={{ animationDelay: `${Math.min(rang, 6) * 40}ms`, ...(issue ? tonIssue(issue) : repondu ? tonIssue(v.issue as Issue) : {}) }}>
+      <DateTuile iso={iso} ton={ton.date} />
 
-      <div className={cv.milieu}>
+      <div className={cv.tete}>
         <div className={cv.qui}>
           <button type="button" className={cv.nom} onClick={onClient} title={sansFiche ? 'Ouvrir la fiche de l’affaire' : `Ouvrir la fiche de ${nom}`}>
-            {v.clients && <AvatarContact c={v.clients} teinte={{ bg: '#f4f3f2', fg: '#2e3034' }} taille={34} />}
+            {v.clients && <AvatarContact c={v.clients} teinte={{ bg: '#f4f3f2', fg: '#2e3034' }} taille={28} />}
             <b>{nom}</b>
           </button>
           {v.libre && <span className={cv.hors} title="Noté sur la fiche de l’affaire, sans fiche demandeur">Hors CRM</span>}
-          {iso && <span className={`${cv.past} ${ton.past}`}><i />{quandRelatif(ecartJours(iso, auj))}</span>}
         </div>
-
-        <button type="button" className={cv.bien} onClick={onBien} title="Ouvrir la fiche du local">
-          {photo
-            ? <img src={photo} alt="" className={cv.photo} onError={e => { (e.target as HTMLImageElement).style.visibility = 'hidden'; }} />
-            : <span className={`${cv.photo} ${cv.photoVide}`}><Picto n="maison" t={22} /></span>}
-          <span className={cv.bienTx}>
-            <b>{v.biens?.titre || lieu || 'Bien'}</b>
-            {lieu && <small><Picto n="pin" t={13} />{lieu}</small>}
-          </span>
-          <span className={cv.fleche}><Picto n="fleche" t={18} /></span>
-        </button>
-
-        <div className={cv.meta}>
-          {v.contact_agence && <span className={cv.m}><Picto n="tel" t={14} />{v.contact_agence}</span>}
-          {telLien && <a className={`${cv.m} ${cv.lienTel}`} href={telLien}><Picto n="tel" t={14} />{v.tel}</a>}
+        <div className={cv.quand}>
+          {(heure || autreAn) && <span className={cv.heure}><Picto n="horloge" t={13} />{[heure, autreAn].filter(Boolean).join(' · ')}</span>}
+          {iso && <span className={`${cv.past} ${ton.past}`}><i />{quandRelatif(ecartJours(iso, auj))}</span>}
           {groupe === 'a_venir' && v.rappel_envoye_le && <span className={`${cv.m} ${cv.vert}`}><Picto n="check" t={14} />{libelleRappel(v.rappel_envoye_le)}</span>}
         </div>
+      </div>
+
+      <div className={cv.corps}>
+        <div className={contact ? cv.duo : undefined}>
+          <button type="button" className={cv.bien} onClick={onBien} title="Ouvrir la fiche du local">
+            {photo
+              ? <img src={photo} alt="" className={cv.photo} onError={e => { (e.target as HTMLImageElement).style.visibility = 'hidden'; }} />
+              : <span className={`${cv.photo} ${cv.photoVide}`}><Picto n="maison" t={22} /></span>}
+            <span className={cv.bienTx}>
+              <b>{v.biens?.titre || lieu || 'Bien'}</b>
+              {lieu && <small><Picto n="pin" t={13} />{lieu}</small>}
+            </span>
+            <span className={cv.fleche}><Picto n="fleche" t={18} /></span>
+          </button>
+          {contact && <ContactVisite texte={contact} />}
+        </div>
+
+        {telLien && <div className={cv.meta}><a className={`${cv.m} ${cv.lienTel}`} href={telLien}><Picto n="tel" t={14} />{v.tel}</a></div>}
 
         {/* Le client a déjà répondu dans son espace : le compte rendu part de là. */}
         {repondu && (
-          <div className={cv.bulle}>
-            <small>{`${prenom}, dans son espace`}</small>
-            <b>{`A répondu : ${repondu.crm}`}</b>
-            {v.prix_envisage ? `, autour de ${Number(v.prix_envisage).toLocaleString('fr-FR')} €` : ''}
-            {v.mot_client ? <div>{`« ${v.mot_client} »`}</div> : null}
-            {motifs.length > 0 && <div className={cv.avis}>{motifs.map(m => <span key={m} className={`${cv.puce} ${v.issue === 'non' ? cv.puceNon : ''}`}>{m}</span>)}</div>}
+          <div className={cv.verdict}>
+            <span className={cv.vIc}><Picto n={PICTO_ISSUE[v.issue as Issue]} t={18} /></span>
+            <span className={cv.vTx}>
+              <small>{`${prenom} a répondu, dans son espace`}</small>
+              <b>{`${repondu.crm}${v.prix_envisage ? `, autour de ${Number(v.prix_envisage).toLocaleString('fr-FR')} €` : ''}`}</b>
+            </span>
+            {motifs.length > 0 && <span className={cv.vPuces}>{motifs.map(m => <span key={m} className={cv.vPuce}>{m}</span>)}</span>}
+            {v.mot_client ? <span className={cv.vMot}>{`« ${v.mot_client} »`}</span> : null}
           </div>
         )}
 
         {/* Ce que la visite a donné */}
-        {groupe === 'effectuee' && (issue || v.note_etoiles > 0 || motifs.length > 0 || aime.length > 0) && (
-          <div className={cv.avis}>
-            {issue && (
-              <span className={cv.issue} style={{ color: ISSUES[issue].couleur, background: ISSUES[issue].fond, borderColor: ISSUES[issue].trait }}>
-                {issue === 'offre' && v.biens?.badge_retour === 'offre_faite' ? 'Offre faite' : ISSUES[issue].crm}
+        {groupe === 'effectuee' && issue && (
+          <div className={cv.verdict}>
+            <span className={cv.vIc}><Picto n={PICTO_ISSUE[issue]} t={18} /></span>
+            <span className={cv.vTx}>
+              <small>{v.issue_par === 'client' && v.avis_client_le ? `D’après ${prenom}, dans son espace` : 'Résultat de la visite'}</small>
+              <b>{issue === 'offre' && v.biens?.badge_retour === 'offre_faite' ? 'Offre faite' : ISSUES[issue].crm}</b>
+            </span>
+            {v.note_etoiles > 0 && <span className={cv.vEtoiles}><Etoiles n={Math.min(5, Number(v.note_etoiles))} /></span>}
+            {(motifs.length > 0 || aime.length > 0) && (
+              <span className={cv.vPuces}>
+                {aime.map(m => <span key={`a-${m}`} className={`${cv.vPuce} ${cv.vAime}`}><Picto n="check" t={12} />{m}</span>)}
+                {motifs.map(m => <span key={`m-${m}`} className={cv.vPuce}>{m}</span>)}
               </span>
             )}
+          </div>
+        )}
+        {groupe === 'effectuee' && !issue && (v.note_etoiles > 0 || motifs.length > 0 || aime.length > 0) && (
+          <div className={cv.avis}>
             {v.note_etoiles > 0 && <Etoiles n={Math.min(5, Number(v.note_etoiles))} />}
-            {motifs.map(m => <span key={`m-${m}`} className={`${cv.puce} ${issue === 'non' ? cv.puceNon : ''}`}>{m}</span>)}
+            {motifs.map(m => <span key={`m-${m}`} className={cv.puce}>{m}</span>)}
             {aime.map(m => <span key={`a-${m}`} className={`${cv.puce} ${cv.puceAime}`}>{m}</span>)}
           </div>
         )}
@@ -418,7 +526,9 @@ function CarteVisite({ v, groupe, auj, rang, onClient, onBien, onCR, onAnnuler, 
    la personne et en dessous plusieurs lignes du bien ». Une seule carte : la
    date et le nom une fois, une ligne par bien avec son heure, sa photo et ses
    propres boutons ; le rappel une fois (il regroupe déjà toutes les visites
-   du jour, voir ModaleRappelVisite). Les jours différents restent séparés. */
+   du jour, voir ModaleRappelVisite). Les jours différents restent séparés.
+   V3.241 : le même en-tête que la carte d'une visite ; le contact de chaque
+   bien sous sa ligne. */
 function CarteJournee({ visites, groupe, auj, rang, onClient, onBien, onCR, onAnnuler, onRappel, onBon, bonEnCours, bonEtat }: {
   visites: any[]; groupe: 'a_faire' | 'a_venir'; auj: string; rang: number;
   onClient: () => void; onBien: (v: any) => void; onCR: (v: any) => void; onAnnuler: (v: any) => void; onRappel: () => void;
@@ -428,8 +538,7 @@ function CarteJournee({ visites, groupe, auj, rang, onClient, onBien, onCR, onAn
   const v0 = visites[0];
   const ton = groupe === 'a_faire' ? { date: cv.dateAfaire, past: cv.pastAfaire } : { date: cv.dateAvenir, past: cv.pastAvenir };
   const iso = String(v0.date_visite).slice(0, 10);
-  const d = new Date(`${iso}T12:00:00Z`);
-  const annee = iso.slice(0, 4) !== auj.slice(0, 4) ? ` ${iso.slice(0, 4)}` : '';
+  const autreAn = iso.slice(0, 4) !== auj.slice(0, 4) ? iso.slice(0, 4) : '';
   const nom = `${v0.clients?.prenom || ''} ${v0.clients?.nom || ''}`.trim() || 'Client';
   const prenom = v0.clients?.prenom || 'Le client';
   const rappel = groupe === 'a_venir' ? visites.map(v => v.rappel_envoye_le).filter(Boolean).sort().pop() : null;
@@ -439,23 +548,24 @@ function CarteJournee({ visites, groupe, auj, rang, onClient, onBien, onCR, onAn
   const sansFiche = horsCrm && !v0.client_id;
   return (
     <div className={`${cv.carte} ${cv.journee}`} style={{ animationDelay: `${Math.min(rang, 6) * 40}ms` }}>
-      <div className={`${cv.date} ${ton.date}`}>
-        <small>{d.toLocaleDateString('fr-FR', { weekday: 'short', timeZone: 'UTC' })}</small>
-        <b>{d.getUTCDate()}</b>
-        <small>{`${d.toLocaleDateString('fr-FR', { month: 'short', timeZone: 'UTC' })}${annee}`}</small>
-        <em>{`${visites.length} visites`}</em>
-      </div>
+      <DateTuile iso={iso} ton={ton.date} />
 
-      <div className={cv.milieu}>
+      <div className={cv.tete}>
         <div className={cv.qui}>
           <button type="button" className={cv.nom} onClick={onClient} title={sansFiche ? 'Ouvrir la fiche de l’affaire' : `Ouvrir la fiche de ${nom}`}>
-            {v0.clients && <AvatarContact c={v0.clients} teinte={{ bg: '#f4f3f2', fg: '#2e3034' }} taille={34} />}
+            {v0.clients && <AvatarContact c={v0.clients} teinte={{ bg: '#f4f3f2', fg: '#2e3034' }} taille={28} />}
             <b>{nom}</b>
           </button>
           {horsCrm && <span className={cv.hors} title="Noté sur la fiche de l’affaire, sans fiche demandeur">Hors CRM</span>}
-          <span className={`${cv.past} ${ton.past}`}><i />{quandRelatif(ecartJours(iso, auj))}</span>
         </div>
+        <div className={cv.quand}>
+          <span className={cv.heure}><Picto n="cal" t={13} />{`${visites.length} visites${autreAn ? ` · ${autreAn}` : ''}`}</span>
+          <span className={`${cv.past} ${ton.past}`}><i />{quandRelatif(ecartJours(iso, auj))}</span>
+          {rappel && <span className={`${cv.m} ${cv.vert}`}><Picto n="check" t={14} />{libelleRappel(rappel)}</span>}
+        </div>
+      </div>
 
+      <div className={cv.corps}>
         <div className={cv.lignes}>
           {visites.map(v => {
             const heure = /^\d{2}:\d{2}/.test(String(v.heure || '')) ? String(v.heure).slice(0, 5) : '';
@@ -472,7 +582,6 @@ function CarteJournee({ visites, groupe, auj, rang, onClient, onBien, onCR, onAn
                   <span className={cv.bienTx}>
                     <b>{v.biens?.titre || lieu || 'Bien'}</b>
                     {lieu && <small><Picto n="pin" t={13} />{lieu}</small>}
-                    {v.contact_agence && <small><Picto n="tel" t={13} />{v.contact_agence}</small>}
                   </span>
                   <span className={cv.fleche}><Picto n="fleche" t={18} /></span>
                 </button>
@@ -482,6 +591,7 @@ function CarteJournee({ visites, groupe, auj, rang, onClient, onBien, onCR, onAn
                     : <button type="button" className={`${cv.btn} ${cv.btnBleu} ${cv.btnPetit}`} onClick={() => onCR(v)}><Picto n="check" t={14} /><span>Effectuée</span></button>}
                   <button type="button" className={`${cv.btn} ${cv.btnDiscret} ${cv.btnPetit}`} onClick={() => onAnnuler(v)} aria-label={`Annuler la visite de ${heure || 'ce local'}`} title="Annuler cette visite"><Picto n="croix" t={14} /><span className={cv.surTel}>Annuler</span></button>
                 </div>
+                {v.contact_agence && <ContactVisite texte={String(v.contact_agence)} mini />}
                 {repondu && (
                   <div className={`${cv.bulle} ${cv.ligneBulle}`}>
                     <small>{`${prenom}, dans son espace`}</small>
@@ -494,8 +604,6 @@ function CarteJournee({ visites, groupe, auj, rang, onClient, onBien, onCR, onAn
             );
           })}
         </div>
-
-        {rappel && <div className={cv.meta}><span className={`${cv.m} ${cv.vert}`}><Picto n="check" t={14} />{libelleRappel(rappel)}</span></div>}
       </div>
 
       <div className={cv.actions}>
@@ -524,6 +632,11 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
   const [pret, setPret] = useState(false);
   useHauteur(CLE_PLACE, place, pret, !!place?.retour);
   const [filtre, setFiltre] = useState<Filtre>('tout');
+  /* V3.241 : la période d'« Effectuées » et de « Toutes » (PeriodeVisites.tsx). */
+  const [periode, setPeriode] = useState<Periode>(() => {
+    const p = place?.periode as Periode | undefined;
+    return p && typeof p === 'object' && typeof p.k === 'string' ? p : PERIODE_TOUT;
+  });
   /* Le rappel au client : la fenêtre s'ouvre sur une visite et retrouve
      toutes celles du même jour pour ce client. */
   const [rappelDe, setRappelDe] = useState<string | null>(null);
@@ -540,7 +653,7 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
      avec un retour vers Visites ; la page note sa rubrique et sa recherche
      en partant (sa hauteur aussi, useHauteur), et les reprend au retour. */
   const bon = useBonDeVisite({ onOuvrir: id => {
-    retenirPlace(CLE_PLACE, { filtre, cherche });
+    retenirPlace(CLE_PLACE, { filtre, cherche, periode });
     onNavigate('documents', { ouvrir: id, retour: { page: 'visites', lib: 'Visites', place: CLE_PLACE } });
   } });
   /* Et où en est le bon de chaque visite : « Bon de visite (à signer) »… */
@@ -662,6 +775,24 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
   const effectuees = recentes(trouvees.filter(v => v.statut === 'effectuee'));
   const annulees = recentes(trouvees.filter(v => v.statut === 'annulee'));
   const montrer = (f: typeof filtre) => filtre === 'tout' || filtre === f;
+  /* V3.241 — La période (Alexandre : « effectuées, imaginons il y a 100
+     visites […] les 7 derniers jours, le mois, les 6 derniers mois, l'année,
+     les dates qu'on choisit ») : dans « Effectuées » et dans « Toutes »,
+     sur la date de la visite. Les chiffres des tuiles, eux, comptent tout. */
+  const aujP = maintenantParis(maintenant).slice(0, 10);
+  const avecPeriode = filtre === 'effectuees' || filtre === 'tout';
+  const bornes = avecPeriode ? bornesDe(periode, aujP) : null;
+  const dansP = (v: any) => dansBornes(v.date_visite, bornes);
+  const vues = {
+    a_venir: aVenir.filter(dansP), a_faire: aFaire.filter(dansP),
+    effectuees: effectuees.filter(dansP), annulees: annulees.filter(dansP),
+  };
+  /* Ce que la période trie : les effectuées, ou toutes les visites. */
+  const sousPeriode = filtre === 'effectuees' ? effectuees : [...aVenir, ...aFaire, ...effectuees, ...annulees];
+  const joursVisites: Record<string, number> = {};
+  for (const v of sousPeriode) { const k = String(v.date_visite || '').slice(0, 10); if (k) joursVisites[k] = (joursVisites[k] || 0) + 1; }
+  const compterPeriode = (b: Bornes | null) => sousPeriode.filter(v => dansBornes(v.date_visite, b)).length;
+  const nPeriode = filtre === 'effectuees' ? vues.effectuees.length : vues.a_venir.length + vues.a_faire.length + vues.effectuees.length + vues.annulees.length;
   const demandesTrouvees = q
     ? demandes.filter(d => sansAccent(`${d.client?.prenom || ''} ${d.client?.nom || ''} ${d.bien.titre || ''} ${d.bien.ville || ''}`).includes(q))
     : demandes;
@@ -795,6 +926,12 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
 
           {bravo && <div className={dv.bravo} role="status"><Picto n="cal" t={16} /><span>{bravo}</span></div>}
 
+          {/* V3.241 : la période, dans « Effectuées » et « Toutes ». */}
+          {avecPeriode && sousPeriode.length > 0 && (
+            <BarrePeriode valeur={periode} onChange={setPeriode} auj={aujP} jours={joursVisites} compter={compterPeriode}
+              n={nPeriode} quoi={filtre === 'effectuees' ? ['visite effectuée', 'visites effectuées'] : ['visite', 'visites']} />
+          )}
+
           {trouvees.length === 0 && demandesTrouvees.length === 0 && (
             <div className={styles.empty}><div className={styles.emptySub}>{`Aucune visite ne correspond à « ${cherche} ».`}</div></div>
           )}
@@ -851,43 +988,70 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
             </div>
           )}
 
+          {/* V3.241 : une autre période, et les cartes arrivent en cascade
+              (la barre, elle, reste : sa pastille glisse). */}
+          <Cascade cle={`${periode.k}|${periode.du || ''}|${periode.au || ''}`} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {bornes && sousPeriode.length > 0 && nPeriode === 0 && (
+            <div className={styles.empty}>
+              <div className={styles.emptySub}>{filtre === 'effectuees' ? 'Aucune visite effectuée sur cette période.' : 'Aucune visite sur cette période.'}</div>
+              <button type="button" className={cv.btn} style={{ marginTop: 10 }} onClick={() => setPeriode(PERIODE_TOUT)}>Voir toutes les dates</button>
+            </div>
+          )}
+
           {/* À VENIR, COMPTE RENDU À FAIRE, EFFECTUÉES — la même carte (V3.135,
               maquette A), dans l'ordre des tuiles (V3.146) */}
           {([
-            { id: 'a_venir' as const, groupe: 'a_venir' as Groupe, liste: aVenir, titre: 'À venir', c: '#2563eb', point: '#3b82f6' },
-            { id: 'a_faire' as const, groupe: 'a_faire' as Groupe, liste: aFaire, titre: 'Compte rendu à faire', c: '#c05d12', point: '#f59e0b' },
-            { id: 'effectuees' as const, groupe: 'effectuee' as Groupe, liste: effectuees, titre: 'Effectuées', c: '#0f9f6e', point: '#10b981' },
+            { id: 'a_venir' as const, groupe: 'a_venir' as Groupe, liste: vues.a_venir, titre: 'À venir', c: '#2563eb', point: '#3b82f6' },
+            { id: 'a_faire' as const, groupe: 'a_faire' as Groupe, liste: vues.a_faire, titre: 'Compte rendu à faire', c: '#c05d12', point: '#f59e0b' },
+            { id: 'effectuees' as const, groupe: 'effectuee' as Groupe, liste: vues.effectuees, titre: 'Effectuées', c: '#0f9f6e', point: '#10b981' },
           ]).filter(g => g.liste.length > 0 && montrer(g.id)).map(g => (
             <div key={g.id}>
               <div className={cv.titreGroupe} style={{ fontSize: 11, fontWeight: 800, color: g.c, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: g.point, display: 'inline-block' }}></span>
                 {`${g.titre} — ${g.liste.length}`}
               </div>
-              <div className={cv.liste}>
-                {parJournee(g.liste, g.groupe !== 'effectuee').map((l, k) => l.length > 1 && g.groupe !== 'effectuee' ? (
-                  <CarteJournee key={l[0].id} visites={l} groupe={g.groupe} auj={aujParis} rang={k}
-                    onClient={() => ouvrirClient(l[0])} onBien={v => ouvrirBien(v)}
-                    onCR={v => openCR(v.id)} onAnnuler={v => { void annuler(v.id); }} onRappel={() => setRappelDe(l[0].id)}
-                    onBon={() => { void bon.lancer(departBon(l[0])); }} bonEnCours={bon.enCours === String(l[0].id)} bonEtat={etatBon(departBon(l[0]))} />
-                ) : (
-                  <CarteVisite key={l[0].id} v={l[0]} groupe={g.groupe} auj={aujParis} rang={k}
-                    onClient={() => ouvrirClient(l[0])} onBien={() => ouvrirBien(l[0])}
-                    onCR={() => openCR(l[0].id)} onAnnuler={() => { void annuler(l[0].id); }} onRappel={() => setRappelDe(l[0].id)}
-                    onBon={() => { void bon.lancer(departBon(l[0])); }} bonEnCours={bon.enCours === String(l[0].id)} bonEtat={etatBon(departBon(l[0]))} />
-                ))}
-              </div>
+              {g.groupe === 'effectuee' ? (
+                /* V3.241 : les effectuées, mois par mois (les plus récentes d'abord). */
+                parMois(g.liste).map(([mois, l]) => (
+                  <section key={mois} className={cv.mois}>
+                    <div className={cv.moisT}><span>{mois}</span><b>{`${l.length} visite${l.length > 1 ? 's' : ''}`}</b><i aria-hidden="true" /></div>
+                    <div className={cv.liste}>
+                      {l.map((v, k) => (
+                        <CarteVisite key={v.id} v={v} groupe="effectuee" auj={aujParis} rang={k}
+                          onClient={() => ouvrirClient(v)} onBien={() => ouvrirBien(v)}
+                          onCR={() => openCR(v.id)} onAnnuler={() => { void annuler(v.id); }} onRappel={() => setRappelDe(v.id)}
+                          onBon={() => { void bon.lancer(departBon(v)); }} bonEnCours={bon.enCours === String(v.id)} bonEtat={etatBon(departBon(v))} />
+                      ))}
+                    </div>
+                  </section>
+                ))
+              ) : (
+                <div className={cv.liste}>
+                  {parJournee(g.liste, true).map((l, k) => l.length > 1 && g.groupe !== 'effectuee' ? (
+                    <CarteJournee key={l[0].id} visites={l} groupe={g.groupe} auj={aujParis} rang={k}
+                      onClient={() => ouvrirClient(l[0])} onBien={v => ouvrirBien(v)}
+                      onCR={v => openCR(v.id)} onAnnuler={v => { void annuler(v.id); }} onRappel={() => setRappelDe(l[0].id)}
+                      onBon={() => { void bon.lancer(departBon(l[0])); }} bonEnCours={bon.enCours === String(l[0].id)} bonEtat={etatBon(departBon(l[0]))} />
+                  ) : (
+                    <CarteVisite key={l[0].id} v={l[0]} groupe={g.groupe} auj={aujParis} rang={k}
+                      onClient={() => ouvrirClient(l[0])} onBien={() => ouvrirBien(l[0])}
+                      onCR={() => openCR(l[0].id)} onAnnuler={() => { void annuler(l[0].id); }} onRappel={() => setRappelDe(l[0].id)}
+                      onBon={() => { void bon.lancer(departBon(l[0])); }} bonEnCours={bon.enCours === String(l[0].id)} bonEtat={etatBon(departBon(l[0]))} />
+                  ))}
+                </div>
+              )}
             </div>
           ))}
 
           {/* ANNULÉES — gardées pour mémoire, sans action */}
-          {annulees.length > 0 && montrer('annulees') && (
+          {vues.annulees.length > 0 && montrer('annulees') && (
             <div>
               <div className={cv.titreGroupe} style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#cbd5e1', display: 'inline-block' }}></span>
-                {`Annulées — ${annulees.length}`}
+                {`Annulées — ${vues.annulees.length}`}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {annulees.map(v => {
+                {vues.annulees.map(v => {
                   const date = v.date_visite ? formatDate(v.date_visite) : null;
                   return (
                     <div key={v.id} className={cv.annulee} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fcfcfb', borderRadius: 14, border: '1px solid #eaeae9', padding: '10px 14px', opacity: .8 }}>
@@ -902,6 +1066,7 @@ export default function PageVisites({ onNavigate }: { onNavigate: (page: string,
               </div>
             </div>
           )}
+          </Cascade>
         </Cascade>
       )}
 
