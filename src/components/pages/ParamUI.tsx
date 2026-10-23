@@ -48,6 +48,7 @@ const TRACES: Record<string, string[]> = {
   trombone: ['M20 11.5 12.2 19.3a5 5 0 0 1-7.1-7.1L13 4.3a3.3 3.3 0 0 1 4.7 4.7l-7.8 7.8a1.7 1.7 0 0 1-2.4-2.4L14.6 7.3'],
   chevron: ['M9 6l6 6-6 6'],
   enregistrer: ['M5 4h11l3 3v13H5z', 'M8 4v5h7V4', 'M8 20v-6h8v6'],
+  loupe: ['M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z', 'M20.5 20.5 16 16'],
 };
 
 export function Ico({ n, t = 18, e = 1.9 }: { n: string; t?: number; e?: number }) {

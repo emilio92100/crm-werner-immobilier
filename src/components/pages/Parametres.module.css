@@ -29,33 +29,32 @@
 .teteTx p { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: #d4d4d8; }
 .teteAction { margin-left: auto; position: relative; z-index: 1; flex-shrink: 0; }
 
-/* ── La grille : le rail à gauche, la rubrique à droite ── */
-.grille { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 18px; align-items: start; }
-.rail {
-  position: sticky; top: 14px; display: flex; flex-direction: column; gap: 4px; padding: 8px;
-  background: #fff; border: 1px solid #eaeae9; border-radius: 20px; box-shadow: 0 10px 30px -22px rgba(38, 40, 44, .35);
+/* ── Les rubriques en onglets, à cheval sur la tête (V3.240) ──
+   Alexandre : « j'aime pas trop la présentation avec le menu à gauche ». La
+   barre blanche chevauche le bas de la tête ; la pastille sombre glisse d'un
+   onglet à l'autre (Curseur) ; au téléphone, la barre défile. */
+.haut { display: flex; flex-direction: column; }
+.haut .tete { padding-bottom: 52px; }
+.onglets {
+  position: relative; z-index: 2; margin: -34px 16px 0; display: flex; gap: 4px; padding: 6px;
+  background: #fff; border: 1px solid #eaeae9; border-radius: 18px; box-shadow: 0 18px 36px -24px rgba(38, 40, 44, .6);
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
 }
-.railBtn {
-  position: relative; z-index: 1; display: flex; align-items: center; gap: 11px; width: 100%; padding: 10px 11px;
-  border: none; border-radius: 14px; background: transparent; cursor: pointer; font-family: inherit; text-align: left;
-  color: #475569; transition: color .2s;
+.onglets::-webkit-scrollbar { display: none; }
+.onglet {
+  position: relative; z-index: 1; flex: 1 0 auto; display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 14px; border: none; border-radius: 13px; background: transparent; cursor: pointer;
+  font-family: inherit; font-size: 13.5px; font-weight: 700; line-height: 1.2; color: #475569; white-space: nowrap; transition: color .2s;
 }
-.railBtn:hover { color: #232528; }
+.onglet:hover { color: #232528; }
 /* La pastille qui glisse (Curseur) prend ce fond et cette ombre. */
-.railBtn[aria-pressed='true'] { color: #fff; background: #2e3034; box-shadow: 0 10px 22px -12px rgba(38, 40, 44, .9); }
+.onglet[aria-pressed='true'] { color: #fff; background: #2e3034; box-shadow: 0 10px 22px -12px rgba(38, 40, 44, .9); }
+.ongletIc { display: flex; color: #c2621c; transition: color .2s, transform .2s; }
+.onglet:hover .ongletIc { transform: scale(1.1); }
+.onglet[aria-pressed='true'] .ongletIc { color: #f7b07a; }
 /* Une rubrique où quelque chose n'est pas encore enregistré */
-.railPoint { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: #f08c42; flex-shrink: 0;
-  box-shadow: 0 0 0 3px rgba(240, 140, 66, .2); animation: pApparait .3s ease both; }
-.railIc {
-  width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  background: #f4f4f5; color: #2e3034; transition: background .2s, color .2s, transform .2s;
-}
-.railBtn:hover .railIc { transform: scale(1.06); }
-.railBtn[aria-pressed='true'] .railIc { background: rgba(255, 255, 255, .14); color: #f7b07a; }
-.railTx { display: flex; flex-direction: column; min-width: 0; }
-.railTx b { font-size: 13.5px; font-weight: 700; line-height: 1.25; }
-.railTx small { font-size: 11.5px; line-height: 1.3; color: #94a3b8; margin-top: 1px; }
-.railBtn[aria-pressed='true'] .railTx small { color: #c4c4c8; }
+.ongletPoint { width: 7px; height: 7px; border-radius: 50%; background: #f08c42; flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(240, 140, 66, .22); animation: pApparait .3s ease both; }
 
 /* ── Une rubrique ── */
 .rubrique { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
@@ -429,24 +428,59 @@ textarea.input { resize: vertical; line-height: 1.55; }
 .personneNom b { max-width: 100%; }
 .sansEspace { margin-top: 2px; font-size: 11px; font-weight: 700; line-height: 1.3; color: #71717a; background: #f4f4f5; border-radius: 99px; padding: 1px 8px; }
 
+/* V3.239 : sous une case de « Pour qui », combien de dossiers elle vise. */
+.caseChiffre {
+  display: inline-block; margin-top: 7px; padding: 2px 9px; border-radius: 99px; font-style: normal; font-size: 11.5px; font-weight: 800;
+  color: #9a4a12; background: #fff7ed; border: 1px solid #fed7aa;
+}
+.case[aria-pressed='true'] .caseChiffre { color: #fff; background: #2e3034; border-color: #2e3034; }
+
+/* ── V3.240 : « Qui le recevrait » en trois chiffres, la liste à la demande ── */
+.trois { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.chiffreBtn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 14px 15px; border-radius: 16px; cursor: pointer; text-align: left;
+  font-family: inherit; background: #fafafa; border: 1.5px solid #f0f0ef; color: #3f3f46;
+  transition: border-color .2s, background .2s, box-shadow .2s, transform .2s;
+}
+.chiffreBtn:hover { border-color: #d4d4d8; box-shadow: 0 10px 22px -18px rgba(38, 40, 44, .6); }
+.chiffreBtn b { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; line-height: 1.05; color: #232528; }
+.chiffreBtn span { font-size: 13px; font-weight: 800; color: #232528; }
+.chiffreBtn small { font-size: 12px; line-height: 1.4; color: #71717a; }
+.chiffreBtn[data-ton='or'] { background: #fff7ed; border-color: #fed7aa; }
+.chiffreBtn[data-ton='or'] b { color: #c2621c; }
+.chiffreBtn[data-ton='bleu'] b { color: #2e3034; }
+.chiffreBtn[data-ton='gris'] b { color: #a1a1aa; }
+.chiffreBtn[aria-pressed='true'] { border-color: #2e3034; box-shadow: 0 10px 22px -16px rgba(38, 40, 44, .7); }
+.toutVoir { margin-top: 14px; padding-top: 14px; border-top: 1px solid #f0f0ef; animation: pApparait .25s ease both; }
+.toutVoirTete { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.toutVoirTete > b { font-size: 14px; color: #232528; margin-right: auto; }
+.cherche {
+  display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; border-radius: 11px;
+  background: #fff; border: 1.5px solid #e4e4e7; color: #a1a1aa; transition: border-color .15s;
+}
+.cherche:focus-within { border-color: #f08c42; }
+.cherche input { border: none; outline: none; background: transparent; font: 14px 'DM Sans', sans-serif; color: #232528; width: 170px; }
+/* Ce qui charge encore : trois barres qui respirent. */
+.squelette { display: flex; flex-direction: column; gap: 10px; }
+.squelette i { display: block; height: 14px; border-radius: 8px; background: linear-gradient(90deg, #f4f4f5 0%, #eaeae9 50%, #f4f4f5 100%); background-size: 200% 100%; animation: pCharge 1.2s ease-in-out infinite; }
+.squelette i:nth-child(1) { width: 62%; } .squelette i:nth-child(2) { width: 84%; } .squelette i:nth-child(3) { width: 46%; }
+@keyframes pCharge { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .tete::after, .teteIc svg, .heroIc::before, .etapesPoint, .pVert i::after, .pOr i::after, .direct i::after { animation: none; }
+  .tete::after, .teteIc svg, .heroIc::before, .squelette i, .etapesPoint, .pVert i::after, .pOr i::after, .direct i::after { animation: none; }
 }
 
 /* ── Téléphone ── */
-@media (max-width: 860px) {
-  .grille { grid-template-columns: 1fr; gap: 12px; }
-  .rail {
-    position: static; top: auto; flex-direction: row; overflow-x: auto; scrollbar-width: none; border-radius: 18px; padding: 6px; gap: 4px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .rail::-webkit-scrollbar { display: none; }
-  .railBtn { width: auto; flex-shrink: 0; padding: 7px 12px 7px 7px; }
-  .railTx small { display: none; }
-  .railIc { width: 30px; height: 30px; border-radius: 10px; }
-  .railTx b { white-space: nowrap; font-size: 13px; }
-}
+
 @media (max-width: 640px) {
+  .haut .tete { padding-bottom: 46px; }
+  .onglets { margin: -30px 10px 0; border-radius: 16px; padding: 5px; }
+  .onglet { flex: 0 0 auto; padding: 9px 12px; font-size: 13px; }
+  .trois { grid-template-columns: 1fr; }
+  .chiffreBtn { flex-direction: row; align-items: baseline; flex-wrap: wrap; column-gap: 10px; }
+  .chiffreBtn b { font-size: 24px; }
+  .cherche { flex: 1 1 100%; }
+  .cherche input { width: 100%; }
   .tete { padding: 18px; border-radius: 18px; }
   .teteTx h1 { font-size: 19px; }
   .teteIc { width: 42px; height: 42px; border-radius: 13px; }
