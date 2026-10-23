@@ -9,7 +9,8 @@ import { jetonEspace } from '@/lib/jeton';
 import type { Client, StatutClient } from '@/lib/supabase';
 import styles from './Clients.module.css';
 import AvatarContact from '@/components/contacts/AvatarContact';
-import { conjointDe, nomFoyer } from '@/lib/foyer';
+import { conjointDe, nomFoyer, personne2De, adressesDossierDe, colonneDossierAbsente, MESSAGE_SQL_DOSSIER } from '@/lib/foyer';
+import IdentitesContact, { identitesVides, colonnesDe, dossierDe, erreurIdentites, type Identites } from '@/components/contacts/IdentitesContact';
 import EnteteRubrique, { PictoClients } from '@/components/shared/EnteteRubrique';
 import Cascade from '@/components/shared/Cascade';
 import RappelSecteur from '@/components/shared/RappelSecteur';
@@ -199,6 +200,11 @@ const initForm = {
   c2_civilite: '' as '' | 'Monsieur' | 'Madame', c2_prenom: '', c2_nom: '', c2_email: '', c2_tel: '',
   adresse_rue: '', adresse_cp: '', adresse_ville: '',
   email1: '', email2: '', tel1: '', tel2: '',
+  /* V3.236 — Un particulier : une case par personne et les autres adresses du
+     dossier (IdentitesContact). Les champs ci-dessus en sont le reflet
+     (`miroir`), pour l'aperçu et la recherche d'un doublon ; un
+     professionnel les remplit directement. */
+  ident: identitesVides() as Identites,
   statut: 'prospect' as StatutClient,
   statut_occupation: '', bien_actuel_type: '', bien_actuel_surface: '',
   bien_actuel_valeur: '', bien_actuel_a_vendre: false, bien_actuel_notes: '',
@@ -218,6 +224,18 @@ const initForm = {
   /* D'où il vient (V3.23) : facultatif, voir src/lib/sources.ts. */
   source: '', source_detail: '',
 };
+
+/* V3.236 : le bloc « Qui est-ce » recopié dans les champs simples. */
+function miroir(v: Identites) {
+  const net = (l: string[]) => l.map(x => x.trim()).filter(Boolean);
+  const m1 = net(v.emails), t1 = net(v.tels), p2 = v.p2;
+  const m2 = p2 ? net(p2.emails) : [], t2 = p2 ? net(p2.tels) : [];
+  return {
+    ident: v, prenom: v.prenom, nom: v.nom, civilite: v.civilite, couple: !!p2,
+    c2_civilite: p2?.civilite || '', c2_prenom: p2?.prenom || '', c2_nom: p2?.nom || '', c2_email: m2[0] || '', c2_tel: t2[0] || '',
+    email1: m1[0] || '', email2: m1[1] || '', tel1: t1[0] || '', tel2: t1[1] || '',
+  } as const;
+}
 
 /* Monsieur ou Madame, pour une personne du couple. */
 function Civilite({ v, onV }: { v: string; onV: (c: 'Monsieur' | 'Madame') => void }) {
@@ -740,6 +758,7 @@ export default function Clients({ onNavigate, fenetre }: {
     cree.current = null;
     setForm(pre ? {
       ...initForm, prenom: pre.prenom, nom: pre.nom, email1: pre.email, tel1: pre.tel,
+      ident: { ...identitesVides(), prenom: pre.prenom || '', nom: pre.nom || '', emails: [pre.email || ''], tels: [pre.tel || ''] },
       types: pre.types, source: pre.source || 'site', source_detail: pre.source_detail, notes: pre.notes,
       creerBien: !fenetre,
     } : initForm);
@@ -963,7 +982,9 @@ export default function Clients({ onNavigate, fenetre }: {
 
   /* La recherche vaut pour toutes les catégories. */
   const q0 = normer(search.trim());
-  const trouve = (c: Client) => { const p = lirePro(c.pro); return !q0 || normer([c.prenom, c.nom, c.reference, ...(c.emails || []), ...(c.telephones || []),
+  /* V3.236 : aussi la personne 2 (qu'elle signe ou non), ses adresses, ses numéros, et les adresses du dossier. */
+  const autresDe = (c: Client) => { const j = personne2De(c); return [j?.prenom, j?.nom, ...(j?.emails || []), ...(j?.telephones || []), ...adressesDossierDe((c as unknown as { adresses_dossier?: unknown }).adresses_dossier).map(a => a.email)]; };
+  const trouve = (c: Client) => { const p = lirePro(c.pro); return !q0 || normer([c.prenom, c.nom, c.reference, ...(c.emails || []), ...(c.telephones || []), ...autresDe(c),
     p.agence, p.etude, p.immeuble, p.societe, p.metier, p.reseau, c.adresse,
     ...typesDe(c).map(k => typeDe(k).lib)].filter(Boolean).join(' ')).includes(q0) || (c.couple ? normer(nomFoyer(c)).includes(q0) : false); };
   const visibles = clients.filter(c => !estArchive(c));
@@ -1047,6 +1068,7 @@ export default function Clients({ onNavigate, fenetre }: {
       c.nom.toLowerCase().includes(q) ||
       c.reference.toLowerCase().includes(q) ||
       (c.emails || []).some(e => e.toLowerCase().includes(q)) ||
+      autresDe(c).some(x => !!x && x.toLowerCase().includes(q)) ||
       (c.secteurs || []).some(s => s.toLowerCase().includes(q)) ||
       (!!motSituation && motSituation.includes(normer(search.trim())));
     return matchStatut && matchSit && matchSearch;
@@ -1080,6 +1102,10 @@ export default function Clients({ onNavigate, fenetre }: {
     if (acheteur && !form.critPlusTard && !(crit.secteurs || []).length && !rappelSecteurVu.current) {
       rappelSecteurVu.current = true; setRappelSecteur(true); return;
     }
+    /* V3.236 : une personne 2 sans nom, une adresse du dossier incomplète. */
+    const particulier = !estPro(form.types);
+    const pbId = particulier ? erreurIdentites(form.ident) : '';
+    if (pbId) { setError(pbId); return; }
     setSaving(true); setError('');
     /* V3.50 : avant de créer, un contact qui existe peut-être déjà (même
        e-mail, même téléphone, même nom). Depuis une demande du site, c'est
@@ -1095,8 +1121,10 @@ export default function Clients({ onNavigate, fenetre }: {
     setDoublon(null);
     try {
       const reference = await genererReference();
-      const emails = [form.email1, form.email2].filter(Boolean);
-      const telephones = [form.tel1, form.tel2].filter(Boolean);
+      /* V3.236 : un particulier, depuis son bloc (toutes ses adresses) ; un professionnel, ses deux champs. */
+      const col = particulier ? colonnesDe(form.ident) : null;
+      const emails = col ? col.emails : [form.email1, form.email2].filter(Boolean);
+      const telephones = col ? col.telephones : [form.tel1, form.tel2].filter(Boolean);
       const adresse = [form.adresse_rue, [form.adresse_cp, form.adresse_ville].filter(Boolean).join(' ')].filter(Boolean).join(', ');
       const ent = (v: string) => (v ? parseInt(v) : null);
 
@@ -1106,10 +1134,8 @@ export default function Clients({ onNavigate, fenetre }: {
         reference, prenom: form.prenom || '', nom: form.nom || '',
         /* Écrits seulement si Alexandre a choisi : avant le SQL « signature-
            plusieurs », ces colonnes n'existent pas. */
-        ...(form.civilite || form.couple ? {
-          civilite: form.civilite || null, couple: form.couple,
-          conjoint: form.couple ? { civilite: form.c2_civilite, prenom: form.c2_prenom.trim(), nom: form.c2_nom.trim(), email: form.c2_email.trim().toLowerCase(), telephone: form.c2_tel.trim() } : null,
-        } : {}),
+        ...(col ? (col.civilite || col.conjoint ? { civilite: col.civilite, couple: col.couple, conjoint: col.conjoint } : {})
+          : form.civilite ? { civilite: form.civilite } : {}),
         /* Le lien de l'espace naît avec le client, pas avec la recherche.
            C'est LE lien qu'on lui enverra : un seul, définitif, même s'il
            ouvre trois recherches par la suite (voir src/lib/espace.ts). */
@@ -1158,6 +1184,13 @@ export default function Clients({ onNavigate, fenetre }: {
       const { data, error: err } = r;
 
       if (err) throw err;
+      /* V3.236 : les autres adresses du dossier, à part : sans le SQL
+         « adresses-dossier », la colonne n'existe pas, et le contact se crée quand même. */
+      const dossier = particulier ? dossierDe(form.ident) : [];
+      if (data && dossier.length) {
+        const { error: eD } = await supabase.from('clients').update({ adresses_dossier: dossier }).eq('id', data.id);
+        if (eD) signalerEchec('Les autres adresses du dossier', colonneDossierAbsente(eD.message) ? MESSAGE_SQL_DOSSIER : eD.message);
+      }
       /* Le contact vient d'une demande du site : elle lui est reliée, et passe
          en « Traitée » (Demandes du site affiche alors « Voir sa fiche »). */
       if (data && demandeLiee.current) {
@@ -1640,7 +1673,12 @@ export default function Clients({ onNavigate, fenetre }: {
                   {pas === 'type' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                       <Bloc ic="personne" titre="Ce contact est…" petit="un ou plusieurs types">
-                        <ChoixTypes v={form.types} onChange={x => { setError(''); setForm({ ...form, types: x }); }} />
+                        <ChoixTypes v={form.types} onChange={x => {
+                          setError('');
+                          /* Un professionnel devenu particulier : ce qui était tapé passe dans le bloc. */
+                          const versParticulier = estPro(form.types) && !estPro(x);
+                          setForm({ ...form, types: x, ...(versParticulier ? { ident: { ...form.ident, prenom: form.prenom, nom: form.nom, civilite: form.civilite, emails: [form.email1, form.email2].filter(Boolean).length ? [form.email1, form.email2].filter(Boolean) : [''], tels: [form.tel1, form.tel2].filter(Boolean).length ? [form.tel1, form.tel2].filter(Boolean) : [''] } } : {}) });
+                        }} />
                         <div className="nc-note">
                           {form.types.length === 0 ? 'Coche un ou plusieurs types : un commerçant qui cède son local et en cherche un autre est « mandant » et « demandeur ».'
                             : form.types.includes('acheteur') ? 'Demandeur : sa recherche et son mandat viennent ensuite. S’il n’a pas encore donné ses critères, il sera « demandeur non filtré ».'
@@ -1669,81 +1707,43 @@ export default function Clients({ onNavigate, fenetre }: {
                       {/* V3.174 (Alexandre) : un notaire, son étude d'abord ; qui le joindre ensuite. */}
                       {form.types.includes('notaire') && champsPro}
                       <Bloc ic="personne" titre="Qui est-ce" teinte={teinte}>
-                        {!pro && <div className="nc-qui">
-                          {([['Monsieur', 'Monsieur'], ['Madame', 'Madame']] as const).map(([k, lib]) => (
-                            <button type="button" key={k} className="nc-etat nc-qui-b"
-                              data-on={!form.couple && form.civilite === k}
-                              onClick={() => setForm({ ...form, couple: false, civilite: k })}>
-                              <b>{lib}</b>
-                            </button>
-                          ))}
-                        </div>}
-                        {pro && <Civilite v={form.civilite} onV={v => setForm({ ...form, couple: false, civilite: v })} />}
-                        {!form.couple || pro ? (
-                          <div className={styles.formRow}>
-                            <div className={styles.formGroup}><label className={styles.label}>Prénom</label><input className={styles.input} value={form.prenom} onChange={e => setForm({ ...form, prenom: e.target.value })} autoFocus /></div>
-                            <div className={styles.formGroup}><label className={styles.label}>Nom</label><input className={styles.input} value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} /></div>
-                          </div>
-                        ) : (
+                        {pro ? (
                           <>
-                            <div className="nc-couple">
-                              <div className="nc-pers">
-                                <div className="nc-pers-h">
-                                  <span className="nc-pers-t"><span className="nc-pers-n">1</span>{'Personne 1 · contact principal'}</span>
-                                  <Civilite v={form.civilite} onV={c => setForm({ ...form, civilite: c })} />
-                                </div>
-                                <div className="nc-id">
-                                  <div className={styles.formGroup}><label className={styles.label}>Prénom</label><input className={styles.input} value={form.prenom} onChange={e => setForm({ ...form, prenom: e.target.value })} autoFocus /></div>
-                                  <div className={styles.formGroup}><label className={styles.label}>Nom</label><input className={styles.input} value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} /></div>
-                                </div>
-                                {/* Ses coordonnées ici, comme pour la personne 2 : elles
-                                    étaient plus bas, dans « Contact », et on les cherchait. */}
-                                <div className="nc-co">
-                                  <div className={styles.formGroup}><label className={styles.label}>Téléphone</label><input className={styles.input} type="tel" value={form.tel1} onChange={e => setForm({ ...form, tel1: e.target.value })} /></div>
-                                  <div className={styles.formGroup}><label className={styles.label}>E-mail</label><input className={styles.input} type="email" value={form.email1} onChange={e => setForm({ ...form, email1: e.target.value })} /></div>
-                                </div>
-                              </div>
-                              <div className="nc-pers">
-                                <div className="nc-pers-h">
-                                  <span className="nc-pers-t"><span className="nc-pers-n">2</span>{'Personne 2'}</span>
-                                  <Civilite v={form.c2_civilite} onV={c => setForm({ ...form, c2_civilite: c })} />
-                                </div>
-                                <div className="nc-id">
-                                  <div className={styles.formGroup}><label className={styles.label}>Prénom</label><input className={styles.input} value={form.c2_prenom} onChange={e => setForm({ ...form, c2_prenom: e.target.value })} /></div>
-                                  <div className={styles.formGroup}><label className={styles.label}>Nom</label><input className={styles.input} value={form.c2_nom} onChange={e => setForm({ ...form, c2_nom: e.target.value })} /></div>
-                                </div>
-                                <div className="nc-co">
-                                  <div className={styles.formGroup}><label className={styles.label}>{'Téléphone · facultatif'}</label><input className={styles.input} type="tel" value={form.c2_tel} onChange={e => setForm({ ...form, c2_tel: e.target.value })} /></div>
-                                  <div className={styles.formGroup}><label className={styles.label}>E-mail</label><input className={styles.input} type="email" value={form.c2_email} onChange={e => setForm({ ...form, c2_email: e.target.value })} /></div>
-                                </div>
-                              </div>
+                            <Civilite v={form.civilite} onV={v => setForm({ ...form, couple: false, civilite: v })} />
+                            <div className={styles.formRow}>
+                              <div className={styles.formGroup}><label className={styles.label}>Prénom</label><input className={styles.input} value={form.prenom} onChange={e => setForm({ ...form, prenom: e.target.value })} autoFocus /></div>
+                              <div className={styles.formGroup}><label className={styles.label}>Nom</label><input className={styles.input} value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })} /></div>
                             </div>
-                            <div className="nc-note">{'Le mandat en ligne sera préparé à leurs deux noms. La personne 1 reçoit les mails et a l’espace client ; la personne 2 reçoit son propre lien et son propre code pour signer.'}</div>
                           </>
+                        ) : (
+                          /* V3.236 : une case par personne, ses adresses et ses numéros,
+                             « + Ajouter une personne », les autres adresses du dossier. */
+                          <IdentitesContact v={form.ident} onChange={v => setForm({ ...form, ...miroir(v) })} autoFocus />
                         )}
                       </Bloc>
 
-                      {/* Le joindre. Un couple a déjà les coordonnées de chacun
-                          au-dessus : ici, seulement un numéro commun ou un autre
-                          e-mail, à la demande. */}
-                      <Bloc ic="telephone" titre="Le joindre" teinte={teinte}>
-                        {!(form.couple && !pro) && (
-                          <div className="nc-co">
-                            <div className={styles.formGroup}><label className={styles.label}>Téléphone</label><input className={styles.input} type="tel" value={form.tel1} onChange={e => setForm({ ...form, tel1: e.target.value })} /></div>
-                            <div className={styles.formGroup}><label className={styles.label}>E-mail</label><input className={styles.input} type="email" value={form.email1} onChange={e => setForm({ ...form, email1: e.target.value })} /></div>
-                          </div>
-                        )}
-                        {autresCoord || form.tel2 || form.email2 ? (
-                          <div className="nc-co">
-                            <div className={styles.formGroup}><label className={styles.label}>{'Autre téléphone · facultatif'}</label><input className={styles.input} type="tel" value={form.tel2} onChange={e => setForm({ ...form, tel2: e.target.value })} /></div>
-                            <div className={styles.formGroup}><label className={styles.label}>{'Autre e-mail · facultatif'}</label><input className={styles.input} type="email" value={form.email2} onChange={e => setForm({ ...form, email2: e.target.value })} /></div>
-                          </div>
-                        ) : (
-                          <button type="button" className="nc-lien" onClick={() => setAutresCoord(true)}>
-                            <Ic n="plus" t={14} e={2.4} />{form.couple && !pro ? 'Un numéro commun ou un autre e-mail' : 'Un autre téléphone ou e-mail'}
-                          </button>
-                        )}
-                      </Bloc>
+                      {/* Le joindre : pour un professionnel. Un particulier a ses
+                          adresses et ses numéros dans sa case, au-dessus (V3.236). */}
+                      {pro && (
+                        <Bloc ic="telephone" titre="Le joindre" teinte={teinte}>
+                          {!(form.couple && !pro) && (
+                            <div className="nc-co">
+                              <div className={styles.formGroup}><label className={styles.label}>Téléphone</label><input className={styles.input} type="tel" value={form.tel1} onChange={e => setForm({ ...form, tel1: e.target.value })} /></div>
+                              <div className={styles.formGroup}><label className={styles.label}>E-mail</label><input className={styles.input} type="email" value={form.email1} onChange={e => setForm({ ...form, email1: e.target.value })} /></div>
+                            </div>
+                          )}
+                          {autresCoord || form.tel2 || form.email2 ? (
+                            <div className="nc-co">
+                              <div className={styles.formGroup}><label className={styles.label}>{'Autre téléphone · facultatif'}</label><input className={styles.input} type="tel" value={form.tel2} onChange={e => setForm({ ...form, tel2: e.target.value })} /></div>
+                              <div className={styles.formGroup}><label className={styles.label}>{'Autre e-mail · facultatif'}</label><input className={styles.input} type="email" value={form.email2} onChange={e => setForm({ ...form, email2: e.target.value })} /></div>
+                            </div>
+                          ) : (
+                            <button type="button" className="nc-lien" onClick={() => setAutresCoord(true)}>
+                              <Ic n="plus" t={14} e={2.4} />{form.couple && !pro ? 'Un numéro commun ou un autre e-mail' : 'Un autre téléphone ou e-mail'}
+                            </button>
+                          )}
+                        </Bloc>
+                      )}
 
                       {/* Un professionnel se joint à son agence, son étude, son
                          immeuble : son adresse est dans la section de son métier. */}
