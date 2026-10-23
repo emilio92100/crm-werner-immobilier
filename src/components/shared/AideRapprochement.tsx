@@ -48,7 +48,7 @@ const ETAPES = (depuis: DepuisAide): Etape[] => [
       { ic: 'loupe', t: 'Les annonces de tes veilles', d: 'Trouvées pour tes autres clients, sur la période choisie : 1 mois, 3 mois, 6 mois ou depuis le début. Celles que tu as écartées n’y sont pas. Une annonce trouvée pour plusieurs clients n’apparaît qu’une fois.' },
       { ic: 'cadenas', t: 'Jamais ses propres affaires', d: 'Une affaire dont il est le mandant ne lui est pas proposée.' },
     ] : [
-      { ic: 'groupe', t: 'Tes demandeurs suivis', d: 'Leurs recherches ouvertes : actifs, prospects, en pause. Pas ceux qui ont trouvé ou abandonné, ni les contacts archivés.' },
+      { ic: 'groupe', t: 'Tes demandeurs suivis', d: 'Leurs recherches ouvertes : accompagnés, en recherche, en pause. Pas ceux qui ont trouvé ou abandonné, ni les contacts archivés.' },
       { ic: 'maison', t: 'Le même type de local', d: 'Des bureaux pour qui cherche des bureaux, un local commercial pour qui cherche un local commercial (un restaurant en est un). Une recherche sans type accepte tout.' },
       { ic: 'cadenas', t: 'Jamais le mandant', d: 'Le mandant de cette affaire n’est pas proposé.' },
       { ic: 'etiquette', t: 'Même avant le mandat', d: 'Une affaire en estimation ou à suivre se rapproche déjà. Présentée, elle part sans montant : il arrive chez le demandeur à la signature du mandat.', ton: 'or' },
