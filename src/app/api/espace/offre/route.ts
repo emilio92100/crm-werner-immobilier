@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { ecritServeur } from '@/lib/ecritures';
 import { pdfDocument, modele, aujourdhui, type Donnees } from '@/lib/actes';
-import { OFFRE_ACHAT, VALIDITE_JOURS, honorairesOffre, mandatDe, noteOffre } from '@/lib/actes/offre-achat';
+import { OFFRE_ACHAT, VALIDITE_JOURS, honorairesOffre, mandatDe, noteOffre, offreLocation } from '@/lib/actes/offre-achat';
 import { validerMandant, validerPersonne } from '@/lib/mandat';
 import { lireIdentiteAgence } from '@/lib/agence';
 import { visitePasseeParis } from '@/lib/visites';
@@ -211,13 +211,19 @@ export async function POST(req: NextRequest) {
       /* « Proposer le prix affiché » : le prix de l'annonce, tel quel, pour le vendeur. */
       d = m.deduire ? m.deduire({ ...d, prix: Number(d.prixAffiche), auPrix: 'oui' }, 'prix') : { ...d, prix: Number(d.prixAffiche) };
     } else {
-      const total = nombre(sx.total, 10_000, 100_000_000);
+      /* Werner : un loyer annuel peut descendre sous 10 000 € (une petite boutique). */
+      const total = nombre(sx.total, offreLocation(d) ? 1_000 : 10_000, 100_000_000);
       if (!total) return ko('total', 400);
       d = m.deduire ? m.deduire({ ...d, total: Math.round(total) }, 'total') : { ...d, total: Math.round(total) };
     }
     if (vente) d = { ...d, honoVendeur: honoVendeurAuPrix(vente, Number(d.prix) || null) };
-    const pret = sx.pret === 'non' ? 'non' : 'oui';
-    const conditions = (Array.isArray(sx.conditions) ? sx.conditions : []).map(String).filter(c => c === 'vente' || c === 'autre');
+    /* Werner : les conditions que le modèle de l'offre sait écrire, selon la
+       nature (une case qu'il ne connaît pas disparaîtrait de l'offre signée). */
+    const loc = offreLocation(d);
+    const cession = d.nature === 'cession_bail' || d.nature === 'fonds';
+    const permises = loc ? ['autorisations', 'financement', 'autre'] : cession ? ['bailleur', 'destination', 'licence', 'autre'] : ['autre'];
+    const pret = loc ? null : sx.pret === 'non' ? 'non' : 'oui';
+    const conditions = (Array.isArray(sx.conditions) ? sx.conditions : []).map(String).filter(c => permises.includes(c));
     const auPlus = new Date(Date.now() + 30 * 86_400_000), demain = new Date(Date.now() + 86_400_000);
     const validite = typeof sx.validite === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(sx.validite) && sx.validite >= ymd(demain) && sx.validite <= ymd(auPlus)
       ? sx.validite : ymd(new Date(Date.now() + VALIDITE_JOURS * 86_400_000));
@@ -229,7 +235,14 @@ export async function POST(req: NextRequest) {
       pretDuree: pret === 'oui' ? nombre(sx.pretDuree, 1, 35) : null,
       pretTaux: pret === 'oui' ? nombre(sx.pretTaux, 0, 20) : null,
       conditions,
-      venteBien: conditions.includes('vente') ? court(sx.venteBien, 400) : '',
+      venteBien: '',
+      /* Son activité (une location, une reprise) ; l'entrée souhaitée et la
+         franchise (une location). Vide : ce que l'offre d'avant disait. */
+      ...(loc || cession ? { activite: court(sx.activite, 300) || String(d.activite || '') } : {}),
+      ...(loc ? {
+        prise: typeof sx.prise === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(sx.prise) ? sx.prise : sx.prise === '' ? '' : String(d.prise || ''),
+        franchise: sx.franchise === null || sx.franchise === '' ? null : nombre(sx.franchise, 0, 24) ?? (typeof d.franchise === 'number' ? d.franchise : null),
+      } : {}),
       conditionAutre: conditions.includes('autre') ? court(sx.conditionAutre, 600) : '',
       notaire: court(sx.notaire, 160),
       validite, validiteHeure: heure,

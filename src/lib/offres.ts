@@ -33,7 +33,7 @@
    Navigateur et serveur : aucune lecture de base ici.
    ════════════════════════════════════════════════════════════════════════ */
 
-import { finValiditeOffre, honorairesOffre, honorairesSurPrix } from './actes/offre-achat';
+import { finValiditeOffre, honorairesOffre, honorairesSurPrix, offreLocation } from './actes/offre-achat';
 import type { Donnees } from './actes/commun';
 
 export type ReponseVendeur = {
@@ -273,15 +273,24 @@ export const FINIES: EtatOffre[] = ['refusee', 'echue', 'sans_suite'];
 
 /** Le prix pour le vendeur, et son total frais d'agence compris. */
 export const prixOffre = (d: Donnees | null | undefined) => (d ? n((d as Record<string, unknown>).prix) : null);
+/* Werner (23 octobre 2026) : une offre de LOCATION est un loyer annuel HT HC.
+   Ses honoraires ne s'y ajoutent pas (ils se paient une fois, à la signature
+   du bail) : son « total » est le loyer, et une contre-proposition aussi. */
 export function totalOffre(d: Donnees | null | undefined): number | null {
   const p = prixOffre(d);
+  if (offreLocation(d)) return p;
   return p && d ? p + honorairesOffre(d) : null;
 }
 /** Une contre-proposition (le prix pour le vendeur) en « frais d'agence compris » pour lui :
-    ses honoraires entiers, comme sur l'offre (taux ou forfait du bien). */
+    ses honoraires entiers, comme sur l'offre (taux ou forfait du bien). Un loyer : tel quel. */
 export function totalContre(d: Donnees | null | undefined, montant: number): number {
+  if (offreLocation(d)) return montant;
   return montant + (d ? honorairesSurPrix(d, montant) : 0);
 }
+/** Une offre de location (un loyer annuel, des honoraires à part). */
+export const offreDeLoyer = (d: Donnees | null | undefined) => offreLocation(d);
+/** À qui va l'offre, dans les phrases : « le bailleur » pour une location, « le mandant » sinon. */
+export const destOffre = (d: Donnees | null | undefined) => (offreLocation(d) ? 'bailleur' : 'mandant');
 /** Une contre-proposition dont la date limite est passée (à minuit, heure de Paris). */
 export function contreDepassee(r: ReponseVendeur | null | undefined, maintenant = Date.now()): boolean {
   if (!r || r.statut !== 'contre' || !r.limite) return false;
@@ -342,6 +351,12 @@ export function filsParBien(docs: DocOffre[]): Map<string, DocOffre[]> {
 /* ── Les mots ── */
 
 const EUR = (x: number) => `${Math.round(x).toLocaleString('fr-FR').replace(/[  ]/g, ' ')} €`;
+/** Le montant d'une offre, dit en clair : « 45 000 € HT HC par an » (une
+    location), sinon « 480 000 € frais d'agence compris » (`virgule` : « 480 000 €, frais… »). */
+export function montantDit(d: Donnees | null | undefined, x: number, o: { virgule?: boolean; court?: boolean } = {}): string {
+  if (offreLocation(d)) return o.court ? `${EUR(x)} / an` : `${EUR(x)} HT HC par an`;
+  return o.court ? EUR(x) : `${EUR(x)}${o.virgule ? ',' : ''} frais d’agence compris`;
+}
 const JOUR = (iso: string) => {
   const t = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T12:00:00`) : new Date(iso);
   return Number.isFinite(t.getTime()) ? t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }) : '';
@@ -381,7 +396,8 @@ export const ETATS_CLIENT: Record<EtatOffre, { l: string; ton: Ton }> = {
   en_signature: { l: 'À signer', ton: 'or' },
   signee: { l: 'Offre signée', ton: 'bleu' },
   envoyee: { l: 'Offre envoyée', ton: 'bleu' },
-  contre: { l: 'Réponse du mandant', ton: 'violet' },
+  /* Werner : pas « mandant » (un mot de métier) ; vaut pour un bailleur comme pour un cédant. */
+  contre: { l: 'Contre-proposition', ton: 'violet' },
   acceptee: { l: 'Offre acceptée', ton: 'vert' },
   refusee: { l: 'Offre non retenue', ton: 'rouge' },
   echue: { l: 'Offre arrivée à échéance', ton: 'gris' },
@@ -413,23 +429,24 @@ export function historiqueFil(fil: DocOffre[], o: { client?: boolean; maintenant
     const n = rangVisible(fil, x);
     const rang = n ? rangOffre(n - 1) : 'offre en préparation';
     const qui = s.origine === 'espace' ? (o.client ? 'depuis votre espace' : 'depuis son espace') : '';
+    const dest = destOffre(d);
     if (total) {
       out.push({
         le: x.created_at, ton: 'or', offre: x.id,
         t: o.client
-          ? `${rang.charAt(0).toUpperCase() + rang.slice(1)} : ${EUR(total)}, frais d’agence compris${s.depuisContre ? ' (vous acceptez la proposition du mandant)' : ''}`
-          : `${rang.charAt(0).toUpperCase() + rang.slice(1)}${qui ? ` ${qui}` : ''} : ${EUR(total)} frais d’agence compris${prix && prix !== total ? ` · ${EUR(prix)} pour le mandant` : ''}${s.depuisContre ? ` · ${pr.accepte} la contre-proposition` : ''}${s.choix === 'relire' ? ' · à relire' : ''}`,
+          ? `${rang.charAt(0).toUpperCase() + rang.slice(1)} : ${montantDit(d, total, { virgule: true })}${s.depuisContre ? ` (vous acceptez la proposition du ${dest})` : ''}`
+          : `${rang.charAt(0).toUpperCase() + rang.slice(1)}${qui ? ` ${qui}` : ''} : ${montantDit(d, total)}${prix && prix !== total ? ` · ${EUR(prix)} pour le mandant` : ''}${s.depuisContre ? ` · ${pr.accepte} la contre-proposition` : ''}${s.choix === 'relire' ? ' · à relire' : ''}`,
       });
     }
     if (x.statut === 'signe' && x.signe_le) out.push({ le: x.signe_le, ton: 'bleu', offre: x.id, t: o.client ? 'Offre signée' : 'Signée par tous' });
     for (const e of envoisOffre(x)) {
-      out.push({ le: e.le, ton: 'bleu', offre: x.id, t: o.client ? 'Transmise au mandant' : e.vendeur ? 'Ajoutée aux offres de la fiche de l’affaire' : `Envoyée à ${e.a.join(', ') || 'l’agence'}` });
+      out.push({ le: e.le, ton: 'bleu', offre: x.id, t: o.client ? `Transmise au ${dest}` : e.vendeur ? 'Ajoutée aux offres de la fiche de l’affaire' : `Envoyée à ${e.a.join(', ') || 'l’agence'}` });
     }
     const r = s.reponse;
     for (const a of s.avant || []) {
       if (a.statut !== 'contre' || !a.montant) continue;
       const tc = totalContre(d, a.montant);
-      out.push({ le: a.le, ton: 'violet', offre: x.id, t: o.client ? `Le mandant propose ${EUR(tc)}, frais d’agence compris` : `Contre-proposition du mandant : ${EUR(a.montant)}` });
+      out.push({ le: a.le, ton: 'violet', offre: x.id, t: o.client ? `Le ${dest} propose ${montantDit(d, tc, { virgule: true })}` : `Contre-proposition du ${dest} : ${offreDeLoyer(d) ? montantDit(d, a.montant) : EUR(a.montant)}` });
     }
     if (r) {
       if (r.statut === 'contre' && r.montant) {
@@ -437,21 +454,21 @@ export function historiqueFil(fil: DocOffre[], o: { client?: boolean; maintenant
         out.push({
           le: r.le, ton: 'violet', offre: x.id,
           t: o.client
-            ? `Le mandant propose ${EUR(tc)}, frais d’agence compris${r.limite ? ` (jusqu’au ${JOUR(r.limite)})` : ''}`
-            : `${tc === r.montant ? `Contre-proposition du mandant : ${EUR(r.montant)}` : `Contre-proposition : ${EUR(r.montant)} pour le mandant, soit ${EUR(tc)} pour ${pr.pour} frais d’agence compris`}${r.limite ? ` · jusqu’au ${JOUR(r.limite)}` : ''}${r.note ? ` · ${r.note}` : ''}`,
+            ? `Le ${dest} propose ${montantDit(d, tc, { virgule: true })}${r.limite ? ` (jusqu’au ${JOUR(r.limite)})` : ''}`
+            : `${tc === r.montant ? `Contre-proposition du ${dest} : ${offreDeLoyer(d) ? montantDit(d, r.montant) : EUR(r.montant)}` : `Contre-proposition : ${EUR(r.montant)} pour le mandant, soit ${EUR(tc)} pour ${pr.pour} frais d’agence compris`}${r.limite ? ` · jusqu’au ${JOUR(r.limite)}` : ''}${r.note ? ` · ${r.note}` : ''}`,
         });
       } else if (r.statut === 'acceptee') {
         /* V3.190 : un accord à un autre prix que l'offre (noté sur la fiche du bien). */
-        const autre = r.montant && total && r.montant !== total ? ` à ${EUR(r.montant)}` : '';
-        out.push({ le: r.le, ton: 'vert', offre: x.id, t: o.client ? `Le mandant accepte votre offre${autre}` : `Acceptée par le mandant${autre}${r.note ? ` · ${r.note}` : ''}` });
+        const autre = r.montant && total && r.montant !== total ? ` à ${offreDeLoyer(d) ? montantDit(d, r.montant) : EUR(r.montant)}` : '';
+        out.push({ le: r.le, ton: 'vert', offre: x.id, t: o.client ? `Le ${dest} accepte votre offre${autre}` : `Acceptée par le ${dest}${autre}${r.note ? ` · ${r.note}` : ''}` });
       } else if (r.statut === 'refusee') {
-        out.push({ le: r.le, ton: 'rouge', offre: x.id, t: o.client ? 'Le mandant n’a pas retenu l’offre' : `Refusée par le mandant${r.note ? ` · ${r.note}` : ''}` });
+        out.push({ le: r.le, ton: 'rouge', offre: x.id, t: o.client ? `Le ${dest} n’a pas retenu l’offre` : `Refusée par le ${dest}${r.note ? ` · ${r.note}` : ''}` });
       }
     }
     if (s.close) out.push({ le: s.close.le, ton: 'gris', offre: x.id, t: o.client ? (s.close.par === 'client' ? 'Vous n’avez pas donné suite' : 'Sans suite') : `Sans suite${s.close.par === 'client' ? ', dit depuis son espace' : ''}` });
     const fin = finOffre(d);
     if (!r && !s.close && !s.remplacee_le && fin && fin.getTime() <= maintenant && (x.statut === 'signe' || !!x.signature)) {
-      out.push({ le: fin.toISOString(), ton: 'gris', offre: x.id, t: o.client ? 'Arrivée à échéance, sans réponse du mandant' : 'Arrivée à échéance sans réponse' });
+      out.push({ le: fin.toISOString(), ton: 'gris', offre: x.id, t: o.client ? `Arrivée à échéance, sans réponse du ${dest}` : 'Arrivée à échéance sans réponse' });
     }
   });
   return out.sort((a, b) => a.le.localeCompare(b.le));
@@ -466,22 +483,26 @@ export function resumeCrm(doc: DocOffre, maintenant = Date.now(), pr: PronomsCrm
   const fin = finOffre(d);
   const env = envoisOffre(doc);
   const agence = estAgence(d);
+  const loyer = offreDeLoyer(d);
+  /* « 480 000 € frais d'agence compris », ou « 45 000 € HT HC / an » (une location). */
+  const m = (x: number) => (loyer ? `${EUR(x)} HT HC / an` : `${EUR(x)} frais d’agence compris`);
+  const mc = (x: number) => (loyer ? `${EUR(x)} / an` : EUR(x));
   switch (e) {
-    case 'a_relire': return `${total ? `${EUR(total)} frais d’agence compris` : 'Son offre'} · préparée dans son espace, à relire puis à envoyer pour signature`;
-    case 'brouillon': return `${total ? `${EUR(total)} frais d’agence compris · ` : ''}brouillon dans Documents`;
-    case 'a_finaliser': return `${total ? `${EUR(total)} frais d’agence compris · ` : ''}à envoyer pour signature`;
-    case 'en_signature': return `${total ? `${EUR(total)} frais d’agence compris · ` : ''}en signature${fin ? `, valable jusqu’au ${JOUR(fin.toISOString())}` : ''}`;
-    case 'signee': return `${total ? `${EUR(total)} frais d’agence compris · ` : ''}${agence ? 'signée : ajoute-la aux offres de la fiche de l’affaire' : 'signée : envoie-la à l’agence'}`;
+    case 'a_relire': return `${total ? m(total) : 'Son offre'} · préparée dans son espace, à relire puis à envoyer pour signature`;
+    case 'brouillon': return `${total ? `${m(total)} · ` : ''}brouillon dans Documents`;
+    case 'a_finaliser': return `${total ? `${m(total)} · ` : ''}à envoyer pour signature`;
+    case 'en_signature': return `${total ? `${m(total)} · ` : ''}en signature${fin ? `, valable jusqu’au ${JOUR(fin.toISOString())}` : ''}`;
+    case 'signee': return `${total ? `${m(total)} · ` : ''}${agence ? 'signée : ajoute-la aux offres de la fiche de l’affaire' : 'signée : envoie-la à l’agence'}`;
     case 'envoyee': return agence
-      ? `${total ? `${EUR(total)} · ` : ''}dans les offres de l’affaire depuis le ${JOUR(env[env.length - 1].le)}${fin ? ` · réponse du mandant avant le ${JOUR(fin.toISOString())}` : ''}`
-      : `${total ? `${EUR(total)} · ` : ''}envoyée le ${JOUR(env[env.length - 1].le)}${fin ? ` · réponse attendue avant le ${JOUR(fin.toISOString())}` : ''}`;
+      ? `${total ? `${mc(total)} · ` : ''}dans les offres de l’affaire depuis le ${JOUR(env[env.length - 1].le)}${fin ? ` · réponse du ${destOffre(d)} avant le ${JOUR(fin.toISOString())}` : ''}`
+      : `${total ? `${mc(total)} · ` : ''}envoyée le ${JOUR(env[env.length - 1].le)}${fin ? ` · réponse attendue avant le ${JOUR(fin.toISOString())}` : ''}`;
     case 'contre': {
       const r = s.reponse;
       if (!r?.montant) return 'Contre-proposition';
       const tc = totalContre(d, r.montant);
-      return `Le mandant propose ${EUR(r.montant)}${tc !== r.montant ? ` (${EUR(tc)} pour ${pr.pour})` : ''} · ${contreDepassee(r, maintenant) ? 'proposition expirée' : 'en attente de sa réponse'}`;
+      return `Le ${destOffre(d)} propose ${mc(r.montant)}${tc !== r.montant ? ` (${EUR(tc)} pour ${pr.pour})` : ''} · ${contreDepassee(r, maintenant) ? 'proposition expirée' : 'en attente de sa réponse'}`;
     }
-    case 'acceptee': return `${s.reponse?.montant || total ? `${EUR(s.reponse?.montant || total || 0)}${agence ? '' : ' frais d’agence compris'} · ` : ''}acceptée le ${JOUR(s.reponse!.le)}`;
+    case 'acceptee': return `${s.reponse?.montant || total ? `${loyer ? m(s.reponse?.montant || total || 0) : `${EUR(s.reponse?.montant || total || 0)}${agence ? '' : ' frais d’agence compris'}`} · ` : ''}acceptée le ${JOUR(s.reponse!.le)}`;
     case 'refusee': return `Refusée le ${JOUR(s.reponse!.le)}`;
     case 'echue': return `Arrivée à échéance${fin ? ` le ${JOUR(fin.toISOString())}` : ''}, sans réponse`;
     case 'sans_suite': return `Sans suite depuis le ${JOUR(s.close!.le)}`;
@@ -509,6 +530,9 @@ export type SaisieOffre = {
   acquereurs: { civilite: string; prenom: string; nom: string; naissanceDate: string; naissanceLieu: string; adresse: string; email: string; telephone: string }[];
   apport: number | null; pret: 'oui' | 'non' | null; pretMontant: number | null; pretDuree: number | null; pretTaux: number | null;
   conditions: string[]; venteBien: string; conditionAutre: string; notaire: string;
+  /* Werner : son activité, l'entrée souhaitée et la franchise (une location),
+     et la société pour laquelle il fait l'offre (reprise de l'offre d'avant). */
+  activite?: string; prise?: string; franchise?: number | null; societe?: string;
 };
 export type OffreEspace = {
   /** L'offre du moment (son document). */
@@ -520,6 +544,8 @@ export type OffreEspace = {
   agence: boolean;
   /** 1 pour la 1re offre… */
   rang: number;
+  /** Werner : une offre de location — un loyer annuel HT HC, les honoraires à part. */
+  location?: boolean;
   total: number | null; prix: number | null; prixAffiche: number | null;
   /** La fin de validité (ISO). */
   fin: string | null;

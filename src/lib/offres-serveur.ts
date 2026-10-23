@@ -12,7 +12,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   lireSuivi, etatDeOffre, filDuBien, offreCourante, totalOffre, prixOffre, envoisOffre, finOffre, totalContre, contreDepassee,
-  historiqueFil, visiblePourClient, rangVisible, brouillonCrmVivant, TETES_OFFRE, ENCOURS,
+  historiqueFil, visiblePourClient, rangVisible, brouillonCrmVivant, TETES_OFFRE, ENCOURS, montantDit, destOffre, offreDeLoyer,
   estAgence, lienAgence, avecAgence, appliquerLignes, idsLignesAgence, COLONNES_LIGNE_AGENCE,
   type DocOffre, type SuiviOffre, type ReponseVendeur, type OffreEspace, type SaisieOffre, type LigneAgence,
 } from './offres';
@@ -217,7 +217,7 @@ export async function offreSigneeParTous(sb: SupabaseClient, doc: { id: string; 
       clientId: doc.client_id, rechercheId: doc.recherche_id, tete: TETES_OFFRE.envoyer, titre,
       detail: lie
         ? `${total ? `${EUR(total)} · ` : ''}à ajouter aux offres de la fiche de l’affaire, depuis « Son offre » (${lie.pb})`
-        : total ? `${EUR(total)} frais d’agence compris${prixOffre(d) !== total ? ` (${EUR(prixOffre(d) || 0)} pour le mandant)` : ''}` : undefined,
+        : total ? `${montantDit(d, total)}${prixOffre(d) !== total ? ` (${EUR(prixOffre(d) || 0)} pour le mandant)` : ''}` : undefined,
     });
     if (pb2) pbs.push('relance « à envoyer » : ' + pb2);
   }
@@ -589,16 +589,18 @@ export async function noterReponse(sb: SupabaseClient, doc: DocOffre, r: Reponse
       const limite = r.limite ? new Date(`${r.limite}T07:00:00Z`) : null;
       const pbC = await poserRelanceOffre(sb, {
         clientId: doc.client_id, rechercheId: doc.recherche_id || null, tete: TETES_OFFRE.contre, titre,
-        detail: `le mandant propose ${EUR(r.montant)}, soit ${EUR(totalContre(d, r.montant))} pour elle : sa réponse ?`,
+        detail: offreDeLoyer(d)
+          ? `le bailleur propose ${montantDit(d, r.montant)} : sa réponse ?`
+          : `le mandant propose ${EUR(r.montant)}, soit ${EUR(totalContre(d, r.montant))} pour elle : sa réponse ?`,
         echeance: limite && limite.getTime() < dans2.getTime() ? (limite.getTime() > Date.now() ? limite : new Date()) : dans2,
       });
       if (pbC) avertissements.push('relance : ' + pbC);
     }
     const ligne = r.statut === 'contre' && r.montant
-      ? { titre: `↩️ Contre-proposition du mandant — ${titre}`, description: `${EUR(r.montant)} pour le mandant, soit ${EUR(totalContre(d, r.montant))} pour le client, frais d’agence compris${r.limite ? ` · valable jusqu’au ${JOUR(r.limite)}` : ''}${r.note ? `\n${r.note}` : ''}` }
+      ? { titre: `↩️ Contre-proposition du ${destOffre(d)} — ${titre}`, description: `${offreDeLoyer(d) ? montantDit(d, r.montant) : `${EUR(r.montant)} pour le mandant, soit ${EUR(totalContre(d, r.montant))} pour le client, frais d’agence compris`}${r.limite ? ` · valable jusqu’au ${JOUR(r.limite)}` : ''}${r.note ? `\n${r.note}` : ''}` }
       : r.statut === 'acceptee'
-        ? { titre: `🤝 Offre acceptée — ${titre}`, description: `${total ? `${EUR(total)} frais d’agence compris` : ''}${prix && prix !== total ? ` · ${EUR(prix)} pour le mandant` : ''}${r.note ? `\n${r.note}` : ''}` }
-        : { titre: `✕ Offre refusée par le mandant — ${titre}`, description: r.note || null };
+        ? { titre: `🤝 Offre acceptée — ${titre}`, description: `${total ? montantDit(d, total) : ''}${prix && prix !== total ? ` · ${EUR(prix)} pour le mandant` : ''}${r.note ? `\n${r.note}` : ''}` }
+        : { titre: `✕ Offre refusée par le ${destOffre(d)} — ${titre}`, description: r.note || null };
     await journal(sb, { client_id: doc.client_id, recherche_id: doc.recherche_id, bien_id: doc.bien_id, type: 'offre_faite', ...ligne, metadata: { document_id: doc.id, reponse: r.statut } });
   }
   if (r.statut === 'refusee') await badgeBien(sb, doc.bien_id, 'visite');
@@ -723,16 +725,18 @@ async function mailClientReponse(sb: SupabaseClient, doc: DocOffre, r: ReponseVe
   const bonjour = `Bonjour${prenom ? ` ${prenom}` : ''},`;
   const total = totalOffre(d);
   let sujet = '', titreMail = '', paras: string[] = [], bouton = 'Ouvrir mon espace';
+  /* Werner : « le bailleur » et un loyer HT HC par an, pour une location. */
+  const dest = destOffre(d);
   if (r.statut === 'contre' && r.montant) {
     const tc = totalContre(d, r.montant);
-    sujet = 'Le mandant a répondu à votre offre';
-    titreMail = 'Le mandant a répondu à votre offre';
+    sujet = `Le ${dest} a répondu à votre offre`;
+    titreMail = `Le ${dest} a répondu à votre offre`;
     paras = [
       bonjour,
-      `Le mandant a répondu à votre offre pour « ${titre} » : il propose ${EUR(tc)}, frais d’agence compris${r.limite ? `, jusqu’au ${JOUR(r.limite)}` : ''}.`,
+      `Le ${dest} a répondu à votre offre pour « ${titre} » : il propose ${montantDit(d, tc, { virgule: true })}${r.limite ? `, jusqu’au ${JOUR(r.limite)}` : ''}.`,
       'Depuis votre espace, vous pouvez accepter, faire une nouvelle offre ou ne pas donner suite. Je reste disponible si vous voulez en parler.',
     ];
-    bouton = 'Voir la réponse du mandant';
+    bouton = `Voir la réponse du ${dest}`;
   } else if (r.statut === 'acceptee') {
     /* V3.190 : un accord noté sur la fiche du bien à un autre prix que l'offre. */
     const accord = r.montant || total;
@@ -740,15 +744,15 @@ async function mailClientReponse(sb: SupabaseClient, doc: DocOffre, r: ReponseVe
     titreMail = '🎉 Félicitations, votre offre est acceptée !';
     paras = [
       `${bonjour.replace(/,$/, '')}, félicitations !`,
-      `Le mandant a accepté votre offre${accord ? ` de ${EUR(accord)}, frais d’agence compris,` : ''} pour « ${titre} ». C’est une très belle nouvelle.`,
+      `Le ${dest} a accepté votre offre${accord ? ` de ${montantDit(d, accord, { virgule: true })},` : ''} pour « ${titre} ». C’est une très belle nouvelle.`,
       'Je vous appelle très vite pour organiser la suite, jusqu’à la signature.',
     ];
   } else {
-    sujet = 'Réponse du mandant à votre offre';
-    titreMail = 'Réponse du mandant à votre offre';
+    sujet = `Réponse du ${dest} à votre offre`;
+    titreMail = `Réponse du ${dest} à votre offre`;
     paras = [
       bonjour,
-      `Le mandant n’a pas retenu votre offre pour « ${titre} ».`,
+      `Le ${dest} n’a pas retenu votre offre pour « ${titre} ».`,
       'Si vous le souhaitez, vous pouvez en faire une nouvelle depuis votre espace, ou on en parle ensemble. La recherche continue de toute façon.',
     ];
   }
@@ -765,7 +769,7 @@ export async function alerteOffreARelire(sb: SupabaseClient, doc: { id: string; 
   const nom = await nomClient(sb, doc.client_id);
   const total = totalOffre(doc.donnees);
   const lien = `${CRM()}/?page=fiche&client=${encodeURIComponent(doc.client_id)}`;
-  const quoi = total ? `${EUR(total)} frais d’agence compris` : 'son offre';
+  const quoi = total ? montantDit(doc.donnees, total) : 'son offre';
   const e = await envoyerMail({
     a: ALERTES(), deLaPartDe: 'crm',
     sujet: `💶 ${nom} a préparé une offre à relire · ${total ? EUR(total) : titre}`,
@@ -792,6 +796,8 @@ function saisieDe(d: Donnees | null | undefined): SaisieOffre | null {
     pretMontant: num(d, 'pretMontant'), pretDuree: num(d, 'pretDuree'), pretTaux: num(d, 'pretTaux'),
     conditions: Array.isArray(d.conditions) ? (d.conditions as unknown[]).map(String) : [],
     venteBien: txt(d, 'venteBien'), conditionAutre: txt(d, 'conditionAutre'), notaire: txt(d, 'notaire'),
+    activite: txt(d, 'activite'), prise: txt(d, 'prise'), franchise: num(d, 'franchise'),
+    societe: d.qui === 'sci' ? txt(d, 'sciNom') : '',
   };
 }
 
@@ -829,7 +835,7 @@ export async function offresPourEspace(sb: SupabaseClient, clientId: string, bie
       const env = envoisOffre(courant);
       const r = s.reponse;
       out[bienId] = {
-        id: courant.id, etat, enPreparation, agence: estAgence(d), rang: rangVisible(fil, courant) || 1,
+        id: courant.id, etat, enPreparation, agence: estAgence(d), rang: rangVisible(fil, courant) || 1, location: offreDeLoyer(d),
         /* Acceptée à un autre prix (noté sur la fiche du bien) : le prix convenu. */
         total: etat === 'acceptee' && r?.montant ? r.montant : totalOffre(d), prix: prixOffre(d), prixAffiche: num(d, 'prixAffiche'),
         fin: fin ? fin.toISOString() : null, envoyeLe: env.length ? env[env.length - 1].le : null,

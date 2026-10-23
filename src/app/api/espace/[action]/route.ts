@@ -791,7 +791,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
         const motifs = [...raisonsValides(issue, body.motifs), ...(issue === 'revoir' ? disposPropres(body.dispos) : [])];
         const mot = nettoie(body.mot, 500) || null;
         const p = Number(body.prix);
-        const prix = issue === 'offre' && Number.isFinite(p) && p >= 10_000 && p <= 50_000_000 ? Math.round(p) : null;
+        /* Werner : un loyer annuel peut être sous 10 000 €. */
+        const prix = issue === 'offre' && Number.isFinite(p) && p >= 1_000 && p <= 50_000_000 ? Math.round(p) : null;
         const le = new Date().toISOString();
 
         /* V3.43 : seulement si personne n'a répondu entre-temps (un double

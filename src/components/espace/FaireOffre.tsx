@@ -23,6 +23,12 @@
    `CarteOffre` : où en est son offre, avec l'historique et le geste du
    moment — la même carte dans « Vos visites », sur la fiche du bien et sur
    l'accueil. Aucun mot de métier, jamais le nom d'une agence (AGENTS.md §5).
+
+   Werner (23 octobre 2026) : pour une LOCATION, il propose un loyer annuel
+   HT HC, tel quel — ses honoraires ne s'y ajoutent pas (ils se paient une
+   fois, à la signature du bail) ; pas de prêt, mais son activité, l'entrée
+   souhaitée et la franchise. Les conditions à cocher sont celles que l'offre
+   sait écrire, selon la nature (CONDITIONS).
    ════════════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -41,6 +47,8 @@ export type BienOffre = {
   honoOffre: HonoOffre;
   /** V3.190 : un bien que son conseiller vend lui-même (il présente l'offre au vendeur). */
   agence?: boolean;
+  /** Werner : la nature de l'affaire (location, cession_bail, fonds, murs…). */
+  nature?: string | null;
 };
 /** `depuis` : l'offre du fil qu'elle suit. `contre` : la proposition du
     vendeur (une autre offre ou son acceptation ne passent pas par la relecture).
@@ -87,14 +95,44 @@ export function calculOffre(h: HonoOffre, total: number): { prix: number | null;
 }
 /* Son total face au prix affiché : ce qu'il gagne (la phrase reprise au
    moment de signer, ecartPrixAffiche). */
-function ecart(total: number, affiche: number | null, prixVendeur?: number | null): { t: string; gain: boolean } | null {
+function ecart(total: number, affiche: number | null, prixVendeur?: number | null, loc = false): { t: string; gain: boolean } | null {
   if (!affiche || !total) return null;
   const d = affiche - total;
+  /* Un loyer : par an, face au loyer affiché. */
+  if (loc) {
+    if (Math.abs(d) < 1) return { t: `Au loyer affiché (${EUR(affiche)} par an)`, gain: false };
+    return d > 0
+      ? { t: `Soit ${EUR(d)} de moins par an que le loyer affiché (${EUR(affiche)})`, gain: true }
+      : { t: `Soit ${EUR(-d)} de plus par an que le loyer affiché (${EUR(affiche)})`, gain: false };
+  }
   if (prixVendeur && Math.abs(prixVendeur - affiche) < 1 && d < 0) return { t: 'Le montant affiché, nos honoraires en plus', gain: false };
   if (Math.abs(d) < 1) return { t: `Au montant affiché (${EUR(affiche)})`, gain: false };
   return d > 0
     ? { t: `Soit ${EUR(d)} de moins que le montant affiché (${EUR(affiche)})`, gain: true }
     : { t: `Soit ${EUR(-d)} de plus que le montant affiché (${EUR(affiche)})`, gain: false };
+}
+
+/* Werner : une location — ses honoraires sur le loyer annuel, à part. */
+const honoSurLoyer = (h: HonoOffre, loyer: number) => (h.mode === 'taux' ? Math.round((loyer * h.val) / 100) : h.mode === 'forfait' ? h.val : 0);
+const motHonoLoyer = (h: HonoOffre) => (h.mode === 'taux'
+  ? `${String(h.val).replace('.', ',')} % HT du loyer annuel`
+  : h.mode === 'forfait' ? `un forfait de ${EUR(h.val)} HT` : '');
+export const AIDE_CONTRE_LOYER = 'C’est le loyer annuel, hors taxes et hors charges, que propose le bailleur. Nos honoraires, s’il y en a, restent à part : ils se paient une seule fois, à la signature du bail.';
+/* Les conditions qu'il peut poser : celles que l'offre sait écrire, selon la
+   nature (src/lib/actes/offre-achat.ts) ; « Une autre condition » en plus. */
+/* `l` : la case ; `r` : la même, dans le récapitulatif (« sous réserve … »). */
+type Cond = { v: string; l: string; r: string; aide?: string };
+function conditionsPour(nature: string | null | undefined): Cond[] {
+  if (nature === 'location') return [
+    { v: 'autorisations', l: 'Sous réserve des autorisations pour mon activité', r: 'des autorisations pour votre activité', aide: 'Urbanisme, enseigne, établissement recevant du public' },
+    { v: 'financement', l: 'Sous réserve du financement de mes travaux', r: 'du financement de vos travaux' },
+  ];
+  if (nature === 'cession_bail' || nature === 'fonds') return [
+    { v: 'bailleur', l: 'Sous réserve de l’accord du bailleur sur la cession', r: 'de l’accord du bailleur sur la cession' },
+    { v: 'destination', l: 'Sous réserve de l’accord du bailleur pour mon activité', r: 'de l’accord du bailleur pour votre activité' },
+    { v: 'licence', l: 'Sous réserve du transfert de la licence', r: 'du transfert de la licence' },
+  ];
+  return [];
 }
 
 /* Les messages du serveur, dits simplement. */
@@ -236,6 +274,13 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
   const accepter = !!mode.accepter && !!contre;
   const h = bien.honoOffre;
   const affiche = bien.prix;
+  /* Werner : une location (un loyer annuel HT HC), une reprise (droit au bail, fonds). */
+  const loc = bien.nature === 'location';
+  const cession = bien.nature === 'cession_bail' || bien.nature === 'fonds';
+  const MIN = loc ? 1_000 : 10_000;
+  /* « 45 000 € HT HC par an », ou « 480 000 € ». */
+  const dit = (x: number) => (loc ? `${EUR(x)} HT HC par an` : EUR(x));
+  const conditions = conditionsPour(bien.nature);
 
   const [etape, setEtape] = useState<Etape>('prix');
   const haut = useRef<HTMLDivElement>(null);
@@ -247,12 +292,16 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
   /* « Proposer le prix affiché » : le prix de l'annonce part tel quel au
      vendeur (pas d'arrondi qui le ferait passer au-dessus). */
   const [auPrixChoisi, setAuPrixChoisi] = useState(false);
-  const auPrix = affiche ? totalPourPrix(honoDonnees(h), affiche) : null;
+  const auPrix = affiche ? (loc ? affiche : totalPourPrix(honoDonnees(h), affiche)) : null;
   const total = accepter && contre ? contre.total : chiffres(totalTxt);
-  const calc = useMemo(() => (accepter && contre ? { prix: contre.prix, hono: contre.total - contre.prix }
-    : auPrixChoisi && affiche && auPrix && total === auPrix ? { prix: affiche, hono: auPrix - affiche }
-      : calculOffre(h, total)), [accepter, contre, h, total, auPrixChoisi, affiche, auPrix]);
-  const gain = ecart(total, affiche, calc.prix);
+  const calc = useMemo(() => {
+    /* Un loyer : écrit tel quel sur l'offre ; ses honoraires, à part, se calculent dessus. */
+    if (loc) return { prix: total || null, hono: total ? honoSurLoyer(h, total) : 0 };
+    return accepter && contre ? { prix: contre.prix, hono: contre.total - contre.prix }
+      : auPrixChoisi && affiche && auPrix && total === auPrix ? { prix: affiche, hono: auPrix - affiche }
+        : calculOffre(h, total);
+  }, [loc, accepter, contre, h, total, auPrixChoisi, affiche, auPrix]);
+  const gain = ecart(total, affiche, calc.prix, loc);
 
   /* 2. Ses informations : celles de l'offre d'avant, sinon son mandat */
   const depart = (saisie?.acquereurs?.length ? saisie.acquereurs : identite).slice(0, 4).map(versMandant);
@@ -268,11 +317,17 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
   const [pretMontant, setPretMontant] = useState(espaces(String(saisie?.pretMontant ?? '')));
   const [pretDuree, setPretDuree] = useState(String(saisie?.pretDuree ?? 25));
   const [pretTaux, setPretTaux] = useState(saisie?.pretTaux != null ? String(saisie.pretTaux).replace('.', ',') : '');
-  const [vente, setVente] = useState(!!saisie?.conditions?.includes('vente'));
-  const [venteBien, setVenteBien] = useState(saisie?.venteBien || '');
+  /* Les conditions qu'il coche (celles de sa nature), et la sienne. */
+  const [conds, setConds] = useState<string[]>(() => (saisie?.conditions || []).filter(c => conditions.some(x => x.v === c)));
   const [autre, setAutre] = useState(!!saisie?.conditions?.includes('autre'));
   const [conditionAutre, setConditionAutre] = useState(saisie?.conditionAutre || '');
   const [notaire, setNotaire] = useState(saisie?.notaire || '');
+  /* Une location : son activité, l'entrée souhaitée, la franchise ; une reprise : son activité. */
+  const [activite, setActivite] = useState(saisie?.activite || '');
+  const [prise, setPrise] = useState(saisie?.prise || '');
+  const [franchise, setFranchise] = useState(saisie?.franchise ? String(saisie.franchise) : '');
+  const [errActivite, setErrActivite] = useState('');
+  const societe = (saisie?.societe || '').trim();
 
   /* 3. Le récapitulatif */
   const [validite, setValidite] = useState(dans(VALIDITE_JOURS));
@@ -303,7 +358,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
   /* Après la 1re étape : si tout est déjà là (une offre d'avant), droit au récapitulatif. */
   const suitePrix = () => {
     if (!accepter) {
-      if (total < 10_000) { setErrPrix('Indiquez le montant total de votre offre, honoraires compris.'); return; }
+      if (total < MIN) { setErrPrix(loc ? 'Indiquez le loyer annuel que vous proposez, hors taxes et hors charges.' : 'Indiquez le montant total de votre offre, honoraires compris.'); return; }
       if (affiche && total > affiche * 2) { setErrPrix('Ce montant semble très élevé : vérifiez-le.'); return; }
     }
     setErrPrix('');
@@ -312,6 +367,13 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
   const suiteVous = () => {
     const e = controler();
     setErrs(e);
+    /* Une location : le bail se fait pour une activité — elle est sur l'offre. */
+    if (loc && !activite.trim()) {
+      setErrActivite('Indiquez votre activité : le bail se fait pour elle.');
+      setErreur('Il manque quelques informations : elles sont en rouge.');
+      return;
+    }
+    setErrActivite('');
     const premier = Object.keys(e).map(Number).sort((a, b) => a - b)[0];
     if (premier !== undefined) { setOuvert(premier); setErreur('Il manque quelques informations : elles sont en rouge.'); return; }
     setErreur(''); setOuvert(null);
@@ -330,8 +392,10 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
         pretMontant: pret === 'oui' ? chiffres(pretMontant) || null : null,
         pretDuree: pret === 'oui' ? Number(pretDuree) || null : null,
         pretTaux: pret === 'oui' && pretTaux.trim() ? Number(pretTaux.replace(',', '.')) : null,
-        conditions: [vente ? 'vente' : '', autre ? 'autre' : ''].filter(Boolean),
-        venteBien: vente ? venteBien : '', conditionAutre: autre ? conditionAutre : '', notaire,
+        conditions: [...conds, autre ? 'autre' : ''].filter(Boolean),
+        conditionAutre: autre ? conditionAutre : '', notaire,
+        ...(loc || cession ? { activite: activite.trim() } : {}),
+        ...(loc ? { prise, franchise: franchise.trim() ? Number(franchise) : null } : {}),
         validite, validiteHeure: '18:00',
       },
     });
@@ -383,7 +447,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
       <span className="ofr-bt">
         <b>{bien.titre}</b>
         <span>{bien.meta}</span>
-        {affiche ? <span className="ofr-aff">{`Montant affiché : ${EUR(affiche)}`}</span> : null}
+        {affiche ? <span className="ofr-aff">{loc ? `Loyer affiché : ${EUR(affiche)} HT HC par an` : `Montant affiché : ${EUR(affiche)}`}</span> : null}
       </span>
     </div>
   );
@@ -397,7 +461,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
         <div className="mdt-corps mdt-fini">
           <div className="mdt-sceau"><Ic n="plume" t={30} /></div>
           <h3>Votre offre est prête</h3>
-          <p className="mdt-p">{`Il ne reste qu’à la signer : vous recevez un code par e-mail, puis vous signez du doigt. Votre offre de ${EUR(total)} part dès qu’elle est signée.`}</p>
+          <p className="mdt-p">{`Il ne reste qu’à la signer : vous recevez un code par e-mail, puis vous signez du doigt. Votre offre de ${dit(total)} part dès qu’elle est signée.`}</p>
           {autres.length > 0 && (
             <div className="mdt-info"><Ic n="mail" t={16} /><span>{`${autres.join(' et ')} ${autres.length > 1 ? 'reçoivent leur' : 'reçoit son'} propre lien par e-mail, pour signer à ${autres.length > 1 ? 'leur' : 'son'} tour.`}</span></div>
           )}
@@ -417,12 +481,81 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
           <div className="mdt-ok"><Ic n="check" t={34} /></div>
           <h3>C’est envoyé à votre conseiller</h3>
           <p className="mdt-p">{fait.repli
-            ? `La signature n’a pas pu partir tout de suite : Werner reprend votre offre de ${EUR(total)} et vous l’envoie pour signature. Vous recevrez un e-mail.`
+            ? `La signature n’a pas pu partir tout de suite : Werner reprend votre offre de ${dit(total)} et vous l’envoie pour signature. Vous recevrez un e-mail.`
             : fait.force
-              ? `Werner relit votre offre de ${EUR(total)} et finalise votre dossier avec vous. Il vous l’envoie ensuite pour signature : vous recevrez un e-mail.`
-              : `Werner relit votre offre de ${EUR(total)}. Il vous l’envoie ensuite pour signature : vous recevrez un e-mail, et elle vous attendra dans votre espace.`}</p>
+              ? `Werner relit votre offre de ${dit(total)} et finalise votre dossier avec vous. Il vous l’envoie ensuite pour signature : vous recevrez un e-mail.`
+              : `Werner relit votre offre de ${dit(total)}. Il vous l’envoie ensuite pour signature : vous recevrez un e-mail, et elle vous attendra dans votre espace.`}</p>
           <div className="ofr-rassure"><Ic n="bouclier" t={18} /><span>{bien.agence ? 'Il la présente ensuite, et vous prévient dès qu’il a la réponse.' : 'Il défend ensuite votre offre, et vous prévient dès qu’il a la réponse.'}</span></div>
           <button type="button" className="btn or mdt-plein" onClick={onFermer}>Revenir à mon espace</button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── 1. Le loyer (Werner : une location) ──
+     Un loyer annuel HT HC, écrit tel quel sur l'offre. Ses honoraires, s'il
+     y en a, se disent à part : ils ne s'ajoutent pas au loyer. */
+  if (etape === 'prix' && loc) {
+    const ok = total >= MIN;
+    return (
+      <div className="mdt">
+        {tete}
+        {barre}
+        <div className="mdt-corps">
+          {leBien}
+          {accepter && contre ? (
+            <>
+              <h3>La contre-proposition</h3>
+              <div className="mdt-total">
+                <div className="t"><Explique titre="La contre-proposition" texte={AIDE_CONTRE_LOYER}>{'Loyer proposé par le bailleur'}</Explique></div>
+                <div className="v">{EUR(contre.total)}</div>
+                <div className="d">{`hors taxes et hors charges, par an · soit ${EUR(Math.round(contre.total / 12))} par mois`}</div>
+                {gain?.gain && <div className="g">{gain.t}</div>}
+              </div>
+              {mode.derniere ? <p className="mdt-p petit">{`Votre dernière offre : ${EUR(mode.derniere)} par an${contre.limite ? ` · la contre-proposition vaut jusqu’au ${jourLong(contre.limite)}` : ''}.`}</p> : null}
+              {calc.hono > 0 && <p className="mdt-p petit">{`Nos honoraires restent à part : ${EUR(calc.hono)} HT, une seule fois, à la signature du bail.`}</p>}
+              <p className="mdt-p">{'Pour l’accepter, vous signez une nouvelle offre à ce loyer. Votre conseiller la transmet aussitôt.'}</p>
+              <button type="button" className="btn or mdt-plein" onClick={suitePrix}>{`J’accepte ${EUR(contre.total)} par an`}</button>
+            </>
+          ) : (
+            <>
+              <h3>{contre || mode.derniere ? 'Votre nouvelle offre' : 'Votre offre'}</h3>
+              <p className="mdt-p">{'Le loyer que vous proposez au bailleur, pour une année.'}</p>
+              {(contre || mode.derniere) && (
+                <div className="ofr-avant">
+                  {mode.derniere ? <span><i className="pt or" />{`Votre dernière offre : ${EUR(mode.derniere)} par an`}</span> : null}
+                  {contre ? <span><i className="pt violet" />{`Contre-proposition : ${EUR(contre.total)} par an`}</span> : null}
+                </div>
+              )}
+              <label className={'ofr-saisie' + (errPrix ? ' rouge' : '')}>
+                <span className="l">Votre loyer annuel, hors taxes et hors charges</span>
+                <span className="ofr-eu grand">
+                  <input inputMode="numeric" autoFocus value={totalTxt} placeholder="Votre loyer"
+                    onChange={e => { setTotalTxt(espaces(e.target.value)); setErrPrix(''); setAuPrixChoisi(false); }} aria-describedby="ofr-calc" />
+                  <i>€</i>
+                </span>
+                {errPrix && <span className="e">{errPrix}</span>}
+              </label>
+              {auPrix && !contre ? (
+                <button type="button" className="ofr-auprix" onClick={() => { setTotalTxt(espaces(String(auPrix))); setErrPrix(''); setAuPrixChoisi(true); }}>
+                  <Ic n="etiquette" t={15} /><span>{`Proposer le loyer affiché (${EUR(auPrix)} par an)`}</span>
+                </button>
+              ) : null}
+              <div className="ofr-calc" id="ofr-calc" aria-live="polite" data-vide={ok ? undefined : '1'}>
+                <LigneCalc l="Soit, par mois" v={ok ? EUR(Math.round(total / 12)) : '—'}
+                  aide="Le même loyer, divisé par douze. Il est hors taxes et hors charges : les charges, et la TVA si le bail y est soumis, s’ajoutent selon le bail." />
+                {h.mode !== 'aucun' && (
+                  <LigneCalc l="Nos honoraires, à part" v={ok ? `${EUR(calc.hono)} HT` : '—'}
+                    aide={`Ceux de votre conseiller sur ce local : ${motHonoLoyer(h)}. Ils ne s’ajoutent pas au loyer : ils se paient une seule fois, à la signature du bail, et ne figurent pas sur l’offre présentée au bailleur.`} />
+                )}
+                <LigneCalc l="Votre loyer annuel, sur l’offre" v={ok ? EUR(total) : '—'} tot
+                  aide="C’est le loyer annuel, hors taxes et hors charges, écrit sur votre offre et présenté au bailleur." />
+                {ok && gain ? <div className={'ofr-gain' + (gain.gain ? '' : ' neutre')}>{gain.gain && <Ic n="check" t={14} />}<span>{gain.t}</span></div> : null}
+              </div>
+              <div className="ofr-rassure"><Ic n="bouclier" t={18} /><span>{bien.agence ? RASSURE(true) : 'Votre conseiller défend votre offre auprès du bailleur, et vous prévient dès qu’il a la réponse.'}</span></div>
+              <button type="button" className="btn or mdt-plein" onClick={suitePrix}>Continuer</button>
+            </>
+          )}
         </div>
       </div>
     );
@@ -508,6 +641,7 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
           <p className="mdt-p">{'Elles figurent sur l’offre. Vérifiez-les, et complétez ce qui manque.'}</p>
 
           <div className="mdt-q2">Qui fait l’offre&nbsp;?</div>
+          {societe && <div className="mdt-info"><Ic n="info" t={16} /><span>{`Pour la société ${societe}, comme votre offre précédente. Pour en changer, dites-le à votre conseiller.`}</span></div>}
           <div className="mdt-qui">
             {liste.map((p, i) => {
               const ok = completeDe(i);
@@ -544,33 +678,59 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
             <div className="mdt-info"><Ic n="groupe" t={16} /><span>{'Chacun signe avec son propre code : les autres signataires reçoivent leur lien par e-mail dès que l’offre est prête.'}</span></div>
           )}
 
-          <div className="mdt-q2">Votre financement</div>
-          <div className="mdt-seg">
-            <button type="button" data-on={pret === 'oui' ? '1' : undefined} onClick={() => setPret('oui')}><Ic n="banque" t={17} /><span>Avec un prêt</span></button>
-            <button type="button" data-on={pret === 'non' ? '1' : undefined} onClick={() => setPret('non')}><Ic n="euro" t={17} /><span>Sans prêt</span></button>
-          </div>
-          <div className="mdt-deux">
-            <ChampEuros lib={pret === 'oui' ? 'Votre apport (facultatif)' : 'Vos fonds propres (facultatif)'} val={apport} onChange={setApport} placeholder="Ex. : 100 000" />
-            {pret === 'oui' && <ChampEuros lib="Montant du prêt (facultatif)" val={pretMontant} onChange={setPretMontant} placeholder="Ex. : 400 000" />}
-          </div>
-          {pret === 'oui' && (
-            <div className="mdt-deux">
-              <Champ lib="Durée du prêt, en années" val={pretDuree} onChange={v => setPretDuree(v.replace(/[^\d]/g, '').slice(0, 2))} mode="numeric" />
-              <Champ lib="Taux maximum, en % (facultatif)" val={pretTaux} onChange={v => setPretTaux(v.replace(/[^\d,.]/g, '').slice(0, 5))} mode="text" placeholder="Ex. : 3,8" />
-            </div>
+          {(loc || cession) && (
+            <>
+              <div className="mdt-q2">Votre projet</div>
+              <Champ lib={loc ? 'Votre activité dans le local' : 'Votre activité dans le local (facultatif)'} val={activite} onChange={v => { setActivite(v); setErrActivite(''); }} err={errActivite}
+                placeholder={loc ? 'Ex. : restauration rapide, sans extraction' : 'Ex. : boulangerie-pâtisserie'} auto="off" />
+              {loc && (
+                <div className="mdt-deux">
+                  <label className="mdt-ch">
+                    <span className="l">Entrée souhaitée (facultatif)</span>
+                    <input type="date" value={prise} min={dans(1)} onChange={e => setPrise(e.target.value)} />
+                  </label>
+                  <Champ lib="Franchise de loyer, en mois (facultatif)" val={franchise} onChange={v => setFranchise(v.replace(/[^\d]/g, '').slice(0, 2))} mode="numeric" placeholder="Ex. : 3" />
+                </div>
+              )}
+              {loc && <div className="mdt-info"><Ic n="info" t={16} /><span>{'La franchise : des mois sans loyer au début du bail, que vous demandez au bailleur (pour vos travaux, par exemple). Il peut l’accepter ou non.'}</span></div>}
+            </>
           )}
-          {pret === 'oui' && <div className="mdt-info"><Ic n="info" t={16} /><span>{'L’obtention de votre prêt sera une condition de l’accord : c’est ce qui vous protège si la banque dit non.'}</span></div>}
+
+          {!loc && (
+            <>
+              <div className="mdt-q2">Votre financement</div>
+              <div className="mdt-seg">
+                <button type="button" data-on={pret === 'oui' ? '1' : undefined} onClick={() => setPret('oui')}><Ic n="banque" t={17} /><span>Avec un prêt</span></button>
+                <button type="button" data-on={pret === 'non' ? '1' : undefined} onClick={() => setPret('non')}><Ic n="euro" t={17} /><span>Sans prêt</span></button>
+              </div>
+              <div className="mdt-deux">
+                <ChampEuros lib={pret === 'oui' ? 'Votre apport (facultatif)' : 'Vos fonds propres (facultatif)'} val={apport} onChange={setApport} placeholder="Ex. : 100 000" />
+                {pret === 'oui' && <ChampEuros lib="Montant du prêt (facultatif)" val={pretMontant} onChange={setPretMontant} placeholder="Ex. : 400 000" />}
+              </div>
+              {pret === 'oui' && (
+                <div className="mdt-deux">
+                  <Champ lib="Durée du prêt, en années" val={pretDuree} onChange={v => setPretDuree(v.replace(/[^\d]/g, '').slice(0, 2))} mode="numeric" />
+                  <Champ lib="Taux maximum, en % (facultatif)" val={pretTaux} onChange={v => setPretTaux(v.replace(/[^\d,.]/g, '').slice(0, 5))} mode="text" placeholder="Ex. : 3,8" />
+                </div>
+              )}
+              {pret === 'oui' && <div className="mdt-info"><Ic n="info" t={16} /><span>{'L’obtention de votre prêt sera une condition de l’accord : c’est ce qui vous protège si la banque dit non.'}</span></div>}
+            </>
+          )}
 
           <div className="mdt-q2">Une condition particulière&nbsp;? (facultatif)</div>
-          <button type="button" className="mdt-coche mdt-leger" data-on={vente ? '1' : undefined} onClick={() => setVente(x => !x)}>
-            <span className="bx">{vente && <Ic n="check" t={14} />}</span><span>{'Sous réserve de la vente de mon affaire actuelle'}</span>
-          </button>
-          {vente && <Champ lib="Laquelle ?" val={venteBien} onChange={setVenteBien} placeholder="Ex. : mon restaurant de la rue de Charonne" auto="off" />}
+          {conditions.map(c => {
+            const on = conds.includes(c.v);
+            return (
+              <button key={c.v} type="button" className="mdt-coche mdt-leger" data-on={on ? '1' : undefined} onClick={() => setConds(l => (on ? l.filter(x => x !== c.v) : [...l, c.v]))}>
+                <span className="bx">{on && <Ic n="check" t={14} />}</span><span>{c.aide ? `${c.l} (${c.aide.toLowerCase()})` : c.l}</span>
+              </button>
+            );
+          })}
           <button type="button" className="mdt-coche mdt-leger" data-on={autre ? '1' : undefined} onClick={() => setAutre(x => !x)}>
             <span className="bx">{autre && <Ic n="check" t={14} />}</span><span>Une autre condition</span>
           </button>
-          {autre && <Champ lib="Laquelle ?" val={conditionAutre} onChange={setConditionAutre} placeholder="Ex. : sous réserve de l’accord du bailleur pour…" auto="off" />}
-          <Champ lib="Votre notaire ou avocat, si vous en avez un (facultatif)" val={notaire} onChange={setNotaire} placeholder="Ex. : Maître Durand, à Paris" auto="off" />
+          {autre && <Champ lib="Laquelle ?" val={conditionAutre} onChange={setConditionAutre} placeholder={loc ? 'Ex. : sous réserve de pouvoir installer une enseigne en façade' : 'Ex. : sous réserve de l’accord du bailleur pour…'} auto="off" />}
+          <Champ lib={loc ? 'Votre avocat, si vous en avez un (facultatif)' : 'Votre notaire ou avocat, si vous en avez un (facultatif)'} val={notaire} onChange={setNotaire} placeholder="Ex. : Maître Durand, à Paris" auto="off" />
 
           {erreur && <div className="mdt-erreur">{erreur}</div>}
           <button type="button" className="btn or mdt-plein" onClick={suiteVous}>Continuer</button>
@@ -581,7 +741,9 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
 
   /* ── 3. Le récapitulatif, et les deux chemins ── */
   const liste = personnes();
-  const conds = [vente ? `la vente de votre affaire actuelle${venteBien.trim() ? ` (${venteBien.trim()})` : ''}` : '', autre && conditionAutre.trim() ? conditionAutre.trim() : ''].filter(Boolean);
+  /* « sous réserve de l'accord du bailleur sur la cession et du transfert de la licence · <la sienne> » */
+  const reserves = conditions.filter(c => conds.includes(c.v)).map(c => c.r);
+  const lesConds = [reserves.length ? `sous réserve ${reserves.join(' et ')}` : '', autre && conditionAutre.trim() ? conditionAutre.trim() : ''].filter(Boolean);
   const finCalc = `${jourLong(validite)} à 18 h`;
   return (
     <div className="mdt">
@@ -589,14 +751,23 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
       {barre}
       <div className="mdt-corps">
         <h3>Votre offre, en clair</h3>
-        <div className="mdt-total">
-          <div className="t">{'Votre offre, honoraires compris'}</div>
-          <div className="v">{EUR(total)}</div>
-          <div className="d">{calc.hono > 0
-            ? `dont ${EUR(calc.prix)} écrits sur l’offre et ${EUR(calc.hono)} de nos honoraires · hors frais d’acte`
-            : 'rien de plus à payer, hors frais d’acte'}</div>
-          {gain?.gain && <div className="g">{gain.t}</div>}
-        </div>
+        {loc ? (
+          <div className="mdt-total">
+            <div className="t">{'Votre loyer annuel'}</div>
+            <div className="v">{EUR(total)}</div>
+            <div className="d">{`hors taxes et hors charges, soit ${EUR(Math.round(total / 12))} par mois${calc.hono > 0 ? ` · nos honoraires à part : ${EUR(calc.hono)} HT, à la signature du bail` : ''}`}</div>
+            {gain?.gain && <div className="g">{gain.t}</div>}
+          </div>
+        ) : (
+          <div className="mdt-total">
+            <div className="t">{'Votre offre, honoraires compris'}</div>
+            <div className="v">{EUR(total)}</div>
+            <div className="d">{calc.hono > 0
+              ? `dont ${EUR(calc.prix)} écrits sur l’offre et ${EUR(calc.hono)} de nos honoraires · hors frais d’acte`
+              : 'rien de plus à payer, hors frais d’acte'}</div>
+            {gain?.gain && <div className="g">{gain.t}</div>}
+          </div>
+        )}
         <div className="mdt-lignes">
           <div className="mdt-ligne">
             <div className="t">Le local</div>
@@ -605,14 +776,26 @@ export default function FaireOffre({ bien, mode = {}, identite, saisie, apportDo
           </div>
           <div className="mdt-ligne">
             <div className="t">{liste.length > 1 ? 'Les signataires' : 'Le signataire'}</div>
-            <div className="v">{liste.map(nomDe).join(', ')}</div>
+            <div className="v">{`${liste.map(nomDe).join(', ')}${societe ? `, pour la société ${societe}` : ''}`}</div>
             <div className="d"><button type="button" className="ofr-mod" onClick={() => setEtape('vous')}>Modifier</button></div>
           </div>
-          <div className="mdt-ligne">
-            <div className="t">Le financement</div>
-            <div className="v">{pret === 'oui' ? `Avec un prêt${chiffres(pretMontant) ? ` de ${EUR(chiffres(pretMontant))}` : ''}` : 'Sans prêt'}</div>
-            <div className="d">{[chiffres(apport) ? `${pret === 'oui' ? 'apport' : 'fonds propres'} : ${EUR(chiffres(apport))}` : '', conds.length ? `sous réserve de ${conds.join(' et de ')}` : ''].filter(Boolean).join(' · ') || 'aucune condition particulière'}</div>
-          </div>
+          {loc ? (
+            <div className="mdt-ligne">
+              <div className="t">Votre projet</div>
+              <div className="v">{activite.trim() ? majuscule(activite.trim()) : 'Activité à préciser'}</div>
+              <div className="d">{[
+                /^\d{4}-\d{2}-\d{2}$/.test(prise) ? `entrée souhaitée le ${jourLong(prise)}` : 'entrée à convenir',
+                Number(franchise) > 0 ? `franchise de ${Number(franchise)} mois demandée` : '',
+                ...lesConds,
+              ].filter(Boolean).join(' · ')}</div>
+            </div>
+          ) : (
+            <div className="mdt-ligne">
+              <div className="t">Le financement</div>
+              <div className="v">{pret === 'oui' ? `Avec un prêt${chiffres(pretMontant) ? ` de ${EUR(chiffres(pretMontant))}` : ''}` : 'Sans prêt'}</div>
+              <div className="d">{[cession && activite.trim() ? `pour votre activité : ${activite.trim()}` : '', chiffres(apport) ? `${pret === 'oui' ? 'apport' : 'fonds propres'} : ${EUR(chiffres(apport))}` : '', ...lesConds].filter(Boolean).join(' · ') || 'aucune condition particulière'}</div>
+            </div>
+          )}
           <div className="mdt-ligne">
             <div className="t"><Explique titre="La date de validité" texte={`La réponse doit arriver avant cette date. Sans réponse d’ici là, votre offre tombe d’elle-même : vous n’avez rien à faire. ${VALIDITE_JOURS} jours, c’est l’usage ; vous pouvez choisir une date entre demain et dans trente jours.`}>{'Valable jusqu’au'}</Explique></div>
             <div className="v">{majuscule(finCalc)}</div>
@@ -729,6 +912,8 @@ export function CarteOffre({ o, indispo = false, historique: histOuvert = false,
   const peutRetirer = o.etat === 'a_relire' && !!onSansSuite;
   const peutNouvelle = finie && !o.enPreparation && !indispo && !!onNouvelle;
   const plusQue = o.contre && o.total ? o.contre.total - o.total : 0;
+  /* Werner : un loyer se dit par an. */
+  const an = o.location ? ' / an' : '';
 
   const sansSuite = async () => {
     if (!onSansSuite) return;
@@ -748,7 +933,7 @@ export function CarteOffre({ o, indispo = false, historique: histOuvert = false,
         {o.total ? (
           <span className="ofr-c-m">
             {!sansEtiquette && <small>{o.rang > 1 ? `votre ${o.rang}e offre` : 'votre offre'}</small>}
-            <b className="tab">{EUR(o.total)}</b>
+            <b className="tab">{`${EUR(o.total)}${an}`}</b>
           </span>
         ) : null}
       </div>
@@ -761,9 +946,11 @@ export function CarteOffre({ o, indispo = false, historique: histOuvert = false,
       ) : contreActive && o.contre ? (
         <>
           <div className="ofr-contre">
-            <div className="t"><Explique titre="La contre-proposition" texte={aideContre(o.agence, o.contre.total > o.contre.prix)}>{'Montant proposé, honoraires compris'}</Explique></div>
-            <div className="v tab">{EUR(o.contre.total)}</div>
-            <div className="d">{[plusQue > 0 ? `soit ${EUR(plusQue)} de plus que votre offre` : '', o.contre.limite ? `${o.contre.depassee ? 'proposition expirée le' : 'valable jusqu’au'} ${jourCourt(o.contre.limite)}` : ''].filter(Boolean).join(' · ')}</div>
+            <div className="t">{o.location
+              ? <Explique titre="La contre-proposition" texte={AIDE_CONTRE_LOYER}>{'Loyer proposé par le bailleur'}</Explique>
+              : <Explique titre="La contre-proposition" texte={aideContre(o.agence, o.contre.total > o.contre.prix)}>{'Montant proposé, honoraires compris'}</Explique>}</div>
+            <div className="v tab">{`${EUR(o.contre.total)}${an}`}</div>
+            <div className="d">{[o.location ? 'hors taxes et hors charges' : '', plusQue > 0 ? `soit ${EUR(plusQue)} de plus${o.location ? ' par an' : ''} que votre offre` : '', o.contre.limite ? `${o.contre.depassee ? 'proposition expirée le' : 'valable jusqu’au'} ${jourCourt(o.contre.limite)}` : ''].filter(Boolean).join(' · ')}</div>
           </div>
           <p className="ofr-c-p">{o.contre.depassee ? phraseOffre(o) : 'Vous pouvez l’accepter, faire une autre offre, ou ne pas donner suite. Votre conseiller reste disponible pour en parler.'}</p>
         </>
@@ -780,7 +967,7 @@ export function CarteOffre({ o, indispo = false, historique: histOuvert = false,
       )}
       {contreActive && o.contre && !confirmer && (
         <div className="ofr-acts">
-          {!o.contre.depassee && onAccepter && <button type="button" className="btn or ofr-b" onClick={onAccepter}>{`Accepter ${EUR(o.contre.total)}`}</button>}
+          {!o.contre.depassee && onAccepter && <button type="button" className="btn or ofr-b" onClick={onAccepter}>{`Accepter ${EUR(o.contre.total)}${o.location ? ' par an' : ''}`}</button>}
           {onAutre && <button type="button" className={'btn ofr-b ' + (o.contre.depassee ? 'or' : 'fant')} onClick={onAutre}>Faire une autre offre</button>}
           {onSansSuite && <button type="button" className="btn lien ofr-ns" onClick={() => setConfirmer(true)}>Ne pas donner suite</button>}
         </div>

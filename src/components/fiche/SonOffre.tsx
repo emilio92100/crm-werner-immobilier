@@ -5,10 +5,10 @@ import { supabase } from '@/lib/supabase';
 import { signalerEchec, verifie } from '@/lib/ecritures';
 import { signalerMaj } from '@/lib/intentions';
 import { modele, aujourdhui, type Donnees } from '@/lib/actes';
-import { VALIDITE_JOURS, honorairesSurPrix } from '@/lib/actes/offre-achat';
+import { VALIDITE_JOURS, honorairesOffre, honorairesSurPrix } from '@/lib/actes/offre-achat';
 import {
   etatDeOffre, offreCourante, filsParBien, historiqueFil, resumeCrm, lireSuivi, envoisOffre, finOffre, totalContre, totalOffre, prixOffre,
-  contreDepassee, rangOffre, rangVisible, etatCrmDe, estAgence, lienAgence, appliquerLignes, idsLignesAgence, COLONNES_LIGNE_AGENCE,
+  contreDepassee, rangOffre, rangVisible, etatCrmDe, estAgence, lienAgence, appliquerLignes, idsLignesAgence, COLONNES_LIGNE_AGENCE, offreDeLoyer, destOffre,
   type DocOffre, type LigneAgence, type Ton,
 } from '@/lib/offres';
 import { colonnesListe, lierOffreAgence, repondreOffre, sansSuiteOffre, supprimerBrouillon, type DocumentRow } from '@/components/documents/outils';
@@ -161,6 +161,8 @@ export default function SonOffre({ fil, bienId, client, seul, onChange, onDocume
   /* La même numérotation que dans son espace (un brouillon du CRM n'en a pas). */
   const rang = rangVisible(docs, courant);
   const total = totalOffre(d), prix = prixOffre(d);
+  /* Werner : une location — un loyer annuel HT HC, tes honoraires à part. */
+  const loc = offreDeLoyer(d);
   const env = envoisOffre(courant);
   const fin = finOffre(d);
   const histo = historiqueFil(docs, { pr: { pour: p.pour, accepte: p.accepte.toLowerCase() } }).reverse();
@@ -175,7 +177,8 @@ export default function SonOffre({ fil, bienId, client, seul, onChange, onDocume
     if (!m || en) return;
     const totalC = accepte && r?.montant ? totalContre(d, r.montant) : 0;
     if (!window.confirm(accepte && r?.montant
-      ? `Préparer son offre à la proposition du mandant : ${EUR(r.montant)} pour le mandant, soit ${EUR(totalC)} pour ${p.pour}, honoraires compris ?\n\nElle s’ouvre dans l’éditeur ; tu l’envoies ensuite pour signature. Dans son espace, ${p.il} voit « Nouvelle offre en préparation ».`
+      ? loc ? `Préparer son offre au loyer proposé par le bailleur : ${EUR(r.montant)} HT HC par an ?\n\nElle s’ouvre dans l’éditeur ; tu l’envoies ensuite pour signature. Dans son espace, ${p.il} voit « Nouvelle offre en préparation ».`
+      : `Préparer son offre à la proposition du mandant : ${EUR(r.montant)} pour le mandant, soit ${EUR(totalC)} pour ${p.pour}, honoraires compris ?\n\nElle s’ouvre dans l’éditeur ; tu l’envoies ensuite pour signature. Dans son espace, ${p.il} voit « Nouvelle offre en préparation ».`
       : `Préparer une nouvelle offre, reprise de celle-ci (sans le prix) ?\n\nElle s’ouvre dans l’éditeur ; tu l’envoies ensuite pour signature.`)) return;
     setEn(accepte ? 'accepte' : 'nouvelle'); setMessage(null);
     try {
@@ -276,7 +279,15 @@ export default function SonOffre({ fil, bienId, client, seul, onChange, onDocume
       {ouvert && (
         <div className={s.corps}>
           {/* Les montants, pour toi seul */}
-          {total && agence ? (
+          {total && loc ? (
+            /* Une location : le loyer proposé ; tes honoraires, à part, à la signature du bail. */
+            <div className={o.montants}>
+              <div><span>Son loyer proposé</span><b>{`${EUR(total)} HT HC / an`}</b></div>
+              <div><span>Soit, par mois</span><b>{EUR(Math.round(total / 12))}</b></div>
+              <div><span>{agence ? 'Tes honoraires (mandat)' : 'Tes honoraires, à part'}</span><b>{agence ? (honoV ? `${EUR(honoV)} HT` : '—') : honorairesOffre(d) ? `${EUR(honorairesOffre(d))} HT` : '—'}</b></div>
+              {fin && <div><span>{'Valable jusqu’au'}</span><b>{JOUR(fin.toISOString())}</b></div>}
+            </div>
+          ) : total && agence ? (
             /* Ton mandat : pas d'honoraires de recherche ; ceux du mandat de vente, au prix offert. */
             <div className={o.montants}>
               <div><span>Son offre</span><b>{EUR(total)}</b></div>
@@ -297,7 +308,7 @@ export default function SonOffre({ fil, bienId, client, seul, onChange, onDocume
             <div className={o.contre}>
               <div className={o.contreT}>{`Contre-proposition du ${JOUR(r.le)}${r.limite ? ` · valable jusqu’au ${JOUR(r.limite)}` : ''}`}</div>
               <div className={o.contreV}>
-                <span><b>{EUR(r.montant)}</b>{agence ? ' demandés par le mandant' : ' pour le mandant'}</span>
+                <span><b>{loc ? `${EUR(r.montant)} HT HC / an` : EUR(r.montant)}</b>{loc ? ' proposés par le bailleur' : agence ? ' demandés par le mandant' : ' pour le mandant'}</span>
                 {totalContre(d, r.montant) !== r.montant && <span>{`soit ${EUR(totalContre(d, r.montant))} pour ${p.pour}, dont ${EUR(totalContre(d, r.montant) - r.montant)} de tes honoraires`}</span>}
               </div>
               {expiree && <div className={o.alerte}>{'Sa date limite est passée : la proposition ne tient plus. Une nouvelle offre, ou « Sans suite ».'}</div>}
@@ -452,14 +463,18 @@ function FenetreReponse({ doc, client, onFermer, onFait }: {
   const m = Number(montant.replace(/[^\d]/g, '')) || 0;
   const total = totalOffre(d), prix = prixOffre(d);
   const hono = m ? honorairesSurPrix(d, m) : 0;
+  /* Werner : une location — le bailleur propose un loyer annuel HT HC ; tes honoraires restent à part. */
+  const loc = offreDeLoyer(d);
+  const dest = destOffre(d);
+  const MIN = loc ? 1_000 : 10_000;
   const titre = [d.adresse, d.ville].filter(x => typeof x === 'string' && x).join(', ');
   const mail = statut === 'acceptee' ? '« 🎉 Félicitations, votre offre est acceptée ! »'
-    : statut === 'contre' ? '« Le mandant a répondu à votre offre », avec sa proposition et les trois choix'
-      : '« Réponse du mandant à votre offre » : non retenue, la recherche continue';
+    : statut === 'contre' ? `« Le ${dest} a répondu à votre offre », avec sa proposition et les trois choix`
+      : `« Réponse du ${dest} à votre offre » : non retenue, la recherche continue`;
 
   async function enregistrer() {
     if (envoi) return;
-    if (statut === 'contre' && m < 10_000) { setErreur('Le prix de la contre-proposition, pour le mandant.'); return; }
+    if (statut === 'contre' && m < MIN) { setErreur(loc ? 'Le loyer annuel que propose le bailleur, HT HC.' : 'Le prix de la contre-proposition, pour le mandant.'); return; }
     setEnvoi(true); setErreur('');
     try {
       const r = await repondreOffre({ id: doc.id, statut, montant: statut === 'contre' ? m : null, limite: statut === 'contre' && avecLimite ? limite : null, note: note.trim() || null });
@@ -474,18 +489,18 @@ function FenetreReponse({ doc, client, onFermer, onFait }: {
   if (typeof document === 'undefined') return null;
   return createPortal(
     <div className={s.voile} onClick={e => { if (e.target === e.currentTarget && !envoi) onFermer(); }}>
-      <div className={s.fenetre} role="dialog" aria-modal="true" aria-label="Réponse du mandant">
+      <div className={s.fenetre} role="dialog" aria-modal="true" aria-label={`Réponse du ${dest}`}>
         <div className={s.fTete}>
           <span className={s.fIc} aria-hidden="true"><Icone nom="euro" taille={19} epaisseur={2} /></span>
           <div style={{ minWidth: 0 }}>
-            <h2>Réponse du mandant</h2>
-            <p>{[titre, total ? `son offre : ${EUR(total)}` : ''].filter(Boolean).join(' · ')}</p>
+            <h2>{`Réponse du ${dest}`}</h2>
+            <p>{[titre, total ? `son offre : ${EUR(total)}${loc ? ' HT HC / an' : ''}` : ''].filter(Boolean).join(' · ')}</p>
           </div>
           <button type="button" className={s.fFermer} onClick={onFermer} aria-label="Fermer" disabled={envoi}><Icone nom="fermer" taille={16} epaisseur={2.4} /></button>
         </div>
         <div className={s.fCorps}>
           <section className={s.section}>
-            <div className={s.lib}><Icone nom="coche" taille={14} epaisseur={2.2} />Le mandant</div>
+            <div className={s.lib}><Icone nom="coche" taille={14} epaisseur={2.2} />{`Le ${dest}`}</div>
             <div className={s.pastilles}>
               {REPONSES_V.map(x => (
                 <button key={x.k} type="button" className={s.pastille} aria-pressed={statut === x.k} data-ton={x.k === 'acceptee' ? 'disponible' : x.k === 'refusee' ? 'vendu' : undefined}
@@ -496,7 +511,25 @@ function FenetreReponse({ doc, client, onFermer, onFait }: {
             </div>
           </section>
 
-          {statut === 'contre' && (
+          {statut === 'contre' && loc && (
+            <section className={s.section}>
+              <div className={s.lib}><Icone nom="euro" taille={14} epaisseur={2.2} />Son loyer</div>
+              <div className={s.grille}>
+                <label className={s.champ}><span>Loyer annuel, HT HC</span>
+                  <input inputMode="numeric" autoFocus value={montant ? Number(montant.replace(/[^\d]/g, '')).toLocaleString('fr-FR') : ''}
+                    onChange={e => { setMontant(e.target.value.replace(/[^\d]/g, '').slice(0, 9)); setErreur(''); }} placeholder="Ex. : 42 000" /></label>
+                <div className={o.calc}>
+                  <span>Soit, par mois</span>
+                  <b>{m >= MIN ? EUR(Math.round(m / 12)) : '—'}</b>
+                  <small>{m >= MIN ? (hono ? `tes honoraires restent à part : ${EUR(hono)} HT, à la signature du bail` : 'hors taxes et hors charges') : 'tape son loyer'}</small>
+                </div>
+              </div>
+              <div className={s.aide}>{`Le loyer annuel que propose le bailleur, hors taxes et hors charges. Tes honoraires ne s’y ajoutent pas.${prix ? ` Son offre était de ${EUR(prix)} par an.` : ''}`}</div>
+              <label className={s.coche}><input type="checkbox" checked={avecLimite} onChange={e => setAvecLimite(e.target.checked)} />{'Sa proposition a une date limite'}</label>
+              {avecLimite && <ChoixJour date={limite} onDate={setLimite} min={cleDuJour()} etiquette="Valable jusqu’au" />}
+            </section>
+          )}
+          {statut === 'contre' && !loc && (
             <section className={s.section}>
               <div className={s.lib}><Icone nom="euro" taille={14} epaisseur={2.2} />Son prix</div>
               <div className={s.grille}>
@@ -527,7 +560,7 @@ function FenetreReponse({ doc, client, onFermer, onFait }: {
         <div className={s.fPied}>
           <span className={s.fNote}><Icone nom="cadenas" taille={14} epaisseur={2.1} />{'Ta note reste interne.'}</span>
           <button type="button" className={s.btn} onClick={onFermer} disabled={envoi}>Annuler</button>
-          <button type="button" className={s.btnFort} onClick={() => { void enregistrer(); }} disabled={envoi || (statut === 'contre' && m < 10_000)}>{envoi ? 'Enregistrement…' : 'Enregistrer'}</button>
+          <button type="button" className={s.btnFort} onClick={() => { void enregistrer(); }} disabled={envoi || (statut === 'contre' && m < MIN)}>{envoi ? 'Enregistrement…' : 'Enregistrer'}</button>
         </div>
       </div>
     </div>,

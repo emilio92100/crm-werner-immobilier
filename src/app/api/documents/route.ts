@@ -403,7 +403,9 @@ async function traiterPost(req: NextRequest) {
       const statut = body.statut === 'acceptee' || body.statut === 'refusee' || body.statut === 'contre' ? body.statut : null;
       if (!statut) return ko('Réponse inconnue');
       const montant = Math.round(Number(body.montant));
-      if (statut === 'contre' && !(Number.isFinite(montant) && montant >= 10_000 && montant <= 100_000_000)) return ko('Le prix de la contre-proposition, pour le mandant.');
+      /* Werner : une location — un loyer annuel, qui peut être sous 10 000 €. */
+      const loyer = (doc.donnees as Record<string, unknown> | null)?.nature === 'location';
+      if (statut === 'contre' && !(Number.isFinite(montant) && montant >= (loyer ? 1_000 : 10_000) && montant <= 100_000_000)) return ko(loyer ? 'Le loyer annuel que propose le bailleur, HT HC.' : 'Le prix de la contre-proposition, pour le mandant.');
       const limite = typeof body.limite === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.limite) ? body.limite : null;
       const note = typeof body.note === 'string' ? body.note.replace(/\s+/g, ' ').trim().slice(0, 500) || null : null;
       let r;

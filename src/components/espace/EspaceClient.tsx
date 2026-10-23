@@ -1894,6 +1894,7 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
     titre: b.titre || [b.pieces ? `${b.pieces} espace${b.pieces > 1 ? 's' : ''}` : '', b.ville || b.secteur].filter(Boolean).join(' · ') || 'Le local',
     meta: [b.pieces ? `${b.pieces} espace${b.pieces > 1 ? 's' : ''}` : '', b.surface ? `${b.surface} m²` : '', b.ville || b.secteur].filter(Boolean).join(' · '),
     photo: (b.photos || [])[0] || null, prix: b.prix, honoOffre: b.honoOffre || { mode: 'aucun', val: 0 }, agence: !!b.agence,
+    nature: b.pro?.nature || null,
   });
   /* Les offres rendues par le serveur : la carte de chaque bien se met à jour. */
   function majOffres(offres: Record<string, OffreEspace>) {
@@ -4414,7 +4415,9 @@ function visiteSansAvis(mesV: VisiteE[], biens: Bien[]): { v: VisiteE; b: Bien }
 type ActionsOffre = { onAccepter?: () => void; onAutre?: () => void; onNouvelle?: () => void; onSansSuite?: () => Promise<boolean> };
 
 /* Les quatre choix, puis la question qui va avec. */
-function AvisVisite({ v, onRepondre, sansNote, sansSuite, onFaireOffre }: { v: VisiteE; onRepondre: Repondre; sansNote?: boolean;
+function AvisVisite({ v, onRepondre, sansNote, sansSuite, onFaireOffre, location = false }: { v: VisiteE; onRepondre: Repondre; sansNote?: boolean;
+  /* Werner : une location — le montant en tête est un loyer annuel HT HC. */
+  location?: boolean;
   /* V3.48 : le bien n'est plus disponible — ni offre, ni deuxième visite. */
   sansSuite?: boolean;
   /* V3.189 : il peut préparer son offre lui-même (pas un bien de l'agence). */
@@ -4480,7 +4483,7 @@ function AvisVisite({ v, onRepondre, sansNote, sansSuite, onFaireOffre }: { v: V
     if (!choix) return;
     setEnCours(true); setRate(false);
     const p = Number(String(prix).replace(/[^\d]/g, ''));
-    const ok = await onRepondre(v, choix, motifs, mot.trim(), choix === 'offre' && p >= 10000 ? p : null, choix === 'revoir' ? dispos : []);
+    const ok = await onRepondre(v, choix, motifs, mot.trim(), choix === 'offre' && p >= (location ? 1000 : 10000) ? p : null, choix === 'revoir' ? dispos : []);
     setEnCours(false);
     if (ok) { setEnvoye(choix); vibrer(); } else setRate(true);
   }
@@ -4488,13 +4491,13 @@ function AvisVisite({ v, onRepondre, sansNote, sansSuite, onFaireOffre }: { v: V
     <div className="vv-q">
       <span className={'etiq ' + ETIQ_ISSUE[choix]}><Ico n={ICO_ISSUE[choix]} t={13} />{ISSUES[choix].choix}</span>
       <div className="apres-avis vv-suite">
-        <div className="aa-t">{q.t}</div>
-        <p className="aa-p">{q.p}</p>
+        <div className="aa-t">{choix === 'offre' && location ? 'Vous avez un loyer en tête ?' : q.t}</div>
+        <p className="aa-p">{choix === 'offre' && location ? 'Facultatif : le loyer annuel, hors taxes et hors charges. Votre conseiller vous appelle pour préparer l’offre avec vous : le loyer et les conditions.' : q.p}</p>
         {choix === 'offre' && (
           <label className="vv-offre-prix">
-            <input inputMode="numeric" value={prix} placeholder="Ex : 660 000"
+            <input inputMode="numeric" value={prix} placeholder={location ? 'Ex : 36 000' : 'Ex : 660 000'}
               onChange={e => { const d = e.target.value.replace(/[^\d]/g, '').slice(0, 9); setPrix(d ? Number(d).toLocaleString('fr-FR') : ''); }} />
-            <span>€</span>
+            <span>{location ? '€ / an' : '€'}</span>
           </label>
         )}
         {raisons.length > 0 && (
@@ -4689,7 +4692,7 @@ function CarteVisite({ b, v, onOuvrir, onCompteRendu, onRepondre, onFaireOffre, 
               <button type="button" className="ofr-mini" onClick={onFaireOffre}><Ico n="euro" t={14} /><span>{v.issue === 'offre' ? 'Préparer mon offre moi-même' : 'Faire une offre'}</span></button>
             )}
           </>
-        ) : <AvisVisite v={v} onRepondre={onRepondre} sansNote sansSuite={indispo(b)} onFaireOffre={onFaireOffre} />}
+        ) : <AvisVisite v={v} onRepondre={onRepondre} sansNote sansSuite={indispo(b)} onFaireOffre={onFaireOffre} location={b.pro?.nature === 'location'} />}
       {v.compteRendu && (
         <button type="button" className="vv-cr" onClick={onCompteRendu || onOuvrir}>
           <Ico n="note" t={14} /><span>{'Le compte rendu de votre conseiller'}</span><Ico n="fleche" t={14} />
@@ -4718,7 +4721,7 @@ function CarteAvisAccueil({ b, v, onRepondre, onOuvrir, onVoir, onFaireOffre }: 
             <span className="vv-meta">{[b.pieces === 1 ? '1 espace' : b.pieces && `${b.pieces} espaces`, b.surface && `${b.surface} m²`, b.ville || b.secteur].filter(Boolean).join(' · ')}</span>
           </span>
         </button>
-        <AvisVisite v={v} onRepondre={onRepondre} onFaireOffre={onFaireOffre} />
+        <AvisVisite v={v} onRepondre={onRepondre} onFaireOffre={onFaireOffre} location={b.pro?.nature === 'location'} />
         <button type="button" className="vv-retour" onClick={onVoir}>Voir toutes mes visites</button>
       </div>
     </section>
@@ -5612,7 +5615,7 @@ function FicheBien({ b, client, crit, onFermer, onAvis, onPartager, onCarte, vis
                 ? <CarteOffre o={b.offreSuivi} indispo={indispo(b)} historique {...(actionsOffre || {})} />
                 : avecEtat && v
                   ? <div className="vf-etat"><EtatVisite b={bv} v={v} enLigne /></div>
-                  : v && onRepondreVisite ? <AvisVisite v={v} onRepondre={onRepondreVisite} sansSuite={indispo(b)} onFaireOffre={onFaireOffre} /> : null}
+                  : v && onRepondreVisite ? <AvisVisite v={v} onRepondre={onRepondreVisite} sansSuite={indispo(b)} onFaireOffre={onFaireOffre} location={b.pro?.nature === 'location'} /> : null}
               {peutRevoir && v && (
                 <DemandeRevisite dejaRevoir={v.issue === 'revoir'} aDispos={v.issue === 'revoir' && v.motifs.some(m => !estRaison('revoir', m))}
                   onEnvoyer={async (motifs: string[], dispos: string[], mot: string) => {
