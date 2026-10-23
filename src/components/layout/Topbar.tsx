@@ -7,7 +7,7 @@ import styles from './Topbar.module.css';
 import { EVT_MAJ, demanderNouveauClient, demanderNouveauMail, demanderNouveauRdv, demanderOuvertureFiche } from '@/lib/intentions';
 import { lireBiensSuivis, parBoutDeNumero, parNom, estUnNumero, ouEnEst, telNational, texteDernier, type BienSuivi } from '@/lib/agences-suivies';
 import { Icone } from '@/components/fiche/ParcoursBien';
-import { estAcheteur, estArchive, lirePro, lireStructure, typeDe, typesDe } from '@/lib/contacts';
+import { estAcheteur, estAncienAcheteur, estArchive, lirePro, lireStructure, typeDe, typesDe } from '@/lib/contacts';
 import { personne2De, adressesDossierDe } from '@/lib/foyer';
 import { etapeDe, titreBien, villeAffichee, type Donnees } from '@/lib/biens-vente';
 import { euros } from '@/lib/mandat';
@@ -259,8 +259,8 @@ export default function Topbar({ onNavigate, onMenu, menuReduit = false, onBascu
   /* V3.134 : un point de couleur dessiné plutôt qu'un émoji (qui rendait une
      bille 3D, différente d'un téléphone à l'autre). */
   const STATUT_LIB: Record<string, string> = {
-    prospect: 'Prospect', actif: 'Actif', suspendu: 'Suspendu',
-    bien_trouve: 'Local trouvé', perdu: 'Perdu', offre_ecrite: 'Offre écrite',
+    prospect: 'En recherche', actif: 'Accompagné', suspendu: 'En pause',
+    bien_trouve: 'Local trouvé avec moi', perdu: 'Recherche arrêtée', offre_ecrite: 'Offre écrite',
   };
 
   /* La première photo de chaque bien trouvé : dans `biens` ou dans la veille. */
@@ -405,7 +405,7 @@ export default function Topbar({ onNavigate, onMenu, menuReduit = false, onBascu
                         return (
                           <span className={styles.searchEtiqT} style={{ background: `${coul}14`, color: `color-mix(in srgb, ${coul} 78%, #25272b)`, borderColor: `${coul}33` }}>
                             <i style={{ background: coul }} />
-                            {lib ? `Demandeur – ${lib}` : 'Demandeur'}
+                            {`${estAncienAcheteur(c) ? 'Ancien demandeur' : 'Demandeur'}${lib ? ` – ${lib}` : ''}`}
                           </span>
                         );
                       })()}
