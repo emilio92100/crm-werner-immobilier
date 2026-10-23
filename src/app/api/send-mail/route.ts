@@ -10,6 +10,7 @@ import { personnaliser, conseillerDe } from '@/lib/mail-variables';
 import { LIEN_POLICE_MAIL, LOGO_BLANC_MAIL, LOGO_MAIL } from '@/lib/mail-charte';
 import { adresseVente } from '@/lib/adresse-vente';
 import { prixDuBien } from '@/lib/honoraires-bien';
+import { prixAvantBaisse } from '@/lib/baisse-prix';
 import { versBienAcheteur, type BienVente } from '@/lib/biens-vente';
 import { avecRemises, noterRemises } from '@/lib/remise-mail';
 import { NATURES, libPrix, unitePrix, type NatureAffaire, type ProBien } from '@/lib/affaires';
@@ -57,6 +58,8 @@ interface BienLite {
   bien_vente_id?: string | null;
   photos?: string[] | null;
   score?: number | null;
+  /* V3.242 : l'ancien montant, barré quand il a baissé depuis la présentation. */
+  historique_prix?: unknown;
   /* Werner : ce que l'affaire dit d'elle-même (biens.pro, src/lib/affaires.ts),
      vide pour une annonce trouvée ailleurs. */
   pro?: Partial<ProBien> | null;
@@ -64,7 +67,7 @@ interface BienLite {
 
 /* Les colonnes d'un local lues pour un mail. `pro` vient de
    outils/sql/werner-commerce.sql : sans elle, on relit sans (lireAvecPro). */
-const COLS_BIEN = 'id, titre, ville, code_postal, type_bien, surface, nb_pieces, nb_chambres, etage, prix_vendeur, prix_acquereur, bien_vente_id, photos, score';
+const COLS_BIEN = 'id, titre, ville, code_postal, type_bien, surface, nb_pieces, nb_chambres, etage, prix_vendeur, prix_acquereur, bien_vente_id, photos, score, historique_prix';
 const sansColonnePro = (e: { message?: string } | null | undefined) => !!e && /\bpro\b/.test(e.message || '') && /column|schema cache/i.test(e.message || '');
 
 function fmt(n?: number | null) {
@@ -165,6 +168,17 @@ function ordonner<T extends BienLite>(biens: T[]): T[] {
     .map(v => v.b);
 }
 
+/* V3.242 : un loyer ou un prix qui a baissé depuis que le local a été
+   présenté — la pastille et l'ancien montant barré, au-dessus du nouveau
+   (src/lib/baisse-prix.ts). */
+function baisseHtml(b: BienLite, prix: number | null, grand: boolean): string {
+  const avant = prixAvantBaisse(b, prix);
+  if (!avant) return '';
+  const u = uniteDe(b);
+  const quoi = natureDe(b) === 'location' ? 'Baisse de loyer' : 'Baisse de prix';
+  return `<div style="margin-bottom:${grand ? '8' : '4'}px;"><span style="display:inline-block;background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;border-radius:99px;padding:2px 10px;font-size:11px;font-weight:800;vertical-align:middle;">${quoi}</span><span style="font-size:${grand ? '15' : '13'}px;color:#8FA3BF;text-decoration:line-through;font-weight:700;margin-left:8px;vertical-align:middle;">${insecable(`${fmt(avant)} €${u ? ` ${u}` : ''}`)}</span></div>`;
+}
+
 function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; token?: string | null; recherche?: string | null }): string {
   const { corps, biens } = opts;
   const corpsHtml = escapeHtml(corps).replace(/\n/g, '<br/>');
@@ -223,7 +237,7 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
       </td></tr>
       ${statsRow ? `<tr><td class="bord" style="padding:14px 28px 4px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #eeeeed;border-bottom:1px solid #eeeeed;"><tr>${statsRow}</tr></table></td></tr>` : ''}
       <tr><td class="bord" style="padding:18px 28px 28px;">
-        ${prix ? `<div style="font-size:26px;font-weight:800;color:${BLEU};line-height:1.15;">${montantHtml(b, prix, 26)}</div><div style="font-size:11px;color:${DORE_TEXTE};font-weight:600;margin:6px 0 ${dessous.length ? '4' : '18'}px;">${libMontant(b)}</div>${dessous.map((t, i) => `<div style="font-size:12px;color:#5B6B80;margin:0 0 ${i === dessous.length - 1 ? '18' : '3'}px;">${insecable(escapeHtml(t))}</div>`).join('')}` : ''}
+        ${prix ? `${baisseHtml(b, prix, true)}<div style="font-size:26px;font-weight:800;color:${BLEU};line-height:1.15;">${montantHtml(b, prix, 26)}</div><div style="font-size:11px;color:${DORE_TEXTE};font-weight:600;margin:6px 0 ${dessous.length ? '4' : '18'}px;">${libMontant(b)}</div>${dessous.map((t, i) => `<div style="font-size:12px;color:#5B6B80;margin:0 0 ${i === dessous.length - 1 ? '18' : '3'}px;">${insecable(escapeHtml(t))}</div>`).join('')}` : ''}
         <a href="${lienBien(b, token, rech)}" style="display:block;background:${BLEU};color:#ffffff;text-decoration:none;text-align:center;padding:15px;border-radius:11px;font-size:15px;font-weight:600;">Consulter le local &rarr;</a>
       </td></tr>`;
   }
@@ -246,7 +260,7 @@ function buildHtml(opts: { prenom: string; corps: string; biens: BienLite[]; tok
             <div style="font-size:15px;font-weight:700;color:${BLEU};margin-bottom:3px;">${escapeHtml(titreOf(b))}</div>
             ${loc ? `<div style="font-size:12px;color:#aba7a3;margin-bottom:6px;"><span style="color:${DORE};">&#9679;</span> ${escapeHtml(loc)}</div>` : ''}
             ${carac ? `<div style="font-size:12px;color:#5B6B80;margin-bottom:8px;">${escapeHtml(carac)}</div>` : ''}
-            ${prix ? `<div style="font-size:17px;font-weight:800;color:${BLEU};margin-bottom:${honoOf(b) || sous ? '2' : '8'}px;">${montantHtml(b, prix, 17)}</div>${sous ? `<div style="font-size:11.5px;color:#5B6B80;margin-bottom:${honoOf(b) ? '2' : '8'}px;">${insecable(escapeHtml(sous))}</div>` : ''}${honoOf(b) ? `<div style="font-size:11.5px;color:#5B6B80;margin-bottom:8px;">+ ${fmt(prixDuBien(b).hono)} € HT de nos honoraires</div>` : ''}` : ''}
+            ${prix ? `${baisseHtml(b, prix, false)}<div style="font-size:17px;font-weight:800;color:${BLEU};margin-bottom:${honoOf(b) || sous ? '2' : '8'}px;">${montantHtml(b, prix, 17)}</div>${sous ? `<div style="font-size:11.5px;color:#5B6B80;margin-bottom:${honoOf(b) ? '2' : '8'}px;">${insecable(escapeHtml(sous))}</div>` : ''}${honoOf(b) ? `<div style="font-size:11.5px;color:#5B6B80;margin-bottom:8px;">+ ${fmt(prixDuBien(b).hono)} € HT de nos honoraires</div>` : ''}` : ''}
             <a href="${lienBien(b, token, rech)}" style="color:${DORE_TEXTE};text-decoration:none;font-size:13px;font-weight:700;">Consulter le local &rarr;</a>
           </td>
         </tr></table>
@@ -1027,7 +1041,7 @@ async function envoyer(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { client_ids, recherche_id, objet, corps, biens_ids, destinataires_override, mode, visites_ids, apercu, ventes_ids } = body as {
+    const { client_ids, recherche_id, objet, corps, biens_ids, destinataires_override, mode, visites_ids, apercu, ventes_ids, baisse } = body as {
       client_ids: string[];
       recherche_id?: string;
       objet: string;
@@ -1038,6 +1052,7 @@ async function envoyer(req: NextRequest) {
       visites_ids?: string[];         // mode 'visites' : les visites à annoncer
       apercu?: boolean;               // modes 'visites' (V3.134) et 'biens' (V3.148) : rend le mail tel que le client le recevra, sans rien envoyer ni noter
       ventes_ids?: string[];          // aperçu 'biens' (V3.148) : les biens en vente qui partiront
+      baisse?: boolean; // V3.242 : « Prévenir le client » d'une baisse de loyer ou de prix (un seul local) : le Suivi le dit
     };
     /* L'aperçu n'existe que pour le rappel de visite (V3.134) et l'envoi de
        biens de l'agence (V3.148) : ailleurs, il ne doit jamais être pris pour
@@ -1539,7 +1554,7 @@ async function envoyer(req: NextRequest) {
             : biensClient.length === 0
             ? `✉️ Mail envoyé — ${objetFinal}`
             : biensClient.length === 1
-              ? `📤 Bien envoyé — ${biensClient[0].titre || biensClient[0].ville || 'bien'}`
+              ? `${baisse ? '📉 Baisse annoncée' : '📤 Bien envoyé'} — ${biensClient[0].titre || biensClient[0].ville || 'bien'}`
               : `📤 Sélection envoyée — ${biensClient.length} biens`;
           await ecritServeur('L’historique du client', supabase.from('journal').insert({
             client_id: client.id,
