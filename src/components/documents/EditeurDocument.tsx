@@ -3,7 +3,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { supabase } from '@/lib/supabase';
 import { IDENTITE_DEFAUT, type IdentiteAgence } from '@/lib/agence';
 import { STATUTS, modele, pdfDocument, electronique, modeSignature, surPlaceSansCode, versEtape, type Champ, type Donnees, type Etape, type Repere } from '@/lib/actes';
-import { lireRetouches, nbRetouches, type Retouches } from '@/lib/actes/retouches';
+import { lireRetouches, nbRetouches, retouchesPerdues, sansBalises, type Retouches } from '@/lib/actes/retouches';
 import ApercuActe, { Croix, Ic } from './ApercuActe';
 import FenetreConfirmer from './FenetreConfirmer';
 import { ContexteActe, manquesEtape } from './ChampsActe';
@@ -47,6 +47,8 @@ import b from '@/components/biens/Biens.module.css';
    comme avant. */
 type Place = { etape: number; top: number };
 const clePlace = (id: string) => `emi-doc-place:${id}`;
+/* Une phrase, en court (la liste des retouches qui ne s'appliquent plus). */
+const couperTexte = (x: string, n = 90) => { const t = x.replace(/\s+/g, ' ').trim(); return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t; };
 function lirePlace(id: string, nb: number): Place {
   try {
     const v = JSON.parse(sessionStorage.getItem(clePlace(id)) || 'null') as Partial<Place> | null;
@@ -411,7 +413,8 @@ export default function EditeurDocument({ doc, onFermer, onMaj, onFinalise, reto
       return {
         parties: m.rediger(dd, identite), garde: m.garde(dd), pour: m.pour(dd), resume: m.resume(dd), erreur: '',
         /* Le texte d'origine, pour le retoucher. */
-        brut: texteLibre ? (m.brut || m.rediger)(dd, identite) : null,
+        /* (et pour voir les retouches qui ne trouvent plus leur phrase). */
+        brut: texteLibre || nbRetouches(lireRetouches(dd)) ? (m.brut || m.rediger)(dd, identite) : null,
       };
     } catch (e) {
       return { parties: [], garde: m.garde({}), pour: '', resume: [], erreur: (e as Error).message, brut: null };
@@ -419,6 +422,18 @@ export default function EditeurDocument({ doc, onFermer, onMaj, onFinalise, reto
   }, [m, dd, identite, voirApercu, texteLibre]);
   const retouches = lireRetouches(d);
   const nbRetouche = nbRetouches(retouches);
+  /* Une phrase retouchée dont l'original a changé avec les réponses : le
+     document imprime l'original. Le dire, et proposer de l'oublier. */
+  const perdues = rendu?.brut && !off ? retouchesPerdues(rendu.brut, retouches) : { phrases: [], ajouts: [] };
+  const nbPerdues = perdues.phrases.length + perdues.ajouts.length;
+  const [voirPerdues, setVoirPerdues] = useState(false);
+  const oublierPerdues = () => {
+    const avant = new Set(perdues.phrases.map(x => x.avant));
+    const ajouts = { ...retouches.ajouts };
+    perdues.ajouts.forEach(k => { delete ajouts[k]; });
+    setVoirPerdues(false);
+    void enregistrerRetouches({ ...retouches, phrases: retouches.phrases.filter(x => !avant.has(x.avant)), ajouts });
+  };
 
   /* L'aperçu suit l'étape : il montre la rubrique dont on parle. */
   /* Les étapes telles qu'on les montre (le numéro remplacé quand le
@@ -894,6 +909,33 @@ export default function EditeurDocument({ doc, onFermer, onMaj, onFinalise, reto
                 <Ic n="oeilBarre" t={14} /><span>Masquer</span>
               </button>
             </div>
+            {nbPerdues > 0 && (
+              <div className={s.etPerdues} data-emi-anim="non" onClick={e => e.stopPropagation()}>
+                <div className={s.etPerduesT}>
+                  <Ic n="info" t={16} />
+                  <span>
+                    <b>{nbPerdues > 1 ? `${nbPerdues} modifications du texte ne s’appliquent plus.` : 'Une modification du texte ne s’applique plus.'}</b>
+                    {` ${perdues.phrases.length ? 'La phrase d’origine a changé avec tes réponses' : 'La partie n’est plus dans le document'} : le document imprime le texte d’origine.`}
+                  </span>
+                </div>
+                {voirPerdues && (
+                  <ul className={s.etPerduesL}>
+                    {perdues.phrases.map(x => (
+                      <li key={x.avant}>
+                        <span>{`« ${couperTexte(x.avant)} »`}</span>
+                        <span>{x.apres.trim() ? `devenue « ${couperTexte(sansBalises(x.apres))} »` : 'retirée'}</span>
+                      </li>
+                    ))}
+                    {perdues.ajouts.map(k => <li key={k}><span>{`Ajouté à la partie « ${(k.replace(/^\d+:/, '').startsWith('#') ? 'sans titre' : k.replace(/^\d+:/, ''))} »`}</span><span>{`« ${couperTexte(sansBalises((retouches.ajouts[k] || []).map(x => x.texte).join(' ')))} »`}</span></li>)}
+                  </ul>
+                )}
+                <div className={s.etPerduesB}>
+                  <button type="button" className={`${s.btn} ${s.btnCourt}`} onClick={() => setVoirPerdues(v => !v)}>{voirPerdues ? 'Masquer' : 'Voir lesquelles'}</button>
+                  <button type="button" className={`${s.btn} ${s.btnCourt}`} onClick={oublierPerdues}>{nbPerdues > 1 ? 'Les oublier' : 'L’oublier'}</button>
+                  {!texteLibre && <button type="button" className={`${s.btn} ${s.btnCourt}`} onClick={() => setAvertirTexte(true)}><Ic n="crayon" t={13} /><span>Réécrire</span></button>}
+                </div>
+              </div>
+            )}
             {texteLibre && (
               <div className={s.etBandeau} data-emi-anim="non">
                 <span className={s.etBandeauIc}><Ic n="crayon" t={15} /></span>

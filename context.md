@@ -478,15 +478,29 @@ honoraires d'un mandat signé fermés (avenant, ou « Mettre fin au mandat » : 
 Werner, demandée à l'arrivée tant qu'elle manque et dessinée dans le CRM
 (`src/lib/signature-agence.ts`, `SignatureBienvenue`).
 
+**23 octobre 2026** — la reconnaissance d'information depuis la fiche d'un demandeur (« ⋯ ›
+Reconnaissance d'information », et la rubrique Documents) : « Pour quelle affaire ? » (par le prix
+ou l'adresse, rien listé avant de taper), civilité, nom, prénom, téléphone et e-mail exigés,
+l'adresse et la société facultatives ; la fiche se complète sans rien écraser
+(`NouvelleReconnaissance.tsx`, `FenReconnaissance.tsx`). L'adresse proposée pendant la frappe
+partout où on la tape (`SaisieAdresse`). La société retrouvée au registre national
+(`src/components/shared/RechercheSociete.tsx`, `src/lib/entreprises.ts`, API
+recherche-entreprises.api.gouv.fr : par le nom ou le SIREN ; forme, SIREN, siège, dirigeants en
+cartes ; « Sélectionner », puis « Société ajoutée ») dans les contacts, le propriétaire d'une
+affaire, la reconnaissance et les documents. Les documents juridiques à la façon de Werner (§6),
+avec « Modifier le texte » sur tous, « Choisir dans mes contacts » sur chaque personne d'un
+document, et « Pour quel demandeur ? » avant de préparer une offre depuis une affaire.
+
 ---
 
 ## 6. Ce qui reste à faire
 
 - **La relecture des textes** — en cours. Aucun mot du résidentiel (AGENTS.md §0), honoraires HT.
 - **Les mandats et avenants de recherche de la rubrique Documents** (`src/lib/actes/mandat-recherche.ts`,
-  `avenant-recherche.ts`) : encore les textes de l'origine (acquéreur, prix maximum…). Le mandat en
-  ligne est fait ; l'avenant, qui sert à changer les honoraires d'un mandat signé, est à reprendre,
-  puis à faire relire par l'avocat.
+  `avenant-recherche.ts`) : les honoraires en HT ou en TTC (23 octobre 2026), comme le mandat en
+  ligne ; une relecture complète de leurs textes reste à faire, puis celle de l'avocat.
+- **L'espace client, « Faire une offre »** : pour une location, il dit encore « honoraires
+  compris » ; à reprendre avec les mots de l'offre de location (honoraires à part, pas de total).
 - **La relecture visuelle de chaque mail** — les gabarits de l'origine, aux couleurs converties : un
   par un, en 390 et 1280 px, quand Mailjet sera branché.
 - **Les modules propres à l'origine sont retirés** (21 octobre 2026) : plus de route ni d'écran
@@ -509,10 +523,39 @@ Werner, demandée à l'arrivée tant qu'elle manque et dessinée dans le CRM
   `deduire`. Un mandant « consommateur » (`conso`) ajoute information précontractuelle, médiateur,
   Bloctel, rétractation et annexe L215. Le mandataire : RT CONSEILS (représentant légal, champ
   `representantLegal` de l'identité), représentée par Werner BONNETON, gérant de WB INVEST. Les PDF
-  sont aux couleurs de Werner (`mandat-pdf.ts`, `registre-pdf.ts`). Restent à adapter : le mandat
-  de recherche, l'avenant (calcule déjà comme le mandat), la délégation, le bon de visite, l'offre.
+  sont aux couleurs de Werner (`mandat-pdf.ts`, `registre-pdf.ts`).
   ⚠️ L'identité enregistrée dans Paramètres › Agence l'emporte sur celle du code : vérifier qu'elle
   dit bien Werner BONNETON.
+  **Le 23 octobre 2026, le reste a suivi** : l'avenant du mandat de commercialisation, la
+  délégation, le bon de visite (avec la nature de l'affaire, `avecPro` lit `biens.pro`), le courrier
+  de reconduction (L215-1 : seulement pour un mandant consommateur) et les mandats de recherche.
+  Chacun dit ses honoraires **en HT ou en TTC, au choix de Werner** (`champsBaseHono`, `selonBase`,
+  `motBase`, `honoEnClair` dans `src/lib/actes/commun.ts`) : « 8 640 € TTC, soit 7 200 € HT ».
+  **L'offre** (`offre-achat.ts`, id `offre_achat` gardé, titre « Offre ») change de mots avec la
+  nature de l'affaire (`mots(d)`) : offre de location (PRENEUR, BAILLEUR : loyer, charges, bail,
+  prise d'effet, activité, franchise, dépôt, garantie, travaux ; honoraires à part, pas de total),
+  de reprise (CESSIONNAIRE, CÉDANT) ou d'achat des murs (ACQUÉREUR, VENDEUR). **Jamais le nom du
+  propriétaire** (Alexandre, 23 octobre : Werner est l'intermédiaire) : « adresse la présente offre
+  au BAILLEUR, par l'intermédiaire de l'Agence » ; seulement le local et les conditions. Depuis une
+  affaire, « Préparer une offre » demande d'abord « Pour quel demandeur ? »
+  (`FenOffreDemandeur.tsx`) : ses demandeurs sur l'affaire, les contacts, un nouveau contact, ou
+  « Sans fiche ». L'offre se rattache à sa fiche (et au local de son dossier, `bien_id`) : signée,
+  elle va dans son historique et dans ses documents ; sans local lié, une relance demande de la
+  noter dans les offres de l'affaire (`offres-serveur.ts`).
+  **« Modifier le texte »**, sur tous les documents (`src/lib/actes/retouches.ts`,
+  `src/components/documents/EditionTexte.tsx`) : un avertissement d'abord (« Tu es responsable de
+  chaque modification », « J'ai compris » ; la date est gardée dans `retouches.responsable_le`),
+  puis l'aperçu se déverrouille. Chaque phrase se réécrit sur place (gras, italique, trois tailles,
+  la police du document), une partie se retire, un paragraphe ou une partie s'ajoute ;
+  « Enregistrer », un petit chargement, « Modification enregistrée. ». Les retouches sont dans
+  `donnees.retouches`, retrouvées par le texte d'origine de chaque phrase, et s'appliquent partout
+  où le document se lit (`avecRetouches` dans `src/lib/actes/index.ts` : aperçu, PDF, page de
+  signature, espace ; `brut` garde l'original). Une phrase d'origine qui change ensuite avec les
+  réponses (un loyer, une date) n'est plus retouchée : l'éditeur le dit en ambre (« Voir
+  lesquelles », « Les oublier », « Réécrire »). Les signatures et la rétractation ne se touchent
+  pas. Une signature lancée fige tout : pour retoucher, l'arrêter, puis « Repasser en brouillon »
+  (l'historique le garde). ⚠️ Tous ces textes sont à faire relire par l'avocat avant le premier
+  usage.
 - **La reconnaissance d'information** (21 octobre 2026, `src/lib/actes/reconnaissance.ts`, id
   `reconnaissance`, rangée avec les bons de visite) — avant de donner l'adresse d'un local, le
   demandeur reconnaît que l'Agence le lui a présenté et s'engage, 6 à 24 mois, à ne pas traiter en

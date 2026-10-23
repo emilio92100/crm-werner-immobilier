@@ -114,6 +114,20 @@ export function phrasesDe(parties: Partie[]): Set<string> {
   return l;
 }
 
+/** Les retouches qui ne trouvent plus leur place : la phrase d'origine a changé
+    avec les réponses (un loyer, une date), ou la partie n'est plus dans le
+    document. Le document imprime alors le texte d'origine : l'éditeur le dit. */
+export function retouchesPerdues(brut: Partie[], r: Retouches): { phrases: PhraseRetouchee[]; ajouts: string[] } {
+  if (!r.phrases.length && !Object.keys(r.ajouts).length) return { phrases: [], ajouts: [] };
+  const l = phrasesDe(brut);
+  const cles = new Set<string>();
+  brut.forEach((p, pi) => p.sections.forEach((sec, si) => cles.add(cleSection(pi, si, sec))));
+  return {
+    phrases: r.phrases.filter(x => !l.has(x.avant)),
+    ajouts: Object.entries(r.ajouts).filter(([k, v]) => !cles.has(k) && v.some(x => x.texte.trim())).map(([k]) => k),
+  };
+}
+
 /** Où vont ses parties à lui : juste avant les signatures (la partie qui les porte). */
 export function placePartiesLibres(parties: Partie[]): { pi: number; si: number } {
   const pi = parties.findIndex(p => p.sections.some(s => s.titre === 'Date et signatures'));
