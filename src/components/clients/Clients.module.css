@@ -223,6 +223,9 @@
   font-size: 14.5px; font-weight: 800; color: var(--emilio); letter-spacing: -0.15px;
   line-height: 1.18; overflow: hidden;
 }
+.nom2 { display: flex; flex-direction: column; }
+.nom2 > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nom2 > span + span { font-size: .9em; font-weight: 700; opacity: .8; }
 .ref { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 700; color: #c1bebc; letter-spacing: 0.4px; }
 
 .rech {

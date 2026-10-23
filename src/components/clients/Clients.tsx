@@ -9,7 +9,7 @@ import { jetonEspace } from '@/lib/jeton';
 import type { Client, StatutClient } from '@/lib/supabase';
 import styles from './Clients.module.css';
 import AvatarContact from '@/components/contacts/AvatarContact';
-import { conjointDe, nomFoyer, personne2De, adressesDossierDe, colonneDossierAbsente, MESSAGE_SQL_DOSSIER } from '@/lib/foyer';
+import { conjointDe, nomFoyer, nomFoyerLignes, personne2De, adressesDossierDe, colonneDossierAbsente, MESSAGE_SQL_DOSSIER } from '@/lib/foyer';
 import IdentitesContact, { identitesVides, colonnesDe, dossierDe, erreurIdentites, type Identites } from '@/components/contacts/IdentitesContact';
 import EnteteRubrique, { PictoClients } from '@/components/shared/EnteteRubrique';
 import Cascade from '@/components/shared/Cascade';
@@ -21,7 +21,7 @@ import {
 import type { CritForm, ModeCrit } from '@/components/shared/CriteresRecherche';
 import { intentions, prendreIntentionNouveauClient, signalerMaj, EVT_NOUVEAU_CLIENT, EVT_DEMANDE_VUE, demanderNouveauBien, annoncerVue, vueDemandee } from '@/lib/intentions';
 import {
-  TYPES_CONTACT, colonneContactAbsente, typesAvecRevente, estAcheteur, estArchive, estPro, lirePro, reventePossible, sansCriteres, structurePropre, typeDe, typesDe,
+  TYPES_CONTACT, STATUTS_CLOS, acheteurQuiCherche, colonneContactAbsente, typesAvecRevente, estAcheteur, estAncienAcheteur, estArchive, estPro, lirePro, reventePossible, sansCriteres, structurePropre, typeDe, typesDe,
   type InfosPro, type TypeContact,
 } from '@/lib/contacts';
 import { ChampsPro, ChoixTypes, EnteteContacts, LigneContact, Puce, type BienDuContact } from '@/components/contacts/ChampsContact';
@@ -35,6 +35,7 @@ import FiltresAcheteurs, { FILTRES_A_VIDES, correspond, nbFiltresA, type Filtres
 import PageRelances from '@/components/pages/PageRelances';
 import { estTri } from '@/lib/relances';
 import { BarreSelection, CaseLigne, CaseTout, ConfirmerLot, STYLE_CHOISI, type Avancement } from '@/components/shared/Selection';
+import { ETATS_ACHETEUR, nomEtat } from '@/lib/etats-acheteur';
 import { STATUTS_LOT, archiverContact, changerStatutContact, effacerContact, empecheSuppression, type StatutLot } from '@/lib/supprimer-contacts';
 import { FenetreMail, type ContactMail } from '@/components/pages/PageMail';
 import { retirerFicheOuverte, signalerFicheOuverte } from '@/components/layout/FichesOuvertes';
@@ -45,20 +46,26 @@ import ConseilEspace from '@/components/shared/ConseilEspace';
 
 const STATUTS = [
   { key: 'tous',        label: 'Tous',       color: '' },
-  /* Werner : comme chez Emilio, « Actif » = avec son espace client (src/lib/espace-choix.ts). */
-  { key: 'prospect',    label: 'Prospects · sans espace',  color: '#8b5cf6' },
-  { key: 'actif',       label: 'Actifs · avec espace',     color: '#10b981' },
-  { key: 'suspendu',    label: 'Suspendus',  color: '#f59e0b' },
-  { key: 'bien_trouve', label: 'Finalisés',  color: '#3b82f6' },
-  { key: 'perdu',       label: 'Perdus',     color: '#ef4444' },
+  /* V3.240 (comme chez Emilio) : les mots de src/lib/etats-acheteur.ts.
+     « Accompagné » = avec son espace client (src/lib/espace-choix.ts). */
+  { key: 'prospect',    label: 'En recherche',              color: '#8b5cf6' },
+  { key: 'actif',       label: 'Accompagnés',               color: '#10b981' },
+  { key: 'suspendu',    label: 'En pause',                  color: '#f59e0b' },
+  { key: 'bien_trouve', label: 'Locaux trouvés avec moi',   color: '#3b82f6' },
+  { key: 'perdu',       label: 'Recherches arrêtées',       color: '#ef4444' },
 ];
 
 /* ── Les catégories de la page Contacts (V3.14) ──
    Les acheteurs (et, parmi eux, ceux dont la recherche n'a pas encore de
    critères), puis un type par catégorie. Les acheteurs ont leur tableau
    détaillé ; « Tous » et les autres types, une liste d'une ligne par
-   contact, la même pour tous. */
-type Categorie = 'tous' | 'acheteur' | 'non_filtre' | Exclude<TypeContact, 'acheteur'> | 'archives' | 'tri';
+   contact, la même pour tous.
+   V3.240 (comme chez Emilio) : « Demandeurs », ce sont ceux qui cherchent
+   encore (en recherche, accompagnés, en pause) ; « Anciens demandeurs », ceux
+   dont le dossier est clos (local trouvé avec moi, recherche arrêtée). Ni
+   l'un ni l'autre n'est écrit en base : ils se lisent sur le statut
+   (src/lib/contacts.ts). */
+type Categorie = 'tous' | 'acheteur' | 'non_filtre' | 'ancien_acheteur' | Exclude<TypeContact, 'acheteur'> | 'archives' | 'tri';
 /* Les pastilles des tuiles, sur le bandeau bleu : les couleurs des types,
    éclaircies pour qu'on les voie (le bleu d'un notaire disparaissait). */
 const TEINTE_BANDEAU: Record<TypeContact, string> = {
@@ -73,6 +80,7 @@ const CATEGORIES: { cle: Categorie; lib: string; couleur?: string }[] = [
   { cle: 'tous', lib: 'Tous' },
   ...PRINCIPAUX.map(k => ({ cle: k as Categorie, lib: typeDe(k).pluriel, couleur: TEINTE_BANDEAU[k] })),
   { cle: 'non_filtre', lib: 'Demandeurs non filtrés', couleur: '#94a3b8' },
+  { cle: 'ancien_acheteur', lib: 'Anciens demandeurs', couleur: '#d4d4d8' },
   ...TYPES_CONTACT.filter(t => !PRINCIPAUX.includes(t.k)).map(t => ({ cle: t.k as Categorie, lib: t.pluriel, couleur: TEINTE_BANDEAU[t.k] })),
 ];
 /* V3.77 (Alexandre : « qu'on voie direct au début, en lisant de gauche à
@@ -81,12 +89,13 @@ const CATEGORIES: { cle: Categorie; lib: string; couleur?: string }[] = [
    d'abord, puis le groupe de fin, tout à droite. */
 /* V3.78 (« propriétaire au début, vendeur et acheteur, ensuite gardien,
    vendeur signé ou autre ») : les trois du métier, puis le reste. */
-const ORDRE_TUILES: Categorie[] = ['proprietaire', 'vendeur', 'acheteur', 'gardien', 'vendeur_signe', 'non_filtre', 'notaire', 'confrere', 'partenaire'];
+const ORDRE_TUILES: Categorie[] = ['proprietaire', 'vendeur', 'acheteur', 'gardien', 'vendeur_signe', 'ancien_acheteur', 'non_filtre', 'notaire', 'confrere', 'partenaire'];
 const FIN_TUILES: Categorie[] = ['tri', 'tous', 'archives'];
 /* V3.78 (« à côté de Acheteurs, une petite flèche, on clique et on choisit
    les autres types ; on ne met pas tout sur la même ligne ») : ceux-ci
    passent dans « Autres types ▾ », chacun dès qu'il a un contact. */
-const MENU_TUILES: Categorie[] = ['gardien', 'vendeur_signe', 'non_filtre', 'notaire', 'confrere', 'partenaire'];
+/* V3.240 : « Anciens demandeurs » à côté des anciens mandants, les anciens clients. */
+const MENU_TUILES: Categorie[] = ['gardien', 'vendeur_signe', 'ancien_acheteur', 'non_filtre', 'notaire', 'confrere', 'partenaire'];
 /* V3.76 : la tuile du tri d'après l'import. */
 const TUILE_TRI: { cle: Categorie; lib: string; couleur?: string } = { cle: 'tri', lib: 'Tri à faire', couleur: '#fbbf24' };
 /* Les catégories d'une vue (« vendeur », « acheteur+proprietaire »…) ; rien de
@@ -116,7 +125,7 @@ const PAQUET = 60;
    Ouvrir une fiche d'ici pose le bloc « Mes contacts » dans la barre du bas.
    Le retour (la croix ou le bouton retour de la fiche, ce bloc, le retour du
    navigateur) arrive avec « ?retour=1 » (AppLayout) : la liste reprend tout.
-   Arrivé par le menu, Contacts s'ouvre comme avant, sur « Actifs ». */
+   Arrivé par le menu, Contacts s'ouvre sur tous ceux qui cherchent (V3.240). */
 const CLE_RETOUR = 'contacts.retour';
 type Retour = { statuts: string[]; sit: string; fa: FiltresA; search: string; typeArch: string; n: number; haut: number; hautZone: number };
 const chaines = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
@@ -174,20 +183,14 @@ function SuiteListe({ reste, onSuite }: { reste: number; onSuite: () => void }) 
 
 /* Les cinq états d'un dossier, avec ce qu'ils veulent dire. Mêmes libellés
    que le menu de statut de la fiche : un seul vocabulaire. */
-const ETATS_NOUVEAU: { cle: string; nom: string; quand: string; point: string }[] = [
-  { cle: 'prospect',    nom: 'Prospect',    quand: 'Premier contact · sans espace client', point: '#8b5cf6' },
-  { cle: 'actif',       nom: 'Actif',       quand: 'Recherche en cours · avec son espace', point: '#10b981' },
-  { cle: 'suspendu',    nom: 'Suspendu',    quand: 'En pause, à reprendre plus tard', point: '#f59e0b' },
-  { cle: 'bien_trouve', nom: 'Local trouvé', quand: 'Bail ou acte signé, dossier clos', point: '#3b82f6' },
-  { cle: 'perdu',       nom: 'Perdu',       quand: 'Ne cherche plus avec nous',       point: '#ef4444' },
-];
+const ETATS_NOUVEAU = ETATS_ACHETEUR;
 
 const statutBadge: Record<string, { label: string; color: string; bg: string }> = {
-  prospect:    { label: '● Prospect',   color: '#8b5cf6', bg: '#f5f3ff' },
-  actif:       { label: '● Actif',      color: '#10b981', bg: '#ecfdf5' },
-  suspendu:    { label: '⏸ Suspendu',   color: '#f59e0b', bg: '#fffbeb' },
-  bien_trouve: { label: '✓ Finalisé',   color: '#3b82f6', bg: '#eff6ff' },
-  perdu:       { label: '✗ Perdu',      color: '#ef4444', bg: '#fef2f2' },
+  prospect:    { label: '● En recherche',           color: '#8b5cf6', bg: '#f5f3ff' },
+  actif:       { label: '● Accompagné',             color: '#10b981', bg: '#ecfdf5' },
+  suspendu:    { label: '⏸ En pause',               color: '#f59e0b', bg: '#fffbeb' },
+  bien_trouve: { label: '✓ Local trouvé avec moi',  color: '#3b82f6', bg: '#eff6ff' },
+  perdu:       { label: '✗ Recherche arrêtée',      color: '#ef4444', bg: '#fef2f2' },
 };
 
 /* Le client et ce qui nous lie à lui. Les critères de recherche vivent à
@@ -441,7 +444,7 @@ function signalDe(client: any, st: StatDossier | undefined): Signal {
     if (j < 15) return { texte: `Mandat · ${j} j`, color: '#c05d12', bg: '#fffbeb', rang: 3, aide };
   }
   if ((client.statut as string) === 'bien_trouve') {
-    return { texte: 'Dossier clos', color: '#1d4ed8', bg: '#eff6ff', rang: 8, aide: 'Local trouvé — dossier terminé' };
+    return { texte: 'Dossier clos', color: '#1d4ed8', bg: '#eff6ff', rang: 8, aide: 'Local trouvé avec moi — dossier terminé' };
   }
   if (st?.dernierContact) {
     const j = joursDepuis(st.dernierContact);
@@ -563,8 +566,8 @@ function villesDe(secteurs: string[] | undefined) {
 }
 
 const ETIQUETTE: Record<string, string> = {
-  prospect: 'Prospect', actif: 'Actif', suspendu: 'Suspendu',
-  bien_trouve: 'Finalisé', perdu: 'Perdu',
+  prospect: 'En recherche', actif: 'Accompagné', suspendu: 'En pause',
+  bien_trouve: 'Local trouvé avec moi', perdu: 'Recherche arrêtée',
 };
 
 const TEINTE: Record<string, { bg: string; fg: string; trait: string }> = {
@@ -661,8 +664,10 @@ export default function Clients({ onNavigate, fenetre }: {
      eux qu'on vient voir. Les autres onglets restent à un clic. */
   /* V3.179 : les statuts se combinent (« Actifs » + « Prospects ») ; une
      liste vide, c'est « Tous les statuts ». */
-  const [statuts, setStatuts] = useState<string[]>(() => retour?.statuts || ['actif']);
-  const dansStatut = (c: Client) => !statuts.length || statuts.includes(String(c.statut));
+  /* V3.240 (comme chez Emilio : « Demandeurs », tous ceux qui cherchent,
+     visibles dès l'ouverture ; le statut sert à trier) : on arrive sur tous
+     les statuts de la catégorie, plus sur les seuls « Accompagnés ». */
+  const [statuts, setStatuts] = useState<string[]>(() => retour?.statuts || []);
   /* Les catégories (types de contact) allumées, au-dessus du statut des
      acheteurs. Elles se cumulent : « Acheteurs » + « Propriétaires » montre
      les deux. « Tous » et « Archivés » sont seuls.
@@ -875,7 +880,6 @@ export default function Clients({ onNavigate, fenetre }: {
     if (!replieFiltre.current) {
       replieFiltre.current = true;
       const acheteurs = merged.filter(c => estAcheteur(c));
-      if (acheteurs.length > 0 && !acheteurs.some(c => c.statut === 'actif')) setStatuts([]);
       if (merged.length > 0 && acheteurs.length === 0) setCats(['tous']);
     }
 
@@ -999,7 +1003,8 @@ export default function Clients({ onNavigate, fenetre }: {
       if (estArchive(c)) { plus('archives'); continue; }
       plus('tous');
       if (tri.has(c.id)) plus('tri');
-      if (estAcheteur(c)) { plus('acheteur'); if (sansCriteres(c)) plus('non_filtre'); }
+      if (estAncienAcheteur(c)) plus('ancien_acheteur');
+      else if (estAcheteur(c)) { plus('acheteur'); if (sansCriteres(c)) plus('non_filtre'); }
       for (const t of new Set(typesDe(c))) if (t !== 'acheteur') plus(t as Categorie);
     }
     return m;
@@ -1010,13 +1015,26 @@ export default function Clients({ onNavigate, fenetre }: {
   const derniere = (c: Client) => stats[c.id]?.dernierContact || (c as { updated_at?: string }).updated_at || (c as { created_at?: string }).created_at || null;
   /* Le tableau détaillé des acheteurs quand on ne regarde que des
      acheteurs ; sinon une ligne par contact, le plus récent en haut. */
-  const avecAcheteurs = cats.every(k => k === 'acheteur' || k === 'non_filtre');
-  const seulsNonFiltres = avecAcheteurs && !cats.includes('acheteur');
+  const avecAcheteurs = cats.every(k => k === 'acheteur' || k === 'non_filtre' || k === 'ancien_acheteur');
+  const seulsNonFiltres = avecAcheteurs && cats.every(k => k === 'non_filtre');
+  const seulsAnciens = avecAcheteurs && cats.every(k => k === 'ancien_acheteur');
   const dansCats = (c: Client) => cats.some(k => k === 'tous' ? true
     : k === 'tri' ? triSet.has(c.id)
-    : k === 'acheteur' ? estAcheteur(c)
-      : k === 'non_filtre' ? estAcheteur(c) && sansCriteres(c)
-        : typesDe(c).includes(k as TypeContact));
+    : k === 'acheteur' ? acheteurQuiCherche(c)
+      : k === 'non_filtre' ? acheteurQuiCherche(c) && sansCriteres(c)
+        : k === 'ancien_acheteur' ? estAncienAcheteur(c)
+          : typesDe(c).includes(k as TypeContact));
+  /* Les demandeurs des catégories allumées, sans les archivés : la base des
+     filtres « Affiner » et de leurs compteurs. */
+  const acheteursCat = clients.filter(c => estAcheteur(c) && !estArchive(c) && dansCats(c));
+  /* V3.240 — Le filtre de statut ne propose que les états de ce qu'on
+     regarde : « Demandeurs », en recherche, accompagnés, en pause ; « Anciens
+     demandeurs », local trouvé avec moi, recherche arrêtée. Un statut retenu
+     qui n'a pas sa place ici (on vient de changer de tuile) ne filtre plus. */
+  const voitOuverts = cats.some(k => k === 'acheteur' || k === 'non_filtre');
+  const STATUTS_VUS = STATUTS.filter(x => x.key === 'tous' || (STATUTS_CLOS.includes(x.key) ? !voitOuverts || cats.includes('ancien_acheteur') : voitOuverts));
+  const statutsVus = statuts.filter(k => STATUTS_VUS.some(x => x.key === k));
+  const dansStatut = (c: Client) => !statutsVus.length || statutsVus.includes(String(c.statut));
   /* V3.77 : les archivés, par type : les types présents, avec leur nombre. */
   const archives = clients.filter(c => estArchive(c));
   const typesArch = TYPES_CONTACT.map(t => ({ k: t.k, lib: t.pluriel, n: archives.filter(c => typesDe(c).includes(t.k)).length })).filter(t => t.n > 0);
@@ -1052,8 +1070,7 @@ export default function Clients({ onNavigate, fenetre }: {
   /* Les acheteurs du statut, du logement et de la recherche tapée ; puis
      ceux qui demandent ce qu'on a choisi dans « Ce qu'il cherche » (V3.75). */
   const avantCriteres = clients.filter(c => {
-    if (!avecAcheteurs || !estAcheteur(c) || estArchive(c)) return false;
-    if (seulsNonFiltres && !sansCriteres(c)) return false;
+    if (!avecAcheteurs || !estAcheteur(c) || estArchive(c) || !dansCats(c)) return false;
     const matchStatut = dansStatut(c);
     const sit = situationDe(c);
     const matchSit = filtreSit === 'toutes'
@@ -1076,8 +1093,7 @@ export default function Clients({ onNavigate, fenetre }: {
   const filtered = nbFiltresA(fa) ? avantCriteres.filter(c => correspond(c as never, fa)) : avantCriteres;
   /* Les compteurs du second filtre suivent le premier : « 3 propriétaires »
      parmi les actifs, pas dans toute la base. */
-  const nbParSituation = (k: string) => clients
-    .filter(c => estAcheteur(c) && !estArchive(c) && (!seulsNonFiltres || sansCriteres(c)))
+  const nbParSituation = (k: string) => acheteursCat
     .filter(dansStatut)
     .filter(c => { const s = situationDe(c); return k === 'toutes' || (k === 'proprietaire' ? (s === 'proprietaire' || s === 'vendeur') : s === k); })
     .length;
@@ -1310,7 +1326,6 @@ export default function Clients({ onNavigate, fenetre }: {
     }
   });
 
-  const acheteursCat = clients.filter(c => estAcheteur(c) && !estArchive(c) && (!seulsNonFiltres || sansCriteres(c)));
 
   /* V3.136 — la liste par paquets (voir `SuiteListe`). La clé dit de quelle
      liste il s'agit : en changer repart des 60 premières. */
@@ -1364,7 +1379,7 @@ export default function Clients({ onNavigate, fenetre }: {
         if (p.get('page') === 'clients') { p.set('retour', '1'); window.history.replaceState(window.history.state, '', `${window.location.pathname}?${p.toString()}`); }
       } catch { /* le retour du navigateur ramènera Contacts sur « Actifs » */ }
       const cat = cats.map(k => (k === 'archives' ? 'Archivés' : k === 'tri' ? 'Tri à faire' : CATEGORIES.find(x => x.cle === k)?.lib || '')).filter(Boolean).join(' + ');
-      const st = avecAcheteurs && statuts.length ? STATUTS.filter(x => statuts.includes(x.key)).map(x => x.label).join(' + ') : '';
+      const st = avecAcheteurs && statutsVus.length ? STATUTS.filter(x => statutsVus.includes(x.key)).map(x => x.label).join(' + ') : '';
       signalerFicheOuverte({ k: 'contacts', id: 'contacts', titre: 'Mes contacts', sous: [cat, st].filter(Boolean).join(' · ') || undefined });
     }
     onNavigate('fiche', c);
@@ -1412,7 +1427,7 @@ export default function Clients({ onNavigate, fenetre }: {
     if (!estAcheteur(c)) return 'Pas demandeur : le statut suit la recherche d’un demandeur.';
     if (estArchive(c)) return 'Archivé : sors-le des archives d’abord.';
     if (st === statut) return `Déjà « ${STATUTS_LOT.find(x => x.k === statut)?.lib} ».`;
-    if (st === 'bien_trouve' || st === 'perdu') return `Dossier clos (« ${st === 'perdu' ? 'Perdu' : 'Local trouvé'} ») : rouvre-le depuis sa fiche.`;
+    if (st === 'bien_trouve' || st === 'perdu') return `Dossier clos (« ${nomEtat(st)} ») : rouvre-le depuis sa fiche.`;
     return null;
   };
   function preparerStatut(statut: StatutLot) {
@@ -1800,7 +1815,7 @@ export default function Clients({ onNavigate, fenetre }: {
                           color: form.statut === 'actif' ? '#15803d' : '#64748b' }}>
                           {form.statut === 'actif'
                             ? 'La veille cherchera pour ce client dès la création du dossier.'
-                            : 'Aucune veille tant que le dossier n\'est pas « Actif ». Tu pourras changer le statut à tout moment depuis sa fiche.'}
+                            : 'Aucune veille tant que le dossier n\'est pas « Accompagné ». Tu pourras changer son état à tout moment depuis sa fiche.'}
                         </div>
                         {/* Werner : « Actif » = avec son espace client (src/lib/espace-choix.ts). */}
                         <InterrupteurEspace on={form.statut === 'actif'}
@@ -1957,8 +1972,8 @@ export default function Clients({ onNavigate, fenetre }: {
       {avecAcheteurs && <div className="ligne-entre">
         <FiltresAcheteurs base={avantCriteres as never[]} f={fa} onF={setFa} n={filtered.length}
           statut={{
-            v: statuts, tout: 'tous', onChange: setStatuts,
-            options: STATUTS.map(x => ({ k: x.key, l: x.key === 'tous' ? 'Tous les statuts' : x.label, n: nbParStatut(x.key), c: x.color || undefined })),
+            v: statutsVus, tout: 'tous', onChange: setStatuts,
+            options: STATUTS_VUS.map(x => ({ k: x.key, l: x.key === 'tous' ? 'Tous les statuts' : x.label, n: nbParStatut(x.key), c: x.color || undefined })),
           }}
           logement={{
             v: filtreSit, tout: 'toutes', onChange: setFiltreSit,
@@ -2002,8 +2017,8 @@ export default function Clients({ onNavigate, fenetre }: {
               {filtered.length === 0 ? (
                 <div className={styles.empty}>
                   <div className={styles.emptyIcon}>👥</div>
-                  <div className={styles.emptyTitle}>{nbFiltresA(fa) ? 'Aucun demandeur ne demande cela' : search || statuts.length > 0 || filtreSit !== 'toutes' || seulsNonFiltres ? 'Aucun demandeur ici' : 'Aucun demandeur pour l\'instant'}</div>
-                  <div className={styles.emptySub}>{nbFiltresA(fa) ? `Parmi les ${avantCriteres.length} demandeurs ${statuts.length > 1 ? 'de ces statuts' : 'de ce statut'}, aucun ne correspond à « Ce qu’il cherche ».` : seulsNonFiltres ? 'Tous tes demandeurs ont leurs critères.' : statuts.length > 0 ? 'Change de statut, juste au-dessus.' : 'Clique sur « + Nouveau contact » pour commencer.'}</div>
+                  <div className={styles.emptyTitle}>{nbFiltresA(fa) ? 'Aucun demandeur ne demande cela' : seulsAnciens && !search && !statutsVus.length && filtreSit === 'toutes' ? 'Aucun ancien demandeur' : search || statutsVus.length > 0 || filtreSit !== 'toutes' || seulsNonFiltres ? 'Aucun demandeur ici' : 'Aucun demandeur pour l\'instant'}</div>
+                  <div className={styles.emptySub}>{nbFiltresA(fa) ? `Parmi les ${avantCriteres.length} demandeurs ${statutsVus.length > 1 ? 'de ces statuts' : 'de ce statut'}, aucun ne correspond à « Ce qu’il cherche ».` : seulsNonFiltres ? 'Tous tes demandeurs ont leurs critères.' : statutsVus.length > 0 ? 'Change de statut, juste au-dessus.' : seulsAnciens ? 'Un demandeur arrive ici quand sa recherche se termine : « Local trouvé avec moi » ou « Recherche arrêtée ». La rouvrir le remet dans « Demandeurs ».' : 'Clique sur « + Nouveau contact » pour commencer.'}</div>
                   {nbFiltresA(fa) > 0 && <button type="button" className={styles.btnSecondary} style={{ marginTop: 12 }} onClick={() => setFa(FILTRES_A_VIDES)}>Effacer « Ce qu’il cherche »</button>}
                 </div>
               ) : (
@@ -2091,7 +2106,15 @@ export default function Clients({ onNavigate, fenetre }: {
                         <CaseLigne on={choisis.has(client.id)} onBasculer={() => basculerChoix(client.id)} titre={choisis.has(client.id) ? `Décocher ${nomFoyer(client)}` : `Cocher ${nomFoyer(client)}`} />
                         <AvatarContact c={client as never} teinte={t} className={styles.avatar} libre />
                         <span style={{ minWidth: 0 }}>
-                          <span className={styles.nom} title={nomFoyer(client)} style={clos ? { color: '#6b7a90' } : undefined}>{nomFoyer(client)}</span>
+                          {/* V3.240 : deux noms qui ne se suivent pas passent sur deux lignes. */}
+                          {(() => {
+                            const [l1, l2] = nomFoyerLignes(client);
+                            return (
+                              <span className={`${styles.nom} ${l2 ? styles.nom2 : ''}`} title={nomFoyer(client)} style={clos ? { color: '#6b7a90' } : undefined}>
+                                {l2 ? <><span>{l1}</span><span>{l2}</span></> : l1}
+                              </span>
+                            );
+                          })()}
                           <span className={styles.ref}>
                             {client.reference?.replace(/^WER-\d{4}-/, 'WER-') || client.reference}
                             {/* Une couleur seule ne se comprend pas : on la nomme. */}
@@ -2405,8 +2428,8 @@ export default function Clients({ onNavigate, fenetre }: {
         <ConfirmerLot ic="drapeau"
           titre={`Passer ${statutLot.cibles.length > 1 ? `${statutLot.cibles.length} demandeurs` : statutLot.cibles.length ? '1 demandeur' : 'ces contacts'} « ${STATUTS_LOT.find(x => x.k === statutLot.statut)?.lib} » ?`}
           phrase={statutLot.statut === 'actif' ? 'Chacun a son espace client (aucun mail ne part : le mail de bienvenue se propose depuis sa fiche). La veille cherche à nouveau pour eux, sur leur recherche la plus récente (ou celles d’avant leur pause). Une ligne dans leur suivi.'
-            : statutLot.statut === 'suspendu' ? 'Leur dossier se met en pause, sans date de reprise (elle se met depuis leur fiche). La veille s’arrête. Une ligne dans leur suivi.'
-              : 'Ils repassent « Prospect » : leur espace client se ferme (le lien qu’ils ont reçu ne s’ouvre plus ; rien n’est perdu s’ils repassent Actif). La veille s’arrête. Une ligne dans leur suivi.'}
+            : statutLot.statut === 'suspendu' ? 'Leur dossier se met en pause, sans date de reprise (elle se met depuis leur fiche). La veille s’arrête pour ceux qui étaient Accompagnés. Une ligne dans leur suivi.'
+              : 'Ils repassent « En recherche » : dans tes rapprochements, sans espace client (le lien qu’ils ont reçu ne s’ouvre plus ; rien n’est perdu s’ils repassent Accompagnés). La veille s’arrête pour ceux qui étaient Accompagnés. Une ligne dans leur suivi.'}
           liste={statutLot.cibles.map(c => nomFoyer(c) || 'Sans nom')} ignores={statutLot.ignores}
           enPlus={statutLot.statut === 'actif' && <ConseilEspace plusieurs={statutLot.cibles.length !== 1} />}
           libValider={`Passer « ${STATUTS_LOT.find(x => x.k === statutLot.statut)?.lib} » (${statutLot.cibles.length})`}
