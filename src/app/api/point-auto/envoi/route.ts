@@ -3,9 +3,10 @@ import type { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { coordonnees } from '@/lib/coordonnees-serveur';
 import {
-  lireReglages, calculerCandidats, mailPoint, envoyerMailjet,
+  lireReglages, calculerCandidats, mailPoint, envoyerMailjet, lienPage, nouveauJeton,
   TYPE_ENVOI, PLAFOND_PAR_JOUR,
 } from '@/lib/point-auto';
+import { basePublique } from '@/lib/jeton';
 import { alerteMailActive } from '@/lib/alertes';
 import { logoMail } from '@/lib/mail-charte';
 
@@ -55,13 +56,22 @@ export async function GET(req: NextRequest) {
     const candidats = await calculerCandidats(sb, reglages);
     const dus = candidats.filter((c) => c.du).slice(0, PLAFOND_PAR_JOUR);
 
-    const partis: { nom: string; id: string; revente: boolean }[] = [];
+    const partis: { nom: string; id: string; revente: boolean; viaEspace: boolean }[] = [];
     const rates: { nom: string; erreur: string }[] = [];
 
     for (const c of dus) {
       const nom = `${c.prenom} ${c.nom}`.trim();
       const co = await coordonnees(sb);
-      const m = mailPoint({ prenom: c.prenom, recherche: c.recherche, tokenClient: c.tokenClient!, site: SITE, co });
+      /* Sans espace (23 octobre 2026) : un jeton tiré pour cet envoi, rangé
+         dans la ligne du suivi ci-dessous. Les boutons du mail ouvrent sa
+         page de réponse, /point/<jeton>. */
+      const jeton = c.viaEspace ? null : nouveauJeton();
+      const m = jeton
+        ? mailPoint({ prenom: c.prenom, recherche: c.recherche, lienDe: (x) => lienPage(jeton, x, basePublique()), site: SITE, co })
+        : mailPoint({ prenom: c.prenom, recherche: c.recherche, tokenClient: c.tokenClient!, site: SITE, co });
+      const depuis = c.dernierMouvement
+        ? `Aucun mouvement sur le dossier depuis le ${new Date(c.dernierMouvement).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })}.`
+        : 'Aucun mouvement sur le dossier depuis sa création.';
 
       /* V3.43 : la ligne du suivi d'abord, le mail ensuite. C'est elle qui
          empêche un deuxième mail le lendemain : écrite après, un échec
@@ -71,10 +81,8 @@ export async function GET(req: NextRequest) {
         client_id: c.clientId, recherche_id: c.recherche?.id || null,
         type: TYPE_ENVOI,
         titre: '📨 Mail « Où en est votre recherche ? » envoyé automatiquement',
-        description: c.dernierMouvement
-          ? `Aucun mouvement sur le dossier depuis le ${new Date(c.dernierMouvement).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })}.`
-          : 'Aucun mouvement sur le dossier depuis sa création.',
-        metadata: { delai: reglages.delai },
+        description: `${depuis} Il répond en un clic ${jeton ? 'depuis le mail (sans espace)' : 'depuis son espace'} : sa réponse s’inscrira ici.`,
+        metadata: { delai: reglages.delai, via: jeton ? 'page' : 'espace', ...(jeton ? { jeton } : {}) },
       }).select('id').single();
       if (error || !note) { rates.push({ nom, erreur: 'pas noté dans le suivi, donc pas envoyé : ' + (error?.message || 'rien n’est revenu') }); continue; }
       const r = await envoyerMailjet({ a: c.email!, nom, sujet: m.sujet, html: m.html, texte: m.texte, id: `point-${c.clientId}-${Date.now()}`, repondre: co.mail });
@@ -84,15 +92,15 @@ export async function GET(req: NextRequest) {
         if (eRetrait) console.error('[point-auto] ligne du suivi à retirer', eRetrait.message);
         continue;
       }
-      partis.push({ nom, id: c.clientId, revente: c.revente });
+      partis.push({ nom, id: c.clientId, revente: c.revente, viaEspace: !jeton });
     }
 
-    /* Un mot à Alexandre, seulement s'il s'est passé quelque chose. */
+    /* Un mot à Werner, seulement s'il s'est passé quelque chose. */
     /* Le récapitulatif peut être coupé (Paramètres → Alertes mail), sauf
-       quand un mail n'a pas pu partir : ça, Alexandre doit le savoir. */
+       quand un mail n'a pas pu partir : ça, Werner doit le savoir. */
     if (rates.length || (partis.length && await alerteMailActive(sb, 'point_auto_recap'))) {
       const lignes = partis.map((p) =>
-        `<li style="margin:0 0 6px;"><a href="${CRM}/?page=fiche&client=${encodeURIComponent(p.id)}" style="color:#232528;font-weight:700;">${echappe(p.nom)}</a>${p.revente ? ' <span style="color:#c2621c;font-weight:700;">· revente possible</span>' : ''}</li>`).join('');
+        `<li style="margin:0 0 6px;"><a href="${CRM}/?page=fiche&client=${encodeURIComponent(p.id)}" style="color:#232528;font-weight:700;">${echappe(p.nom)}</a>${p.viaEspace ? '' : ' <span style="color:#71717a;">· sans espace</span>'}${p.revente ? ' <span style="color:#c2621c;font-weight:700;">· revente possible</span>' : ''}</li>`).join('');
       const html = `<div style="font-family:'Plus Jakarta Sans',-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#363533">
   <div style="background:#2e3034;padding:18px 22px 16px;border-radius:14px 14px 0 0;border-bottom:3px solid #f08c42">
     ${logoMail('CRM')}

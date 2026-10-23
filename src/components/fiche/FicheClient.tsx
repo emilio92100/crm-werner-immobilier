@@ -101,7 +101,7 @@ export function FenExpliquerEspace({ vers, prenom, onAnnuler, onValider }: {
   ] : [
     { ic: 'mobile', t: 'Son espace se ferme', s: 'Le lien qu’il a reçu affichera « Ce lien n’est plus actif ».' },
     { ic: 'envoyer', t: 'Tes envois restent possibles', s: 'Les locaux que tu lui envoies mènent à leur fiche publique, avec tes coordonnées.' },
-    { ic: 'loupe', t: 'La veille s’arrête pour lui', s: 'Plus de point automatique non plus.' },
+    { ic: 'loupe', t: 'La veille s’arrête pour lui', s: 'Le point automatique aussi, sauf si tu l’envoies à tous ceux qui ont une recherche (Paramètres).' },
     { ic: 'remettre', t: 'Rien n’est perdu', s: 'Repassé Actif, il retrouve tout son espace, tel qu’il l’avait laissé.' },
   ];
   return (
@@ -4795,13 +4795,17 @@ ${signatureMail()}`,
                 <b>Pas d’espace client</b>
               </div>
               <p className={styles.situNotes}>{`Les locaux que tu envoies à ${client.prenom || 'ce client'} mènent à leur fiche publique : photos, description, et tes coordonnées pour te répondre. Aucun mail ne lui parle d’espace.`}</p>
-              <p className={styles.situNotes}>{'Avec un espace, il retrouve tous les locaux proposés sur une page à lui, répond « ça m’intéresse », demande une visite ou dit non, et tu vois ses réponses ici. Le point automatique et le mail de bienvenue passent aussi par l’espace.'}</p>
+              <p className={styles.situNotes}>{'Avec un espace, il retrouve tous les locaux proposés sur une page à lui, répond « ça m’intéresse », demande une visite ou dit non, et tu vois ses réponses ici. Le mail de bienvenue passe aussi par l’espace.'}</p>
               {client.statut === 'prospect' && <p className={styles.situNotes}>{'Lui ouvrir son espace, c’est le passer « Actif ».'}</p>}
               <ConseilEspace />
               <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} style={{ alignSelf: 'flex-start' }} onClick={() => basculerEspaceClient(true)} disabled={basculeEspace}>
                 {basculeEspace ? 'Ouverture…' : client.statut === 'prospect' ? 'Ouvrir son espace (passer Actif)' : 'Ouvrir son espace'}
               </button>
             </div>
+            {/* Le point automatique part aussi sans espace, si Werner l'a choisi
+                (Paramètres › Point automatique › Pour qui, 23 octobre 2026) :
+                le bloc dit ce qu'il en est pour ce client. */}
+            {client.id && <PointAuto clientId={client.id} />}
           </div>
         )}
 

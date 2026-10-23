@@ -1,12 +1,21 @@
 /**
  * Le point automatique — « Où en est votre recherche ? »
  *
- * Quand un dossier actif ne bouge plus depuis un certain temps (45 jours par
+ * Quand un dossier ne bouge plus depuis un certain temps (45 jours par
  * défaut), un mail part tout seul au client. Il lui rappelle sa recherche et
- * lui propose quatre réponses : je cherche toujours, mes critères ont changé,
- * j'ai trouvé, j'ai mis en pause ou arrêté. Chaque bouton ouvre son espace
- * sur la bonne fenêtre, et sa réponse arrive dans le CRM comme n'importe
- * quelle réaction du client.
+ * lui propose cinq réponses : je cherche toujours, mes critères ont changé,
+ * j'ai trouvé, j'ai mis en pause ou arrêté, je souhaite être rappelé. Sa
+ * réponse arrive dans le CRM comme n'importe quelle réaction du client.
+ *
+ * ── Pour qui (23 octobre 2026, réglage `point_auto_pour`) ──
+ *   'espace'     les demandeurs « Actif » qui ont leur espace : chaque bouton
+ *                ouvre l'espace sur la bonne fenêtre (comme avant) ;
+ *   'recherche'  tous ceux qui ont une recherche en cours, prospects compris.
+ *                Ceux qui ont un espace répondent toujours depuis l'espace ;
+ *                les autres, sur une petite page sans compte, /point/<jeton>
+ *                (src/app/point), qui écrit par /api/point/repondre. Le jeton
+ *                est tiré à chaque envoi et rangé dans le metadata de la ligne
+ *                « point_auto » du suivi : c'est elle qui dit à qui il parle.
  *
  * Ce fichier ne dépend ni du navigateur ni du serveur : on lui passe un
  * client Supabase. La route d'envoi quotidienne (/api/point-auto/envoi) et
@@ -36,6 +45,7 @@
  *   point_auto_actif   'oui' | 'non'   — 'non' tant qu'Alexandre ne l'a pas allumé
  *   point_auto_delai   '30' | '45' | '60'
  *   point_auto_exclus  liste JSON d'identifiants de clients à ne jamais relancer
+ *   point_auto_pour    'espace' | 'recherche'  — 'espace' tant que rien n'est choisi
  *   Rien de nouveau dans la base : aucune migration à lancer.
  */
 
@@ -51,6 +61,15 @@ type Base = any;
 export const CLE_ACTIF = 'point_auto_actif';
 export const CLE_DELAI = 'point_auto_delai';
 export const CLE_EXCLUS = 'point_auto_exclus';
+export const CLE_POUR = 'point_auto_pour';
+
+/** À qui le mail part : les demandeurs avec un espace, ou tous ceux qui ont une recherche en cours. */
+export type Pour = 'espace' | 'recherche';
+export const POURS: readonly Pour[] = ['espace', 'recherche'];
+/** Les statuts d'un dossier en cours, pour chaque choix. */
+const STATUTS_DE: Record<Pour, string[]> = { espace: ['actif'], recherche: ['actif', 'prospect'] };
+/** Une réponse par la page sans espace se donne jusqu'à ce délai après l'envoi. */
+export const JOURS_REPONSE = 90;
 
 export const DELAIS = [30, 45, 60] as const;
 export const DELAI_DEFAUT = 45;
@@ -69,7 +88,7 @@ const TYPES_REACTION = [
 /** Au-delà, on s'arrête pour la journée : un réglage raté ne doit pas écrire à toute la base. */
 export const PLAFOND_PAR_JOUR = 30;
 
-export type Reglages = { actif: boolean; delai: number; exclus: string[] };
+export type Reglages = { actif: boolean; delai: number; exclus: string[]; pour: Pour };
 
 export function reglagesDepuis(lignes: { cle: string; valeur: string | null }[] | null | undefined): Reglages {
   const p: Record<string, string> = {};
@@ -84,12 +103,13 @@ export function reglagesDepuis(lignes: { cle: string; valeur: string | null }[] 
     actif: p[CLE_ACTIF] === 'oui',
     delai: (DELAIS as readonly number[]).includes(d) ? d : DELAI_DEFAUT,
     exclus,
+    pour: p[CLE_POUR] === 'recherche' ? 'recherche' : 'espace',
   };
 }
 
 export async function lireReglages(sb: Base): Promise<Reglages> {
   const { data, error } = await sb.from('parametres').select('cle, valeur')
-    .in('cle', [CLE_ACTIF, CLE_DELAI, CLE_EXCLUS]);
+    .in('cle', [CLE_ACTIF, CLE_DELAI, CLE_EXCLUS, CLE_POUR]);
   if (error) throw new Error('Lecture des réglages impossible : ' + error.message);
   return reglagesDepuis(data);
 }
@@ -117,6 +137,8 @@ export type Candidat = {
   statut: string;
   revente: boolean;
   tokenClient: string | null;
+  /** Il répond depuis son espace (sinon : la page sans compte, /point/<jeton>). */
+  viaEspace: boolean;
   recherche: any | null;
   dernierMouvement: string | null;
   dernierEnvoi: string | null;
@@ -125,15 +147,15 @@ export type Candidat = {
   du: boolean;
   /** Pourquoi le mail ne part pas pour ce client (vide s'il peut partir). */
   empechement: string | null;
-  /** Alexandre a choisi de ne jamais lui envoyer ce mail. */
+  /** Werner a choisi de ne jamais lui envoyer ce mail. */
   exclu: boolean;
   historique: Envoi[];
 };
 
 /* Ce que le client a répondu après un envoi : sa première réaction dans les
    trente jours qui suivent. Au-delà, ce n'est plus une réponse au mail. */
-function libelleReaction(type: string, titre: string): string {
-  if (type === TYPE_REPONSE) return '« Je cherche toujours »';
+function libelleReaction(type: string, titre: string, metadata?: any): string {
+  if (type === TYPE_REPONSE) return metadata?.reponse === 'criteres' ? '« Mes critères ont changé »' : '« Je cherche toujours »';
   if (type === 'criteres_modifies') return 'critères modifiés';
   if (type === 'demande_rappel') return 'demande de rappel';
   if (type === 'message_client') return 'message';
@@ -153,9 +175,10 @@ function libelleReaction(type: string, titre: string): string {
  * Pour chaque client visé : son dernier mouvement, son dernier mail, la date
  * du prochain, et ce qui empêcherait l'envoi.
  *
- * Sans `clientId`, on prend tous les dossiers actifs (c'est ce que fait
- * l'envoi quotidien). Avec, on calcule pour ce seul client, quel que soit
- * son statut — c'est ce qu'affiche sa fiche.
+ * Sans `clientId`, on prend tous les dossiers en cours (actifs, et les
+ * prospects quand le mail est « pour tous ceux qui ont une recherche ») :
+ * c'est ce que fait l'envoi quotidien. Avec, on calcule pour ce seul client,
+ * quel que soit son statut — c'est ce qu'affiche sa fiche.
  */
 export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { clientId?: string; maintenant?: Date } = {}): Promise<Candidat[]> {
   const maintenant = opts.maintenant || new Date();
@@ -167,7 +190,7 @@ export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { cl
   const COLS = 'id, prenom, nom, emails, statut, created_at, statut_occupation, bien_actuel_a_vendre, token_espace';
   const lire = (cols: string) => {
     const q = sb.from('clients').select(cols);
-    return opts.clientId ? q.eq('id', opts.clientId) : q.eq('statut', 'actif');
+    return opts.clientId ? q.eq('id', opts.clientId) : q.in('statut', STATUTS_DE[reglages.pour]);
   };
   /* Werner : `espace_client` en plus, quand son SQL est passé. */
   let { data: clients, error } = await lire(`${COLS}, types, archive, espace_client`);
@@ -208,21 +231,32 @@ export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { cl
     const dernierEnvoi = envois[0] || null;
 
     const rechs = (recherches || []).filter((r: any) => r.client_id === c.id);
-    const recherche = rechs.find((r: any) => r.active && r.espace_actif !== false)
-      || rechs.find((r: any) => r.espace_actif !== false) || null;
+    /* Avec un espace (activé, et son lien créé), il y répond : on ne lui parle
+       que d'une recherche que l'espace montre. Sans, la page de réponse ne
+       dépend pas de l'espace : une recherche en cours suffit. */
+    const aSonEspace = c.espace_client === true && !!c.token_espace;
+    const viaEspace = reglages.pour === 'espace' || aSonEspace;
+    const visible = (r: any) => r.espace_actif !== false;
+    const recherche = rechs.find((r: any) => r.active && visible(r))
+      || (viaEspace ? null : rechs.find((r: any) => r.active))
+      || rechs.find(visible) || null;
 
     const email = (Array.isArray(c.emails) ? c.emails : []).map((e: string) => String(e || '').trim()).find((e: string) => /.+@.+\..+/.test(e)) || null;
 
     let empechement: string | null = null;
-    if (c.statut !== 'actif') empechement = 'Le mail ne part que pour les dossiers actifs.';
+    if (!STATUTS_DE[reglages.pour].includes(c.statut)) {
+      empechement = c.statut === 'prospect'
+        ? 'Prospect : le mail ne part qu’aux demandeurs qui ont leur espace. Pour l’envoyer aussi aux prospects : Paramètres › Point automatique › Pour qui.'
+        : `Le mail ne part que pour les recherches en cours (${reglages.pour === 'recherche' ? 'statut Actif ou Prospect' : 'statut Actif'}).`;
+    }
     else if (!estAcheteur(c)) empechement = 'Ce contact n’est plus demandeur : le mail ne part pas.';
     else if (estArchive(c)) empechement = 'Ce contact est archivé : le mail ne part pas.';
     else if (reglages.exclus.includes(c.id)) empechement = 'Tu as choisi de ne jamais lui envoyer ce mail.';
     else if (!email) empechement = 'Pas d’adresse mail sur sa fiche.';
     else if (!recherche) empechement = 'Pas de recherche en cours.';
-    else if (!c.token_espace) empechement = 'Son espace n’a pas encore de lien : ouvre sa fiche une fois pour le créer.';
-    /* Werner : ce mail passe par l'espace ; sans espace activé, il ne part pas. */
-    else if (c.espace_client !== true) empechement = 'Pas d’espace client : ce mail passe par son espace. Active-le plus haut si tu veux qu’il parte.';
+    else if (reglages.pour === 'espace' && !c.token_espace) empechement = 'Son espace n’a pas encore de lien : ouvre sa fiche une fois pour le créer.';
+    /* Werner : réservé aux espaces, le mail ne part pas sans espace activé. */
+    else if (reglages.pour === 'espace' && c.espace_client !== true) empechement = 'Pas d’espace client : le mail est réservé aux demandeurs qui ont leur espace. Pour l’envoyer aussi sans espace : Paramètres › Point automatique › Pour qui.';
 
     const ech = echeance({ dernierMouvement, dernierEnvoi, creeLe: c.created_at, delai: reglages.delai });
 
@@ -232,17 +266,17 @@ export async function calculerCandidats(sb: Base, reglages: Reglages, opts: { cl
       const le = envois[i];
       const jusqua = new Date(Math.min(new Date(le).getTime() + 30 * 86_400_000,
         i > 0 ? new Date(envois[i - 1]).getTime() : Number.MAX_SAFE_INTEGER)).toISOString();
-      const { data: rep } = await sb.from('journal').select('type, titre, created_at')
+      const { data: rep } = await sb.from('journal').select('type, titre, metadata, created_at')
         .eq('client_id', c.id).in('type', TYPES_REACTION)
         .gt('created_at', le).lt('created_at', jusqua)
         .order('created_at', { ascending: true }).limit(1);
       const r = rep?.[0];
-      historique.push({ le, reponse: r ? libelleReaction(r.type, r.titre || '') : null, reponduLe: r?.created_at || null });
+      historique.push({ le, reponse: r ? libelleReaction(r.type, r.titre || '', r.metadata) : null, reponduLe: r?.created_at || null });
     }
 
     sortie.push({
       clientId: c.id, prenom: c.prenom || '', nom: c.nom || '', email, statut: c.statut,
-      revente: reventePossible(c), tokenClient: c.token_espace || null,
+      revente: reventePossible(c), tokenClient: c.token_espace || null, viaEspace,
       recherche, dernierMouvement, dernierEnvoi,
       echeance: ech.toISOString(),
       du: !empechement && ech.getTime() <= maintenant.getTime(),
@@ -386,7 +420,8 @@ export function resumeRecherche(r: any): Resume {
   return { lignes, points: points.slice(0, 7), depuis };
 }
 
-export type Reponse = 'toujours' | 'criteres' | 'trouve' | 'pause';
+export type Reponse = 'toujours' | 'criteres' | 'trouve' | 'pause' | 'rappel';
+export const REPONSES: readonly Reponse[] = ['toujours', 'criteres', 'trouve', 'pause', 'rappel'];
 
 /* Les liens n'agissent pas au simple clic : ils ouvrent l'espace sur la bonne
    question, et c'est le client qui répond. Les messageries et les antivirus
@@ -396,13 +431,35 @@ export function lienReponse(tokenClient: string, rechercheId: string, reponse: R
   return `${lienEspace(tokenClient, site)}?r=${encodeURIComponent(rechercheId)}&point=${reponse}`;
 }
 
-export function mailPoint(o: { prenom: string; recherche: any; tokenClient: string; site: string; co?: Coordonnees }): { sujet: string; html: string; texte: string } {
-  const { recherche, tokenClient, site } = o;
+/* Sans espace : la page de réponse de cet envoi (même principe : elle pose
+   la question, c'est le client qui répond). `jeton` : celui de l'envoi. */
+export function lienPage(jeton: string, reponse: Reponse, base: string): string {
+  return `${base.replace(/\/+$/, '')}/point/${encodeURIComponent(jeton)}?r=${reponse}`;
+}
+
+/** Le jeton d'un envoi sans espace : 24 caractères tirés au hasard, impossibles à deviner. */
+export function nouveauJeton(): string {
+  const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  const o = new Uint8Array(24);
+  crypto.getRandomValues(o);
+  return Array.from(o, (b) => A[b & 63]).join('');
+}
+
+/** La page de démonstration : celle des exemples envoyés à Werner. Rien ne s'y enregistre. */
+export const JETON_EXEMPLE = 'exemple';
+/** Un jeton d'envoi bien formé (ou « exemple », la page de démonstration). */
+export const jetonValide = (j: string) => j === JETON_EXEMPLE || /^[A-Za-z0-9_-]{24}$/.test(j);
+
+/* Les liens : `tokenClient` pour un client qui répond depuis son espace,
+   `lienDe` pour les autres (la page de réponse de son envoi, lienPage). */
+export function mailPoint(o: { prenom: string; recherche: any; tokenClient?: string | null; lienDe?: (x: Reponse) => string; site: string; co?: Coordonnees }): { sujet: string; html: string; texte: string } {
+  const { recherche, site } = o;
   /* Le téléphone de l'agence : Paramètres › Agence (la route le passe). */
   const co = o.co || coordonneesDe(null);
   const prenom = echappe(o.prenom || '');
   const res = resumeRecherche(recherche);
-  const lien = (x: Reponse) => lienReponse(tokenClient, recherche.id, x, site);
+  const viaEspace = !o.lienDe;
+  const lien = (x: Reponse) => (o.lienDe ? o.lienDe(x) : lienReponse(o.tokenClient || '', recherche.id, x, site));
 
   const lignesHtml = res.lignes.map((l) => `
             <tr><td style="padding:11px 16px;border-top:1px solid #f6f5f5;vertical-align:top;width:104px;font-size:12px;font-weight:700;color:#aba7a3;">${echappe(l.cle)}</td>
@@ -468,6 +525,11 @@ ${LIEN_POLICE_MAIL}
             bouton('pause', 'J’ai mis ma recherche en pause ou arrêtée', `background:#ffffff;color:#5B6B80;border:1.5px solid #e5e4e3;`)
           }
           </table>
+          <p style="margin:14px 0 9px;font-size:13.5px;color:#5B6B80;">Vous préférez en parler de vive voix&nbsp;?</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${
+            bouton('rappel', 'Je souhaite être rappelé', `background:#f6f6f7;color:${BLEU};border:1.5px solid #f6f6f7;`)
+          }
+          </table>
           <p style="margin:10px 0 22px;">Bonne journée,<br />Werner</p>
         </td></tr>
 
@@ -485,7 +547,7 @@ ${LIEN_POLICE_MAIL}
       <table role="presentation" width="600" class="sheet" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
         <tr><td class="bord" align="center" style="padding:16px 28px 6px;">
           <div style="font-size:11.5px;color:#aba7a3;line-height:1.7;">
-            Vous recevez ce message parce que votre recherche est en cours avec Werner Immobilier.<br />Chaque bouton ouvre votre espace personnel, au bon endroit.
+            Vous recevez ce message parce que votre recherche est en cours avec ${echappe(co.agence)}.<br />${viaEspace ? 'Chaque bouton ouvre votre espace personnel, au bon endroit.' : 'Chaque bouton ouvre une courte page pour nous répondre&nbsp;: rien à installer, aucun compte à créer.'}
           </div>
         </td></tr>
       </table>
@@ -507,6 +569,7 @@ ${LIEN_POLICE_MAIL}
     `Mes critères ont changé : ${lien('criteres')}`,
     `J’ai trouvé mon local : ${lien('trouve')}`,
     `J’ai mis ma recherche en pause ou arrêtée : ${lien('pause')}`,
+    `Je souhaite être rappelé : ${lien('rappel')}`,
     '',
     'Bonne journée,',
     `Werner · ${co.agence} · ${co.tel}`,
@@ -514,6 +577,34 @@ ${LIEN_POLICE_MAIL}
 
   return { sujet: 'Où en est votre recherche ?', html, texte };
 }
+
+/* ══ La page de réponse sans espace : retrouver l'envoi d'un jeton ══ */
+
+export type EnvoiPage = { id: string; clientId: string; rechercheId: string | null; le: string; expire: boolean };
+
+/**
+ * L'envoi auquel répond un lien /point/<jeton> : la ligne « point_auto » du
+ * suivi qui porte ce jeton. Null : aucun envoi n'a ce jeton. Une lecture
+ * ratée lève une erreur (la page dit « réessayez », pas « lien inconnu »).
+ */
+export async function envoiDuJeton(sb: Base, jeton: string): Promise<EnvoiPage | null> {
+  const { data, error } = await sb.from('journal').select('id, client_id, recherche_id, created_at')
+    .eq('type', TYPE_ENVOI).eq('metadata->>jeton', jeton).limit(1);
+  if (error) throw new Error('Lecture du lien impossible : ' + error.message);
+  const l = data?.[0];
+  if (!l) return null;
+  return {
+    id: l.id, clientId: l.client_id, rechercheId: l.recherche_id || null, le: l.created_at,
+    expire: Date.now() - new Date(l.created_at).getTime() > JOURS_REPONSE * 86_400_000,
+  };
+}
+
+/** Ce que veut dire chaque créneau de rappel (les mêmes que dans l'espace). */
+export const CRENEAUX_RAPPEL: Record<string, string> = {
+  matin: 'le matin (8h – 12h)',
+  apres_midi: 'l’après-midi (12h – 18h)',
+  soir: 'en fin de journée (18h – 20h)',
+};
 
 /* ══ L'envoi par Mailjet ══ */
 

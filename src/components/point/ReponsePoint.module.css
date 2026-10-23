@@ -1,0 +1,173 @@
+/* ═══ La page de réponse au point automatique (/point/<jeton>) ═══════════════
+   Lue par le demandeur sans espace, d'abord sur son téléphone. Les couleurs
+   de Werner : anthracite #2e3034, encre #232528, orange #f08c42 (texte orange
+   sur fond clair : #c2621c). Un seul accent : le choix en cours. */
+
+.page {
+  position: fixed; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: #efeeed; color: #232528;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px; line-height: 1.6;
+}
+.feuille { max-width: 600px; margin: 0 auto; padding: 0 0 28px; }
+
+/* ── l'en-tête ── */
+.tete {
+  background: #2e3034; border-bottom: 3px solid #f08c42;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 20px;
+}
+.tete img { height: 38px; width: auto; display: block; }
+.teteMot { font-size: 10px; font-weight: 700; letter-spacing: 2.4px; color: #f7b07a; text-transform: uppercase; }
+
+.exemple {
+  margin: 0 0 16px; padding: 10px 14px; border-radius: 12px;
+  background: #fff7ed; border: 1px dashed #f7b07a; color: #9a4a12;
+  font-size: 13px; font-weight: 600; line-height: 1.5;
+}
+
+/* ── la carte ── */
+.carte {
+  background: #fff; border: 1px solid #e5e4e3; border-radius: 18px;
+  margin: 14px 16px 0; padding: 22px 20px 20px;
+  animation: entre .45s cubic-bezier(.16,1,.3,1) both;
+}
+.bonjour { font-size: 14.5px; color: #5c5955; margin-bottom: 2px; }
+.titre { font-size: 23px; font-weight: 800; letter-spacing: -.3px; line-height: 1.25; color: #232528; }
+.intro { margin-top: 8px; font-size: 14.5px; color: #4a4744; }
+
+.deja {
+  margin-top: 14px; display: flex; gap: 10px; align-items: flex-start;
+  padding: 11px 13px; border-radius: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; color: #14532d; font-size: 13.5px;
+}
+.deja svg { flex: 0 0 auto; margin-top: 2px; color: #16a34a; }
+
+/* ── le rappel de sa recherche ── */
+.recap { margin-top: 16px; border: 1px solid #eeeeed; border-radius: 14px; overflow: hidden; }
+.recapTete {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+  background: #f6f6f7; border: 0; font: inherit; color: #2e3034; text-align: left; cursor: pointer;
+}
+.recapTx { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; row-gap: 1px; }
+.recapTx b { font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.recapTx small { font-size: 12px; color: #9a9691; font-weight: 600; }
+.recapChev { flex: 0 0 auto; color: #9a9691; transition: transform .25s ease; }
+.recapOuvert .recapChev { transform: rotate(180deg); }
+.plie { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s cubic-bezier(.16,1,.3,1); }
+.plie > div { overflow: hidden; min-height: 0; }
+.deplie { grid-template-rows: 1fr; }
+.recapLigne { display: flex; gap: 12px; padding: 10px 14px; border-top: 1px solid #f3f2f2; }
+.recapCle { flex: 0 0 92px; font-size: 12px; font-weight: 700; color: #aba7a3; padding-top: 2px; }
+.recapVal { flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 700; color: #2e3034; line-height: 1.45; }
+.recapVal small { display: block; font-size: 12.5px; font-weight: 500; color: #6b6762; margin-top: 2px; }
+.pastilles { display: flex; flex-wrap: wrap; gap: 5px; }
+.pastille { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 12.5px; font-weight: 700; background: #fff; border: 1px solid #eeeeed; color: #232528; }
+.pastilleForte { background: #fff6ec; border-color: #f7b07a; color: #c2621c; }
+
+/* ── les réponses ── */
+.question { margin-top: 20px; font-size: 13px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #9a9691; }
+.reponses { margin-top: 10px; display: flex; flex-direction: column; gap: 9px; }
+.reponse {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 13px 14px;
+  background: #fff; border: 1.5px solid #e5e4e3; border-radius: 14px;
+  font: inherit; color: #232528; text-align: left; cursor: pointer;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.reponse:hover { border-color: #c9c6c2; }
+.reponse[aria-pressed='true'] { border-color: #f08c42; box-shadow: 0 0 0 3px rgba(240,140,66,.16); background: #fffaf5; }
+.repIc {
+  flex: 0 0 auto; width: 38px; height: 38px; border-radius: 11px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #f4f4f3; color: #2e3034; transition: background .18s ease, color .18s ease;
+}
+.reponse[aria-pressed='true'] .repIc { background: #f08c42; color: #232528; }
+.repTx { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.repTx b { font-size: 15px; font-weight: 700; line-height: 1.35; }
+.repTx small { font-size: 12.5px; color: #77736e; margin-top: 1px; }
+.repCoche {
+  flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #d6d3cf;
+  display: inline-flex; align-items: center; justify-content: center; color: transparent;
+  transition: all .18s ease;
+}
+.reponse[aria-pressed='true'] .repCoche { background: #2e3034; border-color: #2e3034; color: #fff; }
+
+/* le détail, sous la réponse choisie */
+.detail { padding: 4px 2px 6px; }
+.detailIn { padding: 14px 14px 16px; margin-top: 2px; border-radius: 14px; background: #faf9f8; border: 1px solid #efeeed; }
+.detailTx { font-size: 14px; color: #4a4744; }
+.lib { display: block; font-size: 13px; font-weight: 700; color: #2e3034; margin: 14px 0 7px; }
+.lib:first-child { margin-top: 0; }
+.lib small { font-weight: 500; color: #9a9691; }
+.zone {
+  width: 100%; min-height: 84px; resize: vertical; padding: 11px 12px; border-radius: 12px;
+  border: 1.5px solid #e5e4e3; background: #fff; font: inherit; font-size: 15px; color: #232528; line-height: 1.5;
+  outline: none; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.zone:focus { border-color: #2e3034; box-shadow: 0 0 0 3px rgba(46,48,52,.08); }
+.options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.options3 { grid-template-columns: repeat(3, 1fr); }
+.option {
+  padding: 11px 10px; border-radius: 12px; border: 1.5px solid #e5e4e3; background: #fff;
+  font: inherit; color: #232528; cursor: pointer; text-align: center; display: flex; flex-direction: column; gap: 1px;
+  transition: border-color .15s ease, background .15s ease;
+}
+.option b { font-size: 14px; font-weight: 700; line-height: 1.3; }
+.option small { font-size: 12px; color: #77736e; }
+.option[aria-pressed='true'] { border-color: #2e3034; background: #2e3034; color: #fff; }
+.option[aria-pressed='true'] small { color: rgba(255,255,255,.7); }
+.envoyer {
+  margin-top: 14px; width: 100%; padding: 14px 16px; border-radius: 13px; border: 0;
+  background: #2e3034; color: #fff; font: inherit; font-size: 15.5px; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  transition: opacity .15s ease, background .15s ease;
+}
+.envoyer:hover:not(:disabled) { background: #232528; }
+.envoyer:disabled { opacity: .45; cursor: default; }
+.aide { margin-top: 8px; font-size: 12.5px; color: #9a9691; text-align: center; }
+.erreur { margin-top: 10px; padding: 10px 12px; border-radius: 11px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 13.5px; }
+
+/* ── c'est fait ── */
+.fait { text-align: center; padding: 30px 22px 26px; }
+.faitIc {
+  width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: #f08c42; color: #232528;
+  animation: pose .5s .05s cubic-bezier(.16,1,.3,1) both;
+}
+.faitIcGris { background: #f1f0ef; color: #5c5955; }
+.fait .titre { font-size: 22px; }
+.fait .intro { max-width: 420px; margin-left: auto; margin-right: auto; }
+.retour { margin-top: 18px; background: none; border: 0; font: inherit; font-size: 13.5px; font-weight: 700; color: #6b6762; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── le contact ── */
+.contact { margin: 14px 16px 0; padding: 16px 18px; border-radius: 16px; background: #2e3034; color: #fff; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.contactTx { flex: 1 1 180px; min-width: 0; }
+.contactTx b { display: block; font-size: 14px; }
+.contactTx small { display: block; font-size: 12px; color: rgba(255,255,255,.6); margin-top: 1px; }
+.contactBtns { display: flex; gap: 8px; flex-wrap: wrap; }
+.tel, .mail {
+  display: inline-flex; align-items: center; gap: 7px; padding: 10px 14px; border-radius: 12px;
+  text-decoration: none; font-size: 14px; font-weight: 700; white-space: nowrap;
+}
+.tel { background: #f08c42; color: #232528; }
+.mail { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); color: rgba(255,255,255,.92); }
+.pied { margin: 14px 16px 0; text-align: center; font-size: 11.5px; color: #aba7a3; line-height: 1.6; }
+
+@keyframes entre { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes pose { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .carte, .faitIc { animation: none; }
+  .plie, .reponse, .repIc, .repCoche, .recapChev { transition: none; }
+}
+
+@media (min-width: 640px) {
+  .feuille { padding-top: 26px; }
+  .tete { border-radius: 18px 18px 0 0; margin: 0 16px; }
+  .tete + .carte { margin-top: 0; border-top: 0; border-radius: 0 0 18px 18px; }
+  .carte { padding: 28px 30px 26px; }
+  .titre { font-size: 26px; }
+}
+@media (max-width: 380px) {
+  .options3 { grid-template-columns: 1fr; }
+  .options3 .option { flex-direction: row; justify-content: space-between; align-items: center; text-align: left; }
+}

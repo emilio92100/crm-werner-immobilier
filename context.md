@@ -514,6 +514,26 @@ et la relecture des mandats de recherche (§6).
   (`MAILJET_FROM_EMAIL`), le compte de connexion (`WERNER_MAIL_COMPTE`) et la boîte des alertes
   (`ALERTES_EMAIL`, sinon l'expéditeur).
 
+**23 octobre 2026 — Le point automatique, aussi sans espace.**
+- Paramètres › Point automatique redessiné en trois cartes (Réglages, Comment ça marche, Qui le
+  recevrait) : plus de cartes de tuiles qui se répétaient.
+- **Pour qui** (`parametres.point_auto_pour`, rien à migrer) : « les demandeurs qui ont leur espace »
+  (`espace`, par défaut, comme avant) ou « tous ceux qui ont une recherche en cours » (`recherche` :
+  statuts Actif et Prospect). Un client avec son espace y répond toujours ; les autres répondent sur
+  `/point/<jeton>` (`src/app/point/[jeton]/page.tsx`, `src/components/point/ReponsePoint.tsx`), sans
+  compte. Le jeton est tiré à chaque envoi et rangé dans le metadata de la ligne `point_auto` du
+  suivi (`envoiDuJeton`, valable 90 jours) ; `/point/exemple` est la page de démonstration.
+- **Cinq réponses** dans le mail : je cherche toujours, mes critères ont changé, j'ai trouvé, pause
+  ou arrêt, et « Je souhaite être rappelé » (nouveau ; dans l'espace, `?point=rappel` ouvre le choix
+  du moment). Sans espace, elles passent par `/api/point/repondre` : une ligne au suivi (avec la
+  recherche), une relance du jour pour Werner (sauf « je cherche toujours » sans mot), et pour
+  « trouvé », « pause », « j'arrête » la même suite que depuis l'espace — dossier qui change de
+  rubrique, veille arrêtée, relances et visites soldées — tirée de la route de l'espace dans
+  `src/lib/fin-recherche-serveur.ts` (`declarerFin`), que les deux appellent.
+- La ligne « Mail envoyé automatiquement » du suivi dit par où il répondra ; le récapitulatif du
+  matin marque « sans espace ». La fiche d'un demandeur sans espace montre aussi le bloc du point
+  automatique (onglet « Son espace »).
+
 ---
 
 ## 6. Ce qui reste à faire
@@ -663,8 +683,9 @@ et la relecture des mandats de recherche (§6).
   (`outils/sql/espace-client-choix.sql`, exécuté : la colonne est là, vérifié le 22 octobre 2026), faux par défaut. Sans espace :
   les locaux envoyés par mail mènent à leur fiche publique `/bien/<id>` (son bouton « Me contacter »
   porte le titre du local en objet), aucun mail ne parle d'espace, le lien d'espace mène à « Ce lien
-  n'est plus actif » (`ouvrirEspace`, `src/lib/espace.ts`), et le point automatique, le mail de
-  bienvenue, « Renvoyer le lien », le mandat en ligne et ses rappels ne partent pas. Werner l'active
+  n'est plus actif » (`ouvrirEspace`, `src/lib/espace.ts`), et le mail de bienvenue, « Renvoyer le
+  lien », le mandat en ligne et ses rappels ne partent pas. Le point automatique non plus, sauf si
+  Werner l'envoie à tous ceux qui ont une recherche (23 octobre 2026, §5). Werner l'active
   ou le coupe sur la fiche du demandeur, onglet « Son espace ». Avant le SQL, tout le monde est sans
   espace et l'activation échoue (message rouge).
   **Comme chez Emilio** (choix d'Alexandre) : « Actif » = avec son espace, « Prospect » = sans
@@ -744,6 +765,12 @@ types TypeScript ne décrivent plus le schéma » (§2), `relances.statut = 'rep
    une affaire disponible, sous offre ou en signature sans réglage est « Diffusé · Mon site (réglage
    par défaut) », et SeLoger s'affiche grisé, « en attente du branchement ». Le jour venu : ajouter
    'seloger' à `SUPPORTS_BRANCHES` et le cocher dans `SUPPORTS_DEFAUT`.
+10. **Réglé le 23 octobre 2026 : les relances créées par le CRM lui-même étaient refusées par la
+   base.** La structure reprise n'acceptait que deux types de relance (`auto`, `manuelle`) ; le code
+   écrit aussi `rappel_client` (demande de rappel, de visite, offre, signature, réponse au point
+   automatique…) et `message_client`. Refusées, elles ne se créaient pas, et l'erreur n'allait que
+   dans les journaux du serveur. `outils/sql/relances-types.sql` élargit la règle (exécuté le
+   23 octobre 2026 dans le projet « CRM Werner Immobilier »).
 
 Une anomalie nouvelle s'ajoute ici, datée, avant d'être corrigée.
 

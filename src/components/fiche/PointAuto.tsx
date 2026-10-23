@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 
 /* ═══ Le point automatique, sur la fiche d'un client ════════════════════
    Le mail « Où en est votre recherche ? » part tout seul quand un dossier
-   actif ne bouge plus (voir src/lib/point-auto.ts). Ici, on ne règle rien :
+   en cours ne bouge plus (voir src/lib/point-auto.ts). Ici, on ne règle rien :
    on voit quand il partira, ce que le client a répondu les fois d'avant, et
    on peut l'exclure. Le réglage général vit dans les Paramètres.
 
@@ -12,7 +12,7 @@ import { useEffect, useState, useCallback } from 'react';
    que l'envoi ne tiendrait pas. */
 
 type Etat = {
-  reglages: { actif: boolean; delai: number };
+  reglages: { actif: boolean; delai: number; pour?: 'espace' | 'recherche' };
   branche: { cron: boolean; mailjet: boolean };
   client: {
     statut: string;
@@ -22,6 +22,8 @@ type Etat = {
     du: boolean;
     empechement: string | null;
     exclu: boolean;
+    /** Il répond depuis son espace ; sinon, depuis le mail (la page sans compte). */
+    viaEspace?: boolean;
     historique: { le: string; reponse: string | null; reponduLe: string | null }[];
   };
 };
@@ -85,7 +87,8 @@ export default function PointAuto({ clientId, integre = false }: { clientId: str
   } else {
     phrase = `Prochain mail le ${jour(c.echeance)}, si rien ne bouge d’ici là.`;
   }
-  const dernier = c.dernierMouvement ? `Dernier mouvement le ${jour(c.dernierMouvement, true)}` : 'Aucun mouvement depuis la création du dossier';
+  const dernier = (c.dernierMouvement ? `Dernier mouvement le ${jour(c.dernierMouvement, true)}` : 'Aucun mouvement depuis la création du dossier')
+    + (!c.empechement && c.viaEspace === false ? ' · sans espace, il répond depuis le mail' : '');
 
   return (
     <div style={integre

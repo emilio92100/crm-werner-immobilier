@@ -2137,12 +2137,14 @@ export default function EspaceClient({ token, client, criteres, biens: biensInit
     if (pointOuvert.current) return;
     let voulu = '';
     try { voulu = new URLSearchParams(window.location.search).get('point') || ''; } catch { return; }
-    if (!['toujours', 'criteres', 'trouve', 'pause'].includes(voulu)) return;
+    if (!['toujours', 'criteres', 'trouve', 'pause', 'rappel'].includes(voulu)) return;
     const t = setTimeout(() => {
       pointOuvert.current = true;
       try { window.history.replaceState(null, '', window.location.pathname); } catch { /* sans effet */ }
       if (voulu === 'toujours') ouvrirToujours();
       else if (voulu === 'criteres') ouvrirCriteres();
+      /* « Je souhaite être rappelé » (23 octobre 2026) : directement le choix du moment. */
+      else if (voulu === 'rappel') montrer(<ChoixCriteres onFermer={fermer} onModifier={ouvrirModifCriteres} onRappel={demanderRappel} seulRappel />);
       else if (voulu === 'trouve') montrer(<FinRecherche onFermer={fermer} onChoisir={declarerFin}
         seulement={['trouve_avec_vous', 'trouve_ailleurs']} titre={'Bonne nouvelle\u00a0!'}
         intro={'Dites-nous comment, en un clic. Votre conseiller vous rappelle\u00a0: rien ne se ferme sans vous.'} />);
@@ -6347,8 +6349,10 @@ function FinRecherche({ onFermer, onChoisir, seulement, titre, intro }: any) {
   );
 }
 
-function ChoixCriteres({ onFermer, onModifier, onRappel }: any) {
-  const [ouvertRappel, setOuvertRappel] = useState(false);
+/* `seulRappel` : le bouton « Je souhaite être rappelé » du mail « Où en est
+   votre recherche ? » — seulement le choix du moment, déjà ouvert. */
+function ChoixCriteres({ onFermer, onModifier, onRappel, seulRappel = false }: any) {
+  const [ouvertRappel, setOuvertRappel] = useState(!!seulRappel);
   const [creneau, setCreneau] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const CRENEAUX: [string, string, string][] = [
@@ -6359,14 +6363,15 @@ function ChoixCriteres({ onFermer, onModifier, onRappel }: any) {
   return (
     <>
       <div className="tete-f">
-        <div><div className="sur">Votre recherche</div><h3>Comment préférez-vous faire&nbsp;?</h3></div>
+        <div><div className="sur">Votre recherche</div><h3>{seulRappel ? 'Quand souhaitez-vous être rappelé\u00a0?' : 'Comment préférez-vous faire\u00a0?'}</h3></div>
         <button className="fermer" onClick={onFermer} aria-label="Fermer"><Ico n="croix" t={14} /></button>
       </div>
       <div className="corps-f">
         <p className="txt" style={{ marginTop: 0, color: 'var(--plume)' }}>
-          Deux façons de faire évoluer votre recherche. Les deux arrivent chez votre conseiller.
+          {seulRappel ? 'Votre conseiller vous appelle pour en parler de vive voix. Choisissez le moment qui vous arrange.' : 'Deux façons de faire évoluer votre recherche. Les deux arrivent chez votre conseiller.'}
         </p>
 
+        {!seulRappel && <>
         <button className="cta-prec" onClick={onModifier}>
           <span><b>Je modifie moi-même ma recherche</b>
             <span className="s">Vous reprenez vos critères un par un. Vos changements sont
@@ -6381,10 +6386,11 @@ function ChoixCriteres({ onFermer, onModifier, onRappel }: any) {
               et met la recherche à jour avec vous.</span></span>
           <span className="chev"><Ico n="tel" t={18} /></span>
         </button>
+        </>}
 
         {ouvertRappel && (
           <div className="bloc-rappel">
-            <div className="lib-rappel">À quel moment de la journée&nbsp;?</div>
+            {!seulRappel && <div className="lib-rappel">À quel moment de la journée&nbsp;?</div>}
             <div className="creneaux">
               {CRENEAUX.map(([cle, titre, heures]) => (
                 <button key={cle} type="button"

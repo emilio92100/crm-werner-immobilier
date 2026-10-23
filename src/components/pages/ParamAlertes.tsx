@@ -152,7 +152,7 @@ export default function ParamAlertes() {
                     <div className={p.ligneTx}>{fr(a.quand)}</div>
                     <div className={`${p.dansCrm} ${on ? '' : p.dansCrmCoupe}`}>
                       <Ico n="ecran" t={14} e={2} />
-                      <span>{fr(`${on ? 'Aussi dans le CRM' : 'Coupé : tu le vois dans le CRM'} : ${a.crm.charAt(0).toLowerCase()}${a.crm.slice(1)}`)}</span>
+                      <span>{fr(`${on ? 'Toujours dans le CRM, mail coupé ou non' : 'Mail coupé, mais toujours dans le CRM'} : ${a.crm.charAt(0).toLowerCase()}${a.crm.slice(1)}`)}</span>
                     </div>
                     {a.sauf && !on && <div className={p.sauf}>{fr(`Il part quand même si ${a.sauf}`)}</div>}
                   </div>

@@ -409,6 +409,26 @@ textarea.input { resize: vertical; line-height: 1.55; }
 }
 .puceVar:hover { background: #ffedd5; }
 
+/* ── Point automatique (23 octobre 2026) : une case avec sa phrase, les
+   réponses du mail et ce qu'elles font, la mention « sans espace » ── */
+.case small { display: block; margin-top: 3px; font-size: 12.5px; font-weight: 500; line-height: 1.45; color: #71717a; }
+.case[aria-pressed='true'] small { color: #52525b; }
+.effets { display: flex; flex-direction: column; gap: 8px; }
+.effet { display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 1fr); gap: 14px; align-items: center; }
+.effetBtn {
+  display: block; text-align: center; padding: 9px 12px; border-radius: 11px; font-size: 13px; font-weight: 700; line-height: 1.35;
+  border: 1.5px solid #2e3034; color: #2e3034; background: #fff;
+}
+.effetFonce { background: #2e3034; color: #fff; }
+.effetOr { background: #f08c42; border-color: #f08c42; color: #232528; }
+.effetGris { color: #5B6B80; border-color: #e5e4e3; }
+.effetDoux { background: #f6f6f7; border-color: #f6f6f7; }
+.effetTx { font-size: 13px; line-height: 1.5; color: #52525b; }
+.effetTx b { color: #232528; }
+.personneNom { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.personneNom b { max-width: 100%; }
+.sansEspace { margin-top: 2px; font-size: 11px; font-weight: 700; line-height: 1.3; color: #71717a; background: #f4f4f5; border-radius: 99px; padding: 1px 8px; }
+
 @media (prefers-reduced-motion: reduce) {
   .tete::after, .teteIc svg, .heroIc::before, .etapesPoint, .pVert i::after, .pOr i::after, .direct i::after { animation: none; }
 }
@@ -447,6 +467,8 @@ textarea.input { resize: vertical; line-height: 1.55; }
   .personne small { max-width: 50%; }
   .input { font-size: 16px; }
   .etats, .cases, .chiffres { grid-template-columns: 1fr; }
+  .effets { gap: 14px; }
+  .effet { grid-template-columns: 1fr; gap: 6px; }
   .signatureCadre { width: 100%; }
   .barre { bottom: 8px; border-radius: 16px; }
   .barreBoutons { width: 100%; }
