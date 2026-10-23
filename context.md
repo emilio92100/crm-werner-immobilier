@@ -587,6 +587,16 @@ gauche […] c'est pareil sur Werner ».
 - **La période** dans « Effectuées » et « Toutes » : 7 jours, ce mois, 6 mois, cette année, tout, et
   « Dates… » (un calendrier du… au…) ; les effectuées rangées par mois (`PeriodeVisites.tsx`).
 
+**24 octobre 2026 (V3.243, comme chez Emilio)** — le rapprochement.
+- **Ce que dit la fiche de tes affaires** : dans la fenêtre du rapprochement (la carte et l'aperçu),
+  l'historique et « Depuis tes affaires » : l'adresse, le mandant et son numéro, la fourchette d'une
+  estimation (à la place de « Montant non indiqué »), ce qui manque (« Pas dans sa fiche : … »), « Pas
+  de photo » ; un bloc « Dans sa fiche » et un grand bouton « Ouvrir la fiche de l'affaire »
+  (`infosDesBiens`, src/lib/rapprochement.ts). Rien ne part chez le demandeur.
+- **L'onglet Rapprochement de la fiche** : sur toute la largeur, chaque bien en carte, relu tel qu'il
+  est aujourd'hui (`biensDuJour`) ; tes affaires qui lui correspondent devant quand il y en a.
+- **Déplier, replier** en douceur partout dans le rapprochement (`Depliant`).
+
 ---
 
 ## 6. Ce qui reste à faire
