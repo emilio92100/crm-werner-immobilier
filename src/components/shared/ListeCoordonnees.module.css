@@ -24,6 +24,18 @@
 }
 .ajouter:hover { color: #25272b; }
 .ajouter:hover span { text-decoration: underline; text-underline-offset: 3px; }
+/* V3.236 : « Déplacer » et son petit menu. */
+.depl { position: relative; display: inline-flex; flex-shrink: 0; }
+.deplVoile { position: fixed; inset: 0; z-index: 40; }
+.deplMenu {
+  position: absolute; z-index: 41; right: 0; top: calc(100% + 4px); min-width: 230px; display: flex; flex-direction: column; padding: 5px;
+  background: #fff; border: 1px solid #eaeae9; border-radius: 12px; box-shadow: 0 16px 36px -14px rgba(15, 23, 42, .3);
+}
+.deplMenu button {
+  display: block; width: 100%; text-align: left; padding: 9px 11px; border: none; border-radius: 8px; background: none; cursor: pointer;
+  font: 600 13px 'DM Sans', sans-serif; color: #25272b; white-space: nowrap;
+}
+.deplMenu button:hover { background: #f5e6dc; }
 @media (hover: none) {
   .bouton { width: 36px; height: 36px; }
 }

@@ -15,9 +15,13 @@
      principal (c'est lui qui part dans les mails, les actes, l'espace).
 
    `nettoyer` rend la liste à enregistrer : sans les vides, sans les
-   doublons, dans l'ordre affiché. */
+   doublons, dans l'ordre affiché.
 
-import { useEffect, useId, useRef } from 'react';
+   V3.236 — `deplacer` : une flèche sur chaque ligne remplie, qui l'envoie
+   ailleurs (« Vers Maxime », « Vers les autres adresses du dossier ») : pour
+   ranger une fiche où tout était mélangé, sans rien retaper. */
+
+import { useEffect, useId, useRef, useState } from 'react';
 import { Ic } from '@/components/documents/ApercuActe';
 import s from './ListeCoordonnees.module.css';
 
@@ -45,7 +49,7 @@ export function nettoyer(lignes: string[], genre: GenreCoord): string[] {
   return out;
 }
 
-export function ListeCoordonnees({ genre, valeurs, onChange, etiquette, classeBloc, classeEtiquette, classeChamp, exemples }: {
+export function ListeCoordonnees({ genre, valeurs, onChange, etiquette, classeBloc, classeEtiquette, classeChamp, exemples, deplacer }: {
   genre: GenreCoord;
   valeurs: string[];
   onChange: (v: string[]) => void;
@@ -57,8 +61,13 @@ export function ListeCoordonnees({ genre, valeurs, onChange, etiquette, classeBl
   /* V3.173 : ce que les cases vides suggèrent (« Le standard de l'étude »,
      « Une ligne directe »), au lieu de « Numéro » et « Autre numéro ». */
   exemples?: { premier: string; autres: string };
+  /* V3.236 : où cette ligne peut aller. `vers` reçoit la valeur et son rang :
+     c'est lui qui la retire d'ici et la pose ailleurs, en une seule mise à
+     jour (deux `onChange` de suite s'écraseraient). */
+  deplacer?: { lib: string; vers: (v: string, rang: number) => void }[];
 }) {
   const id = useId();
+  const [menu, setMenu] = useState<number | null>(null);
   const liste = valeurs.length ? valeurs : [''];
   const plusieurs = liste.length > 1;
   const ce = genre === 'tel' ? 'ce numéro' : 'cet e-mail';
@@ -104,6 +113,26 @@ export function ListeCoordonnees({ genre, valeurs, onChange, etiquette, classeBl
               <button type="button" className={s.bouton} title={`En faire ${le} principal`} aria-label={`En faire ${le} principal`} onClick={() => enPremier(i)}>
                 <Ic n="etoile" t={15} e={2} />
               </button>
+            )}
+            {!!deplacer?.length && (
+              v.trim() ? (
+                <span className={s.depl}>
+                  <button type="button" className={s.bouton} title="Déplacer" aria-label={`Déplacer ${v.trim()}`} aria-expanded={menu === i}
+                    onClick={() => setMenu(m => (m === i ? null : i))}>
+                    <Ic n="fleche" t={15} e={2.1} />
+                  </button>
+                  {menu === i && (
+                    <>
+                      <span className={s.deplVoile} onClick={() => setMenu(null)} />
+                      <span className={s.deplMenu} role="menu">
+                        {deplacer.map(d => (
+                          <button key={d.lib} type="button" role="menuitem" onClick={() => { setMenu(null); d.vers(v.trim(), i); }}>{d.lib}</button>
+                        ))}
+                      </span>
+                    </>
+                  )}
+                </span>
+              ) : plusieurs ? <span className={s.bouton} aria-hidden="true" /> : null
             )}
             {(plusieurs || !!v) && (
               <button type="button" className={`${s.bouton} ${s.retirer}`} title={`Retirer ${ce}`} aria-label={`Retirer ${ce}`} onClick={() => retirer(i)}>
