@@ -1,4 +1,5 @@
 'use client';
+import { EXIGENCES_PRO } from '@/components/shared/CriteresRecherche';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
@@ -2302,7 +2303,21 @@ const trancheDe = (score: number) => TRANCHES.find(t => score >= t.min) || TRANC
 const NOMS_EXIGENCES: Record<string, string> = {
   ascenseur: 'Ascenseur', balcon: 'Extérieur', terrasse: 'Terrasse', jardin: 'Cour', parking: 'Parking',
   cave: 'Cave', gardien: 'Gardien', exterieur: 'Extérieur',
+  /* Werner (23 octobre 2026) : les exigences d'un local, mêmes clés que ses équipements. */
+  ...Object.fromEntries(EXIGENCES_PRO.map(e => [e.k, e.l])),
 };
+/* Une exigence présente sur l'annonce : sa case, ou ce que la veille a rangé
+   dans son résumé d'affaire (`pro` : équipements, vitrine, extraction). */
+function exigencePresente(p: any, cle: string): boolean {
+  if (cle === 'exterieur') return !!(p.balcon || p.terrasse || p.jardin || Number(p.surface_exterieur) > 0);
+  if (p[cle] === true) return true;
+  const pro = p.pro && typeof p.pro === 'object' ? p.pro : {};
+  if (Array.isArray(pro.equipements) && pro.equipements.includes(cle)) return true;
+  if (cle === 'vitrineEq') return Number(pro.vitrine) > 0;
+  if (cle === 'extraction') return pro.extraction === 'oui';
+  if (cle === 'rdc') return p.etage === 0 || p.etage === '0';
+  return false;
+}
 
 /** La base : ce qu'un bien doit cocher pour être proposé. On ne dit que ce
     qui se vérifie sur la fiche ; le reste est la règle de la veille. */
@@ -2317,7 +2332,7 @@ function baseDe(p: any, r: any): string[] {
   const ex = (r?.exigences || {}) as Record<string, string>;
   const presents = Object.keys(ex)
     .filter(cle => ex[cle] === 'indispensable' && NOMS_EXIGENCES[cle])
-    .filter(cle => cle === 'exterieur' ? !!(p.balcon || p.terrasse || p.jardin || Number(p.surface_exterieur) > 0) : !!p[cle])
+    .filter(cle => exigencePresente(p, cle))
     .map(cle => NOMS_EXIGENCES[cle]);
   if (presents.length) out.push(`${presents.join(', ')} : indispensable${presents.length > 1 ? 's' : ''}, présent${presents.length > 1 ? 's' : ''}`);
   return out;
