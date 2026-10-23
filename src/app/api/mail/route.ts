@@ -4,11 +4,12 @@ import { createClient } from '@supabase/supabase-js';
 import { lireIdentiteAgence } from '@/lib/agence';
 import { ecritServeur } from '@/lib/ecritures';
 import { CLES_MAIL, conseillerDe } from '@/lib/mail-variables';
+import { groupesAdresses, nomDeLAdresse, pourAdresses } from '@/lib/foyer';
 import {
-  habillageDe, htmlVersTexte, htmlVide, mailLibreHtml, nettoyerHtml, personnaliserHtml, personnaliserObjet, personnaliserTexte, texteLiens,
+  habillageDe, htmlVersTexte, htmlVide, mailLibreHtml, nettoyerHtml, personnaliserHtml, personnaliserObjet, personnaliserTexte, pourGroupe, texteLiens,
   type LienPiece, type StyleMail,
 } from '@/lib/mail-libre';
-import { avecRemises, noterRemises } from '@/lib/remise-mail';
+import { avecRemises, noterRemises, noterRemisesCopies } from '@/lib/remise-mail';
 
 /**
  * « Nouveau mail » (V3.41) : un mail écrit à la main, à des contacts du CRM
@@ -30,6 +31,20 @@ import { avecRemises, noterRemises } from '@/lib/remise-mail';
  * son adresse) : une ligne dans `envois` et une dans son Suivi (`journal`),
  * rangées dans sa recherche ouverte s'il en a une. Une adresse hors CRM ne
  * laisse pas de trace : il n'y a pas de fiche où la ranger.
+ *
+ * V3.234 — Cc et Cci (repris du CRM d'Emilio, 23 octobre 2026). Alexandre :
+ * « si je mets des gens en copie, ils recevront aussi le mail, avec
+ * l'affichage du destinataire à qui je l'ai envoyé, comme si j'envoyais un
+ * vrai mail ». `cc` et `cci` : { contacts,
+ * adresses }, comme « À ». Dès qu'il y a une copie, le mail part en UN seul
+ * exemplaire, comme depuis une messagerie : « À » et « Cc » visibles de tous,
+ * « Cci » de personne ; {{prénom}} prend le ou les prénoms en « À »
+ * (`pourGroupe`). Chaque contact du CRM, en « À » ou en copie, a sa ligne
+ * dans son Suivi. Sans copie, rien ne change : un mail par personne.
+ *
+ * V3.235 — `choix` (dans chaque ligne) : { [contact]: [adresses] }, les
+ * adresses cochées d'un contact. Avant, un contact recevait le mail sur
+ * TOUTES les adresses de sa fiche, celles du notaire du dossier comprises.
  */
 
 export const runtime = 'nodejs';
@@ -55,8 +70,14 @@ const ko = (erreur: string, status = 400) => NextResponse.json({ ok: false, erre
 const nomPropre = (n: string) => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   .replace(/[^A-Za-z0-9._ -]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 120) || 'document';
 
-type Dest = { a: string[]; nom: string; prenom: string; famille: string; reference: string; clientId: string | null };
-type Contact = { id: string; prenom: string | null; nom: string | null; reference: string | null; emails: string[] | null };
+/* V3.234 : `role`, la ligne où la personne a été mise — « À », Cc ou Cci. */
+type Role = 'a' | 'cc' | 'cci';
+/* `nomMail` : le nom affiché à côté de chaque adresse dans le mail (V3.236 :
+   celui de la personne 2 pour son adresse, aucun pour le notaire du dossier). */
+type Dest = { a: string[]; nom: string; nomMail: Record<string, string>; prenom: string; famille: string; reference: string; clientId: string | null; role: Role };
+/* Mailjet : 50 adresses au plus dans un même mail (À, Cc et Cci ensemble). */
+const MAX_GROUPE = 50;
+type Contact = { id: string; prenom: string | null; nom: string | null; reference: string | null; emails: string[] | null; conjoint?: unknown; adresses_dossier?: unknown };
 
 /* V3.50 : les mails partent par lots, un appel Mailjet par lot (l'API v3.1
    en accepte 50 par appel). Sans pièce jointe, tout part en un seul appel.
@@ -69,7 +90,9 @@ type Contact = { id: string; prenom: string | null; nom: string | null; referenc
    Mailjet répond message par message : chacun est noté selon SA réponse.
    `incertain` : Mailjet n'a pas répondu (délai dépassé, coupure, panne de
    son côté) — les mails du lot sont peut-être partis, on ne le sait pas. */
-type Message = { a: { email: string; nom: string }[]; sujet: string; texte: string; html: string; id: string };
+type Adresse = { email: string; nom: string };
+type Message = { a: Adresse[]; cc?: Adresse[]; cci?: Adresse[]; sujet: string; texte: string; html: string; id: string };
+const versMailjet = (l: Adresse[]) => l.map(x => ({ Email: x.email, ...(x.nom ? { Name: x.nom } : {}) }));
 type Pj = { nom: string; type: string; base64: string };
 const LOT_MAX_MESSAGES = 50;
 const LOT_MAX_OCTETS = 14_000_000;
@@ -87,7 +110,9 @@ async function mailjetLot(messages: Message[], pj: Pj[], limite: number): Promis
         Messages: messages.map(m => ({
           From: { Email: FROM_EMAIL, Name: FROM_NAME },
           ...reponseAgence(FROM_EMAIL, co),
-          To: m.a.map(x => ({ Email: x.email, ...(x.nom ? { Name: x.nom } : {}) })),
+          To: versMailjet(m.a),
+          ...(m.cc?.length ? { Cc: versMailjet(m.cc) } : {}),
+          ...(m.cci?.length ? { Bcc: versMailjet(m.cci) } : {}),
           Subject: m.sujet, TextPart: m.texte, HTMLPart: m.html, CustomID: m.id,
           ...(pj.length ? { Attachments: pj.map(p => ({ ContentType: p.type, Filename: p.nom, Base64Content: p.base64 })) } : {}),
           TrackOpens: 'disabled', TrackClicks: 'disabled',
@@ -153,46 +178,85 @@ async function envoyer(req: NextRequest) {
     if (!objet) return ko('L’objet est vide.');
     if (htmlVide(corps)) return ko('Le message est vide.');
 
-    const ids = (Array.isArray(body.contacts) ? body.contacts : []).map(String).filter(x => UUID.test(x)).slice(0, MAX_DEST);
-    const libres = (Array.isArray(body.adresses) ? body.adresses : []).map(x => String(x).trim().toLowerCase())
-      .filter((x, i, l) => MAIL.test(x) && l.indexOf(x) === i).slice(0, MAX_DEST);
-    if (!ids.length && !libres.length) return ko('Aucun destinataire.');
+    /* Une ligne du mail (« À », Cc ou Cci) : les contacts choisis, les adresses tapées. */
+    const lireLigne = (o: unknown) => {
+      const x = (o && typeof o === 'object' ? o : {}) as Record<string, unknown>;
+      return {
+        ids: (Array.isArray(x.contacts) ? x.contacts : []).map(String).filter(v => UUID.test(v)).slice(0, MAX_DEST),
+        libres: (Array.isArray(x.adresses) ? x.adresses : []).map(v => String(v).trim().toLowerCase())
+          .filter((v, i, l) => MAIL.test(v) && l.indexOf(v) === i).slice(0, MAX_DEST),
+        /* V3.235 : les adresses cochées de chaque contact (sans choix : toutes, comme avant). */
+        choix: Object.fromEntries(Object.entries(x.choix && typeof x.choix === 'object' ? x.choix as Record<string, unknown> : {})
+          .filter(([id, l]) => UUID.test(id) && Array.isArray(l))
+          .map(([id, l]) => [id, (l as unknown[]).map(v => String(v).trim().toLowerCase()).filter(v => MAIL.test(v))])) as Record<string, string[]>,
+      };
+    };
+    const lignes: { role: Role; ids: string[]; libres: string[]; choix: Record<string, string[]> }[] = [
+      { role: 'a', ...lireLigne(body) },
+      { role: 'cc', ...lireLigne(body.cc) },
+      { role: 'cci', ...lireLigne(body.cci) },
+    ];
+    if (!lignes[0].ids.length && !lignes[0].libres.length) return ko('Aucun destinataire en « À ».');
 
     /* ── Les destinataires : les contacts choisis (toutes leurs adresses),
           puis les adresses tapées — rattachées à leur contact si le CRM le
-          connaît, pour le prénom et le Suivi. ── */
+          connaît, pour le prénom et le Suivi. « À » d'abord, puis Cc, puis
+          Cci : une adresse déjà prise plus haut n'est pas reprise. ── */
     const avertissements: string[] = [];
     const echecs: string[] = [];
     const dests: Dest[] = [];
     const deja = new Set<string>();
     const nomDe = (c: Contact) => `${c.prenom || ''} ${c.nom || ''}`.trim();
-    if (ids.length) {
-      const { data, error } = await sb.from('clients').select('id, prenom, nom, reference, emails').in('id', ids);
-      if (error) return ko(`Les contacts n’ont pas pu être lus : ${error.message}`, 500);
-      for (const c of (data || []) as Contact[]) {
-        const a = (c.emails || []).map(e => String(e).trim().toLowerCase()).filter(e => MAIL.test(e) && !deja.has(e));
-        if (!a.length) { echecs.push(`${nomDe(c) || 'Un contact'} (pas d’adresse e-mail)`); continue; }
-        a.forEach(e => deja.add(e));
-        dests.push({ a, nom: nomDe(c), prenom: c.prenom || '', famille: c.nom || '', reference: c.reference || '', clientId: c.id });
+    for (const { role, ids, libres, choix } of lignes) {
+      if (ids.length) {
+        /* '*' : la personne 2 et les adresses du dossier (V3.236) ; une colonne
+           pas encore créée (SQL « adresses-dossier ») ne fait pas échouer. */
+        const { data, error } = await sb.from('clients').select('*').in('id', ids);
+        if (error) return ko(`Les contacts n’ont pas pu être lus : ${error.message}`, 500);
+        for (const c of (data || []) as Contact[]) {
+          const net = (l: (string | null | undefined)[]) => l.map(e => String(e || '').trim().toLowerCase()).filter((e, i, x) => MAIL.test(e) && x.indexOf(e) === i);
+          /* Les adresses de la personne 1 ; avec un choix, celles de toute la
+             fiche (personne 2, autres adresses du dossier, V3.236). */
+          const siennes = net(c.emails || []);
+          const toutes = net(groupesAdresses(c).flatMap(g => g.emails));
+          /* V3.235 : seulement les adresses cochées (une adresse qui n'est plus
+             sur sa fiche est ignorée ; s'il n'en reste aucune, la première). */
+          const voulues = choix[c.id];
+          const retenues = voulues?.length ? (toutes.filter(e => voulues.includes(e)).length ? toutes.filter(e => voulues.includes(e)) : toutes.slice(0, 1)) : siennes;
+          const a = retenues.filter(e => !deja.has(e));
+          if (!a.length) {
+            if (!retenues.some(e => deja.has(e))) echecs.push(`${nomDe(c) || 'Un contact'} (pas d’adresse e-mail)`);
+            continue;
+          }
+          a.forEach(e => deja.add(e));
+          /* {{prénom}} : la personne à qui l'on écrit (la 2, ou personne pour le notaire). */
+          const pour = pourAdresses(c, a);
+          dests.push({ a, nom: nomDe(c), nomMail: Object.fromEntries(a.map(e => [e, nomDeLAdresse(c, e)])), prenom: pour.prenom, famille: pour.nom, reference: pour.reference, clientId: c.id, role });
+        }
+      }
+      const aChercher = libres.filter(e => !deja.has(e));
+      const connus: Record<string, Contact> = {};
+      if (aChercher.length) {
+        const { data, error } = await sb.from('clients').select('id, prenom, nom, reference, emails').overlaps('emails', aChercher);
+        if (error) console.error('[mail] contacts par adresse', error.message);
+        for (const c of (data || []) as Contact[]) {
+          for (const e of c.emails || []) { const k = String(e).trim().toLowerCase(); if (aChercher.includes(k) && !connus[k]) connus[k] = c; }
+        }
+      }
+      for (const e of aChercher) {
+        deja.add(e);
+        const c = connus[e];
+        dests.push(c
+          ? { a: [e], nom: nomDe(c), nomMail: { [e]: nomDe(c) }, prenom: c.prenom || '', famille: c.nom || '', reference: c.reference || '', clientId: c.id, role }
+          : { a: [e], nom: '', nomMail: {}, prenom: '', famille: '', reference: '', clientId: null, role });
       }
     }
-    const aChercher = libres.filter(e => !deja.has(e));
-    const connus: Record<string, Contact> = {};
-    if (aChercher.length) {
-      const { data, error } = await sb.from('clients').select('id, prenom, nom, reference, emails').overlaps('emails', aChercher);
-      if (error) console.error('[mail] contacts par adresse', error.message);
-      for (const c of (data || []) as Contact[]) {
-        for (const e of c.emails || []) { const k = String(e).trim().toLowerCase(); if (aChercher.includes(k) && !connus[k]) connus[k] = c; }
-      }
+    if (!dests.some(d => d.role === 'a')) return ko(`Personne à qui l’envoyer en « À » : ${echecs.join(' · ') || 'ajoute un destinataire'}`);
+    /* V3.234 : une copie (Cc ou Cci) fait partir un seul mail, le même pour tous. */
+    const groupe = dests.some(d => d.role !== 'a');
+    if (groupe && dests.reduce((t, d) => t + d.a.length, 0) > MAX_GROUPE) {
+      return ko(`Un mail avec des copies part à ${MAX_GROUPE} adresses au plus (À, Cc et Cci ensemble) : retire des destinataires.`);
     }
-    for (const e of aChercher) {
-      deja.add(e);
-      const c = connus[e];
-      dests.push(c
-        ? { a: [e], nom: nomDe(c), prenom: c.prenom || '', famille: c.nom || '', reference: c.reference || '', clientId: c.id }
-        : { a: [e], nom: '', prenom: '', famille: '', reference: '', clientId: null });
-    }
-    if (!dests.length) return ko(`Personne à qui l’envoyer : ${echecs.join(' · ')}`);
 
     /* ── L'habillage : le nom et le téléphone des Paramètres, l'identité de l'agence ── */
     const [reglages, identite] = await Promise.all([
@@ -247,16 +311,36 @@ async function envoyer(req: NextRequest) {
       }
     }
 
-    /* ── L'envoi : un message par destinataire, envoyés par lots (V3.50) ── */
+    /* ── L'envoi : un message par destinataire, envoyés par lots (V3.50) ;
+          avec des copies, un seul message pour tous (V3.234). `traces` :
+          les personnes que ce message touche, pour leur Suivi. ── */
     const texteBrut = htmlVersTexte(corps);
     const marque = Date.now();
-    const lot = dests.map((d, i) => {
-      const pour = { prenom: d.prenom, nom: d.famille, reference: d.reference };
-      const sujet = personnaliserObjet(objet, pour, conseiller) || objet;
-      const html = mailLibreHtml({ style, corps: personnaliserHtml(corps, pour, conseiller), h, liens, jours: LIENS_JOURS });
-      const texte = `${personnaliserTexte(texteBrut, pour, conseiller)}${texteLiens(liens, LIENS_JOURS)}`;
-      return { d, sujet, texte, html, id: `mail-${d.clientId || 'libre'}-${marque}-${i}` };
+    const adressesDe = (role: Role) => dests.filter(d => d.role === role).flatMap(d => d.a.map(email => ({ email, nom: d.nomMail[email] || '' })));
+    const fabriquer = (pour: ReturnType<typeof pourGroupe>) => ({
+      sujet: personnaliserObjet(objet, pour, conseiller) || objet,
+      html: mailLibreHtml({ style, corps: personnaliserHtml(corps, pour, conseiller), h, liens, jours: LIENS_JOURS }),
+      texte: `${personnaliserTexte(texteBrut, pour, conseiller)}${texteLiens(liens, LIENS_JOURS)}`,
     });
+    const lot = groupe
+      ? [{
+          traces: dests, a: adressesDe('a'), cc: adressesDe('cc'), cci: adressesDe('cci'),
+          ...fabriquer(pourGroupe(dests.filter(d => d.role === 'a').map(d => ({ prenom: d.prenom, nom: d.famille, reference: d.reference })))),
+          id: `mail-groupe-${marque}`,
+        }]
+      : dests.map((d, i) => ({
+          traces: [d], a: d.a.map(email => ({ email, nom: d.nomMail[email] || '' })), cc: [] as Adresse[], cci: [] as Adresse[],
+          ...fabriquer({ prenom: d.prenom, nom: d.famille, reference: d.reference }),
+          id: `mail-${d.clientId || 'libre'}-${marque}-${i}`,
+        }));
+    /* Le nom d'un message dans les comptes rendus : la personne, ou tout « À ». */
+    const nomMessage = (m: typeof lot[number]) => m.traces.filter(d => d.role === 'a').map(d => d.nom || d.a[0]).join(', ');
+    /* Ce que le Suivi écrit en tête : « À : … », puis les copies. */
+    const enTete = groupe ? [
+      `À : ${lot[0].a.map(x => x.email).join(', ')}`,
+      ...(lot[0].cc.length ? [`Cc : ${lot[0].cc.map(x => x.email).join(', ')}`] : []),
+      ...(lot[0].cci.length ? [`Cci : ${lot[0].cci.map(x => x.email).join(', ')}`] : []),
+    ].join('\n') : '';
     /* Les lots, dans l'ordre, tant qu'il reste le temps de noter ensuite. */
     const poidsPj = pj.reduce((t, p) => t + p.base64.length, 0);
     const lots: number[][] = [];
@@ -274,21 +358,30 @@ async function envoyer(req: NextRequest) {
     for (const l of lots) {
       if (fin - Date.now() < 8_000) break;
       parti = true;
-      const r = await mailjetLot(l.map(i => ({ a: lot[i].d.a.map(email => ({ email, nom: lot[i].d.nom })), sujet: lot[i].sujet, texte: lot[i].texte, html: lot[i].html, id: lot[i].id })), pj, fin - Date.now());
+      const r = await mailjetLot(l.map(i => ({ a: lot[i].a, cc: lot[i].cc, cci: lot[i].cci, sujet: lot[i].sujet, texte: lot[i].texte, html: lot[i].html, id: lot[i].id })), pj, fin - Date.now());
       l.forEach((i, n) => {
         etat[i] = r.incertain ? 'incertain' : r.erreurs[n];
+        if (etat[i] !== null) return;
         /* V3.151 : on vérifiera qu'il est bien arrivé (src/lib/remise-mail.ts). */
-        if (etat[i] === null) noterRemises(r.brut, { clientId: lot[i].d.clientId, rechercheId: lot[i].d.clientId ? dossier[lot[i].d.clientId!] || null : null, nom: lot[i].d.nom, objet: lot[i].sujet }, n);
+        const infoDe = (d: Dest) => ({ clientId: d.clientId, rechercheId: d.clientId ? dossier[d.clientId] || null : null, nom: d.nom, objet: lot[i].sujet });
+        if (!groupe) noterRemises(r.brut, infoDe(lot[i].traces[0]), n);
+        else {
+          /* V3.234 : chaque adresse, en « À » comme en copie. */
+          noterRemisesCopies(r.brut, n, email => {
+            const d = lot[i].traces.find(x => x.a.includes(email));
+            return d ? infoDe(d) : { objet: lot[i].sujet };
+          });
+        }
       });
     }
 
     /* La trace, pour un contact du CRM : l'envoi, et son Suivi. Tout en même
        temps (pas l'un après l'autre), pour finir bien avant la limite. */
-    const noter = (m: typeof lot[number], incertain: boolean) => {
-      const d = m.d;
+    const lignePieces = noms.length ? `\n\n${mode === 'pj' ? 'Pièces jointes' : `Liens de téléchargement (${LIENS_JOURS} jours)`} : ${noms.join(', ')}` : '';
+    const TITRES: Record<Role, string> = { a: '✉️ Mail envoyé', cc: '✉️ Mail en copie', cci: '✉️ Mail en copie cachée' };
+    const noter = (m: typeof lot[number], d: Dest, incertain: boolean) => {
       if (!d.clientId) return Promise.resolve();
       const rid = dossier[d.clientId] || null;
-      const pieces = noms.length ? `\n\n${mode === 'pj' ? 'Pièces jointes' : `Liens de téléchargement (${LIENS_JOURS} jours)`} : ${noms.join(', ')}` : '';
       return Promise.all([
         incertain ? Promise.resolve(true) : ecritServeur('L’envoi (communications)', sb.from('envois').insert({
           client_id: d.clientId, recherche_id: rid, type: 'mail_libre', objet: m.sujet, corps: m.texte,
@@ -296,22 +389,22 @@ async function envoyer(req: NextRequest) {
         }), avertissements),
         ecritServeur('Le Suivi du contact', sb.from('journal').insert({
           client_id: d.clientId, recherche_id: rid, type: 'mail_envoye',
-          titre: incertain ? `✉️ Mail peut-être parti — ${m.sujet}` : `✉️ Mail envoyé — ${m.sujet}`,
-          description: `${incertain ? 'Mailjet n’a pas répondu à temps : ce mail est peut-être parti, peut-être pas. Vérifie avec lui avant de le renvoyer.\n\n' : ''}À : ${d.a.join(', ')}\n\n${m.texte}${pieces}`,
-          metadata: { source: 'nouveau_mail', style, pieces: noms, ...(incertain ? { incertain: true } : {}) },
+          titre: incertain ? `✉️ Mail peut-être parti — ${m.sujet}` : `${TITRES[d.role]} — ${m.sujet}`,
+          description: `${incertain ? 'Mailjet n’a pas répondu à temps : ce mail est peut-être parti, peut-être pas. Vérifie avec lui avant de le renvoyer.\n\n' : ''}${groupe ? enTete : `À : ${d.a.join(', ')}`}\n\n${m.texte}${lignePieces}`,
+          metadata: { source: 'nouveau_mail', style, pieces: noms, ...(d.role !== 'a' ? { copie: d.role } : {}), ...(incertain ? { incertain: true } : {}) },
         }), avertissements),
       ]).then(() => undefined);
     };
 
-    const envoyes: { nom: string; a: string[]; clientId: string | null }[] = [];
+    const envoyes: { nom: string; a: string[]; clientId: string | null; role: Role }[] = [];
     const incertains: string[] = [];
     lot.forEach((m, i) => {
       const e = etat[i];
-      if (e === 'incertain') incertains.push(m.d.nom || m.d.a[0]);
-      else if (e) echecs.push(`${m.d.nom || m.d.a[0]} (${e})`);
-      else envoyes.push({ nom: m.d.nom, a: m.d.a, clientId: m.d.clientId });
+      if (e === 'incertain') incertains.push(nomMessage(m));
+      else if (e) echecs.push(`${nomMessage(m)} (${e})`);
+      else m.traces.forEach(d => envoyes.push({ nom: d.nom, a: d.a, clientId: d.clientId, role: d.role }));
     });
-    await Promise.all(lot.map((m, i) => (etat[i] === null ? noter(m, false) : etat[i] === 'incertain' ? noter(m, true) : Promise.resolve())));
+    await Promise.all(lot.flatMap((m, i) => (etat[i] === null || etat[i] === 'incertain' ? m.traces.map(d => noter(m, d, etat[i] === 'incertain')) : [])));
     if (!envoyes.length && incertains.length) {
       return NextResponse.json({
         ok: false, incertain: true, incertains, echecs,
