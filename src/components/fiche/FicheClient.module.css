@@ -837,3 +837,14 @@ a.coLien:hover { color: #25272b; }
 .infoCardBody[data-grise] :global(.fc-crit-detail),
 .infoCardBody[data-grise] :global(.fc-crit-vide) { filter: grayscale(1); opacity: .42; pointer-events: none; user-select: none; }
 .etiqRecherche[data-etat='prospect'] { background: #8b5cf6; box-shadow: 0 6px 14px -6px rgba(139, 92, 246, .85), 0 0 0 2px #fff; }
+
+/* V3.243 — L'onglet Rapprochement sur une seule colonne : ses mandats qui lui
+   correspondent, sans résultat, tiennent sur une ligne. */
+.rapproMandatsCarte { gap: 8px; }
+@media (min-width: 900px) {
+  .rapproMandatsCarte:not(:has(.rapproMandats)) { flex-direction: row; align-items: center; gap: 16px; }
+  .rapproMandatsCarte:not(:has(.rapproMandats)) > .carteEnsT { flex: 0 0 auto; }
+  .rapproMandatsCarte:not(:has(.rapproMandats)) > .carteEnsT b { flex: 0 0 auto; }
+  .rapproMandatsCarte:not(:has(.rapproMandats)) > p { margin: 0; }
+}
+.rapproMandatsCarte .rapproMandats { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }

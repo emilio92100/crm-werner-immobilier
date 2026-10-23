@@ -36,9 +36,10 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icone } from './ParcoursBien';
 import {
-  compterSources, rapprocher, poserEnSelection, presenterDansEspace, noterRapprochement, PERIODES,
-  type EtatDossier, type LigneRappro, type SourceRappro, type PeriodeVeille, type Trouve, type VuDepuisBien,
+  compterSources, rapprocher, poserEnSelection, presenterDansEspace, noterRapprochement, biensDuJour, infosDesBiens, PERIODES,
+  type BienDuJour, type EtatDossier, type InfosBien, type LigneRappro, type SourceRappro, type PeriodeVeille, type Trouve, type VuDepuisBien,
 } from '@/lib/rapprochement';
+import Depliant from '@/components/shared/Depliant';
 import AideRapprochement, { BoutonAideRappro } from '@/components/shared/AideRapprochement';
 import { modeAcheteurs } from '@/components/biens/AcheteursBien';
 import { etapeDe, lirePhotos, titreBien } from '@/lib/biens-vente';
@@ -79,14 +80,16 @@ function Note({ n }: { n: number }) {
   );
 }
 
-function Photo({ src, grande }: { src?: string | null; grande?: boolean }) {
+/* V3.243 : sans photo, la case le dit (« Pas de photo ») au lieu d'une maison muette. */
+function Photo({ src, grande, vide }: { src?: string | null; grande?: boolean; vide?: string }) {
   const [ko, setKo] = useState(false);
+  const sans = !src || ko;
   return (
-    <span className={grande ? s.photoG : s.photo}>
-      {src && !ko
+    <span className={grande ? s.photoG : s.photo} data-vide={sans ? 'oui' : undefined}>
+      {!sans
         // eslint-disable-next-line @next/next/no-img-element
-        ? <img src={src} alt="" onError={() => setKo(true)} />
-        : <Icone nom="maison" taille={grande ? 34 : 22} epaisseur={1.8} />}
+        ? <img src={src!} alt="" onError={() => setKo(true)} />
+        : <><Icone nom={vide ? 'photos' : 'maison'} taille={grande ? 30 : 18} epaisseur={1.8} />{vide && <small className={s.photoVide}>{vide}</small>}</>}
     </span>
   );
 }
@@ -94,11 +97,11 @@ function Photo({ src, grande }: { src?: string | null; grande?: boolean }) {
 /* V3.228 — La photo de l'affaire, sa note posée juste dessous (comme l'avatar
    d'un acheteur, côté bien) et ce qu'elle mesure : son potentiel quand le
    bien a été relu, sinon la part de ses critères. */
-function PhotoNote({ photo, n, v, legende }: { photo?: string | null; n: number | null; v: AvisIA['v'] | null; legende: 'potentiel' | 'critères' }) {
+function PhotoNote({ photo, n, v, legende, vide }: { photo?: string | null; n: number | null; v: AvisIA['v'] | null; legende: 'potentiel' | 'critères'; vide?: string }) {
   const x = n === null ? null : Math.max(0, Math.min(100, Math.round(n)));
   return (
     <span className={s.pn} data-v={v || 'aucun'} title={x === null ? undefined : `${legende === 'potentiel' ? 'Potentiel' : 'Ses critères'} : ${x} sur 100`}>
-      <Photo src={photo} />
+      <Photo src={photo} vide={vide} />
       {x !== null && <span className={s.pnNote}><b>{x}</b><small>{'/100'}</small></span>}
       {x !== null && <small className={s.pnLeg}>{legende}</small>}
     </span>
@@ -118,6 +121,98 @@ function Source({ t }: { t: Trouve }) {
     : <span className={`${s.src} ${s.srcVeille}`} title={t.pour ? `Trouvé par la veille de ${t.pour}` : undefined}>
       <Icone nom="loupe" taille={12} epaisseur={2.2} />{`Veille${t.pour ? ` · ${t.pour.split(' ')[0]}` : ''}${t.le ? ` · ${jourCourt(t.le)}` : ''}`}
     </span>;
+}
+
+/* ═══ V3.243 — Ce que dit la fiche de tes biens ═════════════════════════════
+   Alexandre (24 octobre 2026) : « j'ai pas la photo… prix non indiqué, ton
+   estimation, j'ai pas le nom du propriétaire pour aller voir moi-même ;
+   un bouton ouvrir la fiche du bien bien visible ». Pour chacun de tes
+   biens : l'adresse, le propriétaire et son numéro, l'estimation (sa
+   fourchette), ce qui manque dans sa fiche, et de quoi l'ouvrir ou appeler. */
+const fourchette = (a: number | null, b: number | null) => (a && b ? `${a.toLocaleString('fr-FR')} – ${b.toLocaleString('fr-FR')} €` : EUR(a || b));
+const telLien = (t: string) => `tel:${t.replace(/[^\d+]/g, '')}`;
+/* « 06 12 34 56 78 », qui ne se coupe pas en fin de ligne. */
+const telJoli = (t: string) => { const d = t.replace(/[^\d+]/g, '').replace(/^\+33/, '0'); return d.length === 10 ? d.replace(/(\d{2})(?=\d)/g, '$1\u00a0') : t.trim(); };
+/* Le prix : le sien ; une estimation sans prix conseillé montre sa fourchette. */
+function prixDe(t: { prix: number | null | undefined; avant?: boolean; infos?: InfosBien | null }): { texte: string; manque: boolean } {
+  if (t.prix) return { texte: EUR(t.prix), manque: false };
+  const e = t.infos?.estim;
+  if (e && (e.basse || e.haute)) return { texte: fourchette(e.basse, e.haute), manque: false };
+  return { texte: t.avant ? 'Pas encore estimée' : 'Montant non indiqué', manque: true };
+}
+/* Ce que sa fiche ne dit pas encore, en une ligne. */
+const manques = (i: InfosBien | null | undefined): string[] => (i
+  ? [!i.adresse ? 'l’adresse' : '', !i.proprio ? 'le mandant' : i.tel ? '' : 'le numéro du mandant'].filter(Boolean)
+  : []);
+
+/* Sous le titre d'un de tes biens : la fourchette, le propriétaire, ce qui manque. */
+function LignesFiche({ infos, prix }: { infos: InfosBien | null | undefined; prix: number | null | undefined }) {
+  if (!infos) return null;
+  const e = infos.estim;
+  const fourch = e && prix && (e.basse || e.haute) ? fourchette(e.basse, e.haute) : '';
+  const m = manques(infos);
+  return (
+    <>
+      {fourch && <span className={s.bcEstim}>{`Estimation ${fourch}`}</span>}
+      {infos.proprio && (
+        <span className={s.bcProprio}><Icone nom="personne" taille={13} epaisseur={2.2} /><span>{[infos.proprio, infos.tel ? telJoli(infos.tel) : ''].filter(Boolean).join(' · ')}</span></span>
+      )}
+      {m.length > 0 && <span className={s.bcManque}><Icone nom="info" taille={13} epaisseur={2.2} /><span>{`Pas dans sa fiche : ${m.join(', ')}`}</span></span>}
+    </>
+  );
+}
+
+/* Les gestes d'une carte : ouvrir la fiche du bien, appeler son propriétaire, voir l'annonce. */
+function ActionsBien({ onFiche, infos, url }: { onFiche?: () => void; infos?: InfosBien | null; url?: string | null }) {
+  if (!onFiche && !infos?.tel && !url) return null;
+  return (
+    <span className={s.bcGestes}>
+      {onFiche && <button type="button" className={s.bcFiche} onClick={onFiche}><Icone nom="maison" taille={15} epaisseur={2.1} /><span className={s.long}>{'Ouvrir la fiche de l’affaire'}</span><span className={s.court}>{'Ouvrir la fiche'}</span><Icone nom="chevronD" taille={14} epaisseur={2.4} /></button>}
+      {infos?.tel && <a className={s.bcTel} href={telLien(infos.tel)}><Icone nom="tel" taille={14} epaisseur={2.1} /><span>{`Appeler ${infos.proprio ? infos.proprio.split(' ')[0] : 'le mandant'}`}</span></a>}
+      {url && <a className={s.bcTel} href={url} target="_blank" rel="noopener noreferrer"><Icone nom="lien" taille={14} epaisseur={2.1} /><span>{'Voir l’annonce'}</span></a>}
+    </span>
+  );
+}
+
+/* L'aperçu d'un de tes biens : sa fiche, pour toi, et le bouton pour l'ouvrir. */
+function FicheApercu({ infos, prix, prenom, onOuvrir }: { infos?: InfosBien | null; prix: number | null; prenom: string; onOuvrir?: () => void }) {
+  const ligne = (ic: string, lib: string, val: ReactNode | null) => (
+    <div className={s.ficheL}>
+      <span className={s.ficheLic}><Icone nom={ic} taille={14} epaisseur={2.1} /></span>
+      <small>{lib}</small>
+      {val ?? <span className={s.ficheVide}>{'Pas renseigné dans sa fiche'}</span>}
+    </div>
+  );
+  const e = infos?.estim;
+  return (
+    <div className={s.fiche}>
+      <div className={s.ficheT}>
+        <b>{'Dans sa fiche'}</b>
+        <small>{`Pour toi : rien de tout ça ne part chez ${prenom}.`}</small>
+      </div>
+      {infos ? (
+        <div className={s.ficheG}>
+          {ligne('personne', 'Mandant', infos.proprio ? (
+            <span className={s.ficheV}>
+              <b>{infos.proprio}</b>
+              {(infos.tel || infos.mail) && (
+                <span className={s.ficheLiens}>
+                  {infos.tel && <a href={telLien(infos.tel)}><Icone nom="tel" taille={13} epaisseur={2.1} />{telJoli(infos.tel)}</a>}
+                  {infos.mail && <a href={`mailto:${infos.mail}`}><Icone nom="mail" taille={13} epaisseur={2.1} />{infos.mail}</a>}
+                </span>
+              )}
+            </span>
+          ) : null)}
+          {ligne('lieu', 'Adresse', infos.adresse ? <span className={s.ficheV}><b>{infos.adresse}</b></span> : null)}
+          {e && ligne('etiquette', 'Estimation', e.basse || e.haute
+            ? <span className={s.ficheV}><b>{fourchette(e.basse, e.haute)}</b>{prix ? <small>{`montant conseillé ${EUR(prix)}`}</small> : null}</span>
+            : prix ? <span className={s.ficheV}><b>{`Montant conseillé ${EUR(prix)}`}</b></span> : <span className={s.ficheVide}>{'Pas encore estimée'}</span>)}
+          {ligne('photos', 'Photos', infos.photos ? <span className={s.ficheV}><b>{`${infos.photos} photo${infos.photos > 1 ? 's' : ''}`}</b></span> : <span className={s.ficheVide}>{'Aucune dans sa fiche'}</span>)}
+        </div>
+      ) : <p className={s.ficheVide}>{'Sa fiche n’a pas pu être relue : ouvre-la pour tout voir.'}</p>}
+      {onOuvrir && <button type="button" className={s.ficheBtn} onClick={onOuvrir}><Icone nom="maison" taille={16} epaisseur={2.1} /><span>{'Ouvrir la fiche de l’affaire'}</span><Icone nom="chevronD" taille={15} epaisseur={2.4} /></button>}
+    </div>
+  );
 }
 
 export type DepartRappro = { source: SourceRappro; cocher?: string[]; periode?: PeriodeVeille; nouveautes?: boolean; estimations?: boolean; ventes?: boolean };
@@ -330,16 +425,25 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
      et sa note, le titre, le lieu, le prix ; à droite, le choix et l'œil ; et
      l'avis du rapprochement à côté (ordinateur) ou dessous, sur toute la
      largeur (téléphone). */
-  const enTete = (t: Trouve, v: AvisIA['v'] | null, n: number, legende: 'potentiel' | 'critères') => (
-    <button type="button" className={s.bcBien} onClick={() => setApercu(t)} title="Voir cette affaire">
-      <PhotoNote photo={t.photo} n={n} v={v} legende={legende} />
-      <span className={s.bcTx}>
-        <b className={s.bcTitre}>{insec(t.titre)}</b>
-        {t.lieu && <span className={s.bcLieu}><Icone nom="lieu" taille={13} epaisseur={2.2} /><span>{t.lieu}</span></span>}
-        <span className={s.bcPrix}><b>{EUR(t.prix) || 'Montant non indiqué'}</b><Source t={t} /></span>
-      </span>
-    </button>
-  );
+  /* V3.243 : pour un de tes biens, l'adresse de sa fiche, sa fourchette, son
+     propriétaire, ce qui manque ; la case photo dit « Pas de photo ». */
+  const enTete = (t: Trouve, v: AvisIA['v'] | null, n: number, legende: 'potentiel' | 'critères') => {
+    const lieu = t.infos?.adresse || t.lieu;
+    const px = prixDe(t);
+    return (
+      <button type="button" className={s.bcBien} onClick={() => setApercu(t)} title="Voir cette affaire">
+        <PhotoNote photo={t.photo} n={n} v={v} legende={legende} vide="Pas de photo" />
+        <span className={s.bcTx}>
+          <b className={s.bcTitre}>{insec(t.titre)}</b>
+          {lieu && <span className={s.bcLieu} title={lieu}><Icone nom="lieu" taille={13} epaisseur={2.2} /><span>{lieu}</span></span>}
+          <span className={s.bcPrix}><b className={px.manque ? s.prixManque : undefined}>{px.texte}</b><Source t={t} /></span>
+          {t.source === 'mandat' && <LignesFiche infos={t.infos} prix={t.prix} />}
+        </span>
+      </button>
+    );
+  };
+  /* Ouvrir la fiche d'un de tes biens : le rapprochement est gardé (V3.128). */
+  const ficheDe = (t: Trouve) => (t.source === 'mandat' && t.vente && onFicheBien ? () => versFiche(t.vente!.id) : undefined);
   const oeil = (t: Trouve) => (
     <button type="button" className={s.oeil} aria-label="Voir cette affaire" title="Voir cette affaire" onClick={() => setApercu(t)}>
       <Icone nom="oeil" taille={17} epaisseur={2} />
@@ -362,6 +466,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
         <div className={s.bcAvis}>
           {av ? <AvisDetail avis={av} sansMot deuxCol /> : <Ecart t={t} />}
           {ancien(t) && <span className={s.vieux}><Icone nom="horloge" taille={13} epaisseur={2.2} /><span>{'À vérifier : annonce ancienne'}</span></span>}
+          <ActionsBien onFiche={ficheDe(t)} infos={t.infos} url={t.source === 'veille' ? t.url : null} />
         </div>
       </article>
     );
@@ -377,6 +482,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
       </div>
       <div className={s.bcAvis}>
         <span className={s.dejaEtat}><Icone nom="coche" taille={14} epaisseur={2.8} /><span>{etatDossier(t.dossier)}</span></span>
+        <ActionsBien onFiche={ficheDe(t)} infos={t.infos} url={t.source === 'veille' ? t.url : null} />
       </div>
     </article>
   );
@@ -533,12 +639,15 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                         <span>{v === 'oui' ? `Elles peuvent plaire à ${prenom}.` : v === 'a_voir' ? 'Un point à vérifier avec lui.' : 'Le rapprochement les écarte.'}</span>
                       </>
                     );
+                    /* V3.243 : « Voir pourquoi » déplie en douceur (Depliant). */
                     return (
                       <div key={v} className={s.groupe}>
                         {v === 'non'
                           ? <button type="button" className={`${s.groupeT} ${s.groupeBtn}`} aria-expanded={!replie} onClick={() => setVoirNon(o => !o)}>{tete}<em>{replie ? 'Voir pourquoi' : 'Replier'}</em></button>
                           : <div className={s.groupeT}>{tete}</div>}
-                        {!replie && l.map((y, i) => ligne(y.t, i))}
+                        {v === 'non'
+                          ? <Depliant ouvert={!replie} ecart={8}><div className={s.pile}>{l.map((y, i) => ligne(y.t, i))}</div></Depliant>
+                          : l.map((y, i) => ligne(y.t, i))}
                       </div>
                     );
                   })}
@@ -554,7 +663,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                     <b>{`Déjà dans son dossier · ${res.deja.length}`}</b>
                     <span>{voirDeja ? 'Replier' : 'Elles correspondent toujours, mais il les a déjà : un clic pour voir ce qui en a été fait.'}</span>
                   </button>
-                  {voirDeja && res.deja.map((t, i) => ligneDeja(t, i))}
+                  <Depliant ouvert={voirDeja} ecart={8}><div className={s.pile}>{res.deja.map((t, i) => ligneDeja(t, i))}</div></Depliant>
                 </>
               )}
               {anciens.length > 0 && (
@@ -564,7 +673,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
                     <b>{`Déjà ${pl(anciens.length, 'vu', 'vus')}${dernierLe ? ` le ${jourLong(dernierLe)}` : ''}, pas ${pl(anciens.length, 'retenu', 'retenus')} · ${anciens.length}`}</b>
                     <span>{voirAnciens ? 'Replier' : 'Repliés pour ne pas te les remontrer. Un clic pour les revoir.'}</span>
                   </button>
-                  {voirAnciens && anciens.map((t, i) => ligne(t, i))}
+                  <Depliant ouvert={voirAnciens} ecart={8}><div className={s.pile}>{anciens.map((t, i) => ligne(t, i))}</div></Depliant>
                 </>
               )}
             </div>
@@ -607,7 +716,7 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
         <div className={s.voileApercu} onMouseDown={e => { if (e.target === e.currentTarget) setApercu(null); }}>
           <div className={s.apercu} role="dialog" aria-modal="true" aria-label={apercu.titre}>
             <button type="button" className={s.fermerA} aria-label="Fermer l’aperçu" onClick={() => setApercu(null)}><Icone nom="fermer" taille={16} epaisseur={2.2} /></button>
-            <Photo src={apercu.photo} grande />
+            <Photo src={apercu.photo} grande vide={apercu.source === 'mandat' ? 'Pas de photo dans sa fiche' : 'Pas de photo dans l’annonce'} />
             {apercu.photos.length > 1 && (
               <div className={s.vignettes}>
                 {apercu.photos.slice(1, 5).map((u, i) => (
@@ -620,14 +729,16 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
               <div className={s.apercuTete}>
                 <div>
                   <h3>{apercu.titre}</h3>
-                  {apercu.lieu && <p>{apercu.lieu}</p>}
+                  {(apercu.infos?.adresse || apercu.lieu) && <p>{apercu.infos?.adresse || apercu.lieu}</p>}
                 </div>
                 <Note n={apercu.corr.note} />
               </div>
               <div className={s.apercuPrix}>
-                <b>{EUR(apercu.prix) || 'Prix non indiqué'}</b>
+                <b className={prixDe(apercu).manque ? s.prixManque : undefined}>{prixDe(apercu).texte}</b>
                 <Source t={apercu} />
               </div>
+              {/* V3.243 : sa fiche, pour toi — le propriétaire, l'adresse, l'estimation, les photos. */}
+              {apercu.source === 'mandat' && <FicheApercu infos={apercu.infos} prix={apercu.prix} prenom={prenom} onOuvrir={ficheDe(apercu)} />}
               {avisDe(apercu) && (
                 <div className={s.apercuAvis}>
                   <span className={s.sur}>{`Ce qu’en dit le rapprochement${typeof avisDe(apercu)!.s === 'number' ? ` · ${avisDe(apercu)!.s} sur 100` : ''}`}</span>
@@ -655,9 +766,6 @@ export default function Rapprochement({ client, recherche, resume, onFermer, onF
             <div className={s.apercuPied}>
               {apercu.url && <a className={s.btn} href={apercu.url} target="_blank" rel="noopener noreferrer"><Icone nom="lien" taille={15} epaisseur={2.1} />Voir l’annonce</a>}
               {apercu.avant && <span className={s.dejaEtat}>{'Pas encore proposée : elle partira sans montant.'}</span>}
-              {apercu.source === 'mandat' && apercu.vente && onFicheBien && (
-                <button type="button" className={s.btn} onClick={() => versFiche(apercu.vente!.id)}><Icone nom="maison" taille={15} epaisseur={2.1} />Fiche de l’affaire</button>
-              )}
               <span style={{ flexGrow: 1 }} />
               {apercu.dossier
                 ? <span className={s.dejaEtat}>{`Déjà dans son dossier · ${etatDossier(apercu.dossier)}`}</span>
@@ -931,72 +1039,141 @@ const lignesDe = (j: LigneJournal): LigneRappro[] => (Array.isArray(j.metadata?.
 /* V3.231 : trois d'abord (« pas 40 d'un coup ») ; « Voir les plus anciens » en
    ajoute cinq à chaque fois, « Replier » revient aux trois derniers. */
 const PREMIERS = 3, ENCORE = 5;
-export function RapprochementsFaits({ liste, prenom, onBien }: { liste: LigneJournal[]; prenom: string; onBien?: (bienVenteId: string) => void }) {
+/* V3.243 — Alexandre (24 octobre 2026) : « quand le rapprochement est fait,
+   sur la fiche du client, qu'il se mette sur la totalité de l'écran, en mode
+   rectangle… est-ce que c'est bien mis à jour ? ». Chaque bien proposé est la
+   même carte que dans la fenêtre du rapprochement : la photo et sa note, le
+   titre, l'adresse, le prix, l'avis du jour (ses plus, ses moins). Tes biens
+   sont relus tels qu'ils sont AUJOURD'HUI (biensDuJour) : photo, prix, étape,
+   propriétaire — l'avis, lui, reste celui du jour du rapprochement. Ce qui
+   est déjà dans son dossier le dit (`dossier`). Déplier, replier, voir les
+   plus anciens : en douceur (Depliant). */
+export function RapprochementsFaits({ liste, prenom, onBien, dossier }: {
+  liste: LigneJournal[]; prenom: string; onBien?: (bienVenteId: string) => void;
+  /* Ce qui est déjà dans son dossier : par bien en vente, par adresse d'annonce. */
+  dossier?: { ventes: Record<string, EtatDossier>; urls: Record<string, EtatDossier> };
+}) {
   const [ouverts, setOuverts] = useState<string[] | null>(null);
   const [nb, setNb] = useState(PREMIERS);
+  const [jour, setJour] = useState<Map<string, BienDuJour> | null>(null);
+  const ids = [...new Set(liste.flatMap(j => lignesDe(j).map(l => l.bien || '')).filter(Boolean))].sort().join(',');
+  useEffect(() => {
+    let vivant = true;
+    if (!ids) return;
+    biensDuJour(ids.split(',')).then(m => { if (vivant) setJour(m); }).catch(() => { if (vivant) setJour(new Map()); });
+    return () => { vivant = false; };
+  }, [ids]);
   const premier = liste.find(j => lignesDe(j).length)?.id;
   const estOuvert = (id: string) => (ouverts === null ? id === premier : ouverts.includes(id));
   const basculer = (id: string) => setOuverts(o => { const base = o ?? (premier ? [premier] : []); return base.includes(id) ? base.filter(x => x !== id) : [...base, id]; });
   if (!liste.length) return null;
-  const ligneBien = (l: LigneRappro) => {
+
+  const carte = (l: LigneRappro, k: number) => {
+    const j = l.bien ? jour?.get(l.bien) : undefined;
+    const b = j?.vente;
+    const infos = j?.infos || null;
+    const titre = b ? b.titre || titreBien(b.donnees || {}) : l.titre;
+    const lieu = infos?.adresse || (b ? [b.quartier, b.ville].filter(Boolean).join(' · ') : l.lieu) || '';
+    const prix = b ? b.prix : l.prix ?? null;
+    const mode = b ? (b.archive ? 'fini' : modeAcheteurs(b.etape)) : null;
+    const px = prixDe({ prix, avant: mode === 'avant', infos });
+    const avant = l.prix && prix && l.prix !== prix ? EUR(l.prix) : '';
+    const d = l.bien ? dossier?.ventes[l.bien] : l.url ? dossier?.urls[l.url] : undefined;
+    const fin = !b ? '' : b.archive ? 'Affaire archivée' : mode === 'fini' ? `${etapeDe(b.etape).lib} : plus proposée` : mode === 'pause' ? 'Vente en pause' : '';
+    const releve = typeof l.s === 'number' && !!l.v;
     const corps = (
       <>
-        <span className={s.rfNote} data-v={l.v || 'aucun'} title={l.v ? `Potentiel : ${l.s ?? '?'} sur 100` : `${l.n} % de ses critères`}>
-          {l.v && typeof l.s === 'number' ? l.s : `${l.n} %`}
-        </span>
-        <span className={s.rfTx}>
-          <b>{l.titre}</b>
-          <small>{[l.lieu, l.prix ? EUR(l.prix) : '', l.src === 'veille' ? 'annonce d’une veille' : ''].filter(Boolean).join(' · ')}</small>
-          {l.v && l.t ? <AvisDetail avis={{ v: l.v, r: l.t, s: l.s, p: l.p, m: l.m }} compact={true} sansMot={true} /> : null}
+        <PhotoNote photo={j?.photo || l.photo || null} n={releve ? l.s! : l.n} v={releve ? l.v! : null} legende={releve ? 'potentiel' : 'critères'} vide="Pas de photo" />
+        <span className={s.bcTx}>
+          <b className={s.bcTitre}>{insec(titre)}</b>
+          {lieu && <span className={s.bcLieu} title={lieu}><Icone nom="lieu" taille={13} epaisseur={2.2} /><span>{lieu}</span></span>}
+          <span className={s.bcPrix}>
+            <b className={px.manque ? s.prixManque : undefined}>{px.texte}</b>
+            {l.src === 'mandat'
+              ? <span className={`${s.src} ${mode === 'avant' ? s.srcEstim : s.srcMandat}`}><Icone nom="etiquette" taille={12} epaisseur={2.2} />{mode === 'avant' ? 'Ton estimation' : 'Ton affaire'}</span>
+              : <span className={`${s.src} ${s.srcVeille}`}><Icone nom="loupe" taille={12} epaisseur={2.2} />{'Annonce d’une veille'}</span>}
+          </span>
+          {avant && <span className={s.bcAvant}>{`${avant} le jour du rapprochement`}</span>}
+          {l.src === 'mandat' && <LignesFiche infos={infos} prix={prix} />}
         </span>
       </>
     );
-    if (l.bien && onBien) return <button key={l.cle} type="button" className={s.rfBien} onClick={() => onBien(l.bien!)}>{corps}</button>;
-    if (l.url) return <a key={l.cle} className={s.rfBien} href={l.url} target="_blank" rel="noopener noreferrer">{corps}</a>;
-    return <div key={l.cle} className={s.rfBien}>{corps}</div>;
+    return (
+      <article key={l.cle} className={`${s.bc} ${s.bcVu}`} data-v={l.v || 'aucun'} style={{ animationDelay: `${Math.min(k, 6) * 0.04}s` }}>
+        {l.bien && onBien
+          ? <button type="button" className={s.bcBien} title="Ouvrir la fiche de l’affaire" onClick={() => onBien(l.bien!)}>{corps}</button>
+          : l.url
+            ? <a className={s.bcBien} href={l.url} target="_blank" rel="noopener noreferrer" title="Voir l’annonce">{corps}</a>
+            : <div className={s.bcBien}>{corps}</div>}
+        <div className={s.bcAvis}>
+          {l.v && l.t
+            ? <AvisDetail avis={{ v: l.v, r: l.t, s: l.s, p: l.p, m: l.m }} sansMot={true} deuxCol={true} />
+            : <span className={s.ecNeutre}><Icone nom="coche" taille={14} epaisseur={2.4} /><span>{`${l.n} % de ses critères`}</span></span>}
+          {(d || fin) && (
+            <span className={s.vuD}>
+              {d && <span className={s.vuEtatOk}><Icone nom="coche" taille={12} epaisseur={3} /><span>{etatDossier(d)}</span></span>}
+              {fin && <span className={s.vuEtat}>{fin}</span>}
+            </span>
+          )}
+          <ActionsBien onFiche={l.bien && onBien ? () => onBien(l.bien!) : undefined} infos={infos} url={l.src === 'veille' ? l.url : null} />
+        </div>
+      </article>
+    );
   };
+
+  const bloc = (j: LigneJournal) => {
+    const l = lignesDe(j);
+    const n = Number(j.metadata?.n ?? 0);
+    const ouvert = l.length > 0 && estOuvert(j.id);
+    const relus = l.filter(x => x.v).sort((p, q) => compareIA({ v: p.v!, r: '', s: p.s }, { v: q.v!, r: '', s: q.s }));
+    const autres = l.filter(x => !x.v);
+    const c = (v: AvisIA['v']) => relus.filter(x => x.v === v).length;
+    return (
+      <div className={`${s.rfLigne} ${ouvert ? s.rfOuvert : ''}`}>
+        <button type="button" className={s.rfT} aria-expanded={ouvert} disabled={!l.length} onClick={() => basculer(j.id)}>
+          <span className={s.rfIc}><Icone nom="etoile" taille={14} epaisseur={2} /></span>
+          <span className={s.rfTitre}>
+            <b>{`Rapprochement du ${dateRappro(j.created_at)}`}</b>
+            <small>{[`${n} bien${n > 1 ? 's' : ''} trouvé${n > 1 ? 's' : ''}`, !l.length ? 'le détail n’était pas encore gardé' : ''].filter(Boolean).join(' · ')}</small>
+          </span>
+          {relus.length > 0 && (
+            <span className={s.rfComptes}>
+              {(['oui', 'a_voir', 'non'] as const).map(v => <span key={v} className={s.rfCompte} data-v={v} data-zero={c(v) ? undefined : 'oui'}><i />{`${c(v)} ${MOT_IA[v].toLowerCase()}`}</span>)}
+            </span>
+          )}
+          {l.length > 0 && <span className={s.rfChev}><Icone nom="chevron" taille={15} epaisseur={2.2} /></span>}
+        </button>
+        {l.length > 0 && (
+          <Depliant ouvert={ouvert}>
+            <div className={s.rfC}>
+              {(['oui', 'a_voir', 'non'] as const).map(v => {
+                const g = relus.filter(x => x.v === v);
+                if (!g.length) return null;
+                return (
+                  <div key={v} className={s.rfGroupe}>
+                    <span className={s.rfGroupeT}><IconeAvis v={v} t={18} /><b>{MOT_IA[v]}</b><i>{g.length}</i></span>
+                    {g.map(carte)}
+                  </div>
+                );
+              })}
+              {autres.length > 0 && (
+                <div className={s.rfGroupe}>
+                  <span className={s.rfGroupeT}><b>{relus.length ? 'Les autres biens' : `Les biens proposés à ${prenom}`}</b><i>{autres.length}</i></span>
+                  {autres.map(carte)}
+                </div>
+              )}
+            </div>
+          </Depliant>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className={s.rf}>
-      {liste.slice(0, nb).map(j => {
-        const l = lignesDe(j);
-        const n = Number(j.metadata?.n ?? 0);
-        const ouvert = l.length > 0 && estOuvert(j.id);
-        const relus = l.filter(x => x.v).sort((p, q) => compareIA({ v: p.v!, r: '', s: p.s }, { v: q.v!, r: '', s: q.s }));
-        const autres = l.filter(x => !x.v);
-        const c = (v: AvisIA['v']) => relus.filter(x => x.v === v).length;
-        return (
-          <div key={j.id} className={`${s.rfLigne} ${ouvert ? s.rfOuvert : ''}`}>
-            <button type="button" className={s.rfT} aria-expanded={ouvert} disabled={!l.length} onClick={() => basculer(j.id)}>
-              <span className={s.rfIc}><Icone nom="etoile" taille={14} epaisseur={2} /></span>
-              <span className={s.rfTitre}>
-                <b>{`Rapprochement du ${dateRappro(j.created_at)}`}</b>
-                <small>{[`${n} bien${n > 1 ? 's' : ''} trouvé${n > 1 ? 's' : ''}`, relus.length ? `${c('oui')} oui · ${c('a_voir')} à voir · ${c('non')} non` : '', !l.length ? 'le détail n’était pas encore gardé' : ''].filter(Boolean).join(' · ')}</small>
-              </span>
-              {l.length > 0 && <span className={s.rfChev}><Icone nom="chevron" taille={15} epaisseur={2.2} /></span>}
-            </button>
-            {ouvert && (
-              <div className={s.rfC}>
-                {(['oui', 'a_voir', 'non'] as const).map(v => {
-                  const g = relus.filter(x => x.v === v);
-                  if (!g.length) return null;
-                  return (
-                    <div key={v} className={s.rfGroupe}>
-                      <span className={s.rfGroupeT}><IconeAvis v={v} t={18} /><b>{MOT_IA[v]}</b><i>{g.length}</i></span>
-                      {g.map(ligneBien)}
-                    </div>
-                  );
-                })}
-                {autres.length > 0 && (
-                  <div className={s.rfGroupe}>
-                    <span className={s.rfGroupeT}><b>{relus.length ? 'Les autres biens' : `Les biens proposés à ${prenom}`}</b><i>{autres.length}</i></span>
-                    {autres.map(ligneBien)}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {liste.map((j, i) => (i < PREMIERS
+        ? <div key={j.id}>{bloc(j)}</div>
+        : <Depliant key={j.id} ouvert={i < nb} ecart={10}>{bloc(j)}</Depliant>))}
       {liste.length > PREMIERS && (
         <div className={s.plusMoins}>
           {liste.length > nb && (
@@ -1038,10 +1215,21 @@ export function VuDepuisBiens({ liste, prenom, dossier, onBien, onProposer, pose
   const [voirNon, setVoirNon] = useState(false);
   /* V3.231 : trois par groupe, puis « Voir les N autres ». */
   const [tous, setTous] = useState<string[]>([]);
+  /* V3.243 : le propriétaire, l'adresse, l'estimation de chacun (sa fiche). */
+  const [infos, setInfos] = useState<Map<string, InfosBien>>(new Map());
+  const cleInfos = liste.map(v => v.bienId).sort().join(',');
+  useEffect(() => {
+    let vivant = true;
+    const biens = liste.map(v => v.bien).filter((b): b is NonNullable<typeof b> => !!b);
+    if (biens.length) infosDesBiens(biens).then(m => { if (vivant) setInfos(m); }).catch(() => {});
+    return () => { vivant = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cleInfos]);
   const ligne = (v: VuDepuisBien) => {
     const b = v.bien;
+    const fi = infos.get(v.bienId) || null;
     const titre = b ? b.titre || titreBien(b.donnees || {}) : 'Une affaire supprimée';
-    const lieu = b ? [b.quartier, b.ville].filter(Boolean).join(' · ') : '';
+    const lieu = fi?.adresse || (b ? [b.quartier, b.ville].filter(Boolean).join(' · ') : '');
     const mode = b && !b.archive ? modeAcheteurs(b.etape) : 'fini';
     const d = dossier[v.bienId];
     const etat = d ? etatDossier(d)
@@ -1057,16 +1245,17 @@ export function VuDepuisBiens({ liste, prenom, dossier, onBien, onProposer, pose
     return (
       <article key={v.bienId} className={`${s.bc} ${s.bcVu}`} data-v={v.v}>
         <button type="button" className={s.bcBien} disabled={!b} title={b ? 'Ouvrir la fiche de l’affaire' : undefined} onClick={() => onBien(v.bienId)}>
-          <PhotoNote photo={photo} n={note} v={typeof v.s === 'number' ? v.v : null} legende={typeof v.s === 'number' ? 'potentiel' : 'critères'} />
+          <PhotoNote photo={photo} n={note} v={typeof v.s === 'number' ? v.v : null} legende={typeof v.s === 'number' ? 'potentiel' : 'critères'} vide={b ? 'Pas de photo' : undefined} />
           <span className={s.bcTx}>
             <b className={s.bcTitre}>{insec(titre)}</b>
-            {lieu && <span className={s.bcLieu}><Icone nom="lieu" taille={13} epaisseur={2.2} /><span>{lieu}</span></span>}
-            {(b?.prix || mode === 'avant') && (
+            {lieu && <span className={s.bcLieu} title={lieu}><Icone nom="lieu" taille={13} epaisseur={2.2} /><span>{lieu}</span></span>}
+            {b && (
               <span className={s.bcPrix}>
-                {b?.prix ? <b>{EUR(b.prix)}</b> : null}
+                <b className={prixDe({ prix: b.prix, avant: mode === 'avant', infos: fi }).manque ? s.prixManque : undefined}>{prixDe({ prix: b.prix, avant: mode === 'avant', infos: fi }).texte}</b>
                 {mode === 'avant' && <span className={`${s.src} ${s.srcEstim}`} title="Pas encore proposée : elle partirait sans montant"><Icone nom="etiquette" taille={12} epaisseur={2.2} />{'Estimation, sans montant pour lui'}</span>}
               </span>
             )}
+            {b && <LignesFiche infos={fi} prix={b.prix} />}
             <span className={s.bcMeta}><Icone nom="calendrier" taille={13} epaisseur={2.2} /><span>{`Rapprochement du ${jourLong(v.le)}${v.fois > 1 ? ` · ressorti ${v.fois} fois` : ''}`}</span></span>
           </span>
         </button>
@@ -1082,6 +1271,7 @@ export function VuDepuisBiens({ liste, prenom, dossier, onBien, onProposer, pose
               )}
             </span>
           )}
+          <ActionsBien onFiche={b ? () => onBien(v.bienId) : undefined} infos={fi} />
         </div>
       </article>
     );
@@ -1096,14 +1286,20 @@ export function VuDepuisBiens({ liste, prenom, dossier, onBien, onProposer, pose
         {av === 'non'
           ? <button type="button" className={`${s.rfGroupeT} ${s.vuNon}`} aria-expanded={!replie} onClick={() => setVoirNon(o => !o)}>{tete}<em>{replie ? 'Voir pourquoi' : 'Replier'}</em></button>
           : <span className={s.rfGroupeT}>{tete}<em>{av === 'oui' ? `Ils peuvent plaire à ${prenom}.` : 'Un point à vérifier avec lui.'}</em></span>}
-        {!replie && (tous.includes(av) ? l : l.slice(0, PREMIERS)).map(ligne)}
-        {!replie && l.length > PREMIERS && (
-          <div className={s.plusMoins}>
-            {tous.includes(av)
-              ? <button type="button" className={s.plusMoinsR} onClick={() => setTous(x => x.filter(y => y !== av))}><Icone nom="chevron" taille={14} epaisseur={2.4} />{'Replier'}</button>
-              : <button type="button" onClick={() => setTous(x => [...x, av])}><Icone nom="chevron" taille={14} epaisseur={2.4} />{`Voir ${pl(l.length - PREMIERS, 'l’autre', `les ${l.length - PREMIERS} autres`)}`}</button>}
+        {/* V3.243 : « Voir pourquoi », « Voir les autres » : en douceur (Depliant). */}
+        <Depliant ouvert={!replie} ecart={4}>
+          <div className={s.pile}>
+            {l.slice(0, PREMIERS).map(ligne)}
+            {l.length > PREMIERS && <Depliant ouvert={tous.includes(av)} ecart={8}><div className={s.pile}>{l.slice(PREMIERS).map(ligne)}</div></Depliant>}
+            {l.length > PREMIERS && (
+              <div className={s.plusMoins}>
+                {tous.includes(av)
+                  ? <button type="button" className={s.plusMoinsR} onClick={() => setTous(x => x.filter(y => y !== av))}><Icone nom="chevron" taille={14} epaisseur={2.4} />{'Replier'}</button>
+                  : <button type="button" onClick={() => setTous(x => [...x, av])}><Icone nom="chevron" taille={14} epaisseur={2.4} />{`Voir ${pl(l.length - PREMIERS, 'l’autre', `les ${l.length - PREMIERS} autres`)}`}</button>}
+              </div>
+            )}
           </div>
-        )}
+        </Depliant>
       </div>
     );
   };

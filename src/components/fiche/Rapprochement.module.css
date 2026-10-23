@@ -644,3 +644,110 @@ div.rfBien { cursor: default; }
   .lancerL .btn { width: 100%; }
   .histoO > button { padding: 0 6px; font-size: 12.5px; gap: 5px; }
 }
+
+/* ══ V3.243 — Ce que dit la fiche de tes biens, l'historique en grand ═════════
+   Alexandre (24 octobre 2026) : « j'ai pas la photo, prix non indiqué, pas le
+   nom du propriétaire… un bouton ouvrir la fiche du bien bien visible » et
+   « que les rapprochements faits prennent toute la largeur, en rectangle ». */
+.pile { display: flex; flex-direction: column; gap: 8px; }
+/* La case photo sans photo : elle le dit. */
+.photo[data-vide], .photoG[data-vide] { flex-direction: column; gap: 4px; color: #8a97ab; }
+.photoVide { padding: 0 6px; text-align: center; font: 700 10px/1.2 'DM Sans', sans-serif; color: #7b889c; }
+.photoG .photoVide { font-size: 13px; }
+/* Le prix qui manque, en retrait. */
+.bcPrix > b.prixManque, .apercuPrix > b.prixManque { color: #94a3b8; font-size: 14px; font-weight: 700; }
+.apercuPrix > b.prixManque { font-size: 16px; }
+/* Sous le titre : l'estimation, le propriétaire, ce qui manque. */
+.bcEstim { align-self: flex-start; padding: 3px 9px; border-radius: 99px; background: #f3edff; color: #5b34b8; font-size: 12px; font-weight: 700; }
+.bcProprio, .bcManque { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; line-height: 1.35; }
+.bcProprio { color: #25272b; font-weight: 700; }
+.bcProprio svg { color: #c2621c; }
+.bcProprio { align-items: flex-start; }
+.bcProprio svg { margin-top: 2px; flex-shrink: 0; }
+.bcProprio > span { overflow-wrap: anywhere; }
+.bcManque { color: #94a3b8; font-size: 12px; font-weight: 600; }
+.bcManque svg { color: #b8c2d0; }
+.bcAvant { font-size: 12px; color: #94a3b8; text-decoration: line-through; text-decoration-color: #cbd5e1; }
+/* Les gestes : ouvrir la fiche (bien visible), appeler, voir l'annonce. */
+.bcGestes { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.bcFiche, .bcTel {
+  display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 13px; border-radius: 11px; cursor: pointer; white-space: nowrap;
+  font: 700 13px 'DM Sans', sans-serif; text-decoration: none; transition: background-color .15s, border-color .15s, box-shadow .15s, transform .15s;
+}
+.bcFiche { border: 1px solid #25272b; background: #25272b; color: #fff; box-shadow: 0 8px 16px -12px rgba(37, 39, 43, .9); }
+.bcFiche > svg:first-child { color: #f9c69f; }
+.bcFiche > svg:last-child { opacity: .6; margin-left: -2px; }
+.bcTel { border: 1px solid #eaeae9; background: #fff; color: #2e3034; }
+.bcTel svg { color: #c2621c; }
+/* L'avis d'une annonce pas relue : sa note de critères. */
+.ecNeutre { display: flex; align-items: center; gap: 8px; align-self: flex-start; padding: 8px 12px; border-radius: 12px; background: #f7f7f7; color: #2e3034; font-size: 13px; font-weight: 700; }
+/* L'aperçu : « Dans sa fiche ». */
+.fiche { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 16px; border: 1px solid #f9c8a3; background: linear-gradient(160deg, #fffbf7, #fff7f0); }
+.ficheT { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; }
+.ficheT > b { font: 800 14px 'Plus Jakarta Sans', sans-serif; color: #25272b; }
+.ficheT > small { font-size: 12px; color: #b4561a; }
+.ficheG { display: flex; flex-direction: column; gap: 2px; }
+.ficheL { display: grid; grid-template-columns: 28px 92px minmax(0, 1fr); align-items: start; gap: 8px; padding: 7px 4px; border-top: 1px solid #f6e3d3; }
+.ficheL:first-child { border-top: none; }
+.ficheLic { width: 28px; height: 28px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #f9d3b6; color: #c2621c; }
+.ficheL > small { padding-top: 6px; font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: #b06a3a; }
+.ficheV { min-width: 0; display: flex; flex-direction: column; gap: 4px; padding-top: 4px; }
+.ficheV > b { font: 800 14px/1.35 'Plus Jakarta Sans', sans-serif; color: #25272b; overflow-wrap: anywhere; }
+.ficheV > small { font-size: 12px; color: #64748b; }
+.ficheLiens { display: flex; flex-wrap: wrap; gap: 6px; }
+.ficheLiens a {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; height: 30px; padding: 0 11px; border-radius: 99px; border: 1px solid #eaeae9;
+  background: #fff; color: #2e3034; font-size: 12.5px; font-weight: 800; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ficheLiens a svg { color: #c2621c; flex-shrink: 0; }
+.ficheVide { padding-top: 6px; font-size: 13px; font-style: italic; color: #94a3b8; margin: 0; }
+.ficheBtn {
+  display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; height: 46px; border-radius: 13px; cursor: pointer;
+  border: none; background: #25272b; color: #fff; font: 800 14.5px 'Plus Jakarta Sans', sans-serif; box-shadow: 0 12px 22px -14px rgba(37, 39, 43, .95);
+  transition: filter .15s, transform .15s;
+}
+.ficheBtn > svg:first-child { color: #f9c69f; }
+.ficheBtn > svg:last-child { opacity: .6; }
+/* L'historique en pleine largeur : chaque rapprochement, ses comptes, ses cartes. */
+.rf { gap: 10px; }
+.rfLigne { border-radius: 18px; }
+.rfT { padding: 12px 16px; gap: 12px; }
+.rfIc { width: 34px; height: 34px; border-radius: 11px; }
+.rfTitre b { font-size: 15px; }
+.rfC { gap: 14px; padding: 14px; background: #fcfcfd; }
+.rfGroupe { gap: 8px; }
+.rfGroupeT { padding: 0 2px; }
+.rfComptes { display: flex; flex-wrap: wrap; gap: 6px; }
+.rfCompte {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 99px; background: #f7f7f7; color: #25272b;
+  font: 800 12px 'Plus Jakarta Sans', sans-serif; white-space: nowrap;
+}
+.rfCompte i { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+.rfCompte[data-v='oui'] { background: #f0fdf4; color: #166534; } .rfCompte[data-v='oui'] i { background: #16a34a; }
+.rfCompte[data-v='a_voir'] { background: #fff7ed; color: #9a3412; } .rfCompte[data-v='a_voir'] i { background: #d97706; }
+.rfCompte[data-v='non'] { background: #fef2f2; color: #991b1b; } .rfCompte[data-v='non'] i { background: #dc2626; }
+.rfCompte[data-zero] { opacity: .45; }
+/* Une carte de l'historique ou « Depuis tes biens » : le bien | l'avis. */
+.bcVu { grid-template-columns: minmax(0, 25rem) minmax(0, 1fr); }
+a.bcBien { text-decoration: none; }
+@media (hover: hover) {
+  .bcFiche:hover { background: #3a3c41; border-color: #3a3c41; }
+  .bcTel:hover { border-color: #f9c8a3; background: #fff9f4; }
+  .ficheBtn:hover { filter: brightness(1.15); }
+  .ficheLiens a:hover { border-color: #f9c8a3; background: #fff9f4; }
+}
+.court { display: none; }
+@media (max-width: 720px) {
+  .bcGestes > * { flex: 1 1 auto; justify-content: center; }
+  .bcGestes .long { display: none; }
+  .bcGestes .court { display: inline; }
+  .ficheL { grid-template-columns: 28px minmax(0, 1fr); }
+  .ficheL > small { grid-column: 2; padding-top: 0; }
+  .ficheL > .ficheV, .ficheL > .ficheVide { grid-column: 2; padding-top: 0; }
+  .ficheLic { grid-row: span 2; }
+  .rfT { flex-wrap: wrap; padding: 12px; }
+  .rfComptes { order: 3; flex-basis: 100%; padding-left: 46px; }
+  .rfC { padding: 10px 8px; }
+}
+/* L'aperçu défile : rien ne s'y écrase (la photo se réduisait à rien quand la fiche était longue). */
+.apercu > * { flex-shrink: 0; }
