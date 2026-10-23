@@ -71,7 +71,8 @@ export async function GET(req: NextRequest) {
         : mailPoint({ prenom: c.prenom, recherche: c.recherche, tokenClient: c.tokenClient!, site: SITE, co });
       const depuis = c.dernierMouvement
         ? `Aucun mouvement sur le dossier depuis le ${new Date(c.dernierMouvement).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })}.`
-        : 'Aucun mouvement sur le dossier depuis sa création.';
+        /* V3.240 : le calcul en paquets ne lit que les deux derniers mois du suivi. */
+        : c.ancien ? 'Aucun mouvement sur le dossier depuis plus de deux mois.' : 'Aucun mouvement sur le dossier depuis sa création.';
 
       /* V3.43 : la ligne du suivi d'abord, le mail ensuite. C'est elle qui
          empêche un deuxième mail le lendemain : écrite après, un échec
