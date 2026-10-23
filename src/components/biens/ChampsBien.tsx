@@ -577,7 +577,8 @@ function ChampProprio({ d, maj, off }: { d: Donnees; maj: Maj; off: boolean }) {
       const l: Personne[] = [personneDepuisClient(c)];
       if (j) l.push({ ...PERSONNE_VIDE, civilite: j.civilite === 'Madame' || j.civilite === 'Monsieur' ? j.civilite : '', prenom: j.prenom || '', nom: j.nom || '', email: j.email || '', telephone: j.telephone || '' });
       maj('proprietaires', l);
-      if (d.qui !== 'sci') maj('qui', j ? 'couple' : 'personne');
+      /* V3.236 : deux personnes → « Plusieurs personnes » (le mandat de Werner n'a pas de choix « deux personnes »). */
+      if (d.qui !== 'sci') maj('qui', j ? 'indivision' : 'personne');
     }
     /* Il représente une société (V3.30, « Sa société » sur sa fiche) : est-ce
        elle qui vend ? */

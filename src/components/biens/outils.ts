@@ -2408,7 +2408,9 @@ export function donneesProprio(c: ClientMini): Donnees {
   const j = c.couple ? conjointDe(c.conjoint) : null;
   const l: Personne[] = [personneDepuisClient(c)];
   if (j) l.push({ ...PERSONNE_VIDE, civilite: j.civilite === 'Madame' || j.civilite === 'Monsieur' ? j.civilite : '', prenom: j.prenom || '', nom: j.nom || '', email: j.email || '', telephone: j.telephone || '' });
-  return { clientId: c.id, proprietaires: l, qui: j ? 'couple' : 'personne' };
+  /* V3.236 : deux personnes (associés, co-propriétaires) → « Plusieurs personnes » :
+     le mandat de Werner n'a pas de choix « deux personnes » ('couple' ne s'affichait pas). */
+  return { clientId: c.id, proprietaires: l, qui: j ? 'indivision' : 'personne' };
 }
 
 /* Ses recherches à lui : le propriétaire qui rachète ailleurs. */
