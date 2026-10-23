@@ -679,7 +679,7 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
         P('S’il prend à bail, reprend ou acquiert un local, avec ou sans le MANDATAIRE, il l’en informe sans délai et lui indique, à sa demande, le bailleur ou le cédant, le loyer ou le prix, et l’avocat ou le notaire chargé de l’acte.'),
         soc
           ? P('Pendant le mandat et les douze mois qui suivent sa fin, le MANDANT s’interdit de prendre à bail, de reprendre ou d’acquérir sans le MANDATAIRE, directement ou par personne interposée, un local que celui-ci lui a présenté. Il s’en porte fort pour les associés et dirigeants de la société, et pour toute société qu’ils contrôlent.', true)
-          : P('Pendant le mandat et les douze mois qui suivent sa fin, le MANDANT s’interdit de prendre à bail, de reprendre ou d’acquérir sans le MANDATAIRE, directement ou par personne interposée, un local que celui-ci lui a présenté. Il s’en porte fort pour son conjoint, son partenaire de PACS, son concubin, toute personne avec qui il traiterait et toute société qu’il constituerait ou contrôlerait pour cette affaire.', true),
+          : P('Pendant le mandat et les douze mois qui suivent sa fin, le MANDANT s’interdit de prendre à bail, de reprendre ou d’acquérir sans le MANDATAIRE, directement ou par personne interposée, un local que celui-ci lui a présenté. Il s’en porte fort pour ses associés, toute personne avec qui il traiterait et toute société qu’il constituerait ou contrôlerait pour cette affaire.', true),
       ] },
       { titre: 'Engagements de l’Agence', ic: 'etoile', blocs: [
         P('Le MANDATAIRE s’engage, à chaque étape :'),

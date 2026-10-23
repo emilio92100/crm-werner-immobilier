@@ -489,7 +489,9 @@ recherche-entreprises.api.gouv.fr : par le nom ou le SIREN ; forme, SIREN, sièg
 cartes ; « Sélectionner », puis « Société ajoutée ») dans les contacts, le propriétaire d'une
 affaire, la reconnaissance et les documents. Les documents juridiques à la façon de Werner (§6),
 avec « Modifier le texte » sur tous, « Choisir dans mes contacts » sur chaque personne d'un
-document, et « Pour quel demandeur ? » avant de préparer une offre depuis une affaire.
+document, et « Pour quel demandeur ? » avant de préparer une offre depuis une affaire. Puis les
+offres de location dans l'espace client et le CRM (un loyer annuel HT HC, les honoraires à part)
+et la relecture des mandats de recherche (§6).
 
 ---
 
@@ -497,10 +499,25 @@ document, et « Pour quel demandeur ? » avant de préparer une offre depuis une
 
 - **La relecture des textes** — en cours. Aucun mot du résidentiel (AGENTS.md §0), honoraires HT.
 - **Les mandats et avenants de recherche de la rubrique Documents** (`src/lib/actes/mandat-recherche.ts`,
-  `avenant-recherche.ts`) : les honoraires en HT ou en TTC (23 octobre 2026), comme le mandat en
-  ligne ; une relecture complète de leurs textes reste à faire, puis celle de l'avocat.
-- **L'espace client, « Faire une offre »** : pour une location, il dit encore « honoraires
-  compris » ; à reprendre avec les mots de l'offre de location (honoraires à part, pas de total).
+  `avenant-recherche.ts`) — relus le 23 octobre 2026 : honoraires en HT ou en TTC ; l'objet dit
+  exactement ce qu'il a coché (« à prendre à bail ou à reprendre ») ; une question « Relève-t-il des
+  règles du consommateur ? » (`conso`, exigée dans un nouveau mandat ; sans réponse, les règles
+  s'appliquent comme avant) — à « Non » (une société pour son activité), ni rétractation, ni
+  information précontractuelle, ni médiateur, ni Bloctel, ni L215 (`blocsInformations(…, { conso })`) ;
+  le porte-fort ne parle plus de conjoint (« ses associés »), ici et dans le mandat en ligne ;
+  l'avenant ne dit plus « à la charge du MANDANT » sans le cas de l'agence qui partage. Le mandat
+  en ligne (`src/lib/mandat.ts`) garde, lui, la rétractation pour tous (plus protecteur). À faire
+  relire par l'avocat.
+- **Les offres de location** (23 octobre 2026) : un loyer annuel HT HC, les honoraires à part.
+  `totalOffre` et `totalContre` (`src/lib/offres.ts`) rendent le loyer tel quel pour une location ;
+  `montantDit` et `destOffre` (« le bailleur ») disent les montants partout : carte « Votre offre »
+  de l'espace, historique, « Son offre » du CRM et sa fenêtre « Réponse du bailleur », mails au
+  client et à Werner, relances. « Faire une offre » (`FaireOffre.tsx`) a sa version location (le
+  loyer, par mois, nos honoraires à part ; son activité, l'entrée souhaitée, la franchise) ; les
+  conditions à cocher sont celles que l'offre sait écrire, selon la nature (`conditionsPour`, et le
+  même filtre côté serveur, `/api/espace/offre`). L'offre préparée seul dans l'espace reste coupée
+  (`OFFRE_EN_LIGNE = false`, `EspaceClient.tsx`) : « Je veux faire une offre » prévient Werner ;
+  l'écran sert après une contre-proposition (« Accepter », « Faire une autre offre »).
 - **La relecture visuelle de chaque mail** — les gabarits de l'origine, aux couleurs converties : un
   par un, en 390 et 1280 px, quand Mailjet sera branché.
 - **Les modules propres à l'origine sont retirés** (21 octobre 2026) : plus de route ni d'écran

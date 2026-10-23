@@ -552,12 +552,17 @@ export function blocDonnees(id: IdentiteAgence): Bloc {
 /* La section « Informations » : réclamations et médiateur, données,
    blanchiment, démarchage, et les textes applicables cités par leur nom
    (la loi n'impose pas de les recopier : on les nomme). */
-export function blocsInformations(id: IdentiteAgence, qui: string, o: { lcbft?: string; textes?: string } = {}): Bloc[] {
+/* `conso: false` (Werner, 23 octobre 2026) : un mandant qui ne relève pas des
+   règles du consommateur — ni médiateur de la consommation, ni Bloctel. */
+export function blocsInformations(id: IdentiteAgence, qui: string, o: { lcbft?: string; textes?: string; conso?: boolean } = {}): Bloc[] {
+  const conso = o.conso !== false;
   return [
-    P(`Réclamations : par écrit à l’Agence. Sans réponse satisfaisante sous 30 jours, ${qui} peut saisir gratuitement le médiateur de la consommation : ${id.mediateurNom}, ${id.mediateurAdresse}, ${id.mediateurSite}.`),
+    P(conso
+      ? `Réclamations : par écrit à l’Agence. Sans réponse satisfaisante sous 30 jours, ${qui} peut saisir gratuitement le médiateur de la consommation : ${id.mediateurNom}, ${id.mediateurAdresse}, ${id.mediateurSite}.`
+      : 'Réclamations : par écrit à l’Agence.'),
     blocDonnees(id),
     ...(o.lcbft ? [P(`Lutte contre le blanchiment : l’Agence est tenue de vérifier l’identité de ses clients et de s’informer de l’origine des fonds (articles L561-1 et suivants du Code monétaire et financier). ${o.lcbft}`)] : []),
-    P(`Démarchage téléphonique : ${qui} peut s’inscrire gratuitement sur la liste d’opposition Bloctel (www.bloctel.gouv.fr).`),
+    ...(conso ? [P(`Démarchage téléphonique : ${qui} peut s’inscrire gratuitement sur la liste d’opposition Bloctel (www.bloctel.gouv.fr).`)] : []),
     Pp(`Textes applicables : ${o.textes || 'loi n° 70-9 du 2 janvier 1970 (dite loi Hoguet) et décret n° 72-678 du 20 juillet 1972'} ; code de déontologie des professionnels de l’immobilier. Le présent document est soumis à la loi française.`),
   ];
 }

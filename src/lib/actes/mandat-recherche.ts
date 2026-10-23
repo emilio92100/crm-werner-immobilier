@@ -101,7 +101,17 @@ export const NATURES_R: { v: string; l: string; ic: string; aide: string }[] = [
 /* Prendre à bail, ou payer un prix (cession, fonds, murs) : les deux à la fois possibles. */
 export const loueR = (d: Donnees) => { const n = liste(d, 'natures'); return !n.length || n.includes('location'); };
 export const acheteR = (d: Donnees) => { const n = liste(d, 'natures'); return !n.length || n.some(x => x !== 'location'); };
-const verbeR = (d: Donnees) => (loueR(d) && acheteR(d) ? 'à prendre à bail, à reprendre ou à acquérir' : loueR(d) ? 'à prendre à bail' : 'à reprendre ou à acquérir');
+/* « à prendre à bail ou à reprendre » : exactement ce qu'il a coché (tout, s'il n'a rien coché). */
+const verbeR = (d: Donnees) => {
+  const n = liste(d, 'natures');
+  const tout = !n.length;
+  const v = [
+    tout || n.includes('location') ? 'à prendre à bail' : '',
+    tout || n.includes('cession_bail') || n.includes('fonds') ? 'à reprendre' : '',
+    tout || n.includes('murs') || n.includes('murs_occupes') ? 'à acquérir' : '',
+  ].filter(Boolean);
+  return v.length > 1 ? `${v.slice(0, -1).join(', ')} ou ${v[v.length - 1]}` : v[0];
+};
 /* La base des honoraires, selon ce qu'il cherche (la même que le mandat en ligne). */
 const assiette = (d: Donnees) => (loueR(d) && acheteR(d)
   ? 'du loyer annuel hors taxes et hors charges de la première année pour un bail, ou du prix hors honoraires pour une cession de droit au bail, de fonds de commerce ou une vente'
@@ -184,7 +194,16 @@ function argent(d: Donnees): Argent {
   return { prix, honoraires, total: prix && honoPrix !== null ? prix + honoPrix : null, taux, forfait, loyer, honoPrix, honoLoyer };
 }
 
-export const retractation = (d: Donnees) => lieuDe(d) === 'domicile' || lieuDe(d) === 'distance';
+/* Werner (23 octobre 2026) : le mandant relève-t-il des règles du
+   consommateur ? Comme le mandat de commercialisation : un particulier, ou
+   une petite entreprise (5 salariés au plus) pour qui ce mandat sort de son
+   activité principale (article L221-3 du Code de la consommation). Une
+   société qui cherche un local pour son activité n'en relève pas : ni
+   rétractation, ni information précontractuelle, ni médiateur, ni L215.
+   Sans réponse (un mandat d'avant la question) : les règles s'appliquent,
+   comme avant ; un nouveau mandat demande la réponse (manques). */
+export const consoR = (d: Donnees) => d.conso !== 'non';
+export const retractation = (d: Donnees) => consoR(d) && (lieuDe(d) === 'domicile' || lieuDe(d) === 'distance');
 /* Le loyer ou le prix maximum, et les honoraires (la délégation les rappelle). */
 export const argentRecherche = (d: Donnees) => argent(d);
 
@@ -237,6 +256,16 @@ const ETAPES: Etape[] = [
       { t: 'choix', cle: 'represente', lib: 'L’un représente l’autre ?', ic: 'plume', si: d => d.qui === 'couple', options: [
         { v: 'non', l: 'Non, les deux signent', ic: 'couple' }, { v: '0', l: 'Le premier représente le second', ic: 'fleche' }, { v: '1', l: 'Le second représente le premier', ic: 'retour' },
       ], aide: 'Seulement avec une procuration écrite, jointe au mandat.' },
+      { t: 'titre', cle: 't-conso', lib: 'Les règles du consommateur', ic: 'balance' },
+      { t: 'choix', cle: 'conso', lib: 'Relève-t-il des règles du consommateur ?', ic: 'balance', options: [
+        { v: 'non', l: 'Non : une entreprise, pour son activité', ic: 'immeuble' },
+        { v: 'oui', l: 'Oui : un particulier', aide: 'Ou une petite entreprise (5 salariés au plus) pour qui ce mandat sort de son activité principale.', ic: 'personne' },
+      ], aide: 'Une société ou un commerçant qui cherche un local pour son activité\u00a0: «\u00a0Non\u00a0». Dans le doute, «\u00a0Oui\u00a0» protège mieux le mandat.' },
+      { t: 'guide', cle: 'g-conso', si: consoR, titre: () => 'Ce que le mandat ajoute pour lui', points: d => [
+        { ic: 'info', x: 'L’information avant de signer, le médiateur de la consommation et Bloctel.' },
+        { ic: 'retour', x: 'Signé hors de l’agence ou à distance (en ligne, par exemple) : 14 jours pour se rétracter, avec le formulaire joint.' },
+        ...(d.dureeMode === 'prorogation' ? [{ ic: 'boucle', x: 'Il se poursuit par périodes : l’annexe des articles L215, et un courrier avant chaque échéance.' }] : []),
+      ] },
       { t: 'zone', cle: 'noteAcquereurs', lib: 'Une précision', ic: 'plume', large: true, question: 'Une précision à imprimer sous les signataires ?' },
     ],
   },
@@ -303,7 +332,7 @@ const ETAPES: Etape[] = [
       { t: 'choix', cle: 'penale', lib: 'Clause pénale', ic: 'balance', si: d => d.type === 'exclusif', options: ouiNon(),
         aide: 'S’il conclut en chargeant une autre agence de sa recherche pendant le mandat, il doit une indemnité égale à tes honoraires. Elle ne joue que s’il conclut réellement. Il reste libre de traiter seul pour un local trouvé par lui-même.' },
       { t: 'nombre', cle: 'suite', lib: 'Pas d’affaire sans toi pour un local présenté, pendant le mandat et', ic: 'chrono', unite: 'mois après', aide: 'Un local que tu lui as présenté ou fait visiter : pas de bail, de reprise ni d’achat sans toi. 12 mois au plus.' },
-      { t: 'choix', cle: 'infoJointe', lib: 'Joindre l’information précontractuelle', ic: 'info', options: [{ v: 'oui', l: 'Oui', ic: 'trombone' }, { v: 'non', l: 'Non, remise à part', ic: 'envoyer' }],
+      { t: 'choix', cle: 'infoJointe', lib: 'Joindre l’information précontractuelle', ic: 'info', si: consoR, options: [{ v: 'oui', l: 'Oui', ic: 'trombone' }, { v: 'non', l: 'Non, remise à part', ic: 'envoyer' }],
         aide: 'Obligatoire avant la signature avec un particulier ou un petit professionnel (5 salariés au plus). Jointe, elle forme la 2e partie du document.' },
       { t: 'zone', cle: 'clause', lib: 'Clause particulière', ic: 'plume', large: true, question: 'Ajouter une clause particulière ?', aide: 'Imprimée telle quelle, avant les signatures.' },
     ],
@@ -340,6 +369,7 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
   const periode = num(d, 'periode') ?? 3;
   const dureeMax = num(d, 'dureeMax') ?? 12;
   const numero = txt(d, 'numero');
+  const conso = consoR(d);
 
   /* ── Les parties ── */
   const fiches: Fiche[] = [];
@@ -431,7 +461,7 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
   const dur: Bloc[] = [];
   if (d.dureeMode === 'prorogation') {
     dur.push(P(`Le mandat prend effet à sa signature pour une durée de ${nbLettres(duree)} mois. À ce terme, il se poursuit par périodes de ${nbLettres(periode)} mois, dans la limite de ${nbLettres(dureeMax)} mois au total, sauf si l’une des parties y met fin. Chaque partie peut s’opposer à cette poursuite par écrit (lettre ou e-mail), au plus tard la veille de l’échéance ; le mandat prend alors fin à l’échéance.`));
-    dur.push(P('Avant chaque échéance, au plus tôt trois mois et au plus tard un mois avant, l’Agence rappelle par écrit au MANDANT qu’il peut ne pas poursuivre le mandat (article L215-1 du Code de la consommation, reproduit en annexe avec les articles L215-1-1 à L215-3 et L241-3).'));
+    if (conso) dur.push(P('Avant chaque échéance, au plus tôt trois mois et au plus tard un mois avant, l’Agence rappelle par écrit au MANDANT qu’il peut ne pas poursuivre le mandat (article L215-1 du Code de la consommation, reproduit en annexe avec les articles L215-1-1 à L215-3 et L241-3).'));
   } else {
     dur.push(P(`Le mandat prend effet à sa signature et dure ${nbLettres(duree)} mois. Il prend fin de plein droit à son terme, sans reconduction.`));
   }
@@ -463,7 +493,7 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
     engM.push(P('Il déclare n’avoir confié aucun mandat exclusif de recherche portant sur les mêmes locaux.'));
   }
   engM.push(P('S’il prend à bail, reprend ou acquiert un local, avec ou sans l’Agence, il l’en informe sans délai et lui indique, à sa demande, le bailleur ou le cédant, le loyer ou le prix, et l’avocat ou le notaire chargé de l’acte. Il communique à l’Agence les informations utiles à sa recherche, notamment sur son activité et sa capacité de financement.'));
-  engM.push(P(MAJ(`Pendant le mandat et les ${nbLettres(suite)} mois qui suivent sa fin, le MANDANT s’interdit de prendre à bail, de reprendre ou d’acquérir sans l’Agence, directement ou par personne interposée, un local qu’elle lui a présenté ou fait visiter. S’il le fait, il doit à l’Agence, à titre de clause pénale, une indemnité forfaitaire égale aux honoraires prévus au présent mandat, calculés sur le loyer ou le prix de l’affaire conclue. ${d.qui === 'sci' ? 'Il s’en porte fort pour ses associés et dirigeants, et pour toute société qu’ils contrôlent' : 'Il s’en porte fort pour son conjoint, son partenaire de PACS, son concubin, toute personne avec qui il traiterait et toute société qu’il constituerait ou contrôlerait pour cette affaire'}.`), true));
+  engM.push(P(MAJ(`Pendant le mandat et les ${nbLettres(suite)} mois qui suivent sa fin, le MANDANT s’interdit de prendre à bail, de reprendre ou d’acquérir sans l’Agence, directement ou par personne interposée, un local qu’elle lui a présenté ou fait visiter. S’il le fait, il doit à l’Agence, à titre de clause pénale, une indemnité forfaitaire égale aux honoraires prévus au présent mandat, calculés sur le loyer ou le prix de l’affaire conclue. ${d.qui === 'sci' ? 'Il s’en porte fort pour ses associés et dirigeants, et pour toute société qu’ils contrôlent' : 'Il s’en porte fort pour ses associés, toute personne avec qui il traiterait et toute société qu’il constituerait ou contrôlerait pour cette affaire'}.`), true));
 
   /* ── Les pouvoirs ── */
   const pvs: string[] = [
@@ -508,12 +538,13 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
   }
   sections.push({ titre: 'Informations', ic: 'info', blocs: [
     ...(numero ? [P(`Le présent mandat est inscrit sous le numéro ${numero} au registre des mandats de l’Agence.`)] : [P('Numéro au registre des mandats : ……………')]),
-    P(`Le MANDANT reconnaît avoir reçu, avant de signer, l’information précontractuelle prévue par le Code de la consommation${retr ? ' et le formulaire de rétractation' : ''}${vrai(d, 'infoJointe') ? ', qui forme' + (retr ? 'nt' : '') + ' la suite du présent document' : ''}.`),
+    ...(conso ? [P(`Le MANDANT reconnaît avoir reçu, avant de signer, l’information précontractuelle prévue par le Code de la consommation${retr ? ' et le formulaire de rétractation' : ''}${vrai(d, 'infoJointe') ? ', qui forme' + (retr ? 'nt' : '') + ' la suite du présent document' : ''}.`)] : []),
     ...blocsInformations(A, 'le MANDANT', {
+      conso,
       lcbft: 'Le MANDANT s’engage à lui fournir les justificatifs demandés à ce titre, notamment sur l’origine des fonds.',
       textes: [
         'loi n° 70-9 du 2 janvier 1970 (dite loi Hoguet, art. 6 et 7) et décret n° 72-678 du 20 juillet 1972 (art. 72 et 78)',
-        `Code de la consommation (art. L111-1${d.dureeMode === 'prorogation' ? ', L215-1 à L215-3' : ''}${retr ? ', L221-5, L221-18 et suivants' : ''}, L612-1)`,
+        ...(conso ? [`Code de la consommation (art. L111-1${d.dureeMode === 'prorogation' ? ', L215-1 à L215-3' : ''}${retr ? ', L221-5, L221-18 et suivants' : ''}, L612-1)`] : []),
         ...(type === 'exclusif' && vrai(d, 'penale') ? ['Code civil (art. 1231-5)'] : []),
       ].join(' ; '),
     }),
@@ -533,8 +564,8 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
     ic: 'doc',
     sections,
   }];
-  if (d.dureeMode === 'prorogation') parties.push(annexeL215());
-  if (vrai(d, 'infoJointe')) parties.push(infoPrecontractuelle(d, A));
+  if (conso && d.dureeMode === 'prorogation') parties.push(annexeL215());
+  if (conso && vrai(d, 'infoJointe')) parties.push(infoPrecontractuelle(d, A));
   if (retr) parties.push(formulaireType(A, {
     contrat: `mandat de recherche${numero ? ` n° ${numero}` : ''}`,
     /* Signé en ligne ou sur place : conclu à la dernière signature. */
@@ -674,6 +705,7 @@ function manques(d: Donnees): string[] {
     else if (d.qui !== 'sci' && !p.adresse) out.push(`L’adresse de ${nomComplet(p)}`);
   });
   if (d.qui === 'sci' && (!txt(d, 'sciNom') || !txt(d, 'sciSiege'))) out.push('Le nom et le siège de la société');
+  if (d.conso !== 'oui' && d.conso !== 'non') out.push('S’il relève des règles du consommateur (oui ou non)');
   if (!liste(d, 'natures').length) out.push('Ce qu’il veut faire : prendre à bail, reprendre, acheter');
   if (!liste(d, 'types').length) out.push('Le type de local recherché');
   if (!txt(d, 'secteurs')) out.push('Où il cherche');
@@ -780,7 +812,9 @@ export const MANDAT_RECHERCHE: Modele = {
   registre: registreRecherche,
   badge: d => TYPES[typeDe(d)].court,
   reperes,
-  echeances,
+  /* Un mandant professionnel n'attend pas de courrier avant la reconduction (L215-1) :
+     les échéances restent, sans fenêtre à respecter. */
+  echeances: (d: Donnees, signeLe: string) => (consoR(d) ? echeances(d, signeLe) : echeances(d, signeLe).map(e => ({ le: e.le, quoi: e.quoi }))),
   lien: 'recherche',
   surRecherche,
   cases: casesRecherche,

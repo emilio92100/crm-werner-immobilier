@@ -73,7 +73,16 @@ const naturesDe = (d: Donnees, s: '' | '2') => liste(d, 'natures' + s);
 const naturesApres = (d: Donnees) => naturesDe(d, change(d, 'bien') ? '2' : '');
 const loueN = (n: string[]) => !n.length || n.includes('location');
 const acheteN = (n: string[]) => !n.length || n.some(x => x !== 'location');
-const verbeN = (n: string[]) => (loueN(n) && acheteN(n) ? 'à prendre à bail, à reprendre ou à acquérir' : loueN(n) ? 'à prendre à bail' : 'à reprendre ou à acquérir');
+/* « à prendre à bail ou à reprendre » : exactement ce qu'il a coché (tout, s'il n'a rien coché). */
+const verbeN = (n: string[]) => {
+  const tout = !n.length;
+  const v = [
+    tout || n.includes('location') ? 'à prendre à bail' : '',
+    tout || n.includes('cession_bail') || n.includes('fonds') ? 'à reprendre' : '',
+    tout || n.includes('murs') || n.includes('murs_occupes') ? 'à acquérir' : '',
+  ].filter(Boolean);
+  return v.length > 1 ? `${v.slice(0, -1).join(', ')} ou ${v[v.length - 1]}` : v[0];
+};
 const baseN = (n: string[]) => (loueN(n) && acheteN(n)
   ? 'du loyer annuel hors taxes et hors charges de la première année pour un bail, ou du prix hors honoraires pour une cession de droit au bail, de fonds de commerce ou une vente'
   : loueN(n) ? 'du loyer annuel hors taxes et hors charges de la première année du bail conclu'
@@ -297,16 +306,18 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
     const blocs: Bloc[] = [];
     const n = naturesApres(d);
     if (ap.forfait) {
-      blocs.push(P(`Les honoraires de l’Agence sont désormais un forfait de ${montantHono(d, ap.forfait, true)}, à la charge du MANDANT, en plus du loyer ou du prix.`, true));
+      blocs.push(P(`Les honoraires de l’Agence sont désormais un forfait de ${montantHono(d, ap.forfait, true)}.`, true));
     } else {
       const exemples = [
         acheteN(n) && ap.prix && ap.honoPrix !== null ? `${montantHonoCourt(d, ap.honoPrix)} pour un prix de ${euros(ap.prix)}` : '',
         loueN(n) && ap.loyer && ap.honoLoyer !== null ? `${montantHonoCourt(d, ap.honoLoyer)} pour un loyer annuel de ${euros(ap.loyer)}` : '',
       ].filter(Boolean).join(' ou ');
       blocs.push(P(`Les honoraires de l’Agence sont désormais de ${ap.taux !== null ? `${tauxHono(d, ap.taux)} ${baseN(n)}${exemples ? `, soit ${exemples}` : ''}, ${mentionTva(d)}` : '……'}.`, true));
-      blocs.push(P('Ils sont à la charge du MANDANT, en plus du loyer ou du prix.'));
     }
-    blocs.push(P('Ils restent dus dans les conditions prévues au mandat. Lorsqu’ils sont dus, ils sont payés le jour de la signature du bail, ou de l’acte de cession ou de vente : aucune somme n’est due, ni ne peut être versée à l’Agence, avant (article 6 de la loi du 2 janvier 1970).'));
+    /* Werner (23 octobre 2026) : le mandat prévoit deux cas (rien n'est dû
+       quand l'agence qui propose le local partage ses honoraires) : l'avenant
+       ne dit pas « à la charge du MANDANT » sans eux. */
+    blocs.push(P('Ils restent dus dans les seules conditions prévues au mandat, à la charge du MANDANT en plus du loyer ou du prix, sauf lorsque le local est proposé par une autre agence qui partage ses honoraires avec l’Agence. Lorsqu’ils sont dus, ils sont payés le jour de la signature du bail, ou de l’acte de cession ou de vente : aucune somme n’est due, ni ne peut être versée à l’Agence, avant (article 6 de la loi du 2 janvier 1970).'));
     /* Le mandat papier prévoit des indemnités égales aux honoraires (clause
        de suite, clause pénale), en capitales : elles suivent le changement. */
     if (!enLigne(d)) blocs.push(P(MAJ('Toute indemnité prévue au mandat et égale aux honoraires est calculée sur les honoraires ainsi modifiés.'), true));
