@@ -254,10 +254,10 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: string, d
         <div className={styles.statCard} onClick={() => onNavigate('clients')}>
           <div className={styles.statTop}>
             <div className={`${styles.statIcon} ${styles.iconSlate}`}>👥</div>
-            {prospects > 0 && <span className={`${styles.statBadge} ${styles.badgePurple}`}>{prospects} prospect{prospects > 1 ? 's' : ''}</span>}
+            {prospects > 0 && <span className={`${styles.statBadge} ${styles.badgePurple}`}>{`${prospects} en recherche`}</span>}
           </div>
           <div className={styles.statVal}>{actifs}</div>
-          <div className={styles.statLabel}>Clients actifs</div>
+          <div className={styles.statLabel}>Demandeurs accompagnés</div>
         </div>
 
         <div className={styles.statCard}>
