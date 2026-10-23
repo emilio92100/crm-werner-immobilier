@@ -859,12 +859,14 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
   };
 
   const signer = async (griffe: string) => {
-    if (!lu || execution === null || code.length !== 6) return;
+    /* Une société : pas de délai de rétractation, la recherche commence tout de suite. */
+    const societe = achat === 'societe';
+    if (!lu || (!societe && execution === null) || code.length !== 6) return;
     setEnvoi(true); setErreur('');
     /* Quelques secondes de « Signature en cours… », même si le serveur va
        plus vite : le client voit que quelque chose de sérieux se passe. */
     const [r] = await Promise.all([
-      envoyer('mandat', { etape: 'signer', code, execution, accepte: true, griffe }),
+      envoyer('mandat', { etape: 'signer', code, execution: societe ? true : execution, accepte: true, griffe }),
       new Promise(ok => setTimeout(ok, 1600)),
     ]);
     setPad(false);
@@ -874,7 +876,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
           id: x.id, prenom: x.prenom, nom: x.nom, email: x.email, statut: 'invite', invite: r.signeLe || new Date().toISOString(), signe: null, expire: null,
         })) : [];
       setEnAttente(att);
-      const res = { numero: r.numero, signeLe: r.signeLe || new Date().toISOString(), finRetractation: r.finRetractation, execution: r.execution ?? execution, ...(att.length ? { attente: att } : {}) };
+      const res = { numero: r.numero, signeLe: r.signeLe || new Date().toISOString(), finRetractation: r.finRetractation, execution: r.execution ?? (societe ? true : execution), ...(att.length ? { attente: att } : {}) };
       let apres: unknown = null;
       try { apres = await onSigne(res); } catch { /* la signature est faite : la suite ne doit pas la cacher */ }
       setPhraseApres(typeof apres === 'string' ? apres : '');
@@ -1124,7 +1126,10 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
 
   /* ── 3. La signature ── */
   if (etape === 'signer') {
-    const pret = lu && execution !== null && code.length === 6;
+    /* Werner (23 octobre 2026) : pour une société, pas de délai de
+       rétractation — la recherche commence à la signature, rien à choisir. */
+    const sansDelai = achat === 'societe';
+    const pret = lu && (sansDelai || execution !== null) && code.length === 6;
     return (
       <div className="mdt">
         {tete('Étape 3 sur 3')}
@@ -1145,6 +1150,9 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
           </button>
           <button type="button" className="mdt-relire" onClick={() => { setRetourLecture('signer'); setEtape('lecture'); void envoyer('mandat', { etape: 'texte' }); }}>Le relire</button>
 
+          {sansDelai ? (
+            <div className="mdt-info"><Ic n="info" t={16} /><span>{'Pour une société, la recherche commence dès la signature : le délai de rétractation des particuliers ne s’applique pas.'}</span></div>
+          ) : (<>
           <div className="mdt-q">Quand la recherche commence-t-elle&nbsp;?</div>
           <div className="mdt-choix2">
           <button type="button" className="mdt-choix" data-on={execution === true ? '1' : undefined} onClick={() => setExecution(true)}>
@@ -1156,6 +1164,7 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
             <span><b>{`Dans ${RETRACTATION_JOURS} jours`}</b><span className="s">La recherche et les visites commenceront à la fin de mon délai de rétractation.</span></span>
           </button>
           </div>
+          </>)}
 
           <div className="mdt-q">Votre code</div>
           <p className="mdt-p petit">{codeDe
@@ -1179,9 +1188,13 @@ export default function SignatureMandat({ mandat, raison, envoyer, onFermer, onS
           <div className="mdt-confiance">
             <span><Ic n="cadenas" t={15} /><span>Code personnel, à usage unique</span></span>
             <span><Ic n="bouclier" t={15} /><span>Document scellé et horodaté</span></span>
-            <span><Ic n="retour" t={15} /><span>{`${RETRACTATION_JOURS} jours pour changer d’avis`}</span></span>
+            {sansDelai
+              ? <span><Ic n="check" t={15} /><span>Mandat simple, sans exclusivité</span></span>
+              : <span><Ic n="retour" t={15} /><span>{`${RETRACTATION_JOURS} jours pour changer d’avis`}</span></span>}
           </div>
-          <p className="mdt-mention">{achat === 'nom' && cos.length
+          <p className="mdt-mention">{sansDelai
+            ? 'En signant, vous acceptez, pour votre société et en votre nom, votre mandat de recherche non exclusif. Vous en recevez un exemplaire par e-mail.'
+            : achat === 'nom' && cos.length
             ? `En signant, vous acceptez votre mandat de recherche non exclusif : il vous engage dès maintenant, et il sera complet quand ${prenoms(cos)} l’${cos.length > 1 ? 'auront' : 'aura'} signé. Vous en recevez un exemplaire par e-mail, et vous pouvez y renoncer pendant ${RETRACTATION_JOURS} jours après votre signature, prolongés si un autre signataire signe entre-temps.`
             : `En signant, vous acceptez votre mandat de recherche non exclusif. Vous en recevez un exemplaire par e-mail, et vous pouvez y renoncer pendant ${RETRACTATION_JOURS} jours depuis votre espace.`}</p>
         </div>

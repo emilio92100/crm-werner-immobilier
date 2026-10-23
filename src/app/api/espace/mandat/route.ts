@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash, randomInt, randomUUID, timingSafeEqual } from 'crypto';
 import {
-  redigerMandat, resumeMandat, figerContenu, etatMandat, finRetractation, masquerEmail, validerMandant, validerPersonne, validerSociete,
+  redigerMandat, resumeMandat, figerContenu, sansRetractation, etatMandat, finRetractation, masquerEmail, validerMandant, validerPersonne, validerSociete,
   dateLongue, dateCourte, heureParis, jourParis, titreMandat, honorairesCourt, euros, DUREE, RETRACTATION_JOURS, COSIGNATAIRES_MAX, ajouterMois,
   rechercheDepuis, versionMandat, decrireRecherche, type Mandant, type Contenu, type Societe,
 } from '@/lib/mandat';
@@ -639,11 +639,14 @@ export async function POST(req: NextRequest) {
         const code = String(body.code || '').replace(/\D/g, '');
         if (code.length !== 6) return ko('code', 400);
         if (body.accepte !== true) return ko('accepte', 400);
-        if (typeof body.execution !== 'boolean') return ko('execution', 400);
-        const execution = body.execution as boolean;
 
         const l = await derniere(sb, recherche.id);
         if (!l) return ko('recommencer', 409);
+        /* Werner (23 octobre 2026) : pour une société, pas de délai de
+           rétractation — la mission commence à la signature. */
+        const sansDelai = sansRetractation(l);
+        if (!sansDelai && typeof body.execution !== 'boolean') return ko('execution', 400);
+        const execution = sansDelai ? true : body.execution as boolean;
         if (l.statut === 'signe') return NextResponse.json({ ok: true, deja: true, numero: l.numero });
         if (l.statut !== 'en_cours' || !l.code_hash) return ko('recommencer', 409);
         /* Le taux ou les critères ont changé depuis l'envoi du code : ce qu'il
@@ -682,9 +685,11 @@ export async function POST(req: NextRequest) {
         const deroule = [...(l.deroule || []),
           ...(griffeMandant ? [{ t: le, x: 'Signature tracée à la main sur l’écran par le signataire' }] : []),
           { t: le, x: `Code saisi et validé (${tentative})` },
-          { t: le, x: `Cases cochées : « J’ai lu mon mandat de recherche et je l’accepte » · « ${execution
-            ? 'Je demande que la recherche commence tout de suite, sans attendre la fin de mon délai de rétractation'
-            : 'Je préfère que la recherche commence à la fin de mon délai de rétractation'} »` },
+          { t: le, x: sansDelai
+            ? 'Case cochée : « J’ai lu mon mandat de recherche et je l’accepte » · pour une société, sans délai de rétractation : la mission commence à la signature'
+            : `Cases cochées : « J’ai lu mon mandat de recherche et je l’accepte » · « ${execution
+              ? 'Je demande que la recherche commence tout de suite, sans attendre la fin de mon délai de rétractation'
+              : 'Je préfère que la recherche commence à la fin de mon délai de rétractation'} »` },
         ];
 
         /* ── À plusieurs : il signe en premier ──
@@ -820,7 +825,7 @@ export async function POST(req: NextRequest) {
         });
         const certifier = (s1: Uint8Array, e1: string) => pdfSigne(s1, {
           numero: l.numero, mandant: { nom: nomPdf, adresse: soc ? soc.siege : m.adresse, email: m.email, telephone: m.telephone },
-          signeLe: le, ip, appareil, empreinte: e1, deroule, executionImmediate: execution, agenceLe: contenu.agenceLe || null,
+          signeLe: le, ip, appareil, empreinte: e1, deroule, executionImmediate: execution, sansDelai, agenceLe: contenu.agenceLe || null,
           identite,
         });
         let seul = await fabriquer(1);
@@ -887,17 +892,17 @@ export async function POST(req: NextRequest) {
         /* Les copies : au client (son exemplaire sur support durable), et à
            Alexandre. Un échec d'envoi ne défait pas la signature. */
         const pj = [{ nom: `Mandat-de-recherche-${l.numero}.pdf`, type: 'application/pdf', base64: Buffer.from(signe).toString('base64') }];
-        const limite = finRetractation(le);
+        const limite = sansDelai ? new Date(le) : finRetractation(le);
         const eClient = await envoyerMail({ expediteur: 'signature',
           a: m.email, nomA: nom, pj, repondreA: 'contact@wernerimmobilier.com',
           sujet: `Votre mandat de recherche n° ${l.numero}`,
-          texte: `Bonjour ${m.prenom},\n\nMerci pour votre confiance. Vous trouverez ci-joint votre mandat de recherche n° ${l.numero}, signé le ${dateLongue(le)}, avec son certificat de signature.\n\nVous le retrouvez aussi à tout moment dans votre espace, rubrique « Ma recherche ».\n\nWerner travaille désormais pour vous : les locaux hors marché de son réseau, chaque dossier vérifié avant toute offre, la négociation, et un suivi jusqu'à la signature du bail ou de l'acte.\n\nÀ très vite,\nWerner Immobilier\n\n—\nLe mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours (jusqu'au ${dateLongue(limite)} inclus) et la façon de l'exercer.`,
+          texte: `Bonjour ${m.prenom},\n\nMerci pour votre confiance. Vous trouverez ci-joint votre mandat de recherche n° ${l.numero}, signé le ${dateLongue(le)}, avec son certificat de signature.\n\nVous le retrouvez aussi à tout moment dans votre espace, rubrique « Ma recherche ».\n\nWerner travaille désormais pour vous : les locaux hors marché de son réseau, chaque dossier vérifié avant toute offre, la négociation, et un suivi jusqu'à la signature du bail ou de l'acte.\n\nÀ très vite,\nWerner Immobilier${sansDelai ? '' : `\n\n—\nLe mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours (jusqu'au ${dateLongue(limite)} inclus) et la façon de l'exercer.`}`,
           html: gabarit('Votre mandat de recherche', `<p>Bonjour ${echappe(m.prenom)},</p>
             <p>Merci pour votre confiance. Vous trouverez ci-joint votre <b>mandat de recherche n° ${echappe(l.numero)}</b>, signé le ${dateLongue(le)}, avec son certificat de signature.</p>
             <p>Vous le retrouvez aussi à tout moment dans votre espace, rubrique « Ma recherche ».</p>
             <p>Werner travaille désormais pour vous&nbsp;: les locaux hors marché de son réseau, chaque dossier vérifié avant toute offre, la négociation, et un suivi jusqu’à la signature du bail ou de l’acte.</p>
             <p>À très vite,<br>Werner Immobilier</p>`,
-            `Le mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours (jusqu’au ${dateLongue(limite)} inclus) et la façon de l’exercer.`),
+            sansDelai ? undefined : `Le mandat joint rappelle votre délai de rétractation de ${RETRACTATION_JOURS} jours (jusqu’au ${dateLongue(limite)} inclus) et la façon de l’exercer.`),
         });
         /* Werner : son loyer annuel maximum et/ou son prix maximum. */
         const prix = [
@@ -909,11 +914,11 @@ export async function POST(req: NextRequest) {
         if (eClient || eFiche || ecarts.length || await alerteMailActive(sb, 'mandat_signe')) await envoyerMail({
           a: ALERTES(), deLaPartDe: 'crm', pj,
           sujet: `✍️ ${nom} a signé son mandat (n° ${l.numero})`,
-          texte: `${nom} vient de signer son mandat de recherche n° ${l.numero} depuis son espace, le ${dateCourte(le)} à ${heureParis(le)}.\nBudget maximum : ${prix}. Honoraires : ${honorairesCourt(contenu)}.\n${execution ? 'Il a demandé que la recherche commence tout de suite.' : 'Il préfère attendre la fin de ses 14 jours : pas de visite avant le ' + dateCourte(limite) + '.'}\n${contenu.source === 'reserve' ? `\nNuméro pris dans ta réserve : reporte-le dans ton registre des mandats.` : ''}${ecarts.map(e => `\n⚠️ ${e}`).join('')}${eClient ? `\n⚠️ Sa copie n'a pas pu lui être envoyée (${eClient}) : envoie-lui le PDF ci-joint.` : ''}${eFiche ? `\n⚠️ La fiche n'a pas pu être mise à jour (${eFiche.message}) : remplis le bloc Mandat à la main.` : ''}\n\n${lienCrm}`,
+          texte: `${nom} vient de signer son mandat de recherche n° ${l.numero} depuis son espace, le ${dateCourte(le)} à ${heureParis(le)}.\nBudget maximum : ${prix}. Honoraires : ${honorairesCourt(contenu)}.\n${sansDelai ? 'Pour une société : pas de délai de rétractation, la recherche commence tout de suite.' : execution ? 'Il a demandé que la recherche commence tout de suite.' : 'Il préfère attendre la fin de ses 14 jours : pas de visite avant le ' + dateCourte(limite) + '.'}\n${contenu.source === 'reserve' ? `\nNuméro pris dans ta réserve : reporte-le dans ton registre des mandats.` : ''}${ecarts.map(e => `\n⚠️ ${e}`).join('')}${eClient ? `\n⚠️ Sa copie n'a pas pu lui être envoyée (${eClient}) : envoie-lui le PDF ci-joint.` : ''}${eFiche ? `\n⚠️ La fiche n'a pas pu être mise à jour (${eFiche.message}) : remplis le bloc Mandat à la main.` : ''}\n\n${lienCrm}`,
           html: gabarit(`${nom} a signé son mandat`, `<p><b>${echappe(nom)}</b> vient de signer son mandat de recherche <b>n° ${echappe(l.numero)}</b> depuis son espace, le ${dateCourte(le)} à ${heureParis(le)}.</p>
             <p>Budget maximum : ${echappe(prix)} · Honoraires : ${echappe(honorairesCourt(contenu))}</p>
             ${soc ? `<p>🏢 Pour la société <b>${echappe(soc.denomination)}</b> (${echappe(soc.forme)}, SIREN ${echappe(soc.siren)}, RCS ${echappe(soc.rcsVille)}), dont il est ${echappe(soc.qualite.toLowerCase())}${l.kbis_chemin ? ' · Kbis joint (dans le dossier privé)' : ' · pas de Kbis joint'}.</p>` : ''}
-            <p>${execution ? 'Il a demandé que la recherche commence <b>tout de suite</b>.' : `Il préfère attendre la fin de ses 14 jours : <b>pas de visite avant le ${dateCourte(limite)}</b>.`}</p>
+            <p>${sansDelai ? 'Pour une société : <b>pas de délai de rétractation</b>, la recherche commence tout de suite.' : execution ? 'Il a demandé que la recherche commence <b>tout de suite</b>.' : `Il préfère attendre la fin de ses 14 jours : <b>pas de visite avant le ${dateCourte(limite)}</b>.`}</p>
             ${contenu.source === 'reserve' ? '<p>Numéro pris dans ta réserve : <b>reporte-le dans ton registre des mandats</b>.</p>' : ''}
             ${ecarts.map(e => `<p style="color:#c05d12">⚠️ ${echappe(e)}</p>`).join('')}
             ${eClient ? `<p style="color:#b91c1c">⚠️ Sa copie n’a pas pu lui être envoyée (${echappe(eClient)}) : envoie-lui le PDF ci-joint.</p>` : ''}
@@ -947,6 +952,8 @@ export async function POST(req: NextRequest) {
         if (!l || !['signe', 'partiel'].includes(l.statut) || !l.signe_le) return ko('aucun', 404);
         /* À plusieurs, le délai court jusqu'à 14 jours après la dernière signature. */
         const cosR = await lireCos(sb, l.id);
+        /* Une société n'a pas de délai de rétractation. */
+        if (sansRetractation(l)) return ko('delai', 409);
         const finR = finRetractationDe(l, cosR) || finRetractation(l.signe_le);
         if (Date.now() > finR.getTime()) return ko('delai', 409);
         const le = new Date().toISOString();

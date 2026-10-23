@@ -597,7 +597,7 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
     parties = [
       { t: 'fiches', items: [fs, mandataire] },
       P(`${nomLong(m)} déclare être habilité${e(m)} à signer ce mandat au nom de la société, en vertu de ses statuts ou d’une décision de ses associés.`),
-      P(`${nomLong(m)} signe aussi en son nom personnel : les engagements du MANDANT s’appliquent à ${m.civilite === 'Madame' ? 'elle' : 'lui'}, notamment s’${m.civilite === 'Madame' ? 'elle' : 'il'} prend à bail, reprend ou acquiert ${m.civilite === 'Madame' ? 'elle' : 'lui'}-même, ou par une autre société, un local présenté par l’Agence. Comme la société, ${m.civilite === 'Madame' ? 'elle' : 'il'} peut se rétracter dans les conditions ci-dessous.`),
+      P(`${nomLong(m)} signe aussi en son nom personnel : les engagements du MANDANT s’appliquent à ${m.civilite === 'Madame' ? 'elle' : 'lui'}, notamment ${m.civilite === 'Madame' ? 'si elle' : 's’il'} prend à bail, reprend ou acquiert ${m.civilite === 'Madame' ? 'elle' : 'lui'}-même, ou par une autre société, un local présenté par l’Agence.`),
     ];
   }
 
@@ -692,7 +692,15 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
           { titre: 'Rendre compte', x: 'Tenir à jour, dans l’espace personnel du MANDANT, le suivi de sa recherche et les locaux présentés, et lui adresser un compte rendu après chaque visite.' },
         ] },
       ] },
-      { titre: 'Droit de rétractation', ic: 'retour', blocs: plusieurs
+      /* Werner (23 octobre 2026) : une société qui cherche un local pour son
+         activité n'est pas un consommateur — pas de délai de rétractation
+         (l'article L221-3 ne l'étend aux petites entreprises que hors
+         établissement, jamais à distance), et la mission commence tout de suite. */
+      soc
+        ? { titre: 'Début de la mission', ic: 'calendrier', blocs: [
+          P(`Le mandat est conclu pour les besoins de l’activité professionnelle de la société : le délai de rétractation prévu pour les consommateurs ne s’applique pas, ni au MANDANT ni à son représentant. La mission commence dès la signature.`, true),
+        ] }
+        : { titre: 'Droit de rétractation', ic: 'retour', blocs: plusieurs
         ? [
           P(`Le mandat étant conclu à distance, chaque signataire peut se rétracter sans motif pendant ${enLettres(RETRACTATION_JOURS)} (${RETRACTATION_JOURS}) jours à compter du lendemain de sa propre signature (délai prolongé jusqu’au premier jour ouvrable s’il finit un samedi, un dimanche ou un jour férié) ; si un autre signataire signe pendant ce délai, il est prolongé jusqu’à la fin du délai de celui-ci. Il se rétracte par écrit, avec le formulaire ci-après s’il le souhaite, ou en ligne (« Renoncer au mandat », depuis son espace personnel ou son lien personnel), et reçoit un accusé de réception par e-mail. La rétractation d’un signataire ne met fin au mandat qu’à son égard ; celle du premier signataire y met fin pour tous, et chacun en est prévenu par e-mail.`, true),
           P('La mission ne commence, pour chaque signataire, qu’à la fin de son délai de rétractation, sauf s’il demande qu’elle commence plus tôt ; il garde alors son droit de rétractation tant que la mission n’est pas entièrement exécutée.'),
@@ -706,9 +714,9 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
           { t: 'case', coche: d.executionImmediate === false, x: 'Le MANDANT préfère que la mission commence à la fin du délai de rétractation.' },
         ] },
       { titre: 'Informations', ic: 'info', blocs: [
-        P(`Réclamations : par écrit à l’Agence. Sans réponse satisfaisante sous 30 jours, le MANDANT peut saisir gratuitement le médiateur de la consommation : ${A.mediateurNom}, ${A.mediateurAdresse}, ${A.mediateurSite}.`),
+        P(soc ? 'Réclamations : par écrit à l’Agence.' : `Réclamations : par écrit à l’Agence. Sans réponse satisfaisante sous 30 jours, le MANDANT peut saisir gratuitement le médiateur de la consommation : ${A.mediateurNom}, ${A.mediateurAdresse}, ${A.mediateurSite}.`),
         P(`Données personnelles : l’Agence les traite pour exécuter le mandat et respecter ses obligations légales, et ne les communique qu’aux intervenants de l’opération. Le MANDANT peut y accéder, les rectifier ou les faire effacer en écrivant à ${A.mail}, et saisir la CNIL (www.cnil.fr).`),
-        P('Démarchage téléphonique : le MANDANT peut s’inscrire gratuitement sur la liste d’opposition Bloctel (www.bloctel.gouv.fr).'),
+        ...(soc ? [] : [P('Démarchage téléphonique : le MANDANT peut s’inscrire gratuitement sur la liste d’opposition Bloctel (www.bloctel.gouv.fr).')]),
         P('L’Agence exerce sous la loi n° 70-9 du 2 janvier 1970 (dite loi Hoguet), son décret d’application du 20 juillet 1972 et le code de déontologie des professionnels de l’immobilier. Le mandat est soumis à la loi française.'),
       ] },
       { titre: 'Date et signatures', ic: 'plume', blocs: plusieurs && m
@@ -764,8 +772,12 @@ export function redigerMandat(d: DonneesMandat, A: IdentiteAgence = IDENTITE_DEF
     ] }],
   };
 
-  return [mandat, formulaire];
+  /* Une société : ni rétractation, ni formulaire. */
+  return soc ? [mandat] : [mandat, formulaire];
 }
+
+/** Werner : signé pour une société, le mandat en ligne n'a pas de délai de rétractation. */
+export const sansRetractation = (l: { societe?: unknown } | null | undefined) => !!l && !!l.societe;
 
 /* ══ L'état du mandat d'une recherche ═══════════════════════════════════
    Un seul endroit décide si le client peut demander une visite librement.

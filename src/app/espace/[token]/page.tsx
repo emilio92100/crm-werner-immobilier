@@ -689,7 +689,8 @@ export default async function PageEspace({ params, searchParams }: {
     propose: !!recherche.mandat_propose_le && etatM === 'a_signer',
     signe: etatM === 'valide' && signeOuPartiel
       ? { le: derniereSig.signe_le as string, numero: derniereSig.numero as string,
-          fin: finRetractationPour(derniereSig.signe_le, signesCos).toISOString(), execution: derniereSig.execution_immediate ?? null }
+          /* Werner : signé pour une société, pas de délai de rétractation (pas de « Renoncer »). */
+          fin: (derniereSig.societe ? new Date(derniereSig.signe_le as string) : finRetractationPour(derniereSig.signe_le, signesCos)).toISOString(), execution: derniereSig.execution_immediate ?? null }
       : null,
     expiration: (recherche.mandat_date_expiration as string | null) || null,
     recherche: rechercheDepuis(recherche),

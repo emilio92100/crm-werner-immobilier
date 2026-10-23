@@ -717,7 +717,7 @@ export default function MandatEnLigne({ recherche, client, onMaj, onClient, onAv
         <div style={boite('#f0fdf4', '#bbf7d0', '#166534')}>
           <b>{`✍️ Signé en ligne par ${[nomP, ...cos.filter(c => c.statut === 'signe').map(nomCo)].join(' et ')}`}</b>
           <div>{`N° ${sig.numero} · le ${sig.signe_le ? quand(sig.signe_le) : '—'}`}</div>
-          <div style={{ color: '#15803d' }}>{sig.execution_immediate ? 'Il a demandé que la recherche commence tout de suite.' : 'Il préfère attendre la fin de ses 14 jours de rétractation.'}</div>
+          <div style={{ color: '#15803d' }}>{sig.societe ? 'Pour une société : pas de délai de rétractation, la recherche a commencé tout de suite.' : sig.execution_immediate ? 'Il a demandé que la recherche commence tout de suite.' : 'Il préfère attendre la fin de ses 14 jours de rétractation.'}</div>
           {cos.filter(c => c.statut !== 'signe').map(c => (
             <div key={c.id} style={{ color: '#15803d', marginTop: 4 }}>{c.statut === 'decline'
               ? `🙅 ${nomCo(c)} a indiqué ne pas être concerné${c.personne?.civilite === 'Madame' ? 'e' : ''}${c.decline_le ? ` (le ${quand(c.decline_le)})` : ''} : le mandat continue sans ${c.personne?.civilite === 'Madame' ? 'elle' : 'lui'}.`

@@ -1148,6 +1148,8 @@ export type Certificat = {
   empreinte: string;
   deroule: { t: string; x: string }[];
   executionImmediate: boolean;
+  /* Werner : signé pour une société, sans délai de rétractation. */
+  sansDelai?: boolean;
   agenceLe: string | null;
   /* La même identité que celle du mandat qu'il scelle. */
   identite?: IdentiteAgence;
@@ -1324,7 +1326,9 @@ export async function pdfSigne(mandat: Uint8Array, c: Certificat): Promise<Uint8
   if (c.doc) { if (c.doc.execution) ligne('Exécution', c.doc.execution); }
   else ligne('Exécution', sgn
     ? sgn.filter(x => x.le).map(x => `${x.nom} : ${x.execution ? 'dès sa signature, à sa demande' : 'à la fin de son délai de rétractation'}`).join(' · ')
-    : c.executionImmediate
+    : c.sansDelai
+      ? 'Dès la signature : pour une société qui agit pour son activité, pas de délai de rétractation.'
+      : c.executionImmediate
       ? 'Le mandant a demandé que la mission commence dès la signature, sans attendre la fin du délai de rétractation.'
       : 'Le mandant a choisi que la mission commence à la fin du délai de rétractation de 14 jours.');
 

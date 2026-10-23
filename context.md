@@ -506,9 +506,14 @@ et la relecture des mandats de recherche (§6).
   s'appliquent comme avant) — à « Non » (une société pour son activité), ni rétractation, ni
   information précontractuelle, ni médiateur, ni Bloctel, ni L215 (`blocsInformations(…, { conso })`) ;
   le porte-fort ne parle plus de conjoint (« ses associés »), ici et dans le mandat en ligne ;
-  l'avenant ne dit plus « à la charge du MANDANT » sans le cas de l'agence qui partage. Le mandat
-  en ligne (`src/lib/mandat.ts`) garde, lui, la rétractation pour tous (plus protecteur). À faire
-  relire par l'avocat.
+  l'avenant ne dit plus « à la charge du MANDANT » sans le cas de l'agence qui partage. **Le mandat
+  en ligne** (signé seul dans l'espace, `src/lib/mandat.ts`) : signé **pour une société**, plus de
+  délai de rétractation (Alexandre, 23 octobre 2026) — une partie « Début de la mission » au lieu de
+  la rétractation, ni formulaire, ni médiateur, ni Bloctel ; l'espace ne demande plus « tout de suite
+  ou dans 14 jours » ; le serveur pose `execution_immediate` à vrai et refuse la renonciation
+  (`sansRetractation`, `/api/espace/mandat`) ; « Mon mandat » n'offre plus « Renoncer » ; le
+  certificat le dit. Une personne garde ses 14 jours. Le représentant s'engage aussi en son nom :
+  à faire confirmer par l'avocat qu'il n'est pas consommateur. À faire relire par l'avocat.
 - **Les offres de location** (23 octobre 2026) : un loyer annuel HT HC, les honoraires à part.
   `totalOffre` et `totalContre` (`src/lib/offres.ts`) rendent le loyer tel quel pour une location ;
   `montantDit` et `destOffre` (« le bailleur ») disent les montants partout : carte « Votre offre »
