@@ -79,7 +79,7 @@ et les colonnes `clients.vendeur_*`), puis `outils/sql/werner-commerce.sql` (§2
 | `MAILJET_API_KEY` · `MAILJET_API_SECRET` | **Posées** (22 octobre 2026, vérifié sur Vercel le 23). `MAILJET_FROM_EMAIL` · `MAILJET_FROM_NAME` ne le sont pas : replis contact@wernerimmobilier.com, « Werner Immobilier ». `ALERTES_EMAIL` non plus : les alertes vont à contact@ |
 | `MAILJET_FROM_SIGNATURE` | **Posée** : `signature@wernerimmobilier.com`. Les mails d'une signature (lien, code, exemplaire signé, renonciation : l'option `expediteur: 'signature'` de `envoyerMail`) partent de cette adresse, réponses vers contact@. Vide, ils partent de `MAILJET_FROM_EMAIL` |
 | `ANTHROPIC_API_KEY` | **Posée** (23 octobre 2026) |
-| `CRON_SECRET` | **À poser** : le secret des tâches planifiées (sans lui, elles refusent de tourner, c'est voulu) |
+| `CRON_SECRET` | **Posée** (24 octobre 2026, par Alexandre ; vérifié : `/api/point-auto` en mode « lire » répond `branche.cron: true`). Le point automatique reste à activer dans Paramètres. Les deux tâches SeLoger (diffusion, demandes) attendent en plus les `SELOGER_*` |
 | `RINGOVER_CLE_CONTACT` · `RINGOVER_CLE_RECHERCHE` · `NEXT_PUBLIC_HOTE_ESPACE` | **À poser** quand Ringover sera branché, et quand le sous-domaine de l'espace existera (§6) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY` · `VAPID_SUBJECT` | À poser pour les notifications de l'espace client |
 | `SELOGER_*` (sept variables) | La diffusion SeLoger et ses demandes de contact, par l'API d'AVIV de l'origine : à ne poser qu'après vérification (§7) |
@@ -597,6 +597,11 @@ gauche […] c'est pareil sur Werner ».
   est aujourd'hui (`biensDuJour`) ; tes affaires qui lui correspondent devant quand il y en a.
 - **Déplier, replier** en douceur partout dans le rapprochement (`Depliant`).
 
+**24 octobre 2026, plus tard (V3.244, comme chez Emilio)** — Vos visites en douceur.
+- **Espace client › Vos visites** : passer de Tout à Votre avis, En cours ou Pas pour moi n'est plus
+  brusque — la case anthracite glisse jusqu'à l'étape choisie (`Curseur`), ce qui était affiché
+  s'efface, puis les cartes arrivent l'une après l'autre ; la page ne remonte pas (`GardeHauteur`).
+
 ---
 
 ## 6. Ce qui reste à faire
@@ -768,9 +773,9 @@ gauche […] c'est pareil sur Werner ».
 - **Les mails** — Mailjet est branché (§1, §8). Restent : un vrai envoi d'essai vers Alexandre,
   regardé sur téléphone et ordinateur ; le SPF à alléger chez IONOS (retirer `mailgun.org` et
   `_spf-eu.ionos.com`, garder Mailjet et Outlook).
-- **Les clés qui manquent** — `CRON_SECRET` (les quatre tâches du matin : le point automatique
-  aux demandeurs, les rappels de signature des mandats, la diffusion, les demandes SeLoger),
-  Ringover, les notifications (§1).
+- **Les clés qui manquent** — les codes SeLoger (`SELOGER_*` : sans eux, ni la diffusion ni la
+  relève des demandes SeLoger ne marchent, cron ou pas ; `GET /api/seloger/contacts` répond
+  `codes: false`), Ringover, les notifications (§1). `CRON_SECRET` est posée depuis le 24 octobre.
 - **Le premier accès de Werner** — fait (commit « Première connexion de Werner et mot de passe
   oublié », `src/app/api/acces/`, `MotDePasseOublie.tsx`) ; Paramètres › Sécurité pour changer son
   mot de passe.
