@@ -2,7 +2,7 @@
 import { FenetreMail, type ContactMail } from '@/components/pages/PageMail';
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import AvatarContact from '@/components/contacts/AvatarContact';
-import { estAcheteur, estArchive, lirePro, lireStructure, reventePossible, typeDe, typesDe, typesAvecRevente } from '@/lib/contacts';
+import { estAcheteur, estArchive, libType, lirePro, lireStructure, reventePossible, typeDe, typesDe, typesAvecRevente } from '@/lib/contacts';
 import { createPortal } from 'react-dom';
 import { supabase, addJournal } from '@/lib/supabase';
 import { effacerPhotosBien, effacerPhotosDeBiens } from '@/lib/photos';
@@ -24,6 +24,8 @@ import { retenirPlace, useHauteur, usePlace } from '@/lib/place-fiche';
 import CloreRelances, { relancesACocher } from '@/components/shared/CloreRelances';
 import { jetonEspace, lienEspace, BIENS_PAR_MAIL } from '@/lib/jeton';
 import { nomFoyer, personne2De, adressesDossierDe, colonneDossierAbsente, MESSAGE_SQL_DOSSIER } from '@/lib/foyer';
+import { ETATS_ACHETEUR, MOTIFS_CLOTURE, etatDe, nomEtat, pronomDe } from '@/lib/etats-acheteur';
+import { FenetreEtatRecherche, VoileRecherche, type ChoixEtat } from './EtatRecherche';
 import IdentitesContact, { identitesDe, colonnesDe, dossierDe, erreurIdentites, changementsIdentites } from '@/components/contacts/IdentitesContact';
 import {
   BasculeCriteres, CorpsCriteres, CRIT_VIDE, EXPOSITIONS, etapesCriteres,
@@ -84,7 +86,9 @@ function Portail({ children }: { children: React.ReactNode }) {
   return createPortal(children, document.body);
 }
 
-/* ══ Werner : Actif ou Prospect, ce que ça change (21 octobre 2026) ══════
+/* ══ Werner : Accompagné ou En recherche, ce que ça change (21 octobre 2026) ══
+   V3.240 : les nouveaux noms (« Actif » → « Accompagné », « Prospect » →
+   « En recherche »), et l'accompagnement sur mesure dit en premier.
    Alexandre : « un petit message explicatif pour qu'il comprenne bien,
    quand il passe quelqu'un en actif, avec un petit pop-up, en mode j'ai
    compris ». Les mots disent ce qui se passe pour le CLIENT, pas pour la base. */
@@ -95,6 +99,7 @@ export function FenExpliquerEspace({ vers, prenom, onAnnuler, onValider }: {
   const [occupe, setOccupe] = useState(false);
   const actif = vers === 'actif';
   const points = actif ? [
+    { ic: 'cible', t: 'Un accompagnement sur mesure', s: 'Pour un client que tu suis de près : tout ce qui suit se met en route.' },
     { ic: 'mobile', t: 'Il a son espace client', s: 'Une page à lui, où arrivent les locaux que tu lui envoies.' },
     { ic: 'coche', t: 'Il te répond en un clic', s: '« Ça m’intéresse », une visite, ou non avec son motif : tu le vois sur sa fiche.' },
     { ic: 'loupe', t: 'La veille cherche pour lui', s: 'Et le point automatique peut lui écrire quand rien ne bouge.' },
@@ -103,14 +108,15 @@ export function FenExpliquerEspace({ vers, prenom, onAnnuler, onValider }: {
     { ic: 'mobile', t: 'Son espace se ferme', s: 'Le lien qu’il a reçu affichera « Ce lien n’est plus actif ».' },
     { ic: 'envoyer', t: 'Tes envois restent possibles', s: 'Les locaux que tu lui envoies mènent à leur fiche publique, avec tes coordonnées.' },
     { ic: 'loupe', t: 'La veille s’arrête pour lui', s: 'Le point automatique aussi, sauf si tu l’envoies à tous ceux qui ont une recherche (Paramètres).' },
-    { ic: 'remettre', t: 'Rien n’est perdu', s: 'Repassé Actif, il retrouve tout son espace, tel qu’il l’avait laissé.' },
+    { ic: 'loupe', t: 'Il reste dans tes rapprochements', s: 'Quand un local lui correspond, tu le vois toujours.' },
+    { ic: 'remettre', t: 'Rien n’est perdu', s: 'Repassé « Accompagné », il retrouve tout son espace, tel qu’il l’avait laissé.' },
   ];
   return (
     <Portail>
       <div className={styles.overlay}>
         <div className={styles.modal} style={{ maxWidth: 480 }}>
           <div className={styles.modalHeader}>
-            <h2 className={styles.modalTitle}>{actif ? `Passer ${prenom} en Actif` : `Repasser ${prenom} en Prospect`}</h2>
+            <h2 className={styles.modalTitle}>{actif ? `Passer ${prenom} «\u00a0Accompagné\u00a0»` : `Repasser ${prenom} «\u00a0En recherche\u00a0»`}</h2>
             <button className={styles.modalClose} onClick={onAnnuler} aria-label="Fermer">✕</button>
           </div>
           <div className={styles.modalBody}>
@@ -138,7 +144,7 @@ export function FenExpliquerEspace({ vers, prenom, onAnnuler, onValider }: {
             <button className={styles.btn} onClick={onAnnuler} disabled={occupe}>Annuler</button>
             <button className={`${styles.btn} ${styles.btnPrimary}`} disabled={occupe}
               onClick={async () => { setOccupe(true); await onValider(retenir); }}>
-              {occupe ? '…' : actif ? 'J’ai compris, passer Actif' : 'J’ai compris, repasser Prospect'}
+              {occupe ? '…' : actif ? 'J’ai compris, passer « Accompagné »' : 'J’ai compris, repasser « En recherche »'}
             </button>
           </div>
         </div>
@@ -338,16 +344,12 @@ function DiffCriteres({ changements }: { changements: ChangementCrit[] }) {
   );
 }
 
-/* Clore une recherche, c'est dire pourquoi. « Trouvé ailleurs » et « a
-   renoncé » comptent tous deux comme un dossier perdu côté chiffres, mais ce
-   n'est pas la même histoire — et c'est cette histoire qu'on veut relire dans
-   six mois. */
-const MOTIFS_CLOTURE: { cle: string; nom: string; quoi: string; statut: string; point: string }[] = [
-  { cle: 'trouve_avec_moi', nom: 'Trouvé avec moi', quoi: 'Le local a été trouvé grâce à nous', statut: 'bien_trouve', point: '#10b981' },
-  { cle: 'trouve_ailleurs', nom: 'Trouvé ailleurs', quoi: 'Le client a trouvé sans passer par nous', statut: 'perdu', point: '#f59e0b' },
-  { cle: 'renonce', nom: 'A renoncé', quoi: 'Projet abandonné, reporté, ou plus de nouvelles', statut: 'perdu', point: '#94a3b8' },
-  { cle: 'autre', nom: 'Autre raison', quoi: 'À préciser dans la note ci-dessous', statut: 'perdu', point: '#64748b' },
-];
+/* Clore une recherche, c'est dire pourquoi (MOTIFS_CLOTURE) ; et les états
+   d'un dossier, chacun avec ce qu'il veut dire. V3.240 (comme chez Emilio) :
+   les mots viennent de src/lib/etats-acheteur.ts (« En recherche »,
+   « Accompagné », « En pause », « Local trouvé avec moi », « Recherche
+   arrêtée »), les mêmes partout. */
+const ETATS_CLIENT = ETATS_ACHETEUR;
 
 /* Werner : « Ne plus m'expliquer » la fenêtre Actif / Prospect (ce
    navigateur seulement ; rien d'important ne dépend de ce choix). */
@@ -359,16 +361,9 @@ function retenirExplication() {
   try { localStorage.setItem(CLE_EXPLICATION, '1'); } catch { /* navigation privée */ }
 }
 
-/* Les états d'un dossier. Le libellé seul ne suffisait pas : on dit quand
-   chacun s'emploie, pour qu'on choisisse sans hésiter. */
-const ETATS_CLIENT: { cle: string; nom: string; quand: string; point: string }[] = [
-  /* Werner : comme chez Emilio, « Actif » = avec son espace client (src/lib/espace-choix.ts). */
-  { cle: 'prospect',    nom: 'Prospect',    quand: 'Premier contact · sans espace client', point: '#8b5cf6' },
-  { cle: 'actif',       nom: 'Actif',       quand: 'Recherche en cours · avec son espace', point: '#10b981' },
-  { cle: 'suspendu',    nom: 'Suspendu',    quand: 'En pause, à reprendre plus tard', point: '#f59e0b' },
-  { cle: 'bien_trouve', nom: 'Local trouvé', quand: 'Bail ou acte signé, dossier clos', point: '#3b82f6' },
-  { cle: 'perdu',       nom: 'Perdu',       quand: 'Le client ne cherche plus avec nous', point: '#ef4444' },
-];
+
+/* Le détail des critères, plié ou déplié : retenu sur l'appareil (V3.240). */
+const CLE_CRITS = 'werner:criteres-ouverts';
 
 /* « minimum » en toutes lettres : « min » se confondait avec le chiffre. */
 function Mini({ fort }: { fort?: boolean }) {
@@ -1200,9 +1195,24 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
   const [surligne, setSurligne] = useState<string | null>(null);
   const ouvertureFaite = useRef(false);
   useEffect(() => { if (ouverture) oublierOuvertureFiche(); }, [ouverture]);
-  /* Sur téléphone, le détail des critères est replié : le suivi du dossier
-     (veille, sélection, présentés…) remonte d'autant. Sans effet sur ordinateur. */
+  /* Le détail des critères se replie : le bandeau (type, financement, budget)
+     reste. V3.240 (comme chez Emilio) : sur ordinateur aussi, avec son petit
+     bouton. Le choix est retenu sur l'appareil ; sans choix, déplié sur
+     ordinateur, replié sur téléphone (le suivi du dossier remonte d'autant). */
   const [critsOuverts, setCritsOuverts] = useState(false);
+  const [critsLu, setCritsLu] = useState(false);
+  useEffect(() => {
+    let v: string | null = null;
+    try { v = localStorage.getItem(CLE_CRITS); } catch { /* stockage indisponible : le défaut */ }
+    setCritsOuverts(v === null ? !window.matchMedia('(max-width: 900px)').matches : v === '1');
+    setCritsLu(true);
+  }, []);
+  const basculerCrits = () => setCritsOuverts(v => {
+    try { localStorage.setItem(CLE_CRITS, v ? '0' : '1'); } catch { /* rien à retenir */ }
+    return !v;
+  });
+  /* V3.240 : la fenêtre « Où en est la recherche ? », depuis le bloc. */
+  const [fenEtat, setFenEtat] = useState(false);
   const [biens, setBiens] = useState<any[]>([]);
   const [visites, setVisites] = useState<any[]>([]);
   const [transaction, setTransaction] = useState<any>(null);
@@ -1400,13 +1410,22 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
      En pause : dossier suspendu, ou plus aucune recherche qui tourne. Rien
      une fois le dossier clos. */
   const stDossier = String(client.statut || '');
+  /* V3.240 (Alexandre : « la veille n'a jamais débuté sur ce dossier […] ça
+     induit en erreur ») : la veille ne tourne que pour un « Actif » dont une
+     recherche est active. Les textes ne disent « la veille s'arrête » que
+     dans ce cas. */
+  const veilleTourne = stDossier === 'actif' && recherches.some(r => r.active !== false);
   /* V3.172 (Alexandre : « pourquoi, quand je crée un acheteur sans remplir sa
      recherche, il y a le badge En cours ? ») : la fiche crée une recherche
      vide avec le client. Sans un seul critère, elle n'est pas « en cours » :
      pas d'étiquette tant qu'aucune n'est remplie. */
   const remplies = recherches.filter(rechercheRemplie);
-  const etatRecherche: '' | 'cours' | 'pause' = !remplies.length || stDossier === 'bien_trouve' || stDossier === 'perdu' ? ''
-    : stDossier === 'suspendu' || (stDossier !== 'prospect' && !remplies.some(r => r.active !== false)) ? 'pause' : 'cours';
+  /* V3.240 (comme chez Emilio) : l'étiquette dit l'état (« En recherche »,
+     « Accompagné », « En pause ») ; « En cours » valait aussi pour un dossier
+     sans veille. */
+  const etatRecherche: '' | 'cours' | 'pause' | 'prospect' = !remplies.length || stDossier === 'bien_trouve' || stDossier === 'perdu' ? ''
+    : stDossier === 'suspendu' || (stDossier !== 'prospect' && !remplies.some(r => r.active !== false)) ? 'pause'
+      : stDossier === 'prospect' ? 'prospect' : 'cours';
   /* V3.167 : la pastille des documents signés, au coin de « Documents ». */
   const [docX, setDocX] = useState<number | null>(null);
   useEffect(() => {
@@ -1466,7 +1485,14 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
   } | null>(null);
   const [showCloture, setShowCloture] = useState(false);
   /* La petite fenêtre de « Suspendu » : avec ou sans date de reprise. */
-  const [suspendre, setSuspendre] = useState<{ choix: 'sans' | '1' | '3' | '6' | 'date'; date: string } | null>(null);
+  const [suspendre, setSuspendre] = useState<{ choix: 'sans' | '1' | '3' | '6' | 'date'; date: string; en: 'actif' | 'prospect' } | null>(null);
+  /* V3.240 : la fenêtre de suspension, avec l'état que la reprise rendra
+     (celui d'avant la pause, sauf choix contraire). */
+  const ouvrirPause = () => {
+    const s = lireSuspension(client);
+    const en: 'actif' | 'prospect' = s ? s.avant : client.statut === 'prospect' ? 'prospect' : 'actif';
+    setSuspendre(s ? { choix: 'date', date: s.jusqu_au, en } : { choix: 'sans', date: '', en });
+  };
   /* Choisir le bien d'une transaction : à la création, ou pour la corriger. */
   const [showChoixTx, setShowChoixTx] = useState<'creer' | 'changer' | null>(null);
   const [cloture, setCloture] = useState({ motif: 'trouve_avec_moi', note: '' });
@@ -2690,13 +2716,13 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     const jour = new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR');
     if (r.clos) {
       await addJournal(client.id, 'dossier_finalise', '🎉 Bail ou acte signé — local trouvé !',
-        `Signé le ${jour}. ${note || 'Le dossier est clos : la veille s’arrête et les relances en attente sont soldées.'}`,
+        `Signé le ${jour}. ${note || `Le dossier est clos${veilleTourne ? ' : la veille s’arrête et' : ' :'} les relances en attente sont soldées.`}`,
         undefined, { rechercheId: rid });
     } else {
       /* Il cherche encore autre chose : la ligne dit quelle recherche s'arrête. */
       const nomR = recherches.find(x => x.id === rid)?.nom || 'cette recherche';
       await addJournal(client.id, 'dossier_finalise', `🎉 Bail ou acte signé — recherche « ${nomR} » terminée`,
-        `Signé le ${jour}. La veille s’arrête sur cette recherche ; ses autres recherches continuent.`,
+        `Signé le ${jour}. Cette recherche est close ; ses autres recherches continuent.`,
         undefined, { rechercheId: rid });
     }
     await refresh();
@@ -2736,7 +2762,8 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
      on choisit son état ensuite. */
   async function basculerArchive() {
     const archiver = !estArchive(client);
-    if (archiver && !confirm(`Archiver ${nomFoyer(client) || 'ce contact'} ?\n\nIl quitte la liste des contacts et se range dans « Archivés », où tu le retrouves quand tu veux. Sa veille s’arrête et ses relances en attente se ferment.`)) return;
+    const tournait = veilleTourne;
+    if (archiver && !confirm(`Archiver ${nomFoyer(client) || 'ce contact'} ?\n\nIl quitte la liste des contacts et se range dans « Archivés », où tu le retrouves quand tu veux. ${tournait ? 'Sa veille s’arrête et ses' : 'Ses'} relances en attente se ferment.`)) return;
     const { data, error } = await supabase.from('clients').update({ archive: archiver, updated_at: new Date().toISOString() }).eq('id', client.id).select().maybeSingle();
     if (error || !data) {
       signalerEchec(archiver ? 'L’archivage du contact' : 'La sortie des archives', error?.message || 'aucune ligne n’a été modifiée. La session a peut-être expiré : recharge la page, puis recommence.');
@@ -2749,21 +2776,42 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
       if (erreur) signalerEchec('Le contact est archivé, mais ses relances', erreur);
     }
     await addJournal(client.id, 'statut_change', archiver ? 'Contact archivé' : 'Contact sorti des archives',
-      archiver ? 'La veille est arrêtée et ses relances en attente sont fermées.' : 'Rien n’est remis en marche : choisis son état.', { archive: archiver });
+      archiver ? (tournait ? 'La veille est arrêtée et ses relances en attente sont fermées.' : 'Ses relances en attente sont fermées.') : 'Rien n’est remis en marche : choisis son état.', { archive: archiver });
     signalerMaj();
     load();
   }
 
-  async function rouvrirDossier() {
-    if (!confirm('Rouvrir ce dossier ?\n\nLe statut repasse à « Actif » et la veille reprend sur cette recherche.')) return;
+  /* Rouvrir un dossier clos. V3.240 (comme chez Emilio) : « Accompagné » (son
+     espace, la veille reprend) ou « En recherche » (rapprochements seulement),
+     depuis la carte du bloc ou la fenêtre « Où en est la recherche ? » — sans
+     confirmation, le choix y est déjà expliqué ; le menu d'état du haut
+     demande encore. */
+  async function rouvrirDossier(statut: 'actif' | 'prospect' = 'actif', demander = true) {
+    const nom = nomEtat(statut);
+    if (demander && !confirm(`Rouvrir ce dossier ?\n\nIl repasse « ${nom} »${statut === 'actif' ? ' : son espace client, et la veille reprend sur cette recherche.' : ' : il revient dans tes rapprochements, sans espace ni veille.'}`)) return;
     setSaving(true);
-    const ok = await verifie('La réouverture du dossier', supabase.from('clients').update({ statut: 'actif', raison_perte: null, ...(client.espace_client === undefined ? {} : espaceSelonStatut('actif')) }).eq('id', client.id).select('id'), { ligne: true })
-      && (!rechercheId || await verifie('La reprise de la veille', supabase.from('recherches').update({ active: true, updated_at: new Date().toISOString() }).eq('id', rechercheId).select('id'), { ligne: true }));
+    const ok = await verifie('La réouverture du dossier', supabase.from('clients').update({ statut, raison_perte: null, ...(client.espace_client === undefined ? {} : espaceSelonStatut(statut)) }).eq('id', client.id).select('id'), { ligne: true })
+      && (statut !== 'actif' || !rechercheId || await verifie('La reprise de la veille', supabase.from('recherches').update({ active: true, updated_at: new Date().toISOString() }).eq('id', rechercheId).select('id'), { ligne: true }));
     if (!ok) { setSaving(false); load(); return; }
-    await addJournal(client.id, 'statut_change', '↩️ Dossier rouvert — la veille reprend');
+    await addJournal(client.id, 'statut_change', statut === 'actif' ? `↩️ Dossier rouvert — ${nom}, la veille reprend` : `↩️ Dossier rouvert — ${nom}`);
     const { data } = await supabase.from('clients').select('*').eq('id', client.id).maybeSingle();
     if (data) setClient(data as Client);
     setSaving(false); load();
+  }
+
+  /* V3.240 (comme chez Emilio) — Le choix fait dans « Où en est la recherche ? » :
+     les mêmes chemins que le menu d'état du haut (la fenêtre qui explique
+     l'espace, la pause et sa date, la clôture et son motif, déjà coché). */
+  function choisirEtat(c: ChoixEtat) {
+    setFenEtat(false);
+    if (c === 'prospect' || c === 'actif') {
+      if (stDossier === 'bien_trouve' || stDossier === 'perdu') void rouvrirDossier(c, false);
+      else void changeStatut(c);
+    } else if (c === 'suspendu') ouvrirPause();
+    else {
+      setCloture({ motif: c, note: '' });
+      setShowCloture(true);
+    }
   }
 
   /* Une transaction ne se lance que sur un bien que le client a vu. On n'écrit
@@ -2841,6 +2889,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     // Anti-doublon : ne rien faire si le statut est déjà le même
     if (client.statut === statut) return;
     const avaitEspace = client.espace_client === true;
+    const tournait = veilleTourne;
     /* V3.50 : « Bien trouvé » et « Perdu » ferment le dossier. Ils passent
        par la fenêtre de clôture — le motif, puis la même sortie que partout
        (relances, visites, veille, transaction ouverte). Avant, le menu ne
@@ -2881,8 +2930,9 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
       await verifie('L’arrêt de la veille', supabase.from('recherches').update({ active: false }).eq('client_id', client.id));
     }
     const nom = ETATS_CLIENT.find(x => x.cle === statut)?.nom || statut;
+    /* V3.240 : « la veille est arrêtée » seulement si elle tournait. */
     await addJournal(client.id, 'statut_change', `Statut → ${nom}`,
-      chercher ? 'La veille reprend sur cette recherche.' : 'La veille est arrêtée sur ce dossier.');
+      chercher ? 'La veille reprend sur cette recherche.' : tournait ? 'La veille est arrêtée sur ce dossier.' : undefined);
     load();
   }
 
@@ -2892,7 +2942,8 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
      suspendu : la même fenêtre change ou retire la date. */
   async function confirmerSuspension() {
     if (!suspendre) return;
-    const { choix, date } = suspendre;
+    const { choix, date, en } = suspendre;
+    const tournait = veilleTourne;
     const jusqu = choix === 'sans' ? null : choix === 'date' ? date : dansMois(Number(choix));
     if (choix === 'date' && (!date || date <= jourParis())) {
       alert('Choisis une date de reprise à venir, ou « Sans date ».');
@@ -2902,7 +2953,8 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     const aReprendre = dejaSuspendu
       ? (lireSuspension(client)?.recherches || [])
       : recherches.filter(r => r.active).map(r => r.id);
-    const suspension = jusqu ? { jusqu_au: jusqu, recherches: aReprendre, le: new Date().toISOString() } : null;
+    /* V3.240 : `avant`, l'état que la reprise rendra (src/lib/suspension.ts). */
+    const suspension = jusqu ? { jusqu_au: jusqu, recherches: en === 'actif' ? aReprendre : [], le: new Date().toISOString(), avant: en } : null;
 
     setSaving(true);
     let { data, error } = await supabase.from('clients').update({ statut: 'suspendu', suspension }).eq('id', client.id).select().maybeSingle();
@@ -2925,10 +2977,10 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
     await addJournal(client.id, 'statut_change',
       dejaSuspendu
         ? (avecDate ? `⏸️ Reprise prévue le ${le}` : '⏸️ Date de reprise retirée')
-        : `Statut → Suspendu${avecDate ? ` jusqu'au ${le}` : ''}`,
-      avecDate
-        ? `La veille est arrêtée. Le ${le}, le dossier repassera tout seul en « Actif », la veille repartira et une relance rappellera d'appeler le client.`
-        : 'La veille est arrêtée sur ce dossier.');
+        : `Statut → En pause${avecDate ? ` jusqu'au ${le}` : ''}`,
+      [tournait ? 'La veille est arrêtée.' : '',
+        avecDate ? `Le ${le}, le dossier repassera tout seul en « ${nomEtat(en)} »${en === 'actif' ? ', la veille repartira' : ''} et une relance rappellera d'appeler le client.` : '',
+      ].filter(Boolean).join(' ') || undefined);
     setSaving(false);
     setSuspendre(null);
     if (dateNonNotee) {
@@ -4128,6 +4180,21 @@ ${signatureMail()}`,
     </div>
   );
 
+  /* V3.240 (comme chez Emilio) — La carte du bloc grisé (en pause, local
+     trouvé avec moi, recherche arrêtée). */
+  const voileRecherche = rechercheActive && (stDossier === 'suspendu' || stDossier === 'bien_trouve' || stDossier === 'perdu') ? (() => {
+    const sus = stDossier === 'suspendu' ? lireSuspension(client) : null;
+    const clos = stDossier !== 'suspendu';
+    return (
+      <VoileRecherche statut={stDossier} prenom={client.prenom || ''} occupe={saving}
+        reprise={sus ? `le ${jourLisible(sus.jusqu_au)}` : null} repriseEn={sus ? nomEtat(sus.avant) : null}
+        raison={(client as unknown as { raison_perte?: string | null }).raison_perte}
+        onReprendre={x => { void (clos ? rouvrirDossier(x, false) : changeStatut(x)); }}
+        onDate={ouvrirPause}
+        onSupprimer={() => { void supprimerRecherche(rechercheActive); }} />
+    );
+  })() : null;
+
   return (
     <div className={styles.page}>
 
@@ -4276,7 +4343,8 @@ ${signatureMail()}`,
                 }}>
                 <span className={styles.pastilleQuiIc}><Icone nom="cible" taille={17} epaisseur={2} /></span>
                 <span className={styles.pastilleQuiTx}>
-                  <small>{typesDe(client).map(k => typeDe(k).lib).join(' · ') || 'Contact'}</small>
+                  {/* V3.240 : « Ancien demandeur » quand son dossier est clos. */}
+                  <small>{typesDe(client).map(k => libType(k, { ...client, statut: st })).join(' · ') || 'Contact'}</small>
                   <b><span>{`${ETATS_CLIENT.find(x => x.cle === st)?.nom || st}${st === 'suspendu' && lireSuspension(client) ? ` jusqu'au ${jourLisible(lireSuspension(client)!.jusqu_au)}` : ''}`}</span><Icone nom="chevron" taille={14} epaisseur={2.4} /></b>
                 </span>
               </button>
@@ -4297,10 +4365,8 @@ ${signatureMail()}`,
                       return (
                         <button key={e.cle} onClick={() => {
                           setMenuStatut(null);
-                          if (e.cle === 'suspendu') {
-                            const s = lireSuspension(client);
-                            setSuspendre(s ? { choix: 'date', date: s.jusqu_au } : { choix: 'sans', date: '' });
-                          } else changeStatut(e.cle);
+                          if (e.cle === 'suspendu') ouvrirPause();
+                          else changeStatut(e.cle);
                         }}
                           style={{ display: 'flex', alignItems: 'flex-start', gap: 11, width: '100%', textAlign: 'left', padding: '10px 15px', border: 'none', borderBottom: '1px solid #f8f8f7', background: courant ? '#f8fafc' : 'white', cursor: 'pointer', fontFamily: 'inherit' }}>
                           <span style={{ width: 9, height: 9, borderRadius: '50%', background: e.point, flexShrink: 0, marginTop: 5, boxShadow: courant ? `0 0 0 3px ${e.point}26` : 'none' }} />
@@ -4318,7 +4384,7 @@ ${signatureMail()}`,
                       <span style={{ fontSize: 10, fontWeight: 800, color: '#b6b2af', textTransform: 'uppercase', letterSpacing: 1.1 }}>Actions</span>
                     </div>
                     {dossierClos ? (
-                      <button onClick={() => { setMenuStatut(null); rouvrirDossier(); }}
+                      <button onClick={() => { setMenuStatut(null); void rouvrirDossier(); }}
                         style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', textAlign: 'left', padding: '11px 15px', border: 'none', background: '#f0fdf4', cursor: 'pointer', fontFamily: 'inherit', color: '#0f7a4f', fontWeight: 700, fontSize: 13 }}>
                         ↩️ Rouvrir le dossier
                       </button>
@@ -4442,7 +4508,7 @@ ${signatureMail()}`,
                   l'onglet, qui déborde sur le bleu ; « En pause » en orange. */}
               {etatRecherche && etiqX !== null && (
                 <span className={styles.etiqRecherche} data-etat={etatRecherche} style={{ left: etiqX }} aria-hidden="true">
-                  <i />{etatRecherche === 'pause' ? 'En pause' : 'En cours'}
+                  <i />{etatRecherche === 'pause' ? 'En pause' : etatRecherche === 'prospect' ? 'En recherche' : 'Accompagné'}
                 </span>
               )}
               {/* V3.167 : ses documents signés, sur fond bleu Emilio, qui flotte. */}
@@ -4807,10 +4873,10 @@ ${signatureMail()}`,
               </div>
               <p className={styles.situNotes}>{`Les locaux que tu envoies à ${client.prenom || 'ce client'} mènent à leur fiche publique : photos, description, et tes coordonnées pour te répondre. Aucun mail ne lui parle d’espace.`}</p>
               <p className={styles.situNotes}>{'Avec un espace, il retrouve tous les locaux proposés sur une page à lui, répond « ça m’intéresse », demande une visite ou dit non, et tu vois ses réponses ici. Le mail de bienvenue passe aussi par l’espace.'}</p>
-              {client.statut === 'prospect' && <p className={styles.situNotes}>{'Lui ouvrir son espace, c’est le passer « Actif ».'}</p>}
+              {client.statut === 'prospect' && <p className={styles.situNotes}>{'Lui ouvrir son espace, c’est le passer « Accompagné ».'}</p>}
               <ConseilEspace />
               <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} style={{ alignSelf: 'flex-start' }} onClick={() => basculerEspaceClient(true)} disabled={basculeEspace}>
-                {basculeEspace ? 'Ouverture…' : client.statut === 'prospect' ? 'Ouvrir son espace (passer Actif)' : 'Ouvrir son espace'}
+                {basculeEspace ? 'Ouverture…' : client.statut === 'prospect' ? 'Ouvrir son espace (passer « Accompagné »)' : 'Ouvrir son espace'}
               </button>
             </div>
             {/* Le point automatique part aussi sans espace, si Werner l'a choisi
@@ -4855,7 +4921,7 @@ ${signatureMail()}`,
                 des critères : c'est un mail automatique, il vit avec l'espace. */}
             {client.id && <PointAuto clientId={client.id} integre />}
             <button type="button" className={styles.btn} style={{ alignSelf: 'flex-start' }} onClick={() => basculerEspaceClient(false)} disabled={basculeEspace}>
-              {basculeEspace ? 'Enregistrement…' : client.statut === 'actif' ? 'Fermer son espace (repasser Prospect)' : 'Fermer son espace'}
+              {basculeEspace ? 'Enregistrement…' : client.statut === 'actif' ? 'Fermer son espace (repasser « En recherche »)' : 'Fermer son espace'}
             </button>
           </div>
         )}
@@ -4892,9 +4958,25 @@ ${signatureMail()}`,
                   {rechercheActive && (
                     <button className={styles.critRenommer} onClick={() => renommerRecherche()}>Renommer</button>
                   )}
-                  {rechercheActive && rechercheActive.active === false && (
-                    <span className={styles.critPause} title="La veille ne cherche plus sur cette recherche">⏸️ Veille en pause</span>
-                  )}
+                  {/* V3.240 (comme chez Emilio) : l'état du dossier, ce qu'il fait,
+                      et de quoi le changer sans remonter en haut de la fiche. */}
+                  {rechercheActive && (() => {
+                    const e = etatDe(stDossier);
+                    const sus = stDossier === 'suspendu' ? lireSuspension(client) : null;
+                    const lib = !e ? 'État à choisir'
+                      : stDossier === 'actif' ? (rechercheActive.active === false ? 'Accompagné · veille en pause' : 'Accompagné · veille chaque jour')
+                        : stDossier === 'prospect' ? 'En recherche · sans veille'
+                          : sus ? `En pause jusqu’au ${jourLisible(sus.jusqu_au)}` : e.nom;
+                    return (
+                      <>
+                        <span className={styles.critEtat} style={{ ['--c' as string]: e?.point || '#94a3b8' } as React.CSSProperties} title={e?.quand}><i /><span>{lib}</span></span>
+                        <button type="button" className={styles.critMaj} onClick={() => setFenEtat(true)}
+                          title="En recherche, accompagné, en pause, ou terminée : ce que fait chaque état">
+                          <Icone nom="remettre" taille={14} epaisseur={2.2} /><span>Mettre à jour</span>
+                        </button>
+                      </>
+                    );
+                  })()}
                 </span>
               </span>
 
@@ -5019,7 +5101,11 @@ ${signatureMail()}`,
               </Portail>
             )}
 
-            <div className={styles.infoCardBody}>
+            {/* V3.240 (comme chez Emilio) — En pause ou dossier clos : le bloc se
+                grise, une carte posée par-dessus, au centre, dit où on en est et
+                propose de reprendre, ou de supprimer. */}
+            <div className={styles.infoCardBody} data-grise={voileRecherche ? 'oui' : undefined}>
+              {voileRecherche}
               {rechercheRemplie(cr) ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {/* Le bandeau : le client et son enveloppe */}
@@ -5054,13 +5140,18 @@ ${signatureMail()}`,
                     )}
                   </div>
 
-                  <button type="button" className="fc-crit-bascule" onClick={() => setCritsOuverts(v => !v)}
+                  {/* Grisé, le détail reste déplié sous la carte : rien à plier. */}
+                  {!voileRecherche && <button type="button" className="fc-crit-bascule" onClick={basculerCrits}
                     aria-expanded={critsOuverts}>
                     <span>{critsOuverts ? 'Masquer le détail des critères' : 'Voir le détail des critères'}</span>
                     <span className="fc-crit-chevron" data-ouvert={critsOuverts ? 'true' : 'false'}><Icone nom="chevron" taille={15} epaisseur={2.2} /></span>
-                  </button>
+                  </button>}
 
-                  <div className="fc-crit-detail" data-ouvert={critsOuverts ? 'true' : 'false'} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {/* V3.240 (Alexandre : « quand on appuie pour masquer ou voir le détail, ça s'affiche en mode brut ») :
+                      il se déplie et se replie en glissant (Depliant), comme le reste. Monté une fois le choix lu, pour ne pas
+                      jouer l'ouverture à chaque arrivée sur la fiche. */}
+                  {critsLu && <Depliant ouvert={critsOuverts || !!voileRecherche} ecart={10}>
+                  <div className="fc-crit-detail" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {/* Trois familles. Une colonne sans aucun critère renseigné
                       ne s'affiche pas — une case vide en dirait moins que rien. */}
                   {(() => {
@@ -5242,9 +5333,10 @@ ${signatureMail()}`,
                   {/* V3.122 — Son parcours : visible d'Alexandre seul. */}
                   <BlocParcours parcours={lireParcours((rechercheActive as unknown as { parcours?: unknown } | null)?.parcours)} onModifier={() => ouvrirEtapeCrit('parcours')} />
                   </div>
+                  </Depliant>}
                 </div>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="fc-crit-vide" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ color: '#94a3b8', fontSize: 13 }}>Aucun critère défini</span>
                   <button className={`${styles.btn} ${styles.btnPrimary}`} style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => ouvrirCriteres()}>+ Définir</button>
                 </div>
@@ -5563,7 +5655,7 @@ ${signatureMail()}`,
                           Bail ou acte signé — dossier clos
                         </div>
                         <div style={{ fontSize: 13, color: '#4d7c5f', marginTop: 6, lineHeight: 1.55, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
-                          La veille est arrêtée sur cette recherche et les relances en attente ont été soldées.
+                          Cette recherche est close et les relances en attente ont été soldées.
                           {tx.acte_date_prevue ? ` Signé le ${jourFr(tx.acte_date_prevue)}.` : ''}
                         </div>
                         {/* V3.50 : une vente sans honoraires ne compte pas dans le CA — on le dit ici. */}
@@ -5756,8 +5848,8 @@ ${signatureMail()}`,
                                 <div className="tx-note">
                                   {/* V3.50 : un client à plusieurs recherches n'est clos que si plus rien ne tourne. */}
                                   {recherches.some(r => r.id !== rechercheId && r.active !== false)
-                                    ? 'Clôturer ici, c’est fermer cette recherche : sa veille s’arrête et ses relances sont soldées. Ses autres recherches continuent.'
-                                    : 'Clôturer ici, c’est fermer le dossier : le client passe en « Local trouvé », la veille s’arrête et les relances en attente sont soldées.'}
+                                    ? `Clôturer ici, c’est fermer cette recherche : ${veilleTourne ? 'sa veille s’arrête et ' : ''}ses relances sont soldées. Ses autres recherches continuent.`
+                                    : `Clôturer ici, c’est fermer le dossier : le client passe « Local trouvé avec moi »${veilleTourne ? ', la veille s’arrête' : ''} et les relances en attente sont soldées.`}
                                 </div>
                               )}
                             </>
@@ -6134,7 +6226,13 @@ ${signatureMail()}`,
         </Portail>
       )}
 
-      {/* Werner : ce que change le passage en Actif ou en Prospect. */}
+      {fenEtat && (
+        <FenetreEtatRecherche prenom={client.prenom || ''} pronom={pronomDe(client)} statut={stDossier}
+          raison={(client as unknown as { raison_perte?: string | null }).raison_perte}
+          onChoix={choisirEtat} onFermer={() => setFenEtat(false)} />
+      )}
+
+      {/* Werner : ce que change le passage en Accompagné ou En recherche. */}
       {expliquer && (
         <FenExpliquerEspace vers={expliquer as 'actif' | 'prospect'} prenom={client.prenom || 'ce client'}
           onAnnuler={() => setExpliquer(null)}
@@ -6155,7 +6253,8 @@ ${signatureMail()}`,
             <div className={styles.modalHeader}><h2 className={styles.modalTitle}>🏁 Clôturer la recherche</h2><button className={styles.modalClose} onClick={() => setShowCloture(false)}>✕</button></div>
             <div className={styles.modalBody}>
               <div style={{ background: '#f8fafc', border: '1px solid #f3f2f2', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
-                {'La veille s’arrête sur ce dossier, ses relances de demandeur sont soldées, ses visites à venir annulées, et le motif reste au journal. Tout est réversible : « Rouvrir le dossier » dans le menu d’état.'}
+                {/* V3.240 : ce qui s'arrête vraiment, selon où en est le dossier. */}
+                {`${veilleTourne ? 'La veille s’arrête sur ce dossier, ses' : 'Ses'} relances de demandeur sont soldées et ses visites à venir annulées, s’il en a. Le motif reste au journal. Tout est réversible : « Rouvrir le dossier » dans le menu d’état.`}
               </div>
               {/* V3.50 : trouvé avec nous et une transaction ouverte = un acte signé. */}
               {cloture.motif === 'trouve_avec_moi' && transaction && transaction.etape_actuelle !== 'finalise' && (
@@ -6179,7 +6278,7 @@ ${signatureMail()}`,
                             <span style={{ width: 8, height: 8, borderRadius: '50%', background: m.point, flexShrink: 0 }} />
                             <span style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--emilio)' }}>{m.nom}</span>
                             <span style={{ fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.7, borderRadius: 99, padding: '1px 8px', color: m.statut === 'bien_trouve' ? '#1d4ed8' : '#b91c1c', background: m.statut === 'bien_trouve' ? '#eff6ff' : '#fef2f2' }}>
-                              {m.statut === 'bien_trouve' ? 'Local trouvé' : 'Perdu'}
+                              {nomEtat(m.statut)}
                             </span>
                           </span>
                           <span style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{m.quoi}</span>
@@ -6261,10 +6360,11 @@ ${signatureMail()}`,
         <Portail>
         <div className={styles.overlay}>
           <div className={styles.modal} style={{ maxWidth: 480 }}>
-            <div className={styles.modalHeader}><h2 className={styles.modalTitle}>⏸️ Suspendre le dossier</h2><button className={styles.modalClose} onClick={() => setSuspendre(null)}>✕</button></div>
+            <div className={styles.modalHeader}><h2 className={styles.modalTitle}>⏸️ Mettre en pause</h2><button className={styles.modalClose} onClick={() => setSuspendre(null)}>✕</button></div>
             <div className={styles.modalBody}>
               <div style={{ background: '#f8fafc', border: '1px solid #f3f2f2', borderRadius: 11, padding: '11px 14px', fontSize: 12.5, color: '#55647a', lineHeight: 1.55 }}>
-                La veille s'arrête sur ses recherches. Avec une date de reprise, ce jour-là le dossier repasse tout seul en « Actif », la veille repart et une relance vous rappelle d'appeler le client.
+                {/* V3.240 : la veille seulement si elle tournait ; la reprise rend l'état choisi. */}
+                {`${veilleTourne ? 'La veille s’arrête sur ses recherches. ' : ''}Avec une date de reprise, ce jour-là le dossier repasse tout seul en «\u00a0${nomEtat(suspendre.en)}\u00a0»${suspendre.en === 'actif' ? ', la veille repart' : ''} et une relance te rappelle d’appeler le client.`}
               </div>
               <div>
                 <label className={styles.lbl}>Date de reprise <span style={{ fontWeight: 400, color: '#94a3b8' }}>(facultative)</span></label>
@@ -6292,20 +6392,37 @@ ${signatureMail()}`,
                     onChange={v => setSuspendre(x => x && ({ ...x, date: v }))} placeholder="Choisir le jour de reprise" />
                 </div>
               )}
+              {/* V3.240 : à la reprise, l'état d'avant la suspension (au choix). */}
+              {suspendre.choix !== 'sans' && (
+                <div>
+                  <label className={styles.lbl}>Ce jour-là, il repasse</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                    {(['actif', 'prospect'] as const).map(k => {
+                      const on = suspendre.en === k;
+                      return (
+                        <button type="button" key={k} onClick={() => setSuspendre(v => v && ({ ...v, en: k }))}
+                          style={{ padding: '8px 13px', borderRadius: 99, border: `1.5px solid ${on ? '#f08c42' : '#eaeae9'}`, background: on ? '#faf3ee' : 'white', color: on ? '#a85515' : '#55647a', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                          {k === 'actif' ? 'Accompagné · la veille repart' : 'En recherche · sans veille'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div style={{ fontSize: 13, color: 'var(--emilio)', fontWeight: 600 }}>
                 {(() => {
                   const j = suspendre.choix === 'sans' ? '' : suspendre.choix === 'date' ? suspendre.date : dansMois(Number(suspendre.choix));
-                  if (suspendre.choix === 'date' && !j) return 'Choisissez le jour de reprise.';
+                  if (suspendre.choix === 'date' && !j) return 'Choisis le jour de reprise.';
                   return j
-                    ? `Reprise le ${jourLisible(j)} : le dossier repassera en «\u00a0Actif\u00a0» ce jour-là.`
-                    : 'Sans date : le dossier reste suspendu jusqu\u2019à ce que vous le repassiez en «\u00a0Actif\u00a0».';
+                    ? `Reprise le ${jourLisible(j)} : le dossier repassera en «\u00a0${nomEtat(suspendre.en)}\u00a0» ce jour-là.`
+                    : 'Sans date : le dossier reste en pause jusqu\u2019à ce que tu le repasses «\u00a0Accompagné\u00a0» ou «\u00a0En recherche\u00a0».';
                 })()}
               </div>
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.btn} onClick={() => setSuspendre(null)}>Annuler</button>
               <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={confirmerSuspension} disabled={saving}>
-                {saving ? '...' : client.statut === 'suspendu' ? 'Enregistrer' : '⏸️ Suspendre'}
+                {saving ? '...' : client.statut === 'suspendu' ? 'Enregistrer' : '⏸️ Mettre en pause'}
               </button>
             </div>
           </div>
@@ -6532,7 +6649,7 @@ ${signatureMail()}`,
               )}
               {transaction.etape_actuelle === 'finalise' && (
                 <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#92400e', lineHeight: 1.55 }}>
-                  ⚠️ Le dossier était clos : il repasse en <b>« Actif »</b>. La veille, elle, reste en pause — vous êtes toujours à la signature.
+                  ⚠️ Le dossier était clos : il repasse en <b>« Accompagné »</b>. La veille, elle, reste en pause — vous êtes toujours à la signature.
                 </div>
               )}
             </div>
@@ -6627,7 +6744,7 @@ ${signatureMail()}`,
                 {/* V3.50 : la veille suit l'état du client. */}
                 {client.statut === 'actif'
                   ? ' La recherche repart comme si tu venais de la créer, et la prochaine veille rouvrira tout le marché.'
-                  : ' La recherche repart comme si tu venais de la créer. La veille reprendra quand le dossier repassera « Actif ».'}
+                  : ' La recherche repart comme si tu venais de la créer. La veille reprendra quand le dossier repassera « Accompagné ».'}
               </p>
 
               <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '12px 15px' }}>

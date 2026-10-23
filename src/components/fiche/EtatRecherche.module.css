@@ -1,0 +1,120 @@
+/* ═══ Où en est la recherche (V3.240, repris d'Emilio) — voir EtatRecherche.tsx ═══
+   Pas de `gap` sur un texte qui mêle des balises (AGENTS.md §2.2) : chaque
+   morceau de phrase est dans son propre élément. */
+
+/* ── La fenêtre ── */
+.voileFen {
+  position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgba(15, 22, 35, .55); backdrop-filter: blur(4px);
+}
+.fen {
+  width: 100%; max-width: 560px; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden;
+  background: #fff; border-radius: 20px; box-shadow: 0 24px 48px rgba(0, 0, 0, .18);
+}
+.fenTete { display: flex; align-items: flex-start; gap: 12px; padding: 18px 20px 14px; border-bottom: 1px solid #f0f0ef; }
+.fenTitre { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.fenTitre > b { font: 800 17px 'Plus Jakarta Sans', 'DM Sans', sans-serif; color: #232528; letter-spacing: -.2px; }
+.fenTitre > small { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #71717a; }
+.fenTitre > small > strong { color: #232528; font-weight: 800; }
+.point { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.fermer {
+  flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid #e4e4e7; background: #fff; color: #71717a;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+}
+.fermer:hover { background: #fafafa; color: #232528; }
+.fenCorps { flex: 1 1 auto; overflow-y: auto; padding: 14px 20px 6px; display: flex; flex-direction: column; gap: 14px; overscroll-behavior: contain; }
+.groupe { display: flex; flex-direction: column; gap: 7px; }
+.groupeT { font-size: 11px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: #a1a1aa; padding-left: 2px; }
+
+.option {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px; border-radius: 14px; cursor: pointer; text-align: left;
+  border: 1px solid #e4e4e7; background: #fff; font: inherit; color: inherit;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.option:hover { border-color: color-mix(in srgb, var(--c) 45%, #e4e4e7); background: color-mix(in srgb, var(--c) 5%, #fff); box-shadow: 0 8px 20px -16px rgba(38, 40, 44, .5); }
+.option[data-ici] { border-color: color-mix(in srgb, var(--c) 55%, #e4e4e7); background: color-mix(in srgb, var(--c) 7%, #fff); }
+.optIc {
+  flex: 0 0 auto; width: 36px; height: 36px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--c) 13%, #fff); color: var(--c);
+}
+.optTx { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.optTete { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.optTete > b { font: 800 14px 'DM Sans', sans-serif; color: #232528; }
+.optTx > small { font-size: 12.5px; line-height: 1.45; color: #71717a; }
+.etiq, .ici {
+  font-style: normal; font-size: 10.5px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; border-radius: 99px; padding: 1px 8px;
+}
+.etiq { color: var(--c); background: color-mix(in srgb, var(--c) 11%, #fff); }
+.ici { color: #fff; background: var(--c); }
+.faits { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px; }
+.fait {
+  display: inline-flex; align-items: center; gap: 4px; height: 21px; padding: 0 8px; border-radius: 99px;
+  font-size: 11px; font-weight: 700; border: 1px solid transparent;
+}
+.fait[data-oui='oui'] { color: #0f7a4f; background: #ecfdf5; border-color: #c6f0db; }
+.fait[data-oui='non'] { color: #a1a1aa; background: #fafafa; border-color: #f0f0ef; }
+.fait[data-oui='non'] > span { text-decoration: line-through; text-decoration-color: #d4d4d8; }
+.fait[data-oui='clos'] { color: #71717a; background: #fafafa; border-color: #f0f0ef; }
+/* V3.239 : « selon tes Paramètres » (le point automatique). */
+.fait[data-oui='reglage'] { color: #9a4a12; background: #fff7ed; border-color: #fed7aa; }
+.optFleche { flex: 0 0 auto; color: #d4d4d8; }
+.option:hover .optFleche { color: var(--c); }
+.fenPied {
+  display: flex; align-items: flex-start; gap: 8px; margin: 8px 20px 18px; padding: 10px 12px; border-radius: 12px;
+  background: #fafafa; border: 1px solid #f0f0ef; color: #71717a; font-size: 12px; line-height: 1.5;
+}
+.fenPied > svg { margin-top: 2px; color: #a1a1aa; }
+
+/* ── La carte du bloc grisé (en pause, clos) ──
+   Posée par-dessus le bloc, au centre ; le bloc reste dessous, grisé
+   (FicheClient.module.css, .infoCardBody[data-grise]). Seule la carte
+   reçoit les clics. */
+.voile {
+  position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; padding: 16px;
+  pointer-events: none;
+}
+.carte {
+  pointer-events: auto; width: 100%; max-width: 460px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+  padding: 18px 20px 16px; border-radius: 18px; background: rgba(255, 255, 255, .97); border: 1px solid #e4e4e7;
+  box-shadow: 0 24px 54px -22px rgba(15, 22, 35, .45), 0 2px 6px rgba(15, 22, 35, .06);
+}
+.voile[data-etat='suspendu'] .carte { border-color: #fde68a; }
+.carteIc {
+  width: 42px; height: 42px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 2px;
+  background: #f4f4f5; color: #71717a;
+}
+.voile[data-etat='suspendu'] .carteIc { background: #fffbeb; color: #d97706; }
+.voile[data-etat='bien_trouve'] .carteIc { background: #eff6ff; color: #2563eb; }
+.voile[data-etat='perdu'] .carteIc { background: #fef2f2; color: #dc2626; }
+.carteTitre { font: 800 16px 'Plus Jakarta Sans', 'DM Sans', sans-serif; color: #232528; letter-spacing: -.2px; }
+.carteMotif { font-size: 13px; font-weight: 700; color: #52525b; }
+.carteSous { font-size: 12.5px; line-height: 1.5; color: #71717a; }
+.carteQuestion { margin-top: 6px; font-size: 11px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; color: #a1a1aa; }
+.carteGestes { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.geste {
+  display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 15px; border-radius: 11px; cursor: pointer;
+  border: 1px solid #e4e4e7; background: #fff; color: #232528; font: 700 13.5px 'DM Sans', sans-serif;
+  transition: background .15s, border-color .15s;
+}
+.geste:hover:not(:disabled) { background: #fafafa; border-color: #d4d4d8; }
+.gestePlein { background: var(--emilio, #2e3034); border-color: var(--emilio, #2e3034); color: #fff; }
+.gestePlein:hover:not(:disabled) { background: #232528; border-color: #232528; }
+.geste:disabled, .lien:disabled { opacity: .55; cursor: default; }
+.lien {
+  margin-top: 4px; display: inline-flex; align-items: center; gap: 5px; padding: 4px 6px; border: none; background: none; cursor: pointer;
+  color: #71717a; font: 600 12.5px 'DM Sans', sans-serif;
+}
+.lien:hover:not(:disabled) span { text-decoration: underline; text-underline-offset: 3px; }
+.lienDanger:hover:not(:disabled) { color: #b91c1c; }
+
+@media (max-width: 640px) {
+  .voileFen { align-items: flex-end; padding: 0; }
+  .fen { max-width: none; max-height: 94dvh; border-radius: 20px 20px 0 0; }
+  .fenCorps { padding: 12px 14px 6px; }
+  .fenTete { padding: 16px 14px 12px; }
+  .fenPied { margin: 6px 14px 16px; }
+  /* Sur téléphone, le bloc est long : la carte se pose en haut, sur le bandeau. */
+  .voile { align-items: flex-start; padding: 14px 10px; }
+  .carte { padding: 16px 14px 14px; }
+  .geste { flex: 1 1 140px; justify-content: center; }
+}
