@@ -6,6 +6,7 @@ import { apprisDe } from '@/lib/visites';
 import { reprendreSuspendus } from '@/lib/suspension';
 import { prixDeVeille, proDeVeille } from '@/lib/fiche-bien';
 import { champsChauffage } from '@/lib/chauffage';
+import { champsNouveauPrix } from '@/lib/baisse-prix';
 
 /**
  * Page d'import de la veille — /veille/import
@@ -26,6 +27,9 @@ import { champsChauffage } from '@/lib/chauffage';
  *   await window.majLienBien(bienId, nouveau)
  *                                        → le lien d'un bien retenu est mort : le remplace
  *                                          et garde la trace de l'ancien (V3.101).
+ *   await window.majPrixBien(bienId, { prix, date })
+ *                                       → le loyer ou le prix d'un local retenu a changé : la fiche,
+ *                                         l'historique et l'espace du demandeur suivent (V3.242).
  *
  * Aucune clé ne circule : c'est la page, déjà authentifiée, qui écrit.
  */
@@ -562,9 +566,9 @@ export default function PageImportVeille() {
      * l'affiche en haut (AvisLien) : où il était, où il est. Une ligne part
      * aussi au parcours du bien.
      *
-     * Le prix vendeur n'est jamais touché : c'est celui que le client a reçu.
-     * Un prix différent sur la nouvelle annonce se lit dans le marché, et la
-     * réponse le signale (`prix_change`) pour qu'Alexandre décide.
+     * V3.242 : un montant différent sur la nouvelle annonce met la fiche à jour
+     * (majPrixBien) : le demandeur voit l'ancien montant barré dans son espace.
+     * La réponse le dit toujours (`prix_change`, et `prix_maj` une fois écrit).
      */
     async function majLienBien(bienId: string, nouveau: any = {}) {
       if (!bienId) return { ok: false, error: 'bienId manquant' };
@@ -676,7 +680,71 @@ export default function PageImportVeille() {
         : false;
 
       log(`${nouvelUrl ? 'Lien mis à jour' : 'Annonce marquée retirée'} : ${b.titre || bienId}`);
-      return { ok: true, bien: b.titre, etape: b.etape, avant, apres: { ...champs, historique_prix: undefined }, prix_change: prixChange, journal };
+      /* V3.242 : le montant de la nouvelle annonce devient celui de la fiche. */
+      const prixMaj = prixChange ? await majPrixBien(bienId, { prix: prixChange.nouvelle_annonce, date: aujourdhui }) : null;
+      return { ok: true, bien: b.titre, etape: b.etape, avant, apres: { ...champs, historique_prix: undefined }, prix_change: prixChange, prix_maj: prixMaj, journal };
+    }
+
+    /**
+     * Le loyer ou le prix d'un local retenu a changé (V3.242, repris d'Emilio).
+     *
+     *   await window.majPrixBien(bienId, {
+     *     prix: 45000,           // le montant que l'annonce affiche aujourd'hui (loyer annuel HT HC, ou prix)
+     *     date: '2026-10-24',    // le jour où la veille l'a vu (défaut : aujourd'hui)
+     *     apercu: true,          // rend ce qui serait écrit, sans rien écrire
+     *   })
+     *
+     * La fiche prend le nouveau montant (ses honoraires suivent : un taux se
+     * recalcule, un forfait reste ; `pro.loyerAn` ou `pro.prix` aussi), et
+     * `historique_prix` reçoit la ligne { type: 'prix', date, prix, avant } : la
+     * courbe du CRM la montre, et l'espace du demandeur barre l'ancien montant
+     * (src/lib/baisse-prix.ts). Une ligne part au parcours du local. Rien n'est
+     * envoyé au demandeur : le bouton « Prévenir le client » des Présentés est
+     * là pour ça.
+     *
+     * Un mandat de l'agence est refusé : son prix suit l'avenant.
+     */
+    async function majPrixBien(bienId: string, nouveau: any = {}) {
+      if (!bienId) return { ok: false, error: 'bienId manquant' };
+      const COLS = 'id, client_id, recherche_id, titre, etape, url, prix_vendeur, prix_acquereur, commission_type, commission_val, historique_prix, nb_baisses, prix_initial, bien_vente_id';
+      /* `pro` (la nature, le loyer annuel) suit aussi ; sans la colonne, on relit sans. */
+      let lu: any = await supabase.from('biens').select(`${COLS}, pro`).eq('id', bienId).maybeSingle();
+      if (lu.error && /\bpro\b/.test(lu.error.message || '')) lu = await supabase.from('biens').select(COLS).eq('id', bienId).maybeSingle();
+      const b: any = lu.data;
+      if (lu.error) return { ok: false, error: lu.error.message };
+      if (!b) return { ok: false, error: 'local introuvable' };
+      if (b.bien_vente_id) return { ok: false, error: 'mandat de l’agence : son prix suit l’avenant, pas la veille' };
+
+      const date = String(nouveau.date || new Date().toISOString()).slice(0, 10);
+      const r = champsNouveauPrix(b, Number(nouveau.prix), date);
+      if (!r) {
+        return { ok: false, error: Number(nouveau.prix) === Number(b.prix_vendeur) ? 'même montant que la fiche' : 'montant manquant ou illisible' };
+      }
+      if (nouveau.apercu) {
+        return { ok: true, apercu: true, bien: b.titre, etape: b.etape, avant: r.avant, apres: r.prix, baisse: r.baisse, champs: { ...r.champs, historique_prix: undefined } };
+      }
+
+      const { data: maj, error: e2 } = await supabase.from('biens').update(r.champs).eq('id', bienId).select('id');
+      if (e2) {
+        log(`Montant non mis à jour (${b.titre || bienId}) : ${e2.message}`, false);
+        return { ok: false, error: e2.message };
+      }
+      if (!maj?.length) {
+        log(`Montant non mis à jour (${b.titre || bienId}) : aucune ligne modifiée`, false);
+        return { ok: false, error: 'aucune ligne modifiée' };
+      }
+
+      const loyer = b.pro?.nature === 'location';
+      const euros = (n: number) => `${n.toLocaleString('fr-FR')} €`;
+      const titre = `${loyer ? 'Loyer' : 'Prix'} en ${r.baisse ? 'baisse' : 'hausse'} — ${euros(r.avant)} → ${euros(r.prix)}${loyer ? ' HT HC / an' : ''}`;
+      const journal = b.client_id
+        ? await addJournal(b.client_id, 'bien_modifie', titre, undefined, {
+            prix_maj: true, avant: r.avant, apres: r.prix, date,
+          }, { rechercheId: b.recherche_id, bienId })
+        : false;
+
+      log(`${loyer ? 'Loyer' : 'Prix'} en ${r.baisse ? 'baisse' : 'hausse'} : ${b.titre || bienId} (${euros(r.avant)} → ${euros(r.prix)})`);
+      return { ok: true, bien: b.titre, etape: b.etape, avant: r.avant, apres: r.prix, baisse: r.baisse, journal };
     }
 
     (window as any).veilleLire = veilleLire;
@@ -688,6 +756,7 @@ export default function PageImportVeille() {
     (window as any).majPhotosBien = majPhotosBien;
     (window as any).majPlansBien = majPlansBien;
     (window as any).majLienBien = majLienBien;
+    (window as any).majPrixBien = majPrixBien;
     (window as any).__VEILLE_PRETE__ = true;
     setPret(true);
 
@@ -710,6 +779,7 @@ export default function PageImportVeille() {
       delete (window as any).majPhotosBien;
       delete (window as any).majPlansBien;
       delete (window as any).majLienBien;
+      delete (window as any).majPrixBien;
       delete (window as any).__VEILLE_PRETE__;
     };
   }, [log]);
