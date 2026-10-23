@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CHAMPS_ANNONCE, nettoyerLecture, completerParRegex, typeLocalDuTexte } from '@/lib/lecture-annonce';
+import { reglagesSimples, texteReponse } from '@/lib/ia';
 
 /* V3.186 : une quarantaine de champs et la description complète prennent
    plus de temps à écrire. */
@@ -54,7 +55,8 @@ ${CHAMPS_ANNONCE}`;
     },
     body: JSON.stringify({
       model: 'claude-haiku-5-5',
-      max_tokens: 3500,
+      max_tokens: 5000,
+      ...reglagesSimples('claude-haiku-5-5'),
       messages: [{ role: 'user', content: prompt }],
     }),
     signal: AbortSignal.timeout(45000),
@@ -62,7 +64,7 @@ ${CHAMPS_ANNONCE}`;
 
   if (!response.ok) return null;
   const data = await response.json();
-  const text = data.content?.[0]?.text || '';
+  const text = texteReponse(data);
   const jsonMatch = text.match(/\{[\s\S]+\}/);
   if (!jsonMatch) return null;
 

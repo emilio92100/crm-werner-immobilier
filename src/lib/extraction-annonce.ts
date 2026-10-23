@@ -1,4 +1,5 @@
 import { CHAMPS_ANNONCE, nettoyerLecture, completerParRegex, typeLocalDuTexte } from '@/lib/lecture-annonce';
+import { reglagesSimples, texteReponse } from '@/lib/ia';
 
 /* ═══ La lecture d'une annonce par son lien (V3.197) ═══════════════════════
    Sortie de api/extract-bien pour servir à deux endroits :
@@ -227,7 +228,8 @@ ${CHAMPS_ANNONCE}`;
     },
     body: JSON.stringify({
       model: 'claude-haiku-5-5',
-      max_tokens: 3500,
+      max_tokens: 5000,
+      ...reglagesSimples('claude-haiku-5-5'),
       messages: [{ role: 'user', content: prompt }],
     }),
     signal: AbortSignal.timeout(40000),
@@ -235,7 +237,7 @@ ${CHAMPS_ANNONCE}`;
 
   if (!response.ok) return null;
   const data = await response.json();
-  const text = data.content?.[0]?.text || '';
+  const text = texteReponse(data);
 
   // Parser le JSON
   const jsonMatch = text.match(/\{[\s\S]+\}/);

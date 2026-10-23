@@ -174,7 +174,7 @@ export async function analyserPourRecherche(sb: SupabaseClient, rid: string, bie
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: modele, max_tokens: 1800, system: consigne,
+        model: modele, max_tokens: 2400, system: consigne,
         tools: [OUTIL], tool_choice: { type: 'tool', name: OUTIL.name },
         messages: [{
           role: 'user',

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { reglagesSimples, texteReponse } from '@/lib/ia';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -60,14 +61,14 @@ async function demander(cle: string, prompt: string, modeles = MODELES, delai = 
       r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': cle, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model, max_tokens: 2500, messages: [{ role: 'user', content: prompt }] }),
+        body: JSON.stringify({ model, max_tokens: 3500, ...reglagesSimples(model), messages: [{ role: 'user', content: prompt }] }),
         signal: AbortSignal.timeout(reste),
       });
     } catch (e) { derniere = (e as Error).message || 'réseau'; continue; }
     /* Un modèle refusé (inconnu, surchargé) : le suivant. */
     if (!r.ok) { derniere = `api_${r.status}`; continue; }
     const j = await r.json().catch(() => null) as { content?: { text?: string }[] } | null;
-    const brut = (j?.content?.[0]?.text || '').trim();
+    const brut = texteReponse(j);
     const m = brut.match(/\{[\s\S]*\}/);
     if (!m) { derniere = 'réponse illisible'; continue; }
     try {

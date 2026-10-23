@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { reglagesSimples, texteReponse } from '@/lib/ia';
 
 export async function POST(req: NextRequest) {
   try {
@@ -55,7 +56,8 @@ ${String(description).substring(0, 8000)}`;
       },
       body: JSON.stringify({
         model: 'claude-haiku-5-5',
-        max_tokens: 1200,
+        max_tokens: 2000,
+        ...reglagesSimples('claude-haiku-5-5'),
         messages: [{ role: 'user', content: prompt }],
       }),
       signal: AbortSignal.timeout(25000),
@@ -66,7 +68,7 @@ ${String(description).substring(0, 8000)}`;
     }
 
     const data = await response.json();
-    let texte = (data.content?.[0]?.text || '').trim();
+    let texte = texteReponse(data);
     // Retire d'éventuels guillemets entourants
     texte = texte.replace(/^["«»\s]+|["«»\s]+$/g, '').trim();
     if (!texte) return NextResponse.json({ description: null, error: 'empty' });

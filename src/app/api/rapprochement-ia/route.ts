@@ -219,7 +219,7 @@ Réponds avec l'outil « rendre_avis » : un avis par couple, avec leurs id exac
              coupée. L'outil impose la forme : l'API rend un objet, jamais
              du texte à relire. */
           body: JSON.stringify({
-            model: m, max_tokens: Math.min(8000, 800 + aLire.length * 340), system: consigne,
+            model: m, max_tokens: Math.min(11000, 1000 + aLire.length * 450), system: consigne,
             tools: [OUTIL], tool_choice: { type: 'tool', name: OUTIL.name },
             messages: [{ role: 'user', content: contenu }],
           }),

@@ -4,6 +4,7 @@ import { CHAMPS_ANNONCE, completerParRegex, nettoyerLecture } from '@/lib/lectur
 import { ficheNette } from '@/lib/agences-serveur';
 import { analyserPourRecherche } from '@/lib/analyse-bien-serveur';
 import { ecritServeur } from '@/lib/ecritures';
+import { reglagesSimples, texteReponse } from '@/lib/ia';
 
 /* ═══ Le PDF déposé par une agence, côté serveur (V3.202) ═════════════════
    Alexandre : « est-ce qu'il y a possibilité qu'il mette un PDF ? Est-ce que
@@ -49,7 +50,7 @@ async function appeler(contenu: unknown[], apiKey: string): Promise<Record<strin
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model, max_tokens: 3500, messages: [{ role: 'user', content: contenu }] }),
+      body: JSON.stringify({ model, max_tokens: 5000, ...reglagesSimples(model), messages: [{ role: 'user', content: contenu }] }),
       signal: AbortSignal.timeout(40_000),
     });
     if (!r.ok) {
@@ -59,7 +60,7 @@ async function appeler(contenu: unknown[], apiKey: string): Promise<Record<strin
       return null;
     }
     const data = await r.json().catch(() => null) as { content?: { text?: string }[] } | null;
-    const texte = (data?.content || []).map(c => c.text || '').join('');
+    const texte = texteReponse(data);
     const m = texte.match(/\{[\s\S]+\}/);
     if (!m) return null;
     try { return nettoyerLecture(JSON.parse(m[0]) as Record<string, unknown>); } catch { return null; }
