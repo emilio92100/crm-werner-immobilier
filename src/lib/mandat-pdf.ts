@@ -869,7 +869,7 @@ function pageDeGarde(doc: PDFDocument, k: Kit, o: OptionsPdf, sommaire: { t: str
   p.drawRectangle({ x: MARGE.g, y: y + 20, width: 38, height: 2, color: OR });
   const g = o.garde;
   p.drawText(propre(g ? g.titre : 'Mandat de recherche'), { x: MARGE.g, y: y - 12, size: 30, font: k.g, color: BLANC });
-  p.drawText(propre(g ? g.sous : 'simple, d’un bien à acquérir'), { x: MARGE.g, y: y - 40, size: 17, font: k.serifI, color: BLEU_PALE });
+  p.drawText(propre(g ? g.sous : 'de recherche d’un local professionnel'), { x: MARGE.g, y: y - 40, size: 17, font: k.serifI, color: BLEU_PALE });
   espace(p, propre(g ? g.etiquette : `MANDAT NON EXCLUSIF · N° ${o.numero}`), MARGE.g, y - 76, 8.5, k.g, OR, 1.8);
 
   /* Pour qui, et quand. */

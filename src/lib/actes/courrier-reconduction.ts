@@ -12,7 +12,12 @@
    ou Nouveau document › Courrier) : destinataire, numéro, dates, tout est
    repris. Ce n'est pas un contrat : on l'envoie, on ne le fait pas signer.
 
-   ⚠️ Texte écrit pour Emilio, à faire relire par l'avocat d'Alexandre. */
+   Werner (23 octobre 2026) : un mandat de commercialisation (location,
+   cession, vente) ou de recherche ; un LOCAL. L'article L215-1 protège les
+   consommateurs et non-professionnels : envers une société qui agit pour son
+   activité, le courrier n'est pas exigé (l'éditeur le dit).
+
+   ⚠️ Texte à faire relire par l'avocat de Werner. */
 
 import { type Partie, type Bloc, type Resume } from '@/lib/mandat';
 import { type IdentiteAgence } from '@/lib/agence';
@@ -20,7 +25,7 @@ import {
   P, Pp, jourLong, aujourdhui, txt, num, plusMois, veille, lirePersonnes, nomComplet, nomsCourts,
   type Donnees, type Modele, type Etape, type Contexte, type Repere, type Source,
 } from './commun';
-import { TYPES, typeDe as typeVente, echeances } from './mandat-vente';
+import { titreMandat, echeances } from './mandat-vente';
 
 const ENVOIS: Record<string, string> = {
   email: 'Envoyé par courrier électronique dédié',
@@ -33,26 +38,30 @@ const ETAPES: Etape[] = [
   {
     id: 'mandat', titre: 'Le mandat', court: 'Le mandat', sous: 'Repris du mandat signé : vérifie, c’est tout.', ic: 'doc',
     champs: [
-      { t: 'choix', cle: 'quoi', lib: 'Un mandat', ic: 'doc', tuiles: true, options: [
-        { v: 'vente', l: 'De vente', ic: 'maison' }, { v: 'recherche', l: 'De recherche', ic: 'loupe' },
+      { t: 'guide', cle: 'g-qui', titre: () => 'À qui l’envoyer', points: () => [
+        { ic: 'balance', x: 'La loi (article L215-1 du Code de la consommation) l’exige envers un particulier ou un non-professionnel : une SCI familiale, par exemple.' },
+        { ic: 'agence', x: 'Envers une société qui t’a confié le mandat pour son activité, il n’est pas exigé ; l’envoyer reste une bonne pratique.' },
       ] },
-      { t: 'texte', cle: 'mandatNom', lib: 'Le mandat, en toutes lettres', ic: 'plume', large: true, exemple: 'un mandat de vente exclusif', aide: 'Tel qu’il apparaît dans la phrase « vous nous avez confié … ».' },
+      { t: 'choix', cle: 'quoi', lib: 'Un mandat', ic: 'doc', tuiles: true, options: [
+        { v: 'vente', l: 'De commercialisation', aide: 'Location, cession ou vente', ic: 'immeuble' }, { v: 'recherche', l: 'De recherche', ic: 'loupe' },
+      ] },
+      { t: 'texte', cle: 'mandatNom', lib: 'Le mandat, en toutes lettres', ic: 'plume', large: true, exemple: 'un mandat de location exclusif', aide: 'Tel qu’il apparaît dans la phrase « vous nous avez confié … ».' },
       { t: 'texte', cle: 'mandatNumero', lib: 'N° du mandat', ic: 'livre', requis: true },
       { t: 'date', cle: 'mandatDate', lib: 'Signé le', ic: 'calendrier', requis: true },
-      { t: 'texte', cle: 'bien', lib: 'Le bien', ic: 'lieu', large: true, si: d => d.quoi !== 'recherche', exemple: '12 rue des Lilas, 92100 Boulogne-Billancourt', question: 'Rappeler l’adresse du bien ?' },
+      { t: 'texte', cle: 'bien', lib: 'Le local', ic: 'lieu', large: true, si: d => d.quoi !== 'recherche', exemple: '35 rue de Lévis, 75017 Paris', question: 'Rappeler l’adresse du local ?' },
       { t: 'titre', cle: 't-duree', lib: 'Sa durée', ic: 'calendrier' },
       { t: 'nombre', cle: 'periode', lib: 'Il se poursuit par périodes de', ic: 'boucle', unite: 'mois', requis: true, rapides: [3, 6, 12] },
       { t: 'date', cle: 'finMax', lib: 'Au plus tard jusqu’au', ic: 'drapeau', aide: 'La limite totale prévue au mandat.' },
       { t: 'choix', cle: 'resiliation', lib: 'Le mandat peut être arrêté', ic: 'balance', options: [
         { v: 'art78', l: 'Par recommandé, 15 jours de préavis', ic: 'doc' }, { v: 'libre', l: 'Par recommandé ou e-mail, 15 jours de préavis', ic: 'mail' },
-      ], aide: 'Rappelé dans le courrier. Mandat de vente, ou de recherche exclusif : le recommandé (article 78 du décret de 1972).' },
+      ], aide: 'Rappelé dans le courrier. Mandat de commercialisation, ou de recherche exclusif : le recommandé (article 78 du décret de 1972).' },
     ],
   },
   {
     id: 'dest', titre: 'Le destinataire', court: 'Destinataire', sous: 'À qui il part, et comment.', ic: 'personne',
     champs: [
       { t: 'texte', cle: 'destNom', lib: 'Nom', ic: 'personne', large: true, requis: true, exemple: 'Madame Claire MARTIN et Monsieur Paul MARTIN' },
-      { t: 'zone', cle: 'destAdresse', lib: 'Adresse', ic: 'lieu', large: true, exemple: '12 rue des Lilas\n92100 Boulogne-Billancourt' },
+      { t: 'zone', cle: 'destAdresse', lib: 'Adresse', ic: 'lieu', large: true, exemple: '12 rue des Dames\n75017 Paris' },
       { t: 'texte', cle: 'destEmail', lib: 'E-mail', ic: 'mail', large: true },
       { t: 'texte', cle: 'appel', lib: 'Formule d’appel', ic: 'bulle', exemple: 'Chère Madame, cher Monsieur,', question: 'Une autre formule d’appel que « Madame, Monsieur, » ?' },
       { t: 'choix', cle: 'envoi', lib: 'Envoyé par', ic: 'envoyer', tuiles: true, options: [
@@ -99,7 +108,7 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
     ] },
     Pp(`${txt(d, 'faitA') || '……………'}, le ${L(txt(d, 'date'))} · ${ENVOIS[String(d.envoi)] || ENVOIS.lettre}`),
     P(appel),
-    P(`Le ${L(txt(d, 'mandatDate'))}, vous nous avez confié ${txt(d, 'mandatNom') || 'un mandat'} n° ${numero || '……'}${d.quoi !== 'recherche' && txt(d, 'bien') ? `, pour le bien situé ${txt(d, 'bien')}` : ''}. Ce mandat prévoit qu’à chaque échéance, il se poursuit pour une nouvelle période de ${periode} mois${txt(d, 'finMax') ? `, au plus tard jusqu’au ${jourLong(txt(d, 'finMax'))}` : ''}, sauf si l’une des parties y met fin.`),
+    P(`Le ${L(txt(d, 'mandatDate'))}, vous nous avez confié ${txt(d, 'mandatNom') || 'un mandat'} n° ${numero || '……'}${d.quoi !== 'recherche' && txt(d, 'bien') ? `, pour le local situé ${txt(d, 'bien')}` : ''}. Ce mandat prévoit qu’à chaque échéance, il se poursuit pour une nouvelle période de ${periode} mois${txt(d, 'finMax') ? `, au plus tard jusqu’au ${jourLong(txt(d, 'finMax'))}` : ''}, sauf si l’une des parties y met fin.`),
     P(`Sa prochaine échéance est le ${L(echeance)}. Comme le prévoit l’article L215-1 du Code de la consommation, nous vous informons que vous pouvez choisir de ne pas le poursuivre au-delà de cette date.`),
     P(`DATE LIMITE POUR NE PAS POURSUIVRE LE MANDAT : ${limite ? jourLong(limite).toUpperCase() : '……………'}. Jusqu’à cette date incluse (la date d’envoi faisant foi), il vous suffit de nous l’écrire, par lettre ou par e-mail à ${A.mail} : le mandat prendra alors fin le ${L(echeance)}.`, true),
     P(`Sans demande de votre part, le mandat se poursuivra aux mêmes conditions${suite ? ` jusqu’au ${jourLong(suite)}` : ''}.`),
@@ -108,7 +117,7 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
       : 'Passé les trois premiers mois du mandat, vous gardez par ailleurs la faculté d’y mettre fin à tout moment, par lettre recommandée avec avis de réception, avec un préavis de quinze jours (article 78 du décret du 20 juillet 1972).'),
     P(d.quoi === 'recherche'
       ? 'Nous restons à votre disposition pour faire le point avec vous sur votre recherche.'
-      : 'Nous restons à votre disposition pour faire le point avec vous sur la vente de votre bien.'),
+      : 'Nous restons à votre disposition pour faire le point avec vous sur votre local.'),
     P(`Veuillez agréer, ${appel.replace(/[\s,]+$/, '')}, l’expression de nos salutations distinguées.`),
     { t: 'sigs', cases: [{ qui: 'Pour l’Agence', nom: A.nom.toUpperCase(), lignes: [`${A.signataireNom}, ${A.signataireQualite}`] }] },
   ];
@@ -152,7 +161,7 @@ function manques(d: Donnees): string[] {
 function defaut(c: Contexte): Donnees {
   const cl = c.client;
   return {
-    quoi: 'vente', mandatNom: 'un mandat de vente exclusif', mandatNumero: '', mandatDate: '', bien: '',
+    quoi: 'vente', mandatNom: 'un mandat de location exclusif', mandatNumero: '', mandatDate: '', bien: '',
     periode: 3, finMax: '', resiliation: 'art78',
     destNom: cl ? [cl.prenom, (cl.nom || '').toUpperCase()].filter(Boolean).join(' ') : '', destAdresse: cl?.adresse || '', destEmail: cl?.emails?.[0] || '',
     appel: 'Madame, Monsieur,', envoi: 'email',
@@ -176,7 +185,8 @@ function deriver(src: Source, _id: IdentiteAgence, o: { echeance?: string } = {}
   const sci = s.qui === 'sci';
   return {
     quoi: vente ? 'vente' : 'recherche',
-    mandatNom: vente ? `un mandat de vente ${TYPES[typeVente(s)].nom}` : `un mandat de recherche ${exclusif ? 'exclusif' : 'simple'}`,
+    /* « un mandat de location exclusif », « un mandat de cession de droit au bail simple »… */
+    mandatNom: vente ? `un ${titreMandat(s).charAt(0).toLowerCase()}${titreMandat(s).slice(1)}` : `un mandat de recherche ${exclusif ? 'exclusif' : 'simple'}`,
     mandatNumero: src.numero || txt(s, 'numero'), mandatDate: valide ? jour : '',
     bien: vente ? [txt(s, 'adresse'), [txt(s, 'cp'), txt(s, 'ville')].filter(Boolean).join(' ')].filter(Boolean).join(', ') : '',
     periode: num(s, 'periode') ?? 3,

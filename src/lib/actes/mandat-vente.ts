@@ -750,15 +750,17 @@ function rediger(d: Donnees, A: IdentiteAgence): Partie[] {
   const combien = h !== null
     ? `${montantHono(d, h, true)}${a.forfait === null && a.taux !== null ? `, représentant ${tauxHono(d, a.taux)} ${baseTaux}` : ''}`
     : a.taux !== null ? `${tauxHono(d, a.taux)} ${baseTaux}` : 'à préciser';
-  const payeur = a.charge === 'acquereur' ? `au ${A_}` : 'au MANDANT';
+  /* « au PRENEUR », « à l'ACQUÉREUR » ; « du PRENEUR », « de l'ACQUÉREUR ». */
+  const voyelle = /^[AEIOUYÉÈÊ]/.test(A_);
+  const payeur = a.charge === 'acquereur' ? (voyelle ? `à l’${A_}` : `au ${A_}`) : 'au MANDANT';
   hono.push(P(`En cas de réalisation de l’opération, le MANDATAIRE aura droit à des honoraires d’un montant de ${combien}.`, true));
-  hono.push(P(`Le paiement de ces honoraires incombera ${payeur}.${!loc && a.charge === 'acquereur' ? ` Les honoraires à la charge du ${A_} ne sont pas inclus dans le prix indiqué ci-dessus.` : ''}${!loc && a.charge === 'vendeur' ? ' Ils sont compris dans le prix indiqué ci-dessus et seront prélevés sur celui-ci le jour de l’acte.' : ''}`));
+  hono.push(P(`Le paiement de ces honoraires incombera ${payeur}.${!loc && a.charge === 'acquereur' ? ` Les honoraires à la charge ${voyelle ? `de l’${A_}` : `du ${A_}`} ne sont pas inclus dans le prix indiqué ci-dessus.` : ''}${!loc && a.charge === 'vendeur' ? ' Ils sont compris dans le prix indiqué ci-dessus et seront prélevés sur celui-ci le jour de l’acte.' : ''}`));
   if (!loc && a.charge === 'acquereur' && a.prix && h !== null) hono.push(Pp(`Soit un montant affiché, honoraires compris, de ${euros(a.prix)}.`));
   if (a.forfait === null && a.taux !== null) hono.push(P(`Si l’opération se conclut à d’autres conditions, les honoraires sont calculés de la même façon, au même taux, ${loc ? 'sur le loyer annuel HT HC' : 'sur le prix'} effectivement convenu.`));
   hono.push(...paragraphes(txt(d, 'honoNote')));
   hono.push(P(`Le montant de ces honoraires sera payable à la conclusion effective ${loc ? 'du bail' : 'de l’opération constatée dans un seul acte écrit'}. Le taux de TVA appliqué aux honoraires sera le taux en vigueur à la date de leur exigibilité. Aucune somme n’est due au MANDATAIRE avant que l’opération ne soit effectivement conclue (article 6 de la loi du 2 janvier 1970).`));
   if (loc) hono.push(P('Si le présent mandat porte sur la location de plusieurs biens distincts, il est convenu que les honoraires dus au MANDATAIRE seront exigibles dès que la location de l’un d’entre eux aura été effectivement conclue et constatée dans un seul acte écrit contenant l’engagement des parties.'));
-  else hono.push(P(`En cas d’exercice d’un droit de préemption ou d’une faculté de substitution, son bénéficiaire sera subrogé dans tous les droits et obligations du ${A_}. À ce titre, il sera notamment tenu de régler ces honoraires si leur paiement lui incombe.`));
+  else hono.push(P(`En cas d’exercice d’un droit de préemption ou d’une faculté de substitution, son bénéficiaire sera subrogé dans tous les droits et obligations ${voyelle ? `de l’${A_}` : `du ${A_}`}. À ce titre, il sera notamment tenu de régler ces honoraires si leur paiement lui incombe.`));
   if (type === 'semi') hono.push(P(d.semiDirect === 'reduits' && num(d, 'semiMontant')
     ? `Si le MANDANT traite lui-même, directement, avec une personne qui ne lui a été présentée par aucun intermédiaire, les honoraires sont ramenés à ${montantHono(d, num(d, 'semiMontant') || 0)}.`
     : 'Si le MANDANT traite lui-même, directement, avec une personne qui ne lui a été présentée par aucun intermédiaire, aucun honoraire n’est dû.'));
@@ -1002,7 +1004,7 @@ export function formulaireRetractation(d: Donnees, A: IdentiteAgence): Partie {
     sections: [{ blocs: [
       P(`À l’attention de : ${A.nom.toUpperCase()}, ${A.adresse}, ${A.cp} ${A.ville} — ${A.mail}`, true),
       { t: 'l', items: [
-        `Je vous notifie par la présente ma rétractation du contrat portant sur la prestation de service ci-dessous : ${titreMandat(d).toLowerCase()}${txt(d, 'numero') ? ` n° ${txt(d, 'numero')}` : ''}, pour les biens situés ${[txt(d, 'adresse'), txt(d, 'cp'), txt(d, 'ville')].filter(Boolean).join(' ') || '………………'}.`,
+        `Je vous notifie par la présente ma rétractation du contrat portant sur la prestation de service ci-dessous : ${titreMandat(d).toLowerCase()}${txt(d, 'numero') ? ` n° ${txt(d, 'numero')}` : ''}, pour les locaux situés ${[txt(d, 'adresse'), txt(d, 'cp'), txt(d, 'ville')].filter(Boolean).join(' ') || '………………'}.`,
         `Conclu le : ${electronique(d) ? '……………… (la date de la dernière signature, sur le certificat joint)' : txt(d, 'date') ? jourLong(txt(d, 'date')) : '………………'}`,
         `Nom du ou des consommateurs : ${d.qui === 'sci' ? txt(d, 'sciNom') || '………………' : vs.map(nomComplet).join(', ')}`,
         `Adresse : ${d.qui === 'sci' ? txt(d, 'sciSiege') || '………………' : vs[0]?.adresse || '………………'}`,

@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import { enLettres } from '@/lib/mandat';
 import { PERSONNE_VIDE, lirePersonnes, type Champ, type ChampSimple, type Donnees, type Personne } from '@/lib/actes';
 import RechercheSociete from '@/components/shared/RechercheSociete';
-import { formeLongue, immatriculation, qualiteDe, type SocieteTrouvee } from '@/lib/entreprises';
+import { formeLongue, immatriculation, qualiteDe, rcsCourt, type SocieteTrouvee } from '@/lib/entreprises';
 import { Croix, Ic } from './ApercuActe';
 import AjoutBien from './ChoixBienCrm';
 import SaisieAdresse, { adresseProposee, type AdresseChoisie } from '@/components/shared/SaisieAdresse';
@@ -454,7 +454,7 @@ function SaisieSimple({ c, id, v, manque, off, onChange, onAdresse, onSociete }:
         classeChamp={`${s.input} ${manque ? s.inputManque : ''}`} placeholder={c.exemple ? `Ex : ${c.exemple} — tape le début` : 'Tape le début : 12 rue de Silly…'} />
     );
   }
-  if (c.t === 'texte' && c.cle === 'sciNom' && onSociete) {
+  if (c.t === 'texte' && (c.cle === 'sciNom' || c.cle === 'societe') && onSociete) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
         <RechercheSociete classeChamp={s.input} off={off} onChoisir={onSociete}
@@ -609,7 +609,9 @@ export function ChampActe({ c, d, maj, off, bloc = false, sansLib = false, voisi
   let controle: React.ReactNode = null;
   if (c.t === 'texte' || c.t === 'date' || c.t === 'heure' || c.t === 'zone' || c.t === 'nombre' || c.t === 'euros') {
     controle = <SaisieSimple c={c} id={id} v={v} manque={manque} off={off} onChange={x => maj(c.cle, x)}
-      onSociete={c.cle === 'sciNom' ? x => { for (const [k, y] of Object.entries(sciDuRegistre(x, d))) maj(k, y); } : undefined}
+      onSociete={c.cle === 'sciNom' ? x => { for (const [k, y] of Object.entries(sciDuRegistre(x, d))) maj(k, y); }
+        /* « Sa société » (bon de visite, reconnaissance) : son nom et son immatriculation, d'une ligne. */
+        : c.cle === 'societe' ? x => maj('societe', `${x.denomination} (${rcsCourt(x)})`) : undefined}
       onAdresse={voisins ? p => { for (const [k, x] of Object.entries(partiesAdresse(p, voisins))) maj(k, x); } : undefined} />;
   } else if (c.t === 'groupes') {
     controle = <ChampGroupes c={c} d={d} v={v} off={off} onChange={x => maj(c.cle, x)} />;

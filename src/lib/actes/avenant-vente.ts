@@ -110,8 +110,8 @@ function mission(d: Donnees, adresse: string): string {
   switch (natureMandat(d)) {
     case 'cession_bail': return `de rechercher un cessionnaire pour le droit au bail des locaux situés ${lieu}`;
     case 'fonds': return `de rechercher un cessionnaire pour le fonds de commerce exploité ${lieu}`;
-    case 'location': return `de rechercher un preneur pour les biens situés ${lieu}`;
-    default: return `de rechercher un acquéreur pour les biens situés ${lieu}`;
+    case 'location': return `de rechercher un preneur pour les locaux situés ${lieu}`;
+    default: return `de rechercher un acquéreur pour les locaux situés ${lieu}`;
   }
 }
 /* « Le loyer annuel », « Le prix du droit au bail »… */
