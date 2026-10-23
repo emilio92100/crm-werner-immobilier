@@ -797,6 +797,41 @@ SVG : contraste et tableaux. Les images des mails se chargent depuis `NEXT_PUBLI
 (repli : l'adresse vercel.app, un domaine partagé dont les anti-spam se méfient) : la poser sur le
 domaine d'envoi de Werner.
 
+**« Nouveau mail » : Cc et Cci** (23 octobre 2026, repris du CRM d'Emilio, sa V3.234). Un bouton
+« Cc Cci » au bout de la ligne « À » ouvre deux lignes de plus (`PageMail.tsx`). Dès qu'il y a une
+copie, le mail part **en un seul exemplaire**, comme depuis une messagerie : `To` + `Cc` + `Bcc` dans
+un même message Mailjet (`/api/mail`), « À » et « Cc » visibles de tous, « Cci » de personne ;
+{{prénom}} prend le ou les prénoms en « À » (« Marie et Paul », `pourGroupe` dans `mail-libre.ts`).
+Sans copie, rien ne change : un mail par personne. Chaque contact du CRM touché a sa ligne dans son
+Suivi (« ✉️ Mail envoyé », « en copie », « en copie cachée ») ; la vérification de remise suit aussi
+les copies (`noterRemisesCopies`). Le « Répondre à » vers l'adresse de l'agence (`reponseAgence`)
+est gardé : les réponses, « Répondre à tous » compris, arrivent dans la boîte Microsoft 365 de Werner.
+
+**« Nouveau mail » : choisir les adresses d'un contact** (V3.235 d'Emilio). Un contact ajouté n'envoie
+plus à toutes ses adresses : la première seulement, avec une pastille « 1 sur 5 » qui ouvre la
+fenêtre pour cocher les autres (`Dest.choisis`, `choix` côté serveur, qui n'accepte que des adresses
+de la fiche). Trouvé par une de ses adresses : c'est celle-là qui est cochée.
+
+**La fiche contact : une case par personne, et les autres adresses du dossier** (V3.236 d'Emilio,
+23 octobre 2026 ; Alexandre : « la même jolie présentation pour Werner, pas de gros blocs »).
+`src/components/contacts/IdentitesContact.tsx`, le même bloc à la création d'un contact (Clients),
+dans « Modifier le contact » d'un demandeur (FicheClient) et des autres contacts (FicheContact) :
+Personne 1 dans sa case (civilité, prénom, nom, ses e-mails, ses numéros) ; « + Ajouter une
+personne » → Personne 2 : son lien (**Associés**, **Co-propriétaires**, **Autre lien** + précision ;
+clés `couple` / `separes` / `autre` en base, `src/lib/foyer.ts`), ses e-mails, ses numéros, et
+« Signe aussi les mandats » (`couple` ne dit plus que ça) ; « Autres adresses du dossier » : une
+étiquette (Notaire, Avocat, Expert-comptable, Banque, Syndic, Autre) et l'adresse, qui ne reçoit rien
+d'office. Une flèche range une adresse ou un numéro ailleurs (l'étiquette est devinée : un domaine
+d'avocats → Avocat). Un professionnel garde ses champs simples. **SQL** :
+`outils/sql/adresses-dossier.sql` (colonne `clients.adresses_dossier`) ; sans lui, tout marche sauf
+l'enregistrement de ces adresses. Partout où la personne 2 se voit : coordonnées des fiches, recherche
+du haut et de Contacts, Ringover (« Sur la fiche de … (associés) »). « Nouveau mail » range les
+adresses par personne puis par étiquette, nomme la vraie personne (« Envoyer à Sofiane », « Envoyer à
+l'avocat ») et dit « Bonjour, » à une adresse du dossier. Le mandat de vente pré-rempli d'une fiche à
+deux signataires choisit « Plusieurs personnes » (`indivision` ; « deux personnes » n'existe pas dans
+le mandat de Werner). La signature en ligne qui ajoute un co-signataire garde la personne 2 déjà là si
+c'est la même, et ne l'écrase pas si c'en est une autre (le Suivi le signale).
+
 ### Règles d'affichage figées
 
 - **Les montants s'écrivent en entier** : `1 500 000 €`, jamais `1,5 M€` ni `380 k€`
