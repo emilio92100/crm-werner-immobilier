@@ -52,7 +52,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /* Par appel : de quoi répondre en moins d'une minute (la limite de Vercel).
    L'onglet enchaîne les appels quand il y en a plus. */
 const MAX = 12;
-const MODELES = ['claude-sonnet-5-5', 'claude-haiku-4-5-20251001'];
+const MODELES = ['claude-sonnet-5-5', 'claude-haiku-5-5'];
 const ko = (erreur: string, status = 400) => NextResponse.json({ ok: false, erreur }, { status });
 
 /* `s` : la note de potentiel (0 à 100) ; `p`, `m` : les plus, les moins (V3.125). */

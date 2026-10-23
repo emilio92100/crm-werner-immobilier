@@ -17,7 +17,7 @@ export type ResultatAnalyse =
   | { ok: true; analyse: Analyse; modele: string; photos: number }
   | { ok: false; erreur: string; status: number };
 
-const MODELES = ['claude-sonnet-5-5', 'claude-haiku-4-5-20251001'];
+const MODELES = ['claude-sonnet-5-5', 'claude-haiku-5-5'];
 const PHOTOS_MAX = 5;
 
 const OUTIL = {

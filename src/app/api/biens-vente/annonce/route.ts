@@ -20,7 +20,7 @@ export const maxDuration = 60;
      POST { faits, texte?, titre?, version? }  →  { ok, titre, texte } | { ok: false, erreur } */
 
 const MIN = 2000;
-const MODELES = ['claude-sonnet-4-5-20250929', 'claude-haiku-4-5-20251001'];
+const MODELES = ['claude-sonnet-5-5', 'claude-haiku-5-5'];
 
 const ko = (erreur: string, status = 200) => NextResponse.json({ ok: false, erreur }, { status });
 const court = (x: unknown, n: number) => (typeof x === 'string' ? x.slice(0, n) : '');

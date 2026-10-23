@@ -21,7 +21,7 @@ import { ecritServeur } from '@/lib/ecritures';
    - Puis l'analyse habituelle pour la recherche (analyse-bien-serveur.ts).
    Le CRM ouvre le PDF par un lien de quelques minutes (api/lien-agences/pdf). */
 
-const MODELES = ['claude-haiku-4-5-20251001', 'claude-sonnet-5-5'];
+const MODELES = ['claude-haiku-5-5', 'claude-sonnet-5-5'];
 
 /** Un chemin que le serveur a lui-même donné pour cette recherche. */
 export const cheminPdfValide = (rid: string, c: unknown): c is string =>
