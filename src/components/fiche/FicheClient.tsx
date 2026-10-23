@@ -48,6 +48,8 @@ import { ajouterMois, jourParis, joursRestants } from '@/lib/mandat';
 import { retracteEnLigne } from '@/lib/documents-espace';
 import { CLES_MAIL, signatureDe, personnaliser, conseillerDe, dejaSigne, texteModele } from '@/lib/mail-variables';
 import { CHAUFFAGE_MODES, CHAUFFAGE_ENERGIES, CHAUFFAGE_EMETTEURS, optionsAvec } from '@/lib/chauffage';
+import { prixDuBien } from '@/lib/honoraires-bien';
+import { prixAvantBaisse } from '@/lib/baisse-prix';
 
 /* ══ Le bloc « Critères de recherche » de la fiche ════════════════════════
    Un bandeau sombre pour le client et son enveloppe, puis trois familles :
@@ -1662,6 +1664,8 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
   }, [toastVisible, fermerToast]);
   const [envoiMode, setEnvoiMode] = useState<'unique' | 'multi' | 'libre'>('unique');
   const [envoiForm, setEnvoiForm] = useState({ destinataires: '', objet: '', corps: '' });
+  /* V3.242 : la fenêtre s'est ouverte pour prévenir d'une baisse de loyer ou de prix : le Suivi le dit. */
+  const [envoiBaisse, setEnvoiBaisse] = useState(false);
   /* La signature et le modèle « Sélection de biens » des Paramètres (V3.20) :
      ils étaient recopiés en dur, et ce qu'Alexandre y écrivait ne servait à
      rien. Lus une fois, à l'ouverture de la fiche. */
@@ -3438,6 +3442,7 @@ export default function FicheClient({ client: init, onBack, onNavigate, retourVe
   const biensDuMail = biens.filter(b => (envoiPool ? envoiPool.includes(b.id) : b.badge_retour !== 'refuse'));
 
   function openEnvoiBien(bienId: string) {
+    setEnvoiBaisse(false);
     const b = biens.find(x => x.id === bienId);
     const emails = client.emails?.filter(Boolean) || [];
     const titre = b?.titre || `${b?.type_bien||'Local'} — ${b?.ville||''}`;
@@ -3461,7 +3466,42 @@ ${signatureMail()}`,
     setShowEnvoiBien(true);
   }
 
+  /* V3.242 — « Prévenir le client » d'une baisse de loyer ou de prix : la même
+     fenêtre que l'envoi d'un local, avec l'ancien et le nouveau montant dans le
+     texte. Rien ne part tant que Werner n'a pas cliqué « Envoyer ». */
+  function openEnvoiBaisse(bienId: string) {
+    const b = biens.find(x => x.id === bienId);
+    if (!b) return;
+    const emails = client.emails?.filter(Boolean) || [];
+    const titre = b.titre || `${b.type_bien || 'Local'} — ${b.ville || ''}`;
+    const prix = prixDuBien(b).demande;
+    const avant = prixAvantBaisse(b, prix);
+    const loyer = b.pro?.nature === 'location';
+    const quoi = loyer ? 'loyer' : 'prix';
+    const euros = (n: number | null) => `${(n || 0).toLocaleString('fr-FR')} €`;
+    const phrase = avant && prix
+      ? `Bonne nouvelle : le ${quoi} de ce local vient de baisser. Il passe de ${euros(avant)} à ${euros(prix)}${loyer ? ' HT HC par an' : ''}.`
+      : `Bonne nouvelle : le ${quoi} de ce local vient de baisser.`;
+    setEnvoiBienId(bienId);
+    setEnvoiBienIds([bienId]);
+    setEnvoiPool(null);
+    setEnvoiMode('unique');
+    setEnvoiBaisse(true);
+    setEnvoiForm({
+      destinataires: emails.join(', '),
+      objet: `Baisse de ${quoi} — ${titre}`,
+      corps: [
+        `Bonjour ${client.prenom},`,
+        phrase,
+        `Vous le retrouvez ci-dessous, avec le bouton pour revoir sa fiche complète. S’il vous intéresse à ce ${quoi}, dites-le-moi et j’organise une visite.`,
+        signatureMail(),
+      ].join('\n\n'),
+    });
+    setShowEnvoiBien(true);
+  }
+
   function openEnvoiMulti(ids?: string[]) {
+    setEnvoiBaisse(false);
     const emails = client.emails?.filter(Boolean) || [];
     if (ids && ids.length) {
       // Les biens cochés dans « Sélection », et eux seuls
@@ -3529,6 +3569,7 @@ ${signatureMail()}`,
           biens_ids: envoiMode === 'libre' ? undefined : envoiBienIds,
           mode: envoiMode === 'libre' ? 'libre' : 'biens',
           destinataires_override,
+          baisse: envoiBaisse && envoiMode !== 'libre' && envoiBienIds.length === 1 ? true : undefined,
         }),
       });
       const data = await res.json();
@@ -3564,7 +3605,7 @@ ${signatureMail()}`,
           const deQui = b?.bien_vente_id ? 'de l’agence' : 'de recherche';
           await verifie('L’historique du client', supabase.from('journal').insert({
             client_id: client.id, bien_id: id, recherche_id: rechercheId || null, type: 'envoi_bien',
-            titre: neuf ? 'Envoyé au client · mail' : 'Renvoyé au client · mail',
+            titre: neuf ? 'Envoyé au client · mail' : envoiBaisse ? 'Baisse annoncée au client · mail' : 'Renvoyé au client · mail',
             description: prix
               ? `Montant présenté ${prix.toLocaleString('fr-FR')} €${hono > 0 ? ` — dont ${hono.toLocaleString('fr-FR')} € d'honoraires HT ${deQui}` : ''}`
               : null,
@@ -5899,6 +5940,7 @@ ${signatureMail()}`,
             vise={ouverture?.onglet === 'selection' ? ouverture.bienId || null : null} viseEnGrand={!!ouverture?.enGrand} visitePosee={visitePosee}
             onChange={() => { load(); chargerVeilleCount(); }}
             onMail={async (id) => { await load(); openEnvoiBien(id); }}
+            onMailBaisse={async (id) => { await load(); openEnvoiBaisse(id); }}
             onMailGroupe={async (ids) => { await load(); openEnvoiMulti(ids); }}
             rafraichir={versionBiens}
             onFiche={(id) => openFicheBien(id)}
@@ -5915,6 +5957,7 @@ ${signatureMail()}`,
             onBienVente={id => onNavigate('biens', { bien: id })}
             onChange={() => { load(); chargerVeilleCount(); }}
             onMail={async (id) => { await load(); openEnvoiBien(id); }}
+            onMailBaisse={async (id) => { await load(); openEnvoiBaisse(id); }}
             rafraichir={versionBiens}
             onFiche={(id) => openFicheBien(id)}
             onVisite={(id, pre) => planifierVisite(id, pre)}
