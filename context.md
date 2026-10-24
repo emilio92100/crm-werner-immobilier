@@ -615,6 +615,15 @@ gauche […] c'est pareil sur Werner ».
   « représente une société (SAS, SARL, SCI…) ? », « Pour une société (SAS, SARL…) ? ».
 - La clé interne reste `sci` (`qui: 'sci'`) : rien ne change en base.
 
+**24 octobre 2026, l'après-midi (V3.246, comme chez Emilio)** — Nouveau rendez-vous.
+- **Tout le fichier** dans « Pour quel client » : les demandeurs avec leur recherche (perdus et
+  archivés compris, marqués), puis chaque contact sans recherche — un mandant, un propriétaire, un
+  notaire… —, avec son type. Avant, seuls les demandeurs avec une recherche y étaient. Une visite
+  reste rangée dans une recherche : la liste dit pourquoi un contact sans recherche n'y est pas.
+- Le nom, le mail ou le numéro (« +33 », espaces, points permis), les siens et ceux du conjoint ;
+  chaque mot dans n'importe quel ordre. La fenêtre s'ouvre sur « Rendez-vous client »
+  (« Organiser une visite » reste une visite).
+
 ---
 
 ## 6. Ce qui reste à faire
