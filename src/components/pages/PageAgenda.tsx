@@ -19,6 +19,7 @@ import { pourVisiteVide, visitePourCarte } from '@/components/biens/pour-visite'
 import type { PourVisite } from '@/components/biens/VueBien';
 import { adresseVente } from '@/lib/adresse-vente';
 import { etapeDe, type BienVente } from '@/lib/biens-vente';
+import { TYPES_CONTACT, typesDe } from '@/lib/contacts';
 import { copieDe, personneVide } from '@/components/biens/outils';
 import { ETAT_BON, useBonDeVisite, useEtatsBons, type DepartBon, type EtatBon } from '@/components/documents/BonDeVisite';
 
@@ -172,7 +173,18 @@ type Dossier = {
   /* Pour le choix du client : le nom de la recherche, son résumé, et sa
      date (les plus récentes d'abord quand on n'a rien tapé). */
   recherche: string; resume: string; plusieurs: boolean; cree: string;
+  /* V3.246 : un contact sans recherche (vendeur, propriétaire, notaire…) —
+     `rechercheId` vaut alors « contact:<id> » : il se choisit pour un
+     rendez-vous, pas pour une visite. `etiquette` : « Perdu », « Archivé ».
+     `cherche` : tout ce que la recherche lit (nom, conjoint, recherche). */
+  contact?: boolean; etiquette?: string; cherche: string;
+  /* Ses numéros (et ceux du conjoint), en chiffres (« 0612345678 ») pour
+     la recherche, et tels qu'écrits pour l'affichage. */
+  tels: string[]; telsAff: string[];
 };
+/* La clé d'un contact sans recherche, et la vraie recherche d'un dossier. */
+const CLE_CONTACT = 'contact:';
+const vraieRecherche = (d: Dossier | null | undefined): string | null => (d && !d.contact ? d.rechercheId : null);
 
 function lieuDuBien(b: any): string {
   return b?.adresse || b?.adresse_probable || [b?.quartier, b?.ville].filter(Boolean).join(', ') || '';
@@ -384,7 +396,9 @@ function useEtroit() {
 
 /* ══ La page ═══════════════════════════════════════════════════ */
 
-type Modale = { mode: 'nouveau'; jour: string; heure: string; rechercheId?: string; bienId?: string } | { mode: 'modifier'; ev: Ev } | null;
+/* V3.246 : `genre`, le type proposé à l'ouverture (« Rendez-vous client »
+   sinon). */
+type Modale = { mode: 'nouveau'; jour: string; heure: string; rechercheId?: string; bienId?: string; genre?: TypeRdv } | { mode: 'modifier'; ev: Ev } | null;
 
 /* Tout ce que l'agenda affiche, par pages de 1 000 (V3.33) : au-delà,
    Supabase coupait sans rien dire et des visites ou des rendez-vous
@@ -395,9 +409,11 @@ const lire = (t: string, cols: string, filtre?: (q: any) => any) => toutLire<any
 });
 /* V3.50 : `archive` pour reconnaître un dossier clos. La colonne n'existe
    qu'après types-contact.sql : sans elle, on relit sans. */
+/* V3.246 : `types` aussi (vendeur, propriétaire, notaire…), pour les
+   contacts sans recherche de la fenêtre « Nouveau rendez-vous ». */
 const lireClients = async () => {
-  const r = await lire('clients', 'id, prenom, nom, statut, emails, civilite, couple, conjoint, archive');
-  return r.erreur && /archive/.test(r.erreur) ? lire('clients', 'id, prenom, nom, statut, emails, civilite, couple, conjoint') : r;
+  const r = await lire('clients', 'id, prenom, nom, statut, emails, telephones, civilite, couple, conjoint, archive, types');
+  return r.erreur && /archive|types/.test(r.erreur) ? lire('clients', 'id, prenom, nom, statut, emails, telephones, civilite, couple, conjoint') : r;
 };
 const lireAgenda = () => Promise.all([
   lire('visites', '*, clients(id, prenom, nom), biens(id, titre, ville, quartier, adresse, adresse_probable, photos, bien_vente_id, etape)'),
@@ -731,21 +747,57 @@ export default function PageAgenda({ onNavigate }: { onNavigate: (page: string, 
 
 /* ══ Les styles partagés (animations, survols, téléphone) ══════ */
 /* Les dossiers qu'on peut choisir dans la fenêtre « Nouveau rendez-vous » :
-   une ligne par recherche, les clients perdus en moins. Partagé par l'agenda
-   et par la fenêtre qu'on ouvre de n'importe où (NouveauRdvPartout). */
+   une ligne par recherche. Partagé par l'agenda et par la fenêtre qu'on
+   ouvre de n'importe où (NouveauRdvPartout).
+   V3.246 — Alexandre (24 octobre 2026) : « quand je tape le nom du client,
+   ça ne le trouve pas alors qu'il est dans mon CRM » (chez Emilio, puis
+   ici). Seuls les demandeurs avec une recherche y étaient, et pas les
+   clients perdus : un mandant, un propriétaire, un notaire, un demandeur
+   sans recherche ou perdu restait introuvable. Maintenant TOUT le fichier : les recherches (perdues
+   comprises, marquées), puis chaque contact sans recherche (`contact`). */
+const nomConjoint = (c: any) => (c?.conjoint && typeof c.conjoint === 'object' ? `${c.conjoint.prenom || ''} ${c.conjoint.nom || ''}`.trim() : '');
+const etiquetteDe = (c: any) => (c?.archive === true ? 'Archivé' : c?.statut === 'perdu' ? 'Perdu' : '');
+/* Ses mails et ses numéros, et ceux du conjoint (Alexandre : « que tout
+   client inscrit soit retrouvé si on met le nom, le mail ou le numéro »). */
+const chainesDe = (x: unknown): string[] => (Array.isArray(x) ? x.filter((v): v is string => typeof v === 'string' && !!v.trim()) : []);
+const mailsDe = (c: any) => [...chainesDe(c?.emails), ...(c?.conjoint && typeof c.conjoint === 'object' ? [...chainesDe(c.conjoint.emails), ...chainesDe([c.conjoint.email])] : [])];
+const telsDe = (c: any) => [...chainesDe(c?.telephones), ...(c?.conjoint && typeof c.conjoint === 'object' ? [...chainesDe(c.conjoint.telephones), ...chainesDe([c.conjoint.telephone])] : [])];
+/* « +33 6 12 34 56 78 », « 06.12.34.56.78 » → « 0612345678 ». */
+const chiffresTel = (t: string) => {
+  const d = t.replace(/[^\d+]/g, '');
+  return d.replace(/^\+33/, '0').replace(/^0033/, '0').replace(/^33(?=\d{9}$)/, '0').replace(/\+/g, '');
+};
 function dossiersDe(recherches: any[], clientsParId: Record<string, any>): Dossier[] {
   const parClient: Record<string, number> = {};
   recherches.forEach(r => { parClient[r.client_id] = (parClient[r.client_id] || 0) + 1; });
-  return recherches
+  const avecRecherche: Dossier[] = recherches
     .map(r => ({ r, c: clientsParId[r.client_id] }))
-    .filter(x => x.c && x.c.statut !== 'perdu')
-    .map(({ r, c }) => ({
-      rechercheId: r.id, clientId: c.id, nom: nomDe(c), prenom: c.prenom || nomDe(c), personne: c,
-      emails: (c.emails || []).filter(Boolean),
-      libelle: parClient[c.id] > 1 ? `${nomDe(c)} — ${r.nom || 'Recherche'}` : nomDe(c),
-      recherche: nommerRecherche(r, 1), resume: resumerRecherche(r), plusieurs: parClient[c.id] > 1, cree: String(r.created_at || ''),
-    }))
-    .sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr'));
+    .filter(x => x.c)
+    .map(({ r, c }) => {
+      const recherche = nommerRecherche(r, 1), resume = resumerRecherche(r);
+      return {
+        rechercheId: r.id, clientId: c.id, nom: nomDe(c) || 'Sans nom', prenom: c.prenom || nomDe(c), personne: c,
+        emails: (c.emails || []).filter(Boolean),
+        libelle: parClient[c.id] > 1 ? `${nomDe(c)} — ${r.nom || 'Recherche'}` : nomDe(c),
+        recherche, resume, plusieurs: parClient[c.id] > 1, cree: String(r.created_at || ''),
+        etiquette: etiquetteDe(c), cherche: sansAccent([nomDe(c), nomConjoint(c), recherche, resume, ...mailsDe(c)].join(' ')),
+        tels: telsDe(c).map(chiffresTel), telsAff: telsDe(c),
+      };
+    });
+  const sansRecherche: Dossier[] = Object.values(clientsParId)
+    .filter((c: any) => c && !parClient[c.id])
+    .map((c: any) => {
+      const ks = typesDe(c), types = ks.map(k => TYPES_CONTACT.find(t => t.k === k)?.lib || '').filter(Boolean);
+      const qui = ks.length === 1 && ks[0] === 'acheteur' ? `${types[0]} sans recherche` : types.join(' · ');
+      return {
+        rechercheId: CLE_CONTACT + c.id, clientId: c.id, nom: nomDe(c) || 'Sans nom', prenom: c.prenom || nomDe(c), personne: c,
+        emails: (c.emails || []).filter(Boolean), libelle: nomDe(c),
+        recherche: '', resume: qui, plusieurs: false, cree: '', contact: true,
+        etiquette: etiquetteDe(c), cherche: sansAccent([nomDe(c), nomConjoint(c), qui, ...mailsDe(c)].join(' ')),
+        tels: telsDe(c).map(chiffresTel), telsAff: telsDe(c),
+      };
+    });
+  return [...avecRecherche, ...sansRecherche].sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr'));
 }
 
 /* ── « Nouveau rendez-vous », de n'importe quel écran ──
@@ -756,7 +808,7 @@ function dossiersDe(recherches: any[], clientsParId: Record<string, any>): Dossi
    la fenêtre de l'agenda reçoit : les dossiers, les relances, et l'agenda
    lui-même pour signaler un chevauchement. */
 export function NouveauRdvPartout() {
-  const [creneau, setCreneau] = useState<{ jour: string; heure: string; rechercheId?: string; bienId?: string } | null>(null);
+  const [creneau, setCreneau] = useState<{ jour: string; heure: string; rechercheId?: string; bienId?: string; genre?: TypeRdv } | null>(null);
   const [brut, setBrut] = useState<{ visites: any[]; rdvs: any[]; relances: any[]; transactions: any[]; recherches: any[]; clients: any[] } | null>(null);
   const [tableAbsente, setTableAbsente] = useState(false);
 
@@ -773,7 +825,12 @@ export function NouveauRdvPartout() {
       setBrut({ visites: v.data, rdvs: r.data, relances: rel.data, transactions: tx.data, recherches: rech.data, clients: cl.data });
       /* Comme le bouton de l'agenda : aujourd'hui, à l'heure pleine suivante. */
       const n = new Date(); const suiv = Math.min(20, Math.max(8, n.getHours() + 1));
-      setCreneau({ jour: cleDe(n), heure: `${pad(suiv)}:00`, rechercheId, bienId });
+      /* V3.246 — Alexandre : « quand on appuie sur Nouveau rendez-vous, il faut
+         que ça arrive sur Rendez-vous client direct, pas sur Visite ». La
+         barre du haut, le tableau de bord, le menu : « Rendez-vous client ».
+         « Organiser une visite » et « Caler la 2e visite » (un dossier ou un
+         bien donné) restent une visite. */
+      setCreneau({ jour: cleDe(n), heure: `${pad(suiv)}:00`, rechercheId, bienId, genre: rechercheId || bienId ? 'visite' : 'client' });
     };
     window.addEventListener(EVT_NOUVEAU_RDV, ouvrir);
     return () => { vivant = false; window.removeEventListener(EVT_NOUVEAU_RDV, ouvrir); };
@@ -784,7 +841,7 @@ export function NouveauRdvPartout() {
     ? construire(brut.visites, brut.rdvs, brut.transactions, brut.recherches, clientsParId, new Date()).evs
     : []), [brut, clientsParId]);
   const dossiers = useMemo(() => dossiersDe(brut?.recherches || [], clientsParId), [brut, clientsParId]);
-  const modale = useMemo(() => (creneau ? { mode: 'nouveau' as const, jour: creneau.jour, heure: creneau.heure, rechercheId: creneau.rechercheId, bienId: creneau.bienId } : null), [creneau]);
+  const modale = useMemo(() => (creneau ? { mode: 'nouveau' as const, jour: creneau.jour, heure: creneau.heure, rechercheId: creneau.rechercheId, bienId: creneau.bienId, genre: creneau.genre } : null), [creneau]);
 
   if (!modale || !brut) return null;
   return (
@@ -1843,8 +1900,11 @@ function CarteRetenue({ nom, personne, sous, hors, fige, onChanger }: { nom: str
   );
 }
 
-function ChoixDossier({ dossiers, valeur, fige, onChange, libre = '', onLibre, onSaisie }: {
+function ChoixDossier({ dossiers, ailleurs = [], valeur, fige, onChange, libre = '', onLibre, onSaisie }: {
   dossiers: Dossier[]; valeur: string; fige: boolean; onChange: (id: string) => void;
+  /* V3.246 : les contacts qu'on ne peut pas choisir ici (sans recherche,
+     pour une visite) — seulement pour dire pourquoi ils n'y sont pas. */
+  ailleurs?: Dossier[];
   libre?: string; onLibre?: (nom: string) => void; onSaisie?: (q: string) => void;
 }) {
   const [q, setQ] = useState('');
@@ -1855,7 +1915,7 @@ function ChoixDossier({ dossiers, valeur, fige, onChange, libre = '', onLibre, o
   if (choisi) {
     return (
       <CarteRetenue nom={choisi.nom} personne={choisi.personne} fige={fige}
-        sous={`Client de ton fichier · ${[choisi.recherche, choisi.resume].filter(Boolean).join(' · ') || 'Recherche en cours'}`}
+        sous={choisi.contact ? `Contact de ton fichier · ${choisi.resume || 'sans recherche'}` : `Client de ton fichier · ${[choisi.recherche, choisi.resume].filter(Boolean).join(' · ') || 'Recherche en cours'}`}
         onChanger={() => { onChange(''); taper(''); }} />
     );
   }
@@ -1867,7 +1927,23 @@ function ChoixDossier({ dossiers, valeur, fige, onChange, libre = '', onLibre, o
   }
 
   const t = sansAccent(q.trim());
-  const liste = t ? dossiers.filter(d => sansAccent(`${d.nom} ${d.recherche} ${d.resume}`).includes(t)).slice(0, 8) : [];
+  /* V3.246 : chaque mot tapé, dans n'importe quel ordre (« Dupont Marie »
+     trouve Marie Dupont), sur le nom, le conjoint, la recherche ; les
+     dossiers perdus ou archivés après les autres. */
+  const mots = t.split(/\s+/).filter(Boolean);
+  /* Un numéro (3 chiffres au moins, espaces, points, « +33 » permis) : on
+     le cherche dans ses numéros ; sinon chaque mot dans son nom, celui du
+     conjoint, ses mails, sa recherche. */
+  const tapeTel = /^[\d\s.+()-]+$/.test(q.trim()) && q.replace(/\D/g, '').length >= 3 ? chiffresTel(q) : '';
+  const trouve = (d: Dossier) => (tapeTel ? d.tels.some(x => x.includes(tapeTel)) : mots.every(m => d.cherche.includes(m)));
+  /* Ce qui l'a fait trouver, quand ce n'est pas son nom : le numéro, le mail. */
+  const via = (d: Dossier): string => {
+    if (tapeTel) return d.telsAff.find((x, i) => d.tels[i]?.includes(tapeTel)) || '';
+    const m = mots.find(x => x.includes('@') || x.includes('.'));
+    return m ? mailsDe(d.personne).find(e => sansAccent(e).includes(m)) || '' : '';
+  };
+  const liste = t ? dossiers.filter(trouve).sort((a, b) => Number(!!a.etiquette) - Number(!!b.etiquette)).slice(0, 8) : [];
+  const horsVisite = t && !liste.length ? ailleurs.filter(trouve).slice(0, 2) : [];
   /* Le nom tapé, à garder tel quel : la dernière ligne de la liste. */
   const avecLibre = !!onLibre && !!t;
   const nbOptions = liste.length + (avecLibre ? 1 : 0);
@@ -1899,16 +1975,19 @@ function ChoixDossier({ dossiers, valeur, fige, onChange, libre = '', onLibre, o
       )}
       {t && (
       <div role="listbox" aria-label="Dossiers" style={{ display: 'flex', flexDirection: 'column', border: `1px solid ${BORD}`, borderRadius: 14, background: 'white', overflow: 'hidden' }}>
-        <span style={{ padding: '8px 12px 4px', fontSize: 10.5, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: PALE }}>{liste.length ? `Dans ton fichier · ${liste.length === 8 ? '8 premiers' : liste.length}` : 'Personne dans ton fichier'}</span>
-        {liste.length === 0 && <span style={{ padding: '2px 12px 10px', fontSize: 12.5, color: DOUX }}>{onLibre ? `Aucun client ne s’appelle « ${q.trim()} ». Tu peux garder ce nom juste pour ce rendez-vous.` : `Aucun demandeur ne correspond à « ${q.trim()} ».`}</span>}
+        <span style={{ padding: '8px 12px 4px', fontSize: 10.5, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: PALE }}>{liste.length ? `Dans ton fichier · ${liste.length === 8 ? '8 premiers' : liste.length}` : horsVisite.length ? 'Pas pour une visite' : 'Personne dans ton fichier'}</span>
+        {liste.length === 0 && <span style={{ padding: '2px 12px 10px', fontSize: 12.5, color: DOUX }}>{horsVisite.length
+          ? `${horsVisite.map(d => d.nom).join(' et ')} ${horsVisite.length > 1 ? 'sont' : 'est'} dans ton fichier, mais sans recherche : une visite se range dans la recherche d’un demandeur. Pour le voir, choisis « Rendez-vous client » plus haut.`
+          : onLibre ? `Aucun client ne s’appelle « ${q.trim()} ». Tu peux garder ce nom juste pour ce rendez-vous.` : `Aucun demandeur ne correspond à « ${q.trim()} ».`}</span>}
         {liste.map((d, i) => (
           <button key={d.rechercheId} type="button" role="option" aria-selected={i === actif} onClick={() => choisir(d)} onMouseEnter={() => setActif(i)}
             style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '8px 12px', border: 'none', borderTop: i ? `1px solid ${LIGNE}` : 'none', background: i === actif ? '#f9f9f9' : 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: NAVY }}>
             <Pastille nom={d.nom} personne={d.personne} taille={34} />
             <span style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1, minWidth: 0 }}>
               <b style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.nom}</b>
-              <span style={{ fontSize: 11.5, color: DOUX, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{[d.plusieurs ? d.recherche : '', d.resume].filter(Boolean).join(' · ') || d.recherche}</span>
+              <span style={{ fontSize: 11.5, color: DOUX, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{[via(d), d.plusieurs ? d.recherche : '', d.resume].filter(Boolean).join(' · ') || d.recherche}</span>
             </span>
+            {d.etiquette && <span style={{ fontSize: 10.5, fontWeight: 800, color: DOUX, background: '#f1f4f8', borderRadius: 99, padding: '2px 8px', flexShrink: 0 }}>{d.etiquette}</span>}
             {d.emails.length === 0 && <span title="Pas d’adresse mail" style={{ fontSize: 10.5, fontWeight: 700, color: PALE, flexShrink: 0 }}>sans mail</span>}
           </button>
         ))}
@@ -2366,7 +2445,8 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
       let rappel = 'aucun';
       if (rel?.date_echeance) rappel = cleDe(new Date(rel.date_echeance)) === ev.jour ? 'jour' : 'veille';
       return {
-        type: ev.type, rechercheId: ev.rechercheId || '', choisis: Object.fromEntries(ev.biens.map(b => [b.id, true])) as Record<string, boolean>,
+        /* V3.246 : un rendez-vous noté pour un contact sans recherche le retrouve. */
+        type: ev.type, rechercheId: ev.rechercheId || (ev.clientId ? CLE_CONTACT + ev.clientId : ''), choisis: Object.fromEntries(ev.biens.map(b => [b.id, true])) as Record<string, boolean>,
         date: ev.jour, heure: hhmm(ev.debut), duree: minutes, titre: ev.titre, lieu: ev.lieu,
         contact: ev.contact, notes: ev.notes, rappel, prevenir: false,
         mode: ev.details?.mode || 'tel', etape: ev.details?.etape || 'compromis',
@@ -2375,7 +2455,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
       };
     }
     return {
-      type: 'visite', rechercheId: modale.mode === 'nouveau' ? modale.rechercheId || '' : '',
+      type: modale.mode === 'nouveau' && modale.genre ? modale.genre : 'client', rechercheId: modale.mode === 'nouveau' ? modale.rechercheId || '' : '',
       choisis: modale.mode === 'nouveau' && modale.bienId ? { [modale.bienId]: true } : {},
       date: modale.mode === 'nouveau' ? modale.jour : cleDe(new Date()), heure: modale.mode === 'nouveau' ? modale.heure : '10:00',
       duree: 60, titre: null, lieu: null, contact: null, notes: '',
@@ -2407,7 +2487,12 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
   /* V3.106 : ce qui est tapé dans « Pour quel client » sans avoir été retenu. */
   const [saisie, setSaisie] = useState('');
 
-  const dossier = dossiers.find(d => d.rechercheId === f.rechercheId) || null;
+  /* V3.246 : une visite se range dans une recherche ; un contact sans
+     recherche se choisit pour les autres rendez-vous. `rid` : la vraie
+     recherche (null pour un contact). */
+  const dossiersPour = f.type === 'visite' ? dossiers.filter(d => !d.contact) : dossiers;
+  const dossier = dossiersPour.find(d => d.rechercheId === f.rechercheId) || null;
+  const rid = vraieRecherche(dossier);
   /* Le client : obligatoire pour une visite (il faut ses biens), facultatif
      pour un rendez-vous, un appel ou une signature, absent pour un
      rendez-vous libre, une estimation ou un créneau personnel. */
@@ -2438,7 +2523,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
 
   /* Les biens du dossier : ceux de la Sélection et des Présentés. */
   useEffect(() => {
-    if (!f.rechercheId || f.type !== 'visite') { setBiens([]); return; }
+    if (!f.rechercheId || f.rechercheId.startsWith(CLE_CONTACT) || f.type !== 'visite') { setBiens([]); return; }
     let vivant = true;
     supabase.from('biens').select('id, titre, ville, quartier, adresse, adresse_probable, photos, etape, badge_retour, agence_nom, prix_acquereur, prix_vendeur, bien_vente_id')
       .eq('recherche_id', f.rechercheId).in('etape', ['selection', 'presente'])
@@ -2449,7 +2534,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
   /* V3.134 : les biens en vente de l'agence, lus une fois, dès qu'une visite
      a son client. */
   useEffect(() => {
-    if (ev || f.type !== 'visite' || !f.rechercheId || agence !== null) return;
+    if (ev || f.type !== 'visite' || !f.rechercheId || f.rechercheId.startsWith(CLE_CONTACT) || agence !== null) return;
     let vivant = true;
     lireBiensAgence().then(l => { if (vivant) setAgence(l); }).catch(() => { if (vivant) setAgence([]); });
     return () => { vivant = false; };
@@ -2612,7 +2697,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
       }
       if (!relanceId && f.rappel !== 'aucun') {
         const { data, error } = await supabase.from('relances').insert({
-          client_id: dossier.clientId, recherche_id: dossier.rechercheId, type: 'manuelle', statut: 'en_attente',
+          client_id: dossier.clientId, recherche_id: rid, type: 'manuelle', statut: 'en_attente',
           date_echeance: quand.toISOString(), note,
         }).select('id').single();
         if (error) { setEnvoi(false); alert("Le rappel n'a pas pu être créé.\n\n" + error.message); return; }
@@ -2722,7 +2807,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
          disparaît à l'envoi, comme avant. */
       const ligne = {
         type: f.type, titre: titre.trim(), debut: debut.toISOString(), fin: fin.toISOString(), lieu: lieu || null, notes: f.notes || null,
-        client_id: avecDossier ? dossier?.clientId || null : bienEstim?.client_id || null, recherche_id: avecDossier ? dossier?.rechercheId || null : null,
+        client_id: avecDossier ? dossier?.clientId || null : bienEstim?.client_id || null, recherche_id: avecDossier ? rid : null,
         details: {
           ...(ev?.details || {}),
           mode: f.type === 'appel' ? f.mode : undefined, etape: f.type === 'signature' ? f.etape : undefined, proprietaire: f.type === 'estimation' ? f.proprietaire || undefined : undefined, telephone: f.type === 'estimation' ? f.telephone || undefined : undefined,
@@ -2737,7 +2822,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
         : await supabase.from('rendez_vous').insert(ligne).select('id');
       if (error) { await echec("Le rendez-vous n'a pas pu être enregistré.\n\n" + error.message); return; }
       if (!rdvs?.length) { await echec("Le rendez-vous n'a pas pu être enregistré : la session a peut-être expiré. Recharge la page, puis recommence."); return; }
-      if (!ev && avecDossier && dossier) await addJournal(dossier.clientId, 'rdv_planifie', `📅 ${titre.trim()}`, `Le ${debut.toLocaleDateString('fr-FR')} à ${f.heure}${lieu ? ` · ${lieu}` : ''}`, undefined, { rechercheId: dossier.rechercheId });
+      if (!ev && avecDossier && dossier) await addJournal(dossier.clientId, 'rdv_planifie', `📅 ${titre.trim()}`, `Le ${debut.toLocaleDateString('fr-FR')} à ${f.heure}${lieu ? ` · ${lieu}` : ''}`, undefined, { rechercheId: rid });
       /* L'estimation d'un bien choisi : sa fiche reçoit la date, l'heure et
          le lien vers ce rendez-vous. */
       if (bienEstim) await poserEstimationSurBien(bienEstim.id, String((rdvs[0] as { id: string }).id), f.date, f.heure);
@@ -2756,7 +2841,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
       try {
         const res = await fetch('/api/send-mail', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ client_ids: [dossier.clientId], recherche_id: dossier.rechercheId, objet: mail.objet, corps: mail.corps, mode: 'libre' }),
+          body: JSON.stringify({ client_ids: [dossier.clientId], recherche_id: rid || undefined, objet: mail.objet, corps: mail.corps, mode: 'libre' }),
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.success && data.avertissements?.length) signalerEchec('Le mail est parti, mais son suivi', data.avertissements.join(' ; '));
@@ -2889,7 +2974,7 @@ function ModaleRdv({ modale, dossiers, relances, tableAbsente, evs, onFerme, onE
             {avecDossier && (
               <Section n={2} ico="personne" titre={dossierObligatoire ? 'Pour quel client' : 'Pour quel client (facultatif)'} rang={1}
                 aide={dossierObligatoire ? 'Le rendez-vous se range dans sa fiche.' : 'Laisse vide pour un rendez-vous sans client. Avec un client, il se range dans sa fiche.'}>
-                <ChoixDossier dossiers={dossiers} valeur={f.rechercheId} fige={!!ev && ev.source === 'visite'}
+                <ChoixDossier dossiers={dossiersPour} ailleurs={f.type === 'visite' ? dossiers.filter(d => d.contact) : []} valeur={f.rechercheId} fige={!!ev && ev.source === 'visite'}
                   onChange={id => { setSaisie(''); setAjouts([]); setQBien(''); maj_({ rechercheId: id, personne: '', choisis: {}, titre: null, lieu: null, contact: null }); }}
                   libre={libreOk ? f.personne : ''} onSaisie={setSaisie}
                   onLibre={libreOk ? (n => { setSaisie(''); maj_({ personne: n, rechercheId: '', titre: null }); }) : undefined} />
